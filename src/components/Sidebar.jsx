@@ -3,14 +3,24 @@ import { classNames } from '../utils/tailwindUtils'
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Link,Outlet } from 'react-router-dom';
 
 const navigation = [
-  { name: 'Main', href: '#', current: true },
-  { name: 'Socials', href: '#', current: false },
-  { name: 'Speakers', href: '#', current: false },
-  { name: 'Location', href: '#', current: false },
-  { name: 'Documents', href: '#', current: false },
-  { name: 'Reports', href: '#', current: false },
+  { name: 'Home', href: 'home', current: true },
+  { name: 'Speakers', href: 'speakers', current: false },
+  { name: 'Committees', href: 'committee', current: false },
+  { name: 'Sponsorship', href: 'sponsorship', current: false },
+  { name: 'Awards', href: 'awards', current: false },
+  { name: 'Announcements', href: 'announcement', current: false },
+  { name: 'Contacts', href: 'contact', current: false },
+  { name: 'Images', href: 'images', current: false },
+  { name: 'Event Dates', href: 'eventdates', current: false },
+  { name: 'Locations', href: 'locations', current: false },
+  { name: 'Participants', href: 'participants', current: false },
+  { name: 'Navbar', href: 'navbar', current: false },
+
+
+
 ]
 
 const Sidebar = () => {
@@ -80,8 +90,8 @@ const Sidebar = () => {
                         <ul role='list' className='-mx-2 space-y-1'>
                           {navigation.map((item) => (
                             <li key={item.name}>
-                              <a
-                                href={item.href}
+                              <Link
+                                to={item.href}
                                 className={classNames(
                                   item.current
                                     ? 'bg-gray-50 text-emerald-600'
@@ -89,7 +99,7 @@ const Sidebar = () => {
                                   'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                                 )}>
                                 {item.name}
-                              </a>
+                              </Link>
                             </li>
                           ))}
                         </ul>
@@ -120,8 +130,8 @@ const Sidebar = () => {
                 <ul role='list' className='-mx-2 space-y-1'>
                   {navigation.map((item) => (
                     <li key={item.name}>
-                      <a
-                        href={item.href}
+                      <Link
+                        to={item.href}
                         className={classNames(
                           item.current
                             ? 'bg-gray-50 text-emerald-600'
@@ -129,7 +139,7 @@ const Sidebar = () => {
                           'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                         )}>
                         {item.name}
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -151,6 +161,7 @@ const Sidebar = () => {
           Dashboard
         </div>
       </div>
+      <Outlet/>
     </>
   )
 }
