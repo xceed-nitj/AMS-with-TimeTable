@@ -24,7 +24,7 @@ export default function DashboardLayout() {
         <body class="h-full">
         ```
       */}
-       {/* <div>
+      {/* <div>
         <Sidebar />
         <main className='py-10 bg-gray-100 lg:pl-72'>
           <div className='px-4 sm:px-6 lg:px-8'>Your content </div >
@@ -33,29 +33,27 @@ export default function DashboardLayout() {
 
 
 
-       < Routes >
+      < Routes >
         <Route path="/" element={<ConferencePage />} />
         <Route path="info/:confid" element={<Sidebar />}>
-        <Route path="home" element={<Home/>} />
-
-        <Route path="speakers" element={<Speaker  />} />
-        <Route path="committee" element={<Committees/>} />
-          
-             
-              <Route path="sponsorship" element={<Sponsors />} />
-              <Route path="awards" element={<Awards />} />
-              <Route path="announcement" element={<Announcement />} />
-              <Route path="contact" element={<Contacts/>} />
-              <Route path="images" element={<Images />} />  
-              <Route path="eventdates" element={<EventDates/>}/>
-              <Route path="locations" element={<Location/>} />
-              <Route path="participants" element={<Participants />} />  
-              <Route path="navbar" element={<Navbar/>}/>
+        <Route index element={<Home />} />
+          <Route path="home" element={<Home />} />
+          <Route path="speakers" element={<Speaker />} />
+          <Route path="committee" element={<Committees />} />
+          <Route path="sponsorship" element={<Sponsors />} />
+          <Route path="awards" element={<Awards />} />
+          <Route path="announcement" element={<Announcement />} />
+          <Route path="contact" element={<Contacts />} />
+          <Route path="images" element={<Images />} />
+          <Route path="eventdates" element={<EventDates />} />
+          <Route path="locations" element={<Location />} />
+          <Route path="participants" element={<Participants />} />
+          <Route path="navbar" element={<Navbar />} />
 
 
 
         </Route>
-      </Routes > 
+      </Routes >
     </>
   )
 }

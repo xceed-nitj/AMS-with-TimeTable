@@ -1,32 +1,42 @@
 import React from 'react'
 import { classNames } from '../utils/tailwindUtils'
-import { Fragment, useState } from 'react'
+import { Fragment, useState,useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link,Outlet } from 'react-router-dom';
-import { useNavigate } from "react-router-dom";
+import { useNavigate,useLocation } from "react-router-dom";
 
 const navigation = [
-  { name: 'Home', href: 'home', current: true },
-  { name: 'Speakers', href: 'speakers', current: false },
-  { name: 'Committees', href: 'committee', current: false },
-  { name: 'Sponsorship', href: 'sponsorship', current: false },
-  { name: 'Awards', href: 'awards', current: false },
-  { name: 'Announcements', href: 'announcement', current: false },
-  { name: 'Contacts', href: 'contact', current: false },
-  { name: 'Images', href: 'images', current: false },
-  { name: 'Event Dates', href: 'eventdates', current: false },
-  { name: 'Locations', href: 'locations', current: false },
-  { name: 'Participants', href: 'participants', current: false },
-  { name: 'Navbar', href: 'navbar', current: false },
-
-
-
-]
+  { name: 'Home', href: 'home' },
+  { name: 'Speakers', href: 'speakers' },
+  { name: 'Committees', href: 'committee' },
+  { name: 'Sponsorship', href: 'sponsorship' },
+  { name: 'Awards', href: 'awards' },
+  { name: 'Announcements', href: 'announcement' },
+  { name: 'Contacts', href: 'contact' },
+  { name: 'Images', href: 'images' },
+  { name: 'Event Dates', href: 'eventdates' },
+  { name: 'Locations', href: 'locations' },
+  { name: 'Participants', href: 'participants' },
+  { name: 'Navbar', href: 'navbar' },
+];
 
 const Sidebar = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const naviagate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [currentNavigation, setCurrentNavigation] = useState(navigation);
+
+  useEffect(() => {
+    // Update the "current" property of navigation items based on the current route
+    const updatedNavigation = navigation.map((item) => ({
+      ...item,
+      current: location.pathname.endsWith(item.href),
+    }));
+
+    setCurrentNavigation(updatedNavigation);
+  }, [location.pathname]);
+  
 
   return (
     <>
@@ -90,7 +100,7 @@ const Sidebar = () => {
                     <ul role='list' className='flex flex-1 flex-col gap-y-7'>
                       <li>
                         <ul role='list' className='-mx-2 space-y-1'>
-                          {navigation.map((item) => (
+                          {currentNavigation.map((item) => (
                             <li key={item.name}>
                               <Link
                                 to={item.href}
@@ -117,7 +127,6 @@ const Sidebar = () => {
 
       {/* Static sidebar for desktop */}
       <div className='hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col'>
-        {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className='flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6'>
           <div className='flex h-16 shrink-0 items-center'>
             <img
@@ -130,16 +139,17 @@ const Sidebar = () => {
             <ul role='list' className='flex flex-1 flex-col gap-y-7'>
               <li>
                 <ul role='list' className='-mx-2 space-y-1'>
-                  {navigation.map((item) => (
+                  {currentNavigation.map((item) => (
                     <li key={item.name}>
                       <Link
                         to={item.href}
                         className={classNames(
                           item.current
                             ? 'bg-gray-50 text-emerald-600'
-                            : 'text-gray-700 hover:text-emerald-600 hover:bg-gray-50',
+                            : 'text-gray-700 hover:text-emerald-600 hover:bg-gray-50 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
                           'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                        )}>
+                        )}
+                      >
                         {item.name}
                       </Link>
                     </li>
@@ -164,7 +174,7 @@ const Sidebar = () => {
         </div>
       </div>
       <div className='float-right '>
-                <button className="bg-sky-300 m-5 mr-20 hover:bg-sky-700 hover:text-white text-blue font-bold mx-2 px-4 rounded focus:outline-none focus:shadow-outline" onClick={() => naviagate("/")}> Go To Home </button>
+                <button className="bg-sky-300 m-5 mr-20 hover:bg-sky-700 hover:text-white text-blue font-bold mx-2 px-4 rounded focus:outline-none focus:shadow-outline" onClick={() => navigate("/")}> Go To Home </button>
                 </div>
       <Outlet/>
     </>

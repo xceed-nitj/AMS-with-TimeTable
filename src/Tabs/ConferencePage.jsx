@@ -148,9 +148,9 @@ const ConferencePage = () => {
 
             <div>
                 <div className="text-black-700 text-[28px] font-serif mx-auto my-auto grid place-content-center" >Existing Conferences</div>
-                <div className=" flex flex-wrap ">
+                <div className=" flex flex-wrap justify-evenly items-center">
                     {data.map((item, index) => (
-                        <div className="w-[350px] h-[200px] flex flex-col justify-evenly mx-auto my-auto bg-blue-100 border-collapse rounded-lg box-border m-5 "  >
+                        <div className="w-[350px] h-[200px] flex flex-col justify-evenly   bg-blue-100 border-collapse rounded-lg box-border m-5 "  >
                             <table className="min-w-full border-collapse box-border " >
                                 <tr >
                                     <td className="p-1 font-bold text-center">Email</td>
