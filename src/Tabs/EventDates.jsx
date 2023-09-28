@@ -139,10 +139,10 @@ const EventDates = () => {
                         className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-700   leading-tight    focus:outline-none focus:shadow-outline" />
 
                     <label className="block text-gray-700 text-lg ml-1 font-bold ">Date</label>
-                    <input type="date" name="date" value={date} onChange={handleChange}
+                    <input type="datetime-local" name="date" value={date} onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-700   leading-tight    focus:outline-none focus:shadow-outline" />
 
-                    <label className="block text-gray-700 text-lg ml-1 font-bold">Is Date Extended</label>
+                    {/* <label className="block text-gray-700 text-lg ml-1 font-bold">Is Date Extended</label>
                     <label>
                         <input
                             type="radio"
@@ -158,12 +158,12 @@ const EventDates = () => {
                             value={false}
                             onChange={handleChange}
                         /> No
-                    </label>
+                    </label> */}
 
 
 
                     <label className="block text-gray-700 text-lg ml-1  font-bold " >New Dates</label>
-                    <input type="date" name="newDate" value={newDate} onChange={handleChange}
+                    <input type="datetime-local" name="newDate" value={newDate} onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-700   leading-tight    focus:outline-none focus:shadow-outline" />
 
 

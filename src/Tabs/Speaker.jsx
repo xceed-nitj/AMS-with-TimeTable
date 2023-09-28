@@ -27,9 +27,12 @@ const Speaker = () => {
     const { ConfId, Name, Designation, Institute, ProfileLink, ImgLink, TalkType, TalkTitle, Abstract, Bio, sequence, feature } = formData;
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
+        const {name,value } = e.target;
+        setFormData({
+          ...formData,
+          [name]: name === "sequence" ? parseInt(value) : value, // Parse the value to an integer for "sequence"
+        });
+      };
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -176,6 +179,13 @@ const Speaker = () => {
                         <label className="block text-gray-700 text-lg ml-1 font-bold ">Abstract</label>
                         <input type="text" name="Abstract" value={Abstract} onChange={handleChange}
                             className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-500   leading-tight    focus:outline-none focus:shadow-outline" />
+<label  className="block text-gray-700 text-lg ml-1 font-bold ">Sequence<input
+  type="number"
+  name="sequence"
+  value={formData.sequence}
+  onChange={handleChange}
+  className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-500   leading-tight    focus:outline-none focus:shadow-outline"
+/></label> 
 
 
 {/* <label className="block text-gray-700 text-lg ml-1 font-bold ">Sequence</label>
@@ -205,6 +215,8 @@ const Speaker = () => {
                                     <th className="p-1 text-center">Name of Speaker</th>
                                     <th className="p-1 text-center">Designation</th>
                                     <th className="p-1 text-center">Institute</th>
+                                    <th className="p-1 text-center">Sequence</th>
+
                                     <th className="p-1 text-center">Action</th>
                                 </tr>
                             </thead>
@@ -214,6 +226,7 @@ const Speaker = () => {
                                         <td className="p-1 text-center">{item.Name}</td>
                                         <td className="p-1 text-center">{item.Designation}</td>
                                         <td className="p-1 text-center">{item.Institute}</td>
+                                        <td className="p-1 text-center">{item.sequence}</td>
 
                                         <td className="p-1 text-center  flex justify-evenly">
                                             <button onClick={() => {

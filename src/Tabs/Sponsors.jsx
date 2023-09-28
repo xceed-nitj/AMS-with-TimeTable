@@ -25,8 +25,12 @@ const Sponsors = () => {
     const {  confId,name, type,logo,sequence,featured } = formData;
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+        const {name,value } = e.target;
+        setFormData({
+          ...formData,
+          [name]: name === "sequence" ? parseInt(value) : value, // Parse the value to an integer for "sequence"
+        });
+      };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -139,7 +143,13 @@ const Sponsors = () => {
                             <label className="block text-gray-700 text-lg ml-1  font-bold " >logo</label>
                             <input type="text"  name="logo" value={logo} onChange={handleChange}
                             className ="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-700   leading-tight    focus:outline-none focus:shadow-outline"/> 
-
+<label  className="block text-gray-700 text-lg ml-1 font-bold ">Sequence<input
+  type="number"
+  name="sequence"
+  value={formData.sequence}
+  onChange={handleChange}
+  className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-500   leading-tight    focus:outline-none focus:shadow-outline"
+/></label> 
                             
                             
                            
@@ -167,6 +177,8 @@ const Sponsors = () => {
                             <th className="p-1 text-center">Title-1</th>
 
                                 <th className="p-1 text-center  ">logo</th>
+                                <th className="p-1 text-center  ">Sequence</th>
+
                                 <th className="p-1 text-center">Link</th>
                                 <th className="p-1 text-center">Action</th>
                             </tr>
@@ -178,6 +190,8 @@ const Sponsors = () => {
                                     <td className="p-1 text-center">{item.type}</td>
                                     <td className="p-1 text-center">{item.logo}</td>
                                     <td className="p-1 text-center">{item.link}</td>
+                                    <td className="p-1 text-center">{item.sequence}</td>
+
                                    
                                     
                                     <td className="p-1 text-center  flex justify-evenly">

@@ -4,6 +4,7 @@ import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link,Outlet } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 const navigation = [
   { name: 'Home', href: 'home', current: true },
@@ -25,6 +26,7 @@ const navigation = [
 
 const Sidebar = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const naviagate = useNavigate();
 
   return (
     <>
@@ -161,6 +163,9 @@ const Sidebar = () => {
           Dashboard
         </div>
       </div>
+      <div className='float-right '>
+                <button className="bg-sky-300 m-5 mr-20 hover:bg-sky-700 hover:text-white text-blue font-bold mx-2 px-4 rounded focus:outline-none focus:shadow-outline" onClick={() => naviagate("/")}> Go To Home </button>
+                </div>
       <Outlet/>
     </>
   )

@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 const Images = () => {
     const params=useParams();
     const IdConf=params.confid;
+
     const [formData, setFormData] = useState({
         
             "confId": IdConf,
@@ -20,11 +21,15 @@ const Images = () => {
     const [data, setData] = useState([]);
     const [refresh, setRefresh] = useState(0)
 
-    const {  confId,name, imgLink,feature,sequence} = formData;
+    const {name, imgLink} = formData;
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+        const { name, value } = e.target;
+        setFormData({
+          ...formData,
+          [name]: name === "sequence" ? parseInt(value) : value, // Parse the value to an integer for "sequence"
+        });
+      };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -36,6 +41,8 @@ const Images = () => {
             })
             .then(res => {
                 setData([...data, res.data]);
+                console.log(data);
+
                 setFormData({
                     confId: IdConf,
                     name: "",
@@ -45,7 +52,7 @@ const Images = () => {
                     sequence: 0,
                     
                 });
-                setRefresh(refresh + 1)
+                setRefresh(refresh + 1);
 
             })
             .catch(err => console.log(err));
@@ -99,9 +106,11 @@ const Images = () => {
 
             .then(res => {
                 setFormData(res.data)
-
+                 
             })
-            .catch(err => console.log(err))
+            .catch(err =>{console.log(data);
+                 console.log(err)
+            })
     };
 
     useEffect(() => {
@@ -132,9 +141,14 @@ const Images = () => {
                             <input type="text" name="imgLink" value={imgLink} onChange={handleChange}
                             className ="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-700   leading-tight    focus:outline-none focus:shadow-outline"/> 
                           
-                            
-                            
-                           
+                          <label className="block text-gray-700 text-lg ml-1 font-bold">Sequence</label>
+<input
+  type="number"
+  name="sequence"
+  value={formData.sequence}
+  onChange={handleChange}
+  className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-700 leading-tight focus:outline-none focus:shadow-outline"
+/>
 
                             
                         <div className ="flex justify-evenly">
@@ -157,6 +171,8 @@ const Images = () => {
                             <tr className="border-[2px] bg-blue-100  border-blue-500">
                             <th className="p-1 text-center">Description</th>
                             <th className="p-1 text-center">Image Link</th>
+                            <th className="p-1 text-center">Sequence</th>
+
                                 <th className="p-1 text-center">Action</th>
                             </tr>
                         </thead>
@@ -165,8 +181,9 @@ const Images = () => {
                                 <tr key={index} className="border-[1px] font-serif border-blue-500">
                                     <td className="p-1 text-center">{item.name}</td>
                                     <td className="p-1 text-center">{item.imgLink}</td>
-                                   
-                                    
+                                    <td className="p-1 text-center">{item.sequence
+                                }</td>
+                                 
                                     <td className="p-1 text-center  flex justify-evenly">
                                         <button onClick={() => {handleEdit(item.id)
                                         setEditID(item.id) }} className ="bg-yellow-500 hover:bg-yellow-700 text-white font-bold px-4 mx-2 rounded focus:outline-none focus:shadow-outline"> Edit </button>{" "}

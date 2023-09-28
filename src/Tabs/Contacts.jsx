@@ -21,7 +21,7 @@ const Contacts = () => {
 
     });
 
-    const [editID, setEditID] = useState()
+    const [editID, setEditID] = useState("")
 
     const [data, setData] = useState([]);
     const [refresh, setRefresh] = useState(0)
@@ -147,7 +147,7 @@ const Contacts = () => {
 
 
                 <label className="block text-gray-700 text-lg ml-1  font-bold " >Name</label>
-                <input type="text" name="name" value={name} onChange={handleChange}
+                <input type="text" name="name" value={name } onChange={handleChange}
                     className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-700   leading-tight    focus:outline-none focus:shadow-outline" />
 
                 <label className="block text-gray-700 text-lg ml-1 font-bold ">Designation</label>

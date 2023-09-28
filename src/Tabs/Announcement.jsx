@@ -27,8 +27,12 @@ const Announcement = () => {
     const {  confId,title, metaDescription,description,sequence,feature, hidden,link } = formData;
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+        const {name,value } = e.target;
+        setFormData({
+          ...formData,
+          [name]: name === "sequence" ? parseInt(value) : value, // Parse the value to an integer for "sequence"
+        });
+      };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -148,7 +152,14 @@ const Announcement = () => {
                             <input type="text" name="link" value={link} onChange={handleChange}
                             className ="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-700   leading-tight    focus:outline-none focus:shadow-outline"/> 
 
-                            
+<label  className="block text-gray-700 text-lg ml-1 font-bold ">Sequence<input
+  type="number"
+  name="sequence"
+  value={formData.sequence}
+  onChange={handleChange}
+  className="shadow appearance-none border rounded w-full py-1 mb-2 px-3 text-blue-500   leading-tight    focus:outline-none focus:shadow-outline"
+/></label> 
+           
                            
 
                             
@@ -175,6 +186,8 @@ const Announcement = () => {
 
                                 <th className="p-1 text-center  ">Description</th>
                                 <th className="p-1 text-center">Link</th>
+                                <th className="p-1 text-center">Sequence</th>
+
                                 <th className="p-1 text-center">Action</th>
                             </tr>
                         </thead>
@@ -185,7 +198,8 @@ const Announcement = () => {
                                     <td className="p-1 text-center">{item.metaDescription}</td>
                                     <td className="p-1 text-center">{item.description}</td>
                                     <td className="p-1 text-center">{item.link}</td>
-                                   
+                                    <td className="p-1 text-center">{item.sequence}</td>
+                                 
                                     
                                     <td className="p-1 text-center  flex justify-evenly">
                                         <button onClick={() => {handleEdit(item.id)
