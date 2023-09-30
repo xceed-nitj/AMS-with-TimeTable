@@ -1,6 +1,6 @@
-import * as Faculty from './faculty';
+import * as Student from './student';
 
 
 export {
-    Faculty
+    Student
 }
