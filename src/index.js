@@ -13,8 +13,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-const confrenceModule = require("./confrenceModule/routes/index");
-app.use("/confrenceModule", confrenceModule);
 
 const timetableModule = require("./timetableModule/routes/index");
 app.use("/timetablemodule", timetableModule);
