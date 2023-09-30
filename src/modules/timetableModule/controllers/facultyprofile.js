@@ -1,4 +1,4 @@
-const Faculty = require("../models/faculty");
+const Faculty = require("../../../models/faculty");
 
 class FacultyController {
     async createFaculty(req,res) {
