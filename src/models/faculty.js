@@ -10,7 +10,19 @@ const facultySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  Institute: {
+  Dept: {
+    type: String,
+    required: true,
+  },
+  Type: {
+    type: String,
+    required: true,
+  },
+  Email: {
+    type: String,
+    required: true,
+  }, 
+  Extension: {
     type: String,
     required: true,
   },

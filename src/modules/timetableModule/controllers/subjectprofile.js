@@ -1,4 +1,4 @@
-const TimetableEntry = require('../../../models/student');
+const TimetableEntry = require('../../../models/subject');
 
 class StudentController{
     createTimetableEntry = async (req, res) => {

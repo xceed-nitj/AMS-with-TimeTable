@@ -1,6 +1,7 @@
-import * as Student from './student';
-
+import * as Subject from './subject';
+import * as Table from './timetable';
+import * as Faculty from './faculty';
 
 export {
-    Student
+    Subject,Table,Faculty
 }

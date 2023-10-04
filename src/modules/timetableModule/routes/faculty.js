@@ -21,6 +21,23 @@ facultyRouter.post("/", async (req, res) => {
         .status(e?.status || 500)
         .json({ error: e?.message || "Internal Server Error" });
     }
+
+    facultyRouter.put('/a', async (req, res) => {
+      try {
+        const announcementId = req.params.id;
+        console.log(req.body);
+        const updatedAnnouncement = req.body;
+        await facultyController.updateAnnouncement(
+          announcementId,
+          updatedAnnouncement
+        );
+        res.status(200).json({ response: "Announcement updated successfully" });
+      } catch (e) {
+        res
+          .status(e?.status || 500)
+          .json({ error: e?.message || "Internal Server Error" });
+      }
+    });
   });
 
 
