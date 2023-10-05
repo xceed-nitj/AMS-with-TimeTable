@@ -21,24 +21,47 @@ facultyRouter.post("/", async (req, res) => {
         .status(e?.status || 500)
         .json({ error: e?.message || "Internal Server Error" });
     }
+  });
 
-    facultyRouter.put('/a', async (req, res) => {
+  facultyRouter.get("/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const resp = await facultyController.getFacultyById(id);
+      res.status(200).json(resp);
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+    facultyRouter.put('/:id', async (req, res) => {
       try {
-        const announcementId = req.params.id;
-        console.log(req.body);
-        const updatedAnnouncement = req.body;
-        await facultyController.updateAnnouncement(
-          announcementId,
-          updatedAnnouncement
+        const facultyId = req.params.id;
+        const updatedId = req.body;
+        await facultyController.updateID(
+          facultyId,updatedId
         );
-        res.status(200).json({ response: "Announcement updated successfully" });
+        res.status(200).json({ response: "ID updated successfully" });
       } catch (e) {
         res
           .status(e?.status || 500)
           .json({ error: e?.message || "Internal Server Error" });
       }
     });
-  });
+
+    facultyRouter.delete("/:id", async (req, res) => {
+      try {
+        const facultyId = req.params.id;
+        await facultyController.deleteId(facultyId);
+        res.status(200).json({ response: "ID deleted successfully" });
+      } catch (e) {
+        res
+          .status(e?.status || 500)
+          .json({ error: e?.message || "Internal Server Error" });
+      }
+    });
+
 
 
   module.exports = facultyRouter;

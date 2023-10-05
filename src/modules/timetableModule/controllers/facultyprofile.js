@@ -1,4 +1,6 @@
+const HttpException = require("../../../models/http-exception");
 const Faculty = require("../../../models/faculty");
+
 
 class FacultyController {
     async createFaculty(req,res) {
@@ -26,7 +28,23 @@ class FacultyController {
         }
       }
 
-      async updateAnnouncement(id, announcement) {
+      async getFacultyById(id) {
+        if (!id) {
+          throw new HttpException(400, "Invalid Id");
+        }
+        try {
+          // Find an Announcement document by its _id using the Mongoose model
+          const data = await Faculty.findById(id);
+    
+          if (!data) throw new HttpException(400, "data does not exists");
+    
+          return data;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      }
+
+      async updateID(id, announcement) {
         if (!id) {
           throw new HttpException(400, "Invalid Id");
         }
@@ -41,7 +59,20 @@ class FacultyController {
         }
       }
 
-}
+      async deleteId(id) {
+        if (!id) {
+          throw new HttpException(400, "Invalid Id");
+        }
+        try {
+          // Delete an Announcement document by its _id using the Mongoose model
+          await Faculty.findByIdAndDelete(id);
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      }
+    }
+
+
 module.exports = FacultyController;
 
 
