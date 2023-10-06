@@ -53,7 +53,7 @@ facultyRouter.post("/", async (req, res) => {
     facultyRouter.delete("/:id", async (req, res) => {
       try {
         const facultyId = req.params.id;
-        await facultyController.deleteId(facultyId);
+        await facultyController.
         res.status(200).json({ response: "ID deleted successfully" });
       } catch (e) {
         res
