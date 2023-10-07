@@ -35,9 +35,9 @@ const generateUniqueLink = async () => {
    let generatedLink;
   let isLinkUnique = false;
   while (!isLinkUnique) {
-     generatedLink = generateRandomLink();
+   generatedLink = generateRandomLink();
     console.log(generatedLink);
-    const existingtt = await findtt(generatedLink);
+const existingtt = await findtt(generatedLink);
     if (!existingtt) {
       isLinkUnique = true;
     }
