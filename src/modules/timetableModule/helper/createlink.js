@@ -1,5 +1,3 @@
-const mongoose = require('mongoose');
-const express = require("express");
 const TimeTable = require("../../../models/timetable");
 
 const findtt = async (code) => {

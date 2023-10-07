@@ -19,13 +19,6 @@ const tableSchema = new mongoose.Schema({
   },
 });
 
-// tableSchema.pre('save', async function (next) {
-//   const generatedCode = await generateUniqueLink();
-//   this.Code = generatedCode;
-//   next();
-// });
-
-// Create the Mongoose model
 const TimeTable = mongoose.model("TimeTable", tableSchema);
 
 module.exports = TimeTable;
