@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const generateUniqueLink = require("../modules/timetableModule/helper/createlink");
 
 // Define your Mongoose schema based on the interface
 const tableSchema = new mongoose.Schema({
@@ -14,13 +15,19 @@ const tableSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  Code:{
-    type:String,
-    required:true,
+  Code: {
+    type: String,
   },
 });
 
-// Create the Mongoose model
-const Table = mongoose.model("Table", tableSchema);
+tableSchema.pre('save', async function (next) {
+  const generatedCode = await generateUniqueLink();
+  this.Code = generatedCode;
+  next();
+});
 
-module.exports = Table;
+// Create the Mongoose model
+const TimeTable = mongoose.model("Table", tableSchema);
+
+module.exports = TimeTable;
+
