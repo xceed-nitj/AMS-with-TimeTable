@@ -2,27 +2,27 @@ const mongoose = require("mongoose");
 
 // Define your Mongoose schema based on the interface
 const facultySchema = new mongoose.Schema({
-  Name: {
+  name: {
     type: String,
     required: true,
   },
-  Designation: {
+  designation: {
     type: String,
     required: true,
   },
-  Dept: {
+  dept: {
     type: String,
     required: true,
   },
-  Type: {
+  type: {
     type: String,
     required: true,
   },
-  Email: {
+  email: {
     type: String,
     required: true,
   }, 
-  Extension: {
+  extension: {
     type: String,
     required: true,
   },

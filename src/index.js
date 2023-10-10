@@ -17,6 +17,8 @@ app.use(express.urlencoded({ extended: true }));
 const timetableModule = require("./modules/timetableModule/routes/index");
 app.use("/timetablemodule", timetableModule);
 
+const uploadModule = require("./modules/uploadModule/upload")
+app.use("/upload", uploadModule);
 
 
 app.get('/', (req, res) => {

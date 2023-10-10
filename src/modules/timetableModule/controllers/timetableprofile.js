@@ -7,7 +7,6 @@ class TableController {
     const data = req.body;
     try {
       const newCode = await generateUniqueLink();
-      console.log(newCode) 
       const newTimeTable = new TimeTable({
         ...data,
         Code: newCode, 
@@ -24,7 +23,6 @@ class TableController {
       async getTable(req, res) {
         try {
            const TableField = await TimeTable.find();
-           console.log(TableField);
            res.json(TableField)
            return;
          } catch (error) {

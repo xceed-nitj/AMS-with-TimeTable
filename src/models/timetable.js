@@ -2,19 +2,19 @@ const mongoose = require("mongoose");
 
 // Define your Mongoose schema based on the interface
 const tableSchema = new mongoose.Schema({
-  Name: {
+  name: {
     type: String,
     required: true,
   },
-  Dept: {
+  dept: {
     type: String,
     required: true,
   },
-  Session: {
+  session: {
     type: String,
     required: true,
   },
-  Code: {
+  code: {
     type: String,
   },
 });
