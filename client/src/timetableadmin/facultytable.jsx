@@ -5,9 +5,15 @@ function FacultyTable() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Make a GET request to fetch faculty data when the component mounts
-    fetch('http://127.0.0.1:8000/timetablemodule/faculty')
+    // Make a GET request with method and headers set
+    fetch('http://127.0.0.1:8000/timetablemodule/faculty', {
+      method: 'GET', // Specify the HTTP method as GET
+      headers: {
+        'Content-Type': 'application/json', // Set the content type to JSON
+      },
+    })
       .then((response) => {
+        console.log(response)
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -22,7 +28,7 @@ function FacultyTable() {
         setLoading(false);
       });
   }, []);
-
+  
   return (
     <div>
       <h1>Faculty Timetable</h1>

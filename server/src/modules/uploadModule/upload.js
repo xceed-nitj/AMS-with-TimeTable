@@ -24,25 +24,19 @@ const upload = multer({ storage });
 
 router.post('/:objectType', upload.single('csvFile'), (req, res) => {
   const filePath = req.file.path;
-  // Reading our excel file
   const file = reader.readFile(filePath)
-
-  let data = []
-
-  const sheetsArray = file.SheetNames; // sheetsArray contains names of all sheets 
+  const sheetsArray = file.SheetNames;  
 
   for (let i = 0; i < sheetsArray.length; i++) {
     const sheet = reader.utils.sheet_to_json(
       file.Sheets[sheetsArray[i]])
     sheet.forEach((row) => {
-      console.log(row);
 
       const objectType = req.params.objectType; // Access the :obconst mongooseSchema = require(modelPaths[objectType]);
       const mongooseSchema = require(modelPaths[objectType]);
       const schema = new mongooseSchema(row);
       schema.save();
 
-      data.push(row);
     })
   }
 
