@@ -5,13 +5,12 @@ const Faculty = require("../../../models/faculty");
 class FacultyController {
     async createFaculty(req,res) {
         const newFaculty = req.body;
-        console.log(newFaculty);
         try {
           const createdFaculty = await Faculty.create(newFaculty);
           res.json(createdFaculty)
           return;
         } catch (error) {
-          console.error(error); // Log the error for debugging purposes.
+          console.error(error); 
           res.status(500).json({ error: "Internal server error" });
         }
       }
@@ -19,11 +18,10 @@ class FacultyController {
       async getFaculty(req, res) {
        try {
           const facultyList = await Faculty.find();
-          console.log(facultyList);
           res.json(facultyList)
           return;
         } catch (error) {
-          console.error(error); // Log the error for debugging purposes.
+          console.error(error); 
           res.status(500).json({ error: "Internal server error" });
         }
       }
@@ -33,11 +31,8 @@ class FacultyController {
           throw new HttpException(400, "Invalid Id");
         }
         try {
-          // Find an Announcement document by its _id using the Mongoose model
           const data = await Faculty.findById(id);
-    
           if (!data) throw new HttpException(400, "data does not exists");
-    
           return data;
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
@@ -52,7 +47,6 @@ class FacultyController {
         //   return res.status(400).json({ error: "Invalid Announcement data" });
         // }
         try {
-          // Update an Announcement document by its _id using the Mongoose model
           await Faculty.findByIdAndUpdate(id, announcement);
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
@@ -64,7 +58,6 @@ class FacultyController {
           throw new HttpException(400, "Invalid Id");
         }
         try {
-          // Delete an Announcement document by its _id using the Mongoose model
           await Faculty.findByIdAndDelete(id);
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
