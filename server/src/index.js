@@ -20,6 +20,8 @@ app.use("/timetablemodule", timetableModule);
 const uploadModule = require("./modules/uploadModule/upload")
 app.use("/upload", uploadModule);
 
+const attendanceModule = require("./modules/attendanceModule/routes/index");
+app.use("/attendancemodule", attendanceModule);
 
 app.get('/', (req, res) => {
     res.send("Hello India");
