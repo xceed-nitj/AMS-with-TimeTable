@@ -11,7 +11,7 @@ class TableController {
         const newCode = await generateUniqueLink();
         const newTimeTable = new TimeTable({
           ...data,
-          Code: newCode, 
+          code: newCode, 
         });
         const createdTT = await newTimeTable.save(); 
         res.json(createdTT);

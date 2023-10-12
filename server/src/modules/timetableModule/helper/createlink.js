@@ -2,13 +2,11 @@ const TimeTable = require("../../../models/timetable");
 
 const findtt = async (code) => {
   try {
-    console.log(code);
-    const oldtt = await TimeTable.findOne({ Code: code }); // Use "Code" directly
-    console.log(oldtt);
+    const oldtt = await TimeTable.findOne({ code:code });
     return oldtt;
   } catch (error) {
     console.error(error);
-    throw error; // Handle the error appropriately
+    throw error;
   }
 };
 const generateUniqueLink = async () => {
@@ -34,7 +32,6 @@ const generateUniqueLink = async () => {
   let isLinkUnique = false;
   while (!isLinkUnique) {
    generatedLink = generateRandomLink();
-    console.log(generatedLink);
 const existingtt = await findtt(generatedLink);
     if (!existingtt) {
       isLinkUnique = true;

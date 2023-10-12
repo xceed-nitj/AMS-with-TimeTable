@@ -2,27 +2,27 @@ const mongoose = require("mongoose");
 
 // Define the Mongoose schema for the student
 const studentSchema = new mongoose.Schema({
-  Name: {
+  name: {
     type: String,
     required: true,
   },
-  RollNo: {
+  rollNo: {
     type: String,
     required: true,
   },
-  Dept: {
+  dept: {
     type: String,
     required: true,
   },
-  Sem: {
+  sem: {
     type: Number,
     required: true,
   },
-  MailID: {
+  mailID: {
     type: String,
     required: true,
   },
-  Gender: {
+  gender: {
     type: String,
     enum: ["Male", "Female", "Other"],
     required: true,
