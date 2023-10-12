@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import Timetable from './timetableadmin/timetable';
 import FacultyTable from './timetableadmin/facultytable'
+import CreateTimetable from './timetableadmin/creatett'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -13,7 +14,9 @@ function App() {
 <div className="app">
       <h1>Timetable</h1>
       {/* <Timetable /> */}
-      <FacultyTable />
+      {/* <FacultyTable /> */}
+      <CreateTimetable/>
+
     </div>
     </>
   )

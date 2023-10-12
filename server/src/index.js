@@ -8,7 +8,16 @@ const cors = require("cors");
 dotenv.config();
 
 // Middleware
-app.use(cors());
+// CORS configuration
+app.use(cors({
+    origin: '*', // Change this to your allowed origins or '*' to allow all origins
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    allowedHeaders: 'Content-Type',
+    credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
+  }));
+  
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
