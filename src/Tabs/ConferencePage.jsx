@@ -150,7 +150,7 @@ const ConferencePage = () => {
                 <div className="text-black-700 text-[28px] font-serif mx-auto my-auto grid place-content-center" >Existing Conferences</div>
                 <div className=" flex flex-wrap justify-evenly items-center">
                     {data.map((item, index) => (
-                        <div className="w-[350px] h-[200px] flex flex-col justify-evenly   bg-blue-100 border-collapse rounded-lg box-border m-5 "  >
+                        <div className="w-[350px] h-[200px] flex flex-col justify-evenly   bg-blue-100 border-collapse rounded-lg box-border m-5 " key={index}>
                             <table className="min-w-full border-collapse box-border " >
                                 <tr >
                                     <td className="p-1 font-bold text-center">Email</td>
@@ -166,14 +166,14 @@ const ConferencePage = () => {
 
                                 </tr>
                             </table>
-                                <div className="p-1 text-center  flex justify-evenly">
-                                    <button onClick={() => {
-                                        handleEdit(item.id)
-                                        setEditID(item.id)
-                                    }} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold px-4 rounded focus:outline-none focus:shadow-outline"> Edit  </button>{" "}
-                                    <button onClick={() => handleDelete(item.id)} className="bg-red-500 hover:bg-red-700 text-white font-bold  px-4 rounded focus:outline-none focus:shadow-outline"> Delete </button>
-                                    <button className="bg-green-500 hover:bg-green-700 text-white font-bold  px-4 rounded focus:outline-none focus:shadow-outline" onClick={() => naviagate(`info/${item.id}`)}>Add More</button>
-                                
+                            <div className="p-1 text-center  flex justify-evenly">
+                                <button onClick={() => {
+                                    handleEdit(item.id)
+                                    setEditID(item.id)
+                                }} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold px-4 rounded focus:outline-none focus:shadow-outline"> Edit  </button>{" "}
+                                <button onClick={() => handleDelete(item.id)} className="bg-red-500 hover:bg-red-700 text-white font-bold  px-4 rounded focus:outline-none focus:shadow-outline"> Delete </button>
+                                <button className="bg-green-500 hover:bg-green-700 text-white font-bold  px-4 rounded focus:outline-none focus:shadow-outline" onClick={() => naviagate(`info/${item.id}`)}>Add More</button>
+
                             </div>
                         </div>
                     ))}
