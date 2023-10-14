@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from 'axios'
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 const Home = () => {
     const params = useParams();
     const IdConf = params.confid;
@@ -42,7 +42,7 @@ const Home = () => {
             }
         })
             .then(res => {
-                setData( res.data);
+                setData(res.data);
                 console.log(res.data);
                 setFormData({
 
@@ -61,8 +61,10 @@ const Home = () => {
                 }); setRefresh(refresh + 1)
 
             })
-            .catch(err => {console.log(err);
-            console.log(formData)});
+            .catch(err => {
+                console.log(err);
+                console.log(formData)
+            });
 
     };
 
@@ -103,7 +105,7 @@ const Home = () => {
             }
         })
             .then(res => {
-                console.log('DELETD RECORD::::', res)
+                console.log('DELETED RECORD::::', res)
                 setRefresh(refresh + 1)
 
 
@@ -219,31 +221,32 @@ const Home = () => {
                                 </tr>
                             </thead>
                             <tbody>
-    {data && Object.keys(data).length !== 0 ? (
-        <tr className="border-[1px] font-serif border-blue-500">
-            <td className="p-1 text-center">{data.confName}</td>
-            <td className="p-1 text-center">{data.confStartDate}</td>
-            <td className="p-1 text-center">{data.confEndDate}</td>
-            <td className="p-1 text-center  flex justify-evenly">
-                <button onClick={() => {
-                    handleEdit(data.id);
-                    setEditID(data.id);
-                }} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold px-4 rounded focus:outline-none focus:shadow-outline"> Edit </button>{" "}
-                <button onClick={() => handleDelete(data.id)} className="bg-red-500 hover:bg-red-700 text-white font-bold  px-4 rounded focus:outline-none focus:shadow-outline"> Delete </button>
-            </td>
-        </tr>
-    ) : (
-        <tr>
-            <td colSpan="4" className="p-1 text-center">No conference data available</td>
-        </tr>
-    )}
-</tbody>
+                                {data && Object.keys(data).length !== 0 ? (
+                                    <tr className="border-[1px] font-serif border-blue-500">
+                                        <td className="p-1 text-center">{data.confName}</td>
+                                        <td className="p-1 text-center">{data.confStartDate}</td>
+                                        <td className="p-1 text-center">{data.confEndDate}</td>
+                                        <td className="p-1 text-center  flex justify-evenly">
+                                            <button onClick={() => {
+                                                handleEdit(data.id);
+                                                setEditID(data.id);
+                                            }} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold px-4 rounded focus:outline-none focus:shadow-outline"> Edit </button>{" "}
+                                            <button onClick={() => handleDelete(data.id)} className="bg-red-500 hover:bg-red-700 text-white font-bold  px-4 rounded focus:outline-none focus:shadow-outline"> Delete </button>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    <tr>
+                                        <td colSpan="4" className="p-1 text-center">No conference data available</td>
+                                    </tr>
+                                )}
+                            </tbody>
 
 
                         </table>
                     </div>
                 </div>
             </div>
+
         </main>
 
     );
