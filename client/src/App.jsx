@@ -1,25 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Timetable from './timetableadmin/timetable';
-import FacultyTable from './timetableadmin/facultytable'
-import CreateTimetable from './timetableadmin/creatett'
+import FacultyTable from './timetableadmin/facultytable';
+import CreateTimetable from './timetableadmin/creatett';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-<div className="app">
-      <h1>Timetable</h1>
-      {/* <Timetable /> */}
-      {/* <FacultyTable /> */}
-      <CreateTimetable/>
+    <Router>
+      <div className="app">
+        <h1>Timetable</h1>
 
-    </div>
-    </>
-  )
+        <ul>
+          <li>
+            <Link to="/timetable">Timetable</Link>
+          </li>
+          <li>
+            <Link to="/facultytable">Faculty Table</Link>
+          </li>
+          <li>
+            <Link to="/create-timetable">Create Timetable</Link>
+          </li>
+        </ul>
+
+        <Routes>
+          <Route path="/timetable" element={<Timetable />} />
+          <Route path="/facultytable" element={<FacultyTable />} />
+          <Route path="/create-timetable" element={<CreateTimetable />} />
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
-export default App
+export default App;
