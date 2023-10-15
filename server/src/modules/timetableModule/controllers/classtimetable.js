@@ -53,7 +53,7 @@ class ClassTimeTableController {
   }
   
   async facultytt(req, res) {
-    const facultyname = req.query.facultyname; 
+    const facultyname = req.params.facultyname; 
     console.log(facultyname);
     try {
       // Query the ClassTable collection based on the 'faculty' field
