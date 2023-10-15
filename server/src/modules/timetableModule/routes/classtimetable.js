@@ -15,4 +15,17 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     }
   });
 
+  ClassTimeTableRouter.get("/facultytt/:facultyname", async (req, res) => {
+    try { 
+      await classtimetableController.facultytt(req, res);
+    } 
+    catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+
+
   module.exports = ClassTimeTableRouter;
