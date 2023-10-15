@@ -1,35 +1,28 @@
 const mongoose = require("mongoose");
 
 // Define your Mongoose schema based on the interface
-const classTableSchema = new mongoose.Schema({
-  day: {
+const allotmentSchema = new mongoose.Schema({
+  subject: {
     type: String,
     required: true,
-  },
-  slot: {
-    type: String,
-    required: true,
-  },
-  sub: {
-    type: String,
   },
   faculty: {
+    type: Array,
+    required: true,
+  },
+  group: {
     type: String,
   },
   room: {
     type: String,
-  }, 
-  sem: {
-    type: String,
-    required: true,
   },
   code: {
     type: String,
     required: true,
-  },
+  }, 
 });
 
 // Create the Mongoose model
-const ClassTable = mongoose.model("ClassTable", classTableSchema);
+const Allotment = mongoose.model("Allotment", allotmentSchema);
 
-module.exports = ClassTable;
+module.exports = Allotment;

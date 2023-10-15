@@ -5,6 +5,7 @@ const router = express.Router();
 router.use('/timetable', require("./timetable")); 
 router.use('/faculty', require("./faculty")); 
 router.use('/subject', require("./subject")); 
+router.use('/tt', require("./classtimetable")); 
 
 
 module.exports = router;

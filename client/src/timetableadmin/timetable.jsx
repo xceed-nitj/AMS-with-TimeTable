@@ -40,11 +40,12 @@ class Timetable extends Component {
   };
 
   handleSubmit = () => {
-    const apiUrl = 'http://127.0.0.1:8000/timetable/table'; // Replace with the actual URL of your backend route
+    const apiUrl = 'http://127.0.0.1:8000/timetablemodule/tt/savett'; // Replace with the actual URL of your backend route
     const { timetableData } = this.state;
-
+    const code='abc-def-hij';
+    const sem='3';
       // Convert the data to JSON
-      const dataToSend = JSON.stringify({ timetableData });
+      const dataToSend = JSON.stringify({ timetableData,code });
 
       // Log the JSON data to the console
       console.log('JSON Data to Send:', dataToSend);
@@ -54,7 +55,7 @@ class Timetable extends Component {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ timetableData }),
+      body: JSON.stringify({ timetableData,code,sem }),
     })
       .then(response => response.json())
       .then(data => {
