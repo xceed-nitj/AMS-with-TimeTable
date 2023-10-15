@@ -41,6 +41,7 @@ class Timetable extends Component {
   };
 
   handleSubmit = () => {
+
     const apiUrl = 'http://127.0.0.1:8000/timetablemodule/timetable';
 
     fetch(apiUrl, {
@@ -48,7 +49,9 @@ class Timetable extends Component {
       headers: {
         'Content-Type': 'application/json',
       },
+
       body: JSON.stringify({ timetableData: this.state.timetableData }),
+
     })
       .then((response) => response.json())
       .then((data) => {
