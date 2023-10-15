@@ -54,7 +54,7 @@ class ClassTimeTableController {
   
   async facultytt(req, res) {
     const facultyname = req.params.facultyname; 
-    console.log(facultyname);
+    console.log('facultyname:', facultyname);
     try {
       // Query the ClassTable collection based on the 'faculty' field
       const facultydata = await ClassTable.find({ faculty: facultyname });
@@ -66,6 +66,19 @@ class ClassTimeTableController {
     }
   }
   
+  async roomtt(req, res) {
+    const roomno = req.params.room; 
+    console.log('required no:', roomno);
+    try {
+      // Query the ClassTable collection based on the 'faculty' field
+      const roomdata = await ClassTable.find({ room: roomno });
+      console.log(roomdata)
+      res.status(200).json(roomdata);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
   
 
 
