@@ -9,6 +9,8 @@ function CreateTimetable() {
   });
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -32,7 +34,19 @@ function CreateTimetable() {
 
       if (response.ok) {
         const data= await response.json();
-        console.log(data.code);
+        const alldata = data.data;
+        console.log(alldata.code);
+
+        // Access the necessary details from the updated allquiz array
+        const generatedLink = alldata.code;
+
+        // Set the generated link and submitted state in the component state
+        setGeneratedLink(generatedLink);
+        setSubmitted(true);
+
+        // Redirect to the  page
+        const redirectTo = `http://localhost:5173/timetablemodule/timetable/${generatedLink}`;
+        navigate(redirectTo);
       } else {
         // Handle errors
         console.error("Error submitting the form");
