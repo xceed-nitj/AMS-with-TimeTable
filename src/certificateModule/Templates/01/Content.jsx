@@ -1,7 +1,9 @@
+
 function Content({ data }) {
-    const name = "Akleem"
+    const name = "Sarthak"
     return (
         <>
+            
             <g textAnchor="middle">
                 <text
                     x="561.26"
@@ -120,7 +122,7 @@ function Content({ data }) {
             </g>
 
             <foreignObject 
-                x="70vw"
+                x="900"
                 className="-translate-x-1/2"
                 y="440"
                 fontSize="15.816"
