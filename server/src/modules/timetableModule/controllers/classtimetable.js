@@ -3,45 +3,85 @@ const HttpException = require("../../../models/http-exception");
 
 
 class ClassTimeTableController {
-    async savett(req, res) 
-    {
-      const timetableData =req.body;
-      console.log(timetableData);
-      console.log(timetableData.code);
-      try {
-        for (const day of Object.keys(timetableData.timetableData)) {
-          const dayData = timetableData.timetableData[day];
-        
-          // Iterate through the periods (e.g., "period1", "period2", etc.) for each day
-          for (const slot of Object.keys(dayData)) {
-            const slotData = dayData[slot];
-        
-            // Create a new ClassTable instance with the data from the JSON
+  async savett(req, res) {
+    const timetableData = req.body;
+    try {
+      for (const day of Object.keys(timetableData.timetableData)) {
+        const dayData = timetableData.timetableData[day];
+        for (const slot of Object.keys(dayData)) {
+          const slotData = dayData[slot];
+          const { subject, faculty, room, code, sem } = timetableData;
+          const query = {
+            day,
+            slot,
+            code,
+            sem,
+          };
+  
+          // Try to find an existing record based on day, slot, code, and sem
+          const existingRecord = await ClassTable.findOne(query);
+  
+          if (existingRecord) {
+            // If a record already exists, update it with new data
+            existingRecord.sub = slotData.subject;
+            existingRecord.faculty = slotData.faculty;
+            existingRecord.room = slotData.room;
+            await existingRecord.save();
+            console.log(`Updated class table data for ${day} - ${slot}`);
+          } else {
+            // If no record exists, create a new one
             const classTableInstance = new ClassTable({
-              day,  // Set the day from the JSON
-              slot, // Set the slot from the JSON
-              sub: slotData.subject,     // Set subject from the JSON
-              faculty: slotData.faculty, // Set faculty from the JSON
+              day,
+              slot,
+              sub: slotData.subject,
+              faculty: slotData.faculty,
               room: slotData.room,
-              sem:timetableData.sem,       // Set room from the JSON
-              code: timetableData.code // Set code from the JSON (optional)
+              code,
+              sem,
             });
-        
-            // Save the ClassTable instance to the MongoDB database using a promise
-            classTableInstance.save()
-              .then(() => {
-                console.log(`Saved class table data for ${day} - ${slot}`);
-              })
-              .catch((err) => {
-                console.error(`Error saving class table data: ${err}`);
-              });
+            await classTableInstance.save();
+            console.log(`Saved class table data for ${day} - ${slot}`);
           }
         }
-              } catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
-        }
+      }
+  
+      res.status(200).json({ message: "Data updated or created successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
     }
+  }
+  
+  async facultytt(req, res) {
+    const facultyname = req.params.facultyname; 
+    console.log('facultyname:', facultyname);
+    try {
+      // Query the ClassTable collection based on the 'faculty' field
+      const facultydata = await ClassTable.find({ faculty: facultyname });
+  
+      res.status(200).json(facultydata);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+  
+  async roomtt(req, res) {
+    const roomno = req.params.room; 
+    console.log('required no:', roomno);
+    try {
+      // Query the ClassTable collection based on the 'faculty' field
+      const roomdata = await ClassTable.find({ room: roomno });
+      console.log(roomdata)
+      res.status(200).json(roomdata);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+  
+
+
 
 }
 module.exports = ClassTimeTableController;

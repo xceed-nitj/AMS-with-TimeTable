@@ -15,4 +15,27 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     }
   });
 
+  ClassTimeTableRouter.get("/viewfacultytt/:facultyname", async (req, res) => {
+    try { 
+      await classtimetableController.facultytt(req, res);
+    } 
+    catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+  ClassTimeTableRouter.get("/viewroomtt/:room", async (req, res) => {
+    try { 
+      await classtimetableController.roomtt(req, res);
+    } 
+    catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+
   module.exports = ClassTimeTableRouter;
