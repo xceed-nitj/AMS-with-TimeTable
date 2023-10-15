@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
+
 
 function CreateTimetable() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     dept: "",
@@ -34,18 +37,18 @@ function CreateTimetable() {
 
       if (response.ok) {
         const data= await response.json();
-        const alldata = data.data;
-        console.log(alldata.code);
+        console.log(data);
+        console.log(data.code);
 
         // Access the necessary details from the updated allquiz array
-        const generatedLink = alldata.code;
+        const generatedLink = data.code;
 
         // Set the generated link and submitted state in the component state
         setGeneratedLink(generatedLink);
         setSubmitted(true);
 
         // Redirect to the  page
-        const redirectTo = `http://localhost:5173/timetablemodule/timetable/${generatedLink}`;
+        const redirectTo = `/tt/${generatedLink}`;
         navigate(redirectTo);
       } else {
         // Handle errors
