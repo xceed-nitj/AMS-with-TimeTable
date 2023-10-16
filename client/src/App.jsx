@@ -23,10 +23,9 @@ function App() {
         </ul>
 
         <Routes>
-          {/* <Route path="/timetable" element={<Timetable />} /> */}
+          <Route path="/timetable" element={<Timetable />} />
           <Route path="/facultytable" element={<FacultyTable />} />
           <Route path="/create-timetable" element={<CreateTimetable />} />
-          <Route path="/tt/:generatedLink" element={<Timetable />} />
         </Routes>
       </div>
     </Router>
