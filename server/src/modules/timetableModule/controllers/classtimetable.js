@@ -10,7 +10,8 @@ class ClassTimeTableController {
         const dayData = timetableData.timetableData[day];
         for (const slot of Object.keys(dayData)) {
           const slotData = dayData[slot];
-          const { subject, faculty, room, code, sem } = timetableData;
+          const { code, sem } = timetableData;
+  
           const query = {
             day,
             slot,
@@ -18,24 +19,19 @@ class ClassTimeTableController {
             sem,
           };
   
-          // Try to find an existing record based on day, slot, code, and sem
           const existingRecord = await ClassTable.findOne(query);
   
           if (existingRecord) {
-            // If a record already exists, update it with new data
-            existingRecord.sub = slotData.subject;
-            existingRecord.faculty = slotData.faculty;
-            existingRecord.room = slotData.room;
+            // If a record already exists, update it with the new array of subjects
+            existingRecord.slotData = slotData;
             await existingRecord.save();
             console.log(`Updated class table data for ${day} - ${slot}`);
           } else {
-            // If no record exists, create a new one
+            // If no record exists, create a new one with the array of subjects
             const classTableInstance = new ClassTable({
               day,
               slot,
-              sub: slotData.subject,
-              faculty: slotData.faculty,
-              room: slotData.room,
+              slotData: slotData,
               code,
               sem,
             });
@@ -51,7 +47,55 @@ class ClassTimeTableController {
       res.status(500).json({ error: "Internal server error" });
     }
   }
+      
+  async classtt(req, res) {
+    try {
+      const sem = req.params.sem;
+      const code = req.params.code;
   
+      // Query the database to find records that match the sem and code
+      const records = await ClassTable.find({ sem, code });
+  
+      // Create an empty timetable data object
+      const timetableData = {};
+  
+      // Iterate through the records and format the data
+      records.forEach((record) => {
+        // Extract relevant data from the record
+        const { day, slot, slotData } = record;
+  
+        // Create or initialize the day in the timetableData
+        if (!timetableData[day]) {
+          timetableData[day] = {};
+        }
+  
+        // Create or initialize the slot in the day
+        if (!timetableData[day][slot]) {
+          timetableData[day][slot] = [];
+        }
+  
+        // Access the "slotData" array and push its values
+     // Access the "slotData" array and push its values
+     const formattedSlotData = slotData.map(({ subject, faculty, room }) => ({
+      subject,
+      faculty,
+      room,
+    }));
+
+    timetableData[day][slot].push(formattedSlotData);
+        // Set the sem and code for the timetable
+        timetableData.sem = sem;
+        timetableData.code = code;
+      });
+  
+      res.status(200).json(timetableData);
+    } catch (error) {
+      console.error(error);
+      throw new Error('Error fetching and formatting data from the database');
+    }
+  }
+  
+
   async facultytt(req, res) {
     const facultyname = req.params.facultyname; 
     console.log('facultyname:', facultyname);

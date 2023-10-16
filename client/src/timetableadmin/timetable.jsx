@@ -1,6 +1,13 @@
 import React, { Component } from 'react';
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  integrity="sha384-pzjw2HEZBrnHL2hZCBK7W6bzXNEquXpDfXSt8zytUGhSfwmkDr/jwGAqR6u6I0rt"
+  crossorigin="anonymous"
+/>
 
 class Timetable extends Component {
+
   constructor() {
     super();
     this.state = {
@@ -8,9 +15,9 @@ class Timetable extends Component {
       availableSubjects: ['Eng', 'Mat', 'Che', 'Phy', 'Other'],
       availableRooms: ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'],
       availableFaculties: ['Faculty1', 'Faculty2', 'Faculty3', 'Faculty4', 'Faculty5'],
+      selectedCell: null,
     };
-    this.state.timetableData= this.generateInitialTimetableData();
-
+    this.state.timetableData = this.generateInitialTimetableData();
   }
 
   generateInitialTimetableData() {
@@ -21,24 +28,78 @@ class Timetable extends Component {
     for (const day of days) {
       initialData[day] = {};
       for (const period of periods) {
-        initialData[day][`period${period}`] = {
-          subject: this.state.availableSubjects[0], // Set to the first subject in the list
-          room: this.state.availableRooms[0], // Set to the first room in the list
-          faculty: this.state.availableFaculties[0], // Set to the first faculty in the list
-        };
+        initialData[day][`period${period}`] = [
+          {
+            subject: this.state.availableSubjects[0],
+            room: this.state.availableRooms[0],
+            faculty: this.state.availableFaculties[0],
+          },
+        ];
       }
     }
 
     return initialData;
   }
 
-  handleCellChange = (day, period, type, event) => {
+ async getbackendData() {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/timetablemodule/tt/viewclasstt/abc-def-hij/3');
+    const data = await response.json();
+
+    if (data) {
+      this.setState({ timetableData: data });
+    } else {
+      // Handle the case where data is not available
+      console.error('No data available.');
+    }
+  } catch (error) {
+    console.error('Error fetching existing timetable data:', error);
+  }
+}
+
+
+  handleCellChange = (day, period, index, type, event) => {
     const newValue = event.target.value;
     const updatedData = { ...this.state.timetableData };
-    updatedData[day][`period${period}`][type] = newValue;
+    updatedData[day][`period${period}`][index][type] = newValue;
     this.setState({ timetableData: updatedData });
   };
 
+  handleSplitCell = (day, period) => {
+    const { timetableData } = this.state;
+
+    // Create a new cell with the same data as the original cell
+    const newCell = {
+      subject: this.state.availableSubjects[0],
+      room: this.state.availableRooms[0],
+      faculty: this.state.availableFaculties[0],
+    };
+
+    // Add the new cell to the current period
+    timetableData[day][`period${period}`].push(newCell);
+
+    // Update the state with the new timetable data
+    this.setState({ timetableData });
+  };  
+
+  handleDeleteCell = (day, period, index) => {
+    const { timetableData } = this.state;
+  
+    // Find the cell to delete
+    const cellToDelete = timetableData[day][`period${period}`][index];
+  
+    // Remove the cell at the specified index
+    timetableData[day][`period${period}`] = timetableData[day][`period${period}`].filter(
+      (_, i) => i !== index
+    );
+  
+    // Update the state with the modified timetable data
+    this.setState({ timetableData });
+  
+    // If needed, you can also handle further actions, such as saving the updated data to the backend.
+  };
+  
+  
   handleSubmit = () => {
     const apiUrl = 'http://127.0.0.1:8000/timetablemodule/tt/savett'; // Replace with the actual URL of your backend route
     const { timetableData } = this.state;
@@ -104,7 +165,6 @@ class Timetable extends Component {
             <td align="center" height="50" width="100">
               <b>4:30-5:30</b>
             </td>
-            
           </tr>
           {days.map((day) => (
             <tr key={day}>
@@ -113,39 +173,56 @@ class Timetable extends Component {
               </td>
               {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
                 <td key={period} align="center" height="50">
-                  <select
-                    value={this.state.timetableData[day][`period${period}`].subject}
-                    onChange={(event) => this.handleCellChange(day, period, 'subject', event)}
-                  >
-                    {/* <option value="">Select a Subject</option> */}
-                    {this.state.availableSubjects.map((subjectOption) => (
-                      <option key={subjectOption} value={subjectOption}>
-                        {subjectOption}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={this.state.timetableData[day][`period${period}`].room}
-                    onChange={(event) => this.handleCellChange(day, period, 'room', event)}
-                  >
-                    {/* <option value="">Select a Room</option> */}
-                    {this.state.availableRooms.map((roomOption) => (
-                      <option key={roomOption} value={roomOption}>
-                        {roomOption}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={this.state.timetableData[day][`period${period}`].faculty}
-                    onChange={(event) => this.handleCellChange(day, period, 'faculty', event)}
-                  >
-                    {/* <option value="">Select a Faculty</option> */}
-                    {this.state.availableFaculties.map((facultyOption) => (
-                      <option key={facultyOption} value={facultyOption}>
-                        {facultyOption}
-                      </option>
-                    ))}
-                  </select>
+                  {this.state.timetableData[day][`period${period}`].map((subjectData, index) => (
+                    <div key={index} className="cell-container">
+                      <div className="cell-slot">
+                        <select
+                          value={subjectData.subject}
+                          onChange={(event) => this.handleCellChange(day, period, index, 'subject', event)}
+                        >
+                          {this.state.availableSubjects.map((subjectOption) => (
+                            <option key={subjectOption} value={subjectOption}>
+                              {subjectOption}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={subjectData.room}
+                          onChange={(event) => this.handleCellChange(day, period, index, 'room', event)}
+                        >
+                          {this.state.availableRooms.map((roomOption) => (
+                            <option key={roomOption} value={roomOption}>
+                              {roomOption}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={subjectData.faculty}
+                          onChange={(event) => this.handleCellChange(day, period, index, 'faculty', event)}
+                        >
+                          {this.state.availableFaculties.map((facultyOption) => (
+                            <option key={facultyOption} value={facultyOption}>
+                              {facultyOption}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        className="cell-split-button"
+                        onClick={() => this.handleSplitCell(day, period)}
+                      >
+                        +
+                      </button>
+                      {index > 0 && (
+                    <button
+                      className="cell-delete-button"
+                      onClick={() => this.handleDeleteCell(day, period, index)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                    </div>
+                  ))}
                 </td>
               ))}
             </tr>
@@ -154,6 +231,7 @@ class Timetable extends Component {
         <button onClick={this.handleSubmit}>Save Timetable</button>
       </div>
     );
+    
   }
 }
 

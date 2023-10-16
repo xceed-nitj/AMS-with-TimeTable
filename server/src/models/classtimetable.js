@@ -10,15 +10,19 @@ const classTableSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  sub: {
-    type: String,
-  },
-  faculty: {
-    type: String,
-  },
-  room: {
-    type: String,
-  }, 
+  slotData: [
+    {
+      subject: {
+        type: String,
+      },
+      faculty: {
+        type: String,
+      },
+      room: {
+        type: String,
+      },
+    },
+  ],
   sem: {
     type: String,
     required: true,
