@@ -4,13 +4,14 @@ const HttpException = require("../../../models/http-exception");
 
 class ClassTimeTableController {
   async savett(req, res) {
-    const timetableData = req.body;
+    const timetableData = req.body.timetableData; // Access the timetableData object
     try {
-      for (const day of Object.keys(timetableData.timetableData)) {
-        const dayData = timetableData.timetableData[day];
+      for (const day of Object.keys(timetableData)) {
+        const dayData = timetableData[day];
         for (const slot of Object.keys(dayData)) {
-          const slotData = dayData[slot];
-          const { code, sem } = timetableData;
+          let slotData = dayData[slot]; // Access the slotData array
+          slotData = slotData.flat(); 
+          const { code, sem } = req.body;
   
           const query = {
             day,
@@ -22,16 +23,16 @@ class ClassTimeTableController {
           const existingRecord = await ClassTable.findOne(query);
   
           if (existingRecord) {
-            // If a record already exists, update it with the new array of subjects
+            // If a record already exists, update it with the new slotData
             existingRecord.slotData = slotData;
             await existingRecord.save();
             console.log(`Updated class table data for ${day} - ${slot}`);
           } else {
-            // If no record exists, create a new one with the array of subjects
+            // If no record exists, create a new one with the slotData
             const classTableInstance = new ClassTable({
               day,
               slot,
-              slotData: slotData,
+              slotData,
               code,
               sem,
             });
@@ -47,7 +48,7 @@ class ClassTimeTableController {
       res.status(500).json({ error: "Internal server error" });
     }
   }
-      
+          
   async classtt(req, res) {
     try {
       const sem = req.params.sem;

@@ -66,13 +66,21 @@ const Timetable = () => {
   }, [timetableData]);
 
 
-  const handleCellChange = (day, period, index, type, event) => {
+  const handleCellChange = (day, period, slotIndex, cellIndex, type, event) => {
     const newValue = event.target.value;
+  
+    // Create a copy of the current state to update
     const updatedData = { ...timetableData };
-    updatedData[day][`period${period}`][index][type] = newValue;
+  
+    // Ensure that the slot and cell exist before updating
+    if (updatedData[day] && updatedData[day][`period${period}`] && updatedData[day][`period${period}`][slotIndex]) {
+      updatedData[day][`period${period}`][slotIndex][cellIndex][type] = newValue;
+    }
+  
+    // Update the state with the modified data
     setTimetableData(updatedData);
   };
-
+  
   const handleSplitCell = (day, period, slotIndex) => {
     const newCell = {
       subject: availableSubjects[0],
@@ -88,13 +96,20 @@ const Timetable = () => {
   };
   
   const handleDeleteCell = (day, period, slotIndex, cellIndex) => {
-    // Remove the cell at the specified cellIndex within the specific slot
-    timetableData[day][`period${period}`][slotIndex].splice(cellIndex, 1);
+    // Ensure that the slot and cell exist before updating
+    if (timetableData[day] && timetableData[day][`period${period}`]) {
+      const slot = timetableData[day][`period${period}`][slotIndex];
   
-    // Update the state
-    setTimetableData({ ...timetableData });
+      // Check if there is more than one item in the slot
+      if (slot.length > 0) {
+        // Remove the last item from the slot
+        slot.pop();
+        // Update the state
+        setTimetableData({ ...timetableData });
+      }
+    }
   };
-  
+    
   const handleSubmit = () => {
     const apiUrl = 'http://127.0.0.1:8000/timetablemodule/tt/savett';
     const code = 'abc-def-hij';
