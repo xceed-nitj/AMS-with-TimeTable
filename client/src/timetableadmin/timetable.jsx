@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
 
 
 const Timetable = () => {
@@ -7,6 +9,7 @@ const Timetable = () => {
   const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
   const availableFaculties = ['Faculty1', 'Faculty2', 'Faculty3', 'Faculty4', 'Faculty5'];
   const selectedCell = null;
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,6 +113,26 @@ const Timetable = () => {
     }
   };
     
+  const location = useLocation();
+
+  const handleAddSubject = () => {
+    // Navigate to the "Add Subject" page
+    const currentPathname = location.pathname;
+
+    // Navigate to the current URL with an additional path segment
+    navigate(`${currentPathname}/addsubject`);
+  };
+
+  const handleAddFaculty = () => {
+    // Navigate to the "Add Faculty" page
+    navigate('/addfaculty');
+  };
+
+  const handleAddRoom = () => {
+    // Navigate to the "Add Room" page
+    navigate('/addroom');
+  };
+  
   const handleSubmit = () => {
     const apiUrl = 'http://127.0.0.1:8000/timetablemodule/tt/savett';
     const code = 'abc-def-hij';
@@ -139,6 +162,11 @@ const Timetable = () => {
   return (
     <div>
       <h1>TIME TABLE</h1>
+      <div className="add-buttons">
+      <button onClick={handleAddSubject}>Add Subject</button>
+      <button onClick={handleAddFaculty}>Add Faculty</button>
+      <button onClick={handleAddRoom}>Add Room</button>
+    </div>
       {Object.keys(timetableData).length === 0 ? (
   <div>Loading...</div>
 ) : (
