@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import ViewTimetable from './viewtt';
 
 
 
 const Timetable = () => {
   const [timetableData, setTimetableData] = useState({});
+  const [viewData, setViewData] = useState({});
   const availableSubjects = ['Eng', 'Mat', 'Che', 'Phy', 'Other'];
   const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
   const availableFaculties = ['Faculty1', 'Faculty2', 'Faculty3', 'Faculty4', 'Faculty5'];
   const semesters=[1,3,5,7]
   const [selectedSemester, setSelectedSemester] = useState('1'); 
+  const [viewselectedSemester, setViewSelectedSemester] = useState('1'); 
   
   const selectedCell = null;
   const navigate = useNavigate();
@@ -18,21 +21,35 @@ const Timetable = () => {
   const currentCode = parts[parts.length - 1];
   // console.log('Code:', code);
 
+
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (semester) => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewclasstt/${currentCode}/${selectedSemester}`);
+        const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
         const data = await response.json();
-       console.log(data);
+        console.log(data);
         const initialData = generateInitialTimetableData(data);
-       
-        setTimetableData(initialData);
+        return initialData;
       } catch (error) {
         console.error('Error fetching existing timetable data:', error);
+        return {};
       }
     };
-    fetchData();
-  }, [selectedSemester]);
+
+    const fetchTimetableData = async (semester) => {
+      const data = await fetchData(semester);
+      setTimetableData(data);
+    };
+
+    const fetchViewData = async (semester) => {
+      const data = await fetchData(semester);
+      setViewData(data);
+    };
+
+    fetchTimetableData(selectedSemester);
+    fetchViewData(viewselectedSemester);
+  }, [selectedSemester, viewselectedSemester, currentCode]);
+
 
   const generateInitialTimetableData = (fetchedData) => {
     const initialData = {};
@@ -290,8 +307,28 @@ const Timetable = () => {
   </table>
 )}
       <button onClick={handleSubmit}>Save Timetable</button>
+<div>
+<div>
+<h1>View Timetable</h1>
+        <label>Select Semester:</label>
+        <select
+          value={viewselectedSemester}
+          onChange={(e) => setViewSelectedSemester(e.target.value)}
+        >
+          {semesters.map((semester, index) => (
+            <option key={index} value={semester}>
+              {semester}
+            </option>
+          ))}
+        </select>
+      </div>
+  
+<ViewTimetable timetableData={viewData} />     
+</div>
     </div>
+    
   );
+  
 };
 
 export default Timetable;
