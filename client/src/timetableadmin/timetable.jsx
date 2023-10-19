@@ -8,13 +8,20 @@ const Timetable = () => {
   const availableSubjects = ['Eng', 'Mat', 'Che', 'Phy', 'Other'];
   const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
   const availableFaculties = ['Faculty1', 'Faculty2', 'Faculty3', 'Faculty4', 'Faculty5'];
+  const semesters=[1,3,5,7]
+  const [selectedSemester, setSelectedSemester] = useState('1'); 
+  
   const selectedCell = null;
   const navigate = useNavigate();
+  const currentURL = window.location.pathname;
+  const parts = currentURL.split('/');
+  const currentCode = parts[parts.length - 1];
+  // console.log('Code:', code);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/timetablemodule/tt/viewclasstt/abc-def-hij/3');
+        const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewclasstt/${currentCode}/${selectedSemester}`);
         const data = await response.json();
        console.log(data);
         const initialData = generateInitialTimetableData(data);
@@ -25,45 +32,60 @@ const Timetable = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [selectedSemester]);
 
   const generateInitialTimetableData = (fetchedData) => {
     const initialData = {};
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const periods = [1, 2, 3, 4, 5, 6, 7, 8];
-
+  
     for (const day of days) {
       initialData[day] = {};
       for (const period of periods) {
-        const slotData = fetchedData[day][`period${period}`];
         initialData[day][`period${period}`] = [];
   
-        for (const slot of slotData) {
-          const slotSubjects = [];
+        if (fetchedData[day] && fetchedData[day][`period${period}`]) {
+          const slotData = fetchedData[day][`period${period}`];
+          
+          for (const slot of slotData) {
+            const slotSubjects = [];
   
-          for (const slotItem of slot) {
-            const subj = slotItem.subject;
-            const room = slotItem.room;
-            const faculty = slotItem.faculty;
-            const subInd = availableSubjects.indexOf(subj);
-            const roomInd = availableRooms.indexOf(room);
-            const facultyInd = availableFaculties.indexOf(faculty);
+            for (const slotItem of slot) {
+              const subj = slotItem.subject || '';
+              const room = slotItem.room || '';
+              const faculty = slotItem.faculty || '';
   
-            slotSubjects.push({
-              subject: availableSubjects[subInd],
-              room: availableRooms[roomInd],
-              faculty: availableFaculties[facultyInd],
-            });
+              // Only push the values if they are not empty
+              if (subj || room || faculty) {
+                slotSubjects.push({
+                  subject: subj,
+                  room: room,
+                  faculty: faculty,
+                });
+              }
+            }
+  
+            // Push an empty array if no data is available for this slot
+            if (slotSubjects.length === 0) {
+              slotSubjects.push({
+                subject: '',
+                room: '',
+                faculty: '',
+              });
+            }
+  
+            initialData[day][`period${period}`].push(slotSubjects);
           }
-  
-          initialData[day][`period${period}`].push(slotSubjects);
+        } else {
+          // Assign an empty array if day or period data is not available
+          initialData[day][`period${period}`].push([]);
         }
       }
     }
-  console.log(initialData);
+    console.log(initialData);
     return initialData;
   };
-
+  
   useEffect(() => {
     console.log('Updated timetableData:', timetableData);
   }, [timetableData]);
@@ -86,9 +108,9 @@ const Timetable = () => {
   
   const handleSplitCell = (day, period, slotIndex) => {
     const newCell = {
-      subject: availableSubjects[0],
-      room: availableRooms[0],
-      faculty: availableFaculties[0],
+      subject: '',
+      room: '',
+      faculty: '',
     };
   
     // Add the new cell to the specific slot within the day and period
@@ -133,10 +155,12 @@ const Timetable = () => {
     navigate('/addroom');
   };
   
+
+  
   const handleSubmit = () => {
     const apiUrl = 'http://127.0.0.1:8000/timetablemodule/tt/savett';
-    const code = 'abc-def-hij';
-    const sem = '3';
+    const code = currentCode;
+    const sem = selectedSemester;
     const dataToSend = JSON.stringify({ timetableData, code });
 
     console.log('JSON Data to Send:', dataToSend);
@@ -162,6 +186,19 @@ const Timetable = () => {
   return (
     <div>
       <h1>TIME TABLE</h1>
+      <div>
+        <label>Select Semester:</label>
+        <select
+          value={selectedSemester}
+          onChange={(e) => setSelectedSemester(e.target.value)}
+        >
+          {semesters.map((semester, index) => (
+            <option key={index} value={semester}>
+              {semester}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="add-buttons">
       <button onClick={handleAddSubject}>Add Subject</button>
       <button onClick={handleAddFaculty}>Add Faculty</button>
@@ -193,35 +230,39 @@ const Timetable = () => {
                 {slot.map((cell, cellIndex) => (
                   <div key={cellIndex} className="cell-slot">
                     <select
-                      value={cell.subject}
-                      onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'subject', event)}
-                    >
-                      {availableSubjects.map((subjectOption) => (
-                        <option key={subjectOption} value={subjectOption}>
-                          {subjectOption}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={cell.room}
-                      onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'room', event)}
-                    >
-                      {availableRooms.map((roomOption) => (
-                        <option key={roomOption} value={roomOption}>
-                          {roomOption}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={cell.faculty}
-                      onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'faculty', event)}
-                    >
-                      {availableFaculties.map((facultyOption) => (
-                        <option key={facultyOption} value={facultyOption}>
-                          {facultyOption}
-                        </option>
-                      ))}
-                    </select>
+  value={cell.subject}
+  onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'subject', event)}
+>
+  <option value="">Select Subject</option> {/* Add an empty option */}
+  {availableSubjects.map((subjectOption) => (
+    <option key={subjectOption} value={subjectOption}>
+      {subjectOption}
+    </option>
+  ))}
+</select>
+<select
+  value={cell.room}
+  onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'room', event)}
+>
+  <option value="">Select Room</option> {/* Add an empty option */}
+  {availableRooms.map((roomOption) => (
+    <option key={roomOption} value={roomOption}>
+      {roomOption}
+    </option>
+  ))}
+</select>
+<select
+  value={cell.faculty}
+  onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'faculty', event)}
+>
+  <option value="">Select Faculty</option> {/* Add an empty option */}
+  {availableFaculties.map((facultyOption) => (
+    <option key={facultyOption} value={facultyOption}>
+      {facultyOption}
+    </option>
+  ))}
+</select>
+
                   </div>
                 ))}
                  {slotIndex === 0 && (
