@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Timetable from './timetableadmin/timetable';
 import FacultyTable from './timetableadmin/facultytable';
 import CreateTimetable from './timetableadmin/creatett';
-import AddSubject from './timetableadmin/addsubject';
+import MasterFaculty from './timetableadmin/masterfaculty';
 
 function App() {
   return (
@@ -17,7 +17,7 @@ function App() {
           <Route path="/tt/:generatedLink" element={<Timetable />} />
           <Route path="/facultytable" element={<FacultyTable />} />
           <Route path="/create-timetable" element={<CreateTimetable />} />
-          <Route path="/tt/:generatedLink/addsubject" element={<AddSubject />} />
+          <Route path="/tt/:generatedLink/masterfaculty" element={<MasterFaculty />} />
         </Routes>
       </div>
     </Router>
