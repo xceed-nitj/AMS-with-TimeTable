@@ -65,6 +65,43 @@ function Subject() {
     }
   };
 
+  const handleAddFaculty = () => {
+    // Reset the form fields using editedData
+    setEditedData({
+      name: '',
+      designation: '',
+      dept: '',
+      type: '',
+      email: '',
+      extension: '',
+    });
+  };
+
+  const handleSaveNewFaculty = () => {
+    // Send a POST request to add the new faculty to the database
+    fetch('http://localhost:8000/timetablemodule/faculty', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(editedData), // Use editedData for new faculty
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log(data); // Handle the response from the server
+        fetchData(); // Fetch data after a successful addition
+        handleAddFaculty(); // Reset the form fields
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+    };
+
   const handleEditClick = (index) => {
     setEditRowIndex(index);
     // Set the initial values for editing based on the selected row's data
@@ -147,6 +184,57 @@ function Subject() {
           ))}
         </tbody>
       </table>
+
+      <h2>Add Faculty</h2>
+      <div>
+        <label>Name: </label>
+        <input
+          type="text"
+          value={editedData.name}
+          onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
+        />
+      </div>
+      <div>
+        <label>Designation: </label>
+        <input
+          type="text"
+          value={editedData.designation}
+          onChange={(e) => setEditedData({ ...editedData, designation: e.target.value })}
+        />
+      </div>
+      <div>
+        <label>Dept: </label>
+        <input
+          type="text"
+          value={editedData.dept}
+          onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })}
+        />
+      </div>
+      <div>
+        <label>Type: </label>
+        <input
+          type="text"
+          value={editedData.type}
+          onChange={(e) => setEditedData({ ...editedData, type: e.target.value })}
+        />
+      </div>
+      <div>
+        <label>Email: </label>
+        <input
+          type="text"
+          value={editedData.email}
+          onChange={(e) => setEditedData({ ...editedData, email: e.target.value })}
+        />
+      </div>
+      <div>
+        <label>Extension: </label>
+        <input
+          type="text"
+          value={editedData.extension}
+          onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })}
+        />
+      </div>
+      <button onClick={handleSaveNewFaculty}>Save</button>
     </div>
   );
 }
