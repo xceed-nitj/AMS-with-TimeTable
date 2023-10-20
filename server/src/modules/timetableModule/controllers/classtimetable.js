@@ -103,11 +103,12 @@ class ClassTimeTableController {
 
   async facultytt(req, res) {
     const facultyname = req.params.facultyname; 
+    const code=req.params.code;
     console.log('facultyname:', facultyname);
     try {
       // Query the ClassTable collection based on the 'faculty' field
-      const facultydata = await ClassTable.find({ faculty: facultyname });
-  
+      // const facultydata = await ClassTable.find({ faculty: facultyname });
+      const facultydata = await ClassTimeTableDto.findFacultyDataWithSession(code,facultyname);
       res.status(200).json(facultydata);
     } catch (error) {
       console.error(error);

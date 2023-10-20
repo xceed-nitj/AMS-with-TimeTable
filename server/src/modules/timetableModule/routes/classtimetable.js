@@ -28,7 +28,7 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
 
 
 
-  ClassTimeTableRouter.get("/viewfacultytt/:facultyname", async (req, res) => {
+  ClassTimeTableRouter.get("/viewfacultytt/:code/:facultyname", async (req, res) => {
     try { 
       await classtimetableController.facultytt(req, res);
     } 
