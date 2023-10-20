@@ -41,7 +41,7 @@ async findFacultyDataWithSession(code, faculty) {
         }
       }
 
-      async findRoomDataWithSession(code, room) {
+async findRoomDataWithSession(code, room) {
         try {
           const session = await TimeTableDto.getSessionByCode(code);
         // const session='2023-ODD'

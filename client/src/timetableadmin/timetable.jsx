@@ -8,6 +8,8 @@ const Timetable = () => {
   const [timetableData, setTimetableData] = useState({});
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
+  const [viewRoomData, setViewRoomData] = useState({});
+
   const availableSubjects = ['Eng', 'Mat', 'Che', 'Phy', 'Other'];
   const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
   const availableFaculties = ['Faculty1', 'Faculty2', 'Faculty3', 'Faculty4', 'Faculty5'];
@@ -15,6 +17,8 @@ const Timetable = () => {
   const [selectedSemester, setSelectedSemester] = useState('1'); 
   const [viewselectedSemester, setViewSelectedSemester] = useState('1'); 
   const [viewFaculty, setViewFaculty]= useState('Faculty1')  
+  const [viewRoom, setViewRoom]= useState('Room1')  
+  
   const selectedCell = null;
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -48,6 +52,19 @@ const Timetable = () => {
         return {};
       }
     };
+    const roomData = async (currentCode, room) => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewroomtt/${currentCode}/${room }`);
+        const data = await response.json();
+        console.log(data);
+        const initialData = generateInitialTimetableData(data,'room');
+        return initialData;
+      } catch (error) {
+        console.error('Error fetching existing timetable data:', error);
+        return {};
+      }
+    };
+
 
     const fetchTimetableData = async (semester) => {
       const data = await fetchData(semester);
@@ -64,11 +81,17 @@ const Timetable = () => {
       setViewFacultyData(data);
     };
 
+    const fetchRoomData = async (room) => {
+      const data = await roomData(currentCode, room);
+      setViewRoomData(data);
+    };
+
 
     fetchTimetableData(selectedSemester);
     fetchViewData(viewselectedSemester);
     fetchFacultyData(viewFaculty);
-  }, [selectedSemester, viewselectedSemester, currentCode, viewFaculty]);
+    fetchRoomData(viewRoom);
+  }, [selectedSemester, viewselectedSemester, currentCode, viewFaculty, viewRoom]);
 
 
   const generateInitialTimetableData = (fetchedData, type) => {
@@ -87,14 +110,22 @@ const Timetable = () => {
           for (const slot of slotData) {
             const slotSubjects = [];
             let faculty = ''; // Declare faculty here
+            let room='';
             for (const slotItem of slot) {
               const subj = slotItem.subject || '';
-              const room = slotItem.room || '';
+              if (type == 'room')
+              {
+                room = slotItem.sem || '';
+              }
+              else
+              {
+                room=slotItem.room ||'';
+              }
               if (type == 'faculty')
               {
               faculty = slotItem.sem || '';
               }
-              else if (type ==='sem')
+              else
               {
               faculty = slotItem.faculty || '';
               } 
@@ -229,7 +260,13 @@ const Timetable = () => {
   return (
     <div>
       <h1>TIME TABLE</h1>
-      <div>
+      
+      <div className="add-buttons">
+      <button onClick={handleAddSubject}>Add Subject</button>
+      <button onClick={handleAddFaculty}>Add Faculty</button>
+      <button onClick={handleAddRoom}>Add Room</button>
+    </div>
+    <div>
         <label>Select Semester:</label>
         <select
           value={selectedSemester}
@@ -242,11 +279,8 @@ const Timetable = () => {
           ))}
         </select>
       </div>
-      <div className="add-buttons">
-      <button onClick={handleAddSubject}>Add Subject</button>
-      <button onClick={handleAddFaculty}>Add Faculty</button>
-      <button onClick={handleAddRoom}>Add Room</button>
-    </div>
+
+
       {Object.keys(timetableData).length === 0 ? (
   <div>Loading...</div>
 ) : (
@@ -369,6 +403,23 @@ const Timetable = () => {
   
 <ViewTimetable timetableData={viewFacultyData} />     
 </div>
+
+<div>
+<h1>View Room Timetable</h1>
+        <label>Select Room:</label>
+        <select
+          value={viewRoom}
+          onChange={(e) => setViewRoom(e.target.value)}
+        >
+          {availableRooms.map((room, index) => (
+            <option key={index} value={room}>
+              {room}
+            </option>
+          ))}
+        </select>
+      </div>
+  
+<ViewTimetable timetableData={viewRoomData} />     
 
 
     </div>

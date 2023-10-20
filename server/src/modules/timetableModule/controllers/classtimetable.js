@@ -148,19 +148,35 @@ class ClassTimeTableController {
   
   async roomtt(req, res) {
     const roomno = req.params.room; 
-    console.log('required no:', roomno);
+    const code=req.params.code;
+    console.log('room no:', roomno);
     try {
-      // Query the ClassTable collection based on the 'faculty' field
-      const roomdata = await ClassTable.find({ room: roomno });
-      console.log(roomdata)
-      res.status(200).json(roomdata);
+      const records = await ClassTimeTableDto.findRoomDataWithSession(code,roomno);
+      const timetableData = {};
+      records.forEach((record) => {
+      const { day, slot, slotData,sem } = record;
+        if (!timetableData[day]) {
+          timetableData[day] = {};
+        }
+        if (!timetableData[day][slot]) {
+          timetableData[day][slot] = [];
+        }
+     const formattedSlotData = slotData.map(({ subject, faculty }) => ({
+      subject,
+      faculty,    
+      sem,
+    }));
+
+    timetableData[day][slot].push(formattedSlotData);
+        // Set the sem and code for the timetable
+      });
+  
+      res.status(200).json(timetableData);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
     }
   }
-  
-
 
 
 }

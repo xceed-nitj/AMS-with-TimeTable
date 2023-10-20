@@ -39,7 +39,7 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     }
   });
 
-  ClassTimeTableRouter.get("/viewroomtt/:room", async (req, res) => {
+  ClassTimeTableRouter.get("/viewroomtt/:code/:room", async (req, res) => {
     try { 
       await classtimetableController.roomtt(req, res);
     } 
