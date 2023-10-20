@@ -1,6 +1,8 @@
 const ClassTable = require("../../../models/classtimetable");
 const HttpException = require("../../../models/http-exception");
 
+const ClassTimeTabledto = require("../dto/classtimetable");
+const ClassTimeTableDto = new ClassTimeTabledto();
 
 class ClassTimeTableController {
   async savett(req, res) {
@@ -29,12 +31,14 @@ class ClassTimeTableController {
             console.log(`Updated class table data for ${day} - ${slot}`);
           } else {
             // If no record exists, create a new one with the slotData
+            const timetableObject= await ClassTimeTableDto.findTimeTableIdByCode(code);
             const classTableInstance = new ClassTable({
               day,
               slot,
               slotData,
               code,
               sem,
+              timetable:timetableObject,
             });
             await classTableInstance.save();
             console.log(`Saved class table data for ${day} - ${slot}`);

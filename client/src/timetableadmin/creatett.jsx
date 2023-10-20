@@ -110,7 +110,7 @@ function CreateTimetable() {
         />
         <button type="submit">Submit</button>
       </form>
-      <button onClick={handleGetSessions}>Get Sessions</button>
+      {/* <button onClick={handleGetSessions}>Get Sessions</button>
       <table>
         <thead>
           <tr>
@@ -130,7 +130,7 @@ function CreateTimetable() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table> */}
       {loading && <p>Loading...</p>}
     </div>
   );

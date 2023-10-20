@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 // Define your Mongoose schema based on the interface
-const classTableSchema = new mongoose.Schema({
+const classTableSchema = new Schema({
   day: {
     type: String,
     required: true,
@@ -31,6 +32,10 @@ const classTableSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  timetable: {
+    type: Schema.Types.ObjectId,
+    ref: "TimeTable"
+  }
 });
 
 // Create the Mongoose model
