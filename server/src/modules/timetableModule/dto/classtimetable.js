@@ -22,8 +22,8 @@ class ClassTimeTabledto {
      
 async findFacultyDataWithSession(code, faculty) {
         try {
-        //   const session = await TimeTableDto.getSessionByCode(code);
-        const session='2023-ODD'
+          const session = await TimeTableDto.getSessionByCode(code);
+        // const session='2023-ODD'
           const result = await ClassTable.find({
             "slotData.faculty": faculty,
           })
@@ -40,5 +40,27 @@ async findFacultyDataWithSession(code, faculty) {
           throw err;
         }
       }
+
+      async findRoomDataWithSession(code, room) {
+        try {
+          const session = await TimeTableDto.getSessionByCode(code);
+        // const session='2023-ODD'
+          const result = await ClassTable.find({
+            "slotData.room": room,
+          })
+            .populate({
+              path: "timetable",
+              match: { session: session },
+              model: TimeTable,
+            })
+            .exec();
+      
+          return result;
+        } catch (err) {
+          console.error('An error occurred while searching for faculty data:', err);
+          throw err;
+        }
+      }
+
     }
       module.exports = ClassTimeTabledto;

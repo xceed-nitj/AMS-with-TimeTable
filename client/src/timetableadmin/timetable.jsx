@@ -7,13 +7,14 @@ import ViewTimetable from './viewtt';
 const Timetable = () => {
   const [timetableData, setTimetableData] = useState({});
   const [viewData, setViewData] = useState({});
+  const [viewFacultyData, setViewFacultyData] = useState({});
   const availableSubjects = ['Eng', 'Mat', 'Che', 'Phy', 'Other'];
   const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
   const availableFaculties = ['Faculty1', 'Faculty2', 'Faculty3', 'Faculty4', 'Faculty5'];
   const semesters=[1,3,5,7]
   const [selectedSemester, setSelectedSemester] = useState('1'); 
   const [viewselectedSemester, setViewSelectedSemester] = useState('1'); 
-  
+  const [viewFaculty, setViewFaculty]= useState('Faculty1')  
   const selectedCell = null;
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -28,7 +29,19 @@ const Timetable = () => {
         const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
         const data = await response.json();
         console.log(data);
-        const initialData = generateInitialTimetableData(data);
+        const initialData = generateInitialTimetableData(data,'sem');
+        return initialData;
+      } catch (error) {
+        console.error('Error fetching existing timetable data:', error);
+        return {};
+      }
+    };
+    const facultyData = async (currentCode, faculty) => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`);
+        const data = await response.json();
+        console.log(data);
+        const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
         console.error('Error fetching existing timetable data:', error);
@@ -46,12 +59,19 @@ const Timetable = () => {
       setViewData(data);
     };
 
+    const fetchFacultyData = async (faculty) => {
+      const data = await facultyData(currentCode, faculty);
+      setViewFacultyData(data);
+    };
+
+
     fetchTimetableData(selectedSemester);
     fetchViewData(viewselectedSemester);
-  }, [selectedSemester, viewselectedSemester, currentCode]);
+    fetchFacultyData(viewFaculty);
+  }, [selectedSemester, viewselectedSemester, currentCode, viewFaculty]);
 
 
-  const generateInitialTimetableData = (fetchedData) => {
+  const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const periods = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -66,12 +86,18 @@ const Timetable = () => {
           
           for (const slot of slotData) {
             const slotSubjects = [];
-  
+            let faculty = ''; // Declare faculty here
             for (const slotItem of slot) {
               const subj = slotItem.subject || '';
               const room = slotItem.room || '';
-              const faculty = slotItem.faculty || '';
-  
+              if (type == 'faculty')
+              {
+              faculty = slotItem.sem || '';
+              }
+              else if (type ==='sem')
+              {
+              faculty = slotItem.faculty || '';
+              } 
               // Only push the values if they are not empty
               if (subj || room || faculty) {
                 slotSubjects.push({
@@ -309,7 +335,7 @@ const Timetable = () => {
       <button onClick={handleSubmit}>Save Timetable</button>
 <div>
 <div>
-<h1>View Timetable</h1>
+<h1>View Semester Timetable</h1>
         <label>Select Semester:</label>
         <select
           value={viewselectedSemester}
@@ -325,6 +351,26 @@ const Timetable = () => {
   
 <ViewTimetable timetableData={viewData} />     
 </div>
+<div>
+<div>
+<h1>View Faculty Timetable</h1>
+        <label>Select Faculty:</label>
+        <select
+          value={viewFaculty}
+          onChange={(e) => setViewFaculty(e.target.value)}
+        >
+          {availableFaculties.map((faculty, index) => (
+            <option key={index} value={faculty}>
+              {faculty}
+            </option>
+          ))}
+        </select>
+      </div>
+  
+<ViewTimetable timetableData={viewFacultyData} />     
+</div>
+
+
     </div>
     
   );

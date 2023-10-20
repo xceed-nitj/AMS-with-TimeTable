@@ -108,8 +108,38 @@ class ClassTimeTableController {
     try {
       // Query the ClassTable collection based on the 'faculty' field
       // const facultydata = await ClassTable.find({ faculty: facultyname });
-      const facultydata = await ClassTimeTableDto.findFacultyDataWithSession(code,facultyname);
-      res.status(200).json(facultydata);
+      const records = await ClassTimeTableDto.findFacultyDataWithSession(code,facultyname);
+      // Create an empty timetable data object
+      const timetableData = {};
+  
+      // Iterate through the records and format the data
+      records.forEach((record) => {
+        // Extract relevant data from the record
+        const { day, slot, slotData,sem } = record;
+  
+        // Create or initialize the day in the timetableData
+        if (!timetableData[day]) {
+          timetableData[day] = {};
+        }
+  
+        // Create or initialize the slot in the day
+        if (!timetableData[day][slot]) {
+          timetableData[day][slot] = [];
+        }
+  
+        // Access the "slotData" array and push its values
+     // Access the "slotData" array and push its values
+     const formattedSlotData = slotData.map(({ subject, room }) => ({
+      subject,
+      sem,    
+      room,
+    }));
+
+    timetableData[day][slot].push(formattedSlotData);
+        // Set the sem and code for the timetable
+      });
+  
+      res.status(200).json(timetableData);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
