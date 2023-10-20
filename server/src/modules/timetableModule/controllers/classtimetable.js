@@ -52,7 +52,47 @@ class ClassTimeTableController {
       res.status(500).json({ error: "Internal server error" });
     }
   }
-          
+ 
+  async saveslot(req, res) {
+    const day=req.params.day;
+    const slot=req.params.slot;
+    const slotData = req.body.slotData; // Access the timetableData object
+    try {
+          const { code, sem } = req.body;
+          const query = {
+            day,
+            slot,
+            code,
+            sem,
+          };
+          const existingRecord = await ClassTable.findOne(query);
+  
+          if (existingRecord) {
+            // If a record already exists, update it with the new slotData
+            existingRecord.slotData = slotData;
+            await existingRecord.save();
+            console.log(`Updated class table data for ${day} - ${slot}`);
+          } else {
+            // If no record exists, create a new one with the slotData
+            const timetableObject= await ClassTimeTableDto.findTimeTableIdByCode(code);
+            const classTableInstance = new ClassTable({
+              day,
+              slot,
+              slotData,
+              code,
+              sem,
+              timetable:timetableObject,
+            });
+            await classTableInstance.save();
+            console.log(`Saved class table data for ${day} - ${slot}`);
+          }
+      res.status(200).json({ message: "Data updated or created successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+  
   async classtt(req, res) {
     try {
       const sem = req.params.sem;
