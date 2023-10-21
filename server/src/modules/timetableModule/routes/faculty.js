@@ -23,7 +23,7 @@ facultyRouter.post("/", async (req, res) => {
     }
   });
 
-  facultyRouter.get("/:id", async (req, res) => {
+  facultyRouter.get("/id/:id", async (req, res) => {
     try {
       const id = req.params.id;
       const resp = await facultyController.getFacultyById(id);
@@ -34,6 +34,21 @@ facultyRouter.post("/", async (req, res) => {
         .json({ error: e?.message || "Internal Server Error" });
     }
   });
+  
+  facultyRouter.get("/dept/:dept", async (req, res) => {
+    try {
+      const department = req.params.dept;
+      const resp = await facultyController.getFacultyByDepartment(department);
+      res.status(200).json(resp);
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+  
+  
+  
 
     facultyRouter.put('/:id', async (req, res) => {
       try {
