@@ -231,31 +231,34 @@ const Timetable = () => {
   };
   
 
-  
-  const handleSubmit = () => {
+  const handleSubmit = async () => { // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/savett`;
     const code = currentCode;
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ timetableData, code });
-
+  
     console.log('JSON Data to Send:', dataToSend);
-
-    fetch(Url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ timetableData, code, sem }),
-    })
-      .then(response => response.json())
-      .then(data => {
-        console.log('Data sent to the backend:', data);
-      })
-      .catch(error => {
-        console.error('Error sending data to the backend:', error);
+  
+    try {
+      const response = await fetch(Url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ timetableData, code, sem }),
       });
+  
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Data sent to the backend:', data);
+      } else {
+        console.error('Failed to send data to the backend. HTTP status:', response.status);
+      }
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+    }
   };
-
+  
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
