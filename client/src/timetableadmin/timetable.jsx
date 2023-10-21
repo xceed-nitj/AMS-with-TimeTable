@@ -57,7 +57,7 @@ const Timetable = () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room }`);
         const data = await response.json();
-        console.log(data);
+        console.log('roomdata',data);
         const initialData = generateInitialTimetableData(data,'room');
         return initialData;
       } catch (error) {

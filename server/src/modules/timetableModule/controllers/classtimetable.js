@@ -178,7 +178,7 @@ class ClassTimeTableController {
     timetableData[day][slot].push(formattedSlotData);
         // Set the sem and code for the timetable
       });
-  
+      console.log(timetableData)
       res.status(200).json(timetableData);
     } catch (error) {
       console.error(error);
@@ -210,7 +210,7 @@ class ClassTimeTableController {
     timetableData[day][slot].push(formattedSlotData);
         // Set the sem and code for the timetable
       });
-  
+      console.log('rooom data',timetableData)
       res.status(200).json(timetableData);
     } catch (error) {
       console.error(error);
