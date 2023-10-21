@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
+import getEnvironment from "../getenvironment";
 
 
 function CreateTimetable() {
@@ -14,7 +15,7 @@ function CreateTimetable() {
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
   const [submitted, setSubmitted] = useState(false);
-
+  const apiUrl=getEnvironment();
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -27,7 +28,7 @@ function CreateTimetable() {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/timetablemodule/timetable', {
+      const response = await fetch(`${apiUrl}/timetablemodule/timetable`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,7 +63,7 @@ function CreateTimetable() {
   const handleGetSessions = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://127.0.0.1:8000/timetablemodule/timetable", {
+      const response = await fetch(`${apiUrl}/timetablemodule/timetable`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

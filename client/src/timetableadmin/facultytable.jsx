@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import getEnvironment from '../getenvironment';
 
 function FacultyTable() {
   const [facultyData, setFacultyData] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const apiUrl=getEnvironment();
   useEffect(() => {
     // Make a GET request with method and headers set
-    fetch('http://127.0.0.1:8000/timetablemodule/faculty', {
+    fetch(`${apiUrl}/timetablemodule/faculty`, {
       method: 'GET', // Specify the HTTP method as GET
       headers: {
         'Content-Type': 'application/json', // Set the content type to JSON

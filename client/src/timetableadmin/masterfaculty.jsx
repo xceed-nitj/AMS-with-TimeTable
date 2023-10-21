@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import getEnvironment from '../getenvironment';
 
 function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -12,13 +13,13 @@ function Subject() {
     email: '',
     extension: '',
   });
-
+const apiUrl=getEnvironment();
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = () => {
-    fetch("http://localhost:8000/timetablemodule/faculty") // Replace with the actual endpoint
+    fetch(`${apiUrl}/timetablemodule/faculty`) // Replace with the actual endpoint
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -43,7 +44,7 @@ function Subject() {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
 
-      fetch("http://localhost:8000/upload/faculty", {
+      fetch(`${apiUrl}/upload/faculty`, {
         method: 'POST',
         body: formData,
       })
@@ -79,7 +80,7 @@ function Subject() {
 
   const handleSaveNewFaculty = () => {
     // Send a POST request to add the new faculty to the database
-    fetch('http://localhost:8000/timetablemodule/faculty', {
+    fetch(`${apiUrl}/timetablemodule/faculty`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,7 +117,7 @@ function Subject() {
       updatedData[editRowIndex] = editedData;
 
       // Send the updated data to the server
-      fetch(`http://localhost:8000/faculty/${editRowIndex}`, {
+      fetch(`${apiUrl}/faculty/${editRowIndex}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

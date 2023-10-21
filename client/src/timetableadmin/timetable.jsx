@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ViewTimetable from './viewtt';
+import getEnvironment from '../getenvironment';
 
 
 
@@ -25,12 +26,12 @@ const Timetable = () => {
   const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 1];
   // console.log('Code:', code);
-
+  const apiUrl=getEnvironment();
 
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
         const data = await response.json();
         console.log(data);
         const initialData = generateInitialTimetableData(data,'sem');
@@ -42,7 +43,7 @@ const Timetable = () => {
     };
     const facultyData = async (currentCode, faculty) => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`);
+        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`);
         const data = await response.json();
         console.log(data);
         const initialData = generateInitialTimetableData(data,'faculty');
@@ -54,7 +55,7 @@ const Timetable = () => {
     };
     const roomData = async (currentCode, room) => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/timetablemodule/tt/viewroomtt/${currentCode}/${room }`);
+        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room }`);
         const data = await response.json();
         console.log(data);
         const initialData = generateInitialTimetableData(data,'room');
@@ -232,7 +233,7 @@ const Timetable = () => {
 
   
   const handleSubmit = () => {
-    const apiUrl = 'http://127.0.0.1:8000/timetablemodule/tt/savett';
+    const apiUrl = `${apiUrl}/timetablemodule/tt/savett`;
     const code = currentCode;
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ timetableData, code });
