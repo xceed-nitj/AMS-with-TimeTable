@@ -233,14 +233,14 @@ const Timetable = () => {
 
   
   const handleSubmit = () => {
-    const apiUrl = `${apiUrl}/timetablemodule/tt/savett`;
+    const Url = `${apiUrl}/timetablemodule/tt/savett`;
     const code = currentCode;
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ timetableData, code });
 
     console.log('JSON Data to Send:', dataToSend);
 
-    fetch(apiUrl, {
+    fetch(Url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

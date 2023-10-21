@@ -6,7 +6,7 @@ function getEnvironment() {
   
     if (currentURL.includes('localhost')) {
       return development;
-    } else if (currentURL.includes('nitjtt.netlify.app')) {
+    } else if (currentURL.includes('nitjtt')) {
       return production;
     } else {
       // Default to a specific environment or handle other cases
