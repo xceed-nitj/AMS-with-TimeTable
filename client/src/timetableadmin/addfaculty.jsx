@@ -1,42 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import getEnvironment from '../getenvironment';
 
 function SuccessMessage({ message }) {
-    return (
-      <div className="success-message">
-        {message}
-      </div>
-    );
-  }
+  return (
+    <div className="success-message">
+      {message}
+    </div>
+  );
+}
 
-function YourComponent() {
-  const [sem, setSem] = useState('');
+function Component() {
+  const [sem, setSem] = useState(1);
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [faculties, setFaculties] = useState([]);
   const [selectedFaculty, setSelectedFaculty] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [facultyData, setFacultyData] = useState([]);
 
-  const availableDepartments = ['EE','BT'];
+  const availableDepartments = ['EE', 'BT'];
 
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 2];
 
+  const apiUrl = getEnvironment();
+
   useEffect(() => {
-    console.log("Selected Department:", selectedDepartment); // Debugging
-    // Fetch faculty data based on the selected department
+    fetchFacultyData();
+  }, []);
+
+  useEffect(() => {
     if (selectedDepartment) {
-      fetch(`http://localhost:8000/timetablemodule/faculty/dept/${selectedDepartment}`)
+      fetch(`${apiUrl}/timetablemodule/faculty/dept/${selectedDepartment}`)
         .then(handleResponse)
         .then(data => {
-          console.log("Fetched Faculty Data:", data); // Debugging
           setFaculties(data);
         })
         .catch(handleError);
     }
   }, [selectedDepartment]);
-  
+
+  const fetchFacultyData = () => {
+    fetch(`${apiUrl}/timetablemodule/addFaculty`)
+      .then(handleResponse)
+      .then(data => {
+        setFacultyData(data);
+      })
+      .catch(handleError);
+  };
 
   const handleResponse = (response) => {
     if (!response.ok) {
@@ -55,15 +68,13 @@ function YourComponent() {
   };
 
   const handleSubmit = () => {
-    // Prepare the data to be saved in the database
     const dataToSave = {
       sem: sem,
-      code:currentCode,
+      code: currentCode,
       faculty: selectedFaculty,
     };
 
-    // Make a POST request to save the data in the database
-    fetch('http://127.0.0.1:8000/timetablemodule/addFaculty', {
+    fetch(`${apiUrl}/timetablemodule/addFaculty`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -72,11 +83,9 @@ function YourComponent() {
     })
       .then(handleResponse)
       .then((data) => {
-        // Handle the response from the server, e.g., display a success message or navigate to another page
         console.log('Data saved successfully:', data);
         setSuccessMessage('Data saved successfully!');
-        // You can navigate to a success page or display a success message here
-        
+        fetchFacultyData();
       })
       .catch(handleError);
   };
@@ -90,46 +99,69 @@ function YourComponent() {
         <div>
           <label>
             Semester:
-            <input
-              type="text"
-              value={sem}
-              onChange={(e) => setSem(e.target.value)}
-            />
+            <select value={sem} onChange={(e) => setSem(Number(e.target.value))}>
+              {[...Array(8).keys()].map((semester) => (
+                <option key={semester + 1} value={(semester + 1).toString()}>
+                  {semester + 1}
+                </option>
+              ))}
+            </select>
           </label>
           <br />
 
-      <label>
-        Department:
-        <select value={selectedDepartment} onChange={handleDepartmentChange}>
-          <option value="">Select a Department</option>
-          {availableDepartments.map((department) => (
-            <option key={department} value={department}>
-              {department}
-            </option>
-          ))}
-        </select>
-      </label>
-      <br />
+          <label>
+            Department:
+            <select value={selectedDepartment} onChange={handleDepartmentChange}>
+              <option value="">Select a Department</option>
+              {availableDepartments.map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
+          </label>
+          <br />
 
-      <label>
-        Faculty:
-        <select value={selectedFaculty} onChange={(e) => setSelectedFaculty(e.target.value)}>
-        <option value="" key="default">Select a Faculty</option>
-        {faculties.map((faculty) => (
-        <option key={faculty.id} value={faculty.id}>
-            {faculty.name}
-        </option>
-    ))}
-  </select>
-</label>
+          <label>
+            Faculty:
+            <select value={selectedFaculty} onChange={(e) => setSelectedFaculty(e.target.value)}>
+              <option value="" key="default">Select a Faculty</option>
+              {faculties.map((faculty) => (
+                <option key={faculty.id} value={faculty.id}>
+                  {faculty.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <br />
-      <button onClick={handleSubmit}>Submit</button>
+          <br />
+          <button onClick={handleSubmit}>Submit</button>
         </div>
       )}
+
+      <div>
+        <h2>Faculty Data</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Semester</th>
+              <th>Code</th>
+              <th>Faculty</th>
+            </tr>
+          </thead>
+          <tbody>
+            {facultyData.map((faculty) => (
+              <tr key={faculty._id}>
+                <td>{faculty.sem}</td>
+                <td>{faculty.code}</td>
+                <td>{faculty.faculty}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
-  
 }
 
-export default YourComponent;
+export default Component;
