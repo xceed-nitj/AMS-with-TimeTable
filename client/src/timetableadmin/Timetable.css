@@ -1,0 +1,34 @@
+/* Timetable.css */
+
+.timetable {
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+    font-family: Arial, sans-serif;
+  }
+  
+  .timetable-grid {
+    display: grid;
+    grid-template-columns: auto repeat(10, 1fr);
+    grid-gap: 5px;
+  }
+  
+  .timetable-row {
+    display: grid;
+    grid-template-columns: auto repeat(10, 1fr);
+    grid-gap: 5px;
+    border-top: 1px solid #ccc;
+  }
+  
+  .timetable-cell {
+    padding: 5px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+  
+  .event {
+    padding: 2px;
+    background-color: #66ccff;
+  }
+  

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+
 //hello
+
 function SuccessMessage({ message }) {
     return (
       <div className="success-message">
