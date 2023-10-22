@@ -66,15 +66,20 @@ class ClassTimeTableController {
         code,
         sem,
       };
+      // const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotData.faculty);
+      
+      const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(code, day, slot, slotData.faculty);
+      const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(code, day, slot, slotData.room);
+
+      if (isFacultyAvailable)
+      {
+
       const existingRecord = await ClassTable.findOne(query);
-  
       if (existingRecord) {
-        // If a record already exists, update it with the new slotData
         existingRecord.slotData = slotData;
         await existingRecord.save();
         console.log(`Updated class table data for ${day} - ${slot}`);
       } else {
-        // If no record exists, create a new one with the slotData
         const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
         const classTableInstance = new ClassTable({
           day,
@@ -88,7 +93,12 @@ class ClassTimeTableController {
         console.log(`Saved class table data for ${day} - ${slot}`);
       }
       res.status(200).json({ message: "Data updated or created successfully" });
-    } catch (error) {
+    } 
+    else {
+      res.status(400).json({ error: "Slot is already occupied by faculty. check faculty TT for more details" });
+    }
+  }
+    catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
     }

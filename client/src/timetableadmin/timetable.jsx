@@ -65,8 +65,7 @@ const Timetable = () => {
         return {};
       }
     };
-
-
+ 
     const fetchTimetableData = async (semester) => {
       const data = await fetchData(semester);
       setTimetableData(data);
@@ -175,8 +174,10 @@ const Timetable = () => {
     // Ensure that the slot and cell exist before updating
     if (updatedData[day] && updatedData[day][`period${period}`] && updatedData[day][`period${period}`][slotIndex]) {
       updatedData[day][`period${period}`][slotIndex][cellIndex][type] = newValue;
-    }
+    
+      saveSlotData(day, `period${period}`, updatedData[day][`period${period}`][slotIndex]);    }
   
+
     // Update the state with the modified data
     setTimetableData(updatedData);
   };
@@ -231,7 +232,50 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate('/addroom');
   };
+ 
+
+    //  const saveSlotData = async (day,slot) => {
+    //   try {
+    //     const response = await fetch(`${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`);
+    //     const data = await response.json();
+    //   } catch (error) {
+    //     console.error('Error fetching existing timetable data:', error);
+    //     return {};
+    //   }
+    // };
+
+  const saveSlotData = async (day,slot,slotData) => { // Mark the function as async
+    const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
+    const code = currentCode;
+    const sem = selectedSemester;
+    const dataToSend = JSON.stringify({ slotData, code, sem });
   
+    console.log('Slot JSON Data to Send:', dataToSend);
+  
+    try {
+      const response = await fetch(Url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ slotData, code, sem }),
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Slot Data sent to the backend:', data);
+      } else {
+        console.error('Failed to send slot data to the backend. HTTP status:', response.status);
+      }
+    } catch (error) {
+      console.error('Error sending slot data to the backend:', error);
+    }
+  };
+
+
+
+  
+
 
   const handleSubmit = async () => { // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/savett`;
