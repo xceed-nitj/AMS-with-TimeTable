@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [tableData, setTableData] = useState([]);
-  const [editRowIndex, setEditRowIndex] = useState(null);
+  const [editRowId, setEditRowId] = useState(null);
   const [editedData, setEditedData] = useState({
     name: '',
     designation: '',
@@ -102,19 +102,60 @@ function Subject() {
       });
     };
 
-  const handleEditClick = (index) => {
-    setEditRowIndex(index);
-    // Set the initial values for editing based on the selected row's data
-    const rowData = tableData[index];
-    setEditedData({ ...rowData });
-  };
+    const handleEditClick = (_id) => {
+      setEditRowId(_id);
+    
+      // Find the row with the specified _id and set its data to the "editedData" state
+      const editedRow = tableData.find((row) => row._id === _id);
+      if (editedRow) {
+        setEditedData({ ...editedRow });
+      }
+    };
 
-  const handleSaveEdit = () => {
-    // Make a PUT request to update the data for the selected row
-    if (editRowIndex !== null) {
-      const updatedData = tableData.slice(); // Create a copy of the data array
-      updatedData[editRowIndex] = editedData;
+    const handleSaveEdit = () => {
+      // Make a PUT request to update the data for the selected row
+      if (editRowId) {
+        // Find the index of the row with the specified _id in the tableData array
+        const rowIndex = tableData.findIndex((row) => row._id === editRowId);
+        if (rowIndex !== -1) {
+          const updatedData = [...tableData];
+          updatedData[rowIndex] = editedData;
+    
+          fetch(`${apiUrl}/timetablemodule/faculty/${editRowId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(editedData),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`Error: ${response.status} - ${response.statusText}`);
+              }
+              return response.json();
+            })
+            .then((data) => {
+              console.log('Update Success:', data);
+              setTableData(updatedData);
+              setEditRowId(null);
+              setEditedData({
+                _id: null, // Clear the edited data
+                name: '',
+                designation: '',
+                dept: '',
+                type: '',
+                email: '',
+                extension: '',
+              });
+            })
+            .catch((error) => {
+              console.error('Update Error:', error);
+            });
+        }
+      }
+    };
 
+<<<<<<< Updated upstream
       // Send the updated data to the server
       fetch(`http://localhost:8000/faculty/${editRowIndex}`, {
         method: 'PUT',
@@ -122,6 +163,12 @@ function Subject() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(editedData),
+=======
+    const handleDelete = (_id) => {
+      // Send a DELETE request to remove the selected row
+      fetch(`${apiUrl}/timetablemodule/faculty/${_id}`, {
+        method: 'DELETE',
+>>>>>>> Stashed changes
       })
         .then((response) => {
           if (!response.ok) {
@@ -130,15 +177,17 @@ function Subject() {
           return response.json();
         })
         .then((data) => {
-          console.log(data); // Handle the response from the server
-          setTableData(updatedData); // Update the local table data
-          setEditRowIndex(null); // Clear the edit mode
+          console.log('Delete Success:', data);
+          // Remove the deleted row from the tableData
+          const updatedData = tableData.filter((row) => row._id !== _id);
+          setTableData(updatedData);
         })
         .catch((error) => {
-          console.error('Error:', error);
+          console.error('Delete Error:', error);
         });
-    }
-  };
+    };
+  
+
 
   return (
     <div>
@@ -165,19 +214,22 @@ function Subject() {
           </tr>
         </thead>
         <tbody>
-          {tableData.map((row, index) => (
-            <tr key={index}>
-              <td>{editRowIndex === index ? <input type="text" value={editedData.name} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} /> : row.name}</td>
-              <td>{editRowIndex === index ? <input type="text" value={editedData.designation} onChange={(e) => setEditedData({ ...editedData, designation: e.target.value })} /> : row.designation}</td>
-              <td>{editRowIndex === index ? <input type="text" value={editedData.dept} onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })} /> : row.dept}</td>
-              <td>{editRowIndex === index ? <input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
-              <td>{editRowIndex === index ? <input type="text" value={editedData.email} onChange={(e) => setEditedData({ ...editedData, email: e.target.value })} /> : row.email}</td>
-              <td>{editRowIndex === index ? <input type="text" value={editedData.extension} onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })} /> : row.extension}</td>
+          {tableData.map((row) => (
+            <tr key={row._id}>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.name} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} /> : row.name}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.designation} onChange={(e) => setEditedData({ ...editedData, designation: e.target.value })} /> : row.designation}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.dept} onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })} /> : row.dept}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.email} onChange={(e) => setEditedData({ ...editedData, email: e.target.value })} /> : row.email}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.extension} onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })} /> : row.extension}</td>
               <td>
-                {editRowIndex === index ? (
+                {editRowId === row._id ? (
                   <button onClick={handleSaveEdit}>Save</button>
                 ) : (
-                  <button onClick={() => handleEditClick(index)}>Edit</button>
+                  <>
+                    <button onClick={() => handleEditClick(row._id)}>Edit</button>
+                    <button onClick={() => handleDelete(row._id)}>Delete</button>
+                  </>
                 )}
               </td>
             </tr>
