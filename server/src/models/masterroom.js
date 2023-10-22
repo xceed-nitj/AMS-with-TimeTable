@@ -1,27 +1,30 @@
 const mongoose = require("mongoose");
 
 // Define your Mongoose schema based on the interface
-const allotmentSchema = new mongoose.Schema({
-  session: {
+const masterroomSchema = new mongoose.Schema({
+  room: {
     type: String,
     required: true,
+  },
+  building: {
+    type: String,
+    required: true,
+  },
+  floor: {
+    type: String,
   },
   dept: {
     type: String,
-    required: true,
   },
-  room: {
+  landMark: {
     type: String,
-  },
-  day: {
+  }, 
+  imageUrl: {
     type: String,
-  },
-  availableSlots: {
-    type: Array,
   }, 
 });
 
 // Create the Mongoose model
-const Allotment = mongoose.model("Allotment", allotmentSchema);
+const MasterRoom = mongoose.model("MasterRoom", masterroomSchema);
 
-module.exports = Allotment;
+module.exports = MasterRoom;

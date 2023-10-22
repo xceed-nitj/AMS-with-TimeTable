@@ -73,7 +73,8 @@ class ClassTimeTableController {
 
       if (isFacultyAvailable)
       {
-
+        if (isRoomAvailable)
+        {  
       const existingRecord = await ClassTable.findOne(query);
       if (existingRecord) {
         existingRecord.slotData = slotData;
@@ -92,8 +93,12 @@ class ClassTimeTableController {
         await classTableInstance.save();
         console.log(`Saved class table data for ${day} - ${slot}`);
       }
-      res.status(200).json({ message: "Data updated or created successfully" });
-    } 
+      res.status(200).json({ message: "Slot saved" });
+    }
+    else {
+      res.status(400).json({ error: "Room Slot is already occupied. check Room TT for more details" });
+    }
+  }
     else {
       res.status(400).json({ error: "Slot is already occupied by faculty. check faculty TT for more details" });
     }
