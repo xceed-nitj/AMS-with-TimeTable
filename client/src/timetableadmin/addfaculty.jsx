@@ -108,7 +108,7 @@ function Component() {
             </select>
           </label>
           <br />
-
+  
           <label>
             Department:
             <select value={selectedDepartment} onChange={handleDepartmentChange}>
@@ -121,7 +121,7 @@ function Component() {
             </select>
           </label>
           <br />
-
+  
           <label>
             Faculty:
             <select value={selectedFaculty} onChange={(e) => setSelectedFaculty(e.target.value)}>
@@ -133,19 +133,18 @@ function Component() {
               ))}
             </select>
           </label>
-
+  
           <br />
           <button onClick={handleSubmit}>Submit</button>
         </div>
       )}
-
+  
       <div>
         <h2>Faculty Data</h2>
         <table>
           <thead>
             <tr>
               <th>Semester</th>
-              <th>Code</th>
               <th>Faculty</th>
             </tr>
           </thead>
@@ -153,8 +152,11 @@ function Component() {
             {facultyData.map((faculty) => (
               <tr key={faculty._id}>
                 <td>{faculty.sem}</td>
-                <td>{faculty.code}</td>
-                <td>{faculty.faculty}</td>
+                <td>
+                  {faculty.faculty.map((individualFaculty, index) => (
+                    <div key={index}>{individualFaculty}</div>
+                  ))}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -162,6 +164,7 @@ function Component() {
       </div>
     </div>
   );
-}
+  
+    }  
 
 export default Component;

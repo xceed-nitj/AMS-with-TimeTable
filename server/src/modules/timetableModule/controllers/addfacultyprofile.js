@@ -3,17 +3,27 @@ const addFaculty = require("../../../models/addfaculty");
 
 
 class addFacultyController {
-    async AddFaculty(req,res) {
-        const newFaculty = req.body;
+      async  AddFaculty(req, res) {
+        const { code, faculty, sem } = req.body;
+      
         try {
-          const createdFaculty = await addFaculty.create(newFaculty);
-          res.json(createdFaculty)
-          return;
+          const existingFaculty = await addFaculty.findOne({ code, sem });
+      
+          if (!existingFaculty) {
+            const newFaculty = new addFaculty({ code, sem, faculty });
+            await newFaculty.save();
+            res.json({ message: 'Faculty added successfully' });
+          } else {
+            existingFaculty.faculty.push(faculty);
+            await existingFaculty.save();
+            res.json({ message: 'Faculty added to the existing semester successfully' });
+          }
         } catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
+          console.error(error);
+          res.status(500).json({ error: 'Internal server error' });
         }
       }
+      
 
       async getAddedFaculty(req, res) {
        try {
