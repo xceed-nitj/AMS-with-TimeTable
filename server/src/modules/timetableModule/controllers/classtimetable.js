@@ -58,7 +58,7 @@ class ClassTimeTableController {
     const slot = req.params.slot;
     const slotData = req.body.slotData; // Access the slotData object
     const code = req.body.code;
-    const sem = req.body.sem;
+    const sem = req.  body.sem;
     try {
       const query = {
         day,
@@ -66,16 +66,35 @@ class ClassTimeTableController {
         code,
         sem,
       };
-      // const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotData.faculty);
       
-      const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(code, day, slot, slotData.faculty);
-      const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(code, day, slot, slotData.room);
+      // const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotData[0].faculty);
+      // const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
+      // const roomSlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotData[0].room);
+      // const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day,slot, roomSlots);
+      let isSlotAvailable = true; // Assume the slot is initially available
+      const unavailableItems = [];
 
-      if (isFacultyAvailable)
-      {
-        if (isRoomAvailable)
-        {  
-      const existingRecord = await ClassTable.findOne(query);
+      for (const slotItem of slotData) {
+          const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotItem.faculty);
+          const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
+          const roomSlots = await ClassTimeTableDto.findRoomDataWithSession(code, slotItem.room);
+          const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day, slot, roomSlots);
+
+          if (!isFacultyAvailable || !isRoomAvailable) {
+              isSlotAvailable = false; // At least one item is not available
+
+              if (!isFacultyAvailable) {
+                  unavailableItems.push({ item: slotItem, reason: "faculty" });
+              }
+
+              if (!isRoomAvailable) {
+                  unavailableItems.push({ item: slotItem, reason: "room" });
+              }
+          }
+      }
+
+      if (isSlotAvailable) {
+        const existingRecord = await ClassTable.findOne(query);
       if (existingRecord) {
         existingRecord.slotData = slotData;
         await existingRecord.save();
@@ -94,21 +113,18 @@ class ClassTimeTableController {
         console.log(`Saved class table data for ${day} - ${slot}`);
       }
       res.status(200).json({ message: "Slot saved" });
+    } else {
+        res.status(400).json({
+            error: "Slot is not available. Check faculty and room availability for more details",
+            unavailableItems,
+        });
     }
-    else {
-      res.status(400).json({ error: "Room Slot is already occupied. check Room TT for more details" });
-    }
-  }
-    else {
-      res.status(400).json({ error: "Slot is already occupied by faculty. check faculty TT for more details" });
-    }
-  }
-    catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  }
-    
+} catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+}
+}
+
   async classtt(req, res) {
     try {
       const sem = req.params.sem;

@@ -90,32 +90,38 @@ async findRoomDataWithSession(code, room) {
         }
       }
 
-  async isFacultySlotAvailable(code, day, slot, faculty) {
+  async isFacultySlotAvailable(targetDay, targetSlot, facultySlots) {
         try {
           // Check if the faculty is assigned to this slot
-          const facultySlots = await this.findFacultyDataWithSession(code, faculty);
-      
-          if (!facultySlots && !facultySlots[day][slot]) {
-            return true; // Slot is available
-          }
-          console.log('slot not available')
-          return false; // Slot is already occupied by the faculty
+          for (const record of facultySlots) {
+            if (record.day === targetDay && record.slot === targetSlot) {
+                // The day and slot combination is found in the data
+                console.log('faculty slot not available')
+                return false;
+            }
+        }
+        // The day and slot combination is not found in the data
+        console.log('faculty slot available')
+        return true;  // Slot is already occupied by the faculty
         } catch (error) {
           console.error(error);
           return false; // An error occurred while checking availability
         }
       }
       
-      async isRoomSlotAvailable(code, day, slot, room) {
+      async isRoomSlotAvailable(targetDay, targetSlot, roomSlots) {
         try {
           // Check if the faculty is assigned to this slot
-          const roomSlots = await this.findRoomDataWithSession(code, room);
-      
-          if (!roomSlots && !roomSlots[day][slot]) {
-            return true; // Slot is available
-          }
-          console.log('Room slot not available')
-          return false; // Slot is already occupied by the faculty
+          for (const record of roomSlots) {
+            if (record.day === targetDay && record.slot === targetSlot) {
+                // The day and slot combination is found in the data
+                console.log('room slot not available')
+                return false;
+            }
+        }
+        // The day and slot combination is not found in the data
+        console.log('room slot available')
+        return true;  // Slot is already occupied by the faculty
         } catch (error) {
           console.error(error);
           return false; // An error occurred while checking availability
