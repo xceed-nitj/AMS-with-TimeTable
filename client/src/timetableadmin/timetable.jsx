@@ -12,10 +12,13 @@ const Timetable = () => {
   const [viewRoomData, setViewRoomData] = useState({});
   const [message, setMessage]=useState();
 
-  const availableSubjects = ['Eng', 'Mat', 'Che', 'Phy', 'Other'];
+  const availableSubjects = ['SM','QM-1','SSP-1','ED','NS','NI','PP','AMS','NAR','QFT','EM','MH-II','MH-I','EM-LAB','SM(Tut)','QM-1 (Tut)','SSP-1 (Tut)','ED (Tut)','SSP Lab (G1)','SSP Lab (G2)','PP (Tut)','AMS (Tut)','AMS Lab (G1)','AMS Lab (G2)',
+    'EM (Tut)','MH-II (Tut)','Other'];
   const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
-  const availableFaculties = ['Faculty1', 'Faculty2', 'Faculty3', 'Faculty4', 'Faculty5'];
-  const semesters=[1,3,5,7]
+  const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
+    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Harleen Dahiya',
+    'Dr. Kiran Singh','Dr. Vinod Ashokan','Dr. Suneel Dutt','Dr. Kiran Singh'];
+  const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)']
   const [selectedSemester, setSelectedSemester] = useState('1'); 
   const [viewselectedSemester, setViewSelectedSemester] = useState('1'); 
   const [viewFaculty, setViewFaculty]= useState('Faculty1')  
