@@ -114,8 +114,8 @@ class ClassTimeTableController {
       }
       res.status(200).json({ message: "Slot saved" });
     } else {
-        res.status(400).json({
-            error: "Slot is not available. Check faculty and room availability for more details",
+        res.status(200).json({
+            message: "Slot is not available. Check faculty and room availability for more details",
             unavailableItems,
         });
     }

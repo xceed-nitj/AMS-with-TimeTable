@@ -10,6 +10,7 @@ const Timetable = () => {
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
+  const [message, setMessage]=useState();
 
   const availableSubjects = ['Eng', 'Mat', 'Che', 'Phy', 'Other'];
   const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
@@ -261,11 +262,12 @@ const Timetable = () => {
         body: JSON.stringify({ slotData, code, sem }),
       });
   
-      if (response.ok) {
+      if (response) {
         const data = await response.json();
-        console.log('Slot Data sent to the backend:', data);
+        console.log('Slot Data sent to the backend:', data.message);
+        setMessage(data.message);
       } else {
-        console.error('Failed to send slot data to the backend. HTTP status:', response.status);
+        console.log('no response');
       }
     } catch (error) {
       console.error('Error sending slot data to the backend:', error);
@@ -316,6 +318,7 @@ const Timetable = () => {
       <button onClick={handleAddFaculty}>Add Faculty</button>
       <button onClick={handleAddRoom}>Add Room</button>
     </div>
+    <div>{message}</div>
     <div>
         <label>Select Semester:</label>
         <select
