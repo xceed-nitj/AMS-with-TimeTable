@@ -14,15 +14,14 @@ const Timetable = () => {
 
   const availableSubjects = ['SM','QM-1','SSP-1','ED','NS','NI','PP','AMS','NAR','QFT','EM','MH-II','MH-I','EM-LAB','SM(Tut)','QM-1 (Tut)','SSP-1 (Tut)','ED (Tut)','SSP Lab (G1)','SSP Lab (G2)','PP (Tut)','AMS (Tut)','AMS Lab (G1)','AMS Lab (G2)',
     'EM (Tut)','MH-II (Tut)','Other'];
-  const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
+  const availableRooms = ['L-201', 'L-209'];
   const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
-    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Harleen Dahiya',
-    'Dr. Kiran Singh','Dr. Vinod Ashokan','Dr. Suneel Dutt','Dr. Kiran Singh'];
+    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt'];
   const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)']
-  const [selectedSemester, setSelectedSemester] = useState('1'); 
-  const [viewselectedSemester, setViewSelectedSemester] = useState('1'); 
-  const [viewFaculty, setViewFaculty]= useState('Faculty1')  
-  const [viewRoom, setViewRoom]= useState('Room1')  
+  const [selectedSemester, setSelectedSemester] = useState('B.Sc (2 sem)'); 
+  const [viewselectedSemester, setViewSelectedSemester] = useState('B.Sc (2 sem)'); 
+  const [viewFaculty, setViewFaculty]= useState('Dr. Kiran Singh')  
+  const [viewRoom, setViewRoom]= useState('L-201')  
   
   const selectedCell = null;
   const navigate = useNavigate();
