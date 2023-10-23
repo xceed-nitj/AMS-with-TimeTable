@@ -237,16 +237,6 @@ const Timetable = () => {
   };
  
 
-    //  const saveSlotData = async (day,slot) => {
-    //   try {
-    //     const response = await fetch(`${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`);
-    //     const data = await response.json();
-    //   } catch (error) {
-    //     console.error('Error fetching existing timetable data:', error);
-    //     return {};
-    //   }
-    // };
-
   const saveSlotData = async (day,slot,slotData) => { // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
     const code = currentCode;
@@ -287,8 +277,9 @@ const Timetable = () => {
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ timetableData, code });
   
-    console.log('JSON Data to Send:', dataToSend);
-  
+    console.log('Data is getting saved');
+
+    setMessage('Data is being saved....')
     try {
       const response = await fetch(Url, {
         method: 'POST',
@@ -306,6 +297,9 @@ const Timetable = () => {
       }
     } catch (error) {
       console.error('Error sending data to the backend:', error);
+    }
+    finally{
+      setMessage('Data saved successfully');
     }
   };
   

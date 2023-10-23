@@ -94,26 +94,30 @@ class ClassTimeTableController {
       }
 
       if (isSlotAvailable) {
-        const existingRecord = await ClassTable.findOne(query);
-      if (existingRecord) {
-        existingRecord.slotData = slotData;
-        await existingRecord.save();
-        console.log(`Updated class table data for ${day} - ${slot}`);
-      } else {
-        const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
-        const classTableInstance = new ClassTable({
-          day,
-          slot,
-          slotData,
-          code,
-          sem,
-          timetable: timetableObject,
-        });
-        await classTableInstance.save();
-        console.log(`Saved class table data for ${day} - ${slot}`);
-      }
-      res.status(200).json({ message: "Slot saved" });
-    } else {
+        // const existingRecord = await ClassTable.findOne(query);
+    //   if (existingRecord) {
+    //     existingRecord.slotData = slotData;
+    //     await existingRecord.save();
+    //     console.log(`Updated class table data for ${day} - ${slot}`);
+    //   } else{
+    //     const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
+    //     console.log(slotData)
+    //     console.log(slotData.subject)
+    //     if (!(slotData.subject=='' && slotData.faculty=='' && slotData.room==''))
+    //     {
+    //     const classTableInstance = new ClassTable({
+    //       day,
+    //       slot,
+    //       slotData,
+    //       code,
+    //       sem,
+    //       timetable: timetableObject,
+    //     });
+    //     await classTableInstance.save();
+    //     console.log(`Saved class table data for ${day} - ${slot}`);
+      
+      res.status(200).json({ message: "Slot is available" });
+    }else {
         res.status(200).json({
             message: "Slot is not available. Check faculty and room availability for more details",
             unavailableItems,

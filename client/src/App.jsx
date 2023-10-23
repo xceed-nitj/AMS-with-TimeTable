@@ -12,8 +12,8 @@ function App() {
   return (
     <Router>
       <div className="app">
-        <h1>Timetable</h1>
-            <Link to="/create-timetable">Create Timetable</Link>
+        <h1>XCEED-Timetable Module</h1>
+            {/* <Link to="/create-timetable">Create Timetable</Link> */}
           
         <Routes>
           <Route path="/tt/:generatedLink" element={<Timetable />} />
