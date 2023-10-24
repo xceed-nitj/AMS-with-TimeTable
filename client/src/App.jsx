@@ -1,11 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Timetable from './timetableadmin/timetable';
-import FacultyTable from './timetableadmin/facultytable';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
 import AddFaculty from './timetableadmin/addfaculty';
-
 
 
 function App() {
@@ -17,10 +15,9 @@ function App() {
           
         <Routes>
           <Route path="/tt/:generatedLink" element={<Timetable />} />
-          <Route path="/facultytable" element={<FacultyTable />} />
           <Route path="/" element={<CreateTimetable />} />
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
-          <Route path="/tt/:generatedLink/masterfaculty" element={<MasterFaculty />} />
+          <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
         </Routes>
       </div>
     </Router>
