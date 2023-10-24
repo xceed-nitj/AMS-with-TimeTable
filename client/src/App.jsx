@@ -6,17 +6,16 @@ import MasterFaculty from './timetableadmin/masterfaculty';
 import AddFaculty from './timetableadmin/addfaculty';
 
 
-
 function App() {
   return (
     <Router>
       <div className="app">
-        <h1>Timetable</h1>
-            <Link to="/create-timetable">Create Timetable</Link>
+        <h1>XCEED-Timetable Module</h1>
+            {/* <Link to="/create-timetable">Create Timetable</Link> */}
           
         <Routes>
           <Route path="/tt/:generatedLink" element={<Timetable />} />
-          <Route path="/create-timetable" element={<CreateTimetable />} />
+          <Route path="/" element={<CreateTimetable />} />
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
           <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
         </Routes>

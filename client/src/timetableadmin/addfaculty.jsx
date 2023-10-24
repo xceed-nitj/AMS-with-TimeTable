@@ -9,7 +9,6 @@ function SuccessMessage({ message }) {
     </div>
   );
 }
-
 function Component() {
   const [sem, setSem] = useState(1);
   const [selectedDepartment, setSelectedDepartment] = useState('');

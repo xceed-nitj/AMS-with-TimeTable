@@ -24,7 +24,6 @@ class addFacultyController {
         }
       }
       
-
       async getAddedFaculty(req, res) {
        try {
           const facultyList = await addFaculty.find();
