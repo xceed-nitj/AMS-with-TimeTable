@@ -4,7 +4,7 @@ import getEnvironment from '../getenvironment';
 function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [tableData, setTableData] = useState([]);
-  const [editRowIndex, setEditRowIndex] = useState(null);
+  const [editRowId, setEditRowId] = useState(null);
   const [editedData, setEditedData] = useState({
     name: '',
     designation: '',
