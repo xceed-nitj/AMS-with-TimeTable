@@ -215,17 +215,17 @@ const Timetable = () => {
   };
     
   const location = useLocation();
-
+  const currentPathname = location.pathname;
   const handleAddSubject = () => {
     // Navigate to the "Add Subject" page
-    const currentPathname = location.pathname;
+    // const currentPathname = location.pathname;
 
     // Navigate to the current URL with an additional path segment
     navigate(`${currentPathname}/addsubject`);
   };
 
   const handleAddFaculty = () => {
-    const currentPathname = location.pathname;
+    
 
     // Navigate to the current URL with an additional path segment
     navigate(`${currentPathname}/addfaculty`);
