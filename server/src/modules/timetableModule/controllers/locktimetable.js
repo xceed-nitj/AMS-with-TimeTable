@@ -41,52 +41,52 @@ class LockTimeTableController {
         }
  
 
-  // async getlockedclasstt(req, res) {
-  //   try {
-  //     const sem = req.params.sem;
-  //     const code = req.params.code;
+  async getlockedclasstt(req, res) {
+    try {
+      const sem = req.params.sem;
+      const code = req.params.code;
   
-  //     // Query the database to find records that match the sem and code
-  //     const records = await LockSem.find({ sem, code });
+      // Query the database to find records that match the sem and code
+      const records = await LockSem.find({ sem, code });
   
-  //     // Create an empty timetable data object
-  //     const timetableData = {};
+      // Create an empty timetable data object
+      const timetableData = {};
   
-  //     // Iterate through the records and format the data
-  //     records.forEach((record) => {
-  //       // Extract relevant data from the record
-  //       const { day, slot, slotData } = record;
+      // Iterate through the records and format the data
+      records.forEach((record) => {
+        // Extract relevant data from the record
+        const { day, slot, slotData } = record;
   
-  //       // Create or initialize the day in the timetableData
-  //       if (!timetableData[day]) {
-  //         timetableData[day] = {};
-  //       }
+        // Create or initialize the day in the timetableData
+        if (!timetableData[day]) {
+          timetableData[day] = {};
+        }
   
-  //       // Create or initialize the slot in the day
-  //       if (!timetableData[day][slot]) {
-  //         timetableData[day][slot] = [];
-  //       }
+        // Create or initialize the slot in the day
+        if (!timetableData[day][slot]) {
+          timetableData[day][slot] = [];
+        }
   
-  //       // Access the "slotData" array and push its values
-  //    // Access the "slotData" array and push its values
-  //    const formattedSlotData = slotData.map(({ subject, faculty, room }) => ({
-  //     subject,
-  //     faculty,
-  //     room,
-  //   }));
+        // Access the "slotData" array and push its values
+     // Access the "slotData" array and push its values
+     const formattedSlotData = slotData.map(({ subject, faculty, room }) => ({
+      subject,
+      faculty,
+      room,
+    }));
 
-  //   timetableData[day][slot].push(formattedSlotData);
-  //       // Set the sem and code for the timetable
-  //       timetableData.sem = sem;
-  //       timetableData.code = code;
-  //     });
+    timetableData[day][slot].push(formattedSlotData);
+        // Set the sem and code for the timetable
+        timetableData.sem = sem;
+        timetableData.code = code;
+      });
   
-  //     res.status(200).json(timetableData);
-  //   } catch (error) {
-  //     console.error(error);
-  //     throw new Error('Error fetching and formatting data from the database');
-  //   }
-  // }
+      res.status(200).json(timetableData);
+    } catch (error) {
+      console.error(error);
+      throw new Error('Error fetching and formatting data from the database');
+    }
+  }
   
 
   // async facultytt(req, res) {

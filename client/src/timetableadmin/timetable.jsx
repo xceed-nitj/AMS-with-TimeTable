@@ -235,6 +235,10 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate('/addroom');
   };
+  const handleViewSummary = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/lockedsummary`);
+  };
  
 
   const saveSlotData = async (day,slot,slotData) => { // Mark the function as async
@@ -348,6 +352,7 @@ const Timetable = () => {
       <button onClick={handleAddFaculty}>Add Faculty</button>
       <button onClick={handleAddRoom}>Add Room</button>
       <button onClick={handleLockTT}>Lock TT</button>
+      <button onClick={handleViewSummary}>View/Download Locked TT</button>
     </div>
     <div>{message}</div>
     <div>
