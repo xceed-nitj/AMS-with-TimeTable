@@ -7,4 +7,5 @@ router.use('/faculty', require("./faculty"));
 router.use('/subject', require("./subject")); 
 router.use('/tt', require("./classtimetable")); 
 router.use('/addfaculty', require("./addfaculty")); 
+router.use('/lock', require("./locktimetable")); 
 module.exports = router;
