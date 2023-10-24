@@ -8,6 +8,19 @@ const cors = require("cors");
 dotenv.config();
 
 // Middleware
+
+// Create a middleware to check the database connection
+const checkDatabaseConnection = (req, res, next) => {
+    // Check if the database connection is ready
+    if (mongoose.connection.readyState === 1) { // 1 indicates the connection is open
+      next(); // Proceed to the next middleware or route handler
+    } else {
+      res.status(500).json({ error: 'Database connection is not established' });
+    }
+  };
+  
+
+
 // CORS configuration
 app.use(cors({
     origin: '*', // Change this to your allowed origins or '*' to allow all origins
@@ -20,6 +33,7 @@ app.use(cors({
   
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(checkDatabaseConnection);
 
 // Routes
 
