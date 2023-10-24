@@ -3,18 +3,27 @@ const addFaculty = require("../../../models/addfaculty");
 
 
 class addFacultyController {
-    async AddFaculty(req,res) {
-        const newFaculty = req.body;
+      async  AddFaculty(req, res) {
+        const { code, faculty, sem } = req.body;
+      
         try {
-          const createdFaculty = await addFaculty.create(newFaculty);
-          res.json(createdFaculty)
-          return;
+          const existingFaculty = await addFaculty.findOne({ code, sem });
+      
+          if (!existingFaculty) {
+            const newFaculty = new addFaculty({ code, sem, faculty });
+            await newFaculty.save();
+            res.json({ message: 'Faculty added successfully' });
+          } else {
+            existingFaculty.faculty.push(faculty);
+            await existingFaculty.save();
+            res.json({ message: 'Faculty added to the existing semester successfully' });
+          }
         } catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
+          console.error(error);
+          res.status(500).json({ error: 'Internal server error' });
         }
       }
-
+      
       async getAddedFaculty(req, res) {
        try {
           const facultyList = await addFaculty.find();
@@ -31,7 +40,7 @@ class addFacultyController {
           throw new HttpException(400, "Invalid Id");
         }
         try {
-          const data = await Faculty.findById(id);
+          const data = await addFaculty.findById(id);
           if (!data) throw new HttpException(400, "data does not exists");
           return data;
         } catch (e) {
@@ -47,7 +56,7 @@ class addFacultyController {
         //   return res.status(400).json({ error: "Invalid Announcement data" });
         // }
         try {
-          await Faculty.findByIdAndUpdate(id, announcement);
+          await addFaculty.findByIdAndUpdate(id, announcement);
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
@@ -58,7 +67,7 @@ class addFacultyController {
           throw new HttpException(400, "Invalid Id");
         }
         try {
-          await Faculty.findByIdAndDelete(id);
+          await addFaculty.findByIdAndDelete(id);
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
         }

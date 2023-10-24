@@ -9,7 +9,6 @@ function SuccessMessage({ message }) {
     </div>
   );
 }
-
 function Component() {
   const [sem, setSem] = useState(1);
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -17,6 +16,11 @@ function Component() {
   const [selectedFaculty, setSelectedFaculty] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [facultyData, setFacultyData] = useState([]);
+
+  const [editFacultyData, setEditFacultyData] = useState({
+    facultyId: null,
+    facultyName: '',
+  });
 
   const availableDepartments = ['EE', 'BT'];
 
@@ -90,6 +94,30 @@ function Component() {
       .catch(handleError);
   };
 
+
+  const handleDelete = (facultyId, facultyName) => {
+    const facultyToDelete = facultyData.find((faculty) => faculty._id === facultyId);
+  
+    if (facultyToDelete) {
+      const updatedFaculty = facultyToDelete.faculty.filter((name) => name !== facultyName);
+      facultyToDelete.faculty = updatedFaculty;
+  
+      fetch(`${apiUrl}/timetablemodule/addFaculty/${facultyId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(facultyToDelete),
+      })
+        .then(handleResponse)
+        .then(() => {
+          console.log('Faculty removed from the entry successfully');
+          fetchFacultyData();
+        })
+        .catch(handleError);
+    }
+  };
+
   return (
     <div>
       <h1>Add Faculty</h1>
@@ -108,7 +136,7 @@ function Component() {
             </select>
           </label>
           <br />
-
+  
           <label>
             Department:
             <select value={selectedDepartment} onChange={handleDepartmentChange}>
@@ -121,47 +149,54 @@ function Component() {
             </select>
           </label>
           <br />
-
+  
           <label>
             Faculty:
             <select value={selectedFaculty} onChange={(e) => setSelectedFaculty(e.target.value)}>
-              <option value="" key="default">Select a Faculty</option>
+              <option value="" key="default">
+                Select a Faculty
+              </option>
               {faculties.map((faculty) => (
-                <option key={faculty.id} value={faculty.id}>
+                <option key={faculty.id} value={faculty.name}>
                   {faculty.name}
                 </option>
               ))}
             </select>
           </label>
-
+  
           <br />
           <button onClick={handleSubmit}>Submit</button>
         </div>
       )}
-
+  
       <div>
         <h2>Faculty Data</h2>
         <table>
           <thead>
             <tr>
               <th>Semester</th>
-              <th>Code</th>
               <th>Faculty</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {facultyData.map((faculty) => (
-              <tr key={faculty._id}>
-                <td>{faculty.sem}</td>
-                <td>{faculty.code}</td>
-                <td>{faculty.faculty}</td>
-              </tr>
-            ))}
+            {facultyData.map((faculty) =>
+              faculty.faculty.map((individualFaculty, index) => (
+                <tr key={`${faculty._id}-${index}`}>
+                  <td>{index === 0 ? faculty.sem : ''}</td>
+                  <td>{individualFaculty}</td>
+                  <td>
+                    <button onClick={() => handleDelete(faculty._id, individualFaculty)}>Delete</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
+  
 }
 
 export default Component;

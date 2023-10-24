@@ -10,15 +10,18 @@ const Timetable = () => {
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
+  const [message, setMessage]=useState();
 
-  const availableSubjects = ['Eng', 'Mat', 'Che', 'Phy', 'Other'];
-  const availableRooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
-  const availableFaculties = ['Faculty1', 'Faculty2', 'Faculty3', 'Faculty4', 'Faculty5'];
-  const semesters=[1,3,5,7]
-  const [selectedSemester, setSelectedSemester] = useState('1'); 
-  const [viewselectedSemester, setViewSelectedSemester] = useState('1'); 
-  const [viewFaculty, setViewFaculty]= useState('Faculty1')  
-  const [viewRoom, setViewRoom]= useState('Room1')  
+  const availableSubjects = ['SM','QM-1','SSP-1','ED','NS','NI','PP','AMS','NAR','QFT','EM','MH-II','MH-I','EM-LAB','SM(Tut)','QM-1 (Tut)','SSP-1 (Tut)','ED (Tut)','SSP Lab (G1)','SSP Lab (G2)','PP (Tut)','AMS (Tut)','AMS Lab (G1)','AMS Lab (G2)',
+    'EM (Tut)','MH-II (Tut)','Other','s1','s2','s3'];
+  const availableRooms = ['L-201', 'L-209','room1','room2'];
+  const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
+    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
+  const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)','d-sem1','d-sem2']
+  const [selectedSemester, setSelectedSemester] = useState('B.Sc (2 sem)'); 
+  const [viewselectedSemester, setViewSelectedSemester] = useState('B.Sc (2 sem)'); 
+  const [viewFaculty, setViewFaculty]= useState('Dr. Kiran Singh')  
+  const [viewRoom, setViewRoom]= useState('L-201')  
   
   const selectedCell = null;
   const navigate = useNavigate();
@@ -212,17 +215,17 @@ const Timetable = () => {
   };
     
   const location = useLocation();
-
+  const currentPathname = location.pathname;
   const handleAddSubject = () => {
     // Navigate to the "Add Subject" page
-    const currentPathname = location.pathname;
+    // const currentPathname = location.pathname;
 
     // Navigate to the current URL with an additional path segment
     navigate(`${currentPathname}/addsubject`);
   };
 
   const handleAddFaculty = () => {
-    const currentPathname = location.pathname;
+    
 
     // Navigate to the current URL with an additional path segment
     navigate(`${currentPathname}/addfaculty`);
@@ -232,17 +235,11 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate('/addroom');
   };
+  const handleViewSummary = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/lockedsummary`);
+  };
  
-
-    //  const saveSlotData = async (day,slot) => {
-    //   try {
-    //     const response = await fetch(`${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`);
-    //     const data = await response.json();
-    //   } catch (error) {
-    //     console.error('Error fetching existing timetable data:', error);
-    //     return {};
-    //   }
-    // };
 
   const saveSlotData = async (day,slot,slotData) => { // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
@@ -261,11 +258,12 @@ const Timetable = () => {
         body: JSON.stringify({ slotData, code, sem }),
       });
   
-      if (response.ok) {
+      if (response) {
         const data = await response.json();
-        console.log('Slot Data sent to the backend:', data);
+        console.log('Slot Data sent to the backend:', data.message);
+        setMessage(data.message);
       } else {
-        console.error('Failed to send slot data to the backend. HTTP status:', response.status);
+        console.log('no response');
       }
     } catch (error) {
       console.error('Error sending slot data to the backend:', error);
@@ -283,8 +281,9 @@ const Timetable = () => {
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ timetableData, code });
   
-    console.log('JSON Data to Send:', dataToSend);
-  
+    console.log('Data is getting saved');
+
+    setMessage('Data is being saved....')
     try {
       const response = await fetch(Url, {
         method: 'POST',
@@ -303,8 +302,45 @@ const Timetable = () => {
     } catch (error) {
       console.error('Error sending data to the backend:', error);
     }
+    finally{
+      setMessage('Data saved successfully');
+    }
   };
   
+
+  const handleLockTT = async () => { // Mark the function as async
+    setMessage('Data is being saved....')
+    await handleSubmit();
+    console.log('Data is getting Locked');
+    setMessage('Data saved. Commencing lock')
+    setMessage('Data is being locked')
+    const Url = `${apiUrl}/timetablemodule/lock/locktt`;
+    const code = currentCode;
+    const sem = selectedSemester;
+    try {
+      const response = await fetch(Url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({code, sem }),
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Data sent to the backend:', data);
+      } else {
+        console.error('Failed to send data to the backend. HTTP status:', response.status);
+      }
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+    }
+    finally{
+      setMessage('Data Locked successfully');
+    }
+  };
+
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
@@ -315,7 +351,10 @@ const Timetable = () => {
       <button onClick={handleAddSubject}>Add Subject</button>
       <button onClick={handleAddFaculty}>Add Faculty</button>
       <button onClick={handleAddRoom}>Add Room</button>
+      <button onClick={handleLockTT}>Lock TT</button>
+      <button onClick={handleViewSummary}>View/Download Locked TT</button>
     </div>
+    <div>{message}</div>
     <div>
         <label>Select Semester:</label>
         <select
