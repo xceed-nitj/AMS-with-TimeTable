@@ -24,7 +24,6 @@ class addFacultyController {
         }
       }
       
-
       async getAddedFaculty(req, res) {
        try {
           const facultyList = await addFaculty.find();
@@ -41,7 +40,7 @@ class addFacultyController {
           throw new HttpException(400, "Invalid Id");
         }
         try {
-          const data = await Faculty.findById(id);
+          const data = await addFaculty.findById(id);
           if (!data) throw new HttpException(400, "data does not exists");
           return data;
         } catch (e) {
@@ -57,7 +56,7 @@ class addFacultyController {
         //   return res.status(400).json({ error: "Invalid Announcement data" });
         // }
         try {
-          await Faculty.findByIdAndUpdate(id, announcement);
+          await addFaculty.findByIdAndUpdate(id, announcement);
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
@@ -68,7 +67,7 @@ class addFacultyController {
           throw new HttpException(400, "Invalid Id");
         }
         try {
-          await Faculty.findByIdAndDelete(id);
+          await addFaculty.findByIdAndDelete(id);
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
