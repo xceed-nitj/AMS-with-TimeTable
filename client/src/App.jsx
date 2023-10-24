@@ -18,7 +18,7 @@ function App() {
         <Routes>
           <Route path="/tt/:generatedLink" element={<Timetable />} />
           <Route path="/facultytable" element={<FacultyTable />} />
-          <Route path="/create-timetable" element={<CreateTimetable />} />
+          <Route path="/" element={<CreateTimetable />} />
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
           <Route path="/tt/:generatedLink/masterfaculty" element={<MasterFaculty />} />
         </Routes>

@@ -303,6 +303,40 @@ const Timetable = () => {
     }
   };
   
+
+  const handleLockTT = async () => { // Mark the function as async
+    setMessage('Data is being saved....')
+    await handleSubmit();
+    console.log('Data is getting Locked');
+    setMessage('Data saved. Commencing lock')
+    setMessage('Data is being locked')
+    const Url = `${apiUrl}/timetablemodule/lock/locktt`;
+    const code = currentCode;
+    const sem = selectedSemester;
+    try {
+      const response = await fetch(Url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({code, sem }),
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Data sent to the backend:', data);
+      } else {
+        console.error('Failed to send data to the backend. HTTP status:', response.status);
+      }
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+    }
+    finally{
+      setMessage('Data Locked successfully');
+    }
+  };
+
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
@@ -313,6 +347,7 @@ const Timetable = () => {
       <button onClick={handleAddSubject}>Add Subject</button>
       <button onClick={handleAddFaculty}>Add Faculty</button>
       <button onClick={handleAddRoom}>Add Room</button>
+      <button onClick={handleLockTT}>Lock TT</button>
     </div>
     <div>{message}</div>
     <div>

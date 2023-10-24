@@ -1,19 +1,8 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 // Define your Mongoose schema based on the interface
 const locksemSchema = new mongoose.Schema({
-  session: {
-    type: String,
-    required: true,
-  },
-  sem: {
-    type: String,
-    required: true,
-  },
-  dept: {
-    type: String,
-    required: true,
-  },
   day: {
     type: String,
   },
@@ -33,16 +22,18 @@ const locksemSchema = new mongoose.Schema({
       },
     },
   ],
+  sem: {
+    type: String,
+    required: true,
+  },
+  code: {
+    type: String,
+    required: true,
+  },
   timetable: {
     type: Schema.Types.ObjectId,
     ref: "timetable"
-  },
-  lastUpdated:{
-    type: Date,
-  },
-  lastLockedBy:{
-    type: String,
-  },
+  }
 });
 
 // Create the Mongoose model
