@@ -2,36 +2,43 @@ const mongoose = require("mongoose");
 
 // Define your Mongoose schema based on the interface
 const subjectSchema = new mongoose.Schema({
-  subName:{
+  abbreviation:{
     type:String,
     required:true,
+  },
+  type: {
+    type: String,
+    // enum:["theory","tutorial","Project","others"], // Example: "class", "lab", "tut"
+    required: true,
   },
   subCode: {
     type: String,
     required: true,
   },
-  subType: {
-    type: String,
-    enum:["PE","PC","OE","FE","others"],
-    required: true,
+  subName:{
+    type:String,
+    required:true,
   },
   sem: {
-    type: Number,
+    type: String,
     required: true,
+  },
+  degree:{
+    type:String,
+    required:true,
   },
   dept: {
     type: String,
-    required: true,
-  },
-  type: {
-    type: String,
-    enum:["theory","tutorial","Project","others"], // Example: "class", "lab", "tut"
-    required: true,
+    required: false,
   },
   credits: {
     type: Number,
-    required: true,
+    required: false,
   },
+  code:{
+    type: String,
+    required: false,
+  }
 });
 
 // Create the Mongoose model
