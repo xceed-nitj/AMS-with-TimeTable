@@ -4,6 +4,7 @@ import Timetable from './timetableadmin/timetable';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
 import AddFaculty from './timetableadmin/addfaculty';
+import MasterRoom from './timetableadmin/masterroom';
 
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<CreateTimetable />} />
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
           <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
+          <Route path="/tt/masterroom" element={<MasterRoom />} />
         </Routes>
       </div>
     </Router>
