@@ -8,4 +8,5 @@ router.use('/subject', require("./subject"));
 router.use('/tt', require("./classtimetable")); 
 router.use('/addfaculty', require("./addfaculty")); 
 router.use('/lock', require("./locktimetable")); 
+router.use('/masterroom', require("./masterroom")); 
 module.exports = router;
