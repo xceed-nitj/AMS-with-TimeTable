@@ -310,7 +310,7 @@ const Timetable = () => {
 
   const handleLockTT = async () => { // Mark the function as async
     setMessage('Data is being saved....')
-    await handleSubmit();
+    // await handleSubmit();
     console.log('Data is getting Locked');
     setMessage('Data saved. Commencing lock')
     setMessage('Data is being locked')
@@ -323,12 +323,12 @@ const Timetable = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({code, sem }),
+        body: JSON.stringify({code}),
       });
   
       if (response.ok) {
         const data = await response.json();
-        console.log('Data sent to the backend:', data);
+        console.log(data.message);
       } else {
         console.error('Failed to send data to the backend. HTTP status:', response.status);
       }
