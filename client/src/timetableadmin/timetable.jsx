@@ -215,17 +215,17 @@ const Timetable = () => {
   };
     
   const location = useLocation();
-
+  const currentPathname = location.pathname;
   const handleAddSubject = () => {
     // Navigate to the "Add Subject" page
-    const currentPathname = location.pathname;
+    // const currentPathname = location.pathname;
 
     // Navigate to the current URL with an additional path segment
     navigate(`${currentPathname}/addsubject`);
   };
 
   const handleAddFaculty = () => {
-    const currentPathname = location.pathname;
+    
 
     // Navigate to the current URL with an additional path segment
     navigate(`${currentPathname}/addfaculty`);
@@ -234,6 +234,10 @@ const Timetable = () => {
   const handleAddRoom = () => {
     // Navigate to the "Add Room" page
     navigate('/addroom');
+  };
+  const handleViewSummary = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/lockedsummary`);
   };
  
 
@@ -306,7 +310,7 @@ const Timetable = () => {
 
   const handleLockTT = async () => { // Mark the function as async
     setMessage('Data is being saved....')
-    await handleSubmit();
+    // await handleSubmit();
     console.log('Data is getting Locked');
     setMessage('Data saved. Commencing lock')
     setMessage('Data is being locked')
@@ -319,12 +323,12 @@ const Timetable = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({code, sem }),
+        body: JSON.stringify({code}),
       });
   
       if (response.ok) {
         const data = await response.json();
-        console.log('Data sent to the backend:', data);
+        console.log(data.message);
       } else {
         console.error('Failed to send data to the backend. HTTP status:', response.status);
       }
@@ -348,6 +352,7 @@ const Timetable = () => {
       <button onClick={handleAddFaculty}>Add Faculty</button>
       <button onClick={handleAddRoom}>Add Room</button>
       <button onClick={handleLockTT}>Lock TT</button>
+      <button onClick={handleViewSummary}>View/Download Locked TT</button>
     </div>
     <div>{message}</div>
     <div>

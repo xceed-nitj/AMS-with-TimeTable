@@ -202,14 +202,15 @@ class ClassTimeTableController {
         if (!timetableData[day][slot]) {
           timetableData[day][slot] = [];
         }
-  
-        // Access the "slotData" array and push its values
-     // Access the "slotData" array and push its values
-     const formattedSlotData = slotData.map(({ subject, room }) => ({
-      subject,
-      sem,    
-      room,
-    }));
+   // Iterate through the slotData array and filter based on faculty name
+   const matchingSlotData = slotData.filter((slotItem) => slotItem.faculty === facultyname);
+
+   // Access the matching values from the filtered slotData and push them
+   const formattedSlotData = matchingSlotData.map(({ subject, room }) => ({
+       subject,
+       sem,
+       room,
+   }));
 
     timetableData[day][slot].push(formattedSlotData);
         // Set the sem and code for the timetable
@@ -237,7 +238,11 @@ class ClassTimeTableController {
         if (!timetableData[day][slot]) {
           timetableData[day][slot] = [];
         }
-     const formattedSlotData = slotData.map(({ subject, faculty }) => ({
+   
+   // Iterate through the slotData array and filter based on faculty name
+   const matchingSlotData = slotData.filter((slotItem) => slotItem.room === roomno);
+ 
+  const formattedSlotData = matchingSlotData.map(({ subject, faculty }) => ({
       subject,
       faculty,    
       sem,
