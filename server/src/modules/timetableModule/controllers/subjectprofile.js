@@ -2,23 +2,17 @@ const TimetableEntry = require('../../../models/subject');
 const HttpException = require("../../../models/http-exception");
 
 class SubjectController{
-    createTimetableEntry = async (req, res) => {
-        try {
-          const newentry = req.body;
-          const existingEntry = await TimetableEntry.findOne({ Slot: newentry.Slot, Day: newentry.Day });
-          if (existingEntry) {
-            return res.status(400).json({ error: 'Timetable slot already occupied' });
-          }
-          const newTimetableEntry = req.body;
-          const createdEntry = await TimetableEntry.create(newTimetableEntry);
-          res.json(newTimetableEntry)
-          return;
-      
-        } catch (error) {
-          console.error('Error creating timetable entry:', error);
-          res.status(500).json({ error: 'Internal Server Error' });
-        }
-      }
+  async createTimetableEntry(req,res) {
+    const newSub = req.body;
+    try {
+      const createdSub = await TimetableEntry.create(newSub);
+      res.json(createdSub)
+      return;
+    } catch (error) {
+      console.error(error); 
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
 
       async getSubject(req, res) {
         try {
