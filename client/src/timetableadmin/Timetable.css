@@ -1,4 +1,108 @@
-/* Timetable.css */
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  margin: 0;
+  padding: 0;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #000;
+  padding-bottom: 5%;
+  margin: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header Styles */
+h1 {
+  text-align: center;
+  color: #333;
+}
+
+/* Buttons Styles */
+button {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  margin: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+/* Select Styles */
+select {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 100%;
+}
+
+/* Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+}
+
+table, th, td {
+  border: 1px solid #000;
+}
+
+th, td {
+  padding: 10px;
+  text-align: center;
+}
+
+/* Cell Styles */
+.cell-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cell-slot {
+  margin: 5px;
+}
+
+.cell-split-button {
+  background-color: #28a745;
+}
+
+.cell-delete-button {
+  background-color: #dc3545;
+}
+
+/* Save Button Styles */
+button[type="submit"] {
+  background-color: #007bff;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* View Timetable Section Styles */
+.view-section {
+  margin-top: 20px;
+}
+
+/* Footer Styles */
+.footer {
+  text-align: center;
+  background-color: #333;
+  color: #fff;
+  padding: 10px;
+}
 
 .timetable {
     margin: 20px;
@@ -31,4 +135,5 @@
     padding: 2px;
     background-color: #66ccff;
   }
+
   
