@@ -46,9 +46,13 @@ app.use("/upload", uploadModule);
 const attendanceModule = require("./modules/attendanceModule/routes/index");
 app.use("/attendancemodule", attendanceModule);
 
+const usermanagementModule=require("./modules/usermanagement/routes")
+app.use("/auth", usermanagementModule);
+
 app.get('/', (req, res) => {
     res.send("Hello India");
 });
+
 
 // Connect to MongoDB and listen for events
 mongoose

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ViewTimetable from './viewtt';
 import getEnvironment from '../getenvironment';
-
+import './Timetable.css';
 
 
 const Timetable = () => {
