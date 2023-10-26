@@ -6,12 +6,13 @@ function Subject() {
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
   const [editedData, setEditedData] = useState({
+    facultyID:'',
     name: '',
     designation: '',
     dept: '',
-    type: '',
     email: '',
     extension: '',
+    type: '',
   });
 const apiUrl=getEnvironment();
   useEffect(() => {
@@ -69,12 +70,13 @@ const apiUrl=getEnvironment();
   const handleAddFaculty = () => {
     // Reset the form fields using editedData
     setEditedData({
+      facultyID:'',
       name: '',
       designation: '',
       dept: '',
-      type: '',
       email: '',
       extension: '',
+      type: '',
     });
   };
 
@@ -141,12 +143,13 @@ const apiUrl=getEnvironment();
               setEditRowId(null);
               setEditedData({
                 _id: null, // Clear the edited data
+                facultyID:'',
                 name: '',
                 designation: '',
                 dept: '',
-                type: '',
                 email: '',
                 extension: '',
+                type: '',
               });
             })
             .catch((error) => {
@@ -195,6 +198,7 @@ const apiUrl=getEnvironment();
       <table>
         <thead>
           <tr>
+            <th>FacultyID</th>
             <th>Name</th>
             <th>Designation</th>
             <th>Dept</th>
@@ -207,6 +211,7 @@ const apiUrl=getEnvironment();
         <tbody>
           {tableData.map((row) => (
             <tr key={row._id}>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.facultyID} onChange={(e) => setEditedData({ ...editedData, facultyID: e.target.value })} /> : row.facultyID}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.name} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} /> : row.name}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.designation} onChange={(e) => setEditedData({ ...editedData, designation: e.target.value })} /> : row.designation}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.dept} onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })} /> : row.dept}</td>
@@ -229,6 +234,14 @@ const apiUrl=getEnvironment();
       </table>
 
       <h2>Add Faculty</h2>
+      <div>
+        <label>Faculty ID: </label>
+        <input
+          type="text"
+          value={editedData.facultyID}
+          onChange={(e) => setEditedData({ ...editedData, facultyID: e.target.value })}
+        />
+      </div>
       <div>
         <label>Name: </label>
         <input

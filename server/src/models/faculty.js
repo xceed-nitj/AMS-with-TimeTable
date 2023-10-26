@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 // Define your Mongoose schema based on the interface
 const facultySchema = new mongoose.Schema({
+  facultyID:{
+    type: String,
+    required: true,
+  },
   name: {
     type: String,
     required: true,
@@ -14,18 +18,16 @@ const facultySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  type: {
-    type: String,
-    required: true,
-  },
   email: {
     type: String,
     required: true,
   }, 
   extension: {
     type: String,
-    required: true,
   },
+  type: {
+    type: String,
+  }
 });
 
 // Create the Mongoose model
