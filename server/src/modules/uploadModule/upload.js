@@ -6,7 +6,8 @@ const fs = require('fs'); // Import the fs module for file deletion
 
 const modelPaths={
     faculty:"../../models/faculty",
-    subject:"../../models/subject"
+    subject:"../../models/subject",
+    masterroom:"../../models/masterroom",
 }
 //const mongooseSchema = mongooseSchemas.
 
