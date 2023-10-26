@@ -233,7 +233,7 @@ const Timetable = () => {
 
   const handleAddRoom = () => {
     // Navigate to the "Add Room" page
-    navigate('/addroom');
+    navigate(`${currentPathname}/addroom`);
   };
   const handleViewSummary = () => {
     // Navigate to the "Add Room" page
