@@ -20,8 +20,23 @@ const checkDatabaseConnection = (req, res, next) => {
     }
   };
   
-
-
+  mongoose.connection.on('connected', () => {
+    // Iterate through all models and apply the hook
+    mongoose.modelNames().forEach((modelName) => {
+      const model = mongoose.model(modelName);
+      model.schema.pre('save', function (next) {
+        const currentDate = new Date();
+      
+        if (!this.created_at) {
+          this.created_at = currentDate;
+        }
+      
+        this.updated_at = currentDate;
+        next();
+      });
+    });
+  });
+  
 // CORS configuration
 app.use(cors({
     origin: ['http://localhost:5173','https://nitjtt.netlify.app'], // Change this to your allowed origins or '*' to allow all origins
