@@ -35,13 +35,15 @@ function Subject() {
 
 
 
-const apiUrl=getEnvironment();
+  const apiUrl = getEnvironment();
+
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentCode]); // Trigger a fetch when the code changes
 
   const fetchData = () => {
-    fetch(`${apiUrl}/timetablemodule/subject`) // Replace with the actual endpoint
+    if (currentCode) {
+    fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`) // Replace with the actual endpoint
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -49,11 +51,16 @@ const apiUrl=getEnvironment();
         return response.json();
       })
       .then((data) => {
-        setTableData(data);
+        const filteredData = data.filter((item) => item.code === currentCode);
+        setTableData(filteredData);
       })
       .catch((error) => {
         console.error('Error:', error);
       });
+    }
+    else{
+      setTableData([]);
+    }
   };
 
   const handleFileChange = (e) => {
@@ -98,8 +105,8 @@ const apiUrl=getEnvironment();
         subName: '',
         sem: '',
         degree: '',
-        dept:'',
-    credits:'',
+         dept:'',
+        credits:'',
         code:currentCode
     });
   };
@@ -136,7 +143,7 @@ const apiUrl=getEnvironment();
         // Find the row with the specified _id and set its data to the "editedData" state
         const editedRow = tableData.find((row) => row._id === _id);
         if (editedRow) {
-          setEditedSData({ ...editedRow });
+          setEditedData({ ...editedRow });
         }
       };
   
@@ -175,7 +182,7 @@ const apiUrl=getEnvironment();
                   sem: '',
                   degree: '',
                   dept:'',
-    credits:'',
+                  credits:'',
                   code:currentCode
                 });
               })
