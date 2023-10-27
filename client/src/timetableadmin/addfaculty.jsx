@@ -17,6 +17,8 @@ function Component() {
   const [successMessage, setSuccessMessage] = useState('');
   const [facultyData, setFacultyData] = useState([]);
   const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [availableSemesters, setAvailableSemesters] = useState([]);
+
 
   const [editFacultyData, setEditFacultyData] = useState({
     facultyId: null,
@@ -30,6 +32,15 @@ function Component() {
   const currentCode = parts[parts.length - 2];
 
   const apiUrl = getEnvironment();
+
+  useEffect(() => {
+    fetch(`${apiUrl}/timetablemodule/subject/sem`)
+      .then(handleResponse)
+      .then(data => {
+        setAvailableSemesters(data);
+      })
+      .catch(handleError);
+      }, []);
 
   useEffect(() => {
     fetchFacultyData();
@@ -60,19 +71,14 @@ function Component() {
     fetch(`${apiUrl}/timetablemodule/faculty/dept`)
       .then(handleResponse)
       .then(data => {
-        // Assuming data is an array of values from the 'dept' column
-        const formattedDepartments = data.map(department => ({
+          const formattedDepartments = data.map(department => ({
           value: department,
           label: department,
         }));
-  
         setAvailableDepartments(formattedDepartments);
       })
       .catch(handleError);
   };
-  
-  
-  
 
   const handleResponse = (response) => {
     if (!response.ok) {
@@ -144,12 +150,12 @@ function Component() {
         <SuccessMessage message={successMessage} />
       ) : (
         <div>
-          <label>
+           <label>
             Semester:
             <select value={sem} onChange={(e) => setSem(Number(e.target.value))}>
-              {[...Array(8).keys()].map((semester) => (
-                <option key={semester + 1} value={(semester + 1).toString()}>
-                  {semester + 1}
+              {availableSemesters.map((semester) => (
+                <option key={semester} value={semester}>
+                  {semester}
                 </option>
               ))}
             </select>
@@ -157,17 +163,16 @@ function Component() {
           <br />
   
           <label>
-  Department:
-  <select value={selectedDepartment} onChange={handleDepartmentChange}>
-    <option value="">Select a Department</option>
-    {availableDepartments.map((department) => (
-      <option key={department.value} value={department.value}>
-        {department.label}
-      </option>
-    ))}
-  </select>
-</label>
-
+            Department:
+            <select value={selectedDepartment} onChange={handleDepartmentChange}>
+              <option value="">Select a Department</option>
+              {availableDepartments.map((department) => (
+                <option key={department.value} value={department.value}>
+                  {department.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <br />
   
           <label>
