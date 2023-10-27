@@ -6,7 +6,7 @@ const tableController = new TableController();
 
 TableRouter.get("/", async (req, res) => {
   try {
-    await tableController.getTable(req,res) ;
+    await tableController.getUserTable(req,res) ;
   } 
   catch (e) {
     res
