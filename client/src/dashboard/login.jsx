@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import getEnvironment from "../getenvironment";
-
+import './login.css'
+import logoImage from '../assets/logo.png'; 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,32 +42,54 @@ function Login() {
   };
 
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+
+<div className="App">
+          <div className="appAside" />
+          <div className="appForm">
+
+          <div className="formCenter">
+          <div className="logoContainer">
+                <img src={logoImage} alt="Your Logo" className="logoImage" />
+              </div>       
+    <form className="formFields" onSubmit={handleSubmit}>
+      <div className="formField">
+     
+        <label className="formFieldLabel" htmlFor="email">
+          E-Mail Address
+        </label>
+        <input
+          type="email"
+          id="email"
+          className="formFieldInput"
+          placeholder="Enter your email"
+          name="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+
+      <div className="formField">
+        <label className="formFieldLabel" htmlFor="password">
+          Password
+        </label>
+        <input
+          type="password"
+          id="password"
+          className="formFieldInput"
+          placeholder="Enter your password"
+          name="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+    />
+      </div>
         <button type="submit">Login</button>
       </form>
     </div>
+
+
+</div>
+          </div>
   );
 }
 

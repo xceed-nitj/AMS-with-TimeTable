@@ -13,8 +13,8 @@ import Subjects from './timetableadmin/addsubjects';
 function App() {
   return (
     <Router>
-      <div className="app">
-        <h1>XCEED-Timetable Module</h1>
+      {/* <div className="app">
+        <h1>XCEED-Timetable Module</h1> */}
             {/* <Link to="/create-timetable">Create Timetable</Link> */}
           
         <Routes>
@@ -28,7 +28,7 @@ function App() {
           <Route path="/tt/addsubjects" element={<Subjects />} />
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
         </Routes>
-      </div>
+      {/* </div> */}
     </Router>
   );
 }
