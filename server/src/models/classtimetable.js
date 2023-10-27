@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+const { commonFields, updateTimestamps } = require('./commonFields');
 
 // Define your Mongoose schema based on the interface
 const classTableSchema = new Schema({
@@ -38,6 +39,11 @@ const classTableSchema = new Schema({
   }
 });
 
+
+classTableSchema.add(commonFields);
+
+// Apply the pre-save middleware
+classTableSchema.pre('save', updateTimestamps);
 // Create the Mongoose model
 const ClassTable = mongoose.model("ClassTable", classTableSchema);
 

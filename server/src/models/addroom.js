@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { commonFields, updateTimestamps } = require('./commonFields');
 
 const addRoomSchema = new mongoose.Schema({
   room: {
@@ -10,6 +11,12 @@ const addRoomSchema = new mongoose.Schema({
     required: true,
   }, 
 });
+
+addRoomSchema.add(commonFields);
+
+// Apply the pre-save middleware
+addRoomSchema.pre('save', updateTimestamps);
+
 
 const addRoom = mongoose.model("addRoom", addRoomSchema);
 

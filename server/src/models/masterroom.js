@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { commonFields, updateTimestamps } = require('./commonFields');
+
 
 // Define your Mongoose schema based on the interface
 const masterroomSchema = new mongoose.Schema({
@@ -23,6 +25,12 @@ const masterroomSchema = new mongoose.Schema({
     type: String,
   }, 
 });
+
+
+masterroomSchema.add(commonFields);
+
+// Apply the pre-save middleware
+masterroomSchema.pre('save', updateTimestamps);
 
 // Create the Mongoose model
 const MasterRoom = mongoose.model("MasterRoom", masterroomSchema);
