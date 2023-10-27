@@ -15,6 +15,16 @@ class FacultyController {
         }
       }
 
+      async getDepartments() {
+        try {
+          const uniqueDepartments = await Faculty.distinct('dept');
+          
+          return uniqueDepartments;
+        } catch (error) {
+          throw error; 
+        }
+      }
+      
       async getFaculty(req, res) {
        try {
           const facultyList = await Faculty.find();

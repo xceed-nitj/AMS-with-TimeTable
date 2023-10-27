@@ -16,13 +16,13 @@ function Component() {
   const [selectedFaculty, setSelectedFaculty] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [facultyData, setFacultyData] = useState([]);
+  const [availableDepartments, setAvailableDepartments] = useState([]);
 
   const [editFacultyData, setEditFacultyData] = useState({
     facultyId: null,
     facultyName: '',
   });
 
-  const availableDepartments = ['EE', 'BT'];
 
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -33,6 +33,7 @@ function Component() {
 
   useEffect(() => {
     fetchFacultyData();
+    fetchAvailableDepartments();
   }, []);
 
   useEffect(() => {
@@ -54,6 +55,24 @@ function Component() {
       })
       .catch(handleError);
   };
+
+  const fetchAvailableDepartments = () => {
+    fetch(`${apiUrl}/timetablemodule/faculty/dept`)
+      .then(handleResponse)
+      .then(data => {
+        // Assuming data is an array of values from the 'dept' column
+        const formattedDepartments = data.map(department => ({
+          value: department,
+          label: department,
+        }));
+  
+        setAvailableDepartments(formattedDepartments);
+      })
+      .catch(handleError);
+  };
+  
+  
+  
 
   const handleResponse = (response) => {
     if (!response.ok) {
@@ -138,16 +157,17 @@ function Component() {
           <br />
   
           <label>
-            Department:
-            <select value={selectedDepartment} onChange={handleDepartmentChange}>
-              <option value="">Select a Department</option>
-              {availableDepartments.map((department) => (
-                <option key={department} value={department}>
-                  {department}
-                </option>
-              ))}
-            </select>
-          </label>
+  Department:
+  <select value={selectedDepartment} onChange={handleDepartmentChange}>
+    <option value="">Select a Department</option>
+    {availableDepartments.map((department) => (
+      <option key={department.value} value={department.value}>
+        {department.label}
+      </option>
+    ))}
+  </select>
+</label>
+
           <br />
   
           <label>
