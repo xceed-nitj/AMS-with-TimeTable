@@ -10,7 +10,7 @@ function SuccessMessage({ message }) {
   );
 }
 function Component() {
-  const [sem, setSem] = useState(1);
+  const [sem, setSem] = useState('1st');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [faculties, setFaculties] = useState([]);
   const [selectedFaculty, setSelectedFaculty] = useState('');
@@ -58,15 +58,19 @@ function Component() {
     }
   }, [selectedDepartment]);
 
+
   const fetchFacultyData = () => {
     fetch(`${apiUrl}/timetablemodule/addFaculty`)
       .then(handleResponse)
-      .then(data => {
-        setFacultyData(data);
+      .then((data) => {
+        const filteredFacultyData = data.filter((faculty) => faculty.code === currentCode);
+        setFacultyData(filteredFacultyData);
       })
       .catch(handleError);
   };
+  
 
+  
   const fetchAvailableDepartments = () => {
     fetch(`${apiUrl}/timetablemodule/faculty/dept`)
       .then(handleResponse)
@@ -152,7 +156,7 @@ function Component() {
         <div>
            <label>
             Semester:
-            <select value={sem} onChange={(e) => setSem(Number(e.target.value))}>
+            <select value={sem} onChange={(e) => setSem(e.target.value)}>
               {availableSemesters.map((semester) => (
                 <option key={semester} value={semester}>
                   {semester}

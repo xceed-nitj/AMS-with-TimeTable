@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 // Define your Mongoose schema based on the interface
 const addFacultySchema = new mongoose.Schema({
   sem: {
-    type: Number,
+    type: String,
     required: true,
   },
   faculty: {
