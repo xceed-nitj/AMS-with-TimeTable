@@ -9,4 +9,5 @@ router.use('/tt', require("./classtimetable"));
 router.use('/addfaculty', require("./addfaculty")); 
 router.use('/lock', require("./locktimetable")); 
 router.use('/masterroom', require("./masterroom")); 
+router.use('/addroom', require("./addroom")); 
 module.exports = router;

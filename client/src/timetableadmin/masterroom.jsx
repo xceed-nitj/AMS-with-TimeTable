@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 
 function MasterRoom() {
+  const [selectedFile, setSelectedFile] = useState(null);
   const [masterRooms, setMasterRooms] = useState([]);
   const [editedRoom, setEditedRoom] = useState({
     room: '',
@@ -177,7 +178,8 @@ function MasterRoom() {
 
   return (
     <div>
-      <h1>CSV File Upload</h1>
+      <h1>Manage Master Rooms</h1>
+      <h2>CSV File Upload</h2>
       <input
         type="file"
         accept=".xlsx"
@@ -187,7 +189,7 @@ function MasterRoom() {
       <button onClick={handleUpload}>Upload CSV</button>
 
       <div>
-        <h2>Manage Master Rooms</h2>
+        
         {isAddRoomFormVisible ? ( 
           <div>
             <div>
