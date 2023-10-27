@@ -119,6 +119,7 @@ function CreateTimetable() {
 
   return (
     <div>
+      <h1>Create Time Table</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
