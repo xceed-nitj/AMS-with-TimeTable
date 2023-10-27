@@ -221,7 +221,7 @@ const Timetable = () => {
     // const currentPathname = location.pathname;
 
     // Navigate to the current URL with an additional path segment
-    navigate(`${currentPathname}/addsubject`);
+    navigate(`${currentPathname}/addsubjects`);
   };
 
   const handleAddFaculty = () => {

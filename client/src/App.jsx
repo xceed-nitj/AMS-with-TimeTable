@@ -22,7 +22,7 @@ function App() {
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
           <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
           <Route path="/tt/masterroom" element={<MasterRoom />} />
-          <Route path="/tt/addsubjects" element={<Subjects />} />
+          <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
         </Routes>
       </div>
