@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 // Define your Mongoose schema based on the interface
 const tableSchema = new mongoose.Schema({
@@ -17,6 +18,10 @@ const tableSchema = new mongoose.Schema({
   code: {
     type: String,
   },
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: "User"
+  }
 });
 
 const TimeTable = mongoose.model("TimeTable", tableSchema);

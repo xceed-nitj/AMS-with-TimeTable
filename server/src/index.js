@@ -3,6 +3,7 @@ const app = express();
 const mongoose = require("mongoose");
 const dotenv = require('dotenv');
 const cors = require("cors");
+const cookieParser = require('cookie-parser');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -23,9 +24,8 @@ const checkDatabaseConnection = (req, res, next) => {
 
 // CORS configuration
 app.use(cors({
-    origin: '*', // Change this to your allowed origins or '*' to allow all origins
+    origin: ['http://localhost:5173','https://nitjtt.netlify.app'], // Change this to your allowed origins or '*' to allow all origins
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    preflightContinue: false,
     optionsSuccessStatus: 204,
     allowedHeaders: 'Content-Type',
     credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
@@ -33,6 +33,7 @@ app.use(cors({
   
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(checkDatabaseConnection);
 
 // Routes
