@@ -119,7 +119,8 @@ exports.login = async (req, res, next) => {
           // httpOnly: true,
           maxAge: maxAge * 1000,
           domain: "nitjtt.netlify.app",
-          secure: true
+          secure: true,
+          samsite: 'none'
         });
 
         res.status(200).json({
