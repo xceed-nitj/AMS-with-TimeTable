@@ -23,6 +23,15 @@ facultyRouter.post("/", async (req, res) => {
     }
   });
 
+  facultyRouter.get('/dept', async (req, res) => {
+    try {
+      const departments = await facultyController.getDepartments(); 
+      res.status(200).json(departments);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
   facultyRouter.get("/id/:id", async (req, res) => {
     try {
       const id = req.params.id;

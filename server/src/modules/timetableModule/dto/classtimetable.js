@@ -20,9 +20,8 @@ class ClassTimeTabledto {
         }
       }
      
-async findFacultyDataWithSession(code, faculty) {
+async findFacultyDataWithSession(session, faculty) {
         try {
-          const session = await TimeTableDto.getSessionByCode(code);
         //  const session="mksd"
          const result = await ClassTable.aggregate([
           {
@@ -56,9 +55,8 @@ async findFacultyDataWithSession(code, faculty) {
         }
       }
 
-async findRoomDataWithSession(code, room) {
+async findRoomDataWithSession(session, room) {
         try {
-          const session = await TimeTableDto.getSessionByCode(code);
           const result = await ClassTable.aggregate([
             {
               $match: {

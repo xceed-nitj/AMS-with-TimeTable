@@ -29,11 +29,13 @@ function AddRoomComponent() {
     fetchMasterRooms();
   }, []);
 
+
   const fetchRoomsData = () => {
     fetch(`${apiUrl}/timetablemodule/addroom`)
       .then(handleResponse)
-      .then(data => {
-        setRooms(data);
+      .then((data) => {
+        const filteredRooms = data.filter((room) => room.code === currentCode);
+        setRooms(filteredRooms);
       })
       .catch(handleError);
   };

@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
+const { commonFields, updateTimestamps } = require('./commonFields');
 
 // Define your Mongoose schema based on the interface
 const facultySchema = new mongoose.Schema({
@@ -29,6 +31,11 @@ const facultySchema = new mongoose.Schema({
     type: String,
   }
 });
+
+facultySchema.add(commonFields);
+
+// Apply the pre-save middleware
+facultySchema.pre('save', updateTimestamps);
 
 // Create the Mongoose model
 const Faculty = mongoose.model("Faculty", facultySchema);
