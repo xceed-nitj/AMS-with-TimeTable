@@ -6,6 +6,7 @@ import * as addFaculty from './addfaculty';
 import * as LockSem from './locksem';
 import * as User from './usermanagement/user';
 
+
 export {
     Subject,Table,Faculty,Student,addFaculty, LockSem, User,
 }

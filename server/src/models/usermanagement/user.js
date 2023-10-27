@@ -1,4 +1,5 @@
 const Mongoose = require("mongoose");
+require('../commonFields');
 const UserSchema = new Mongoose.Schema({
   email: {
     type: String,

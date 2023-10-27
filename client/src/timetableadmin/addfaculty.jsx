@@ -10,19 +10,21 @@ function SuccessMessage({ message }) {
   );
 }
 function Component() {
-  const [sem, setSem] = useState(1);
+  const [sem, setSem] = useState('1st');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [faculties, setFaculties] = useState([]);
   const [selectedFaculty, setSelectedFaculty] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [facultyData, setFacultyData] = useState([]);
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [availableSemesters, setAvailableSemesters] = useState([]);
+
 
   const [editFacultyData, setEditFacultyData] = useState({
     facultyId: null,
     facultyName: '',
   });
 
-  const availableDepartments = ['EE', 'BT'];
 
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -32,7 +34,17 @@ function Component() {
   const apiUrl = getEnvironment();
 
   useEffect(() => {
+    fetch(`${apiUrl}/timetablemodule/subject/sem`)
+      .then(handleResponse)
+      .then(data => {
+        setAvailableSemesters(data);
+      })
+      .catch(handleError);
+      }, []);
+
+  useEffect(() => {
     fetchFacultyData();
+    fetchAvailableDepartments();
   }, []);
 
   useEffect(() => {
@@ -46,11 +58,28 @@ function Component() {
     }
   }, [selectedDepartment]);
 
+
   const fetchFacultyData = () => {
     fetch(`${apiUrl}/timetablemodule/addFaculty`)
       .then(handleResponse)
+      .then((data) => {
+        const filteredFacultyData = data.filter((faculty) => faculty.code === currentCode);
+        setFacultyData(filteredFacultyData);
+      })
+      .catch(handleError);
+  };
+  
+
+  
+  const fetchAvailableDepartments = () => {
+    fetch(`${apiUrl}/timetablemodule/faculty/dept`)
+      .then(handleResponse)
       .then(data => {
-        setFacultyData(data);
+          const formattedDepartments = data.map(department => ({
+          value: department,
+          label: department,
+        }));
+        setAvailableDepartments(formattedDepartments);
       })
       .catch(handleError);
   };
@@ -125,12 +154,12 @@ function Component() {
         <SuccessMessage message={successMessage} />
       ) : (
         <div>
-          <label>
+           <label>
             Semester:
-            <select value={sem} onChange={(e) => setSem(Number(e.target.value))}>
-              {[...Array(8).keys()].map((semester) => (
-                <option key={semester + 1} value={(semester + 1).toString()}>
-                  {semester + 1}
+            <select value={sem} onChange={(e) => setSem(e.target.value)}>
+              {availableSemesters.map((semester) => (
+                <option key={semester} value={semester}>
+                  {semester}
                 </option>
               ))}
             </select>
@@ -142,8 +171,8 @@ function Component() {
             <select value={selectedDepartment} onChange={handleDepartmentChange}>
               <option value="">Select a Department</option>
               {availableDepartments.map((department) => (
-                <option key={department} value={department}>
-                  {department}
+                <option key={department.value} value={department.value}>
+                  {department.label}
                 </option>
               ))}
             </select>

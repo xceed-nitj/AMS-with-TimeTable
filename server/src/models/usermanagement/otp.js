@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const mailSender = require("../../modules/usermanagement/mailsender");
+require('../commonFields');
+
 const Schema = mongoose.Schema;
 const otpSchema = new Schema({
   email: {
