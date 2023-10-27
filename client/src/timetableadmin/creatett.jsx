@@ -162,7 +162,7 @@ function CreateTimetable() {
               <td>{timetable.session}</td>
               <td>{timetable.dept}</td>
               <td>
-                <a href={`${domainName}/tt/${timetable.code}`}>{timetable.code}</a>
+                <a href={`http://${domainName}/tt/${timetable.code}`}>{timetable.code}</a>
               </td>
               {/* Add more table data cells as needed */}
             </tr>
