@@ -97,52 +97,74 @@ function AddRoomComponent() {
 
   return (
     <div>
-      <h1>Add Rooms</h1>
-      {successMessage ? (
-        <SuccessMessage message={successMessage} />
-      ) : (
-        <div>
-          <label>
-            Room:
-            <select
-              value={selectedMasterRoom}
-              onChange={(e) => setSelectedMasterRoom(e.target.value)}
-            >
-              <option value="">Select a Room</option>
-              {masterRooms.map((masterRoom) => (
-                <option key={masterRoom._id} value={masterRoom.room}>
-                  {masterRoom.room}
-                </option>
-              ))}
-            </select>
-          </label>
-          <br />
-          <button onClick={handleSubmit}>Add Room</button>
-        </div>
-      )}
-
+    <h1>Add Rooms</h1>
+    {successMessage ? (
+      <SuccessMessage message={successMessage} />
+    ) : (
       <div>
-        <h2>Room Data</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Room</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rooms.map((room) => (
-              <tr key={room._id}>
-                <td>{room.room}</td>
-                <td>
-                  <button onClick={() => handleDelete(room._id)}>Delete</button>
-                </td>
-              </tr>
+        <label>
+          Room:
+          <select
+            value={selectedMasterRoom}
+            onChange={(e) => setSelectedMasterRoom(e.target.value)}
+          >
+            <option value="">Select a Room</option>
+            {masterRooms.map((masterRoom) => (
+              <option key={masterRoom._id} value={masterRoom.room}>
+                {masterRoom.room}
+              </option>
             ))}
-          </tbody>
-        </table>
+          </select>
+        </label>
+        <br />
+        <button onClick={handleSubmit}>Add Room</button>
       </div>
+    )}
+
+    {successMessage && (
+      <div>
+        <label>
+          Room:
+          <select
+            value={selectedMasterRoom}
+            onChange={(e) => setSelectedMasterRoom(e.target.value)}
+          >
+            <option value="">Select a Room</option>
+            {masterRooms.map((masterRoom) => (
+              <option key={masterRoom._id} value={masterRoom.room}>
+                {masterRoom.room}
+              </option>
+            ))}
+          </select>
+        </label>
+        <br />
+        <button onClick={() => setSuccessMessage('')}>Add Room</button>
+      </div>
+  )}
+
+  <div>
+      <h2>Room Data</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Room</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rooms.map((room) => (
+            <tr key={room._id}>
+              <td>{room.room}</td>
+              <td>
+                <button onClick={() => handleDelete(room._id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
+</div>
+
   );
 }
 
