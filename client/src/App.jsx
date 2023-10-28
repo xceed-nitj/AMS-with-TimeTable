@@ -5,10 +5,12 @@ import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
 import AddFaculty from './timetableadmin/addfaculty';
 import MasterRoom from './timetableadmin/masterroom';
+import AddSem from './timetableadmin/addsemester';
 import AddRoom from './timetableadmin/addroom';
 import LockedSummary from './timetableadmin/lockedsummary';
 import Login from './dashboard/login';
 import Subjects from './timetableadmin/addsubjects';
+import LockedView from './timetableviewer/viewer';
 
 
 function App() {
@@ -26,9 +28,11 @@ function App() {
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
           <Route path="/tt/:generatedLink/addroom" element={<AddRoom />} />
           <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
+          <Route path="/tt/:generatedLink/addsem" element={<AddSem />} />
           <Route path="/tt/masterroom" element={<MasterRoom />} />
           <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
+          <Route path="/tt/viewtimetable" element={<LockedView/>} />
         </Routes>
       {/* </div> */}
     </Router>

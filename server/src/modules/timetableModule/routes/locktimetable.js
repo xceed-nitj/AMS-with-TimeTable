@@ -67,7 +67,7 @@ LockTimeTableRouter.get("/viewsem/:degree/:dept/:sem", async (req, res) => {
 
 
 
-LockTimeTableRouter.get("/viewfaculty/:session/:facultyname", async (req, res) => {
+LockTimeTableRouter.get("/viewfaculty/:session/:faculty", async (req, res) => {
   try { 
     await locktimetableController.facultytt(req, res);
   } 

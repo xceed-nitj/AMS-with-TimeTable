@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
-import ViewTimetable from './viewtt';
-import Header from './header';
+import ViewTimetable from '../timetableadmin/viewtt';
+import headernitj from '../assets/headernitj.svg';
+// import Header from './header';
 
-function LockedSummary() {
+function LockedView() {
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
   const [message, setMessage]=useState();
   const [selectedSemester, setSelectedSemester] = useState('B.Sc (2 sem)');
   const [selectedFaculty, setSelectedFaculty] = useState('Dr. Kiran Singh');
+  const [selectedSession, setSelectedSession] = useState('ff');
+  const [selectedDept, setSelectedDept] = useState('2023');
+
   const [selectedRoom, setSelectedRoom] = useState('L-201');
   
   const apiUrl = getEnvironment();
@@ -21,26 +25,36 @@ function LockedSummary() {
 
   // Define your options for semesters, faculty, and rooms
 //   const availableRooms = ['L-201', 'L-209','room1','room2'];
-//   const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
-//     'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
+  const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
+    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
 //   const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)','d-sem1','d-sem2']
+    const availableSession=['ff']
+    const availableDept=['2023','2024','ee']
+
 
   useEffect(() => {
-    const fetchData = async (semester) => {
+    // const fetchData = async (session, degree, dept, sem) => {
+    //   try {
+    //     const response = await fetch(`${apiUrl}/timetablemodule/lock/viewfaculty/${session}/${degree}/${dept}/${sem}`);
+    //     const data = await response.json();
+    //     console.log(data);
+    //     const initialData = generateInitialTimetableData(data,'sem');
+    //     return initialData;
+    //   } catch (error) {
+    //     console.error('Error fetching existing timetable data:', error);
+    //     return {};
+    //   }
+    // };
+    const facultyData = async (session, faculty) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`);
-        const data = await response.json();
-        console.log(data);
-        const initialData = generateInitialTimetableData(data,'sem');
-        return initialData;
-      } catch (error) {
-        console.error('Error fetching existing timetable data:', error);
-        return {};
-      }
-    };
-    const facultyData = async (currentCode, faculty) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty }`);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewfaculty/${session}/${faculty}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+    
         const data = await response.json();
         console.log(data);
         const initialData = generateInitialTimetableData(data,'faculty');
@@ -50,39 +64,39 @@ function LockedSummary() {
         return {};
       }
     };
-    const roomData = async (currentCode, room) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`);
-        const data = await response.json();
-        console.log('roomdata',data);
-        const initialData = generateInitialTimetableData(data,'room');
-        return initialData;
-      } catch (error) {
-        console.error('Error fetching existing timetable data:', error);
-        return {};
-      }
-    };
+    // const roomData = async (currentCode, room) => {
+    //   try {
+    //     const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`);
+    //     const data = await response.json();
+    //     console.log('roomdata',data);
+    //     const initialData = generateInitialTimetableData(data,'room');
+    //     return initialData;
+    //   } catch (error) {
+    //     console.error('Error fetching existing timetable data:', error);
+    //     return {};
+    //   }
+    // };
  
-    const fetchViewData = async (semester) => {
-      const data = await fetchData(semester);
-      setViewData(data);
-    };
+    // const fetchViewData = async (session, degree, dept, sem) => {
+    //   const data = await fetchData(session, degree, dept, sem);
+    //   setViewData(data);
+    // };
 
-    const fetchFacultyData = async (faculty) => {
-      const data = await facultyData(currentCode, faculty);
+    const fetchFacultyData = async (session,faculty) => {
+      const data = await facultyData(session, faculty);
       setViewFacultyData(data);
     };
 
-    const fetchRoomData = async (room) => {
-      const data = await roomData(currentCode, room);
-      setViewRoomData(data);
-    };
+    // const fetchRoomData = async (room) => {
+    //   const data = await roomData(currentCode, room);
+    //   setViewRoomData(data);
+    // };
 
 
-    fetchViewData(selectedSemester);
-    fetchFacultyData(selectedFaculty);
-    fetchRoomData(selectedRoom);
-  }, [selectedSemester, currentCode, selectedFaculty, selectedRoom]);
+    // fetchViewData(selectedSemester);
+    fetchFacultyData(selectedSession, selectedFaculty);
+    // fetchRoomData(selectedRoom);
+  }, [selectedSemester, selectedFaculty]);
 
 
   const generateInitialTimetableData = (fetchedData, type) => {
@@ -154,11 +168,11 @@ function LockedSummary() {
 
   return (
     <div>
-      <h1>Summary</h1>
+      <h1>View Timetable</h1>
       {/* <button onClick={}>Upload CSV</button> */}
 
 
-      <h2>Select semester</h2>
+      {/* <h2>Select semester</h2>
       <select
         value={selectedSemester}
         onChange={(e) => setSelectedSemester(e.target.value)}
@@ -173,8 +187,33 @@ function LockedSummary() {
       <div>
       <Header />
       <ViewTimetable timetableData={viewData} />     
-      </div>
+      </div> */}
       {/* Faculty Dropdown */}
+      <select
+        value={selectedDept}
+        onChange={(e) => setSelectedDept(e.target.value)}
+      >
+        <option value="">Select Dept</option>
+        {availableDept.map((dept, index) => (
+          <option key={index} value={dept}>
+            {dept}
+          </option>
+        ))}
+      </select>
+      select session
+      <select
+        value={selectedSession}
+        onChange={(e) => setSelectedSession(e.target.value)}
+      >
+        <option value="">Select Session</option>
+        {availableSession.map((session, index) => (
+          <option key={index} value={session}>
+            {session}
+          </option>
+        ))}
+      </select>
+ 
+
       <select
         value={selectedFaculty}
         onChange={(e) => setSelectedFaculty(e.target.value)}
@@ -186,12 +225,13 @@ function LockedSummary() {
           </option>
         ))}
       </select>
+      <img src={headernitj} alt="SVG Description" />
       <div>
       <ViewTimetable timetableData={viewFacultyData} />     
       </div>
 
       {/* Room Dropdown */}
-      <select
+      {/* <select
         value={selectedRoom}
         onChange={(e) => setSelectedRoom(e.target.value)}
       >
@@ -204,10 +244,10 @@ function LockedSummary() {
       </select>
       <div>
       <ViewTimetable timetableData={viewRoomData} />     
-      </div>
+      </div> */}
 
 </div>
   );
 }
 
-export default LockedSummary;
+export default LockedView;

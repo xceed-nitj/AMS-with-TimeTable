@@ -87,19 +87,22 @@ class LockTimeTableController {
   
 
   async facultytt(req, res) {
-    const facultyname = req.params.facultyname; 
-    const code=req.params.code;
-    console.log('facultyname:', facultyname);
-    try {
-      let session ='';
+    
+    // const code=req.params.code;
+    let session ='';
+   const  facultyname=req.params.faculty;      
+       try {
+      
       if(!req.params.session)
       {
-      session = await TimeTableDto.getSessionByCode(code);
-      }
+      session = await TimeTableDto.getSessionByCode(req.params.code);
+       }
       else
       {
       session=req.params.session;
-      }
+      // const facultyId=req.params.facultyId;
+      // facultyname = await findFacultyById(facultyId); 
+    }
       const records = await LockTimeTableDto.findFacultyDataWithSession(session,facultyname);
       // Create an empty timetable data object
       const timetableData = {};

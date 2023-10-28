@@ -225,10 +225,13 @@ const Timetable = () => {
   };
 
   const handleAddFaculty = () => {
-    
-
     // Navigate to the current URL with an additional path segment
     navigate(`${currentPathname}/addfaculty`);
+  };
+
+  const handleAddSem = () => {
+    // Navigate to the current URL with an additional path segment
+    navigate(`${currentPathname}/addsem`);
   };
 
   const handleAddRoom = () => {
@@ -348,6 +351,7 @@ const Timetable = () => {
       <h1>TIME TABLE</h1>
       
       <div className="add-buttons">
+      <button onClick={handleAddSem}>Add Semester</button>
       <button onClick={handleAddSubject}>Add Subject</button>
       <button onClick={handleAddFaculty}>Add Faculty</button>
       <button onClick={handleAddRoom}>Add Room</button>
