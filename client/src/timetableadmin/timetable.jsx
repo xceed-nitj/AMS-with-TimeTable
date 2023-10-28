@@ -24,7 +24,7 @@ const Timetable = () => {
   const semesters=availableSems;
   const [selectedSemester, setSelectedSemester] = useState('1'); 
   const [viewselectedSemester, setViewSelectedSemester] = useState('2'); 
-  const [viewFaculty, setViewFaculty]= useState(' ')  
+  const [viewFaculty, setViewFaculty]= useState(availableFaculties[0])  
   const [viewRoom, setViewRoom]= useState('L-201')  
   
   const selectedCell = null;
@@ -108,14 +108,14 @@ const Timetable = () => {
     // Fetch subject data from the database and populate availableSubjects
     const fetchSubjects = async (selectedSemester) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}&sem=${selectedSemester}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`);
         if (response.ok) {
           const data = await response.json();
-          const filteredSubjects = data.filter((subject) => subject.code === currentCode && subject.sem === selectedSemester);
-          const semValues = filteredSubjects.map((subject) => subject.subName);
+          const filteredSubjects = data.filter((subject) => subject.code === currentCode);
+          // const semValues = filteredSubjects.map((subject) => subject.subName);
 
-          setAvailableSubjects(semValues);
-          // console.log("sub",availableSubjects)
+          setAvailableSubjects(filteredSubjects);
+          console.log("sub",availableSubjects)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -163,7 +163,7 @@ const Timetable = () => {
           const filteredSems = data.filter((faculty) => faculty.code === currentCode);
           const semValues = filteredSems.map((faculty) => faculty.faculty);
 
-          setAvailableFaculties(semValues);
+          setAvailableFaculties(semValues[0]);
           console.log('available faucutly',availableFaculties)
         }
       } catch (error) {
@@ -507,9 +507,9 @@ const Timetable = () => {
   onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'faculty', event)}
 >
   <option value="">Select Faculty</option> {/* Add an empty option */}
-  {availableFaculties.map((facultyOption) => (
-    <option key={facultyOption} value={facultyOption}>
-      {facultyOption}
+  {availableFaculties.map((faculty, index) => (
+    <option key={index} value={faculty}>
+      {faculty}
     </option>
   ))}
 </select>
