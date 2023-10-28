@@ -197,6 +197,8 @@ function Component() {
           <button onClick={handleSubmit}>Submit</button>
         </div>
       )}
+
+      
   
       <div>
         <h2>Faculty Data</h2>
@@ -209,17 +211,17 @@ function Component() {
             </tr>
           </thead>
           <tbody>
-            {facultyData.map((faculty) =>
-              faculty.faculty.map((individualFaculty, index) => (
-                <tr key={`${faculty._id}-${index}`}>
-                  <td>{index === 0 ? faculty.sem : ''}</td>
-                  <td>{individualFaculty}</td>
-                  <td>
-                    <button onClick={() => handleDelete(faculty._id, individualFaculty)}>Delete</button>
-                  </td>
-                </tr>
-              ))
-            )}
+          {facultyData.map((faculty) =>
+          faculty.faculty.map((individualFaculty, index) => (
+            <tr key={`${faculty._id}-${index}`}>
+              <td>{faculty.sem}</td>
+              <td>{individualFaculty}</td>
+              <td>
+                <button onClick={() => handleDelete(faculty._id, individualFaculty)}>Delete</button>
+              </td>
+            </tr>
+          ))
+        )}
           </tbody>
         </table>
       </div>
