@@ -11,9 +11,9 @@ const Timetable = () => {
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
   const [message, setMessage]=useState();
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState('');
 
-  const availableSubjects = ['SM','QM-1','SSP-1','ED','NS','NI','PP','AMS','NAR','QFT','EM','MH-II','MH-I','EM-LAB','SM(Tut)','QM-1 (Tut)','SSP-1 (Tut)','ED (Tut)','SSP Lab (G1)','SSP Lab (G2)','PP (Tut)','AMS (Tut)','AMS Lab (G1)','AMS Lab (G2)',
-    'EM (Tut)','MH-II (Tut)','Other','s1','s2','s3'];
   const availableRooms = ['L-201', 'L-209','room1','room2'];
   const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
     'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
@@ -67,6 +67,7 @@ const Timetable = () => {
         console.error('Error fetching existing timetable data:', error);
         return {};
       }
+   
     };
  
     const fetchTimetableData = async (semester) => {
@@ -94,8 +95,28 @@ const Timetable = () => {
     fetchViewData(viewselectedSemester);
     fetchFacultyData(viewFaculty);
     fetchRoomData(viewRoom);
+    
   }, [selectedSemester, viewselectedSemester, currentCode, viewFaculty, viewRoom]);
 
+  useEffect(() => {
+    // Fetch subject data from the database and populate availableSubjects
+    const fetchSubjects = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          const filteredSubjects = data.filter((subject) => subject.code === currentCode);
+          setAvailableSubjects(filteredSubjects);
+        }
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+    // Fetch other data and set states
+
+    fetchSubjects(); // Call the function to fetch subject data
+  }, [apiUrl,currentCode]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -400,14 +421,14 @@ const Timetable = () => {
                 {slot.map((cell, cellIndex) => (
                   <div key={cellIndex} className="cell-slot">
                     <select
-  value={cell.subject}
-  onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'subject', event)}
+  value={selectedSubject}
+  onChange={(event) => setSelectedSubject(e.target.value)}
 >
-  <option value="">Select Subject</option> {/* Add an empty option */}
-  {availableSubjects.map((subjectOption) => (
-    <option key={subjectOption} value={subjectOption}>
-      {subjectOption}
-    </option>
+<option value="">Select Subject</option>
+    {availableSubjects.map((subject) => (
+      <option key={subject._id} value={subject._id}>
+        {subject.subName}
+      </option>
   ))}
 </select>
 <select
