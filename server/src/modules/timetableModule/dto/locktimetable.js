@@ -5,9 +5,9 @@ const TimeTableDto = new TimeTabledto();
 
 class LockTimeTabledto {
      
-async findFacultyDataWithSession(code, faculty) {
+async findFacultyDataWithSession(session, faculty) {
         try {
-          const session = await TimeTableDto.getSessionByCode(code);
+          // const session = await TimeTableDto.getSessionByCode(code);
         //  const session="mksd"
          const result = await LockSem.aggregate([
           {
@@ -41,9 +41,9 @@ async findFacultyDataWithSession(code, faculty) {
         }
       }
 
-async findRoomDataWithSession(code, room) {
+async findRoomDataWithSession(session, room) {
         try {
-          const session = await TimeTableDto.getSessionByCode(code);
+          // const session = await TimeTableDto.getSessionByCode(code);
           const result = await LockSem.aggregate([
             {
               $match: {

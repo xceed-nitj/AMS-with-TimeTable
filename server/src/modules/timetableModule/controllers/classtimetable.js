@@ -4,6 +4,9 @@ const HttpException = require("../../../models/http-exception");
 const ClassTimeTabledto = require("../dto/classtimetable");
 const ClassTimeTableDto = new ClassTimeTabledto();
 
+const TimeTabledto = require("../dto/timetable");
+const TimeTableDto = new TimeTabledto();
+
 class ClassTimeTableController {
   async savett(req, res) {
     const timetableData = req.body.timetableData; // Access the timetableData object
@@ -184,7 +187,8 @@ class ClassTimeTableController {
     try {
       // Query the ClassTable collection based on the 'faculty' field
       // const facultydata = await ClassTable.find({ faculty: facultyname });
-      const records = await ClassTimeTableDto.findFacultyDataWithSession(code,facultyname);
+      const session = await TimeTableDto.getSessionByCode(code);
+      const records = await ClassTimeTableDto.findFacultyDataWithSession(session,facultyname);
       // Create an empty timetable data object
       const timetableData = {};
   
@@ -228,7 +232,8 @@ class ClassTimeTableController {
     const code=req.params.code;
     console.log('room no:', roomno);
     try {
-      const records = await ClassTimeTableDto.findRoomDataWithSession(code,roomno);
+      const session = await TimeTableDto.getSessionByCode(code);
+      const records = await ClassTimeTableDto.findRoomDataWithSession(session,roomno);
       const timetableData = {};
       records.forEach((record) => {
       const { day, slot, slotData,sem } = record;
