@@ -23,6 +23,15 @@ addSemRouter.post("/", async (req, res) => {
     }
   });
 
+  addSemRouter.get('/sem', async (req, res) => {
+    try {
+      const sem = await addSemController.getSem(); 
+      res.status(200).json(sem);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
   addSemRouter.get("/:id", async (req, res) => {
     try {
       const id = req.params.id;
