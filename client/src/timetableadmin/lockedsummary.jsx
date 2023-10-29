@@ -19,12 +19,17 @@ function LockedSummary() {
   const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 2];
 
-  // Define your options for semesters, faculty, and rooms
-  const availableRooms = ['L-201', 'L-209','room1','room2'];
-  const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
-    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
-  const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)','d-sem1','d-sem2']
+  // // Define your options for semesters, faculty, and rooms
+  // const availableRooms = ['L-201', 'L-209','room1','room2'];
+  // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
+  //   'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
+  // const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)','d-sem1','d-sem2']
 
+  const [availableSems, setAvailableSems] = useState([]);
+  const [availableRooms, setAvailableRooms] = useState([]);
+  const [availableFaculties, setAvailableFaculties] = useState([]);
+
+  const semesters=availableSems;
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
@@ -83,6 +88,67 @@ function LockedSummary() {
     fetchFacultyData(selectedFaculty);
     fetchRoomData(selectedRoom);
   }, [selectedSemester, currentCode, selectedFaculty, selectedRoom]);
+
+
+  useEffect(() => {
+        
+    const fetchSem = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('filtered data',data)
+          const filteredSems = data.filter((sem) => sem.code === currentCode);
+          const semValues = filteredSems.map((sem) => sem.sem);
+
+          setAvailableSems(semValues);
+          console.log('available semesters',availableSems)
+        }
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+    const fetchRoom = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          const filteredSems = data.filter((room) => room.code === currentCode);
+          const semValues = filteredSems.map((room) => room.room);
+
+          setAvailableRooms(semValues);
+          console.log('available rooms',availableRooms)
+        }
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+    const fetchFaculty = async (currentCode,selectedSemester) => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty?${currentCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          const filteredSems = data.filter((faculty) => faculty.code === currentCode);
+          const semValues = filteredSems.map((room) => room.room);
+
+          setAvailableRooms(semValues);
+          console.log('available rooms',availableRooms)
+        }
+         
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+
+    fetchSem();
+    fetchRoom();
+    fetchFaculty(currentCode,selectedSemester); // Call the function to fetch subject data
+  }, [apiUrl,currentCode,selectedSemester]);
+
+
 
 
   const generateInitialTimetableData = (fetchedData, type) => {
