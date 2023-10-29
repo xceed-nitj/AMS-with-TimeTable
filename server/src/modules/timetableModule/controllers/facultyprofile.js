@@ -1,5 +1,6 @@
 const HttpException = require("../../../models/http-exception");
 const Faculty = require("../../../models/faculty");
+const addFaculty = require("../../../models/addfaculty");
 
 
 class FacultyController {
@@ -15,6 +16,16 @@ class FacultyController {
         }
       }
 
+      async getDepartments() {
+        try {
+          const uniqueDepartments = await Faculty.distinct('dept');
+          
+          return uniqueDepartments;
+        } catch (error) {
+          throw error; 
+        }
+      }
+      
       async getFaculty(req, res) {
        try {
           const facultyList = await Faculty.find();
@@ -57,9 +68,6 @@ class FacultyController {
         if (!id) {
           throw new HttpException(400, "Invalid Id");
         }
-        // if (!isValidAnnouncement(announcement)) {
-        //   return res.status(400).json({ error: "Invalid Announcement data" });
-        // }
         try {
           await Faculty.findByIdAndUpdate(id, announcement);
         } catch (e) {
@@ -77,23 +85,10 @@ class FacultyController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
+    
+
+
     }
 
 
 module.exports = FacultyController;
-
-
-// function isValidAnnouncement(announcement) {
-//   return (
-//     announcement &&
-//     typeof announcement === "object" &&
-//     typeof announcement.Name === "string" &&
-//     typeof announcement.Designation=== "string" &&
-//     typeof announcement.Dept === "string" &&
-//     typeof announcement.Type === "string" &&
-//     typeof announcement.Email === "string" &&
-//     typeof announcement.Extension === "string" &&
-//     announcement.createdAt instanceof Date &&
-//     announcement.updatedAt instanceof Date
-//   );
-// }

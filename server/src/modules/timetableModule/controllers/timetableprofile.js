@@ -1,4 +1,6 @@
 const TimeTable = require("../../../models/timetable");
+const User = require("../../../models/usermanagement/user");
+
 const generateUniqueLink = require("../helper/createlink");
 const HttpException = require("../../../models/http-exception");
 
@@ -7,11 +9,14 @@ class TableController {
     async createTable(req,res) 
     {
       const data = req.body;
+      const userId=req.user.id;
       try {
         const newCode = await generateUniqueLink();
+        //const userObject = await User.findById(userId)
         const newTimeTable = new TimeTable({
           ...data,
           code: newCode, 
+          user: userId
         });
         const createdTT = await newTimeTable.save(); 
         res.json(createdTT);
@@ -71,10 +76,11 @@ class TableController {
 
 
 
-    async getTable(req, res) 
+    async getUserTable(req, res) 
     {
+      const userId=req.user.id;
       try {
-          const TableField = await TimeTable.find();
+          const TableField = await TimeTable.find({user: userId});
           res.json(TableField)
           return;
         } catch (error) {

@@ -1,18 +1,29 @@
 const TimetableEntry = require('../../../models/subject');
+const Subject=require('../../../models/subject');
 const HttpException = require("../../../models/http-exception");
 
 class SubjectController{
-  async createTimetableEntry(req,res) {
-    const newSub = req.body;
-    try {
-      const createdSub = await TimetableEntry.create(newSub);
-      res.json(createdSub)
-      return;
-    } catch (error) {
-      console.error(error); 
-      res.status(500).json({ error: "Internal server error" });
-    }
-  }
+      async createTimetableEntry(req,res) {
+        const newSub = req.body;
+        try {
+          const createdSub = await TimetableEntry.create(newSub);
+          res.json(createdSub)
+          return;
+        } catch (error) {
+          console.error(error); 
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
+
+      async getSem() {
+        try {
+          const uniquesems = await TimetableEntry.distinct('sem');
+          
+          return uniquesems;
+        } catch (error) {
+          throw error; 
+        }
+      }
 
       async getSubject(req, res) {
         try {
@@ -61,6 +72,19 @@ class SubjectController{
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
+
+async getFilteredSubject (code, sem){
+        try {
+          const subjects = await Subject.find({ code, sem }).select('subName');
+      
+      return subjects;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      };
+      
+
+
 }
 
 module.exports = SubjectController;

@@ -4,6 +4,9 @@ const HttpException = require("../../../models/http-exception");
 const ClassTimeTabledto = require("../dto/classtimetable");
 const ClassTimeTableDto = new ClassTimeTabledto();
 
+const TimeTabledto = require("../dto/timetable");
+const TimeTableDto = new TimeTabledto();
+
 class ClassTimeTableController {
   async savett(req, res) {
     const timetableData = req.body.timetableData; // Access the timetableData object
@@ -66,33 +69,38 @@ class ClassTimeTableController {
         code,
         sem,
       };
-      
-      // const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotData[0].faculty);
-      // const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
-      // const roomSlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotData[0].room);
-      // const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day,slot, roomSlots);
+
+      const  session = await TimeTableDto.getSessionByCode(code);
+         
       let isSlotAvailable = true; // Assume the slot is initially available
       const unavailableItems = [];
 
       for (const slotItem of slotData) {
-          const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotItem.faculty);
-          const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
-          const roomSlots = await ClassTimeTableDto.findRoomDataWithSession(code, slotItem.room);
+        if (slotItem.room){
+          const roomSlots = await ClassTimeTableDto.findRoomDataWithSession(session, slotItem.room);
           const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day, slot, roomSlots);
-
-          if (!isFacultyAvailable || !isRoomAvailable) {
+          if (!isRoomAvailable) {
               isSlotAvailable = false; // At least one item is not available
-
-              if (!isFacultyAvailable) {
-                  unavailableItems.push({ item: slotItem, reason: "faculty" });
-              }
-
               if (!isRoomAvailable) {
                   unavailableItems.push({ item: slotItem, reason: "room" });
               }
           }
       }
+      if (slotItem.faculty){
+      const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(session, slotItem.faculty);
+      const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
+      if (!isFacultyAvailable) {
+        isSlotAvailable = false; // At least one item is not available
 
+        if (!isFacultyAvailable) {
+            unavailableItems.push({ item: slotItem, reason: "faculty" });
+        }
+
+    }  
+    }
+
+
+    }
       if (isSlotAvailable) {
         // const existingRecord = await ClassTable.findOne(query);
     //   if (existingRecord) {
@@ -184,7 +192,8 @@ class ClassTimeTableController {
     try {
       // Query the ClassTable collection based on the 'faculty' field
       // const facultydata = await ClassTable.find({ faculty: facultyname });
-      const records = await ClassTimeTableDto.findFacultyDataWithSession(code,facultyname);
+      const session = await TimeTableDto.getSessionByCode(code);
+      const records = await ClassTimeTableDto.findFacultyDataWithSession(session,facultyname);
       // Create an empty timetable data object
       const timetableData = {};
   
@@ -228,7 +237,8 @@ class ClassTimeTableController {
     const code=req.params.code;
     console.log('room no:', roomno);
     try {
-      const records = await ClassTimeTableDto.findRoomDataWithSession(code,roomno);
+      const session = await TimeTableDto.getSessionByCode(code);
+      const records = await ClassTimeTableDto.findRoomDataWithSession(session,roomno);
       const timetableData = {};
       records.forEach((record) => {
       const { day, slot, slotData,sem } = record;

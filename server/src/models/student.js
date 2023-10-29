@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { commonFields, updateTimestamps } = require('./commonFields');
+
 
 // Define the Mongoose schema for the student
 const studentSchema = new mongoose.Schema({
@@ -28,6 +30,12 @@ const studentSchema = new mongoose.Schema({
     required: true,
   },
 });
+
+
+studentSchema.add(commonFields);
+
+// Apply the pre-save middleware
+studentSchema.pre('save', updateTimestamps);
 
 // Create the Mongoose model for the student
 const Student = mongoose.model("Student", studentSchema);

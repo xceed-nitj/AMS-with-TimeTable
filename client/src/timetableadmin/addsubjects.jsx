@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 
 function Subject() {
+  const currentURL = window.location.pathname;
+  const parts = currentURL.split('/');
+  const currentCode = parts[parts.length - 2];
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
@@ -12,6 +16,9 @@ function Subject() {
     subName: '',
     sem: '',
     degree: '',
+    dept:'',
+    credits:'',
+    code:currentCode
   });
 
   const [editedSData, setEditedSData] = useState({
@@ -21,19 +28,22 @@ function Subject() {
     subName: '',
     sem: '',
     degree: '',
+    dept:'',
+    credits:'',
+    code:currentCode
   });
 
-  const currentURL = window.location.pathname;
-  const parts = currentURL.split('/');
-  const currentCode = parts[parts.length - 2];
 
-const apiUrl=getEnvironment();
+
+  const apiUrl = getEnvironment();
+
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentCode]); // Trigger a fetch when the code changes
 
   const fetchData = () => {
-    fetch(`${apiUrl}/timetablemodule/subject`) // Replace with the actual endpoint
+    if (currentCode) {
+    fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`) // Replace with the actual endpoint
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -41,11 +51,16 @@ const apiUrl=getEnvironment();
         return response.json();
       })
       .then((data) => {
-        setTableData(data);
+        const filteredData = data.filter((item) => item.code === currentCode);
+        setTableData(filteredData);
       })
       .catch((error) => {
         console.error('Error:', error);
       });
+    }
+    else{
+      setTableData([]);
+    }
   };
 
   const handleFileChange = (e) => {
@@ -57,6 +72,7 @@ const apiUrl=getEnvironment();
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
+      formData.append('code', currentCode); 
 
       fetch(`${apiUrl}/upload/subject`, {
         method: 'POST',
@@ -89,17 +105,22 @@ const apiUrl=getEnvironment();
         subName: '',
         sem: '',
         degree: '',
+         dept:'',
+        credits:'',
+        code:currentCode
     });
   };
 
   const handleSaveNewSubject = () => {
+    const dataWithCode = { ...editedSData, code: currentCode };
+
     // Send a POST request to add the new faculty to the database
     fetch(`${apiUrl}/timetablemodule/subject`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(editedData), // Use editedData for new faculty
+      body: JSON.stringify(dataWithCode), // Use editedData for new faculty
     })
       .then((response) => {
         if (!response.ok) {
@@ -160,6 +181,8 @@ const apiUrl=getEnvironment();
                   subName: '',
                   sem: '',
                   degree: '',
+                  dept:'',
+                  credits:'',
                   code:currentCode
                 });
               })
@@ -215,7 +238,9 @@ const apiUrl=getEnvironment();
             <th>SubName</th>
             <th>Sem</th>
             <th>Degree</th>
-            <th>Code</th>
+            <th>Department</th>
+            <th>Credits</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -225,7 +250,11 @@ const apiUrl=getEnvironment();
               <td>{editRowId === row._id ? <input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.subCode} onChange={(e) => setEditedData({ ...editedData, subCode: e.target.value })} /> : row.subCode}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.subName} onChange={(e) => setEditedData({ ...editedData, subName: e.target.value })} /> : row.subName}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.sem} onChange={(e) => setEditedData({ ...editedData, sem: e.target.value })} /> : row.sem}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.degree} onChange={(e) => setEditedData({ ...editedData, degree: e.target.value })} /> : row.degree}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.dept} onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })} /> : row.dept}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.credits} onChange={(e) => setEditedData({ ...editedData, credits: e.target.value })} /> : row.credits}</td>
+            
                <td>
                 {editRowId === row._id ? (
                   <button onClick={handleSaveEdit}>Save</button>
@@ -247,7 +276,7 @@ const apiUrl=getEnvironment();
   <input
     type="text"
     value={editedSData.abbreviation}
-    onChange={(e) => setEditedSData({ ...editedData, abbreviation: e.target.value })}
+    onChange={(e) => setEditedSData({ ...editedSData, abbreviation: e.target.value })}
   />
 </div>
 <div>
@@ -255,7 +284,7 @@ const apiUrl=getEnvironment();
   <input
     type="text"
     value={editedSData.type}
-    onChange={(e) => setEditedSData({ ...editedData, type: e.target.value })}
+    onChange={(e) => setEditedSData({ ...editedSData, type: e.target.value })}
   />
 </div>
 <div>
@@ -263,7 +292,7 @@ const apiUrl=getEnvironment();
   <input
     type="text"
     value={editedSData.subCode}
-    onChange={(e) => setEditedSData({ ...editedData, subCode: e.target.value })}
+    onChange={(e) => setEditedSData({ ...editedSData, subCode: e.target.value })}
   />
 </div>
 <div>
@@ -271,7 +300,7 @@ const apiUrl=getEnvironment();
   <input
     type="text"
     value={editedSData.subName}
-    onChange={(e) => setEditedSData({ ...editedData, subName: e.target.value })}
+    onChange={(e) => setEditedSData({ ...editedSData, subName: e.target.value })}
   />
 </div>
 <div>
@@ -279,7 +308,7 @@ const apiUrl=getEnvironment();
   <input
     type="text"
     value={editedSData.sem}
-    onChange={(e) => setEditedSData({ ...editedData, sem: e.target.value })}
+    onChange={(e) => setEditedSData({ ...editedSData, sem: e.target.value })}
   />
 </div>
 <div>
@@ -287,7 +316,7 @@ const apiUrl=getEnvironment();
   <input
     type="text"
     value={editedSData.degree}
-    onChange={(e) => setEditedSData({ ...editedData, degree: e.target.value })}
+    onChange={(e) => setEditedSData({ ...editedSData, degree: e.target.value })}
   />
 </div>
 <div>
@@ -295,7 +324,7 @@ const apiUrl=getEnvironment();
   <input
     type="text"
     value={editedSData.dept}
-    onChange={(e) => setEditedSData({ ...editedData, dept: e.target.value })}
+    onChange={(e) => setEditedSData({ ...editedSData, dept: e.target.value })}
   />
 </div>
 <div>
@@ -303,7 +332,7 @@ const apiUrl=getEnvironment();
   <input
     type="number" // Assuming it's a number
     value={editedSData.credits}
-    onChange={(e) => setEditedSData({ ...editedData, credits: e.target.value })}
+    onChange={(e) => setEditedSData({ ...editedSData, credits: e.target.value })}
   />
 </div>
 

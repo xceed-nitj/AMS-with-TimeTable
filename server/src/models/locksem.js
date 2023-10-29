@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+const { commonFields, updateTimestamps } = require('./commonFields');
+
 
 // Define your Mongoose schema based on the interface
 const locksemSchema = new mongoose.Schema({
@@ -35,6 +37,12 @@ const locksemSchema = new mongoose.Schema({
     ref: "timetable"
   }
 });
+
+locksemSchema.add(commonFields);
+
+// Apply the pre-save middleware
+locksemSchema.pre('save', updateTimestamps);
+
 
 // Create the Mongoose model
 const LockSem = mongoose.model("LockSem", locksemSchema);

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate} from 'react-router-dom';
 import getEnvironment from "../getenvironment";
 import './creatett.css';
 
@@ -11,7 +11,7 @@ function CreateTimetable() {
     session: "",
     code: "",
   });
-  const [sessions, setSessions] = useState([]);
+  const [table, setTable] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -24,6 +24,33 @@ function CreateTimetable() {
     });
   };
 
+  useEffect(() => {
+    // Define a function to fetch timetables
+    const fetchTimetables = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/timetable/`,{
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',   
+        }); // Adjust the URL as needed
+        if (response.ok) {
+          const data = await response.json();
+          setTable(data);
+          console.log(data)
+        } else {
+          console.error('Failed to fetch timetables');
+        }
+      } catch (error) {
+      }
+    };
+
+    // Call the fetchTimetables function when the component mounts and when userId changes
+    fetchTimetables();
+  }, []);
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -33,14 +60,14 @@ function CreateTimetable() {
         headers: {
           "Content-Type": "application/json",
         },
+      
         body: JSON.stringify(formData),
+        credentials: 'include', 
       });
 
       if (response.ok) {
         const data= await response.json();
-        console.log(data);
-        console.log(data.code);
-
+        
         // Access the necessary details from the updated allquiz array
         const generatedLink = data.code;
 
@@ -85,7 +112,13 @@ function CreateTimetable() {
     }
   };
 
+  const currentUrl = window.location.href;
+  const urlParts = currentUrl.split('/');
+  const domainName = urlParts[2]; // This will give you the domain name with port, e.g., 'localhost:5173'
+  
+
   return (
+
     <div class="createttbody">
     <div className="createttcontainer">
       <div class="createttsignin-content">
@@ -141,14 +174,16 @@ function CreateTimetable() {
           </form>
         </div>
       </div>
-      {/* <button onClick={handleGetSessions}>Get Sessions</button>
+  
       <table>
       <thead>
           <tr>
           <th>Name</th>
             <th>Department</th>
             <th>Session</th>
-            <th>Code</th>
+            <th>Department</th>
+            <th>Link</th>
+       
           </tr>
           </thead>
           <tbody>
@@ -161,7 +196,7 @@ function CreateTimetable() {
             </tr>
           ))}
           </tbody>
-        </table> */}
+        </table>
       {loading && <p>Loading...</p>}
     </div>
     </div>

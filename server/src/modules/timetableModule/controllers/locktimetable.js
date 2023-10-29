@@ -87,11 +87,23 @@ class LockTimeTableController {
   
 
   async facultytt(req, res) {
-    const facultyname = req.params.facultyname; 
-    const code=req.params.code;
-    console.log('facultyname:', facultyname);
-    try {
-      const records = await LockTimeTableDto.findFacultyDataWithSession(code,facultyname);
+    
+    // const code=req.params.code;
+    let session ='';
+   const  facultyname=req.params.faculty;      
+       try {
+      
+      if(!req.params.session)
+      {
+      session = await TimeTableDto.getSessionByCode(req.params.code);
+       }
+      else
+      {
+      session=req.params.session;
+      // const facultyId=req.params.facultyId;
+      // facultyname = await findFacultyById(facultyId); 
+    }
+      const records = await LockTimeTableDto.findFacultyDataWithSession(session,facultyname);
       // Create an empty timetable data object
       const timetableData = {};
   
@@ -135,7 +147,17 @@ class LockTimeTableController {
     const code=req.params.code;
     console.log('room no:', roomno);
     try {
-      const records = await LockTimeTableDto.findRoomDataWithSession(code,roomno);
+      let session ='';
+      if(!req.params.session)
+      {
+      session = await TimeTableDto.getSessionByCode(code);
+      }
+      else
+      {
+      session=req.params.session;
+      }
+      
+      const records = await LockTimeTableDto.findRoomDataWithSession(session,roomno);
       const timetableData = {};
       records.forEach((record) => {
       const { day, slot, slotData,sem } = record;

@@ -11,19 +11,21 @@ function SuccessMessage({ message }) {
   );
 }
 function Component() {
-  const [sem, setSem] = useState(1);
+  const [sem, setSem] = useState('1st');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [faculties, setFaculties] = useState([]);
   const [selectedFaculty, setSelectedFaculty] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [facultyData, setFacultyData] = useState([]);
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [availableSemesters, setAvailableSemesters] = useState([]);
+
 
   const [editFacultyData, setEditFacultyData] = useState({
     facultyId: null,
     facultyName: '',
   });
 
-  const availableDepartments = ['EE', 'BT'];
 
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -33,7 +35,17 @@ function Component() {
   const apiUrl = getEnvironment();
 
   useEffect(() => {
+    fetch(`${apiUrl}/timetablemodule/subject/sem`)
+      .then(handleResponse)
+      .then(data => {
+        setAvailableSemesters(data);
+      })
+      .catch(handleError);
+      }, []);
+
+  useEffect(() => {
     fetchFacultyData();
+    fetchAvailableDepartments();
   }, []);
 
   useEffect(() => {
@@ -47,11 +59,28 @@ function Component() {
     }
   }, [selectedDepartment]);
 
+
   const fetchFacultyData = () => {
     fetch(`${apiUrl}/timetablemodule/addFaculty`)
       .then(handleResponse)
+      .then((data) => {
+        const filteredFacultyData = data.filter((faculty) => faculty.code === currentCode);
+        setFacultyData(filteredFacultyData);
+      })
+      .catch(handleError);
+  };
+  
+
+  
+  const fetchAvailableDepartments = () => {
+    fetch(`${apiUrl}/timetablemodule/faculty/dept`)
+      .then(handleResponse)
       .then(data => {
-        setFacultyData(data);
+          const formattedDepartments = data.map(department => ({
+          value: department,
+          label: department,
+        }));
+        setAvailableDepartments(formattedDepartments);
       })
       .catch(handleError);
   };
@@ -120,6 +149,7 @@ function Component() {
   };
 
   return (
+
     <div class="addfacultybody">
     <div class="addfacultycontainer">
       <h1 class="addfacultypage-title">Add Faculty</h1>
@@ -175,6 +205,7 @@ function Component() {
       <div class="faculty-data">
         <h2 class="section-title">Faculty Data</h2>
         <table class="faculty-table">
+
           <thead>
             <tr>
               <th>Semester</th>
@@ -194,6 +225,7 @@ function Component() {
                 </tr>
               ))
               )}
+
           </tbody>
         </table>
       </div>

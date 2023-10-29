@@ -72,6 +72,16 @@ class addFacultyController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
+      async getFilteredFaculty(code, sem){
+        try {
+          const faculty = await addFaculty.find({ code, sem });
+      
+      return faculty;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      };
+
     }
 
 
