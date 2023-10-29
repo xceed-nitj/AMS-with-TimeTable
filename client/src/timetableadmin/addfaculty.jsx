@@ -34,7 +34,7 @@ function Component() {
   const apiUrl = getEnvironment();
 
   useEffect(() => {
-    fetch(`${apiUrl}/timetablemodule/subject/sem`)
+    fetch(`${apiUrl}/timetablemodule/addsem/sem`)
       .then(handleResponse)
       .then(data => {
         setAvailableSemesters(data);
