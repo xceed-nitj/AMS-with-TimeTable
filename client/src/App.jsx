@@ -16,10 +16,11 @@ import LockedView from './timetableviewer/viewer';
 function App() {
   return (
     <Router>
-      {/* <div className="app">
-        <h1>XCEED-Timetable Module</h1> */}
-            {/* <Link to="/create-timetable">Create Timetable</Link> */}
-          
+
+      <div className="app">
+   
+        <h1>XCEED-Timetable Module</h1> 
+         
         <Routes>
         <Route path="/" element={<Login/>} />
 

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import ViewTimetable from './viewtt';
 import Header from './header';
+import './lockedsummary.css'
 
 function LockedSummary() {
   const [viewData, setViewData] = useState({});
@@ -153,60 +154,52 @@ function LockedSummary() {
 
 
   return (
-    <div>
-      <h1>Summary</h1>
-      {/* <button onClick={}>Upload CSV</button> */}
+    <div class="lockedsum-container">
+        <h1 class="lockedsum-page-title">Summary</h1>
 
+        <h2 class="lockedsum-section-title">Select semester</h2>
+        <select class="lockedsum-form-select" value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
+            <option value="">Select Semester</option>
+            {semesters.map((semester, index) => (
+                <option key={index} value={semester}>
+                    {semester}
+                </option>
+            ))}
+        </select>
 
-      <h2>Select semester</h2>
-      <select
-        value={selectedSemester}
-        onChange={(e) => setSelectedSemester(e.target.value)}
-      >
-        <option value="">Select Semester</option>
-        {semesters.map((semester, index) => (
-          <option key={index} value={semester}>
-            {semester}
-          </option>
-        ))}
-      </select>
-      <div>
-      <Header />
-      <ViewTimetable timetableData={viewData} />     
-      </div>
-      {/* Faculty Dropdown */}
-      <select
-        value={selectedFaculty}
-        onChange={(e) => setSelectedFaculty(e.target.value)}
-      >
-        <option value="">Select Faculty</option>
-        {availableFaculties.map((faculty, index) => (
-          <option key={index} value={faculty}>
-            {faculty}
-          </option>
-        ))}
-      </select>
-      <div>
-      <ViewTimetable timetableData={viewFacultyData} />     
-      </div>
+        <div class="lockedsum-table-container">
+            <Header />
+            <ViewTimetable class="lockedsum-table" timetableData={viewData} />
+        </div>
 
-      {/* Room Dropdown */}
-      <select
-        value={selectedRoom}
-        onChange={(e) => setSelectedRoom(e.target.value)}
-      >
-        <option value="">Select Room</option>
-        {availableRooms.map((room, index) => (
-          <option key={index} value={room}>
-            {room}
-          </option>
-        ))}
-      </select>
-      <div>
-      <ViewTimetable timetableData={viewRoomData} />     
-      </div>
+        <h2 class="lockedsum-section-title">Faculty Dropdown</h2>
+        <select class="lockedsum-form-select" value={selectedFaculty} onChange={(e) => setSelectedFaculty(e.target.value)}>
+            <option value="">Select Faculty</option>
+            {availableFaculties.map((faculty, index) => (
+                <option key={index} value={faculty}>
+                    {faculty}
+                </option>
+            ))}
+        </select>
 
-</div>
+        <div class="lockedsum-table-container">
+            <ViewTimetable class="lockedsum-table" timetableData={viewFacultyData} />
+        </div>
+
+        <h2 class="lockedsum-section-title">Room Dropdown</h2>
+        <select class="lockedsum-form-select" value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)}>
+            <option value="">Select Room</option>
+            {availableRooms.map((room, index) => (
+                <option key={index} value={room}>
+                    {room}
+                </option>
+            ))}
+        </select>
+
+        <div class="lockedsum-table-container">
+            <ViewTimetable class="lockedsum-table" timetableData={viewRoomData} />
+        </div>
+    </div>
   );
 }
 
