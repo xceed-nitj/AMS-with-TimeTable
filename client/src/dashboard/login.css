@@ -1,7 +1,7 @@
 .App {
     height: 100vh;
     display: flex;
-    color: white;
+    color: rgb(9, 9, 9);
   }
   body
   {
@@ -19,7 +19,7 @@
   
   .appForm {
     width: 100%;
-    background-color: #12130f;
+    background-color: #000000;
     padding: 25px 40px;
     overflow: auto;
   }
@@ -57,7 +57,7 @@
   }
   
   .formCenter {
-    margin-bottom: 100px;
+    margin-bottom: 10px;
   }
   
   .formTitle {

@@ -29,7 +29,7 @@ LockTimeTableRouter.post("/locktt", async (req, res) => {
 
 
 
-  LockTimeTableRouter.get("/lockfacultytt/:code/:facultyname", async (req, res) => {
+  LockTimeTableRouter.get("/lockfacultytt/:code/:faculty", async (req, res) => {
     try { 
       await locktimetableController.facultytt(req, res);
     } 

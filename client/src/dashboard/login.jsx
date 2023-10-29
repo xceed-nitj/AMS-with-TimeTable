@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from "../getenvironment";
 import './login.css'
 import logoImage from '../assets/logo.png'; 
+import logoVideo from '../assets/logo.mp4'; 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,7 +45,13 @@ function Login() {
   return (
 
 <div className="App">
-          <div className="appAside" />
+<video className="video" autoPlay loop muted>
+      <source src={logoVideo} type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+          {/* <div className="appAside" /> */}
+         
+          
           <div className="appForm">
 
           <div className="formCenter">

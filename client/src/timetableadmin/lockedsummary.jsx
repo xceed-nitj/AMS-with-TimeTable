@@ -43,11 +43,20 @@ function LockedSummary() {
         return {};
       }
     };
+ 
+    const fetchViewData = async (semester) => {
+      const data = await fetchData(semester);
+      setViewData(data);
+    };
+    fetchViewData(selectedSemester);
+  }, [selectedSemester]);
+
+  useEffect(() => {
     const facultyData = async (currentCode, faculty) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty }`);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty}`);
         const data = await response.json();
-        console.log(data);
+        console.log('facultydata',data);
         const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
@@ -55,6 +64,17 @@ function LockedSummary() {
         return {};
       }
     };
+
+    const fetchFacultyData = async (faculty) => {
+      const data = await facultyData(currentCode, faculty);
+      setViewFacultyData(data);
+    };
+
+
+    fetchFacultyData(selectedFaculty);
+  }, [selectedFaculty]);
+
+  useEffect(() => {
     const roomData = async (currentCode, room) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`);
@@ -67,27 +87,16 @@ function LockedSummary() {
         return {};
       }
     };
- 
-    const fetchViewData = async (semester) => {
-      const data = await fetchData(semester);
-      setViewData(data);
-    };
-
-    const fetchFacultyData = async (faculty) => {
-      const data = await facultyData(currentCode, faculty);
-      setViewFacultyData(data);
-    };
 
     const fetchRoomData = async (room) => {
       const data = await roomData(currentCode, room);
       setViewRoomData(data);
     };
 
-
-    fetchViewData(selectedSemester);
-    fetchFacultyData(selectedFaculty);
     fetchRoomData(selectedRoom);
-  }, [selectedSemester, currentCode, selectedFaculty, selectedRoom]);
+  }, [selectedRoom]);
+
+
 
 
   useEffect(() => {
@@ -125,16 +134,14 @@ function LockedSummary() {
       }
     };
 
-    const fetchFaculty = async (currentCode,selectedSemester) => {
+    const fetchFaculty = async (currentCode) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty?${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`);
         if (response.ok) {
           const data = await response.json();
-          const filteredSems = data.filter((faculty) => faculty.code === currentCode);
-          const semValues = filteredSems.map((room) => room.room);
-
-          setAvailableRooms(semValues);
-          console.log('available rooms',availableRooms)
+          console.log('faculty response',data);
+          setAvailableFaculties(data);
+          console.log('faculties', availableFaculties);
         }
          
       } catch (error) {
@@ -145,8 +152,8 @@ function LockedSummary() {
 
     fetchSem();
     fetchRoom();
-    fetchFaculty(currentCode,selectedSemester); // Call the function to fetch subject data
-  }, [apiUrl,currentCode,selectedSemester]);
+    fetchFaculty(currentCode); // Call the function to fetch subject data
+  }, [apiUrl,currentCode,selectedSemester, selectedFaculty,selectedRoom]);
 
 
 
@@ -220,11 +227,11 @@ function LockedSummary() {
 
   return (
     <div>
-      <h1>Summary</h1>
+      <h1>Locked TimeTable Summary</h1>
       {/* <button onClick={}>Upload CSV</button> */}
 
 
-      <h2>Select semester</h2>
+      <h2>Semester timetable (locked)</h2>
       <select
         value={selectedSemester}
         onChange={(e) => setSelectedSemester(e.target.value)}
@@ -237,10 +244,11 @@ function LockedSummary() {
         ))}
       </select>
       <div>
-      <Header />
+      {/* <Header /> */}
       <ViewTimetable timetableData={viewData} />     
       </div>
       {/* Faculty Dropdown */}
+      <h2>Faculty timetable (locked)</h2>
       <select
         value={selectedFaculty}
         onChange={(e) => setSelectedFaculty(e.target.value)}
@@ -255,7 +263,7 @@ function LockedSummary() {
       <div>
       <ViewTimetable timetableData={viewFacultyData} />     
       </div>
-
+      <h2>Room timetable (locked)</h2>
       {/* Room Dropdown */}
       <select
         value={selectedRoom}

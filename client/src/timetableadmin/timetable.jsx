@@ -41,7 +41,7 @@ const Timetable = () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
         const initialData = generateInitialTimetableData(data,'sem');
         return initialData;
       } catch (error) {
@@ -53,7 +53,7 @@ const Timetable = () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`);
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
         const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
@@ -65,7 +65,7 @@ const Timetable = () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room }`);
         const data = await response.json();
-        console.log('roomdata',data);
+        // console.log('roomdata',data);
         const initialData = generateInitialTimetableData(data,'room');
         return initialData;
       } catch (error) {
@@ -110,7 +110,7 @@ const Timetable = () => {
         if (response.ok) {
           const data = await response.json();
           setAvailableSubjects(data);
-          console.log('subjects', availableSubjects);
+          // console.log('subjects', availableSubjects);
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -123,12 +123,12 @@ const Timetable = () => {
         const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('filtered data',data)
+          // console.log('filtered data',data)
           const filteredSems = data.filter((sem) => sem.code === currentCode);
           const semValues = filteredSems.map((sem) => sem.sem);
 
           setAvailableSems(semValues);
-          console.log('available semesters',availableSems)
+          // console.log('available semesters',availableSems)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -144,7 +144,7 @@ const Timetable = () => {
           const semValues = filteredSems.map((room) => room.room);
 
           setAvailableRooms(semValues);
-          console.log('available rooms',availableRooms)
+          // console.log('available rooms',availableRooms)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -156,9 +156,9 @@ const Timetable = () => {
         const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/filteredfaculty/${currentCode}/${selectedSemester}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('faculty response',data[0]);
+          // console.log('faculty response',data[0]);
           setAvailableFaculties(data[0].faculty);
-          console.log('faculties', availableFaculties);
+          // console.log('faculties', availableFaculties);
         }
          
       } catch (error) {
@@ -235,12 +235,12 @@ const Timetable = () => {
         }
       }
     }
-    console.log(initialData);
+    // console.log(initialData);
     return initialData;
   };
   
   useEffect(() => {
-    console.log('Updated timetableData:', timetableData);
+    // console.log('Updated timetableData:', timetableData);
   }, [timetableData]);
 
 
@@ -326,7 +326,7 @@ const Timetable = () => {
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ slotData, code, sem });
   
-    console.log('Slot JSON Data to Send:', dataToSend);
+    // console.log('Slot JSON Data to Send:', dataToSend);
   
     try {
       const response = await fetch(Url, {
@@ -339,13 +339,13 @@ const Timetable = () => {
   
       if (response) {
         const data = await response.json();
-        console.log('Slot Data sent to the backend:', data.message);
+        // console.log('Slot Data sent to the backend:', data.message);
         setMessage(data.message);
       } else {
-        console.log('no response');
+        // console.log('no response');
       }
     } catch (error) {
-      console.error('Error sending slot data to the backend:', error);
+      // console.error('Error sending slot data to the backend:', error);
     }
   };
 
@@ -360,7 +360,7 @@ const Timetable = () => {
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ timetableData, code });
   
-    console.log('Data is getting saved');
+    // console.log('Data is getting saved');
 
     setMessage('Data is being saved....')
     try {
@@ -374,7 +374,7 @@ const Timetable = () => {
   
       if (response.ok) {
         const data = await response.json();
-        console.log('Data sent to the backend:', data);
+        // console.log('Data sent to the backend:', data);
       } else {
         console.error('Failed to send data to the backend. HTTP status:', response.status);
       }
@@ -390,7 +390,7 @@ const Timetable = () => {
   const handleLockTT = async () => { // Mark the function as async
     setMessage('Data is being saved....')
     // await handleSubmit();
-    console.log('Data is getting Locked');
+    // console.log('Data is getting Locked');
     setMessage('Data saved. Commencing lock')
     setMessage('Data is being locked')
     const Url = `${apiUrl}/timetablemodule/lock/locktt`;
@@ -407,7 +407,7 @@ const Timetable = () => {
   
       if (response.ok) {
         const data = await response.json();
-        console.log(data.message);
+        // console.log(data.message);
       } else {
         console.error('Failed to send data to the backend. HTTP status:', response.status);
       }

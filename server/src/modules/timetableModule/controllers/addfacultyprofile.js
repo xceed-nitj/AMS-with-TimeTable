@@ -26,9 +26,17 @@ class addFacultyController {
       
       async getAddedFaculty(req, res) {
        try {
-          const facultyList = await addFaculty.find();
-          res.json(facultyList)
-          return;
+          const code=req.query.code
+          const facultyList = await addFaculty.find({code});
+          const allFaculty = [];
+          facultyList.forEach((item) => {
+            item.faculty.forEach((facultyMember) => {
+              if (!allFaculty.includes(facultyMember)) {
+                allFaculty.push(facultyMember);
+              }
+            });
+          });
+          return allFaculty;
         } catch (error) {
           console.error(error); 
           res.status(500).json({ error: "Internal server error" });

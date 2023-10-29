@@ -91,8 +91,7 @@ class LockTimeTableController {
     // const code=req.params.code;
     let session ='';
    const  facultyname=req.params.faculty;      
-       try {
-      
+       try {  
       if(!req.params.session)
       {
       session = await TimeTableDto.getSessionByCode(req.params.code);
@@ -134,7 +133,7 @@ class LockTimeTableController {
     timetableData[day][slot].push(formattedSlotData);
         // Set the sem and code for the timetable
       });
-      console.log(timetableData)
+      // console.log(timetableData)
       res.status(200).json(timetableData);
     } catch (error) {
       console.error(error);
@@ -145,7 +144,7 @@ class LockTimeTableController {
   async roomtt(req, res) {
     const roomno = req.params.room; 
     const code=req.params.code;
-    console.log('room no:', roomno);
+    // console.log('room no:', roomno);
     try {
       let session ='';
       if(!req.params.session)
@@ -180,7 +179,7 @@ class LockTimeTableController {
     timetableData[day][slot].push(formattedSlotData);
         // Set the sem and code for the timetable
       });
-      console.log('rooom data',timetableData)
+      // console.log('rooom data',timetableData)
       res.status(200).json(timetableData);
     } catch (error) {
       console.error(error);
