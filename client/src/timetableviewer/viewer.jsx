@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import ViewTimetable from '../timetableadmin/viewtt';
 import headernitj from '../assets/headernitj.svg';
+import footerxceed from '../assets/footerxceed.svg';
+
 // import Header from './header';
 
 function LockedView() {
@@ -225,11 +227,14 @@ function LockedView() {
           </option>
         ))}
       </select>
-      <img src={headernitj} alt="SVG Description" />
+      <div style={{margin: 0, padding:60}}>
+      <img src={headernitj} alt="SVG Description" style={{ width: '1200px', height:'400px', display:'block' }} />
+      </div>
       <div>
       <ViewTimetable timetableData={viewFacultyData} />     
       </div>
-
+      <img src={footerxceed} alt="SVG Description" style={{ width: '1200px', height:'500px' }} />
+     
       {/* Room Dropdown */}
       {/* <select
         value={selectedRoom}

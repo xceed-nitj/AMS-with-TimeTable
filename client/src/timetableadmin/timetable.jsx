@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import ViewTimetable from './viewtt';
 import getEnvironment from '../getenvironment';
 import './Timetable.css';
+import TimetableSummary from './ttsummary';
 
 
 const Timetable = () => {
@@ -23,9 +24,9 @@ const Timetable = () => {
     // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
   const semesters=availableSems;
   const [selectedSemester, setSelectedSemester] = useState('1'); 
-  const [viewselectedSemester, setViewSelectedSemester] = useState('2'); 
-  const [viewFaculty, setViewFaculty]= useState(availableFaculties[0])  
-  const [viewRoom, setViewRoom]= useState('L-201')  
+  const [viewselectedSemester, setViewSelectedSemester] = useState(availableSems[0]); 
+  const [viewFaculty, setViewFaculty]= useState('')  
+  const [viewRoom, setViewRoom]= useState('')  
   
   const selectedCell = null;
   const navigate = useNavigate();
@@ -93,9 +94,6 @@ const Timetable = () => {
       const data = await roomData(currentCode, room);
       setViewRoomData(data);
     };
-
-
-
 
     fetchTimetableData(selectedSemester);
     fetchViewData(viewselectedSemester);
@@ -436,7 +434,16 @@ const Timetable = () => {
       <button onClick={handleLockTT}>Lock TT</button>
       <button onClick={handleViewSummary}>View/Download Locked TT</button>
     </div>
-    <div>{message}</div>
+    <div style={{
+  backgroundColor: 'brown',
+  color: 'white',
+  textAlign: 'center',
+  fontWeight: 'bold',
+  fontSize: '1.5rem', // Adjust the font size as needed
+}}>
+  {message}
+</div>
+
     <div>
         <label>Select Semester:</label>
         <select
@@ -484,7 +491,7 @@ const Timetable = () => {
 
 <option value="">Select Subject</option>
     {availableSubjects.map((subject) => (
-      <option key={subject._id} value={subject._id}>
+      <option key={subject._id} value={subject.subName}>
         {subject.subName}
       </option>
   ))}
@@ -546,7 +553,8 @@ const Timetable = () => {
         <select
           value={viewselectedSemester}
           onChange={(e) => setViewSelectedSemester(e.target.value)}
-        >
+        >          <option value="">Select </option>
+
           {semesters.map((semester, index) => (
             <option key={index} value={semester}>
               {semester}
@@ -555,7 +563,19 @@ const Timetable = () => {
         </select>
       </div>
   
-<ViewTimetable timetableData={viewData} />     
+
+<div>
+  {viewselectedSemester ? (
+    <div>
+      <ViewTimetable timetableData={viewData} />     
+<TimetableSummary timetableData={viewData} /> 
+    </div>
+  ) : (
+    <p>Please select a Semester from the dropdown.</p>
+  )}
+</div>
+
+
 </div>
 <div>
 <div>
@@ -565,6 +585,7 @@ const Timetable = () => {
           value={viewFaculty}
           onChange={(e) => setViewFaculty(e.target.value)}
         >
+          <option value="">Select </option>
           {availableFaculties.map((faculty, index) => (
             <option key={index} value={faculty}>
               {faculty}
@@ -572,8 +593,13 @@ const Timetable = () => {
           ))}
         </select>
       </div>
-  
-<ViewTimetable timetableData={viewFacultyData} />     
+      <div>
+  {viewFaculty ? (
+    <ViewTimetable timetableData={viewFacultyData} />
+  ) : (
+    <p>Please select a faculty from the dropdown.</p>
+  )}
+</div>     
 </div>
 
 <div>
@@ -583,6 +609,7 @@ const Timetable = () => {
           value={viewRoom}
           onChange={(e) => setViewRoom(e.target.value)}
         >
+           <option value="">Select </option>
           {availableRooms.map((room, index) => (
             <option key={index} value={room}>
               {room}
@@ -591,8 +618,13 @@ const Timetable = () => {
         </select>
       </div>
   
-<ViewTimetable timetableData={viewRoomData} />     
-
+      <div>
+  {viewRoom ? (
+    <ViewTimetable timetableData={viewRoomData} />
+  ) : (
+    <p>Please select a Room from the dropdown.</p>
+  )}
+</div>
 
     </div>
     

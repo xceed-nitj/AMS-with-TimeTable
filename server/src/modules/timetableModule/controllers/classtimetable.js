@@ -69,33 +69,38 @@ class ClassTimeTableController {
         code,
         sem,
       };
-      
-      // const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotData[0].faculty);
-      // const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
-      // const roomSlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotData[0].room);
-      // const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day,slot, roomSlots);
+
+      const  session = await TimeTableDto.getSessionByCode(code);
+         
       let isSlotAvailable = true; // Assume the slot is initially available
       const unavailableItems = [];
 
       for (const slotItem of slotData) {
-          const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(code, slotItem.faculty);
-          const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
-          const roomSlots = await ClassTimeTableDto.findRoomDataWithSession(code, slotItem.room);
+        if (slotItem.room){
+          const roomSlots = await ClassTimeTableDto.findRoomDataWithSession(session, slotItem.room);
           const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day, slot, roomSlots);
-
-          if (!isFacultyAvailable || !isRoomAvailable) {
+          if (!isRoomAvailable) {
               isSlotAvailable = false; // At least one item is not available
-
-              if (!isFacultyAvailable) {
-                  unavailableItems.push({ item: slotItem, reason: "faculty" });
-              }
-
               if (!isRoomAvailable) {
                   unavailableItems.push({ item: slotItem, reason: "room" });
               }
           }
       }
+      if (slotItem.faculty){
+      const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(session, slotItem.faculty);
+      const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
+      if (!isFacultyAvailable) {
+        isSlotAvailable = false; // At least one item is not available
 
+        if (!isFacultyAvailable) {
+            unavailableItems.push({ item: slotItem, reason: "faculty" });
+        }
+
+    }  
+    }
+
+
+    }
       if (isSlotAvailable) {
         // const existingRecord = await ClassTable.findOne(query);
     //   if (existingRecord) {
