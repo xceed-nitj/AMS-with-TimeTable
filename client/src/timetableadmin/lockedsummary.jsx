@@ -9,21 +9,20 @@ function LockedSummary() {
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
   const [message, setMessage]=useState();
-  const [selectedSemester, setSelectedSemester] = useState('B.Sc (2 sem)');
-  const [selectedFaculty, setSelectedFaculty] = useState('Dr. Kiran Singh');
-  const [selectedRoom, setSelectedRoom] = useState('L-201');
+  const [selectedSemester, setSelectedSemester] = useState('1');
+  const [selectedFaculty, setSelectedFaculty] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState('');
   
   const apiUrl = getEnvironment();
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 2];
-
-  // Define your options for semesters, faculty, and rooms
-  const availableRooms = ['L-201', 'L-209','room1','room2'];
-  const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
-    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
-  const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)','d-sem1','d-sem2']
+  // const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [availableSems, setAvailableSems] = useState([]);
+  const [availableRooms, setAvailableRooms] = useState([]);
+  const [availableFaculties, setAvailableFaculties] = useState([]);
+  const semesters=availableSems;
 
   useEffect(() => {
     const fetchData = async (semester) => {
@@ -84,6 +83,59 @@ function LockedSummary() {
     fetchRoomData(selectedRoom);
   }, [selectedSemester, currentCode, selectedFaculty, selectedRoom]);
 
+  useEffect(() => {
+    const fetchSem = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('filtered data',data)
+          const filteredSems = data.filter((sem) => sem.code === currentCode);
+          const semValues = filteredSems.map((sem) => sem.sem);
+
+          setAvailableSems(semValues);
+          console.log('available semesters',availableSems)
+        }
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+    const fetchRoom = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          const filteredSems = data.filter((room) => room.code === currentCode);
+          const semValues = filteredSems.map((room) => room.room);
+
+          setAvailableRooms(semValues);
+          console.log('available rooms',availableRooms)
+        }
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+    const fetchFaculty = async (currentCode,selectedSemester) => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/filteredfaculty/${currentCode}/${selectedSemester}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('faculty response',data[0]);
+          setAvailableFaculties(data[0].faculty);
+          console.log('faculties', availableFaculties);
+        }
+         
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+    fetchSem();
+    fetchRoom();
+    fetchFaculty(currentCode,selectedSemester); // Call the function to fetch subject data
+  }, [apiUrl,currentCode,selectedSemester]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -171,7 +223,7 @@ function LockedSummary() {
         ))}
       </select>
       <div>
-      <Header />
+      {/* <Header /> */}
       <ViewTimetable timetableData={viewData} />     
       </div>
       {/* Faculty Dropdown */}
