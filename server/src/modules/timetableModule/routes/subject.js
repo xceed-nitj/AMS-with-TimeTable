@@ -73,5 +73,18 @@ subjectRouter.post("/", async (req, res) => {
     }
   });
 
+  subjectRouter.get("/filteredsubject/:code/:sem", async (req, res) => {
+    try {
+      const code=req.params.code;
+      const sem=req.params.sem;
+      const subjects = await subjectController.getFilteredSubject(code,sem); 
+      res.status(200).json(subjects);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+
+
 
   module.exports = subjectRouter;

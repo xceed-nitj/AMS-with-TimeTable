@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import ViewTimetable from './viewtt';
 import getEnvironment from '../getenvironment';
 import './Timetable.css';
+import TimetableSummary from './ttsummary';
 
 
 const Timetable = () => {
@@ -12,16 +13,20 @@ const Timetable = () => {
   const [viewRoomData, setViewRoomData] = useState({});
   const [message, setMessage]=useState();
   const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [availableSems, setAvailableSems] = useState([]);
+  const [availableRooms, setAvailableRooms] = useState([]);
+  const [availableFaculties, setAvailableFaculties] = useState([]);
+
   const [selectedSubject, setSelectedSubject] = useState('');
 
-  const availableRooms = ['L-201', 'L-209','room1','room2'];
-  const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
-    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
-  const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)','d-sem1','d-sem2']
-  const [selectedSemester, setSelectedSemester] = useState('B.Sc (2 sem)'); 
-  const [viewselectedSemester, setViewSelectedSemester] = useState('B.Sc (2 sem)'); 
-  const [viewFaculty, setViewFaculty]= useState('Dr. Kiran Singh')  
-  const [viewRoom, setViewRoom]= useState('L-201')  
+  // const availableRooms = ['L-201', 'L-209','room1','room2'];
+  // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
+    // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
+  const semesters=availableSems;
+  const [selectedSemester, setSelectedSemester] = useState('1'); 
+  const [viewselectedSemester, setViewSelectedSemester] = useState(availableSems[0]); 
+  const [viewFaculty, setViewFaculty]= useState('')  
+  const [viewRoom, setViewRoom]= useState('')  
   
   const selectedCell = null;
   const navigate = useNavigate();
@@ -90,7 +95,6 @@ const Timetable = () => {
       setViewRoomData(data);
     };
 
-
     fetchTimetableData(selectedSemester);
     fetchViewData(viewselectedSemester);
     fetchFacultyData(viewFaculty);
@@ -100,23 +104,74 @@ const Timetable = () => {
 
   useEffect(() => {
     // Fetch subject data from the database and populate availableSubjects
-    const fetchSubjects = async () => {
+    const fetchSubjects = async (currentCode,selectedSemester) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/subject/filteredsubject/${currentCode}/${selectedSemester}`);
         if (response.ok) {
           const data = await response.json();
-          const filteredSubjects = data.filter((subject) => subject.code === currentCode);
-          setAvailableSubjects(filteredSubjects);
+          setAvailableSubjects(data);
+          console.log('subjects', availableSubjects);
+        }
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+    
+    
+    const fetchSem = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('filtered data',data)
+          const filteredSems = data.filter((sem) => sem.code === currentCode);
+          const semValues = filteredSems.map((sem) => sem.sem);
+
+          setAvailableSems(semValues);
+          console.log('available semesters',availableSems)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
       }
     };
 
-    // Fetch other data and set states
+    const fetchRoom = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          const filteredSems = data.filter((room) => room.code === currentCode);
+          const semValues = filteredSems.map((room) => room.room);
 
-    fetchSubjects(); // Call the function to fetch subject data
-  }, [apiUrl,currentCode]);
+          setAvailableRooms(semValues);
+          console.log('available rooms',availableRooms)
+        }
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+    const fetchFaculty = async (currentCode,selectedSemester) => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/filteredfaculty/${currentCode}/${selectedSemester}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('faculty response',data[0]);
+          setAvailableFaculties(data[0].faculty);
+          console.log('faculties', availableFaculties);
+        }
+         
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+
+    fetchSubjects(currentCode,selectedSemester);
+    fetchSem();
+    fetchRoom();
+    fetchFaculty(currentCode,selectedSemester); // Call the function to fetch subject data
+  }, [apiUrl,currentCode,selectedSemester]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -379,7 +434,16 @@ const Timetable = () => {
       <button onClick={handleLockTT}>Lock TT</button>
       <button onClick={handleViewSummary}>View/Download Locked TT</button>
     </div>
-    <div>{message}</div>
+    <div style={{
+  backgroundColor: 'brown',
+  color: 'white',
+  textAlign: 'center',
+  fontWeight: 'bold',
+  fontSize: '1.5rem', // Adjust the font size as needed
+}}>
+  {message}
+</div>
+
     <div>
         <label>Select Semester:</label>
         <select
@@ -420,13 +484,14 @@ const Timetable = () => {
               <div key={slotIndex} className="cell-container">
                 {slot.map((cell, cellIndex) => (
                   <div key={cellIndex} className="cell-slot">
-                    <select
-  value={selectedSubject}
-  onChange={(event) => setSelectedSubject(e.target.value)}
+<select
+  value={cell.subject}
+  onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'subject', event)}
 >
+
 <option value="">Select Subject</option>
     {availableSubjects.map((subject) => (
-      <option key={subject._id} value={subject._id}>
+      <option key={subject._id} value={subject.subName}>
         {subject.subName}
       </option>
   ))}
@@ -447,9 +512,9 @@ const Timetable = () => {
   onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'faculty', event)}
 >
   <option value="">Select Faculty</option> {/* Add an empty option */}
-  {availableFaculties.map((facultyOption) => (
-    <option key={facultyOption} value={facultyOption}>
-      {facultyOption}
+  {availableFaculties.map((faculty, index) => (
+    <option key={index} value={faculty}>
+      {faculty}
     </option>
   ))}
 </select>
@@ -488,7 +553,8 @@ const Timetable = () => {
         <select
           value={viewselectedSemester}
           onChange={(e) => setViewSelectedSemester(e.target.value)}
-        >
+        >          <option value="">Select </option>
+
           {semesters.map((semester, index) => (
             <option key={index} value={semester}>
               {semester}
@@ -497,7 +563,19 @@ const Timetable = () => {
         </select>
       </div>
   
-<ViewTimetable timetableData={viewData} />     
+
+<div>
+  {viewselectedSemester ? (
+    <div>
+      <ViewTimetable timetableData={viewData} />     
+<TimetableSummary timetableData={viewData} /> 
+    </div>
+  ) : (
+    <p>Please select a Semester from the dropdown.</p>
+  )}
+</div>
+
+
 </div>
 <div>
 <div>
@@ -507,6 +585,7 @@ const Timetable = () => {
           value={viewFaculty}
           onChange={(e) => setViewFaculty(e.target.value)}
         >
+          <option value="">Select </option>
           {availableFaculties.map((faculty, index) => (
             <option key={index} value={faculty}>
               {faculty}
@@ -514,8 +593,13 @@ const Timetable = () => {
           ))}
         </select>
       </div>
-  
-<ViewTimetable timetableData={viewFacultyData} />     
+      <div>
+  {viewFaculty ? (
+    <ViewTimetable timetableData={viewFacultyData} />
+  ) : (
+    <p>Please select a faculty from the dropdown.</p>
+  )}
+</div>     
 </div>
 
 <div>
@@ -525,6 +609,7 @@ const Timetable = () => {
           value={viewRoom}
           onChange={(e) => setViewRoom(e.target.value)}
         >
+           <option value="">Select </option>
           {availableRooms.map((room, index) => (
             <option key={index} value={room}>
               {room}
@@ -533,8 +618,13 @@ const Timetable = () => {
         </select>
       </div>
   
-<ViewTimetable timetableData={viewRoomData} />     
-
+      <div>
+  {viewRoom ? (
+    <ViewTimetable timetableData={viewRoomData} />
+  ) : (
+    <p>Please select a Room from the dropdown.</p>
+  )}
+</div>
 
     </div>
     
