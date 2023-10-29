@@ -62,6 +62,18 @@ addFacultyRouter.post("/", async (req, res) => {
       }
     });
 
-
+    addFacultyRouter.get("/filteredfaculty/:code/:sem", async (req, res) => {
+      try {
+      const code=req.params.code;
+      const sem=req.params.sem;
+      const faculty=await addFacultyController.getFilteredFaculty(code,sem) ; 
+      res.status(200).json(faculty);
+      } catch (e) {
+        res
+          .status(e?.status || 500)
+          .json({ error: e?.message || "Internal Server Error" });
+      }
+    });
+  
 
   module.exports = addFacultyRouter;
