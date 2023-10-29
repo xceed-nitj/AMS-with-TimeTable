@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate} from 'react-router-dom';
 import getEnvironment from "../getenvironment";
-import './creatett.css';
+
 
 function CreateTimetable() {
   const navigate = useNavigate();
@@ -118,87 +118,59 @@ function CreateTimetable() {
   
 
   return (
-
-    <div class="createttbody">
-    <div className="createttcontainer">
-      <div class="createttsignin-content">
-        <div class="createttsignin-form">
-          <form className="createttregister-form" onSubmit={handleSubmit}>
-            <div class="createttform-group">
-              <div class="labelandin">
-                <label>
-                Name:
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  // placeholder="Name"
-                  className="createttform-input" 
-                  />
-              </div>
-
-              <div class="labelandin">
-                <label>
-                Department:
-                </label>
-                <input
-                  type="text"
-                  name="dept"
-                  value={formData.dept}
-                  onChange={handleInputChange}
-                  // placeholder="Department"
-                  className="createttform-input"
-                  />
-              </div>
-
-              <div class="labelandin">
-                <label>
-                Session:
-                </label>
-                <input
-                  type="text"
-                  name="session"
-                  value={formData.session}
-                  onChange={handleInputChange}
-                  // placeholder="Session"
-                  className="createttform-input"
-                  />
-              </div>
-              
-              <div class="createttform-button">
-                <input class="createttbtn" type="submit" value="submit"/>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-  
+    <div>
+      <h1>Create Time Table</h1>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleInputChange}
+          placeholder="Name"
+        />
+        <input
+          type="text"
+          name="dept"
+          value={formData.dept}
+          onChange={handleInputChange}
+          placeholder="Department"
+        />
+        <input
+          type="text"
+          name="session"
+          value={formData.session}
+          onChange={handleInputChange}
+          placeholder="Session"
+        />
+        <button type="submit">Submit</button>
+      </form>
       <table>
-      <thead>
+        <thead>
           <tr>
-          <th>Name</th>
-            <th>Department</th>
+            <th>Timetable Name</th>
             <th>Session</th>
             <th>Department</th>
             <th>Link</th>
-       
+            
+            {/* Add more table headers as needed */}
           </tr>
-          </thead>
-          <tbody>
-          {sessions.map((session) => (
-            <tr key={session.id}>
-            <td>{session.name}</td>
-            <td>{session.dept}</td>
-            <td>{session.session}</td>
-            <td>{session.code}</td>
+        </thead>
+        <tbody>
+          {table.map((timetable) => (
+            <tr key={timetable._id}>
+              <td>{timetable.name}</td>
+              <td>{timetable.session}</td>
+              <td>{timetable.dept}</td>
+              <td>
+                <a href={`http://${domainName}/tt/${timetable.code}`}>{timetable.code}</a>
+              </td>
+              {/* Add more table data cells as needed */}
             </tr>
           ))}
-          </tbody>
-        </table>
+        </tbody>
+      </table>
+
       {loading && <p>Loading...</p>}
-    </div>
     </div>
   );
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
-import './addfaculty.css'
 
 function SuccessMessage({ message }) {
   return (
@@ -149,63 +148,61 @@ function Component() {
   };
 
   return (
-
-    <div class="addfacultybody">
-    <div class="addfacultycontainer">
-      <h1 class="addfacultypage-title">Add Faculty</h1>
-      <div class="success-message">
-        {successMessage ? (
-          <SuccessMessage message={successMessage} />
-          ) : (
-          <div class="addfacultyform">
-            <div class="labelandDD">
-              <label class="form-label">Semester:</label>
-              <select class="form-select" value={sem} onChange={(e) => setSem(Number(e.target.value))}>
-                {[...Array(8).keys()].map((semester) => (
-                  <option key={semester + 1} value={(semester + 1).toString()}>
-                    {semester + 1}
-                  </option>
-                ))}
-              </select>
-              <br />
-            </div>
-
-            <div class="labelandDD">
-              <label class="form-label">Department:</label>
-              <select class="form-select" value={selectedDepartment} onChange={handleDepartmentChange}>
-                <option value="">Select a Department</option>
-                {availableDepartments.map((department) => (
-                  <option key={department} value={department}>
-                    {department}
-                  </option>
-                ))}
-              </select>
-              <br />
-            </div>
-
-            <div class="labelandDD">
-              <label class="form-label">Faculty:</label>
-              <select class="form-select" value={selectedFaculty} onChange={(e) => setSelectedFaculty(e.target.value)}>
-                <option value="" key="default">
-                  Select a Faculty
+    <div>
+      <h1>Add Faculty</h1>
+      {successMessage ? (
+        <SuccessMessage message={successMessage} />
+      ) : (
+        <div>
+           <label>
+            Semester:
+            <select value={sem} onChange={(e) => setSem(e.target.value)}>
+              {availableSemesters.map((semester) => (
+                <option key={semester} value={semester}>
+                  {semester}
                 </option>
-                {faculties.map((faculty) => (
-                  <option key={faculty.id} value={faculty.name}>
-                    {faculty.name}
-                  </option>
-                ))}
-              </select>
-              <br />
-            </div>
-          </div>
-        )}
-        <button class="form-button" onClick={handleSubmit}>Submit</button>
-      </div>
+              ))}
+            </select>
+          </label>
+          <br />
+  
+          <label>
+            Department:
+            <select value={selectedDepartment} onChange={handleDepartmentChange}>
+              <option value="">Select a Department</option>
+              {availableDepartments.map((department) => (
+                <option key={department.value} value={department.value}>
+                  {department.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <br />
+  
+          <label>
+            Faculty:
+            <select value={selectedFaculty} onChange={(e) => setSelectedFaculty(e.target.value)}>
+              <option value="" key="default">
+                Select a Faculty
+              </option>
+              {faculties.map((faculty) => (
+                <option key={faculty.id} value={faculty.name}>
+                  {faculty.name}
+                </option>
+              ))}
+            </select>
+          </label>
+  
+          <br />
+          <button onClick={handleSubmit}>Submit</button>
+        </div>
+      )}
 
-      <div class="faculty-data">
-        <h2 class="section-title">Faculty Data</h2>
-        <table class="faculty-table">
-
+      
+  
+      <div>
+        <h2>Faculty Data</h2>
+        <table>
           <thead>
             <tr>
               <th>Semester</th>
@@ -214,22 +211,20 @@ function Component() {
             </tr>
           </thead>
           <tbody>
-            {facultyData.map((faculty) =>
-              faculty.faculty.map((individualFaculty, index) => (
-                <tr key={`${faculty._id}-${index}`}>
-                  <td class="table-cell">{index === 0 ? faculty.sem : ''}</td>
-                  <td class="table-cell">{individualFaculty}</td>
-                  <td class="table-cell">
-                    <button class="table-button" onClick={() => handleDelete(faculty._id, individualFaculty)}>Delete</button>
-                  </td>
-                </tr>
-              ))
-              )}
-
+          {facultyData.map((faculty) =>
+          faculty.faculty.map((individualFaculty, index) => (
+            <tr key={`${faculty._id}-${index}`}>
+              <td>{faculty.sem}</td>
+              <td>{individualFaculty}</td>
+              <td>
+                <button onClick={() => handleDelete(faculty._id, individualFaculty)}>Delete</button>
+              </td>
+            </tr>
+          ))
+        )}
           </tbody>
         </table>
       </div>
-    </div>
     </div>
   );
   

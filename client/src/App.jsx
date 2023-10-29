@@ -17,9 +17,9 @@ function App() {
   return (
     <Router>
 
-      <div className="app">
+      {/* <div className="app"> */}
    
-        <h1>XCEED-Timetable Module</h1> 
+        {/* <h1>XCEED-Timetable Module</h1>  */}
          
         <Routes>
         <Route path="/" element={<Login/>} />
