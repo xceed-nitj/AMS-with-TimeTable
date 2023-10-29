@@ -14,6 +14,16 @@ class AddSemController {
           res.status(500).json({ error: "Internal server error" });
         }
       }
+
+      async getSem() {
+        try {
+          const uniqueSem = await addSem.distinct('sem');
+          
+          return uniqueSem;
+        } catch (error) {
+          throw error; 
+        }
+      }
       
       async getAddedSem(req, res) {
        try {
@@ -25,6 +35,7 @@ class AddSemController {
           res.status(500).json({ error: "Internal server error" });
         }
       }
+      
 
       async getAddedSemById(id) {
         if (!id) {
