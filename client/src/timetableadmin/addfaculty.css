@@ -1,0 +1,96 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.addfacultybody {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+    background: #f8f8f8;
+    font-weight: 400;
+    font-family: 'Poppins', sans-serif;
+}
+
+.addfacultycontainer {
+    text-align: center;
+    margin: 10px auto;
+    background: #fff;
+    width: 700px;
+    box-shadow: 0px 15px 16.83px 0.17px rgba(0, 0, 0, 0.05);
+    border-radius: 20px;
+    padding: 20px;
+}
+
+.addfacultypage-title {
+    font-size: 28px;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+
+.success-message {
+    text-align: center;
+}
+
+.addfacultyform {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+}
+
+.labelandDD {
+    display: block;
+}
+
+.form-label {
+    display: block;
+    font-weight: bold;
+    margin-top: 10px;
+    text-align: start;
+}
+
+.form-select {
+    width: 100%;
+    padding: 10px 107px 10px 5px;
+    margin-top: 10px;
+    border: 1px solid #999;
+    border-radius: 5px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.form-button {
+    width: 20%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    font-family: 'Poppins', sans-serif;
+    background: #6dabe4;
+    color: #fff;
+    cursor: pointer;
+}
+
+.faculty-data {
+    margin-top: 20px;
+}
+
+.section-title {
+    font-size: 23px;
+}
+
+.faculty-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.table-cell {
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.table-button {
+    background: #6dabe4;
+    color: #fff;
+    cursor: pointer;
+}
