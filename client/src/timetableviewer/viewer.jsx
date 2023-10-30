@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import ViewTimetable from '../timetableadmin/viewtt';
-import headernitj from '../assets/headernitj.svg';
-import footerxceed from '../assets/footerxceed.svg';
+import headernitj from '../assets/nitjheader.svg';
+import footerxceed from '../assets/xceedfooter.svg';
 
 // import Header from './header';
 
