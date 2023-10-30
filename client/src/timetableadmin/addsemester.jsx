@@ -64,7 +64,7 @@ function AddSemComponent() {
       .then(handleResponse)
       .then((data) => {
         console.log('Data saved successfully:', data);
-        setSuccessMessage('Room added successfully!');
+        setSuccessMessage('Semester added successfully!');
         fetchSemData();
       })
       .catch(handleError);
