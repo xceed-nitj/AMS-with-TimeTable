@@ -14,7 +14,7 @@ class AllotmentController {
         }
       }
       
-      async getAddedAllotment(req, res) {
+      async getAllotment(req, res) {
        try {
           const list = await AddAllotment.find();
           res.json(list)
@@ -28,14 +28,13 @@ class AllotmentController {
       async getSessions() {
         try {
           const uniqueSessions = await AddAllotment.distinct('session');
-          
           return uniqueSessions;
         } catch (error) {
           throw error; 
         }
       }
 
-      async getAddedAllotmentById(id) {
+      async getAllotmentById(id) {
         if (!id) {
           throw new HttpException(400, "Invalid Id");
         }
