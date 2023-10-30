@@ -4,6 +4,7 @@ import getEnvironment from '../getenvironment';
 
 const TimetableSummary = ({ timetableData, type }) => {
 
+  const [subjectData, setSubjectData] = useState({}); // Initialize as an empty array
 
 
   const apiUrl = getEnvironment();
@@ -29,23 +30,24 @@ const TimetableSummary = ({ timetableData, type }) => {
     }
   }
   
-const currentCode=extractCodeFromURL(currentURL);
-
-  const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
-
   useEffect(() => {
     const fetchSubjectData = async (currentCode) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
         const data = await response.json();
         setSubjectData(data);
+        console.log('subjectdata',data)
       } catch (error) {
         console.error('Error fetching subject data:', error);
       }
     };
 
     fetchSubjectData(currentCode);
-  }, [apiUrl, currentCode]);
+  
+const currentCode=extractCodeFromURL(currentURL);
+console.log('code:',currentCode)
+
+  }, [apiUrl]);
 
   const summaryData = {};
 

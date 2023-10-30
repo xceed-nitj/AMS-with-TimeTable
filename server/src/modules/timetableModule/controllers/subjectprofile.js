@@ -1,5 +1,5 @@
 const TimetableEntry = require('../../../models/subject');
-const Subject=require('../../../models/subject');
+// const Subject=require('../../../models/subject');
 const HttpException = require("../../../models/http-exception");
 
 class SubjectController{
@@ -75,7 +75,7 @@ class SubjectController{
 
 async getFilteredSubject (code, sem){
         try {
-          const subjects = await Subject.find({ code, sem }).select('subName');
+          const subjects = await TimetableEntry.find({ code, sem }).select('subName');
       
       return subjects;
         } catch (e) {
@@ -85,7 +85,7 @@ async getFilteredSubject (code, sem){
       
       async getSubjectBySession (code){
         try {
-          const subjects = await Subject.find({ code});
+          const subjects = await TimetableEntry.find({ code});
       
       return subjects;
         } catch (e) {

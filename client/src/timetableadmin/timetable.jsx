@@ -25,10 +25,9 @@ const Timetable = () => {
   // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
     // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
   const semesters=availableSems;
-  const [selectedSemester, setSelectedSemester] = useState('1'); 
   const [viewselectedSemester, setViewSelectedSemester] = useState(availableSems[0]); 
-  const [viewFaculty, setViewFaculty]= useState('')  
-  const [viewRoom, setViewRoom]= useState('')  
+  const [viewFaculty, setViewFaculty]= useState(availableFaculties[0])  
+  const [viewRoom, setViewRoom]= useState(availableRooms[0])  
   
   const selectedCell = null;
   const navigate = useNavigate();
@@ -37,6 +36,61 @@ const Timetable = () => {
   const currentCode = parts[parts.length - 1];
   // console.log('Code:', code);
   const apiUrl=getEnvironment();
+
+  useEffect(() => {
+
+  const fetchSem = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
+      if (response.ok) {
+        const data = await response.json();
+        // console.log('filtered data',data)
+        const filteredSems = data.filter((sem) => sem.code === currentCode);
+        const semValues = filteredSems.map((sem) => sem.sem);
+
+        setAvailableSems(semValues);
+        setSelectedSemester(semValues[0]);
+        // console.log('available semesters',availableSems)
+      }
+    } catch (error) {
+      console.error('Error fetching subject data:', error);
+    }
+  };
+  fetchSem();
+
+}, [apiUrl, currentCode]);
+
+
+
+
+  const [selectedSemester, setSelectedSemester] = useState(''); 
+  useEffect(() => {
+    const fetchData = async (semester) => {
+      try {
+        console.log('sem value',semester);
+        console.log('current code', currentCode);
+        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
+        const data = await response.json();
+        // console.log(data);
+        const initialData = generateInitialTimetableData(data,'sem');
+        return initialData;
+      } catch (error) {
+        console.error('Error fetching existing timetable data:', error);
+        return {};
+      }
+    };
+    const fetchTimetableData = async (semester) => {
+      const data = await fetchData(semester);
+      setTimetableData(data);
+    };
+
+
+
+    fetchTimetableData(selectedSemester);
+    
+  }, [selectedSemester, apiUrl, currentCode]);
+
+
 
   useEffect(() => {
     const fetchData = async (semester) => {
@@ -51,6 +105,18 @@ const Timetable = () => {
         return {};
       }
     };
+    
+    const fetchViewData = async (semester) => {
+      const data = await fetchData(semester);
+      setViewData(data);
+    };
+
+
+    fetchViewData(viewselectedSemester);
+    
+  }, [selectedSemester, currentCode,apiUrl, viewselectedSemester]);
+
+  useEffect(() => {
     const facultyData = async (currentCode, faculty) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`);
@@ -63,6 +129,17 @@ const Timetable = () => {
         return {};
       }
     };
+    const fetchFacultyData = async (faculty) => {
+      const data = await facultyData(currentCode, faculty);
+      setViewFacultyData(data);
+    };
+    fetchFacultyData(viewFaculty);
+
+  }, [viewFaculty, currentCode]);
+
+
+
+  useEffect(() => {
     const roomData = async (currentCode, room) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room }`);
@@ -77,32 +154,21 @@ const Timetable = () => {
    
     };
  
-    const fetchTimetableData = async (semester) => {
-      const data = await fetchData(semester);
-      setTimetableData(data);
-    };
-
-    const fetchViewData = async (semester) => {
-      const data = await fetchData(semester);
-      setViewData(data);
-    };
-
-    const fetchFacultyData = async (faculty) => {
-      const data = await facultyData(currentCode, faculty);
-      setViewFacultyData(data);
-    };
 
     const fetchRoomData = async (room) => {
       const data = await roomData(currentCode, room);
       setViewRoomData(data);
     };
 
-    fetchTimetableData(selectedSemester);
-    fetchViewData(viewselectedSemester);
-    fetchFacultyData(viewFaculty);
     fetchRoomData(viewRoom);
     
-  }, [selectedSemester, viewselectedSemester, currentCode, viewFaculty, viewRoom]);
+  }, [viewRoom, currentCode]);
+
+
+
+
+
+
 
   useEffect(() => {
     // Fetch subject data from the database and populate availableSubjects
@@ -120,23 +186,6 @@ const Timetable = () => {
     };
     
     
-    const fetchSem = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
-        if (response.ok) {
-          const data = await response.json();
-          // console.log('filtered data',data)
-          const filteredSems = data.filter((sem) => sem.code === currentCode);
-          const semValues = filteredSems.map((sem) => sem.sem);
-
-          setAvailableSems(semValues);
-          // console.log('available semesters',availableSems)
-        }
-      } catch (error) {
-        console.error('Error fetching subject data:', error);
-      }
-    };
-
     const fetchRoom = async () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`);
@@ -170,9 +219,9 @@ const Timetable = () => {
 
 
     fetchSubjects(currentCode,selectedSemester);
-    fetchSem();
     fetchRoom();
     fetchFaculty(currentCode,selectedSemester); // Call the function to fetch subject data
+
   }, [apiUrl,currentCode,selectedSemester]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
@@ -570,7 +619,7 @@ const Timetable = () => {
   {viewselectedSemester ? (
     <div>
       <ViewTimetable timetableData={viewData} />     
-<TimetableSummary timetableData={viewData} /> 
+{/* <TimetableSummary timetableData={viewData} />  */}
     </div>
 
     
