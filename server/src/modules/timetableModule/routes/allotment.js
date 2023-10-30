@@ -1,6 +1,6 @@
 const express = require("express");
 const allotmentRouter = express.Router();
-const AllotmentController = require("../controllers/allotment");
+const AllotmentController = require("../controllers/allotmentprofile");
 const allotmentController = new AllotmentController();
 
 allotmentRouter.post("/", async (req, res) => {
@@ -23,6 +23,15 @@ allotmentRouter.post("/", async (req, res) => {
     }
   });
 
+  allotmentRouter.get('/session', async (req, res) => {
+    try {
+      const sessions = await allotmentController.getSessions(); 
+      res.status(200).json(sessions);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
   allotmentRouter.get("/:id", async (req, res) => {
     try {
       const id = req.params.id;
@@ -32,15 +41,6 @@ allotmentRouter.post("/", async (req, res) => {
       res
         .status(e?.status || 500)
         .json({ error: e?.message || "Internal Server Error" });
-    }
-  });
-
-  allotmentRouter.get('/session', async (req, res) => {
-    try {
-      const sessions = await allotmentController.getSessions(); 
-      res.status(200).json(sessions);
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
     }
   });
 
