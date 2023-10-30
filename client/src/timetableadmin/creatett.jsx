@@ -1,22 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import getEnvironment from '../getenvironment';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import getEnvironment from "../getenvironment";
+import { Container } from "@chakra-ui/layout";
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
 
 function CreateTimetable() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '',
-    dept: '',
-    session: '',
-    code: '',
+    name: "",
+    dept: "",
+    session: "",
+    code: "",
   });
   const [table, setTable] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState('');
+  const [generatedLink, setGeneratedLink] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [apiUrl] = useState(getEnvironment());
-  const [sessions, setSessions] = useState([]); 
-  const [departments, setDepartments] = useState([]); 
+  const [sessions, setSessions] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -29,39 +40,42 @@ function CreateTimetable() {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/allotment/session`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/allotment/session`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
         if (response.ok) {
           const data = await response.json();
           setSessions(data);
         } else {
-          console.error('Failed to fetch sessions');
+          console.error("Failed to fetch sessions");
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
       }
     };
 
     const fetchDepartments = async () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept`, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
         if (response.ok) {
           const data = await response.json();
           setDepartments(data);
         } else {
-          console.error('Failed to fetch departments');
+          console.error("Failed to fetch departments");
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
       }
     };
 
@@ -72,20 +86,20 @@ function CreateTimetable() {
   const fetchTimetables = async () => {
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/timetable/`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
         setTable(data);
       } else {
-        console.error('Failed to fetch timetables');
+        console.error("Failed to fetch timetables");
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
@@ -98,12 +112,12 @@ function CreateTimetable() {
 
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/timetable`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -115,19 +129,19 @@ function CreateTimetable() {
         const redirectTo = `/tt/${generatedLink}`;
         navigate(redirectTo);
       } else {
-        console.error('Error submitting the form');
+        console.error("Error submitting the form");
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
   const currentUrl = window.location.href;
-  const urlParts = currentUrl.split('/');
+  const urlParts = currentUrl.split("/");
   const domainName = urlParts[2];
 
   return (
-    <div>
+    <Container maxW={"container.lg"}>
       <h1>Create Time Table</h1>
       <form onSubmit={handleSubmit}>
         <input
@@ -138,47 +152,57 @@ function CreateTimetable() {
           placeholder="Name"
         />
         <select name="dept" value={formData.dept} onChange={handleInputChange}>
-        <option value="">Select a Department</option>
-        {departments.map((department, index) => (
-          <option key={index} value={department}>
-            {department}
-          </option>
-        ))}
-      </select>
-      <select name="session" value={formData.session} onChange={handleInputChange}>
-      <option value="">Select a Session</option>
-      {sessions.map((session, index) => (
-        <option key={index} value={session}>
-          {session}
-        </option>
-      ))}
-    </select>
-        <button type="submit">Submit</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>Timetable Name</th>
-            <th>Session</th>
-            <th>Department</th>
-            <th>Link</th>
-          </tr>
-        </thead>
-        <tbody>
-          {table.map((timetable) => (
-            <tr key={timetable._id}>
-              <td>{timetable.name}</td>
-              <td>{timetable.session}</td>
-              <td>{timetable.dept}</td>
-              <td>
-                <a href={`http://${domainName}/tt/${timetable.code}`}>{timetable.code}</a>
-              </td>
-            </tr>
+          <option value="">Select a Department</option>
+          {departments.map((department, index) => (
+            <option key={index} value={department}>
+              {department}
+            </option>
           ))}
-        </tbody>
-      </table>
+        </select>
+        <select
+          name="session"
+          value={formData.session}
+          onChange={handleInputChange}
+        >
+          <option value="">Select a Session</option>
+          {sessions.map((session, index) => (
+            <option key={index} value={session}>
+              {session}
+            </option>
+          ))}
+        </select>
+        <Button type="submit">Submit</Button>
+      </form>
+      <TableContainer>
+        <Table
+        variant='striped'
+        >
+          <Thead>
+            <Tr>
+              <Th>Timetable Name</Th>
+              <Th>Session</Th>
+              <Th>Department</Th>
+              <Th>Link</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {table.map((timetable) => (
+              <Tr key={timetable._id}>
+                <Td>{timetable.name}</Td>
+                <Td>{timetable.session}</Td>
+                <Td>{timetable.dept}</Td>
+                <Td>
+                  <a href={`http://${domainName}/tt/${timetable.code}`}>
+                    {timetable.code}
+                  </a>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </TableContainer>
       {loading && <p>Loading...</p>}
-    </div>
+    </Container>
   );
 }
 
