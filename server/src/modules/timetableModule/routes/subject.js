@@ -88,7 +88,7 @@ subjectRouter.post("/", async (req, res) => {
     try {
       const code=req.params.code;
       // const sub=req.params.subname;
-      const subjects = await subjectController.getSubjectByName(code); 
+      const subjects = await subjectController.getSubjectBySession(code); 
       res.status(200).json(subjects);
     } catch (error) {
       res.status(500).json({ error: 'Internal Server Error' });

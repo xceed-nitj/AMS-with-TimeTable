@@ -13,6 +13,20 @@ addFacultyRouter.post("/", async (req, res) => {
     }
   });
 
+  addFacultyRouter.get("/", async (req, res) => {
+    try {
+      const allfaculty=await addFacultyController.getFaculty() ;
+      res.status(200).json(allfaculty);
+
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+
+
   addFacultyRouter.get("/all", async (req, res) => {
     try {
       const allfaculty=await addFacultyController.getAddedFaculty(req,res) ;

@@ -83,7 +83,7 @@ async getFilteredSubject (code, sem){
         }
       };
       
-      async getSubjectByName (code){
+      async getSubjectBySession (code){
         try {
           const subjects = await Subject.find({ code});
       

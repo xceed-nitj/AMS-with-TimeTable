@@ -10,7 +10,7 @@ function SuccessMessage({ message }) {
   );
 }
 function Component() {
-  const [sem, setSem] = useState('1st');
+  const [sem, setSem] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [faculties, setFaculties] = useState([]);
   const [selectedFaculty, setSelectedFaculty] = useState('');
@@ -106,6 +106,7 @@ function Component() {
       code: currentCode,
       faculty: selectedFaculty,
     };
+    console.log(dataToSave)
 
     fetch(`${apiUrl}/timetablemodule/addFaculty`, {
       method: 'POST',
@@ -150,13 +151,13 @@ function Component() {
   return (
     <div>
       <h1>Add Faculty</h1>
-      {successMessage ? (
         <SuccessMessage message={successMessage} />
-      ) : (
         <div>
            <label>
             Semester:
             <select value={sem} onChange={(e) => setSem(e.target.value)}>
+            <option value="" disabled> Select Semester
+    </option>
               {availableSemesters.map((semester) => (
                 <option key={semester} value={semester}>
                   {semester}
@@ -196,7 +197,6 @@ function Component() {
           <br />
           <button onClick={handleSubmit}>Submit</button>
         </div>
-      )}
 
       
   

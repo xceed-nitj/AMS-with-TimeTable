@@ -74,6 +74,7 @@ const currentCode=extractCodeFromURL(currentURL);
                     faculties: [faculty],
                     subType: foundSubject.type,
                     rooms:[room],
+                    subjectFullName: foundSubject.subjectFullName,
                   };
                 } else {
                   summaryData[subject].count++;
@@ -97,6 +98,7 @@ const currentCode=extractCodeFromURL(currentURL);
       <table border="1" cellSpacing="0" align="center">
         <thead>
           <tr>
+          <th>Abbreviation</th>
             <th>Subject Code</th>
             <th>Subject Name</th>
             {type !== 'room' && <th>Subject Type</th>}
@@ -108,8 +110,9 @@ const currentCode=extractCodeFromURL(currentURL);
         <tbody>
           {Object.keys(summaryData).map((subject) => (
             <tr key={subject}>
-              <td>{summaryData[subject].subCode}</td>
               <td>{subject}</td>
+              <td>{summaryData[subject].subCode}</td>
+              <td>{summaryData[subject].subjectFullName}</td>
               {type !== 'room' && <td>{summaryData[subject].subType}</td>}
               <td>{summaryData[subject].count}</td>
               {type !== 'faculty' && <td>{summaryData[subject].faculties.join(', ')}</td>}

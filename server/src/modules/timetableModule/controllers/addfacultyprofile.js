@@ -90,6 +90,18 @@ class addFacultyController {
         }
       };
 
+      async getFaculty(){
+        try {
+          const faculty = await addFaculty.find();
+      
+      return faculty;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      };
+
+
+
     }
 
 
