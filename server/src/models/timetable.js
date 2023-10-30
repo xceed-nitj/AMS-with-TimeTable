@@ -9,10 +9,6 @@ const tableSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  degree:{
-    type: String,
-    required: true,
-  },
   dept: {
     type: String,
     required: true,

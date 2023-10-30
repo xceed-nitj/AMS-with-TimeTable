@@ -83,6 +83,15 @@ async getFilteredSubject (code, sem){
         }
       };
       
+      async getSubjectByName (code){
+        try {
+          const subjects = await Subject.find({ code});
+      
+      return subjects;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      };
 
 
 }

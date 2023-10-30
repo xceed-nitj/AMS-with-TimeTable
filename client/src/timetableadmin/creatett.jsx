@@ -87,31 +87,6 @@ function CreateTimetable() {
     }
   };
 
-  const handleGetSessions = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${apiUrl}/timetablemodule/timetable`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSessions(data);
-        setLoading(false);
-      } else {
-        // Handle errors
-        console.error("Error fetching sessions");
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setLoading(false);
-    }
-  };
-
   const currentUrl = window.location.href;
   const urlParts = currentUrl.split('/');
   const domainName = urlParts[2]; // This will give you the domain name with port, e.g., 'localhost:5173'

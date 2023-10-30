@@ -4,6 +4,8 @@ import ViewTimetable from './viewtt';
 import getEnvironment from '../getenvironment';
 import './Timetable.css';
 import TimetableSummary from './ttsummary';
+import ReactToPrint from 'react-to-print';
+
 
 
 const Timetable = () => {
@@ -570,6 +572,8 @@ const Timetable = () => {
       <ViewTimetable timetableData={viewData} />     
 <TimetableSummary timetableData={viewData} /> 
     </div>
+
+    
   ) : (
     <p>Please select a Semester from the dropdown.</p>
   )}
@@ -594,9 +598,11 @@ const Timetable = () => {
         </select>
       </div>
       <div>
-  {viewFaculty ? (
+  {viewFaculty ? (<div>
     <ViewTimetable timetableData={viewFacultyData} />
-  ) : (
+<TimetableSummary timetableData={viewFacultyData} type={'faculty'}/> 
+</div>
+    ) : (
     <p>Please select a faculty from the dropdown.</p>
   )}
 </div>     
@@ -620,7 +626,11 @@ const Timetable = () => {
   
       <div>
   {viewRoom ? (
+    <div>
     <ViewTimetable timetableData={viewRoomData} />
+<TimetableSummary timetableData={viewRoomData} type={'room'} /> 
+    
+    </div>
   ) : (
     <p>Please select a Room from the dropdown.</p>
   )}

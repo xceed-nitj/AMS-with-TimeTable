@@ -84,7 +84,17 @@ subjectRouter.post("/", async (req, res) => {
     }
   });
   
-
+  subjectRouter.get("/subjectdetails/:code", async (req, res) => {
+    try {
+      const code=req.params.code;
+      // const sub=req.params.subname;
+      const subjects = await subjectController.getSubjectByName(code); 
+      res.status(200).json(subjects);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+ 
 
 
   module.exports = subjectRouter;

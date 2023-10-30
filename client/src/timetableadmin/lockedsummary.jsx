@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import ViewTimetable from './viewtt';
-import Header from './header';
+import TimetableSummary from './ttsummary';
 
 function LockedSummary() {
   const [viewData, setViewData] = useState({});
@@ -28,6 +28,7 @@ function LockedSummary() {
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [availableFaculties, setAvailableFaculties] = useState([]);
+
 
   const semesters=availableSems;
   useEffect(() => {
@@ -244,9 +245,17 @@ function LockedSummary() {
         ))}
       </select>
       <div>
-      {/* <Header /> */}
+  {selectedSemester ? (
+    <div>
       <ViewTimetable timetableData={viewData} />     
-      </div>
+<TimetableSummary timetableData={viewData} /> 
+    </div>
+
+    
+  ) : (
+    <p>Please select a Semester from the dropdown.</p>
+  )}
+</div>
       {/* Faculty Dropdown */}
       <h2>Faculty timetable (locked)</h2>
       <select
@@ -261,8 +270,14 @@ function LockedSummary() {
         ))}
       </select>
       <div>
-      <ViewTimetable timetableData={viewFacultyData} />     
-      </div>
+  {selectedFaculty ? (<div>
+    <ViewTimetable timetableData={viewFacultyData} />
+<TimetableSummary timetableData={viewFacultyData} type={'faculty'}/> 
+</div>
+    ) : (
+    <p>Please select a faculty from the dropdown.</p>
+  )}
+</div> 
       <h2>Room timetable (locked)</h2>
       {/* Room Dropdown */}
       <select
@@ -277,8 +292,16 @@ function LockedSummary() {
         ))}
       </select>
       <div>
-      <ViewTimetable timetableData={viewRoomData} />     
-      </div>
+  {selectedRoom ? (
+    <div>
+    <ViewTimetable timetableData={viewRoomData} />
+<TimetableSummary timetableData={viewRoomData} type={'room'} /> 
+    
+    </div>
+  ) : (
+    <p>Please select a Room from the dropdown.</p>
+  )}
+</div>
 
 </div>
   );
