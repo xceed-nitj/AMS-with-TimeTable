@@ -10,7 +10,7 @@ function Subject() {
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
   const [editedData, setEditedData] = useState({
-    abbreviation: '',
+    subjectFullName: '',
     type: '',
     subCode: '',
     subName: '',
@@ -22,7 +22,7 @@ function Subject() {
   });
 
   const [editedSData, setEditedSData] = useState({
-    abbreviation: '',
+    subjectFullName: '',
     type: '',
     subCode: '',
     subName: '',
@@ -99,7 +99,7 @@ function Subject() {
   const handleAddSubject = () => {
     // Reset the form fields using editedData
     setEditedSData({
-        abbreviation: '',
+        subjectFullName: '',
         type: '',
         subCode: '',
         subName: '',
@@ -175,7 +175,7 @@ function Subject() {
                 setEditRowId(null);
                 setEditedData({
                   _id: null, // Clear the edited data
-                  abbreviation: '',
+                  subjectFullName: '',
                   type: '',
                   subCode: '',
                   subName: '',
@@ -218,25 +218,25 @@ function Subject() {
 
   return (
     <div>
-      <h1>CSV File Upload</h1>
+      <h1>Add Subject</h1>
       <input
         type="file"
         accept=".xlsx"
         onChange={handleFileChange}
         name="csvFile"
       />
-      <button onClick={handleUpload}>Upload CSV</button>
+      <button onClick={handleUpload}>Batch Upload</button>
 
       {/* Display the fetched data */}
       <h2>Table of Subject Data</h2>
       <table>
         <thead>
           <tr>
-            <th>Abb</th>
+            <th>Subject Name</th>
             <th>Type</th>
-            <th>SubCode</th>
-            <th>SubName</th>
-            <th>Sem</th>
+            <th>Subject Code</th>
+            <th>Subject Abrreviation</th>
+            <th>Semester</th>
             <th>Degree</th>
             <th>Department</th>
             <th>Credits</th>
@@ -246,7 +246,7 @@ function Subject() {
         <tbody>
           {tableData.map((row) => (
             <tr key={row._id}>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.abbreviation} onChange={(e) => setEditedData({ ...editedData, abbreviation: e.target.value })} /> : row.abbreviation}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.subjectFullName} onChange={(e) => setEditedData({ ...editedData, subjectFullName: e.target.value })} /> : row.subjectFullName}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.subCode} onChange={(e) => setEditedData({ ...editedData, subCode: e.target.value })} /> : row.subCode}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.subName} onChange={(e) => setEditedData({ ...editedData, subName: e.target.value })} /> : row.subName}</td>
@@ -272,11 +272,11 @@ function Subject() {
 
       <h2>Add Subject</h2>
 <div>
-  <label>Abbreviation: </label>
+  <label>Subject Full Name: </label>
   <input
     type="text"
-    value={editedSData.abbreviation}
-    onChange={(e) => setEditedSData({ ...editedSData, abbreviation: e.target.value })}
+    value={editedSData.subjectFullName}
+    onChange={(e) => setEditedSData({ ...editedSData, subjectFullName: e.target.value })}
   />
 </div>
 <div>

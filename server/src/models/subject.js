@@ -4,7 +4,7 @@ const { commonFields, updateTimestamps } = require('./commonFields');
 
 // Define your Mongoose schema based on the interface
 const subjectSchema = new mongoose.Schema({
-  SubjectFullName:{
+  subjectFullName:{
     type:String,
     required:true,
   },
@@ -44,10 +44,10 @@ const subjectSchema = new mongoose.Schema({
 });
 
 
-subjectSchema.add(commonFields);
+// subjectSchema.add(commonFields);
 
-// Apply the pre-save middleware
-subjectSchema.pre('save', updateTimestamps);
+// // Apply the pre-save middleware
+// subjectSchema.pre('save', updateTimestamps);
 
 // Create the Mongoose model
 const Subject= mongoose.model("Subject", subjectSchema);

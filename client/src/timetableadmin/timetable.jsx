@@ -600,7 +600,7 @@ const Timetable = () => {
       <div>
   {viewFaculty ? (<div>
     <ViewTimetable timetableData={viewFacultyData} />
-<TimetableSummary timetableData={viewFacultyData} type={'faculty'}/> 
+{/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
 </div>
     ) : (
     <p>Please select a faculty from the dropdown.</p>
@@ -628,7 +628,7 @@ const Timetable = () => {
   {viewRoom ? (
     <div>
     <ViewTimetable timetableData={viewRoomData} />
-<TimetableSummary timetableData={viewRoomData} type={'room'} /> 
+{/* <TimetableSummary timetableData={viewRoomData} type={'room'} />  */}
     
     </div>
   ) : (
