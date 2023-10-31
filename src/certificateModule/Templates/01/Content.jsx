@@ -3,29 +3,42 @@ function Content({ data }) {
     const name = "Sarthak"
     return (
         <>
-            
+
             <g textAnchor="middle">
+                <text x="561" y="115" font-family="Nunito-Bold" font-size="16">
+                    डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
+                </text>
+                <text x="561" y="129" font-family="Nunito-Bold" font-size="10">
+                    जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत-144008
+                </text>
+                <text x="561" y="155" font-family="Nunito-Bold" font-size="14">
+                    Dr. B R Ambedkar National Institute of Technology Jalandhar
+                </text>
+                <text x="561" y="168" font-family="Nunito-Bold" font-size="10">
+                    G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India- 144008
+                </text>
+
                 <text
                     x="561.26"
-                    y={186}
+                    y={245}
                     fill="#272727"
                     fontFamily="Butler-Bold"
-                    fontSize={52}
+                    fontSize={47}
                 >
                     CERTIFICATE
                 </text>
                 <text
                     x="561.26"
-                    y={218}
+                    y={268}
                     fill="#272727"
                     fontFamily="AbhayaLibre-Regular"
-                    fontSize={28}
+                    fontSize={18}
                 >
                     OF ACHIEVEMENT
                 </text>
                 <text
                     x="561.26"
-                    y={320}
+                    y={348}
                     fill="#272727"
                     fontFamily="AbhayaLibre-Regular"
                     fontSize={18}
@@ -34,10 +47,10 @@ function Content({ data }) {
                 </text>
                 <text
                     x="561.26"
-                    y={400}
+                    y={415}
                     fill="#1E0C45"
                     fontFamily="Allura-Regular"
-                    fontSize={80}
+                    fontSize={70}
                 >
                     Sarthak Sharma
                 </text>
@@ -72,7 +85,7 @@ function Content({ data }) {
                     fontFamily="AbhayaLibre-Regular"
                     fontSize={28}
                 >
-                    15-Oct-2023
+                    Signature
                 </text>
                 <text
                     x="361.342"
@@ -81,16 +94,16 @@ function Content({ data }) {
                     fontFamily="AbhayaLibre-Regular"
                     fontSize={20}
                 >
-                    DATE
+                    Name
                 </text>
                 <text
                     x="761.342"
                     y="608.859"
                     fill="#272727"
-                    fontFamily="Dandelion-Script-Regular"
-                    fontSize={38}
+                    fontFamily="AbhayaLibre-Regular"
+                    fontSize={28}
                 >
-                    Prof. Binod
+                    Signature
                 </text>
                 <text
                     x="761.342"
@@ -99,7 +112,7 @@ function Content({ data }) {
                     fontFamily="AbhayaLibre-Regular"
                     fontSize={20}
                 >
-                    SIGNATURE
+                    Name
                 </text>
                 <text
                     x="980.401"
@@ -121,23 +134,25 @@ function Content({ data }) {
                 </text>
             </g>
 
-            <foreignObject 
-                x="900"
+            <foreignObject
+                x="850"
                 className="-translate-x-1/2"
-                y="440"
+                y="460"
                 fontSize="15.816"
                 textAnchor="middle"
                 fontFamily="AbhayaLibre-Regular"
-                width="500px"
+                width="600px"
                 height="100px"
-                // x="561.26"
-                //     y={455}
-                //     fill="#272727"
-                //     fontFamily="AbhayaLibre-Regular"
-                //     fontSize="18.64"
+            // x="561.26"
+            //     y={455}
+            //     fill="#272727"
+            //     fontFamily="AbhayaLibre-Regular"
+            //     fontSize="18.64"
             >
-                <p className="w-full">This is a paragraph. Anything after height 100px while go disapper. HJNNZJ Lorem ipsum dolor sit amet consectetur adipisicing elit. Ducimus nemo sint odio delectus qui omnis voluptatibus illum amet consequuntur unde! Lorem, ipsum dolor sit amet consectetur adipisicing elit. Debitis a veniam dicta quibusdam similique ea sint quaerat consectetur nihil! Officia. Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi officiis quis architecto, laborum molestias facere explicabo laudantium inventore iste vitae! lrem30
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Obcaecati possimus unde dolorum, explicabo minus doloribus, quam molestiae esse eos quidem debitis vitae beatae libero nostrum odit tenetur in, vel officiis?
+                <p className="w-full">
+                of team __________ from the department ________________________ has won the ________________________
+                in PixelPerfect Event, an internal design held from 13 June,2023 to 1st July,2023 organized by Website Development & management Club.
+                {/* This is a paragraph. Anything after height 100px while go disapper. */}
 
                 </p>
             </foreignObject>

@@ -47,7 +47,7 @@ function Certificate() {
     console.log(certificate)
     return (
         <div >
-
+            
             <div className="p-2 bg-blue-200 flex items-center justify-between">
                 <p className="text-2xl font-bold text-blue-900">Certificate</p>
                 <Link to={-1} className="text-blue-900 bg-white rounded-md p-2 font-bold">Go to Home</Link>
