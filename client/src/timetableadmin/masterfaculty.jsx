@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
+import FileDownloadButton from '../filedownload/filedownload';
 
 function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -185,15 +186,19 @@ const apiUrl=getEnvironment();
 
   return (
     <div>
-      <h1>CSV File Upload</h1>
+      <h1>Master Faculty </h1>
+      <h2>Batch Upload</h2>
       <input
         type="file"
         accept=".xlsx"
         onChange={handleFileChange}
         name="csvFile"
       />
-      <button onClick={handleUpload}>Upload CSV</button>
-
+      <button onClick={handleUpload}>Upload Xlsx</button>
+      <FileDownloadButton
+      fileUrl='/faculty_template.xlsx'
+      fileName="faculty_template.xlsx"
+    />
        <h2>Table of Faculty Data</h2>
       <table>
         <thead>
