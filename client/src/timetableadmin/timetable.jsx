@@ -62,7 +62,7 @@ const Timetable = () => {
         const semValues = filteredSems.map((sem) => sem.sem);
 
         setAvailableSems(semValues);
-        // setSelectedSemester(semValues[0]);
+        setSelectedSemester(semValues[0]);
         // console.log('available semesters',availableSems)
       }
     } catch (error) {
@@ -147,7 +147,7 @@ const Timetable = () => {
     };
     fetchFacultyData(viewFaculty);
 
-  }, [viewFaculty, currentCode]);
+  }, [viewFaculty, currentCode,viewData]);
 
 
 
@@ -174,7 +174,7 @@ const Timetable = () => {
 
     fetchRoomData(viewRoom);
     
-  }, [viewRoom, currentCode]);
+  }, [viewRoom, currentCode, viewData]);
 
 
 
@@ -511,7 +511,7 @@ const Timetable = () => {
           value={selectedSemester}
           onChange={(e) => setSelectedSemester(e.target.value)}
         >
-          <option value="">Select Semester</option>
+          {/* <option value="">Select Semester</option> */}
 
           {semesters.map((semester, index) => (
             <option key={index} value={semester}>
@@ -608,7 +608,7 @@ const Timetable = () => {
     ))}
   </table>
 )}
-      <button onClick={handleSubmit}>Save Timetable</button>
+      <CustomBlueButton onClick={handleSubmit}>Save Timetable</CustomBlueButton>
 <div>
 <div>
 <Heading>View Semester Timetable</Heading>
