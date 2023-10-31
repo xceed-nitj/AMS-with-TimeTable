@@ -21,6 +21,7 @@
     "nodemailer": "^6.9.7",
     "nodemon": "^3.0.1",
     "otp-generator": "^4.0.1",
+    "papaparse": "^5.4.1",
     "xlsx": "^0.18.5"
   }
 }
