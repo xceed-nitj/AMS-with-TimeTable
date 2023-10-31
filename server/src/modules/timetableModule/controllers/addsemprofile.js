@@ -15,15 +15,15 @@ class AddSemController {
         }
       }
 
-      async getSem() {
+      async getSem(currentCode) {
         try {
-          const uniqueSem = await addSem.distinct('sem');
-          
+          const uniqueSem = await addSem.distinct('sem', { code: currentCode }); 
           return uniqueSem;
         } catch (error) {
-          throw error; 
+          throw error;
         }
       }
+
       
       async getAddedSem(req, res) {
        try {

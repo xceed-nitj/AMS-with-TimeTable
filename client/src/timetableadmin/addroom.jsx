@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import FileDownloadButton from '../filedownload/filedownload';
 import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
@@ -154,6 +155,13 @@ function AddRoomComponent() {
         <CustomBlueButton onClick={() => setSuccessMessage('')}>Add Room</CustomBlueButton>
       </div>
   )}
+     <div>
+    
+    <FileDownloadButton
+      fileUrl='/room_template.xlsx'
+      fileName="room_template.xlsx"
+    />
+  </div>
 
   <div>
       <h2>Room Data</h2>
