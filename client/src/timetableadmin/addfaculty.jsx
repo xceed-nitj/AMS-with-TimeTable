@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
-import { Heading,Input } from '@chakra-ui/react';
-import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import { Heading, Input } from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 import {
   Table,
   TableContainer,
@@ -11,17 +11,15 @@ import {
   Th,
   Thead,
   Tr,
-} from "@chakra-ui/table";
-import { Button } from "@chakra-ui/button";
-
+} from '@chakra-ui/table';
+import { Button } from '@chakra-ui/button';
 
 function SuccessMessage({ message }) {
   return (
-    <div className="success-message">
-      {message}
-    </div>
+    <div className="success-message">{message}</div>
   );
 }
+
 function Component() {
   const [sem, setSem] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -32,12 +30,10 @@ function Component() {
   const [availableDepartments, setAvailableDepartments] = useState([]);
   const [availableSemesters, setAvailableSemesters] = useState([]);
 
-
-  const [editFacultyData, setEditFacultyData] = useState({
+  const [editFacultyData] = useState({
     facultyId: null,
     facultyName: '',
   });
-
 
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -47,13 +43,13 @@ function Component() {
   const apiUrl = getEnvironment();
 
   useEffect(() => {
-    fetch(`${apiUrl}/timetablemodule/addsem/sem`)
+    fetch(`${apiUrl}/timetablemodule/addsem/sem/${currentCode}`)
       .then(handleResponse)
-      .then(data => {
+      .then((data) => {
         setAvailableSemesters(data);
       })
       .catch(handleError);
-      }, []);
+  }, [currentCode]);
 
   useEffect(() => {
     fetchFacultyData();
@@ -64,31 +60,30 @@ function Component() {
     if (selectedDepartment) {
       fetch(`${apiUrl}/timetablemodule/faculty/dept/${selectedDepartment}`)
         .then(handleResponse)
-        .then(data => {
+        .then((data) => {
           setFaculties(data);
         })
         .catch(handleError);
     }
   }, [selectedDepartment]);
 
-
   const fetchFacultyData = () => {
     fetch(`${apiUrl}/timetablemodule/addFaculty`)
       .then(handleResponse)
       .then((data) => {
-        const filteredFacultyData = data.filter((faculty) => faculty.code === currentCode);
+        const filteredFacultyData = data.filter(
+          (faculty) => faculty.code === currentCode
+        );
         setFacultyData(filteredFacultyData);
       })
       .catch(handleError);
   };
-  
 
-  
   const fetchAvailableDepartments = () => {
     fetch(`${apiUrl}/timetablemodule/faculty/dept`)
       .then(handleResponse)
-      .then(data => {
-          const formattedDepartments = data.map(department => ({
+      .then((data) => {
+        const formattedDepartments = data.map((department) => ({
           value: department,
           label: department,
         }));
@@ -119,7 +114,6 @@ function Component() {
       code: currentCode,
       faculty: selectedFaculty,
     };
-    console.log(dataToSave)
 
     fetch(`${apiUrl}/timetablemodule/addFaculty`, {
       method: 'POST',
@@ -130,21 +124,21 @@ function Component() {
     })
       .then(handleResponse)
       .then((data) => {
-        console.log('Data saved successfully:', data);
         setSuccessMessage('Data saved successfully!');
         fetchFacultyData();
       })
       .catch(handleError);
   };
 
-
   const handleDelete = (facultyId, facultyName) => {
     const facultyToDelete = facultyData.find((faculty) => faculty._id === facultyId);
-  
+
     if (facultyToDelete) {
-      const updatedFaculty = facultyToDelete.faculty.filter((name) => name !== facultyName);
+      const updatedFaculty = facultyToDelete.faculty.filter(
+        (name) => name !== facultyName
+      );
       facultyToDelete.faculty = updatedFaculty;
-  
+
       fetch(`${apiUrl}/timetablemodule/addFaculty/${facultyId}`, {
         method: 'PUT',
         headers: {
@@ -154,7 +148,6 @@ function Component() {
       })
         .then(handleResponse)
         .then(() => {
-          console.log('Faculty removed from the entry successfully');
           fetchFacultyData();
         })
         .catch(handleError);
@@ -164,55 +157,57 @@ function Component() {
   return (
     <div>
       <Heading>Add Faculty</Heading>
-        <SuccessMessage message={successMessage} />
-        <div>
-           <label>
-            Semester:
-            <select value={sem} onChange={(e) => setSem(e.target.value)}>
-            <option value="" disabled> Select Semester
-    </option>
-              {availableSemesters.map((semester) => (
-                <option key={semester} value={semester}>
-                  {semester}
-                </option>
-              ))}
-            </select>
-          </label>
-          <br />
-  
-          <label>
-            Department:
-            <select value={selectedDepartment} onChange={handleDepartmentChange}>
-              <option value="">Select a Department</option>
-              {availableDepartments.map((department) => (
-                <option key={department.value} value={department.value}>
-                  {department.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <br />
-  
-          <label>
-            Faculty:
-            <select value={selectedFaculty} onChange={(e) => setSelectedFaculty(e.target.value)}>
-              <option value="" key="default">
-                Select a Faculty
+      <SuccessMessage message={successMessage} />
+      <div>
+        <label>
+          Semester:
+          <select value={sem} onChange={(e) => setSem(e.target.value)}>
+            <option value="" disabled>
+              Select Semester
+            </option>
+            {availableSemesters.map((semester) => (
+              <option key={semester} value={semester}>
+                {semester}
               </option>
-              {faculties.map((faculty) => (
-                <option key={faculty.id} value={faculty.name}>
-                  {faculty.name}
-                </option>
-              ))}
-            </select>
-          </label>
-  
-          <br />
-          <Button onClick={handleSubmit}>Submit</Button>
-        </div>
+            ))}
+          </select>
+        </label>
+        <br />
 
-      
-  
+        <label>
+          Department:
+          <select value={selectedDepartment} onChange={handleDepartmentChange}>
+            <option value="">Select a Department</option>
+            {availableDepartments.map((department) => (
+              <option key={department.value} value={department.value}>
+                {department.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <br />
+
+        <label>
+          Faculty:
+          <select
+            value={selectedFaculty}
+            onChange={(e) => setSelectedFaculty(e.target.value)}
+          >
+            <option value="" key="default">
+              Select a Faculty
+            </option>
+            {faculties.map((faculty) => (
+              <option key={faculty.id} value={faculty.name}>
+                {faculty.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <br />
+        <Button onClick={handleSubmit}>Submit</Button>
+      </div>
+
       <div>
         <h2>Faculty Data</h2>
         <table>
@@ -224,23 +219,28 @@ function Component() {
             </tr>
           </thead>
           <tbody>
-          {facultyData.map((faculty) =>
-          faculty.faculty.map((individualFaculty, index) => (
-            <tr key={`${faculty._id}-${index}`}>
-              <td>{faculty.sem}</td>
-              <td>{individualFaculty}</td>
-              <td>
-                <CustomBlueButton onClick={() => handleDelete(faculty._id, individualFaculty)}>Delete</CustomBlueButton>
-              </td>
-            </tr>
-          ))
-        )}
+            {facultyData.map((faculty) =>
+              faculty.faculty.map((individualFaculty, index) => (
+                <tr key={`${faculty._id}-${index}`}>
+                  <td>{faculty.sem}</td>
+                  <td>{individualFaculty}</td>
+                  <td>
+                    <CustomBlueButton
+                      onClick={() =>
+                        handleDelete(faculty._id, individualFaculty)
+                      }
+                    >
+                      Delete
+                    </CustomBlueButton>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
-  
 }
 
 export default Component;
