@@ -29,7 +29,11 @@ const TimetableSummary = ({ timetableData, type }) => {
       return null; // Handle error or return a default value if needed
     }
   }
-  
+
+  const currentCode=extractCodeFromURL(currentURL);
+console.log('code:',currentCode)
+
+
   useEffect(() => {
     const fetchSubjectData = async (currentCode) => {
       try {
@@ -44,10 +48,9 @@ const TimetableSummary = ({ timetableData, type }) => {
 
     fetchSubjectData(currentCode);
   
-const currentCode=extractCodeFromURL(currentURL);
-console.log('code:',currentCode)
 
-  }, [apiUrl]);
+
+  }, []);
 
   const summaryData = {};
 

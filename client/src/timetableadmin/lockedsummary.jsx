@@ -9,9 +9,9 @@ function LockedSummary() {
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
   const [message, setMessage]=useState();
-  const [selectedSemester, setSelectedSemester] = useState('B.Sc (2 sem)');
-  const [selectedFaculty, setSelectedFaculty] = useState('Dr. Kiran Singh');
-  const [selectedRoom, setSelectedRoom] = useState('L-201');
+  const [selectedSemester, setSelectedSemester] = useState('');
+  const [selectedFaculty, setSelectedFaculty] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState('');
   
   const apiUrl = getEnvironment();
   const navigate = useNavigate();
@@ -248,7 +248,7 @@ function LockedSummary() {
   {selectedSemester ? (
     <div>
       <ViewTimetable timetableData={viewData} />     
-{/* <TimetableSummary timetableData={viewData} />  */}
+<TimetableSummary timetableData={viewData} /> 
     </div>
 
     

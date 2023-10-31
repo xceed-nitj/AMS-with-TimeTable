@@ -131,7 +131,7 @@ function AddSemComponent() {
               <tr key={sem._id}>
                 <td>{sem.sem}</td>
                 <td>
-                  <button onClick={() => handleDelete(sem._id)}>Delete</button>
+                  <CustomBlueButton onClick={() => handleDelete(sem._id)}>Delete</CustomBlueButton>
                 </td>
               </tr>
             ))}

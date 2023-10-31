@@ -130,7 +130,7 @@ function AddRoomComponent() {
           </select>
         </label>
         <br />
-        <button onClick={handleSubmit}>Add Room</button>
+        <CustomBlueButton onClick={handleSubmit}>Add Room</CustomBlueButton>
       </div>
     )}
 

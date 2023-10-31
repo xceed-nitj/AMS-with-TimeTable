@@ -86,6 +86,7 @@ async getFilteredSubject (code, sem){
       async getSubjectBySession (code){
         try {
           const subjects = await TimetableEntry.find({ code});
+          console.log(subjects)
       
       return subjects;
         } catch (e) {

@@ -32,7 +32,7 @@ const Timetable = () => {
   const [availableRooms, setAvailableRooms] = useState([]);
   const [availableFaculties, setAvailableFaculties] = useState([]);
 
-  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState();
 
   // const availableRooms = ['L-201', 'L-209','room1','room2'];
   // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
@@ -62,7 +62,7 @@ const Timetable = () => {
         const semValues = filteredSems.map((sem) => sem.sem);
 
         setAvailableSems(semValues);
-        setSelectedSemester(semValues[0]);
+        // setSelectedSemester(semValues[0]);
         // console.log('available semesters',availableSems)
       }
     } catch (error) {
@@ -70,13 +70,12 @@ const Timetable = () => {
     }
   };
   fetchSem();
-
 }, [apiUrl, currentCode]);
 
 
 
 
-  const [selectedSemester, setSelectedSemester] = useState(''); 
+  const [selectedSemester, setSelectedSemester] = useState(availableSems[0]); 
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
@@ -185,7 +184,7 @@ const Timetable = () => {
 
   useEffect(() => {
     // Fetch subject data from the database and populate availableSubjects
-    const fetchSubjects = async (currentCode,selectedSemester) => {
+    const fetchSubjects = async () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/subject/filteredsubject/${currentCode}/${selectedSemester}`);
         if (response.ok) {
@@ -215,7 +214,7 @@ const Timetable = () => {
       }
     };
 
-    const fetchFaculty = async (currentCode,selectedSemester) => {
+    const fetchFaculty = async () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/filteredfaculty/${currentCode}/${selectedSemester}`);
         if (response.ok) {
@@ -231,11 +230,11 @@ const Timetable = () => {
     };
 
 
-    fetchSubjects(currentCode,selectedSemester);
+    fetchSubjects();
     fetchRoom();
-    fetchFaculty(currentCode,selectedSemester); // Call the function to fetch subject data
+    fetchFaculty(); // Call the function to fetch subject data
 
-  }, [apiUrl,currentCode,selectedSemester]);
+  }, [selectedSemester,viewData,currentCode]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -492,6 +491,7 @@ const Timetable = () => {
       <CustomBlueButton onClick={handleAddSem}>Add Semester</CustomBlueButton>
       <CustomBlueButton onClick={handleAddSubject}>Add Subject</CustomBlueButton>
       <CustomBlueButton onClick={handleAddRoom}>Add Room</CustomBlueButton>
+      <CustomBlueButton onClick={handleAddFaculty}>Add Faculty</CustomBlueButton>
       <CustomBlueButton onClick={handleLockTT}>Lock TT</CustomBlueButton>
       <CustomBlueButton onClick={handleViewSummary}>View/Download Locked TT</CustomBlueButton>
 
@@ -511,6 +511,8 @@ const Timetable = () => {
           value={selectedSemester}
           onChange={(e) => setSelectedSemester(e.target.value)}
         >
+          <option value="">Select Semester</option>
+
           {semesters.map((semester, index) => (
             <option key={index} value={semester}>
               {semester}
