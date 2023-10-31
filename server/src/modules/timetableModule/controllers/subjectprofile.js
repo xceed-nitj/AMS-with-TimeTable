@@ -1,6 +1,8 @@
 const TimetableEntry = require('../../../models/subject');
 // const Subject=require('../../../models/subject');
 const HttpException = require("../../../models/http-exception");
+const TimeTabledto = require("../dto/timetable");
+const TimeTableDto = new TimeTabledto();
 
 class SubjectController{
       async createTimetableEntry(req,res) {
@@ -85,10 +87,16 @@ async getFilteredSubject (code, sem){
       
       async getSubjectBySession (code){
         try {
-          const subjects = await TimetableEntry.find({ code});
-          console.log(subjects)
+          const  session = await TimeTableDto.getSessionByCode(code);
+          const  allcode=await TimeTableDto.getAllCodesOfSession(session);
+          const final = [];
+          for (const code of allcode) {
+            const subjects = await TimetableEntry.find({ code });
+            final.push(...subjects);
+          }
+          console.log('finaldata',final)
       
-      return subjects;
+      return final;
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
         }

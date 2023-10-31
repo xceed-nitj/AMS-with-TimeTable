@@ -319,7 +319,7 @@ function Subject() {
   />
 </div>
 <div>
-  <label>Subject Name: </label>
+  <label>Subject Abbreviation: </label>
   <Input
     type="text"
     value={editedSData.subName}

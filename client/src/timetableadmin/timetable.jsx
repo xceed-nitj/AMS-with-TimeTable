@@ -631,7 +631,7 @@ const Timetable = () => {
   {viewselectedSemester ? (
     <div>
       <ViewTimetable timetableData={viewData} />     
-{/* <TimetableSummary timetableData={viewData} />  */}
+<TimetableSummary timetableData={viewData} type={'sem'} code={currentCode}/> 
     </div>
 
     
@@ -661,7 +661,7 @@ const Timetable = () => {
       <div>
   {viewFaculty ? (<div>
     <ViewTimetable timetableData={viewFacultyData} />
-{/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
+<TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/> 
 </div>
     ) : (
     <p>Please select a faculty from the dropdown.</p>
@@ -689,7 +689,7 @@ const Timetable = () => {
   {viewRoom ? (
     <div>
     <ViewTimetable timetableData={viewRoomData} />
-{/* <TimetableSummary timetableData={viewRoomData} type={'room'} />  */}
+{/* <TimetableSummary timetableData={viewRoomData} type={'room'} code={currentCode}/>  */}
     
     </div>
   ) : (
