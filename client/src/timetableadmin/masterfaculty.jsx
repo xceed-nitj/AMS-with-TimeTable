@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 
 function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -194,7 +195,7 @@ const apiUrl=getEnvironment();
         onChange={handleFileChange}
         name="csvFile"
       />
-      <button onClick={handleUpload}>Upload Xlsx</button>
+      <CustomBlueButton onClick={handleUpload}>Upload Xlsx</CustomBlueButton>
       <FileDownloadButton
       fileUrl='/faculty_template.xlsx'
       fileName="faculty_template.xlsx"
@@ -225,11 +226,11 @@ const apiUrl=getEnvironment();
               <td>{editRowId === row._id ? <input type="text" value={editedData.extension} onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })} /> : row.extension}</td>
               <td>
                 {editRowId === row._id ? (
-                  <button onClick={handleSaveEdit}>Save</button>
+                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
                 ) : (
                   <>
-                    <button onClick={() => handleEditClick(row._id)}>Edit</button>
-                    <button onClick={() => handleDelete(row._id)}>Delete</button>
+                    <CustomBlueButton onClick={() => handleEditClick(row._id)}>Edit</CustomBlueButton>
+                    <CustomBlueButton onClick={() => handleDelete(row._id)}>Delete</CustomBlueButton>
                   </>
                 )}
               </td>
@@ -295,7 +296,7 @@ const apiUrl=getEnvironment();
           onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })}
         />
       </div>
-      <button onClick={handleSaveNewFaculty}>Save</button>
+      <CustomBlueButton onClick={handleSaveNewFaculty}>Save</CustomBlueButton>
     </div>
   );
 }

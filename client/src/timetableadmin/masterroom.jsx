@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 
 function MasterRoom() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -187,7 +188,7 @@ function MasterRoom() {
         onChange={handleFileChange}
         name="XlsxFile"
       />
-      <button onClick={handleUpload}>Upload Xlsx</button>
+      <CustomBlueButton onClick={handleUpload}>Upload Xlsx</CustomBlueButton>
       <div>
     
     <FileDownloadButton
@@ -250,12 +251,12 @@ function MasterRoom() {
               />
             </div>
             <div>
-              <button onClick={handleSaveNewRoom}>Save New Room</button>
-              <button onClick={handleCancelAddRoom}>Cancel</button>
+              <CustomBlueButton onClick={handleSaveNewRoom}>Save New Room</CustomBlueButton>
+              <CustomBlueButton onClick={handleCancelAddRoom}>Cancel</CustomBlueButton>
             </div>
           </div>
         ) : (
-          <button onClick={handleAddRoom}>Add Master Room</button>
+          <CustomBlueButton onClick={handleAddRoom}>Add Master Room</CustomBlueButton>
         )}
       </div>
 
@@ -343,11 +344,11 @@ function MasterRoom() {
               </td>
               <td>
                 {editRoomId === room._id ? (
-                  <button onClick={handleSaveEdit}>Save</button>
+                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
                 ) : (
                   <>
-                    <button onClick={() => handleEditClick(room._id)}>Edit</button>
-                    <button onClick={() => handleDelete(room._id)}>Delete</button>
+                    <CustomBlueButton onClick={() => handleEditClick(room._id)}>Edit</CustomBlueButton>
+                    <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
                   </>
                 )}
               </td>
