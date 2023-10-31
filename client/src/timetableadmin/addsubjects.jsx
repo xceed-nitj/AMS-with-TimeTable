@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
+import FileDownloadButton from '../filedownload/filedownload';
+// import subjectFile from '../assets/subject_template';
 import { Heading, Input } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
@@ -232,14 +234,22 @@ function Subject() {
   return (
     <div>
       <Heading>Add Subject</Heading>
+      Batch Upload:
+    
       <Input
         type="file"
         accept=".xlsx"
         onChange={handleFileChange}
-        name="csvFile"
+        name="XlsxFile"
       />
       <Button onClick={handleUpload}>Batch Upload</Button>
-
+      <div>
+    
+      <FileDownloadButton
+        fileUrl='/subject_template.xlsx'
+        fileName="subject_template.xlsx"
+      />
+    </div>
       {/* Display the fetched data */}
       <h2>Table of Subject Data</h2>
       <table>

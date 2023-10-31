@@ -41,7 +41,8 @@ const Timetable = () => {
   const [viewselectedSemester, setViewSelectedSemester] = useState(availableSems[0]); 
   const [viewFaculty, setViewFaculty]= useState(availableFaculties[0])  
   const [viewRoom, setViewRoom]= useState(availableRooms[0])  
-  
+
+  const [selectedSemester, setSelectedSemester] = useState('');  
   const selectedCell = null;
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -74,8 +75,7 @@ const Timetable = () => {
 
 
 
-
-  const [selectedSemester, setSelectedSemester] = useState(availableSems[0]); 
+ 
   useEffect(() => {
     const fetchData = async (semester) => {
       try {

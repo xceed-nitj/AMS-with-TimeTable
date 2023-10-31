@@ -179,14 +179,22 @@ function MasterRoom() {
   return (
     <div>
       <h1>Manage Master Rooms</h1>
-      <h2>CSV File Upload</h2>
+      <h2>Batch Upload</h2>
       <input
         type="file"
         accept=".xlsx"
         onChange={handleFileChange}
-        name="csvFile"
+        name="XlsxFile"
       />
-      <button onClick={handleUpload}>Upload CSV</button>
+      <button onClick={handleUpload}>Upload Xlsx</button>
+      <div>
+    
+    <FileDownloadButton
+      fileUrl='/room_template.xlsx'
+      fileName="room_template.xlsx"
+    />
+  </div>
+
 
       <div>
         
