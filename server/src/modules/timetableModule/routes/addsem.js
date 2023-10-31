@@ -13,6 +13,16 @@ addSemRouter.post("/", async (req, res) => {
     }
   });
 
+  addSemRouter.get("/sem/:code", async (req, res) => {
+    try {
+      const currentCode = req.params.code; 
+      const sem = await addSemController.getSem(currentCode); 
+      res.status(200).json(sem);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
   addSemRouter.get("/", async (req, res) => {
     try {
       await addSemController.getAddedSem(req,res) ;
@@ -23,14 +33,7 @@ addSemRouter.post("/", async (req, res) => {
     }
   });
 
-  addSemRouter.get('/sem', async (req, res) => {
-    try {
-      const sem = await addSemController.getSem(); 
-      res.status(200).json(sem);
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+  
 
   addSemRouter.get("/:id", async (req, res) => {
     try {
