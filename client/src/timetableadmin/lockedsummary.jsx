@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import ViewTimetable from './viewtt';
 import TimetableSummary from './ttsummary';
-
+import './Timetable.css'
 function LockedSummary() {
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
@@ -248,7 +248,7 @@ function LockedSummary() {
   {selectedSemester ? (
     <div>
       <ViewTimetable timetableData={viewData} />     
-<TimetableSummary timetableData={viewData} /> 
+{/* <TimetableSummary timetableData={viewData} />  */}
     </div>
 
     
@@ -272,7 +272,7 @@ function LockedSummary() {
       <div>
   {selectedFaculty ? (<div>
     <ViewTimetable timetableData={viewFacultyData} />
-<TimetableSummary timetableData={viewFacultyData} type={'faculty'}/> 
+{/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
 </div>
     ) : (
     <p>Please select a faculty from the dropdown.</p>
@@ -295,7 +295,7 @@ function LockedSummary() {
   {selectedRoom ? (
     <div>
     <ViewTimetable timetableData={viewRoomData} />
-<TimetableSummary timetableData={viewRoomData} type={'room'} /> 
+{/* <TimetableSummary timetableData={viewRoomData} type={'room'} />  */}
     
     </div>
   ) : (

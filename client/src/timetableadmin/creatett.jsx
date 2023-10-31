@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import { Container } from "@chakra-ui/layout";
+import { Heading } from '@chakra-ui/react';
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
   TableContainer,
@@ -142,7 +144,9 @@ function CreateTimetable() {
 
   return (
     <Container maxW={"container.lg"}>
-      <h1>Create Time Table</h1>
+      <Heading as="h1" size="xl">
+        Create Time Table
+      </Heading>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -171,7 +175,7 @@ function CreateTimetable() {
             </option>
           ))}
         </select>
-        <Button type="submit">Submit</Button>
+        <CustomBlueButton type="submit">Submit</CustomBlueButton>
       </form>
       <TableContainer>
         <Table
@@ -179,10 +183,10 @@ function CreateTimetable() {
         >
           <Thead>
             <Tr>
-              <Th>Timetable Name</Th>
-              <Th>Session</Th>
-              <Th>Department</Th>
-              <Th>Link</Th>
+              <CustomTh>Timetable Name</CustomTh>
+              <CustomTh>Session</CustomTh>
+              <CustomTh>Department</CustomTh>
+              <CustomTh>Link</CustomTh>
             </Tr>
           </Thead>
           <Tbody>
@@ -192,9 +196,12 @@ function CreateTimetable() {
                 <Td>{timetable.session}</Td>
                 <Td>{timetable.dept}</Td>
                 <Td>
-                  <a href={`http://${domainName}/tt/${timetable.code}`}>
-                    {timetable.code}
-                  </a>
+                <CustomLink
+                href={`http://${domainName}/tt/${timetable.code}`}
+                target="_blank" // Optional: If you want to open the link in a new tab
+              >
+                {timetable.code}
+              </CustomLink>
                 </Td>
               </Tr>
             ))}

@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import { Heading,Input } from '@chakra-ui/react';
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
+
 
 function SuccessMessage({ message }) {
   return (
@@ -150,7 +163,7 @@ function Component() {
 
   return (
     <div>
-      <h1>Add Faculty</h1>
+      <Heading>Add Faculty</Heading>
         <SuccessMessage message={successMessage} />
         <div>
            <label>
@@ -195,7 +208,7 @@ function Component() {
           </label>
   
           <br />
-          <button onClick={handleSubmit}>Submit</button>
+          <Button onClick={handleSubmit}>Submit</Button>
         </div>
 
       
@@ -217,7 +230,7 @@ function Component() {
               <td>{faculty.sem}</td>
               <td>{individualFaculty}</td>
               <td>
-                <button onClick={() => handleDelete(faculty._id, individualFaculty)}>Delete</button>
+                <CustomBlueButton onClick={() => handleDelete(faculty._id, individualFaculty)}>Delete</CustomBlueButton>
               </td>
             </tr>
           ))

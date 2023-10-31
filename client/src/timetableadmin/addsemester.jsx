@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import { Heading,Input } from '@chakra-ui/react';
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
+
 
 function SuccessMessage({ message }) {
   return (
@@ -88,20 +101,20 @@ function AddSemComponent() {
 
   return (
     <div>
-      <h1>Add semesters</h1>
+      <Heading>Add semesters</Heading>
     
         <SuccessMessage message={successMessage} />
 
 <div>
           <label>
             Sem:
-            <input
+            <Input
               type="text"
               value={newSem}
               onChange={handleSemInputChange}
             />
           </label>
-          <button onClick={handleSubmit}>Add Sem</button>
+          <CustomBlueButton onClick={handleSubmit}>Add Sem</CustomBlueButton>
         </div>     
 
       <div>

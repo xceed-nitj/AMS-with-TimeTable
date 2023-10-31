@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
+import { Heading, Input } from '@chakra-ui/react';
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
+
 
 function Subject() {
   const currentURL = window.location.pathname;
@@ -218,14 +231,14 @@ function Subject() {
 
   return (
     <div>
-      <h1>Add Subject</h1>
-      <input
+      <Heading>Add Subject</Heading>
+      <Input
         type="file"
         accept=".xlsx"
         onChange={handleFileChange}
         name="csvFile"
       />
-      <button onClick={handleUpload}>Batch Upload</button>
+      <Button onClick={handleUpload}>Batch Upload</Button>
 
       {/* Display the fetched data */}
       <h2>Table of Subject Data</h2>
@@ -246,22 +259,22 @@ function Subject() {
         <tbody>
           {tableData.map((row) => (
             <tr key={row._id}>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.subjectFullName} onChange={(e) => setEditedData({ ...editedData, subjectFullName: e.target.value })} /> : row.subjectFullName}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.subCode} onChange={(e) => setEditedData({ ...editedData, subCode: e.target.value })} /> : row.subCode}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.subName} onChange={(e) => setEditedData({ ...editedData, subName: e.target.value })} /> : row.subName}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.sem} onChange={(e) => setEditedData({ ...editedData, sem: e.target.value })} /> : row.sem}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.degree} onChange={(e) => setEditedData({ ...editedData, degree: e.target.value })} /> : row.degree}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.dept} onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })} /> : row.dept}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.credits} onChange={(e) => setEditedData({ ...editedData, credits: e.target.value })} /> : row.credits}</td>
+              <td>{editRowId === row._id ? <Input type="text" value={editedData.subjectFullName} onChange={(e) => setEditedData({ ...editedData, subjectFullName: e.target.value })} /> : row.subjectFullName}</td>
+              <td>{editRowId === row._id ? <Input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
+              <td>{editRowId === row._id ? <Input type="text" value={editedData.subCode} onChange={(e) => setEditedData({ ...editedData, subCode: e.target.value })} /> : row.subCode}</td>
+              <td>{editRowId === row._id ? <Input type="text" value={editedData.subName} onChange={(e) => setEditedData({ ...editedData, subName: e.target.value })} /> : row.subName}</td>
+              <td>{editRowId === row._id ? <Input type="text" value={editedData.sem} onChange={(e) => setEditedData({ ...editedData, sem: e.target.value })} /> : row.sem}</td>
+              <td>{editRowId === row._id ? <Input type="text" value={editedData.degree} onChange={(e) => setEditedData({ ...editedData, degree: e.target.value })} /> : row.degree}</td>
+              <td>{editRowId === row._id ? <Input type="text" value={editedData.dept} onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })} /> : row.dept}</td>
+              <td>{editRowId === row._id ? <Input type="text" value={editedData.credits} onChange={(e) => setEditedData({ ...editedData, credits: e.target.value })} /> : row.credits}</td>
             
                <td>
                 {editRowId === row._id ? (
-                  <button onClick={handleSaveEdit}>Save</button>
+                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
                 ) : (
                   <>
-                    <button onClick={() => handleEditClick(row._id)}>Edit</button>
-                    <button onClick={() => handleDelete(row._id)}>Delete</button>
+                    <CustomBlueButton onClick={() => handleEditClick(row._id)}>Edit</CustomBlueButton>
+                    <CustomBlueButton onClick={() => handleDelete(row._id)}>Delete</CustomBlueButton>
                   </>
                 )}
               </td>
@@ -273,7 +286,7 @@ function Subject() {
       <h2>Add Subject</h2>
 <div>
   <label>Subject Full Name: </label>
-  <input
+  <Input
     type="text"
     value={editedSData.subjectFullName}
     onChange={(e) => setEditedSData({ ...editedSData, subjectFullName: e.target.value })}
@@ -281,7 +294,7 @@ function Subject() {
 </div>
 <div>
   <label>Type: </label>
-  <input
+  <Input
     type="text"
     value={editedSData.type}
     onChange={(e) => setEditedSData({ ...editedSData, type: e.target.value })}
@@ -289,7 +302,7 @@ function Subject() {
 </div>
 <div>
   <label>Subject Code: </label>
-  <input
+  <Input
     type="text"
     value={editedSData.subCode}
     onChange={(e) => setEditedSData({ ...editedSData, subCode: e.target.value })}
@@ -297,7 +310,7 @@ function Subject() {
 </div>
 <div>
   <label>Subject Name: </label>
-  <input
+  <Input
     type="text"
     value={editedSData.subName}
     onChange={(e) => setEditedSData({ ...editedSData, subName: e.target.value })}
@@ -305,7 +318,7 @@ function Subject() {
 </div>
 <div>
   <label>Semester: </label>
-  <input
+  <Input
     type="text"
     value={editedSData.sem}
     onChange={(e) => setEditedSData({ ...editedSData, sem: e.target.value })}
@@ -313,7 +326,7 @@ function Subject() {
 </div>
 <div>
   <label>Degree: </label>
-  <input
+  <Input
     type="text"
     value={editedSData.degree}
     onChange={(e) => setEditedSData({ ...editedSData, degree: e.target.value })}
@@ -321,7 +334,7 @@ function Subject() {
 </div>
 <div>
   <label>Department: </label>
-  <input
+  <Input
     type="text"
     value={editedSData.dept}
     onChange={(e) => setEditedSData({ ...editedSData, dept: e.target.value })}
@@ -329,14 +342,14 @@ function Subject() {
 </div>
 <div>
   <label>Credits: </label>
-  <input
+  <Input
     type="number" // Assuming it's a number
     value={editedSData.credits}
     onChange={(e) => setEditedSData({ ...editedSData, credits: e.target.value })}
   />
 </div>
 
-<button onClick={handleSaveNewSubject}>Save</button>
+<Button onClick={handleSaveNewSubject}>Save</Button>
 
 
     </div>

@@ -5,6 +5,19 @@ import getEnvironment from '../getenvironment';
 import './Timetable.css';
 import TimetableSummary from './ttsummary';
 import ReactToPrint from 'react-to-print';
+import { Container } from "@chakra-ui/layout";
+import { Heading } from '@chakra-ui/react';
+import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
 
 
 
@@ -474,17 +487,14 @@ const Timetable = () => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
-    <div>
-      <h1>TIME TABLE</h1>
-      
-      <div className="add-buttons">
-      <button onClick={handleAddSem}>Add Semester</button>
-      <button onClick={handleAddSubject}>Add Subject</button>
-      <button onClick={handleAddFaculty}>Add Faculty</button>
-      <button onClick={handleAddRoom}>Add Room</button>
-      <button onClick={handleLockTT}>Lock TT</button>
-      <button onClick={handleViewSummary}>View/Download Locked TT</button>
-    </div>
+    <Container maxW={"1400px"}>
+      <Heading>GENERATE TIME TABLE</Heading>
+      <CustomBlueButton onClick={handleAddSem}>Add Semester</CustomBlueButton>
+      <CustomBlueButton onClick={handleAddSubject}>Add Subject</CustomBlueButton>
+      <CustomBlueButton onClick={handleAddRoom}>Add Room</CustomBlueButton>
+      <CustomBlueButton onClick={handleLockTT}>Lock TT</CustomBlueButton>
+      <CustomBlueButton onClick={handleViewSummary}>View/Download Locked TT</CustomBlueButton>
+
     <div style={{
   backgroundColor: 'brown',
   color: 'white',
@@ -573,20 +583,20 @@ const Timetable = () => {
                   </div>
                 ))}
                  {slotIndex === 0 && (
-      <button
+      <CustomPlusButton
         className="cell-split-button"
         onClick={() => handleSplitCell(day, period, slotIndex)}
       >
         +
-      </button>
+      </CustomPlusButton>
     )}
     {slotIndex === 0 && slot.length > 1 && (
-      <button
+      <CustomDeleteButton
         className="cell-delete-button"
         onClick={() => handleDeleteCell(day, period, slotIndex)}
       >
         Delete
-      </button>
+      </CustomDeleteButton>
     )}
               </div>
             ))}
@@ -599,7 +609,7 @@ const Timetable = () => {
       <button onClick={handleSubmit}>Save Timetable</button>
 <div>
 <div>
-<h1>View Semester Timetable</h1>
+<Heading>View Semester Timetable</Heading>
         <label>Select Semester:</label>
         <select
           value={viewselectedSemester}
@@ -632,7 +642,7 @@ const Timetable = () => {
 </div>
 <div>
 <div>
-<h1>View Faculty Timetable</h1>
+<Heading>View Faculty Timetable</Heading>
         <label>Select Faculty:</label>
         <select
           value={viewFaculty}
@@ -658,7 +668,7 @@ const Timetable = () => {
 </div>
 
 <div>
-<h1>View Room Timetable</h1>
+<Heading>View Room Timetable</Heading>
         <label>Select Room:</label>
         <select
           value={viewRoom}
@@ -685,7 +695,7 @@ const Timetable = () => {
   )}
 </div>
 
-    </div>
+</Container>
     
   );
   

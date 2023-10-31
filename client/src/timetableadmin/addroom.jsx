@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import { Heading } from '@chakra-ui/react';
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
+
 
 function SuccessMessage({ message }) {
   return (
@@ -97,7 +110,7 @@ function AddRoomComponent() {
 
   return (
     <div>
-    <h1>Add Rooms</h1>
+    <Heading>Add Rooms</Heading>
     {successMessage ? (
       <SuccessMessage message={successMessage} />
     ) : (
@@ -138,7 +151,7 @@ function AddRoomComponent() {
           </select>
         </label>
         <br />
-        <button onClick={() => setSuccessMessage('')}>Add Room</button>
+        <CustomBlueButton onClick={() => setSuccessMessage('')}>Add Room</CustomBlueButton>
       </div>
   )}
 
@@ -156,7 +169,7 @@ function AddRoomComponent() {
             <tr key={room._id}>
               <td>{room.room}</td>
               <td>
-                <button onClick={() => handleDelete(room._id)}>Delete</button>
+                <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
               </td>
             </tr>
           ))}

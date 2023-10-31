@@ -1,4 +1,19 @@
 import React from 'react';
+import { Container } from "@chakra-ui/layout";
+import { Heading } from '@chakra-ui/react';
+import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
+
+
 
 const ViewTimetable = ({ timetableData }) => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -9,20 +24,23 @@ const ViewTimetable = ({ timetableData }) => {
       {Object.keys(timetableData).length === 0 ? (
         <div>Loading...</div>
       ) : (
-        <table border="5" cellSpacing="0" align="center">
-          <thead>
-            <tr>
-              <th align="center" height="50" width="100">
-                <b>Day/Period</b>
-              </th>
+        <TableContainer>
+        <Table
+
+        >
+          <Thead>
+            <Tr>
+                
+              <CustomTh>Day/Period </CustomTh>
+              {/* </th> */}
               {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
                 <th key={period} align="center" height="50">
                   <b>{period}</b>
                 </th>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </Tr>
+          </Thead>
+          <Tbody>
             {days.map((day) => (
               <tr key={day}>
                 <td align="center" height="50">
@@ -46,8 +64,9 @@ const ViewTimetable = ({ timetableData }) => {
                 ))}
               </tr>
             ))}
-          </tbody>
-        </table>
+          </Tbody>
+        </Table>
+        </TableContainer>
       )}
     </div>
   );
