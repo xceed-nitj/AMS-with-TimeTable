@@ -13,7 +13,7 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
-
+import { Link } from 'react-router-dom';
 
 function SuccessMessage({ message }) {
   return (
@@ -41,7 +41,6 @@ function AddRoomComponent() {
     fetchRoomsData();
     fetchMasterRooms();
   }, []);
-
 
   const fetchRoomsData = () => {
     fetch(`${apiUrl}/timetablemodule/addroom`)
@@ -110,74 +109,76 @@ function AddRoomComponent() {
 
   return (
     <div>
-    <Heading>Add Rooms</Heading>
-    {successMessage ? (
-      <SuccessMessage message={successMessage} />
-    ) : (
-      <div>
-        <label>
-          Room:
-          <select
-            value={selectedMasterRoom}
-            onChange={(e) => setSelectedMasterRoom(e.target.value)}
-          >
-            <option value="">Select a Room</option>
-            {masterRooms.map((masterRoom) => (
-              <option key={masterRoom._id} value={masterRoom.room}>
-                {masterRoom.room}
-              </option>
-            ))}
-          </select>
-        </label>
-        <br />
-        <CustomBlueButton onClick={handleSubmit}>Add Room</CustomBlueButton>
-      </div>
-    )}
+      <Heading>Add Rooms</Heading>
+      {successMessage ? (
+        <SuccessMessage message={successMessage} />
+      ) : (
+        <div>
+          <label>
+            Room:
+            <select
+              value={selectedMasterRoom}
+              onChange={(e) => setSelectedMasterRoom(e.target.value)}
+            >
+              <option value="">Select a Room</option>
+              {masterRooms.map((masterRoom) => (
+                <option key={masterRoom._id} value={masterRoom.room}>
+                  {masterRoom.room}
+                </option>
+              ))}
+            </select>
+          </label>
+          <br />
+          <CustomBlueButton onClick={handleSubmit}>Add Room</CustomBlueButton>
+        </div>
+      )}
+       <Link to="/tt/viewmrooms">
+        <Button>View Master Rooms</Button>
+      </Link>
 
-    {successMessage && (
-      <div>
-        <label>
-          Room:
-          <select
-            value={selectedMasterRoom}
-            onChange={(e) => setSelectedMasterRoom(e.target.value)}
-          >
-            <option value="">Select a Room</option>
-            {masterRooms.map((masterRoom) => (
-              <option key={masterRoom._id} value={masterRoom.room}>
-                {masterRoom.room}
-              </option>
-            ))}
-          </select>
-        </label>
-        <br />
-        <CustomBlueButton onClick={() => setSuccessMessage('')}>Add Room</CustomBlueButton>
-      </div>
-  )}
+      {successMessage && (
+        <div>
+          <label>
+            Room:
+            <select
+              value={selectedMasterRoom}
+              onChange={(e) => setSelectedMasterRoom(e.target.value)}
+            >
+              <option value="">Select a Room</option>
+              {masterRooms.map((masterRoom) => (
+                <option key={masterRoom._id} value={masterRoom.room}>
+                  {masterRoom.room}
+                </option>
+              ))}
+            </select>
+          </label>
+          <br />
+          <CustomBlueButton onClick={() => setSuccessMessage('')}>Add Room</CustomBlueButton>
+        </div>
+      )}
 
-  <div>
-      <h2>Room Data</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Room</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rooms.map((room) => (
-            <tr key={room._id}>
-              <td>{room.room}</td>
-              <td>
-                <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
-              </td>
+      <div>
+        <h2>Room Data</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Room</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rooms.map((room) => (
+              <tr key={room._id}>
+                <td>{room.room}</td>
+                <td>
+                  <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-</div>
-
   );
 }
 
