@@ -156,30 +156,7 @@ function AddRoomComponent() {
           <br />
           <CustomBlueButton onClick={() => setSuccessMessage('')}>Add Room</CustomBlueButton>
         </div>
-      )}
-
-      <div>
-        <h2>Room Data</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Room</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rooms.map((room) => (
-              <tr key={room._id}>
-                <td>{room.room}</td>
-                <td>
-                  <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-  )}
+      )}  
      <div>
     
     <FileDownloadButton
@@ -208,6 +185,7 @@ function AddRoomComponent() {
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   );
 }
