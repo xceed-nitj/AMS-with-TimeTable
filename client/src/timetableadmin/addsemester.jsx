@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
-import { Container, Heading,Input } from '@chakra-ui/react';
+import { Heading,Input } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
@@ -100,53 +100,45 @@ function AddSemComponent() {
   };
 
   return (
-    <Container maxW={"container.lg"}>
+    <div>
+      <Heading>Add semesters</Heading>
+    
+        <SuccessMessage message={successMessage} />
+
+<div>
+          <label>
+            Sem:
+            <Input
+              type="text"
+              value={newSem}
+              onChange={handleSemInputChange}
+            />
+          </label>
+          <CustomBlueButton onClick={handleSubmit}>Add Sem</CustomBlueButton>
+        </div>     
+
       <div>
-      <Heading as="h1" size="xl">
-        Add Semester
-      </Heading>
-      
-          <SuccessMessage message={successMessage} />
-      
-      <div>
-            <label>
-              Sem:
-              <Input
-                type="text"
-                value={newSem}
-                onChange={handleSemInputChange}
-              />
-            </label>
-            <CustomBlueButton onClick={handleSubmit}>Add Sem</CustomBlueButton>
-          </div>
-        <TableContainer>
-          <div>
-            <h2>Sem Data</h2>
-            <Table
-            variant='striped'
-            size='md'
-            >
-              <Thead>
-                <Tr>
-                  <Th>Sem</Th>
-                  <Th>Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {sems.map((sem) => (
-                  <Tr key={sem._id}>
-                    <Td>{sem.sem}</Td>
-                    <Td>
-                      <CustomBlueButton onClick={() => handleDelete(sem._id)}>Delete</CustomBlueButton>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </div>
-        </TableContainer>
+        <h2>Sem Data</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Sem</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sems.map((sem) => (
+              <tr key={sem._id}>
+                <td>{sem.sem}</td>
+                <td>
+                  <CustomBlueButton onClick={() => handleDelete(sem._id)}>Delete</CustomBlueButton>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </Container>
+    </div>
   );
 }
 
