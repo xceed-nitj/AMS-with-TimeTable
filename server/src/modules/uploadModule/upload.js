@@ -39,6 +39,7 @@ router.post('/:objectType', upload.single('csvFile'), (req, res) => {
       if (objectType === 'subject') {
         const currentCode = req.body.code; // Assuming you pass the code from the client
         row.code = currentCode;
+        
     }
       const schema = new mongooseSchema(row);
       schema.save();
