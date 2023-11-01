@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
-import FileDownloadButton from '../filedownload/generatePDF';
+import FileDownloadButton from '../filedownload/filedownload';
 import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
