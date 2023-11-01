@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import html2canvas from 'html2canvas';
+import jspdf from 'jspdf';
 
 const TimetableSummary = ({ timetableData, code, type }) => {
 
@@ -10,29 +12,41 @@ const TimetableSummary = ({ timetableData, code, type }) => {
   const apiUrl = getEnvironment();
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
-//   function extractCodeFromURL(url) {
-//     try {
-//       const urlObject = new URL(`http://${url}`);
-//       const pathParts = urlObject.pathname.split('/');
 
-//       if (pathParts.length >= 2) {
-//         const code = pathParts[pathParts.length - 2];
-//         return code;
-//       }
-//       else
-//       {
-//       const code = pathParts[pathParts.length - 1];
-//       console.log('code in second file', code)
-//       return code;
-//       }
-//     } catch (error) {
-//       console.error('Error extracting code from URL:', error);
-//       return null; // Handle error or return a default value if needed
-//     }
-//   }
+  const [pdfData, setPdfData] = useState(null);
 
-//   const currentCode=extractCodeFromURL(currentURL);
-// console.log('code:',currentCode)
+  useEffect(() => {
+    const generatePDF = async () => {
+      const content = document.getElementById('timetable-summary');
+    
+      try {
+        const canvas = await html2canvas(content);
+        const pdf = new jspdf();
+        pdf.addImage(canvas, 'PNG', 0, 0);
+        const pdfDataURL = pdf.output('datauristring');
+        setPdfData(pdfDataURL);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+      }
+    };
+    
+    generatePDF();
+  }, []);
+
+  const downloadPDF = () => {
+    // Create a new anchor element
+    const anchor = document.createElement('a');
+
+    // Set the anchor element's href attribute to the PDF data URL
+    anchor.href = pdfData;
+
+    // Set the anchor element's download attribute to the PDF file name
+    anchor.download = 'timetable-summary.pdf';
+
+    // Click the anchor element to download the PDF file
+    anchor.click();
+  };
+
 
 const currentCode=code;
   useEffect(() => {
@@ -137,6 +151,7 @@ const currentCode=code;
           ))}
         </tbody>
       </table>
+      <button onClick={downloadPDF}>Download PDF</button>
     </div>
   );
 };
