@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
-import { Container, Heading, Input } from '@chakra-ui/react';
+import { Heading, Input } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 import {
   Table,
@@ -155,92 +155,91 @@ function Component() {
   };
 
   return (
-    <Container maxW='7xl' >
-      
-        <Heading as="h1" size="xl">Add Faculty</Heading>
-        <SuccessMessage message={successMessage} />
-        <div>
-          <label>
-            Semester:
-            <select value={sem} onChange={(e) => setSem(e.target.value)}>
-              <option value="" disabled>
-                Select Semester
+    <div>
+      <Heading>Add Faculty</Heading>
+      <SuccessMessage message={successMessage} />
+      <div>
+        <label>
+          Semester:
+          <select value={sem} onChange={(e) => setSem(e.target.value)}>
+            <option value="" disabled>
+              Select Semester
+            </option>
+            {availableSemesters.map((semester) => (
+              <option key={semester} value={semester}>
+                {semester}
               </option>
-              {availableSemesters.map((semester) => (
-                <option key={semester} value={semester}>
-                  {semester}
-                </option>
-              ))}
-            </select>
-          </label>
-          <br />
-          <label>
-            Department:
-            <select value={selectedDepartment} onChange={handleDepartmentChange}>
-              <option value="">Select a Department</option>
-              {availableDepartments.map((department) => (
-                <option key={department.value} value={department.value}>
-                  {department.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <br />
-          <label>
-            Faculty:
-            <select
-              value={selectedFaculty}
-              onChange={(e) => setSelectedFaculty(e.target.value)}
-            >
-              <option value="" key="default">
-                Select a Faculty
+            ))}
+          </select>
+        </label>
+        <br />
+
+        <label>
+          Department:
+          <select value={selectedDepartment} onChange={handleDepartmentChange}>
+            <option value="">Select a Department</option>
+            {availableDepartments.map((department) => (
+              <option key={department.value} value={department.value}>
+                {department.label}
               </option>
-              {faculties.map((faculty) => (
-                <option key={faculty.id} value={faculty.name}>
-                  {faculty.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <br />
-          <Button onClick={handleSubmit}>Submit</Button>
-        </div>
-        <div>
-          <TableContainer>
-            <h2>Faculty Data</h2>
-            <Table
-            variant={'striped'}>
-              <Thead>
-                <Tr>
-                  <Th>Semester</Th>
-                  <Th>Faculty</Th>
-                  <Th>Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {facultyData.map((faculty) =>
-                  faculty.faculty.map((individualFaculty, index) => (
-                    <Tr key={`${faculty._id}-${index}`}>
-                      <Td>{faculty.sem}</Td>
-                      <Td>{individualFaculty}</Td>
-                      <Td>
-                        <CustomBlueButton
-                          onClick={() =>
-                            handleDelete(faculty._id, individualFaculty)
-                          }
-                        >
-                          Delete
-                        </CustomBlueButton>
-                      </Td>
-                    </Tr>
-                  ))
-                )}
-              </Tbody>
-            </Table>
-          </TableContainer>
-        </div>
-    </Container>
-    
+            ))}
+          </select>
+        </label>
+        <br />
+
+        <label>
+          Faculty:
+          <select
+            value={selectedFaculty}
+            onChange={(e) => setSelectedFaculty(e.target.value)}
+          >
+            <option value="" key="default">
+              Select a Faculty
+            </option>
+            {faculties.map((faculty) => (
+              <option key={faculty.id} value={faculty.name}>
+                {faculty.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <br />
+        <Button onClick={handleSubmit}>Submit</Button>
+      </div>
+
+      <div>
+        <h2>Faculty Data</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Semester</th>
+              <th>Faculty</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {facultyData.map((faculty) =>
+              faculty.faculty.map((individualFaculty, index) => (
+                <tr key={`${faculty._id}-${index}`}>
+                  <td>{faculty.sem}</td>
+                  <td>{individualFaculty}</td>
+                  <td>
+                    <CustomBlueButton
+                      onClick={() =>
+                        handleDelete(faculty._id, individualFaculty)
+                      }
+                    >
+                      Delete
+                    </CustomBlueButton>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
