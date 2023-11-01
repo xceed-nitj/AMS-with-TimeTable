@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
-import FileDownloadButton from '../filedownload/filedownload';
+import FileDownloadButton from '../filedownload/generatePDF';
 // import subjectFile from '../assets/subject_template';
 import { Heading, Input } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
