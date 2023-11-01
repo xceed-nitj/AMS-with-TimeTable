@@ -26,6 +26,9 @@ function Subject() {
   const [uploadMessage, setUploadMessage] = useState('');
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
+  const [semesterData, setSemesterData] = useState([]);
+  const [semesters, setSemesters] = useState([]);
+  const [duplicateEntryMessage, setDuplicateEntryMessage] = useState('');
   const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false); 
 
   
@@ -88,22 +91,59 @@ function Subject() {
     setSelectedFile(file);
   };
 
- 
+   // Fetch available semesters when the component mounts
+   useEffect(() => {
+    if (currentCode) {
+      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`) // Replace with the actual endpoint
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Assuming that the data is an array of semesters
+          const filteredSemesters = data.filter((semester) => semester.code === currentCode);
+          setSemesterData(filteredSemesters);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+  }, [currentCode]);
 
+  useEffect(() => {
+    if (currentCode) {
+      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const filteredSemesters = data.filter((semester) => semester.code === currentCode);
+          setSemesters(filteredSemesters); // Store the semesters in the state
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+  }, [currentCode]);
   const handleUpload = () => {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-      formData.append('code', currentCode); 
+      formData.append('code', currentCode);
       setIsLoading(true);
-
+  
       fetch(`${apiUrl}/upload/subject`, {
         method: 'POST',
         body: formData,
       })
         .then((response) => {
           if (!response.ok) {
-            throw  Error(`Error: ${response.status} - ${response.statusText}`);
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
           }
           setUploadState(true);
           setUploadMessage('File uploaded successfully');
@@ -111,7 +151,20 @@ function Subject() {
         })
         .then((data) => {
           console.log(data); // Handle the response from the server
-          // Fetch data after a successful upload
+  
+          // Check for duplicate entries after the batch upload
+          const duplicateEntries = data.filter((entry) => {
+            return tableData.some((row) => row.subjectFullName === entry.subjectFullName);
+          });
+  
+          if (duplicateEntries.length > 0) {
+            const duplicateEntryMessage = `Duplicate entries detected for the following subjects: ${duplicateEntries.map((entry) => entry.subjectFullName).join(', ')}. Kindly delete these entries.`;
+            setDuplicateEntryMessage(duplicateEntryMessage);
+          } else {
+            fetchData(); // Fetch data after a successful upload
+            setDuplicateEntryMessage(''); // Reset duplicate entry message
+          }
+  
           setIsLoading(false);
         })
         .catch((error) => {
@@ -122,7 +175,7 @@ function Subject() {
           setIsLoading(false);
           setTimeout(() => {
             setUploadMessage('');
-          }, 3000); 
+          }, 3000);
         });
     } else {
       alert('Please select a CSV file before uploading.');
@@ -239,29 +292,36 @@ function Subject() {
       };
     
       const handleSaveNewSubject = () => {
-        fetch(`${apiUrl}/timetablemodule/subject`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(editedSData),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`Error: ${response.status} - ${response.statusText}`);
-            }
-            return response.json();
-          })
-          .then((data) => {
-            console.log('Data saved successfully:', data);
-            fetchData();
-            handleCancelAddSubject(); 
-          })
-          .catch((error) => {
-            console.error('Error:', error);
-          });
-      };
+        // Check for duplicate entry by subjectName
+        const isDuplicateEntry = tableData.some((row) => row.subjectFullName === editedSData.subjectFullName);
     
+        if (isDuplicateEntry) {
+          setDuplicateEntryMessage(`Duplicate entry for "${editedSData.subjectFullName}" is detected. Kindly delete the entry.`);
+        } else {
+          fetch(`${apiUrl}/timetablemodule/subject`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(editedSData),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`Error: ${response.status} - ${response.statusText}`);
+              }
+              return response.json();
+            })
+            .then((data) => {
+              console.log('Data saved successfully:', data);
+              fetchData();
+              handleCancelAddSubject();
+              setDuplicateEntryMessage(''); // Reset duplicate entry message
+            })
+            .catch((error) => {
+              console.error('Error:', error);
+            });
+        }
+      };
 
   return (
     <div>
@@ -275,6 +335,7 @@ function Subject() {
         name="XlsxFile"
       />
       <Button onClick={handleUpload}>Batch Upload</Button>
+     
       <div>
 
         {uploadMessage && (
@@ -287,6 +348,17 @@ function Subject() {
         fileUrl='/subject_template.xlsx'
         fileName="subject_template.xlsx"
       />
+       {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
+
+       {/* Display available semesters */}
+       <div>
+        <h3>Available Semesters which can to be added:</h3>
+        <ul>
+          {semesterData.map((semester) => (
+            <li key={semester.code}>{semester.sem}</li>
+          ))}
+        </ul>
+      </div>
 
 
 <div>
@@ -326,13 +398,20 @@ function Subject() {
               />
             </div>
             <div>
-              <label>Semester:</label>
-              <input
-                type="text"
-                value={editedSData.sem}
-                onChange={(e) => setEditedSData({ ...editedSData, sem: e.target.value })}
-              />
-            </div>
+  <label>Semester:</label>
+  <select
+    value={editedSData.sem}
+    onChange={(e) => setEditedSData({ ...editedSData, sem: e.target.value })}
+  >
+    <option value="">Select Semester</option>
+    {semesters.map((semester) => (
+      <option key={semester._id} value={semester.sem}>
+        {semester.sem}
+      </option>
+    ))}
+  </select>
+</div>
+
             <div>
               <label>Degree:</label>
               <input
@@ -366,6 +445,7 @@ function Subject() {
           <CustomBlueButton onClick={handleAddSubject}>Add Subject</CustomBlueButton>
         )}
       </div>
+      {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
 
 
       
