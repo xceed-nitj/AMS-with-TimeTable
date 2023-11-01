@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
+import FileDownloadButton from '../filedownload/filedownload';
+
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 
 function MasterRoom() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -179,14 +182,22 @@ function MasterRoom() {
   return (
     <div>
       <h1>Manage Master Rooms</h1>
-      <h2>CSV File Upload</h2>
+      <h2>Batch Upload</h2>
       <input
         type="file"
         accept=".xlsx"
         onChange={handleFileChange}
-        name="csvFile"
+        name="XlsxFile"
       />
-      <button onClick={handleUpload}>Upload CSV</button>
+      <CustomBlueButton onClick={handleUpload}>Upload Xlsx</CustomBlueButton>
+      <div>
+    
+    <FileDownloadButton
+      fileUrl='/room_template.xlsx'
+      fileName="room_template.xlsx"
+    />
+  </div>
+
 
       <div>
         
@@ -241,12 +252,12 @@ function MasterRoom() {
               />
             </div>
             <div>
-              <button onClick={handleSaveNewRoom}>Save New Room</button>
-              <button onClick={handleCancelAddRoom}>Cancel</button>
+              <CustomBlueButton onClick={handleSaveNewRoom}>Save New Room</CustomBlueButton>
+              <CustomBlueButton onClick={handleCancelAddRoom}>Cancel</CustomBlueButton>
             </div>
           </div>
         ) : (
-          <button onClick={handleAddRoom}>Add Master Room</button>
+          <CustomBlueButton onClick={handleAddRoom}>Add Master Room</CustomBlueButton>
         )}
       </div>
 
@@ -334,11 +345,11 @@ function MasterRoom() {
               </td>
               <td>
                 {editRoomId === room._id ? (
-                  <button onClick={handleSaveEdit}>Save</button>
+                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
                 ) : (
                   <>
-                    <button onClick={() => handleEditClick(room._id)}>Edit</button>
-                    <button onClick={() => handleDelete(room._id)}>Delete</button>
+                    <CustomBlueButton onClick={() => handleEditClick(room._id)}>Edit</CustomBlueButton>
+                    <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
                   </>
                 )}
               </td>

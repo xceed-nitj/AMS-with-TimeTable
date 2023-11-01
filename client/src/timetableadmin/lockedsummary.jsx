@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import ViewTimetable from './viewtt';
@@ -248,7 +249,8 @@ function LockedSummary() {
   {selectedSemester ? (
     <div>
       <ViewTimetable timetableData={viewData} />     
-<TimetableSummary timetableData={viewData} /> 
+      <TimetableSummary timetableData={viewData} type={'sem'} code={currentCode}/> 
+
     </div>
 
     
@@ -272,6 +274,8 @@ function LockedSummary() {
       <div>
   {selectedFaculty ? (<div>
     <ViewTimetable timetableData={viewFacultyData} />
+<TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/> 
+
 {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
 </div>
     ) : (
@@ -295,6 +299,8 @@ function LockedSummary() {
   {selectedRoom ? (
     <div>
     <ViewTimetable timetableData={viewRoomData} />
+{/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/>  */}
+
 {/* <TimetableSummary timetableData={viewRoomData} type={'room'} />  */}
     
     </div>

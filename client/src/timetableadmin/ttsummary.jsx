@@ -2,38 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 
-const TimetableSummary = ({ timetableData, type }) => {
+const TimetableSummary = ({ timetableData, code, type }) => {
 
-  const [subjectData, setSubjectData] = useState({}); // Initialize as an empty array
+  const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
 
 
   const apiUrl = getEnvironment();
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
-  function extractCodeFromURL(url) {
-    try {
-      const urlObject = new URL(`http://${url}`);
-      const pathParts = urlObject.pathname.split('/');
+//   function extractCodeFromURL(url) {
+//     try {
+//       const urlObject = new URL(`http://${url}`);
+//       const pathParts = urlObject.pathname.split('/');
 
-      if (pathParts.length >= 2) {
-        const code = pathParts[pathParts.length - 2];
-        return code;
-      }
-      else
-      {
-      const code = pathParts[pathParts.length - 1];
-      return code;
-      }
-    } catch (error) {
-      console.error('Error extracting code from URL:', error);
-      return null; // Handle error or return a default value if needed
-    }
-  }
+//       if (pathParts.length >= 2) {
+//         const code = pathParts[pathParts.length - 2];
+//         return code;
+//       }
+//       else
+//       {
+//       const code = pathParts[pathParts.length - 1];
+//       console.log('code in second file', code)
+//       return code;
+//       }
+//     } catch (error) {
+//       console.error('Error extracting code from URL:', error);
+//       return null; // Handle error or return a default value if needed
+//     }
+//   }
 
-  const currentCode=extractCodeFromURL(currentURL);
-console.log('code:',currentCode)
+//   const currentCode=extractCodeFromURL(currentURL);
+// console.log('code:',currentCode)
 
-
+const currentCode=code;
   useEffect(() => {
     const fetchSubjectData = async (currentCode) => {
       try {
@@ -66,10 +67,17 @@ console.log('code:',currentCode)
             // Check if the cell contains data
             if (cell.subject) {
               const { subject, faculty, room } = cell;
-
-              // Find the subject data in the subjectData array
-              const foundSubject = subjectData.find(item => item.subName === subject);
-
+              let foundSubject=''
+              if(type == 'faculty'){
+              foundSubject = subjectData.find(item => item.subName === subject && item.sem === faculty);
+              }
+              else if(type == 'room'){
+                foundSubject = subjectData.find(item => item.subName === subject && item.sem === room);
+                }
+              else
+              {
+              foundSubject = subjectData.find(item => item.subName === subject);
+              }
               // Initialize or update the subject entry in the summaryData
               if (foundSubject) {
                 if (!summaryData[subject]) {
@@ -80,6 +88,7 @@ console.log('code:',currentCode)
                     subType: foundSubject.type,
                     rooms:[room],
                     subjectFullName: foundSubject.subjectFullName,
+                    subSem:foundSubject.sem,
                   };
                 } else {
                   summaryData[subject].count++;
@@ -110,6 +119,7 @@ console.log('code:',currentCode)
             <th>Hours</th>
             {type !== 'faculty' && <th>Faculty Name</th>}
             {type !== 'room' && <th>Room No</th>}
+            {type !=='sem' && <th>Semester</th>}
           </tr>
         </thead>
         <tbody>
@@ -122,6 +132,7 @@ console.log('code:',currentCode)
               <td>{summaryData[subject].count}</td>
               {type !== 'faculty' && <td>{summaryData[subject].faculties.join(', ')}</td>}
               {type !== 'room' && <td>{summaryData[subject].rooms.join(', ')}</td>}
+              {type !=='sem' && <td>{summaryData[subject].subSem}</td>}
             </tr>
           ))}
         </tbody>

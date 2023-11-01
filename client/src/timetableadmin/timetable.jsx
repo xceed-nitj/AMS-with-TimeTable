@@ -41,7 +41,8 @@ const Timetable = () => {
   const [viewselectedSemester, setViewSelectedSemester] = useState(availableSems[0]); 
   const [viewFaculty, setViewFaculty]= useState(availableFaculties[0])  
   const [viewRoom, setViewRoom]= useState(availableRooms[0])  
-  
+
+  const [selectedSemester, setSelectedSemester] = useState('');  
   const selectedCell = null;
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -62,7 +63,7 @@ const Timetable = () => {
         const semValues = filteredSems.map((sem) => sem.sem);
 
         setAvailableSems(semValues);
-        // setSelectedSemester(semValues[0]);
+        setSelectedSemester(semValues[0]);
         // console.log('available semesters',availableSems)
       }
     } catch (error) {
@@ -74,8 +75,7 @@ const Timetable = () => {
 
 
 
-
-  const [selectedSemester, setSelectedSemester] = useState(availableSems[0]); 
+ 
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
@@ -147,7 +147,7 @@ const Timetable = () => {
     };
     fetchFacultyData(viewFaculty);
 
-  }, [viewFaculty, currentCode]);
+  }, [viewFaculty, currentCode,viewData]);
 
 
 
@@ -174,7 +174,7 @@ const Timetable = () => {
 
     fetchRoomData(viewRoom);
     
-  }, [viewRoom, currentCode]);
+  }, [viewRoom, currentCode, viewData]);
 
 
 
@@ -511,7 +511,7 @@ const Timetable = () => {
           value={selectedSemester}
           onChange={(e) => setSelectedSemester(e.target.value)}
         >
-          <option value="">Select Semester</option>
+          {/* <option value="">Select Semester</option> */}
 
           {semesters.map((semester, index) => (
             <option key={index} value={semester}>
@@ -608,7 +608,7 @@ const Timetable = () => {
     ))}
   </table>
 )}
-      <button onClick={handleSubmit}>Save Timetable</button>
+      <CustomBlueButton onClick={handleSubmit}>Save Timetable</CustomBlueButton>
 <div>
 <div>
 <Heading>View Semester Timetable</Heading>
@@ -631,7 +631,7 @@ const Timetable = () => {
   {viewselectedSemester ? (
     <div>
       <ViewTimetable timetableData={viewData} />     
-{/* <TimetableSummary timetableData={viewData} />  */}
+<TimetableSummary timetableData={viewData} type={'sem'} code={currentCode}/> 
     </div>
 
     
@@ -661,7 +661,7 @@ const Timetable = () => {
       <div>
   {viewFaculty ? (<div>
     <ViewTimetable timetableData={viewFacultyData} />
-{/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
+<TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/> 
 </div>
     ) : (
     <p>Please select a faculty from the dropdown.</p>
@@ -689,7 +689,7 @@ const Timetable = () => {
   {viewRoom ? (
     <div>
     <ViewTimetable timetableData={viewRoomData} />
-{/* <TimetableSummary timetableData={viewRoomData} type={'room'} />  */}
+{/* <TimetableSummary timetableData={viewRoomData} type={'room'} code={currentCode}/>  */}
     
     </div>
   ) : (
