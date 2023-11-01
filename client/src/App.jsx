@@ -11,6 +11,7 @@ import LockedSummary from './timetableadmin/lockedsummary';
 import Login from './dashboard/login';
 import Subjects from './timetableadmin/addsubjects';
 import LockedView from './timetableviewer/viewer';
+import PrintButton from './filedownload/printButton';
 
 
 function App() {
@@ -34,7 +35,9 @@ function App() {
           <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
+          <Route path="/tt/print" element={<PrintButton/>} />
         </Routes>
+        
       {/* </div> */}
     </Router>
   );
