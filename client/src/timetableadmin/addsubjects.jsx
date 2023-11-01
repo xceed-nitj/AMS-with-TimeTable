@@ -27,6 +27,7 @@ function Subject() {
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
   const [semesterData, setSemesterData] = useState([]);
+  const [semesters, setSemesters] = useState([]);
   const [duplicateEntryMessage, setDuplicateEntryMessage] = useState('');
   const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false); 
 
@@ -111,7 +112,24 @@ function Subject() {
     }
   }, [currentCode]);
 
-
+  useEffect(() => {
+    if (currentCode) {
+      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const filteredSemesters = data.filter((semester) => semester.code === currentCode);
+          setSemesters(filteredSemesters); // Store the semesters in the state
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+  }, [currentCode]);
   const handleUpload = () => {
     if (selectedFile) {
       const formData = new FormData();
@@ -380,13 +398,20 @@ function Subject() {
               />
             </div>
             <div>
-              <label>Semester:</label>
-              <input
-                type="text"
-                value={editedSData.sem}
-                onChange={(e) => setEditedSData({ ...editedSData, sem: e.target.value })}
-              />
-            </div>
+  <label>Semester:</label>
+  <select
+    value={editedSData.sem}
+    onChange={(e) => setEditedSData({ ...editedSData, sem: e.target.value })}
+  >
+    <option value="">Select Semester</option>
+    {semesters.map((semester) => (
+      <option key={semester._id} value={semester.sem}>
+        {semester.sem}
+      </option>
+    ))}
+  </select>
+</div>
+
             <div>
               <label>Degree:</label>
               <input
