@@ -7,6 +7,7 @@ function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
+  const [isAddFacultyFormVisible, setIsAddFacultyFormVisible] = useState(false); 
   const [editedData, setEditedData] = useState({
     facultyID:'',
     name: '',
@@ -69,44 +70,8 @@ const apiUrl=getEnvironment();
     }
   };
 
-  const handleAddFaculty = () => {
-    // Reset the form fields using editedData
-    setEditedData({
-      facultyID:'',
-      name: '',
-      designation: '',
-      dept: '',
-      email: '',
-      extension: '',
-      type: '',
-    });
-  };
 
-  const handleSaveNewFaculty = () => {
-    // Send a POST request to add the new faculty to the database
-    fetch(`${apiUrl}/timetablemodule/faculty`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(editedData), // Use editedData for new faculty
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log(data); // Handle the response from the server
-        fetchData(); // Fetch data after a successful addition
-        handleAddFaculty(); // Reset the form fields
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-    };
-
+ 
     const handleEditClick = (_id) => {
       setEditRowId(_id);
     
@@ -182,6 +147,46 @@ const apiUrl=getEnvironment();
           console.error('Delete Error:', error);
         });
     };
+    const handleCancelAddFaculty = () => {
+      setIsAddFacultyFormVisible(false); 
+    };
+
+    const handleAddFaculty = () => {
+      setEditedData({
+        facultyID:'',
+        name: '',
+        designation: '',
+        dept: '',
+        email: '',
+        extension: '',
+        type: '',
+      });
+      setIsAddFacultyFormVisible(true); 
+    };
+  
+    const handleSaveNewFaculty = () => {
+      fetch(`${apiUrl}/timetablemodule/faculty`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editedData),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log('Data saved successfully:', data);
+          fetchData();
+          handleCancelAddFaculty(); 
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    };
   
 
 
@@ -200,46 +205,9 @@ const apiUrl=getEnvironment();
       fileUrl='/faculty_template.xlsx'
       fileName="faculty_template.xlsx"
     />
-       <h2>Table of Faculty Data</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>FacultyID</th>
-            <th>Name</th>
-            <th>Designation</th>
-            <th>Dept</th>
-            <th>Type</th>
-            <th>Email</th>
-            <th>Extension</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tableData.map((row) => (
-            <tr key={row._id}>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.facultyID} onChange={(e) => setEditedData({ ...editedData, facultyID: e.target.value })} /> : row.facultyID}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.name} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} /> : row.name}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.designation} onChange={(e) => setEditedData({ ...editedData, designation: e.target.value })} /> : row.designation}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.dept} onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })} /> : row.dept}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.email} onChange={(e) => setEditedData({ ...editedData, email: e.target.value })} /> : row.email}</td>
-              <td>{editRowId === row._id ? <input type="text" value={editedData.extension} onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })} /> : row.extension}</td>
-              <td>
-                {editRowId === row._id ? (
-                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
-                ) : (
-                  <>
-                    <CustomBlueButton onClick={() => handleEditClick(row._id)}>Edit</CustomBlueButton>
-                    <CustomBlueButton onClick={() => handleDelete(row._id)}>Delete</CustomBlueButton>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h2>Add Faculty</h2>
+<div>
+{isAddFacultyFormVisible ?(
+  <div>
       <div>
         <label>Faculty ID: </label>
         <input
@@ -296,7 +264,56 @@ const apiUrl=getEnvironment();
           onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })}
         />
       </div>
-      <CustomBlueButton onClick={handleSaveNewFaculty}>Save</CustomBlueButton>
+          <div>
+          <CustomBlueButton onClick={handleSaveNewFaculty}>Save New Faculty</CustomBlueButton>
+          <CustomBlueButton onClick={handleCancelAddFaculty}>Cancel</CustomBlueButton>
+        </div>
+      </div>
+    ) : (
+      <CustomBlueButton onClick={handleAddFaculty}>Add Faculty</CustomBlueButton>
+    )}
+    </div>
+
+       <h2>Table of Faculty Data</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>FacultyID</th>
+            <th>Name</th>
+            <th>Designation</th>
+            <th>Dept</th>
+            <th>Type</th>
+            <th>Email</th>
+            <th>Extension</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tableData.map((row) => (
+            <tr key={row._id}>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.facultyID} onChange={(e) => setEditedData({ ...editedData, facultyID: e.target.value })} /> : row.facultyID}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.name} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} /> : row.name}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.designation} onChange={(e) => setEditedData({ ...editedData, designation: e.target.value })} /> : row.designation}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.dept} onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })} /> : row.dept}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.email} onChange={(e) => setEditedData({ ...editedData, email: e.target.value })} /> : row.email}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.extension} onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })} /> : row.extension}</td>
+              <td>
+                {editRowId === row._id ? (
+                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
+                ) : (
+                  <>
+                    <CustomBlueButton onClick={() => handleEditClick(row._id)}>Edit</CustomBlueButton>
+                    <CustomBlueButton onClick={() => handleDelete(row._id)}>Delete</CustomBlueButton>
+                  </>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+     
     </div>
   );
 }
