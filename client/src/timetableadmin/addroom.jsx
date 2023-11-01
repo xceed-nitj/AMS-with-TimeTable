@@ -14,7 +14,7 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
-
+import { Link } from 'react-router-dom';
 
 function SuccessMessage({ message }) {
   return (
@@ -42,7 +42,6 @@ function AddRoomComponent() {
     fetchRoomsData();
     fetchMasterRooms();
   }, []);
-
 
   const fetchRoomsData = () => {
     fetch(`${apiUrl}/timetablemodule/addroom`)
@@ -111,50 +110,53 @@ function AddRoomComponent() {
 
   return (
     <div>
-    <Heading>Add Rooms</Heading>
-    {successMessage ? (
-      <SuccessMessage message={successMessage} />
-    ) : (
-      <div>
-        <label>
-          Room:
-          <select
-            value={selectedMasterRoom}
-            onChange={(e) => setSelectedMasterRoom(e.target.value)}
-          >
-            <option value="">Select a Room</option>
-            {masterRooms.map((masterRoom) => (
-              <option key={masterRoom._id} value={masterRoom.room}>
-                {masterRoom.room}
-              </option>
-            ))}
-          </select>
-        </label>
-        <br />
-        <CustomBlueButton onClick={handleSubmit}>Add Room</CustomBlueButton>
-      </div>
-    )}
+      <Heading>Add Rooms</Heading>
+      {successMessage ? (
+        <SuccessMessage message={successMessage} />
+      ) : (
+        <div>
+          <label>
+            Room:
+            <select
+              value={selectedMasterRoom}
+              onChange={(e) => setSelectedMasterRoom(e.target.value)}
+            >
+              <option value="">Select a Room</option>
+              {masterRooms.map((masterRoom) => (
+                <option key={masterRoom._id} value={masterRoom.room}>
+                  {masterRoom.room}
+                </option>
+              ))}
+            </select>
+          </label>
+          <br />
+          <CustomBlueButton onClick={handleSubmit}>Add Room</CustomBlueButton>
+        </div>
+      )}
+       <Link to="/tt/viewmrooms">
+        <Button>View Master Rooms</Button>
+      </Link>
 
-    {successMessage && (
-      <div>
-        <label>
-          Room:
-          <select
-            value={selectedMasterRoom}
-            onChange={(e) => setSelectedMasterRoom(e.target.value)}
-          >
-            <option value="">Select a Room</option>
-            {masterRooms.map((masterRoom) => (
-              <option key={masterRoom._id} value={masterRoom.room}>
-                {masterRoom.room}
-              </option>
-            ))}
-          </select>
-        </label>
-        <br />
-        <CustomBlueButton onClick={() => setSuccessMessage('')}>Add Room</CustomBlueButton>
-      </div>
-  )}
+      {successMessage && (
+        <div>
+          <label>
+            Room:
+            <select
+              value={selectedMasterRoom}
+              onChange={(e) => setSelectedMasterRoom(e.target.value)}
+            >
+              <option value="">Select a Room</option>
+              {masterRooms.map((masterRoom) => (
+                <option key={masterRoom._id} value={masterRoom.room}>
+                  {masterRoom.room}
+                </option>
+              ))}
+            </select>
+          </label>
+          <br />
+          <CustomBlueButton onClick={() => setSuccessMessage('')}>Add Room</CustomBlueButton>
+        </div>
+      )}  
      <div>
     
     <FileDownloadButton
@@ -184,8 +186,7 @@ function AddRoomComponent() {
         </tbody>
       </table>
     </div>
-</div>
-
+    </div>
   );
 }
 
