@@ -26,6 +26,7 @@ function Subject() {
   const [uploadMessage, setUploadMessage] = useState('');
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
+  const [semesterData, setSemesterData] = useState([]);
   const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false); 
 
   
@@ -88,7 +89,27 @@ function Subject() {
     setSelectedFile(file);
   };
 
- 
+   // Fetch available semesters when the component mounts
+   useEffect(() => {
+    if (currentCode) {
+      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`) // Replace with the actual endpoint
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Assuming that the data is an array of semesters
+          const filteredSemesters = data.filter((semester) => semester.code === currentCode);
+          setSemesterData(filteredSemesters);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+  }, [currentCode]);
+
 
   const handleUpload = () => {
     if (selectedFile) {
@@ -287,6 +308,16 @@ function Subject() {
         fileUrl='/subject_template.xlsx'
         fileName="subject_template.xlsx"
       />
+
+       {/* Display available semesters */}
+       <div>
+        <h3>Available Semesters which need to be added:</h3>
+        <ul>
+          {semesterData.map((semester) => (
+            <li key={semester.code}>{semester.sem}</li>
+          ))}
+        </ul>
+      </div>
 
 
 <div>

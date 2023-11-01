@@ -75,7 +75,7 @@ class SubjectController{
         }
       }
 
-async getFilteredSubject (code, sem){
+     async getFilteredSubject (code, sem){
         try {
           const subjects = await TimetableEntry.find({ code, sem }).select('subName');
       
