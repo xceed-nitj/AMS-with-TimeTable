@@ -3,6 +3,7 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 // import subjectFile from '../assets/subject_template';
 import { Heading, Input } from '@chakra-ui/react';
+import Papa from 'papaparse';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
@@ -20,10 +21,13 @@ function Subject() {
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 2];
-
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadState, setUploadState] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
+  
   const [editedData, setEditedData] = useState({
     subjectFullName: '',
     type: '',
@@ -88,6 +92,7 @@ function Subject() {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
       formData.append('code', currentCode); 
+      setIsLoading(true);
 
       fetch(`${apiUrl}/upload/subject`, {
         method: 'POST',
@@ -97,19 +102,38 @@ function Subject() {
           if (!response.ok) {
             throw  Error(`Error: ${response.status} - ${response.statusText}`);
           }
+          setUploadState(true);
+          setUploadMessage('File uploaded successfully');
           return response.json();
         })
         .then((data) => {
           console.log(data); // Handle the response from the server
-          fetchData(); // Fetch data after a successful upload
+          // Fetch data after a successful upload
+          setIsLoading(false);
         })
         .catch((error) => {
           console.error('Error:', error);
+          setIsLoading(false);
+        })
+        .finally(() => {
+          setIsLoading(false);
+          setTimeout(() => {
+            setUploadMessage('');
+          }, 3000); 
         });
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
+
+  useEffect(() => {
+    fetchData();
+    if (uploadState) {
+      // Only fetch data again when uploadState is true
+      setUploadState(false); // Reset uploadState
+    }
+  }, [currentCode, uploadState]);
+
 
   const handleAddSubject = () => {
     // Reset the form fields using editedData
@@ -244,12 +268,19 @@ function Subject() {
       />
       <Button onClick={handleUpload}>Batch Upload</Button>
       <div>
-    
+
+        {uploadMessage && (
+          <p>{uploadMessage}</p>
+        )}
+      </div>
+   
+
       <FileDownloadButton
         fileUrl='/subject_template.xlsx'
         fileName="subject_template.xlsx"
       />
-    </div>
+ 
+
       {/* Display the fetched data */}
       <h2>Table of Subject Data</h2>
       <table>
@@ -292,7 +323,8 @@ function Subject() {
           ))}
         </tbody>
       </table>
-
+     
+  <div>
       <h2>Add Subject</h2>
 <div>
   <label>Subject Full Name: </label>
@@ -319,7 +351,7 @@ function Subject() {
   />
 </div>
 <div>
-  <label>Subject Abbreviation: </label>
+  <label>Subject Name: </label>
   <Input
     type="text"
     value={editedSData.subName}
@@ -361,7 +393,7 @@ function Subject() {
 
 <Button onClick={handleSaveNewSubject}>Save</Button>
 
-
+</div>
     </div>
   );
 }
