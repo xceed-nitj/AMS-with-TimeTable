@@ -3,7 +3,6 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 // import subjectFile from '../assets/subject_template';
 import { Heading, Input } from '@chakra-ui/react';
-import Papa from 'papaparse';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
@@ -283,6 +282,9 @@ function Subject() {
 
       {/* Display the fetched data */}
       <h2>Table of Subject Data</h2>
+      {isLoading ? ( // Check if data is loading
+        <p>Loading data...</p>
+      ) : (
       <table>
         <thead>
           <tr>
@@ -323,6 +325,7 @@ function Subject() {
           ))}
         </tbody>
       </table>
+       )}
      
   <div>
       <h2>Add Subject</h2>
