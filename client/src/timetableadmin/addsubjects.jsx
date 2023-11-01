@@ -20,10 +20,15 @@ function Subject() {
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 2];
-
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadState, setUploadState] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
+  const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false); 
+
+  
   const [editedData, setEditedData] = useState({
     subjectFullName: '',
     type: '',
@@ -83,11 +88,14 @@ function Subject() {
     setSelectedFile(file);
   };
 
+ 
+
   const handleUpload = () => {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
       formData.append('code', currentCode); 
+      setIsLoading(true);
 
       fetch(`${apiUrl}/upload/subject`, {
         method: 'POST',
@@ -97,61 +105,42 @@ function Subject() {
           if (!response.ok) {
             throw  Error(`Error: ${response.status} - ${response.statusText}`);
           }
+          setUploadState(true);
+          setUploadMessage('File uploaded successfully');
           return response.json();
         })
         .then((data) => {
           console.log(data); // Handle the response from the server
-          fetchData(); // Fetch data after a successful upload
+          // Fetch data after a successful upload
+          setIsLoading(false);
         })
         .catch((error) => {
           console.error('Error:', error);
+          setIsLoading(false);
+        })
+        .finally(() => {
+          setIsLoading(false);
+          setTimeout(() => {
+            setUploadMessage('');
+          }, 3000); 
         });
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
+  
 
-  const handleAddSubject = () => {
-    // Reset the form fields using editedData
-    setEditedSData({
-        subjectFullName: '',
-        type: '',
-        subCode: '',
-        subName: '',
-        sem: '',
-        degree: '',
-         dept:'',
-        credits:'',
-        code:currentCode
-    });
-  };
+  useEffect(() => {
+    fetchData();
+    if (uploadState) {
+      // Only fetch data again when uploadState is true
+      setUploadState(false); // Reset uploadState
+    }
+  }, [currentCode, uploadState]);
 
-  const handleSaveNewSubject = () => {
-    const dataWithCode = { ...editedSData, code: currentCode };
 
-    // Send a POST request to add the new faculty to the database
-    fetch(`${apiUrl}/timetablemodule/subject`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(dataWithCode), // Use editedData for new faculty
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log(data); // Handle the response from the server
-        fetchData(); // Fetch data after a successful addition
-        handleAddSubject(); // Reset the form fields
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-    };
+  
+
     const handleEditClick = (_id) => {
         setEditRowId(_id);
       
@@ -229,6 +218,49 @@ function Subject() {
             console.error('Delete Error:', error);
           });
       };
+
+      const handleCancelAddSubject = () => {
+        setIsAddSubjectFormVisible(false); 
+      };
+
+      const handleAddSubject = () => {
+        setEditedSData({
+          subjectFullName: '',
+          type: '',
+          subCode: '',
+          subName: '',
+          sem: '',
+          degree: '',
+          dept:'',
+          credits:'',
+          code:currentCode
+        });
+        setIsAddSubjectFormVisible(true); 
+      };
+    
+      const handleSaveNewSubject = () => {
+        fetch(`${apiUrl}/timetablemodule/subject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editedSData),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Error: ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log('Data saved successfully:', data);
+            fetchData();
+            handleCancelAddSubject(); 
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+          });
+      };
     
 
   return (
@@ -244,14 +276,106 @@ function Subject() {
       />
       <Button onClick={handleUpload}>Batch Upload</Button>
       <div>
-    
+
+        {uploadMessage && (
+          <p>{uploadMessage}</p>
+        )}
+      </div>
+   
+
       <FileDownloadButton
         fileUrl='/subject_template.xlsx'
         fileName="subject_template.xlsx"
       />
-    </div>
+
+
+<div>
+        
+        {isAddSubjectFormVisible ? ( 
+          <div>
+            <div>
+              <label>Subject Name:</label>
+              <input
+                type="text"
+                value={editedSData.subjectFullName}
+                onChange={(e) => setEditedSData({ ...editedSData, subjectFullName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Type:</label>
+              <input
+                type="text"
+                value={editedSData.type}
+                onChange={(e) => setEditedSData({ ...editedSData, type: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Subject Code:</label>
+              <input
+                type="text"
+                value={editedSData.subCode}
+                onChange={(e) => setEditedSData({ ...editedSData, subCode: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Subject Abrreviation:</label>
+              <input
+                type="text"
+                value={editedSData.subName}
+                onChange={(e) => setEditedSData({ ...editedSData, subName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Semester:</label>
+              <input
+                type="text"
+                value={editedSData.sem}
+                onChange={(e) => setEditedSData({ ...editedSData, sem: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Degree:</label>
+              <input
+                type="text"
+                value={editedSData.degree}
+                onChange={(e) => setEditedSData({ ...editedSData, degree: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Department:</label>
+              <input
+                type="text"
+                value={editedSData.dept}
+                onChange={(e) => setEditedSData({ ...editedSData, dept: e.target.value })}
+              />
+            </div>
+            <div>
+  <label>Credits: </label>
+  <input
+    type="number" // Assuming it's a number
+    value={editedSData.credits}
+    onChange={(e) => setEditedSData({ ...editedSData, credits: e.target.value })}
+  />
+</div>
+            <div>
+              <CustomBlueButton onClick={handleSaveNewSubject}>Save New Subject</CustomBlueButton>
+              <CustomBlueButton onClick={handleCancelAddSubject}>Cancel</CustomBlueButton>
+            </div>
+          </div>
+        ) : (
+          <CustomBlueButton onClick={handleAddSubject}>Add Subject</CustomBlueButton>
+        )}
+      </div>
+
+
+      
+ 
+
       {/* Display the fetched data */}
       <h2>Table of Subject Data</h2>
+      {isLoading ? ( // Check if data is loading
+        <p>Loading data...</p>
+      ) : (
       <table>
         <thead>
           <tr>
@@ -292,76 +416,9 @@ function Subject() {
           ))}
         </tbody>
       </table>
-
-      <h2>Add Subject</h2>
-<div>
-  <label>Subject Full Name: </label>
-  <Input
-    type="text"
-    value={editedSData.subjectFullName}
-    onChange={(e) => setEditedSData({ ...editedSData, subjectFullName: e.target.value })}
-  />
-</div>
-<div>
-  <label>Type: </label>
-  <Input
-    type="text"
-    value={editedSData.type}
-    onChange={(e) => setEditedSData({ ...editedSData, type: e.target.value })}
-  />
-</div>
-<div>
-  <label>Subject Code: </label>
-  <Input
-    type="text"
-    value={editedSData.subCode}
-    onChange={(e) => setEditedSData({ ...editedSData, subCode: e.target.value })}
-  />
-</div>
-<div>
-  <label>Subject Abbreviation: </label>
-  <Input
-    type="text"
-    value={editedSData.subName}
-    onChange={(e) => setEditedSData({ ...editedSData, subName: e.target.value })}
-  />
-</div>
-<div>
-  <label>Semester: </label>
-  <Input
-    type="text"
-    value={editedSData.sem}
-    onChange={(e) => setEditedSData({ ...editedSData, sem: e.target.value })}
-  />
-</div>
-<div>
-  <label>Degree: </label>
-  <Input
-    type="text"
-    value={editedSData.degree}
-    onChange={(e) => setEditedSData({ ...editedSData, degree: e.target.value })}
-  />
-</div>
-<div>
-  <label>Department: </label>
-  <Input
-    type="text"
-    value={editedSData.dept}
-    onChange={(e) => setEditedSData({ ...editedSData, dept: e.target.value })}
-  />
-</div>
-<div>
-  <label>Credits: </label>
-  <Input
-    type="number" // Assuming it's a number
-    value={editedSData.credits}
-    onChange={(e) => setEditedSData({ ...editedSData, credits: e.target.value })}
-  />
-</div>
-
-<Button onClick={handleSaveNewSubject}>Save</Button>
-
-
+       )}
+     
+  
     </div>
   );
 }
