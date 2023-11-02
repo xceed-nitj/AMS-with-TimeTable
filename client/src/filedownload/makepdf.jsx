@@ -8,7 +8,8 @@ import header from '../assets/header.png'
 import footer from '../assets/footer.png'; // Replace with the actual path to your footer image
 
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// pdfMake.vfs = pdfFonts.pdfMake.vfs;
+pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
 class PDFGenerator extends React.Component {
   constructor(props) {
