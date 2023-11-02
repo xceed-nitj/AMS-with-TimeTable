@@ -20,6 +20,7 @@ import {
 
 //nothing
 console.log("ak");
+//nothing
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
 pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
