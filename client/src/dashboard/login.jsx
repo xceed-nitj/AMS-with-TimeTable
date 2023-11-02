@@ -16,8 +16,8 @@ function Login() {
     e.preventDefault();
 
     const userData = { email, password };
-    console.log(userData)
-    console.log(apiUrl)
+    // console.log(userData)
+    // console.log(apiUrl)
     try {
       const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',

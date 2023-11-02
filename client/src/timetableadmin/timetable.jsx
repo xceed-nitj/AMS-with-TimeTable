@@ -81,8 +81,8 @@ const Timetable = () => {
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
-        console.log('sem value',semester);
-        console.log('current code', currentCode);
+        // console.log('sem value',semester);
+        // console.log('current code', currentCode);
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
         const data = await response.json();
         // console.log(data);

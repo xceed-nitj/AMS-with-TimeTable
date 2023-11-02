@@ -30,7 +30,7 @@ class TableController {
     async savett(req, res) 
     {
       const timetableData =req.body;
-      console.log(timetableData);
+      // console.log(timetableData);
       try {
         for (const day of Object.keys(timetableData.timetableData)) {
           const dayData = timetableData.timetableData[day];

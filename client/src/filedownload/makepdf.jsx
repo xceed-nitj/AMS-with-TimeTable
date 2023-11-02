@@ -1,6 +1,6 @@
 import React from 'react';
-import * as pdfMake from 'pdfmake/build/pdfmake';
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
@@ -186,7 +186,7 @@ class PDFGenerator extends React.Component {
           pageOrientation: 'landscape',
           header: {
               image: this.state.headerImageDataURL, // Use the data URL from state
-              width: 500,
+              width: 450,
               alignment: 'center', // Adjust the width as needed
           },
           footer: {
@@ -197,9 +197,9 @@ class PDFGenerator extends React.Component {
           content: [
             {
               text: `Department of ${dept}`,
-              fontSize: 14,
+              fontSize: 12,
               bold: true,
-              margin: [10, 10, 40, 10],
+              margin: [15, 15, 40, 10],
               alignment: 'center', // Adjust the width as needed
               
             },
