@@ -61,7 +61,7 @@ class ClassTimeTableController {
     const slot = req.params.slot;
     const slotData = req.body.slotData; // Access the slotData object
     const code = req.body.code;
-    const sem = req.params.sem;
+    const sem = req.body.sem;
     console.log('sem',sem)
     try {
       const query = {

@@ -88,7 +88,7 @@ async findRoomDataWithSession(session, room) {
         }
       }
 
-  async isFacultySlotAvailable(targetDay, targetSlot, facultySlots, code) {
+  async isFacultySlotAvailable(targetDay, targetSlot, facultySlots, sem) {
         try {
           // Check if the faculty is assigned to this slot
           for (const record of facultySlots) {

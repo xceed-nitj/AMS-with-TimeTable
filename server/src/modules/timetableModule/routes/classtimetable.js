@@ -15,7 +15,7 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     }
   });
 
-  ClassTimeTableRouter.post("/saveslot/:sem/:day/:slot", async (req, res) => {
+  ClassTimeTableRouter.post("/saveslot/:day/:slot", async (req, res) => {
     try { 
       await classtimetableController.saveslot(req, res);
     } 
