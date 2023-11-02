@@ -6,6 +6,17 @@ import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 import header from '../assets/header.png'
 import footer from '../assets/footer.png'; // Replace with the actual path to your footer image
+import { Container, Heading, Input } from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from '@chakra-ui/table';
 
 
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -23,7 +34,8 @@ class PDFGenerator extends React.Component {
   generatePDF = () => {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const timetableData = this.props.timetableData; // Assuming you pass the timetable data as a prop
-
+    const summaryData = this.props.summaryData; 
+    console.log('summaryDate',summaryData)
     const tableData = [];
     const { headerImageDataURL } = this.state; // Use the header image URL from the state
 
@@ -72,6 +84,48 @@ class PDFGenerator extends React.Component {
     }
       tableData.push(row);
     });
+    const summaryTableData = [];
+    // const summaryTableHeader = ['Abreviation','Code','Subject Name','Type','Hours','Faculty Name', 'Room No'];
+    const summaryTableHeader = [
+      { text: 'Abreviation', bold: true },
+      { text: 'Code', bold: true },
+      { text: 'Subject Name', bold: true },
+      { text: 'Type', bold: true },
+      { text: 'Hours', bold: true },
+      { text: 'Faculty Name', bold: true },
+      { text: 'Room No', bold: true },
+    ];
+    
+    summaryTableData.push(summaryTableHeader);
+  
+    Object.keys(summaryData).forEach(subject => {
+      const summaryRow = [subject];
+      // Add data for each summary column here
+      summaryRow.push(summaryData[subject].subCode);
+      summaryRow.push(summaryData[subject].subjectFullName);
+      summaryRow.push(summaryData[subject].subType);
+      summaryRow.push(summaryData[subject].count);
+      summaryRow.push( summaryData[subject].faculties.join(', ') );
+      summaryRow.push(summaryData[subject].rooms.join(', '));
+
+
+
+      // You can customize this part to include the summary data as needed.
+  
+      summaryTableData.push(summaryRow);
+    });
+    // const signatures = [
+    //   { text: 'Time Table Coordinator', bold: true },
+    //   { text: ' ', bold: true },
+    //   { text: '', bold: true },
+    //   { text: '', bold: true },
+    //   { text: '', bold: true },
+    //   { text: '', bold: true },
+    //   { text: 'Head of the Department', bold: true },
+    // ];
+
+    // summaryTableData.push(signatures);
+
 
     const footerImage = new Image();
     footerImage.src = footer; // Replace with the actual path to your image
@@ -132,8 +186,36 @@ class PDFGenerator extends React.Component {
                 alignment: 'center'
               },
             },
-            
-          ],
+            {
+              text: 'Summary',
+              fontSize: 12,
+              bold: true,
+              margin: [0, 10, 40, 10],
+              alignment: 'left',
+            },
+            {
+              table: {
+                body: summaryTableData,
+                alignment: 'center',
+              },
+            },
+            {
+              text: 'Time Table Incharge',
+              fontSize: 12,
+              bold: true,
+              margin: [0, 30, 10, 10],
+              alignment: 'left',
+            },
+            {
+              text: 'Head of the Department',
+              fontSize: 12,
+              bold: true,
+              margin: [0, 10, 10, 10],
+              alignment: 'left',
+            },
+
+
+            ],
          
 
         };
@@ -146,7 +228,7 @@ class PDFGenerator extends React.Component {
   render() {
     return (
       <div>
-        <button onClick={this.generatePDF}>Generate PDF</button>
+        <CustomBlueButton onClick={this.generatePDF}>Generate PDF</CustomBlueButton>
       </div>
     );
   }

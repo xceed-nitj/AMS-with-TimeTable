@@ -16,7 +16,7 @@ import { Button } from "@chakra-ui/button";
 import PDFGenerator from '../filedownload/makepdf';
 
 
-const ViewTimetable = ({ timetableData }) => {
+const ViewTimetable = ({ timetableData,tableSummary,headerDetails }) => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 
@@ -75,7 +75,7 @@ const ViewTimetable = ({ timetableData }) => {
         </TableContainer>
         {/* <button onClick={downloadPDF}>Download PDF</button>
          */}
-         <PDFGenerator timetableData={timetableData} />
+        
             </div>
       )}
 
