@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/table';
 
 //nothing
+console.log("ak");
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
 pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
