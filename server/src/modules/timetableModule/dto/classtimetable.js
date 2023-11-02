@@ -46,7 +46,7 @@ async findFacultyDataWithSession(session, faculty) {
             },
           },
         ]);
-                    console.log(result);
+                    // console.log(result);
       
           return result;
         } catch (err) {
@@ -80,7 +80,7 @@ async findRoomDataWithSession(session, room) {
               },
             },
           ]);
-      console.log('room result', result)
+      // console.log('room result', result)
           return result;
         } catch (err) {
           console.error('An error occurred while searching for faculty data:', err);
@@ -88,11 +88,11 @@ async findRoomDataWithSession(session, room) {
         }
       }
 
-  async isFacultySlotAvailable(targetDay, targetSlot, facultySlots) {
+  async isFacultySlotAvailable(targetDay, targetSlot, facultySlots, code) {
         try {
           // Check if the faculty is assigned to this slot
           for (const record of facultySlots) {
-            if (record.day === targetDay && record.slot === targetSlot) {
+            if (record.day === targetDay && record.slot === targetSlot  && record.sem !== sem) {
                 // The day and slot combination is found in the data
                 console.log('faculty slot not available')
                 return false;
@@ -107,11 +107,11 @@ async findRoomDataWithSession(session, room) {
         }
       }
       
-      async isRoomSlotAvailable(targetDay, targetSlot, roomSlots) {
+      async isRoomSlotAvailable(targetDay, targetSlot, roomSlots, sem) {
         try {
           // Check if the faculty is assigned to this slot
           for (const record of roomSlots) {
-            if (record.day === targetDay && record.slot === targetSlot) {
+            if (record.day === targetDay && record.slot === targetSlot && record.sem !== sem) {
                 // The day and slot combination is found in the data
                 console.log('room slot not available')
                 return false;

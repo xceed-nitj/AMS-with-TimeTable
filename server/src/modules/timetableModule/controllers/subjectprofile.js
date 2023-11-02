@@ -94,7 +94,7 @@ class SubjectController{
             const subjects = await TimetableEntry.find({ code });
             final.push(...subjects);
           }
-          console.log('finaldata',final)
+          // console.log('finaldata',final)
       
       return final;
         } catch (e) {

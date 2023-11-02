@@ -81,8 +81,7 @@ const Timetable = () => {
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
-        console.log('sem value',semester);
-        console.log('current code', currentCode);
+      S    // console.log('current code', currentCode);
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
         const data = await response.json();
         // console.log(data);
@@ -386,7 +385,7 @@ const Timetable = () => {
  
 
   const saveSlotData = async (day,slot,slotData) => { // Mark the function as async
-    const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
+    const Url = `${apiUrl}/timetablemodule/tt/saveslot/${selectedSemester}/${day}/${slot}`;
     const code = currentCode;
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ slotData, code, sem });
