@@ -12,7 +12,7 @@ router.use('/masterroom', require("./masterroom"));
 router.use('/addroom', require("./addroom")); 
 router.use('/addsem', require("./addsem")); 
 router.use('/allotment', require("./allotment")); 
-router.use('/lockfaculty', require("./lockfacultysummary")); 
+router.use('/lockfaculty', require("./lockfaculty")); 
 
 
 module.exports = router;

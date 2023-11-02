@@ -1,11 +1,11 @@
 const HttpException = require("../../../models/http-exception");
-const lockFaculty = require("../../../models/lockfacultysummary");
+const lockFaculty = require("../../../models/lockfaculty");
 
 class lockFacultyController {
     async lockFaculty(req,res) {
-        const lockFaculty = req.body;
+        const lockFacultydata = req.body;
         try {
-          const lockedFaculty = await lockFaculty.create(lockFaculty);
+          const lockedFaculty = await lockFaculty.create(lockFacultydata);
           res.json(lockedFaculty)
           return;
         } catch (error) {
