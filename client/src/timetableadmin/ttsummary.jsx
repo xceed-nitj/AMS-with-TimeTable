@@ -19,6 +19,7 @@ import PDFGenerator from '../filedownload/makepdf';
 const TimetableSummary = ({ timetableData, code, type }) => {
 
   const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
+  const [TTData, setTTData] = useState([]); // Initialize as an empty array
 
 
   const apiUrl = getEnvironment();
@@ -33,17 +34,39 @@ const currentCode=code;
         const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
         const data = await response.json();
         setSubjectData(data);
-        console.log('subjectdata',data)
+        // console.log('subjectdata',data)
       } catch (error) {
         console.error('Error fetching subject data:', error);
       }
     };
 
+    const fetchTTData = async (currentCode) => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          // body: JSON.stringify(userData),
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        setTTData(data);
+      } catch (error) {
+        console.error('Error fetching TTdata:', error);
+      }
+    };
+
+
+
     fetchSubjectData(currentCode);
-  
+    fetchTTData(currentCode);
 
 
   }, []);
+  console.log('TT data',TTData);
+
 
   const summaryData = {};
 
@@ -129,7 +152,7 @@ const currentCode=code;
           ))}
         </tbody>
       </table>
-      <PDFGenerator timetableData={timetableData}  summaryData={summaryData} />
+      <PDFGenerator timetableData={timetableData}  summaryData={summaryData} type={type} ttdata={TTData}/>
     </div>
   );
 };

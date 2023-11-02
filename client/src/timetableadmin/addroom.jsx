@@ -88,7 +88,7 @@ function AddRoomComponent() {
     })
       .then(handleResponse)
       .then((data) => {
-        console.log('Data saved successfully:', data);
+        // console.log('Data saved successfully:', data);
         setSuccessMessage('Room added successfully!');
         fetchRoomsData();
         setSelectedMasterRoom('');
@@ -102,7 +102,7 @@ function AddRoomComponent() {
     })
       .then(handleResponse)
       .then(() => {
-        console.log('Room deleted successfully');
+        // console.log('Room deleted successfully');
         fetchRoomsData();
       })
       .catch(handleError);
