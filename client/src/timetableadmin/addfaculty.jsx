@@ -19,7 +19,6 @@ function SuccessMessage({ message }) {
     <div className="success-message">{message}</div>
   );
 }
-console.log("ak");console.log("ak");
 function Component() {
   const [sem, setSem] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
