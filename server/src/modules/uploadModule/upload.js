@@ -8,6 +8,7 @@ const modelPaths={
     faculty:"../../models/faculty",
     subject:"../../models/subject",
     masterroom:"../../models/masterroom",
+    mastersem:"../../models/mastersem",
 }
 //const mongooseSchema = mongooseSchemas.
 

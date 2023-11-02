@@ -18,7 +18,6 @@ import {
   Tr,
 } from '@chakra-ui/table';
 
-
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
 pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
