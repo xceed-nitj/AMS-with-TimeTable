@@ -66,4 +66,17 @@ TableRouter.post("/", async (req, res) => {
     }
   });
 
+  TableRouter.get("/alldetails/:code", async (req, res) => {
+    try {
+      const code = req.params.code;
+      const TTdetails = await tableController.getTableByCode(code);
+      res.status(200).json(TTdetails);
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+
   module.exports = TableRouter;

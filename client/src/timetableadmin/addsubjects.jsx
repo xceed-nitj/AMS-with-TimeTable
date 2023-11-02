@@ -131,7 +131,7 @@ function Subject() {
           return response.json();
         })
         .then((data) => {
-          console.log(data); // Handle the response from the server
+          // console.log(data); // Handle the response from the server
           // Fetch data after a successful upload
           setIsLoading(false);
         })

@@ -65,17 +65,6 @@ class TableController {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
     async getUserTable(req, res) 
     {
       const userId=req.user.id;
@@ -88,6 +77,19 @@ class TableController {
           res.status(500).json({ error: "Internal server error" });
         }
     }
+
+    async getTableByCode(code) 
+    {
+      // const code=req.params.code;
+      try {
+          const TableField = await TimeTable.find({code});
+          return TableField;
+        } catch (error) {
+          console.error(error); 
+          res.status(500).json({ error: "Internal server error" });
+        }
+    }
+
 
     async getTableById(id) {
       if (!id) {

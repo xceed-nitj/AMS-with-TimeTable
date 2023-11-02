@@ -58,7 +58,7 @@ function LockedView() {
         });
     
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
         const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
@@ -163,7 +163,7 @@ function LockedView() {
         }
       }
     }
-    console.log(initialData);
+    // console.log(initialData);
     return initialData;
   };
 

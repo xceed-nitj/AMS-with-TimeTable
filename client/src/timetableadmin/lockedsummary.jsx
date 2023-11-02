@@ -40,7 +40,7 @@ function LockedSummary() {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`);
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
         const initialData = generateInitialTimetableData(data,'sem');
         return initialData;
       } catch (error) {
@@ -61,7 +61,7 @@ function LockedSummary() {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty}`);
         const data = await response.json();
-        console.log('facultydata',data);
+        // console.log('facultydata',data);
         const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
@@ -84,7 +84,7 @@ function LockedSummary() {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`);
         const data = await response.json();
-        console.log('roomdata',data);
+        // console.log('roomdata',data);
         const initialData = generateInitialTimetableData(data,'room');
         return initialData;
       } catch (error) {
@@ -109,12 +109,12 @@ function LockedSummary() {
         const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('filtered data',data)
+          // console.log('filtered data',data)
           const filteredSems = data.filter((sem) => sem.code === currentCode);
           const semValues = filteredSems.map((sem) => sem.sem);
 
           setAvailableSems(semValues);
-          console.log('available semesters',availableSems)
+          // console.log('available semesters',availableSems)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -130,7 +130,7 @@ function LockedSummary() {
           const semValues = filteredSems.map((room) => room.room);
 
           setAvailableRooms(semValues);
-          console.log('available rooms',availableRooms)
+          // console.log('available rooms',availableRooms)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -142,9 +142,9 @@ function LockedSummary() {
         const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('faculty response',data);
+          // console.log('faculty response',data);
           setAvailableFaculties(data);
-          console.log('faculties', availableFaculties);
+          // console.log('faculties', availableFaculties);
         }
          
       } catch (error) {
@@ -221,7 +221,7 @@ function LockedSummary() {
         }
       }
     }
-    console.log(initialData);
+    // console.log(initialData);
     return initialData;
   };
 

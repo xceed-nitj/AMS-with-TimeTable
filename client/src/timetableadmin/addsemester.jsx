@@ -76,7 +76,7 @@ function AddSemComponent() {
     })
       .then(handleResponse)
       .then((data) => {
-        console.log('Data saved successfully:', data);
+        // console.log('Data saved successfully:', data);
         setSuccessMessage('Semester added successfully!');
         fetchSemData();
       })
@@ -93,7 +93,7 @@ function AddSemComponent() {
     })
       .then(handleResponse)
       .then(() => {
-        console.log('Sem deleted successfully');
+        // console.log('Sem deleted successfully');
         fetchSemData();
       })
       .catch(handleError);

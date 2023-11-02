@@ -8,6 +8,8 @@ import ReactToPrint from 'react-to-print';
 import { Container } from "@chakra-ui/layout";
 import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
+import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+
 import {
   Table,
   TableContainer,
@@ -483,6 +485,28 @@ const Timetable = () => {
   };
 
 
+  const [showMessage, setShowMessage] = useState(true);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const handleScroll = () => {
+    const scrollPosition = window.scrollY;
+    const scrollThreshold = 1000; // Adjust this value to control when the message disappears
+
+    if (scrollPosition > scrollThreshold) {
+      setShowMessage(false);
+    } else {
+      setShowMessage(true);
+    }
+  };
+
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
@@ -495,7 +519,7 @@ const Timetable = () => {
       <CustomBlueButton onClick={handleLockTT}>Lock TT</CustomBlueButton>
       <CustomBlueButton onClick={handleViewSummary}>View/Download Locked TT</CustomBlueButton>
 
-    <div style={{
+    {/* <div style={{
   backgroundColor: 'brown',
   color: 'white',
   textAlign: 'center',
@@ -503,7 +527,29 @@ const Timetable = () => {
   fontSize: '1.5rem', // Adjust the font size as needed
 }}>
   {message}
-</div>
+</div> */}
+      {/* Floating Message */}
+      <Portal>
+        <Box
+          bg={showMessage && message ? "rgba(255, 100, 0, 0.9)" : 0} // Brighter yellow with some transparency
+          color="white"
+          textAlign="center"
+          fontWeight="bold"
+          fontSize="1.5rem"
+          position="fixed"
+          top="25%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+          zIndex="999"
+          borderRadius="20px" // Adding curved borders
+          p="10px" // Padding to make it a bit larger
+          opacity={showMessage ? 1 : 0} 
+>
+          <Text>{message}</Text>
+        </Box>
+
+        
+      </Portal>
 
     <div>
         <label>Select Semester:</label>

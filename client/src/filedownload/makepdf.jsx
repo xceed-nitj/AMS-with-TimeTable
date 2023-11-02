@@ -34,8 +34,13 @@ class PDFGenerator extends React.Component {
   generatePDF = () => {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const timetableData = this.props.timetableData; // Assuming you pass the timetable data as a prop
-    const summaryData = this.props.summaryData; 
-    console.log('summaryDate',summaryData)
+    const summaryData = this.props.summaryData;
+    const type=this.props.type;
+    const ttdata=this.props.ttdata; 
+
+    const session=ttdata[0].session;
+    const dept=ttdata[0].dept;
+    // console.log('summaryDate',summaryData)
     const tableData = [];
     const { headerImageDataURL } = this.state; // Use the header image URL from the state
 
@@ -85,35 +90,56 @@ class PDFGenerator extends React.Component {
       tableData.push(row);
     });
     const summaryTableData = [];
-    // const summaryTableHeader = ['Abreviation','Code','Subject Name','Type','Hours','Faculty Name', 'Room No'];
     const summaryTableHeader = [
-      { text: 'Abreviation', bold: true },
-      { text: 'Code', bold: true },
-      { text: 'Subject Name', bold: true },
-      { text: 'Type', bold: true },
-      { text: 'Hours', bold: true },
-      { text: 'Faculty Name', bold: true },
-      { text: 'Room No', bold: true },
+      { text: 'Abbreviation', bold: true, alignment: 'center', fontSize: 10 },
+      { text: 'Subject Code', bold: true, fontSize: 10 },
+      { text: 'Subject Name', bold: true, fontSize: 10 },
+      { text: 'Hours', bold: true, alignment: 'center', fontSize: 10 },
     ];
     
+    if (type !== 'room') {
+      summaryTableHeader.push({ text: 'Subject Type', bold: true, fontSize: 10 });
+    }
+    
+    if (type !== 'faculty') {
+      summaryTableHeader.push({ text: 'Faculty Name', bold: true, fontSize: 10 });
+    }
+    
+    if (type !== 'room') {
+      summaryTableHeader.push({ text: 'Room No', bold: true, fontSize: 10 });
+    }
+    
+    if (type !== 'sem') {
+      summaryTableHeader.push({ text: 'Semester', bold: true, fontSize: 10 });
+    }
+    
     summaryTableData.push(summaryTableHeader);
-  
-    Object.keys(summaryData).forEach(subject => {
-      const summaryRow = [subject];
-      // Add data for each summary column here
-      summaryRow.push(summaryData[subject].subCode);
-      summaryRow.push(summaryData[subject].subjectFullName);
-      summaryRow.push(summaryData[subject].subType);
-      summaryRow.push(summaryData[subject].count);
-      summaryRow.push( summaryData[subject].faculties.join(', ') );
-      summaryRow.push(summaryData[subject].rooms.join(', '));
-
-
-
-      // You can customize this part to include the summary data as needed.
-  
+    
+    // Iterate through the summary data and add rows to the table
+    Object.keys(summaryData).forEach((subject) => {
+      const summaryRow = [];
+      summaryRow.push({ text: subject, fontSize: 10, alignment: 'center' });
+      summaryRow.push({ text: summaryData[subject].subCode, fontSize: 10, alignment: 'center' });
+      summaryRow.push({ text: summaryData[subject].subjectFullName, fontSize: 10 });
+      summaryRow.push({ text: summaryData[subject].count, fontSize: 10,alignment: 'center' });
+      summaryRow.push({ text: summaryData[subject].subType, fontSize: 10, alignment: 'center' });
+    
+      if (type !== 'faculty') {
+        summaryRow.push({ text: summaryData[subject].faculties.join(', '), fontSize: 10 });
+      }
+    
+      if (type !== 'room') {
+        summaryRow.push({ text: summaryData[subject].rooms.join(', '), fontSize: 10 });
+      }
+    
+      if (type !== 'sem') {
+        summaryRow.push({ text: summaryData[subject].subSem, fontSize: 10 });
+      }
+    
       summaryTableData.push(summaryRow);
     });
+    
+
     // const signatures = [
     //   { text: 'Time Table Coordinator', bold: true },
     //   { text: ' ', bold: true },
@@ -161,7 +187,7 @@ class PDFGenerator extends React.Component {
           pageOrientation: 'landscape',
           header: {
               image: this.state.headerImageDataURL, // Use the data URL from state
-              width: 400,
+              width: 500,
               alignment: 'center', // Adjust the width as needed
           },
           footer: {
@@ -171,10 +197,18 @@ class PDFGenerator extends React.Component {
         },
           content: [
             {
-              text: 'hi',
-              fontSize: 16,
+              text: `Department of ${dept}`,
+              fontSize: 14,
               bold: true,
-              margin: [40, 70, 40, 10],
+              margin: [10, 10, 40, 10],
+              alignment: 'center', // Adjust the width as needed
+              
+            },
+            {
+              text: `Session:${session}`,
+              fontSize: 12,
+              bold: true,
+              margin: [10, 10, 40, 10],
               alignment: 'center', // Adjust the width as needed
               
             },
@@ -187,7 +221,7 @@ class PDFGenerator extends React.Component {
               },
             },
             {
-              text: 'Summary',
+              text: 'Summary:',
               fontSize: 12,
               bold: true,
               margin: [0, 10, 40, 10],
@@ -195,24 +229,36 @@ class PDFGenerator extends React.Component {
             },
             {
               table: {
+                fontSize: 10,
                 body: summaryTableData,
                 alignment: 'center',
               },
             },
             {
-              text: 'Time Table Incharge',
-              fontSize: 12,
-              bold: true,
-              margin: [0, 30, 10, 10],
-              alignment: 'left',
+            table: {
+              widths: ['*', '*'], // Two equal-width columns
+              body: [
+                [
+                  {
+                    text: 'Time Table Incharge',
+                    fontSize: 12,
+                    bold: true,
+                    alignment: 'left',
+                    
+                  },
+                  {
+                    text: 'Head of the Department',
+                    fontSize: 12,
+                    bold: true,
+                    alignment: 'right',
+                    // margin: [10,10,10,10],
+                  },
+                ],
+              ],
             },
-            {
-              text: 'Head of the Department',
-              fontSize: 12,
-              bold: true,
-              margin: [0, 10, 10, 10],
-              alignment: 'left',
-            },
+            layout: 'noBorders',
+            margin: [0,30,0,0],
+          },
 
 
             ],
