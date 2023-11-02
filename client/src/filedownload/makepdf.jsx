@@ -1,6 +1,8 @@
 import React from 'react';
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+
+// (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
 import header from '../assets/header.png'
 import footer from '../assets/footer.png'; // Replace with the actual path to your footer image
