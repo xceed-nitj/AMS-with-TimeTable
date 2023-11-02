@@ -5,6 +5,7 @@ import FileDownloadButton from '../filedownload/filedownload';
 import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 
 function MasterSemester() {
+  const [selectedFile, setSelectedFile] = useState(null);
   const [masterSems, setMasterSems] = useState([]);
   const [editedSemester, setEditedSemester] = useState({
     sem: '',
