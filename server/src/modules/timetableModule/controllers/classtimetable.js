@@ -6,6 +6,7 @@ const ClassTimeTableDto = new ClassTimeTabledto();
 
 const TimeTabledto = require("../dto/timetable");
 const TimeTableDto = new TimeTabledto();
+const getIndianTime = require("../helper/getIndianTime")
 
 class ClassTimeTableController {
   async savett(req, res) {
@@ -195,6 +196,7 @@ class ClassTimeTableController {
       // const facultydata = await ClassTable.find({ faculty: facultyname });
       const session = await TimeTableDto.getSessionByCode(code);
       const records = await ClassTimeTableDto.findFacultyDataWithSession(session,facultyname);
+      const updatedTime= await ClassTimeTableDto.getLastUpdatedTime(records);
       // Create an empty timetable data object
       const timetableData = {};
   
@@ -226,7 +228,7 @@ class ClassTimeTableController {
         // Set the sem and code for the timetable
       });
       // console.log(timetableData)
-      res.status(200).json(timetableData);
+      res.status(200).json({timetableData, updatedTime});
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
@@ -240,6 +242,7 @@ class ClassTimeTableController {
     try {
       const session = await TimeTableDto.getSessionByCode(code);
       const records = await ClassTimeTableDto.findRoomDataWithSession(session,roomno);
+      const updatedTime= await ClassTimeTableDto.getLastUpdatedTime(records);
       const timetableData = {};
       records.forEach((record) => {
       const { day, slot, slotData,sem } = record;
@@ -263,7 +266,7 @@ class ClassTimeTableController {
         // Set the sem and code for the timetable
       });
       // console.log('rooom data',timetableData)
-      res.status(200).json(timetableData);
+      res.status(200).json({timetableData,updatedTime});
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
