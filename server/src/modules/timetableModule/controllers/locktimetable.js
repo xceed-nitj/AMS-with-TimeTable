@@ -8,7 +8,7 @@ const LockTimeTableDto = new LockTimeTabledto();
 const TimeTabledto=require("../dto/timetable")
 const TimeTableDto=new TimeTabledto(); 
 
-const getIndianTime=require("../helper/getIndianTime")
+const getIndianTime=require("../helper/getIndianTime") 
 
 class LockTimeTableController {
   async locktt(req, res) {
@@ -192,17 +192,22 @@ class LockTimeTableController {
     }
   }
 
-
   async getLastUpdatedTimeByCode(code) {
-    const latestObject = await LockSem.find({ code }).sort({ updated_at: -1 }).limit(1);
+    const lockTime = await LockSem.find({ code }).sort({ updated_at: -1 }).limit(1);
+    const saveTime = await ClassTable.find({ code }).sort({ updated_at: -1 }).limit(1);
   
-    if (latestObject.length > 0) {
-      return latestObject[0].updated_at;
-    } else {
-      return null; // Handle the case where no document with the specified code is found
-    }
-  };
+    const lockTimeIST = lockTime.length > 0 ? await getIndianTime(new Date(lockTime[0].updated_at)) : null;
+    const saveTimeIST = saveTime.length > 0 ? await getIndianTime(new Date(saveTime[0].updated_at)) : null;
   
+    console.log(lockTimeIST);
+    console.log(saveTimeIST);
+  
+    return {
+      lockTimeIST,
+      saveTimeIST
+    };
+  }
+    
 
 }
 module.exports = LockTimeTableController;

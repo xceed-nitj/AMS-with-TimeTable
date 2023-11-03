@@ -35,7 +35,7 @@ const Timetable = () => {
   const [availableFaculties, setAvailableFaculties] = useState([]);
 
   const [lockedTime, setLockedTime] = useState();
-
+  const [savedTime, setSavedTime] = useState();
   // const availableRooms = ['L-201', 'L-209','room1','room2'];
   // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
     // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
@@ -93,6 +93,21 @@ const Timetable = () => {
         return {};
       }
     };
+
+    const fetchTime = async () => {
+      try {
+        // console.log('sem value',semester);
+        // console.log('current code', currentCode);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`);
+        const data = await response.json();
+        setLockedTime(data.updatedTime.lockTimeIST)
+        setSavedTime( data.updatedTime.saveTimeIST)
+      } catch (error) {
+        console.error('Error fetching existing timetable data:', error);
+        }
+    };
+
+
     const fetchTimetableData = async (semester) => {
       const data = await fetchData(semester);
       setTimetableData(data);
@@ -101,7 +116,7 @@ const Timetable = () => {
 
 
     fetchTimetableData(selectedSemester);
-    
+    fetchTime();
   }, [selectedSemester, apiUrl, currentCode]);
 
 
@@ -522,7 +537,15 @@ const Timetable = () => {
       <CustomBlueButton onClick={handleLockTT}>Lock TT</CustomBlueButton>
       <CustomBlueButton onClick={handleViewSummary}>View/Download Locked TT</CustomBlueButton>
 
-      {lockedTime}
+      <Box display="flex" flexDirection="column" alignItems="center">
+      <Text fontSize="xl" color="blue" id="saveTime">
+         Last saved on: {savedTime ? savedTime: 'Not saved yet'}
+        </Text>
+        <Text fontSize="xl" color="blue" id="lockTime">
+          Last locked on: {lockedTime ? lockedTime: 'Not Locked yet'}
+        </Text>
+       
+      </Box>
 
     {/* <div style={{
   backgroundColor: 'brown',
