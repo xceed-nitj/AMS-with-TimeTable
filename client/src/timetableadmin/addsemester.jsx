@@ -13,20 +13,22 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
+import { useToast } from '@chakra-ui/react';
 
 
-function SuccessMessage({ message }) {
-  return (
-    <div className="success-message">
-      {message}
-    </div>
-  );
-}
+// function SuccessMessage({ message }) {
+//   return (
+//     <div className="success-message">
+//       {message}
+//     </div>
+//   );
+// }
 
 function AddSemComponent() {
+  const toast = useToast()
   const [sems, setSems] = useState([]);
   const [newSem, setNewSem] = useState(''); 
-  const [successMessage, setSuccessMessage] = useState('');
+  // const [successMessage, setSuccessMessage] = useState('');
  
   const navigate = useNavigate();
   const apiUrl = getEnvironment();
@@ -77,7 +79,15 @@ function AddSemComponent() {
       .then(handleResponse)
       .then((data) => {
         console.log('Data saved successfully:', data);
-        setSuccessMessage('Semester added successfully!');
+
+        // setSuccessMessage('Semester added successfully!');
+        toast({
+          title: 'Semester added',
+          description: "Semester added successfully!",
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        })
         fetchSemData();
       })
       .catch(handleError);
@@ -99,20 +109,30 @@ function AddSemComponent() {
       .catch(handleError);
   };
 
+  // useEffect(()=>{
+
+  //   setTimeout(()=>{
+  //     setSuccessMessage('')
+  //   }, 1500)
+
+  // }, [successMessage])
+
   return (
-    <Container maxW='5xl'>
-      <div>
+    <Container maxW='4xl'>
       <Heading as="h1" size="xl" mt='6' mb='6'>
         Add Semester
       </Heading>
-          <SuccessMessage message={successMessage} />
         <Box>
           <FormControl mb='5'>
             <Text as='b'>
               Sem
             </Text>
-            <Box display='flex' mt='1'>
-              <Select placeholder='Select Semester' w='80%'>
+            <Box display='flex' justifyContent='space-between'>
+              <Select
+               onChange={(e)=>{
+                setNewSem(e.target.value)
+               }}
+              placeholder='Select Semester' w='80%'>
                 <option>1</option>
                 <option>2</option>
                 <option>3</option>
@@ -131,7 +151,7 @@ function AddSemComponent() {
             <Text as='b'>Sem Data</Text>
             <Table
             variant='striped'
-            maxWidth='80%'
+            maxWidth='100%'
             size='md'
             mt='1'
             >
@@ -144,7 +164,10 @@ function AddSemComponent() {
               <Tbody>
                 {sems.map((sem) => (
                   <Tr key={sem._id} h='20' w='20'>
-                      <Td><Center>{sem.sem}</Center></Td>
+                      <Td><Center><Text
+                        fontSize='lg'
+                        fontWeight='medium'
+                      >{sem.sem}</Text></Center></Td>
                     <Td><Center>
                       <Button bg='teal' color='white' onClick={() => handleDelete(sem._id)}>Delete</Button>
                     </Center></Td>
@@ -154,7 +177,6 @@ function AddSemComponent() {
             </Table>
           </Box>
         </TableContainer>
-      </div>
     </Container>
   );
 }
