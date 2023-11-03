@@ -1,7 +1,6 @@
 import React from "react";
+import { useLocation } from "react-router-dom"; 
 import logo from "../assets/clublogo.png"
-import logo1 from "../assets/logo.png"
-
 import {
   Box,
   Flex,
@@ -25,13 +24,25 @@ const theme = extendTheme({
 });
 
 function Navbar({ isAuthenticated }) {
+  const location = useLocation(); // Get the current route location
+
+  // Define an array of routes where you want to exclude the Navbar
+  const excludedRoutes = ["/",];
+
+  // Check if the current route is in the excludedRoutes array
+  const isExcluded = excludedRoutes.includes(location.pathname);
+
+  // Conditionally render the Navbar based on the route
+  if (isExcluded) {
+    return null; // Exclude Navbar in certain routes
+  }
+
   return (
     <ChakraProvider theme={theme}>
       <Box bg="black" py={2} px={4}>
         <Flex justify="space-between" align="center">
           <Flex align="center">
             <Image src={logo} alt="Logo" h={10} w={40} mr={2} />
-            {/* <Image src={logo1} alt="Logo" h={10} w={10} mr={2} /> */}
             <Text fontSize="xl" color="white">
               
             </Text>
