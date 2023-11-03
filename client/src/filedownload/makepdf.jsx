@@ -1,6 +1,6 @@
 import React from 'react';
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
@@ -36,12 +36,24 @@ class PDFGenerator extends React.Component {
     const summaryData = this.props.summaryData;
     const type=this.props.type;
     const ttdata=this.props.ttdata; 
+    const updatedTime=this.props.updatedTime;
+    const headTitle=this.props.headTitle;
 
     const session=ttdata[0].session;
     const dept=ttdata[0].dept;
     // console.log('summaryDate',summaryData)
     const tableData = [];
     const { headerImageDataURL } = this.state; // Use the header image URL from the state
+
+    let subheading=''
+    if (type=='sem')
+    {
+      subheading='Degree & Sem:'
+    }
+    else if(type=='faculty')
+    {
+      subheading='Faculty Name: Dr.'
+    }
 
     // Add the table header
     // const tableHeader = ['Day/Period', ...[1, 2, 3, 4, 5, 6, 7, 8].map(period => period.toString())];
@@ -204,13 +216,34 @@ class PDFGenerator extends React.Component {
               
             },
             {
-              text: `Session:${session}`,
-              fontSize: 12,
-              bold: true,
-              margin: [10, 10, 40, 10],
-              alignment: 'center', // Adjust the width as needed
-              
+              table: {
+                widths: ['*', '*', '*'], // Three columns with equal width
+                body: [
+                  [
+                    {
+                      text: `${subheading}${headTitle}`,
+                      fontSize: 12,
+                      bold: true,
+                      alignment: 'left',
+                    },
+                    {
+                      text: `Session:${session}`,
+                      fontSize: 12,
+                      bold: true,
+                      alignment: 'center',
+                    },
+                    {
+                      text: `Last Locked on: ${updatedTime}`,
+                      fontSize: 12,
+                      bold: true,
+                      alignment: 'right',
+                    },
+                  ],
+                ],
+              },
+              layout: 'noBorders', // Remove table borders
             },
+        
             {
               table: {
                 // alignment: 'justify',

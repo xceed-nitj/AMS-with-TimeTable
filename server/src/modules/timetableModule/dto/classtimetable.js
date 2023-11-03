@@ -2,6 +2,7 @@ const ClassTable = require("../../../models/classtimetable");
 const TimeTable = require('../../../models/timetable'); // Import the TimeTable model
 const TimeTabledto = require("./timetable");
 const TimeTableDto = new TimeTabledto();
+const getIndianTime = require("../helper/getIndianTime")
 
 class ClassTimeTabledto {
     async findTimeTableIdByCode(code) {
@@ -126,6 +127,23 @@ async findRoomDataWithSession(session, room) {
         }
       }
   
+      async getLastUpdatedTime(records) {
+        try {
+          // Check if the faculty is assigned to this slot
+          const latestUpdatedTime = new Date(
+            Math.max(...records.map((obj) => new Date(obj.updated_at)))
+          );
+          
+          // Convert the latest 'updated_at' timestamp to IST
+          const latestUpdatedTimeIST = getIndianTime(latestUpdatedTime);
+          
+        return latestUpdatedTimeIST;  // Slot is already occupied by the faculty
+        } catch (error) {
+          console.error(error);// An error occurred while checking availability
+        }
+      }
+  
+
 
     }
       module.exports = ClassTimeTabledto;

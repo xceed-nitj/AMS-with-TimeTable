@@ -5,7 +5,23 @@ import getEnvironment from '../getenvironment';
 import ViewTimetable from './viewtt';
 import TimetableSummary from './ttsummary';
 import './Timetable.css'
-import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles';
+import { Container } from "@chakra-ui/layout";
+import { Heading } from '@chakra-ui/react';
+import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
+import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
+
+
 // import PDFViewTimetable from '../filedownload/chakrapdf'
 
 function LockedSummary() {
@@ -32,6 +48,10 @@ function LockedSummary() {
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [availableFaculties, setAvailableFaculties] = useState([]);
+
+  const [lockedTime, setLockedTime] = useState();
+  const [facultyLockedTime,setFacultyLockedTime]=useState();
+  const [roomlockedTime,setRoomLockedTime]=useState();
 
 
   const semesters=availableSems;
@@ -60,8 +80,9 @@ function LockedSummary() {
     const facultyData = async (currentCode, faculty) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty}`);
-        const data = await response.json();
-        // console.log('facultydata',data);
+        const data1 = await response.json();
+        const data=data1.timetableData;
+        setFacultyLockedTime(data1.updatedTime);
         const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
@@ -83,8 +104,9 @@ function LockedSummary() {
     const roomData = async (currentCode, room) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`);
-        const data = await response.json();
-        // console.log('roomdata',data);
+        const data1 = await response.json();
+        const data=data1.timetableData;
+        setRoomLockedTime(data1.updatedTime);
         const initialData = generateInitialTimetableData(data,'room');
         return initialData;
       } catch (error) {
@@ -152,9 +174,22 @@ function LockedSummary() {
       }
     };
 
+    const fetchTime = async () => {
+      try {
+        // console.log('sem value',semester);
+        // console.log('current code', currentCode);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`);
+        const data = await response.json();
+        setLockedTime(data.updatedTime.lockTimeIST)
+        // setSavedTime( data.updatedTime.saveTimeIST)
+      } catch (error) {
+        console.error('Error fetching existing timetable data:', error);
+        }
+    };
 
     fetchSem();
     fetchRoom();
+    fetchTime();
     fetchFaculty(currentCode); // Call the function to fetch subject data
   }, [apiUrl,currentCode,selectedSemester, selectedFaculty,selectedRoom]);
 
@@ -225,52 +260,10 @@ function LockedSummary() {
     return initialData;
   };
 
-  // const generatePDF = (viewData) => {
-  //   // Create a new jsPDF instance
-  //   const doc = new jsPDF();
-  
-  //   // Add the timetable data to the PDF
-  //   doc.text('Locked TimeTable Summary', 10, 10);
-  
-  //   // You can loop through the timetableData and add it to the PDF
-  //   let yOffset = 30; // Adjust the starting Y position
-  //   for (const day of Object.keys(viewData)) {
-  //     doc.text(day, 10, yOffset);
-  //     yOffset += 10;
-  
-  //     for (const period of Object.keys(viewData[day])) {
-  //       const slots = viewData[day][period];
-  //       if (slots.length > 0) {
-  //         yOffset += 10;
-  //         doc.text(`Period ${period}:`, 20, yOffset);
-  //         yOffset += 5;
-  
-  //         slots.forEach((slot) => {
-  //           yOffset += 5;
-  //           doc.text(`Subject: ${slot.subject}`, 30, yOffset);
-  //           yOffset += 5;
-  //           doc.text(`Room: ${slot.room}`, 30, yOffset);
-  //           yOffset += 5;
-  //           doc.text(`Faculty: ${slot.faculty}`, 30, yOffset);
-  //           yOffset += 10;
-  //         });
-  //       }
-  //     }
-  //   }
-  
-  //   // Save the PDF with a specified filename
-  //   doc.save('timetable-summary.pdf');
-  // };
-  
-
-
 
   return (
     <div>
       <h1>Locked TimeTable Summary</h1>
-      {/* <button onClick={}>Upload CSV</button> */}
-
-      {/* <Button onClick={generatePDF}>Generate PDF</Button> */}
 
       <h2>Semester timetable (locked)</h2>
       <select
@@ -287,8 +280,11 @@ function LockedSummary() {
       <div>
   {selectedSemester ? (
     <div>
+      <Text fontSize="xl" color="blue" id="saveTime">
+         Last saved on: {lockedTime ? lockedTime: 'Not saved yet'}
+        </Text>
       <ViewTimetable timetableData={viewData} />     
-      <TimetableSummary timetableData={viewData} type={'sem'} code={currentCode}/> 
+      <TimetableSummary timetableData={viewData} type={'sem'} code={currentCode} time={lockedTime} headTitle={selectedSemester}/> 
 
     </div>
 
@@ -312,8 +308,12 @@ function LockedSummary() {
       </select>
       <div>
   {selectedFaculty ? (<div>
+    <Text fontSize="xl" color="blue" id="saveTime">
+         Last saved on: {facultyLockedTime ? facultyLockedTime: 'Not saved yet'}
+        </Text>
+
     <ViewTimetable timetableData={viewFacultyData} />
-<TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/> 
+<TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode} time={facultyLockedTime} headTitle={selectedFaculty}/> 
 {/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
 {/* <PDFViewTimetable timetableData={viewFacultyData} /> */}
 {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
@@ -338,6 +338,10 @@ function LockedSummary() {
       <div>
   {selectedRoom ? (
     <div>
+            <Text fontSize="xl" color="blue" id="saveTime">
+         Last saved on: {roomlockedTime ? roomlockedTime: 'Not saved yet'}
+        </Text>
+
     <ViewTimetable timetableData={viewRoomData} />
 {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/>  */}
 
