@@ -108,12 +108,20 @@ function AddRoomComponent() {
       .catch(handleError);
   };
 
+  useEffect(()=>{
+
+    setTimeout(() => {
+      setSuccessMessage('')
+    }, 1500);
+
+
+  },[successMessage])
+
   return (
     <Container maxW='5xl'>
       <Heading as="h1" size="xl" mt='6' mb='6'>Add Rooms</Heading>
-        {successMessage ? (
+       
           <SuccessMessage message={successMessage} />
-        ) : (
           <Box >
             <Box mb='1'>
               <Text as='b'>
@@ -133,31 +141,9 @@ function AddRoomComponent() {
             </Select>
             <Button bg='teal' color='white' ml='0' mt='2.5' onClick={handleSubmit}>Add Room</Button>
           </Box>
-        )}
          <Link to="/tt/viewmrooms">
           <Button ml='0'>View Master Rooms</Button>
         </Link>
-        {successMessage && (
-          <Box>
-            <Box mb='1'>
-              <Text as='b'>
-                Room
-              </Text>
-            </Box>
-              <Select
-                value={selectedMasterRoom}
-                onChange={(e) => setSelectedMasterRoom(e.target.value)}
-              >
-                <option value="">Select a Room</option>
-                {masterRooms.map((masterRoom) => (
-                  <option key={masterRoom._id} value={masterRoom.room}>
-                    {masterRoom.room}
-                  </option>
-                ))}
-              </Select>
-            <Button bg='teal' color='white' ml='0' mt='2.5' onClick={() => setSuccessMessage('')}>Add Room</Button>
-          </Box>
-        )}
       
       <Box ml='-1'>
         <FileDownloadButton
