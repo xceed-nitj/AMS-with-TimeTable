@@ -91,4 +91,19 @@ LockTimeTableRouter.get("/viewroom/:session/:room", async (req, res) => {
 
 
 
+LockTimeTableRouter.get("/viewsem/:code", async (req, res) => {
+  try { 
+    const code=req.params.code;
+   const updatedTime= await locktimetableController.getLastUpdatedTimeByCode(code);
+   res.json({updatedTime})
+  } 
+  catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+
+
   module.exports = LockTimeTableRouter;

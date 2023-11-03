@@ -34,7 +34,7 @@ const Timetable = () => {
   const [availableRooms, setAvailableRooms] = useState([]);
   const [availableFaculties, setAvailableFaculties] = useState([]);
 
-  const [selectedSubject, setSelectedSubject] = useState();
+  const [lockedTime, setLockedTime] = useState();
 
   // const availableRooms = ['L-201', 'L-209','room1','room2'];
   // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
@@ -472,7 +472,10 @@ const Timetable = () => {
   
       if (response.ok) {
         const data = await response.json();
-        // console.log(data.message);
+        console.log(data.message);
+        console.log(data.updatedTime);
+
+        setLockedTime(data.updatedTime);
       } else {
         console.error('Failed to send data to the backend. HTTP status:', response.status);
       }
@@ -518,6 +521,8 @@ const Timetable = () => {
       <CustomBlueButton onClick={handleAddFaculty}>Add Faculty</CustomBlueButton>
       <CustomBlueButton onClick={handleLockTT}>Lock TT</CustomBlueButton>
       <CustomBlueButton onClick={handleViewSummary}>View/Download Locked TT</CustomBlueButton>
+
+      {lockedTime}
 
     {/* <div style={{
   backgroundColor: 'brown',
