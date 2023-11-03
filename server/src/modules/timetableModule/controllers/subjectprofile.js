@@ -102,6 +102,16 @@ class SubjectController{
         }
       };
 
+        async deleteSubjectsByCode(code) {
+          try {
+      
+            await TimetableEntry.deleteMany({ code });
+      
+          } catch (error) {
+            throw new Error("Failed to delete subjects by code");
+          }
+        };
+      
 
 }
 

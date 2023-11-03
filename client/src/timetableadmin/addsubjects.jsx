@@ -323,6 +323,29 @@ function Subject() {
         }
       };
 
+      const handleDeleteAll = () => {
+        if (currentCode) {
+          if (window.confirm("Are you sure you want to delete all entries with the current code?")) {
+            fetch(`${apiUrl}/timetablemodule/subject/deletebycode/${currentCode}`, {
+              method: 'DELETE',
+            })
+              .then((response) => {
+                if (!response.ok) {
+                  throw new Error(`Error: ${response.status} - ${response.statusText}`);
+                }
+                return response.json();
+              })
+              .then((data) => {
+                console.log('Delete All Success:', data);
+                fetchData(); // Fetch data after a successful delete
+              })
+              .catch((error) => {
+                console.error('Delete All Error:', error);
+              });
+          }
+        }
+      };
+
   return (
     <div>
       <Heading>Add Subject</Heading>
@@ -448,7 +471,7 @@ function Subject() {
       {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
 
 
-      
+      <Button onClick={handleDeleteAll}>Delete All</Button>
  
 
       {/* Display the fetched data */}
