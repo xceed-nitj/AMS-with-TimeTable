@@ -36,6 +36,9 @@ const Timetable = () => {
 
   const [lockedTime, setLockedTime] = useState();
   const [savedTime, setSavedTime] = useState();
+
+  const [facultyUpdateTime,setFacultyUpdateTime]=useState();
+  const [roomUpdateTime,setRoomUpdateTime]=useState();
   // const availableRooms = ['L-201', 'L-209','room1','room2'];
   // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
     // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
@@ -149,8 +152,9 @@ const Timetable = () => {
     const facultyData = async (currentCode, faculty) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`);
-        const data = await response.json();
-        // console.log(data);
+        const data1 = await response.json();
+        const data=data1.timetableData;
+        setFacultyUpdateTime(data1.updatedTime);
         const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
@@ -172,8 +176,9 @@ const Timetable = () => {
     const roomData = async (currentCode, room) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room }`);
-        const data = await response.json();
-        // console.log('roomdata',data);
+        const data1 = await response.json();
+        const data=data1.timetableData;
+        setRoomUpdateTime(data1.updatedTime);
         const initialData = generateInitialTimetableData(data,'room');
         return initialData;
       } catch (error) {
@@ -429,11 +434,6 @@ const Timetable = () => {
     }
   };
 
-
-
-  
-
-
   const handleSubmit = async () => { // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/savett`;
     const code = currentCode;
@@ -655,7 +655,6 @@ const Timetable = () => {
     </option>
   ))}
 </select>
-
                   </div>
                 ))}
                  {slotIndex === 0 && (
@@ -704,8 +703,11 @@ const Timetable = () => {
 <div>
   {viewselectedSemester ? (
     <div>
+      <Text fontSize="xl" color="blue" id="saveTime">
+         Last saved on: {savedTime ? savedTime: 'Not saved yet'}
+        </Text>
       <ViewTimetable timetableData={viewData} />     
-<TimetableSummary timetableData={viewData} type={'sem'} code={currentCode}/> 
+<TimetableSummary timetableData={viewData} type={'sem'} code={currentCode} /> 
     </div>
 
     
@@ -732,8 +734,15 @@ const Timetable = () => {
           ))}
         </select>
       </div>
+      
       <div>
-  {viewFaculty ? (<div>
+  {viewFaculty ? (
+  
+  
+  <div>
+    <Text fontSize="xl" color="blue" id="saveTime">
+         Last saved on: {facultyUpdateTime ? facultyUpdateTime: 'Not saved yet'}
+        </Text>
     <ViewTimetable timetableData={viewFacultyData} />
 <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/> 
 </div>
@@ -762,6 +771,10 @@ const Timetable = () => {
       <div>
   {viewRoom ? (
     <div>
+          <Text fontSize="xl" color="blue" id="saveTime">
+         Last saved on: {roomUpdateTime ? roomUpdateTime: 'Not saved yet'}
+        </Text>
+
     <ViewTimetable timetableData={viewRoomData} />
 {/* <TimetableSummary timetableData={viewRoomData} type={'room'} code={currentCode}/>  */}
     

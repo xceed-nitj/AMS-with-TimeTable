@@ -8,6 +8,9 @@ const LockTimeTableDto = new LockTimeTabledto();
 const TimeTabledto=require("../dto/timetable")
 const TimeTableDto=new TimeTabledto(); 
 
+const ClassTimeTabledto = require("../dto/classtimetable");
+const ClassTimeTableDto = new ClassTimeTabledto();
+
 const getIndianTime=require("../helper/getIndianTime") 
 
 class LockTimeTableController {
@@ -46,9 +49,9 @@ class LockTimeTableController {
           }
       const timenow=Date.now();
       console.log(timenow)
-      // const formattedtime= getIndianTime(timenow);
-      // console.log(formattedtime)
-      res.status(200).json({ message: 'Data Locked successfully!', updatedTime: timenow});
+      const formattedtime= getIndianTime(timenow);
+      console.log(formattedtime)
+      res.status(200).json({ message: 'Data Locked successfully!', updatedTime: formateedtime});
       
         } catch (err) {
           res.status(500).json({ error: 'An error occurred' });
@@ -108,6 +111,7 @@ class LockTimeTableController {
       // facultyname = await findFacultyById(facultyId); 
     }
       const records = await LockTimeTableDto.findFacultyDataWithSession(session,facultyname);
+      const updatedTime= await ClassTimeTableDto.getLastUpdatedTime(records);
       // Create an empty timetable data object
       const timetableData = {};
   
@@ -139,7 +143,7 @@ class LockTimeTableController {
         // Set the sem and code for the timetable
       });
       // console.log(timetableData)
-      res.status(200).json(timetableData);
+      res.status(200).json({timetableData,updatedTime});
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
@@ -162,6 +166,7 @@ class LockTimeTableController {
       }
       
       const records = await LockTimeTableDto.findRoomDataWithSession(session,roomno);
+      const updatedTime= await ClassTimeTableDto.getLastUpdatedTime(records);
       const timetableData = {};
       records.forEach((record) => {
       const { day, slot, slotData,sem } = record;
@@ -185,7 +190,7 @@ class LockTimeTableController {
         // Set the sem and code for the timetable
       });
       // console.log('rooom data',timetableData)
-      res.status(200).json(timetableData);
+      res.status(200).json({timetableData, updatedTime});
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
