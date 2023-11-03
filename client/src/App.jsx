@@ -14,6 +14,7 @@ import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
 import PrintButton from './filedownload/printButton';
+import Navbar from './components/navbar';
 
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
       {/* <div className="app"> */}
    
         {/* <h1>XCEED-Timetable Module</h1>  */}
+        <Navbar/>
          
         <Routes>
         <Route path="/" element={<Login/>} />
