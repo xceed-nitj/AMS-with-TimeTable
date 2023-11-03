@@ -15,6 +15,7 @@ import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
 import PrintButton from './filedownload/printButton';
 import Navbar from './components/navbar';
+import Footer from './components/footer'
 
 
 function App() {
@@ -43,10 +44,11 @@ function App() {
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
           <Route path="/tt/print" element={<PrintButton/>} />
         </Routes>
-        
+        <Footer/>
       {/* </div> */}
     </Router>
-  );
+
+ );
 }
 
 export default App;

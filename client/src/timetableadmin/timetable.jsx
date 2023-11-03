@@ -537,7 +537,7 @@ const Timetable = () => {
       <CustomBlueButton onClick={handleLockTT}>Lock TT</CustomBlueButton>
       <CustomBlueButton onClick={handleViewSummary}>View/Download Locked TT</CustomBlueButton>
 
-      <Box display="flex" flexDirection="column" alignItems="center">
+      <Box display="flex" justifyContent="right" flexDirection="column" >
       <Text fontSize="xl" color="blue" id="saveTime">
          Last saved on: {savedTime ? savedTime: 'Not saved yet'}
         </Text>
@@ -565,7 +565,7 @@ const Timetable = () => {
           fontWeight="bold"
           fontSize="1.5rem"
           position="fixed"
-          top="25%"
+          top="30%"
           left="50%"
           transform="translate(-50%, -50%)"
           zIndex="999"

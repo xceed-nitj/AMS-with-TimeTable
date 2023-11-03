@@ -1,5 +1,7 @@
 import React from "react";
-import logo from "../assets/logo.png"
+import logo from "../assets/clublogo.png"
+import logo1 from "../assets/logo.png"
+
 import {
   Box,
   Flex,
@@ -28,9 +30,10 @@ function Navbar({ isAuthenticated }) {
       <Box bg="black" py={2} px={4}>
         <Flex justify="space-between" align="center">
           <Flex align="center">
-            <Image src={logo} alt="Logo" h={8} w={8} mr={2} />
+            <Image src={logo} alt="Logo" h={10} w={40} mr={2} />
+            {/* <Image src={logo1} alt="Logo" h={10} w={10} mr={2} /> */}
             <Text fontSize="xl" color="white">
-              My Website
+              
             </Text>
           </Flex>
           <Flex align="center">
