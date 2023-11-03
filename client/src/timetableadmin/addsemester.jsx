@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
-import { Container, Heading,Input } from '@chakra-ui/react';
+import { AbsoluteCenter, Box, Center, Circle, Container, FormControl, FormLabel, Heading,Input, Select, Text } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
@@ -100,50 +100,59 @@ function AddSemComponent() {
   };
 
   return (
-    <Container maxW={"container.lg"}>
+    <Container maxW='5xl'>
       <div>
-      <Heading as="h1" size="xl">
+      <Heading as="h1" size="xl" mt='6' mb='6'>
         Add Semester
       </Heading>
-      
           <SuccessMessage message={successMessage} />
-      
-      <div>
-            <label>
-              Sem:
-              <Input
-                type="text"
-                value={newSem}
-                onChange={handleSemInputChange}
-              />
-            </label>
-            <CustomBlueButton onClick={handleSubmit}>Add Sem</CustomBlueButton>
-          </div>
+        <Box>
+          <FormControl mb='5'>
+            <Text as='b'>
+              Sem
+            </Text>
+            <Box display='flex' mt='1'>
+              <Select placeholder='Select Semester' w='80%'>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+                <option>6</option>
+                <option>7</option>
+                <option>8</option>
+              </Select>
+              <Button mt='0' ml='16' bg='teal' color='white' onClick={handleSubmit}>Add Sem</Button>
+            </Box>
+          </FormControl>
+        </Box>
         <TableContainer>
-          <div>
-            <h2>Sem Data</h2>
+          <Box>
+            <Text as='b'>Sem Data</Text>
             <Table
             variant='striped'
+            maxWidth='80%'
             size='md'
+            mt='1'
             >
               <Thead>
                 <Tr>
-                  <Th>Sem</Th>
-                  <Th>Actions</Th>
+                  <Th><Center>Sem</Center></Th>
+                  <Th><Center>Actions</Center></Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {sems.map((sem) => (
-                  <Tr key={sem._id}>
-                    <Td>{sem.sem}</Td>
-                    <Td>
-                      <CustomBlueButton onClick={() => handleDelete(sem._id)}>Delete</CustomBlueButton>
-                    </Td>
+                  <Tr key={sem._id} h='20' w='20'>
+                      <Td><Center>{sem.sem}</Center></Td>
+                    <Td><Center>
+                      <Button bg='teal' color='white' onClick={() => handleDelete(sem._id)}>Delete</Button>
+                    </Center></Td>
                   </Tr>
                 ))}
               </Tbody>
             </Table>
-          </div>
+          </Box>
         </TableContainer>
       </div>
     </Container>

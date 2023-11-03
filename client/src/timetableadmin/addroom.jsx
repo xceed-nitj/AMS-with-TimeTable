@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
-import { Heading } from '@chakra-ui/react';
+import { Box, Center, Container, Heading, Select, Text } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
@@ -109,15 +109,18 @@ function AddRoomComponent() {
   };
 
   return (
-    <div>
-      <Heading>Add Rooms</Heading>
-      {successMessage ? (
-        <SuccessMessage message={successMessage} />
-      ) : (
-        <div>
-          <label>
-            Room:
-            <select
+    <Container maxW='5xl'>
+      <Heading as="h1" size="xl" mt='6' mb='6'>Add Rooms</Heading>
+        {successMessage ? (
+          <SuccessMessage message={successMessage} />
+        ) : (
+          <Box >
+            <Box mb='1'>
+              <Text as='b'>
+                Room
+              </Text>
+            </Box>
+            <Select
               value={selectedMasterRoom}
               onChange={(e) => setSelectedMasterRoom(e.target.value)}
             >
@@ -127,66 +130,70 @@ function AddRoomComponent() {
                   {masterRoom.room}
                 </option>
               ))}
-            </select>
-          </label>
-          <br />
-          <CustomBlueButton onClick={handleSubmit}>Add Room</CustomBlueButton>
-        </div>
-      )}
-       <Link to="/tt/viewmrooms">
-        <Button>View Master Rooms</Button>
-      </Link>
-
-      {successMessage && (
-        <div>
-          <label>
-            Room:
-            <select
-              value={selectedMasterRoom}
-              onChange={(e) => setSelectedMasterRoom(e.target.value)}
-            >
-              <option value="">Select a Room</option>
-              {masterRooms.map((masterRoom) => (
-                <option key={masterRoom._id} value={masterRoom.room}>
-                  {masterRoom.room}
-                </option>
+            </Select>
+            <Button bg='teal' color='white' ml='0' mt='2.5' onClick={handleSubmit}>Add Room</Button>
+          </Box>
+        )}
+         <Link to="/tt/viewmrooms">
+          <Button ml='0'>View Master Rooms</Button>
+        </Link>
+        {successMessage && (
+          <Box>
+            <Box mb='1'>
+              <Text as='b'>
+                Room
+              </Text>
+            </Box>
+              <Select
+                value={selectedMasterRoom}
+                onChange={(e) => setSelectedMasterRoom(e.target.value)}
+              >
+                <option value="">Select a Room</option>
+                {masterRooms.map((masterRoom) => (
+                  <option key={masterRoom._id} value={masterRoom.room}>
+                    {masterRoom.room}
+                  </option>
+                ))}
+              </Select>
+            <Button bg='teal' color='white' ml='0' mt='2.5' onClick={() => setSuccessMessage('')}>Add Room</Button>
+          </Box>
+        )}
+      
+      <Box ml='-1'>
+        <FileDownloadButton
+          fileUrl='/room_template.xlsx'
+          fileName="Room_template.xlsx"
+        />
+      </Box>
+      <TableContainer>
+        
+          <Box >
+          <Text as='b'>Room Data</Text>
+          <Table
+         variant='striped'
+         size='md'
+         mt='1'
+          >
+            <Thead>
+              <Tr>
+                <Th><Center>Room</Center></Th>
+                <Th><Center>Actions</Center></Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {rooms.map((room) => (
+                <Tr key={room._id}>
+                  <Td> <Center>{room.room} </Center></Td>
+                  <Td> <Center>
+                    <Button bg='teal' color='white' onClick={() => handleDelete(room._id)}>Delete</Button>
+                  </Center></Td>
+                </Tr>
               ))}
-            </select>
-          </label>
-          <br />
-          <CustomBlueButton onClick={() => setSuccessMessage('')}>Add Room</CustomBlueButton>
-        </div>
-      )}  
-     <div>
-    
-    <FileDownloadButton
-      fileUrl='/room_template.xlsx'
-      fileName="room_template.xlsx"
-    />
-  </div>
-
-  <div>
-      <h2>Room Data</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Room</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rooms.map((room) => (
-            <tr key={room._id}>
-              <td>{room.room}</td>
-              <td>
-                <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    </div>
+            </Tbody>
+          </Table>
+        </Box>
+      </TableContainer>
+    </Container>
   );
 }
 
