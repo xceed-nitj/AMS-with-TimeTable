@@ -94,6 +94,16 @@ subjectRouter.post("/", async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+
+  subjectRouter.delete("/deletebycode/:code", async (req, res) => {
+    try {
+      const code = req.params.code;
+      await subjectController.deleteSubjectsByCode(code);
+      res.status(200).json({ response: `Subjects with code ${code} deleted successfully` });
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
  
 
 
