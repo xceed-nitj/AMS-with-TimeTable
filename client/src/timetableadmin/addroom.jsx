@@ -110,6 +110,7 @@ function AddRoomComponent() {
           duration: 2000,
           isClosable: true,
         });
+
         fetchRoomsData();
         setSelectedMasterRoom("");
       })
@@ -127,7 +128,6 @@ function AddRoomComponent() {
     })
       .then(handleResponse)
       .then(() => {
-        console.log("Room deleted successfully");
         fetchRoomsData();
       })
       .catch(handleError)

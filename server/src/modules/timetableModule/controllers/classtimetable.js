@@ -61,7 +61,8 @@ class ClassTimeTableController {
     const slot = req.params.slot;
     const slotData = req.body.slotData; // Access the slotData object
     const code = req.body.code;
-    const sem = req.  body.sem;
+    const sem = req.body.sem;
+    console.log('sem',sem)
     try {
       const query = {
         day,
@@ -78,7 +79,7 @@ class ClassTimeTableController {
       for (const slotItem of slotData) {
         if (slotItem.room){
           const roomSlots = await ClassTimeTableDto.findRoomDataWithSession(session, slotItem.room);
-          const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day, slot, roomSlots);
+          const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day, slot, roomSlots,sem);
           if (!isRoomAvailable) {
               isSlotAvailable = false; // At least one item is not available
               if (!isRoomAvailable) {
@@ -88,7 +89,7 @@ class ClassTimeTableController {
       }
       if (slotItem.faculty){
       const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(session, slotItem.faculty);
-      const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots);
+      const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots, sem);
       if (!isFacultyAvailable) {
         isSlotAvailable = false; // At least one item is not available
 
@@ -224,7 +225,7 @@ class ClassTimeTableController {
     timetableData[day][slot].push(formattedSlotData);
         // Set the sem and code for the timetable
       });
-      console.log(timetableData)
+      // console.log(timetableData)
       res.status(200).json(timetableData);
     } catch (error) {
       console.error(error);
@@ -235,7 +236,7 @@ class ClassTimeTableController {
   async roomtt(req, res) {
     const roomno = req.params.room; 
     const code=req.params.code;
-    console.log('room no:', roomno);
+    // console.log('room no:', roomno);
     try {
       const session = await TimeTableDto.getSessionByCode(code);
       const records = await ClassTimeTableDto.findRoomDataWithSession(session,roomno);
@@ -261,7 +262,7 @@ class ClassTimeTableController {
     timetableData[day][slot].push(formattedSlotData);
         // Set the sem and code for the timetable
       });
-      console.log('rooom data',timetableData)
+      // console.log('rooom data',timetableData)
       res.status(200).json(timetableData);
     } catch (error) {
       console.error(error);

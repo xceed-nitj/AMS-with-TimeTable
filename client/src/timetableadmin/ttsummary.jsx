@@ -1,38 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/table";
+import { Button } from "@chakra-ui/button";
+
+import PDFGenerator from '../filedownload/makepdf';
+
 
 const TimetableSummary = ({ timetableData, code, type }) => {
 
   const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
+  const [TTData, setTTData] = useState([]); // Initialize as an empty array
 
 
   const apiUrl = getEnvironment();
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
-//   function extractCodeFromURL(url) {
-//     try {
-//       const urlObject = new URL(`http://${url}`);
-//       const pathParts = urlObject.pathname.split('/');
 
-//       if (pathParts.length >= 2) {
-//         const code = pathParts[pathParts.length - 2];
-//         return code;
-//       }
-//       else
-//       {
-//       const code = pathParts[pathParts.length - 1];
-//       console.log('code in second file', code)
-//       return code;
-//       }
-//     } catch (error) {
-//       console.error('Error extracting code from URL:', error);
-//       return null; // Handle error or return a default value if needed
-//     }
-//   }
-
-//   const currentCode=extractCodeFromURL(currentURL);
-// console.log('code:',currentCode)
 
 const currentCode=code;
   useEffect(() => {
@@ -41,17 +34,39 @@ const currentCode=code;
         const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
         const data = await response.json();
         setSubjectData(data);
-        console.log('subjectdata',data)
+        // console.log('subjectdata',data)
       } catch (error) {
         console.error('Error fetching subject data:', error);
       }
     };
 
+    const fetchTTData = async (currentCode) => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          // body: JSON.stringify(userData),
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        setTTData(data);
+      } catch (error) {
+        console.error('Error fetching TTdata:', error);
+      }
+    };
+
+
+
     fetchSubjectData(currentCode);
-  
+    fetchTTData(currentCode);
 
 
   }, []);
+  console.log('TT data',TTData);
+
 
   const summaryData = {};
 
@@ -137,6 +152,7 @@ const currentCode=code;
           ))}
         </tbody>
       </table>
+      <PDFGenerator timetableData={timetableData}  summaryData={summaryData} type={type} ttdata={TTData}/>
     </div>
   );
 };

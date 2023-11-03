@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container } from "@chakra-ui/layout";
 import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
@@ -13,17 +13,23 @@ import {
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 
+import PDFGenerator from '../filedownload/makepdf';
 
 
-const ViewTimetable = ({ timetableData }) => {
+const ViewTimetable = ({ timetableData,tableSummary,headerDetails }) => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
+
+  // const [pdfData, setPdfData] = useState(null);
+  const [pdfData, setPdfData] = useState(null);
+
   return (
-    <div>
+    <div >
       
       {Object.keys(timetableData).length === 0 ? (
         <div>Loading...</div>
       ) : (
+        <div id='timetable-summary'>
         <TableContainer>
         <Table
 
@@ -67,7 +73,12 @@ const ViewTimetable = ({ timetableData }) => {
           </Tbody>
         </Table>
         </TableContainer>
+        {/* <button onClick={downloadPDF}>Download PDF</button>
+         */}
+        
+            </div>
       )}
+
     </div>
   );
 };

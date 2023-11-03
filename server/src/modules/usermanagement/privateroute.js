@@ -6,7 +6,8 @@ const jwtSecret =   "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0
 
 // Middleware to protect the route and verify the token
 function protectRoute(req, res, next) {
-  const token = req.cookies.jwt; // Assuming the token is stored in a cookie named 'token'
+  const token = req.cookies.jwt; 
+  console.log(token)
 
   if (!token) {
     return res.status(401).json({ message: 'Unauthorized' });

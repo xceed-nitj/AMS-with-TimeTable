@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-
+import jsPDF from 'jspdf';
 import { useNavigate, useLocation } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import ViewTimetable from './viewtt';
 import TimetableSummary from './ttsummary';
 import './Timetable.css'
+import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles';
+// import PDFViewTimetable from '../filedownload/chakrapdf'
+
 function LockedSummary() {
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
@@ -37,7 +40,7 @@ function LockedSummary() {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`);
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
         const initialData = generateInitialTimetableData(data,'sem');
         return initialData;
       } catch (error) {
@@ -58,7 +61,7 @@ function LockedSummary() {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty}`);
         const data = await response.json();
-        console.log('facultydata',data);
+        // console.log('facultydata',data);
         const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
@@ -81,7 +84,7 @@ function LockedSummary() {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`);
         const data = await response.json();
-        console.log('roomdata',data);
+        // console.log('roomdata',data);
         const initialData = generateInitialTimetableData(data,'room');
         return initialData;
       } catch (error) {
@@ -99,8 +102,6 @@ function LockedSummary() {
   }, [selectedRoom]);
 
 
-
-
   useEffect(() => {
         
     const fetchSem = async () => {
@@ -108,12 +109,12 @@ function LockedSummary() {
         const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('filtered data',data)
+          // console.log('filtered data',data)
           const filteredSems = data.filter((sem) => sem.code === currentCode);
           const semValues = filteredSems.map((sem) => sem.sem);
 
           setAvailableSems(semValues);
-          console.log('available semesters',availableSems)
+          // console.log('available semesters',availableSems)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -129,7 +130,7 @@ function LockedSummary() {
           const semValues = filteredSems.map((room) => room.room);
 
           setAvailableRooms(semValues);
-          console.log('available rooms',availableRooms)
+          // console.log('available rooms',availableRooms)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -141,9 +142,9 @@ function LockedSummary() {
         const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('faculty response',data);
+          // console.log('faculty response',data);
           setAvailableFaculties(data);
-          console.log('faculties', availableFaculties);
+          // console.log('faculties', availableFaculties);
         }
          
       } catch (error) {
@@ -156,8 +157,6 @@ function LockedSummary() {
     fetchRoom();
     fetchFaculty(currentCode); // Call the function to fetch subject data
   }, [apiUrl,currentCode,selectedSemester, selectedFaculty,selectedRoom]);
-
-
 
 
   const generateInitialTimetableData = (fetchedData, type) => {
@@ -222,9 +221,48 @@ function LockedSummary() {
         }
       }
     }
-    console.log(initialData);
+    // console.log(initialData);
     return initialData;
   };
+
+  // const generatePDF = (viewData) => {
+  //   // Create a new jsPDF instance
+  //   const doc = new jsPDF();
+  
+  //   // Add the timetable data to the PDF
+  //   doc.text('Locked TimeTable Summary', 10, 10);
+  
+  //   // You can loop through the timetableData and add it to the PDF
+  //   let yOffset = 30; // Adjust the starting Y position
+  //   for (const day of Object.keys(viewData)) {
+  //     doc.text(day, 10, yOffset);
+  //     yOffset += 10;
+  
+  //     for (const period of Object.keys(viewData[day])) {
+  //       const slots = viewData[day][period];
+  //       if (slots.length > 0) {
+  //         yOffset += 10;
+  //         doc.text(`Period ${period}:`, 20, yOffset);
+  //         yOffset += 5;
+  
+  //         slots.forEach((slot) => {
+  //           yOffset += 5;
+  //           doc.text(`Subject: ${slot.subject}`, 30, yOffset);
+  //           yOffset += 5;
+  //           doc.text(`Room: ${slot.room}`, 30, yOffset);
+  //           yOffset += 5;
+  //           doc.text(`Faculty: ${slot.faculty}`, 30, yOffset);
+  //           yOffset += 10;
+  //         });
+  //       }
+  //     }
+  //   }
+  
+  //   // Save the PDF with a specified filename
+  //   doc.save('timetable-summary.pdf');
+  // };
+  
+
 
 
   return (
@@ -232,6 +270,7 @@ function LockedSummary() {
       <h1>Locked TimeTable Summary</h1>
       {/* <button onClick={}>Upload CSV</button> */}
 
+      {/* <Button onClick={generatePDF}>Generate PDF</Button> */}
 
       <h2>Semester timetable (locked)</h2>
       <select
@@ -275,7 +314,8 @@ function LockedSummary() {
   {selectedFaculty ? (<div>
     <ViewTimetable timetableData={viewFacultyData} />
 <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/> 
-
+{/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
+{/* <PDFViewTimetable timetableData={viewFacultyData} /> */}
 {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
 </div>
     ) : (

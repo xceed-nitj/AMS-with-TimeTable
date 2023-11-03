@@ -8,6 +8,8 @@ const LockTimeTableDto = new LockTimeTabledto();
 const TimeTabledto=require("../dto/timetable")
 const TimeTableDto=new TimeTabledto(); 
 
+const getIndianTime=require("../helper/getIndianTime") 
+
 class LockTimeTableController {
   async locktt(req, res) {
         try {
@@ -42,8 +44,11 @@ class LockTimeTableController {
                             );
             }
           }
-      
-          res.status(200).json({ message: 'Data Locked successfully' });
+      const timenow=Date.now();
+      console.log(timenow)
+      // const formattedtime= getIndianTime(timenow);
+      // console.log(formattedtime)
+      res.status(200).json({ message: 'Data Locked successfully!', updatedTime: timenow});
       
         } catch (err) {
           res.status(500).json({ error: 'An error occurred' });
@@ -187,7 +192,25 @@ class LockTimeTableController {
     }
   }
 
+  async getLastUpdatedTimeByCode(code) {
+    const lockTime = await LockSem.find({ code }).sort({ updated_at: -1 }).limit(1);
+    const saveTime = await ClassTable.find({ code }).sort({ updated_at: -1 }).limit(1);
+  
+    const lockTimeIST = lockTime.length > 0 ? await getIndianTime(new Date(lockTime[0].updated_at)) : null;
+    const saveTimeIST = saveTime.length > 0 ? await getIndianTime(new Date(saveTime[0].updated_at)) : null;
+  
+    console.log(lockTimeIST);
+    console.log(saveTimeIST);
+  
+    return {
+      lockTimeIST,
+      saveTimeIST
+    };
+  }
+    
+
 }
 module.exports = LockTimeTableController;
+
 
 

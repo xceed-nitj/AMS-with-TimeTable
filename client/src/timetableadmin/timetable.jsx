@@ -8,6 +8,8 @@ import ReactToPrint from 'react-to-print';
 import { Container } from "@chakra-ui/layout";
 import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
+import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+
 import {
   Table,
   TableContainer,
@@ -32,8 +34,8 @@ const Timetable = () => {
   const [availableRooms, setAvailableRooms] = useState([]);
   const [availableFaculties, setAvailableFaculties] = useState([]);
 
-  const [selectedSubject, setSelectedSubject] = useState();
-
+  const [lockedTime, setLockedTime] = useState();
+  const [savedTime, setSavedTime] = useState();
   // const availableRooms = ['L-201', 'L-209','room1','room2'];
   // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
     // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
@@ -79,8 +81,8 @@ const Timetable = () => {
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
-        console.log('sem value',semester);
-        console.log('current code', currentCode);
+        // console.log('sem value',semester);
+        // console.log('current code', currentCode);
         const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
         const data = await response.json();
         // console.log(data);
@@ -91,6 +93,21 @@ const Timetable = () => {
         return {};
       }
     };
+
+    const fetchTime = async () => {
+      try {
+        // console.log('sem value',semester);
+        // console.log('current code', currentCode);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`);
+        const data = await response.json();
+        setLockedTime(data.updatedTime.lockTimeIST)
+        setSavedTime( data.updatedTime.saveTimeIST)
+      } catch (error) {
+        console.error('Error fetching existing timetable data:', error);
+        }
+    };
+
+
     const fetchTimetableData = async (semester) => {
       const data = await fetchData(semester);
       setTimetableData(data);
@@ -99,7 +116,7 @@ const Timetable = () => {
 
 
     fetchTimetableData(selectedSemester);
-    
+    fetchTime();
   }, [selectedSemester, apiUrl, currentCode]);
 
 
@@ -470,7 +487,10 @@ const Timetable = () => {
   
       if (response.ok) {
         const data = await response.json();
-        // console.log(data.message);
+        console.log(data.message);
+        console.log(data.updatedTime);
+
+        setLockedTime(data.updatedTime);
       } else {
         console.error('Failed to send data to the backend. HTTP status:', response.status);
       }
@@ -479,6 +499,28 @@ const Timetable = () => {
     }
     finally{
       setMessage('Data Locked successfully');
+    }
+  };
+
+
+  const [showMessage, setShowMessage] = useState(true);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const handleScroll = () => {
+    const scrollPosition = window.scrollY;
+    const scrollThreshold = 1000; // Adjust this value to control when the message disappears
+
+    if (scrollPosition > scrollThreshold) {
+      setShowMessage(false);
+    } else {
+      setShowMessage(true);
     }
   };
 
@@ -495,7 +537,17 @@ const Timetable = () => {
       <CustomBlueButton onClick={handleLockTT}>Lock TT</CustomBlueButton>
       <CustomBlueButton onClick={handleViewSummary}>View/Download Locked TT</CustomBlueButton>
 
-    <div style={{
+      <Box display="flex" justifyContent="right" flexDirection="column" >
+      <Text fontSize="xl" color="blue" id="saveTime">
+         Last saved on: {savedTime ? savedTime: 'Not saved yet'}
+        </Text>
+        <Text fontSize="xl" color="blue" id="lockTime">
+          Last locked on: {lockedTime ? lockedTime: 'Not Locked yet'}
+        </Text>
+       
+      </Box>
+
+    {/* <div style={{
   backgroundColor: 'brown',
   color: 'white',
   textAlign: 'center',
@@ -503,7 +555,29 @@ const Timetable = () => {
   fontSize: '1.5rem', // Adjust the font size as needed
 }}>
   {message}
-</div>
+</div> */}
+      {/* Floating Message */}
+      <Portal>
+        <Box
+          bg={showMessage && message ? "rgba(255, 100, 0, 0.9)" : 0} // Brighter yellow with some transparency
+          color="white"
+          textAlign="center"
+          fontWeight="bold"
+          fontSize="1.5rem"
+          position="fixed"
+          top="30%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+          zIndex="999"
+          borderRadius="20px" // Adding curved borders
+          p="10px" // Padding to make it a bit larger
+          opacity={showMessage ? 1 : 0} 
+>
+          <Text>{message}</Text>
+        </Box>
+
+        
+      </Portal>
 
     <div>
         <label>Select Semester:</label>
