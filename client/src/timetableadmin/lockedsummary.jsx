@@ -58,7 +58,7 @@ function LockedSummary() {
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`,{credentials: 'include',});
         const data = await response.json();
         // console.log(data);
         const initialData = generateInitialTimetableData(data,'sem');
@@ -79,7 +79,7 @@ function LockedSummary() {
   useEffect(() => {
     const facultyData = async (currentCode, faculty) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty}`,{credentials: 'include',});
         const data1 = await response.json();
         const data=data1.timetableData;
         setFacultyLockedTime(data1.updatedTime);
@@ -103,7 +103,7 @@ function LockedSummary() {
   useEffect(() => {
     const roomData = async (currentCode, room) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`,{credentials: 'include',});
         const data1 = await response.json();
         const data=data1.timetableData;
         setRoomLockedTime(data1.updatedTime);
@@ -128,7 +128,7 @@ function LockedSummary() {
         
     const fetchSem = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`,{credentials: 'include',});
         if (response.ok) {
           const data = await response.json();
           // console.log('filtered data',data)
@@ -145,7 +145,7 @@ function LockedSummary() {
 
     const fetchRoom = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`,{credentials: 'include',});
         if (response.ok) {
           const data = await response.json();
           const filteredSems = data.filter((room) => room.code === currentCode);
@@ -161,7 +161,7 @@ function LockedSummary() {
 
     const fetchFaculty = async (currentCode) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`,{credentials: 'include',});
         if (response.ok) {
           const data = await response.json();
           // console.log('faculty response',data);
@@ -178,7 +178,7 @@ function LockedSummary() {
       try {
         // console.log('sem value',semester);
         // console.log('current code', currentCode);
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`,{credentials: 'include',});
         const data = await response.json();
         setLockedTime(data.updatedTime.lockTimeIST)
         // setSavedTime( data.updatedTime.saveTimeIST)

@@ -16,6 +16,7 @@ import LockedView from './timetableviewer/viewer';
 import PrintButton from './filedownload/printButton';
 import Navbar from './components/navbar';
 import Footer from './components/footer'
+import PrintSummary from './timetableadmin/printSummary'
 
 
 function App() {
@@ -40,6 +41,8 @@ function App() {
           <Route path="/tt/mastersem" element={<MasterSem />} />
           <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
+          <Route path="/tt/:generatedLink/generatepdf" element={<PrintSummary />} />
+          
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
           <Route path="/tt/print" element={<PrintButton/>} />

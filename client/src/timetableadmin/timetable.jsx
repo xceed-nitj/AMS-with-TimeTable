@@ -60,7 +60,7 @@ const Timetable = () => {
 
   const fetchSem = async () => {
     try {
-      const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`,{credentials: 'include'});
       if (response.ok) {
         const data = await response.json();
         // console.log('filtered data',data)
@@ -86,7 +86,7 @@ const Timetable = () => {
       try {
         // console.log('sem value',semester);
         // console.log('current code', currentCode);
-        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`,{credentials: 'include'});
         const data = await response.json();
         // console.log(data);
         const initialData = generateInitialTimetableData(data,'sem');
@@ -101,7 +101,7 @@ const Timetable = () => {
       try {
         // console.log('sem value',semester);
         // console.log('current code', currentCode);
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`,{credentials: 'include'});
         const data = await response.json();
         setLockedTime(data.updatedTime.lockTimeIST)
         setSavedTime( data.updatedTime.saveTimeIST)
@@ -127,7 +127,7 @@ const Timetable = () => {
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`,{credentials: 'include'});
         const data = await response.json();
         // console.log(data);
         const initialData = generateInitialTimetableData(data,'sem');
@@ -151,7 +151,7 @@ const Timetable = () => {
   useEffect(() => {
     const facultyData = async (currentCode, faculty) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`);
+        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`,{credentials: 'include'});
         const data1 = await response.json();
         const data=data1.timetableData;
         setFacultyUpdateTime(data1.updatedTime);
@@ -175,7 +175,7 @@ const Timetable = () => {
   useEffect(() => {
     const roomData = async (currentCode, room) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room }`);
+        const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room }`,{credentials: 'include'});
         const data1 = await response.json();
         const data=data1.timetableData;
         setRoomUpdateTime(data1.updatedTime);
@@ -200,15 +200,11 @@ const Timetable = () => {
 
 
 
-
-
-
-
   useEffect(() => {
     // Fetch subject data from the database and populate availableSubjects
     const fetchSubjects = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/subject/filteredsubject/${currentCode}/${selectedSemester}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/subject/filteredsubject/${currentCode}/${selectedSemester}`,{ credentials: 'include',});
         if (response.ok) {
           const data = await response.json();
           setAvailableSubjects(data);
@@ -222,7 +218,7 @@ const Timetable = () => {
     
     const fetchRoom = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`,{credentials: 'include',});
         if (response.ok) {
           const data = await response.json();
           const filteredSems = data.filter((room) => room.code === currentCode);
@@ -238,7 +234,7 @@ const Timetable = () => {
 
     const fetchFaculty = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/filteredfaculty/${currentCode}/${selectedSemester}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/filteredfaculty/${currentCode}/${selectedSemester}`,{credentials: 'include',});
         if (response.ok) {
           const data = await response.json();
           // console.log('faculty response',data[0]);
@@ -420,6 +416,7 @@ const Timetable = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ slotData, code, sem }),
+        credentials: 'include',
       });
   
       if (response) {
@@ -450,6 +447,7 @@ const Timetable = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ timetableData, code, sem }),
+        credentials: 'include',
       });
   
       if (response.ok) {
@@ -483,6 +481,7 @@ const Timetable = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({code}),
+        credentials: 'include',
       });
   
       if (response.ok) {
@@ -515,7 +514,7 @@ const Timetable = () => {
 
   const handleScroll = () => {
     const scrollPosition = window.scrollY;
-    const scrollThreshold = 1000; // Adjust this value to control when the message disappears
+    const scrollThreshold = 1100; // Adjust this value to control when the message disappears
 
     if (scrollPosition > scrollThreshold) {
       setShowMessage(false);
@@ -528,7 +527,7 @@ const Timetable = () => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
-    <Container maxW={"1400px"}>
+    <Container maxW={"1200px"}>
       <Heading>GENERATE TIME TABLE</Heading>
       <CustomBlueButton onClick={handleAddSem}>Add Semester</CustomBlueButton>
       <CustomBlueButton onClick={handleAddSubject}>Add Subject</CustomBlueButton>

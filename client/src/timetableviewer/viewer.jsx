@@ -12,26 +12,18 @@ function LockedView() {
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
   const [message, setMessage]=useState();
-  const [selectedSemester, setSelectedSemester] = useState('B.Sc (2 sem)');
-  const [selectedFaculty, setSelectedFaculty] = useState('Dr. Kiran Singh');
-  const [selectedSession, setSelectedSession] = useState('ff');
-  const [selectedDept, setSelectedDept] = useState('2023');
+  const [selectedSemester, setSelectedSemester] = useState('');
+  const [selectedFaculty, setSelectedFaculty] = useState('');
+  const [selectedSession, setSelectedSession] = useState('');
+  const [selectedDept, setSelectedDept] = useState('');
 
-  const [selectedRoom, setSelectedRoom] = useState('L-201');
+  const [selectedRoom, setSelectedRoom] = useState('');
   
   const apiUrl = getEnvironment();
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 2];
-
-  // Define your options for semesters, faculty, and rooms
-//   const availableRooms = ['L-201', 'L-209','room1','room2'];
-  const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
-    'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
-//   const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)','d-sem1','d-sem2']
-    const availableSession=['ff']
-    const availableDept=['2023','2024','ee']
 
 
   useEffect(() => {
@@ -98,7 +90,7 @@ function LockedView() {
     // fetchViewData(selectedSemester);
     fetchFacultyData(selectedSession, selectedFaculty);
     // fetchRoomData(selectedRoom);
-  }, [selectedSemester, selectedFaculty]);
+  }, [selectedSession, selectedFaculty]);
 
 
   const generateInitialTimetableData = (fetchedData, type) => {
@@ -168,89 +160,124 @@ function LockedView() {
   };
 
 
+  const [sessions, setSessions] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [faculties, setFaculties] = useState([]);
+
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/allotment/session`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setSessions(data);
+        } else {
+          console.error("Failed to fetch sessions");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDepartments(data);
+        } else {
+          console.error("Failed to fetch departments");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+
+    fetchSessions();
+    fetchDepartments();
+
+  }, []);
+
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const handleResponse = (response) => {
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    }
+    return response.json();
+  };
+  const handleError = (error) => {
+    console.error("Error:", error);
+  };
+
+  useEffect(() => {
+    if (selectedDepartment) {
+      fetch(`${apiUrl}/timetablemodule/faculty/dept/${selectedDepartment}`,{credentials: 'include',})
+        .then(handleResponse)
+        .then((data) => {
+          setFaculties(data);
+        })
+        .catch(handleError);
+    }
+  }, [selectedDepartment]);
+
+
+
   return (
     <div>
+
       <h1>View Timetable</h1>
-      {/* <button onClick={}>Upload CSV</button> */}
-
-
-      {/* <h2>Select semester</h2>
-      <select
-        value={selectedSemester}
-        onChange={(e) => setSelectedSemester(e.target.value)}
-      >
-        <option value="">Select Semester</option>
-        {semesters.map((semester, index) => (
-          <option key={index} value={semester}>
-            {semester}
-          </option>
-        ))}
-      </select>
-      <div>
-      <Header />
-      <ViewTimetable timetableData={viewData} />     
-      </div> */}
-      {/* Faculty Dropdown */}
-      <select
-        value={selectedDept}
-        onChange={(e) => setSelectedDept(e.target.value)}
-      >
-        <option value="">Select Dept</option>
-        {availableDept.map((dept, index) => (
-          <option key={index} value={dept}>
-            {dept}
-          </option>
-        ))}
-      </select>
       select session
       <select
         value={selectedSession}
         onChange={(e) => setSelectedSession(e.target.value)}
       >
         <option value="">Select Session</option>
-        {availableSession.map((session, index) => (
+        {sessions.map((session, index) => (
           <option key={index} value={session}>
             {session}
           </option>
         ))}
       </select>
- 
 
+
+      <select
+        value={selectedDepartment}
+        onChange={(e) => setSelectedDepartment(e.target.value)}
+      >
+        <option value="">Select Dept</option>
+        {departments.map((dept, index) => (
+          <option key={index} value={dept}>
+            {dept}
+          </option>
+        ))}
+      </select>
       <select
         value={selectedFaculty}
         onChange={(e) => setSelectedFaculty(e.target.value)}
       >
-        <option value="">Select Faculty</option>
-        {availableFaculties.map((faculty, index) => (
-          <option key={index} value={faculty}>
-            {faculty}
-          </option>
-        ))}
+ <option value="" key="default">
+              Select a Faculty
+            </option>
+            {faculties.map((faculty) => (
+              <option key={faculty.id} value={faculty.name}>
+                {faculty.name}
+              </option>        ))}
       </select>
-      <div style={{margin: 0, padding:60}}>
-      <img src={headernitj} alt="SVG Description" style={{ width: '1200px', height:'400px', display:'block' }} />
-      </div>
-      <div>
-      <ViewTimetable timetableData={viewFacultyData} />     
-      </div>
-      <img src={footerxceed} alt="SVG Description" style={{ width: '1200px', height:'500px' }} />
-     
-      {/* Room Dropdown */}
-      {/* <select
-        value={selectedRoom}
-        onChange={(e) => setSelectedRoom(e.target.value)}
-      >
-        <option value="">Select Room</option>
-        {availableRooms.map((room, index) => (
-          <option key={index} value={room}>
-            {room}
-          </option>
-        ))}
-      </select>
-      <div>
-      <ViewTimetable timetableData={viewRoomData} />     
-      </div> */}
-
+    
 </div>
   );
 }

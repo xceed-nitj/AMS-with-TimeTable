@@ -4,32 +4,36 @@ const { commonFields, updateTimestamps } = require('./commonFields');
 
 // Define your Mongoose schema based on the interface
 const lockFacultySchema = new mongoose.Schema({
+  session: {
+    type: String,
+    required: true,
+  },
   name: {
     type: String,
     required: true,
   },
-  abbreviation: {
-    type: String,
+  timeTableData: {
+    type: Schema.Types.Mixed,
     required: true,
   },
-  subCode: {
-    type: String,
+  summaryData: {
+    type: Schema.Types.Mixed,
     required: true,
   },
-  subName: {
-    type: String,
+  type: {
+    type: Schema.Types.Mixed,
     required: true,
   }, 
-  room: {
-    type: String,
+  TTData: {
+    type: Schema.Types.Mixed,
     required: true,
   },
-  sem: {
-    type: String,
+  updatedTime: {
+    type: Schema.Types.Mixed,
     required: true,
   },
-  session:{
-    type: String,
+  headTitle:{
+    type: Schema.Types.Mixed,
     required: true,
   }
 });

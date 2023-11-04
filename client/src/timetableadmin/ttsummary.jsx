@@ -152,7 +152,7 @@ const currentCode=code;
           ))}
         </tbody>
       </table>
-{time?<PDFGenerator timetableData={timetableData}  summaryData={summaryData} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle}/>:null}
+{time?<PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle}/>:null}
     </div>
   );
 };
