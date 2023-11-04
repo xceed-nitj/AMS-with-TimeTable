@@ -43,7 +43,7 @@ function AddSemComponent() {
 
 
   const fetchSemData = () => {
-    fetch(`${apiUrl}/timetablemodule/addSem`)
+    fetch(`${apiUrl}/timetablemodule/addSem`,{credentials: 'include'})
       .then(handleResponse)
       .then((data) => {
         const filteredSem = data.filter((sem) => sem.code === currentCode);
@@ -75,6 +75,7 @@ function AddSemComponent() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(dataToSave),
+      credentials: 'include',
     })
       .then(handleResponse)
       .then((data) => {
@@ -100,6 +101,7 @@ function AddSemComponent() {
   const handleDelete = (semId) => {
     fetch(`${apiUrl}/timetablemodule/addSem/${semId}`, {
       method: 'DELETE',
+      credentials: 'include',
     })
       .then(handleResponse)
       .then(() => {

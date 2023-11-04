@@ -9,6 +9,7 @@ function MasterRoom() {
   const [masterRooms, setMasterRooms] = useState([]);
   const [editedRoom, setEditedRoom] = useState({
     room: '',
+    type:'',
     building: '',
     floor: '',
     dept: '',
@@ -43,6 +44,7 @@ function MasterRoom() {
   const handleAddRoom = () => {
     setEditedRoom({
       room: '',
+      type:'',
       building: '',
       floor: '',
       dept: '',
@@ -114,6 +116,7 @@ function MasterRoom() {
             setEditRoomId(null);
             setEditedRoom({
               room: '',
+              type:'',
               building: '',
               floor: '',
               dept: '',
@@ -204,13 +207,22 @@ function MasterRoom() {
         {isAddRoomFormVisible ? ( 
           <div>
             <div>
-              <label>Room:</label>
+              <label>Room No:</label>
               <input
                 type="text"
                 value={editedRoom.room}
                 onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
               />
             </div>
+            <div>
+              <label>Type:</label>
+              <input
+                type="text"
+                value={editedRoom.type}
+                onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
+              />
+            </div>
+ 
             <div>
               <label>Building:</label>
               <input
@@ -266,6 +278,7 @@ function MasterRoom() {
         <thead>
           <tr>
             <th>Room</th>
+            <th>Type</th>
             <th>Building</th>
             <th>Floor</th>
             <th>Department</th>
@@ -288,6 +301,18 @@ function MasterRoom() {
                   room.room
                 )}
               </td>
+              <td>
+                {editRoomId === room._id ? (
+                  <input
+                    type="text"
+                    value={editedRoom.type}
+                    onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
+                  />
+                ) : (
+                  room.type
+                )}
+              </td>
+
               <td>
                 {editRoomId === room._id ? (
                   <input

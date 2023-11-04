@@ -59,7 +59,7 @@ function Component() {
   const apiUrl = getEnvironment();
 
   useEffect(() => {
-    fetch(`${apiUrl}/timetablemodule/addsem/sem/${currentCode}`)
+    fetch(`${apiUrl}/timetablemodule/addsem/sem/${currentCode}`,{credentials: 'include'})
       .then(handleResponse)
       .then((data) => {
         setAvailableSemesters(data);
@@ -74,7 +74,7 @@ function Component() {
 
   useEffect(() => {
     if (selectedDepartment) {
-      fetch(`${apiUrl}/timetablemodule/faculty/dept/${selectedDepartment}`)
+      fetch(`${apiUrl}/timetablemodule/faculty/dept/${selectedDepartment}`,{credentials: 'include',})
         .then(handleResponse)
         .then((data) => {
           setFaculties(data);
@@ -84,7 +84,7 @@ function Component() {
   }, [selectedDepartment]);
 
   const fetchFacultyData = () => {
-    fetch(`${apiUrl}/timetablemodule/addFaculty`)
+    fetch(`${apiUrl}/timetablemodule/addFaculty`,{credentials: 'include',})
       .then(handleResponse)
       .then((data) => {
         const filteredFacultyData = data.filter(
@@ -96,7 +96,7 @@ function Component() {
   };
 
   const fetchAvailableDepartments = () => {
-    fetch(`${apiUrl}/timetablemodule/faculty/dept`)
+    fetch(`${apiUrl}/timetablemodule/faculty/dept`,{credentials: 'include'})
       .then(handleResponse)
       .then((data) => {
         const formattedDepartments = data.map((department) => ({
@@ -137,6 +137,7 @@ function Component() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(dataToSave),
+      credentials: 'include',
     })
       .then(handleResponse)
       .then((data) => {
@@ -174,6 +175,7 @@ function Component() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(facultyToDelete),
+        credentials: 'include',
       })
         .then(handleResponse)
         .then(() => {

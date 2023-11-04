@@ -66,7 +66,7 @@ function Subject() {
 
   const fetchData = () => {
     if (currentCode) {
-    fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`) // Replace with the actual endpoint
+    fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`,{credentials: 'include',}) // Replace with the actual endpoint
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -94,7 +94,7 @@ function Subject() {
    // Fetch available semesters when the component mounts
    useEffect(() => {
     if (currentCode) {
-      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`) // Replace with the actual endpoint
+      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`,{credentials: 'include'}) // Replace with the actual endpoint
         .then((response) => {
           if (!response.ok) {
             throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -114,7 +114,7 @@ function Subject() {
 
   useEffect(() => {
     if (currentCode) {
-      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`)
+      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`,{credentials: 'include'})
         .then((response) => {
           if (!response.ok) {
             throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -140,6 +140,7 @@ function Subject() {
       fetch(`${apiUrl}/upload/subject`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       })
         .then((response) => {
           if (!response.ok) {
@@ -219,6 +220,7 @@ function Subject() {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify(editedData),
+              credentials: 'include',
             })
               .then((response) => {
                 if (!response.ok) {
@@ -254,6 +256,7 @@ function Subject() {
         // Send a DELETE request to remove the selected row
         fetch(`${apiUrl}/timetablemodule/subject/${_id}`, {
           method: 'DELETE',
+          credentials: 'include',
         })
           .then((response) => {
             if (!response.ok) {
@@ -304,6 +307,7 @@ function Subject() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(editedSData),
+            credentials: 'include',
           })
             .then((response) => {
               if (!response.ok) {
@@ -328,6 +332,7 @@ function Subject() {
           if (window.confirm("Are you sure you want to delete all entries with the current code?")) {
             fetch(`${apiUrl}/timetablemodule/subject/deletebycode/${currentCode}`, {
               method: 'DELETE',
+              credentials: 'include',
             })
               .then((response) => {
                 if (!response.ok) {

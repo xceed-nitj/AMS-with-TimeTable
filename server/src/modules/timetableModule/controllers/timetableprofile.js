@@ -10,6 +10,13 @@ class TableController {
     {
       const data = req.body;
       const userId=req.user.id;
+      const existingTimeTable = await TimeTable.findOne({ user: userId, session: data.session });
+
+    if (existingTimeTable) {
+      // If a timetable already exists, you can choose to return an error or update the existing one
+      // In this example, we return an error
+      return res.status(400).json({ error: "Timetable already exists for this session" });
+    }
       try {
         const newCode = await generateUniqueLink();
         //const userObject = await User.findById(userId)

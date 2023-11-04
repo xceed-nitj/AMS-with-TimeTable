@@ -24,7 +24,7 @@ const apiUrl=getEnvironment();
   }, []);
 
   const fetchData = () => {
-    fetch(`${apiUrl}/timetablemodule/faculty`) // Replace with the actual endpoint
+    fetch(`${apiUrl}/timetablemodule/faculty`,{credentials: 'include'}) // Replace with the actual endpoint
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -98,6 +98,7 @@ const apiUrl=getEnvironment();
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(editedData),
+            credentials: 'include',
           })
             .then((response) => {
               if (!response.ok) {
@@ -131,6 +132,7 @@ const apiUrl=getEnvironment();
       // Send a DELETE request to remove the selected row
       fetch(`${apiUrl}/timetablemodule/faculty/${_id}`, {
         method: 'DELETE',
+        credentials: 'include'
       })
         .then((response) => {
           if (!response.ok) {
@@ -172,6 +174,7 @@ const apiUrl=getEnvironment();
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(editedData),
+        credentials: 'include',
       })
         .then((response) => {
           if (!response.ok) {

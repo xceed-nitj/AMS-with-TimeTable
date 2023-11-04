@@ -12,6 +12,7 @@ function FacultyTable() {
       headers: {
         'Content-Type': 'application/json', // Set the content type to JSON
       },
+      credentials: 'include',
     })
       .then((response) => {
         // console.log(response)

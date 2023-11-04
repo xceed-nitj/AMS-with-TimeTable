@@ -57,7 +57,7 @@ function AddRoomComponent() {
   }, []);
 
   const fetchRoomsData = () => {
-    fetch(`${apiUrl}/timetablemodule/addroom`)
+    fetch(`${apiUrl}/timetablemodule/addroom`,{credentials: 'include'})
       .then(handleResponse)
       .then((data) => {
         const filteredRooms = data.filter((room) => room.code === currentCode);
@@ -67,7 +67,7 @@ function AddRoomComponent() {
   };
 
   const fetchMasterRooms = () => {
-    fetch(`${apiUrl}/timetablemodule/masterroom`)
+    fetch(`${apiUrl}/timetablemodule/masterroom`,{credentials: 'include'})
       .then(handleResponse)
       .then((data) => {
         setMasterRooms(data);
@@ -98,6 +98,7 @@ function AddRoomComponent() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(dataToSave),
+     credentials: 'include',
     })
       .then(handleResponse)
       .then((data) => {
@@ -125,6 +126,7 @@ function AddRoomComponent() {
 
     fetch(`${apiUrl}/timetablemodule/addroom/${roomId}`, {
       method: "DELETE",
+      credentials: 'include',
     })
       .then(handleResponse)
       .then(() => {

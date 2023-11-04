@@ -23,7 +23,7 @@ function MasterSemester() {
   }, []);
 
   const fetchMasterSemesters = () => {
-    fetch(`${apiUrl}/timetablemodule/mastersem`)
+    fetch(`${apiUrl}/timetablemodule/mastersem`,{credentials: 'include'})
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -59,6 +59,7 @@ function MasterSemester() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(editedSemester),
+      credentials: 'include'
     })
       .then((response) => {
         if (!response.ok) {
@@ -97,6 +98,7 @@ function MasterSemester() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(editedSemester),
+          credentials: 'include'
         })
           .then((response) => {
             if (!response.ok) {
@@ -125,6 +127,7 @@ function MasterSemester() {
   const handleDelete = (_id) => {
     fetch(`${apiUrl}/timetablemodule/mastersem/${_id}`, {
       method: 'DELETE',
+      credentials: 'include'
     })
       .then((response) => {
         if (!response.ok) {
@@ -155,6 +158,7 @@ function MasterSemester() {
       fetch(`${apiUrl}/upload/mastersem`, {
         method: 'POST',
         body: formData,
+        credentials: 'include'
       })
         .then((response) => {
           if (!response.ok) {
