@@ -44,7 +44,7 @@ function App() {
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
           <Route path="/tt/print" element={<PrintButton/>} />
         </Routes>
-        <Footer/>
+        {/* <Footer/> */}
       {/* </div> */}
     </Router>
 

@@ -57,7 +57,7 @@ class PDFGenerator extends React.Component {
 
     // Add the table header
     // const tableHeader = ['Day/Period', ...[1, 2, 3, 4, 5, 6, 7, 8].map(period => period.toString())];
-    const tableHeader = ['Day/Period','8:30 AM - 9:30 AM ','9:30 AM - 10:30 AM','10:30 AM - 11:30 AM','11:30 AM - 12:30 AM','12:30 AM - 1:30 AM','1:30 AM - 2:30 AM','2:30 AM - 3:30 AM','3:30 AM - 4:30 AM','3:30 AM - 4:30 AM']
+    const tableHeader = ['Day/Period','8:30 AM - 9:25 AM ','9:30 AM - 10:25 AM','10:30 AM - 11:25 AM','11:30 AM - 12:25 PM','12:30 PM - 1:30 PM','1:30 PM - 2:25 PM','2:30 PM - 3:25 PM','3:30 PM - 4:25 PM','4:30 PM - 5:25 PM']
     tableData.push(tableHeader);
     days.forEach(day => {
         const row = [day];
