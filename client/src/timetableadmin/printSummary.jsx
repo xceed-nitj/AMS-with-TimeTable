@@ -20,12 +20,21 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
+import PDFDownloader from '../filedownload/downloadpdf';
 import PDFGenerator from '../filedownload/makepdf';
 
 
 const PrintSummary = () => {
 
-  const [timetableData, setTimetableData] = useState({});
+// Initialize as an empty array
+const [TTData, setTTData] = useState([]); // Initialize as an empty array
+const [timetableData, setTimetableData] = useState({});
+const [summaryData, setSummaryData] = useState({});
+const [type, setType] = useState(''); 
+const [updatedTime, setUpdatedTime] = useState(''); 
+const [headTitle, setHeadTitle] = useState(''); 
+
+  
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [availableFaculties, setAvailableFaculties] = useState([]);
@@ -36,10 +45,7 @@ const PrintSummary = () => {
   const [facultyUpdateTime,setFacultyUpdateTime]=useState();
   const [roomUpdateTime,setRoomUpdateTime]=useState();
 
-  const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
-  const [TTData, setTTData] = useState([]); // Initialize as an empty array
-
-
+  const [subjectData, setSubjectData] = useState([]); 
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -280,7 +286,7 @@ const roomData = async (currentCode, room) => {
       
       const data = await response.json();
       console.log('ttdata',data)
-      setTTData(data);
+    //   setTTData(data);
       return data;
     //   
     } catch (error) {
@@ -347,11 +353,13 @@ function generateSummary(timetableData, type){
 return summaryData;
 }
 
+
   
 // Function to fetch and store data for all available semesters sequentially
 const fetchAndStoreTimetableDataForAllSemesters = async () => {
     fetchSubjectData(currentCode);
     const fetchedttdetails=await fetchTTData(currentCode);
+    setTTData(fetchedttdetails);
 
     for (const semester of availableSems) {
       const fetchedttdata = await fetchTimetableData(semester);
@@ -363,11 +371,17 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         type: 'sem',
         timeTableData: fetchedttdata,
         summaryData: summaryData,
-        updatedTime: time,
-        TTData:TTData,
+        updatedTime: time.lockedTime,
+        TTData:fetchedttdetails,
         headTitle: semester,
       };
-  
+
+      setTimetableData(fetchedttdata);
+      setSummaryData(summaryData);
+      setType(type);
+      setUpdatedTime(time);
+      setHeadTitle(semester);
+
       // Make a POST request to store the data in your schema
       const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
         method: 'POST',
@@ -389,12 +403,6 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   // Call the function to fetch and store data for all available semesters sequentially
 //   fetchAndStoreTimetableDataForAllSemesters();
 
-generatePDF = () => {
-    // ... (your existing code)
-  
-    pdfMake.createPdf(documentDefinition).download(`${headTitle}_timetable.pdf`);
-  };
-
 
   const handleDownloadAllSemesters = () => {
     fetchAndStoreTimetableDataForAllSemesters();
@@ -409,9 +417,11 @@ generatePDF = () => {
         variant="solid"
       >
         Download All Semesters
-<PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle}/>
-        
+{/* pdfMake.createPdf(documentDefinition).download(`${headTitle}_timetable.pdf`);     */}
       </Button>
+{/* <PDFDownloader timetableData={timetableData} summaryData={summaryData} type={type} Tdata={TTData} updatedTime={updatedTime} headTitle={headTitle}/> */}
+<PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={updatedTime.lockedTime} headTitle={headTitle}/>
+
     </div>
   );
 
