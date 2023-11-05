@@ -9,6 +9,7 @@ import { Container } from "@chakra-ui/layout";
 import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
 import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+import downloadPDF from '../filedownload/downloadpdf';
 
 import {
   Table,
@@ -142,7 +143,7 @@ const [headTitle, setHeadTitle] = useState('');
 
   const fetchTimetableData = async (semester) => {
     const data = await fetchData(semester);
-    fetchTime();
+    await fetchTime();
     setTimetableData(data);
     return(data);
     
@@ -359,7 +360,8 @@ return summaryData;
 const fetchAndStoreTimetableDataForAllSemesters = async () => {
     fetchSubjectData(currentCode);
     const fetchedttdetails=await fetchTTData(currentCode);
-    setTTData(fetchedttdetails);
+    console.log('ttdetails', fetchedttdetails);
+    // setTTData(fetchedttdetails);
 
     for (const semester of availableSems) {
       const fetchedttdata = await fetchTimetableData(semester);
@@ -375,6 +377,8 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         TTData:fetchedttdetails,
         headTitle: semester,
       };
+
+      downloadPDF(fetchedttdata,summaryData,'sem',fetchedttdetails,lockedTime,semester);
 
       setTimetableData(fetchedttdata);
       setSummaryData(summaryData);
@@ -420,7 +424,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
 {/* pdfMake.createPdf(documentDefinition).download(`${headTitle}_timetable.pdf`);     */}
       </Button>
 {/* <PDFDownloader timetableData={timetableData} summaryData={summaryData} type={type} Tdata={TTData} updatedTime={updatedTime} headTitle={headTitle}/> */}
-<PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={updatedTime.lockedTime} headTitle={headTitle}/>
+{/* <PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={updatedTime.lockedTime} headTitle={headTitle}/> */}
 
     </div>
   );
