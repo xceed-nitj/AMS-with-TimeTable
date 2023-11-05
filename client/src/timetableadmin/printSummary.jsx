@@ -25,6 +25,7 @@ import PDFDownloader from '../filedownload/downloadpdf';
 import PDFGenerator from '../filedownload/makepdf';
 
 
+
 const PrintSummary = () => {
 
 // Initialize as an empty array
@@ -32,7 +33,7 @@ const [TTData, setTTData] = useState([]); // Initialize as an empty array
 const [timetableData, setTimetableData] = useState({});
 const [summaryData, setSummaryData] = useState({});
 const [type, setType] = useState(''); 
-const [updatedTime, setUpdatedTime] = useState(''); 
+const [updateTime, setUpdatedTime] = useState(''); 
 const [headTitle, setHeadTitle] = useState(''); 
 
   
@@ -53,6 +54,9 @@ const [headTitle, setHeadTitle] = useState('');
   const currentCode = parts[parts.length - 2];
   const apiUrl=getEnvironment();
 
+  const [downloadStatus, setDownloadStatus]=useState('')
+
+
   useEffect(() => {
 
     // getting all the semester values for this code.
@@ -66,6 +70,7 @@ const [headTitle, setHeadTitle] = useState('');
           const semValues = filteredSems.map((sem) => sem.sem);
             // console.log(semValues)
           setAvailableSems(semValues);
+          setDownloadStatus("fetchingSemesters")
         //   setSelectedSemester(semValues[0]);
           // console.log('available semesters',availableSems)
         }
@@ -133,8 +138,10 @@ const [headTitle, setHeadTitle] = useState('');
       // console.log('current code', currentCode);
       const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`,{credentials: 'include'});
       const data = await response.json();
+      console.log('time daata', data)
       setLockedTime(data.updatedTime.lockTimeIST)
       setSavedTime( data.updatedTime.saveTimeIST)
+      return data.updatedTime.lockTimeIST;
     } catch (error) {
       console.error('Error fetching existing timetable data:', error);
       }
@@ -142,9 +149,11 @@ const [headTitle, setHeadTitle] = useState('');
 
 
   const fetchTimetableData = async (semester) => {
+    setDownloadStatus("fetchingSlotData")
     const data = await fetchData(semester);
-    await fetchTime();
     setTimetableData(data);
+    setDownloadStatus("fetchingSummaryData")
+    
     return(data);
     
 };
@@ -268,6 +277,7 @@ const roomData = async (currentCode, room) => {
       const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
       const data = await response.json();
       setSubjectData(data);
+      return data
       // console.log('subjectdata',data)
     } catch (error) {
       console.error('Error fetching subject data:', error);
@@ -286,7 +296,7 @@ const roomData = async (currentCode, room) => {
       });
       
       const data = await response.json();
-      console.log('ttdata',data)
+      // console.log('ttdata',data)
     //   setTTData(data);
       return data;
     //   
@@ -297,8 +307,7 @@ const roomData = async (currentCode, room) => {
 
 
 
-function generateSummary(timetableData, type){
-
+function generateSummary(timetableData, subjectData, type){
   const summaryData = {};
 
   // Iterate through the timetable data to calculate the summary
@@ -351,39 +360,51 @@ function generateSummary(timetableData, type){
       }
     }
   }
-return summaryData;
+  // setDownloadStatus("fetchingHeadersFooters")
+  setSummaryData(summaryData);
+  // console.log('summary dataaaa',summaryData)
+  return summaryData;
 }
 
 
   
 // Function to fetch and store data for all available semesters sequentially
 const fetchAndStoreTimetableDataForAllSemesters = async () => {
-    fetchSubjectData(currentCode);
+  const subjectData = await  fetchSubjectData(currentCode);
+    setDownloadStatus("fetchingHeadersFooters")
+
     const fetchedttdetails=await fetchTTData(currentCode);
-    console.log('ttdetails', fetchedttdetails);
+
+
+    
+    // console.log('ttdetails', fetchedttdetails);
     // setTTData(fetchedttdetails);
 
     for (const semester of availableSems) {
+      
       const fetchedttdata = await fetchTimetableData(semester);
-      const summaryData = generateSummary(fetchedttdata,'sem');
-      const time = {lockedTime}; 
+      
+      const summaryData = generateSummary(fetchedttdata, subjectData, 'sem'); 
+      // console.log(summaryData)
+      const lockTime= await fetchTime();
+
       const postData = {
         session: fetchedttdetails[0].session,
         name: semester,
         type: 'sem',
         timeTableData: fetchedttdata,
         summaryData: summaryData,
-        updatedTime: time.lockedTime,
+        updatedTime: lockTime,
         TTData:fetchedttdetails,
         headTitle: semester,
       };
-
-      downloadPDF(fetchedttdata,summaryData,'sem',fetchedttdetails,lockedTime,semester);
-
+      setDownloadStatus("preparingDownload")
+      downloadPDF(fetchedttdata,summaryData,'sem',fetchedttdetails,lockTime,semester);
+      setDownloadStatus("downloadStarted")
       setTimetableData(fetchedttdata);
       setSummaryData(summaryData);
       setType(type);
-      setUpdatedTime(time);
+      setUpdatedTime(lockTime);
       setHeadTitle(semester);
 
       // Make a POST request to store the data in your schema
@@ -403,7 +424,63 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
       }
     }
   };
+
+  const fetchAndStoreTimetableDataForAllFaculty = async () => {
+    const subjectData = await  fetchSubjectData(currentCode);
+      setDownloadStatus("fetchingHeadersFooters")
   
+      const fetchedttdetails=await fetchTTData(currentCode);
+  
+  
+      for (const faculty of availableFaculties) {
+        console.log(faculty);        
+        const fetchedttdata = await fetchFacultyData(faculty);
+        
+        const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty'); 
+        // console.log(summaryData)
+        const lockTime= facultyUpdateTime;
+  
+        const postData = {
+          session: fetchedttdetails[0].session,
+          name: faculty,
+          type: 'faculty',
+          timeTableData: fetchedttdata,
+          summaryData: summaryData,
+          updatedTime: lockTime,
+          TTData:fetchedttdetails,
+          headTitle: faculty,
+        };
+        setDownloadStatus("preparingDownload")
+        downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty);
+        setDownloadStatus("downloadStarted")
+        setTimetableData(fetchedttdata);
+        setSummaryData(summaryData);
+        setType(type);
+        setUpdatedTime(lockTime);
+        setHeadTitle(faculty);
+  
+        // Make a POST request to store the data in your schema
+        const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(postData),
+          credentials: 'include'
+        });
+    
+        if (postResponse.ok) {
+          console.log(`Timetable data for semester ${semester} stored successfully.`);
+        } else {
+          console.error(`Error storing timetable data for semester ${semester}.`);
+        }
+      }
+    };
+    
+  
+
+
+
   // Call the function to fetch and store data for all available semesters sequentially
 //   fetchAndStoreTimetableDataForAllSemesters();
 
@@ -411,6 +488,13 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   const handleDownloadAllSemesters = () => {
     fetchAndStoreTimetableDataForAllSemesters();
       };
+
+      const handleDownloadAllFaculty = () => {
+        fetchAndStoreTimetableDataForAllFaculty();
+          };
+    
+
+
 
   return (
     <div>
@@ -425,7 +509,79 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
       </Button>
 {/* <PDFDownloader timetableData={timetableData} summaryData={summaryData} type={type} Tdata={TTData} updatedTime={updatedTime} headTitle={headTitle}/> */}
 {/* <PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={updatedTime.lockedTime} headTitle={headTitle}/> */}
+{downloadStatus && (
+        // Conditionally render messages based on downloadStatus
+        <>
+{downloadStatus === 'fetchingSemesters' && (
+  <p>
+    {availableSems ? `No of available sems: ${availableSems.length}` : 'No semesters available'}
+  </p>
+)}
 
+          
+          {downloadStatus === 'fetchingSlotData' && (
+            <p>Fetching slot data...</p>
+          )}
+          {downloadStatus === 'fetchingSummaryData' && (
+            <p>Fetching summary data...</p>
+          )}
+          {downloadStatus === 'fetchingNotes' && (
+            <p>Fetching notes...</p>
+          )}
+          {downloadStatus === 'fetchingHeadersFooters' && (
+            <p>Fetching headers and footers...</p>
+          )}
+          {downloadStatus === 'preparingDownload' && (
+            <p>Preparing download...</p>
+          )}
+          {downloadStatus === 'downloadStarted' && (
+            <p>Download in progress. Check downloads folder</p>
+          )}
+        </>
+      )}
+
+<Button
+  onClick={handleDownloadAllFaculty}
+  colorScheme="teal"
+  variant="solid"
+>
+  Download All Fauculty Time Table
+{/* pdfMake.createPdf(documentDefinition).download(`${headTitle}_timetable.pdf`);     */}
+</Button>
+
+{downloadStatus && (
+        // Conditionally render messages based on downloadStatus
+        <>
+{downloadStatus === 'fetchingSemesters' && (
+  <p>
+    {availableSems ? `No of available sems: ${availableSems.length}` : 'No semesters available'}
+  </p>
+)}
+
+          
+          {downloadStatus === 'fetchingSlotData' && (
+            <p>Fetching slot data...</p>
+          )}
+          {downloadStatus === 'fetchingSummaryData' && (
+            <p>Fetching summary data...</p>
+          )}
+          {downloadStatus === 'fetchingNotes' && (
+            <p>Fetching notes...</p>
+          )}
+          {downloadStatus === 'fetchingHeadersFooters' && (
+            <p>Fetching headers and footers...</p>
+          )}
+          {downloadStatus === 'preparingDownload' && (
+            <p>Preparing download...</p>
+          )}
+          {downloadStatus === 'downloadStarted' && (
+            <p>Download in progress. Check downloads folder</p>
+          )}
+        </>
+      )}
+
+
+      
     </div>
   );
 

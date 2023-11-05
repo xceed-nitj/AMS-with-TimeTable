@@ -11,10 +11,13 @@ function downloadPDF(timetableData, summaryData, type, ttdata, updatedTime, head
 console.log('type',type)
 console.log('ttdataaaa',ttdata)
 console.log('passed time',updatedTime)
+console.log('passed time',headTitle)
 
 const session = ttdata[0].session;
   const dept = ttdata[0].dept;
-  
+  const updatedTime1 =updatedTime;
+  const headTitle1 =headTitle;
+
   const tableData = [];
   let subheading = '';
 
@@ -23,7 +26,8 @@ const session = ttdata[0].session;
   } else if (type =='faculty') {
     subheading = 'Faculty Name: Dr.';
   }
-
+  const subheading1=subheading;
+// console.log(subheading)
   const tableHeader = [
     'Day/Period',
     '8:30 AM - 9:25 AM',
@@ -168,31 +172,30 @@ const session = ttdata[0].session;
             alignment: 'center',
           },
           {
-            table: {
-              widths: ['*', '*', '*'],
-              body: [
-                {
-                  text: `${subheading}${headTitle}`,
-                  fontSize: 12,
-                  bold: true,
-                  alignment: 'left',
-                },
-                {
-                  text: `Session: ${session}`,
-                  fontSize: 12,
-                  bold: true,
-                  alignment: 'center',
-                },
-                {
-                  text: `Last Locked on: ${updatedTime}`,
-                  fontSize: 12,
-                  bold: true,
-                  alignment: 'right',
-                },
-              ],
-            },
-            layout: 'noBorders',
+            columns: [
+              {
+                text: `${subheading1}${headTitle1}`,
+                fontSize: 12,
+                bold: true,
+                alignment: 'left',
+              },
+              {
+                text: `Session: ${session}`,
+                fontSize: 12,
+                bold: true,
+                alignment: 'center',
+              },
+              {
+                text: `Last Locked on: ${updatedTime1}`,
+                fontSize: 12,
+                bold: true,
+                alignment: 'right',
+              },
+            ],
+            margin: [0, 0, 0, 10], // Add top margin if needed
           },
+          
+           
           {
             table: {
               body: tableData,
@@ -214,26 +217,24 @@ const session = ttdata[0].session;
             },
           },
           {
-            table: {
-              widths: ['*', '*'],
-              body: [
-                {
-                  text: 'Time Table Incharge',
-                  fontSize: 12,
-                  bold: true,
-                  alignment: 'left',
-                },
-                {
-                  text: 'Head of the Department',
-                  fontSize: 12,
-                  bold: true,
-                  alignment: 'right',
-                },
-              ],
-            },
-            layout: 'noBorders',
-            margin: [0, 30, 0, 0],
+            columns: [
+              {
+                text: 'Time Table Incharge',
+                fontSize: 12,
+                bold: true,
+                alignment: 'left',
+              },
+              {
+                text: 'Head of the Department',
+                fontSize: 12,
+                bold: true,
+                alignment: 'right',
+              },
+            ],
+            margin: [0, 20, 0, 0],
           },
+            // layout: 'noBorders',
+            // margin: [0, 30, 0, 0],
         ],
       };
 
