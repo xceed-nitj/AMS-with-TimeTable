@@ -55,6 +55,13 @@ const [headTitle, setHeadTitle] = useState('');
   const apiUrl=getEnvironment();
 
   const [downloadStatus, setDownloadStatus]=useState('')
+  const [slotStatus, setSlotStatus]=useState('')
+  const [summaryStatus, setSummaryStatus]=useState('')
+  const [noteStatus, setNoteStatus]=useState('')
+  const [headerStatus, setHeaderStatus]=useState('')
+  const [prepareStatus, setPrepareStatus]=useState('')
+  const [startStatus, setStartStatus]=useState('')
+  const [completeStatus, setCompleteStatus]=useState('')
 
 
   useEffect(() => {
@@ -177,6 +184,7 @@ const [headTitle, setHeadTitle] = useState('');
   const fetchFacultyData = async (currentCode, faculty) => {
     const data = await facultyData(currentCode, faculty);
     // setTimetableData(data);
+    setSlotStatus('fetchingSlotData')
 return data;
 
   };
@@ -365,6 +373,8 @@ function generateSummary(timetableData, subjectData, type){
   }
   // setDownloadStatus("fetchingHeadersFooters")
   setSummaryData(summaryData);
+  setSummaryStatus('fetchingSummaryData')
+
   // console.log('summary dataaaa',summaryData)
   return summaryData;
 }
@@ -431,6 +441,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   const fetchAndStoreTimetableDataForAllFaculty = async () => {
     const subjectData = await  fetchSubjectData(currentCode);
       setDownloadStatus("fetchingHeadersFooters")
+      
   
       const fetchedttdetails=await fetchTTData(currentCode);
   
@@ -443,7 +454,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty'); 
         // console.log(summaryData)
         const lockTime= facultyUpdateTime;
-  
+        setHeaderStatus("fetchingHeadersFooters")
         const postData = {
           session: fetchedttdetails[0].session,
           name: faculty,
@@ -455,9 +466,15 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           headTitle: faculty,
         };
         console.log(postData);
+        setNoteStatus("fetchingNotes")
+
         setDownloadStatus("preparingDownload")
+        setPrepareStatus("preparingDownload")
+
         downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty);
         setDownloadStatus("downloadStarted")
+        setStartStatus("downloadStarted")
+
         setTimetableData(fetchedttdata);
         setSummaryData(summaryData);
         setType(type);
@@ -480,6 +497,8 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           console.error(`Error storing timetable data for faculty ${faculty}.`);
         }
       }
+      setCompleteStatus("downloadCompleted")    
+
     };
     
   
@@ -496,101 +515,115 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
 
   const handleDownloadAllFaculty = () => {
         fetchAndStoreTimetableDataForAllFaculty();
-          };
+      };
     
 
 
 
-  return (
-    <div>
-      {/* Your other components and UI elements */}
-      <Button
-        onClick={handleDownloadAllSemesters}
-        colorScheme="teal"
-        variant="solid"
-      >
-        Download All Semesters
-{/* pdfMake.createPdf(documentDefinition).download(`${headTitle}_timetable.pdf`);     */}
-      </Button>
-{/* <PDFDownloader timetableData={timetableData} summaryData={summaryData} type={type} Tdata={TTData} updatedTime={updatedTime} headTitle={headTitle}/> */}
-{/* <PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={updatedTime.lockedTime} headTitle={headTitle}/> */}
-{downloadStatus && (
-        // Conditionally render messages based on downloadStatus
-        <>
-{downloadStatus === 'fetchingSemesters' && (
-  <p>
-    {availableSems ? `No of available sems: ${availableSems.length}` : 'No semesters available'}
+          return (
+            <div>
+              {/* Your other components and UI elements */}
+              <Button
+                onClick={handleDownloadAllSemesters}
+                colorScheme="teal"
+                variant="solid"
+              >
+                Download All Semesters
+              </Button>
+          
+              <div className="message">
+                {downloadStatus === 'fetchingSemesters' && (
+                  <p>
+                    {availableSems ? `No of available sems: ${availableSems.length}` : 'No semesters available'}
+                  </p>
+                )}
+                {downloadStatus === 'fetchingSlotData' && (
+                  <p className={downloadStatus === 'fetchingSlotData' ? 'bold-message' : ''}>
+                    Fetching slot data...
+                  </p>
+                )}
+                {downloadStatus === 'fetchingSummaryData' && (
+                  <p className={downloadStatus === 'fetchingSummaryData' ? 'bold-message' : ''}>
+                    Fetching summary data...
+                  </p>
+                )}
+                {downloadStatus === 'fetchingNotes' && (
+                  <p className={downloadStatus === 'fetchingNotes' ? 'bold-message' : ''}>
+                    Fetching notes...
+                  </p>
+                )}
+                {downloadStatus === 'fetchingHeadersFooters' && (
+                  <p className={downloadStatus === 'fetchingHeadersFooters' ? 'bold-message' : ''}>
+                    Fetching headers and footers...
+                  </p>
+                )}
+                {downloadStatus === 'preparingDownload' && (
+                  <p className={downloadStatus === 'preparingDownload' ? 'bold-message' : ''}>
+                    Preparing download...
+                  </p>
+                )}
+                {downloadStatus === 'downloadStarted' && (
+                  <p className={downloadStatus === 'downloadStarted' ? 'bold-message' : ''}>
+                    Download in progress. Check downloads folder
+                  </p>
+                )}
+              </div>
+          
+              <Button
+                onClick={handleDownloadAllFaculty}
+                colorScheme="teal"
+                variant="solid"
+              >
+                Download All Fauculty Time Table
+              </Button>
+          
+              {/* Render the messages again for the second button */}
+              <div className="message">
+                {downloadStatus === 'fetchingSemesters' && (
+                  <p>
+                    {availableFaculties ? `No of Faculty: ${availableFaculties.length}` : 'No faculty available'}
+                  </p>
+                )}
+                {slotStatus === 'fetchingSlotData' && (
+                  <p className={slotStatus === 'fetchingSlotData' ? 'bold-message' : ''}>
+                    Fetching slot data...
+                  </p>
+                )}
+                {summaryStatus === 'fetchingSummaryData' && (
+                  <p className={summaryStatus === 'fetchingSummaryData' ? 'bold-message' : ''}>
+                    Fetching summary data...
+                  </p>
+                )}
+                {noteStatus === 'fetchingNotes' && (
+                  <p className={noteStatus === 'fetchingNotes' ? 'bold-message' : ''}>
+                    Fetching notes...
+                  </p>
+                )}
+                {headerStatus === 'fetchingHeadersFooters' && (
+                  <p className={headerStatus === 'fetchingHeadersFooters' ? 'bold-message' : ''}>
+                    Fetching headers and footers...
+                  </p>
+                )}
+                {prepareStatus === 'preparingDownload' && (
+                  <p className={prepareStatus === 'preparingDownload' ? 'bold-message' : ''}>
+                    Preparing download...
+                  </p>
+                )}
+                {startStatus === 'downloadStarted' && (
+                  <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
+                    Download in progress. Check downloads folder
+                  </p>
+                )}
+                 {completeStatus === 'downloadCompleted' && (
+  <p style={{ fontWeight: 'bold', color: 'green' }}>
+    Download Completed.
   </p>
 )}
 
+              </div>
+            </div>
+          );
           
-          {downloadStatus === 'fetchingSlotData' && (
-            <p>Fetching slot data...</p>
-          )}
-          {downloadStatus === 'fetchingSummaryData' && (
-            <p>Fetching summary data...</p>
-          )}
-          {downloadStatus === 'fetchingNotes' && (
-            <p>Fetching notes...</p>
-          )}
-          {downloadStatus === 'fetchingHeadersFooters' && (
-            <p>Fetching headers and footers...</p>
-          )}
-          {downloadStatus === 'preparingDownload' && (
-            <p>Preparing download...</p>
-          )}
-          {downloadStatus === 'downloadStarted' && (
-            <p>Download in progress. Check downloads folder</p>
-          )}
-        </>
-      )}
-
-<Button
-  onClick={handleDownloadAllFaculty}
-  colorScheme="teal"
-  variant="solid"
->
-  Download All Fauculty Time Table
-{/* pdfMake.createPdf(documentDefinition).download(`${headTitle}_timetable.pdf`);     */}
-</Button>
-
-{downloadStatus && (
-        // Conditionally render messages based on downloadStatus
-        <>
-{downloadStatus === 'fetchingSemesters' && (
-  <p>
-    {availableSems ? `No of available sems: ${availableSems.length}` : 'No semesters available'}
-  </p>
-)}
-
-          
-          {downloadStatus === 'fetchingSlotData' && (
-            <p>Fetching slot data...</p>
-          )}
-          {downloadStatus === 'fetchingSummaryData' && (
-            <p>Fetching summary data...</p>
-          )}
-          {downloadStatus === 'fetchingNotes' && (
-            <p>Fetching notes...</p>
-          )}
-          {downloadStatus === 'fetchingHeadersFooters' && (
-            <p>Fetching headers and footers...</p>
-          )}
-          {downloadStatus === 'preparingDownload' && (
-            <p>Preparing download...</p>
-          )}
-          {downloadStatus === 'downloadStarted' && (
-            <p>Download in progress. Check downloads folder</p>
-          )}
-        </>
-      )}
-
-
-      
-    </div>
-  );
-
-
   
 };
 
