@@ -28,6 +28,8 @@ function AddSemComponent() {
   const toast = useToast()
   const [sems, setSems] = useState([]);
   const [newSem, setNewSem] = useState(''); 
+  const [dept, setDepartment] = useState('');
+  const [semestersFromMasterSem, setSemestersFromMasterSem] = useState([]);
   // const [successMessage, setSuccessMessage] = useState('');
  
   const navigate = useNavigate();
@@ -38,8 +40,38 @@ function AddSemComponent() {
   const currentCode = parts[parts.length - 2];
 
   useEffect(() => {
-    fetchSemData();
-   }, []);
+    fetchDepartmentData();
+    fetchSemData(); // Fetch semesters from the database when the component mounts
+  }, []);
+
+  useEffect(() => {
+    if (dept) {
+      fetchSemestersFromMasterSem();
+    }
+  }, [dept]);
+
+  const fetchDepartmentData = () => {
+    fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
+      credentials: 'include',
+    })
+      .then(handleResponse)
+      .then((data) => {
+        setDepartment(data[0].dept);
+      })
+      .catch(handleError);
+  };
+
+  const fetchSemestersFromMasterSem = () => {
+    fetch(`${apiUrl}/timetablemodule/mastersem/dept/${dept}`, {
+      credentials: 'include',
+    })
+      .then(handleResponse)
+      .then((data) => {
+        const semesters = data.map((item) => item.sem);
+        setSemestersFromMasterSem(semesters);
+      })
+      .catch(handleError);
+  };
 
 
   const fetchSemData = () => {
@@ -130,20 +162,20 @@ function AddSemComponent() {
               Sem
             </Text>
             <Box display='flex' justifyContent='space-between'>
-              <Select
-               onChange={(e)=>{
-                setNewSem(e.target.value)
-               }}
-              placeholder='Select Semester' w='80%'>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>4</option>
-                <option>5</option>
-                <option>6</option>
-                <option>7</option>
-                <option>8</option>
-              </Select>
+            
+            <Select
+              onChange={handleSemInputChange}
+              value={newSem}
+              placeholder="Select Semester"
+              w="80%"
+            >
+              {semestersFromMasterSem.map((semester) => (
+                <option key={semester} value={semester}>
+                  {semester}
+                </option>
+              ))}
+            </Select>
+
               <Button mt='0' ml='16' bg='teal' color='white' onClick={handleSubmit}>Add Sem</Button>
             </Box>
           </FormControl>
