@@ -6,9 +6,10 @@ import './Timetable.css';
 import TimetableSummary from './ttsummary';
 import ReactToPrint from 'react-to-print';
 import { Container } from "@chakra-ui/layout";
-import { Heading } from '@chakra-ui/react';
+import { Heading, Select } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
 import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+import { Center, Square, Circle } from '@chakra-ui/react';
 
 import {
   Table,
@@ -527,26 +528,41 @@ const Timetable = () => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
-    <Container maxW={"1200px"}>
-      <Heading>GENERATE TIME TABLE</Heading>
-      <CustomBlueButton onClick={handleAddSem}>Add Semester</CustomBlueButton>
-      <CustomBlueButton onClick={handleAddSubject}>Add Subject</CustomBlueButton>
-      <CustomBlueButton onClick={handleAddRoom}>Add Room</CustomBlueButton>
-      <CustomBlueButton onClick={handleAddFaculty}>Add Faculty</CustomBlueButton>
-      <CustomBlueButton onClick={handleLockTT}>Lock TT</CustomBlueButton>
-      <CustomBlueButton onClick={handleViewSummary}>View/Download Locked TT</CustomBlueButton>
-
-      <Box display="flex" justifyContent="right" flexDirection="column" >
-      <Text fontSize="xl" color="blue" id="saveTime">
-         Last saved on: {savedTime ? savedTime: 'Not saved yet'}
-        </Text>
-        <Text fontSize="xl" color="blue" id="lockTime">
-          Last locked on: {lockedTime ? lockedTime: 'Not Locked yet'}
-        </Text>
-       
+    <Container maxW="8xl">
+      <Heading as="h1" size="xl" mt="6" mb="6">
+        GENERATE TIME TABLE
+      </Heading>
+      <Box display="flex" mt="3" mb="5">
+        <Button m="1 auto" colorScheme="teal" onClick={handleAddSem}>
+          Add Semester
+        </Button>
+        <Button m="1 auto" colorScheme="teal" onClick={handleAddSubject}>
+          Add Subject
+        </Button>
+        <Button m="1 auto" colorScheme="teal" onClick={handleAddRoom}>
+          Add Room
+        </Button>
+        <Button m="1 auto" colorScheme="teal" onClick={handleAddFaculty}>
+          Add Faculty
+        </Button>
+        <Button m="1 auto" colorScheme="teal" onClick={handleLockTT}>
+          Lock TT
+        </Button>
+        <Button m="1 auto" colorScheme="teal" onClick={handleViewSummary}>
+          View/Download Locked TT
+        </Button>
       </Box>
 
-    {/* <div style={{
+      <Box display="flex" justifyContent="space-between" mb="4">
+        <Text fontSize="xl" color="black" id="saveTime">
+          Last saved on: {savedTime ? savedTime : "Not saved yet"}
+        </Text>
+        <Text fontSize="xl" color="black" id="lockTime">
+          Last locked on: {lockedTime ? lockedTime : "Not Locked yet"}
+        </Text>
+      </Box>
+
+      {/* <div style={{
   backgroundColor: 'brown',
   color: 'white',
   textAlign: 'center',
@@ -570,17 +586,17 @@ const Timetable = () => {
           zIndex="999"
           borderRadius="20px" // Adding curved borders
           p="10px" // Padding to make it a bit larger
-          opacity={showMessage ? 1 : 0} 
->
+          opacity={showMessage ? 1 : 0}
+        >
           <Text>{message}</Text>
         </Box>
-
-        
       </Portal>
 
-    <div>
-        <label>Select Semester:</label>
-        <select
+      <Box display="flex" mb="2.5">
+        <Text fontWeight="bold" mb="1.5">
+          Select Semester:
+        </Text>
+        <Select
           value={selectedSemester}
           onChange={(e) => setSelectedSemester(e.target.value)}
         >
@@ -591,202 +607,249 @@ const Timetable = () => {
               {semester}
             </option>
           ))}
-        </select>
-      </div>
-
+        </Select>
+      </Box>
 
       {Object.keys(timetableData).length === 0 ? (
-  <div>Loading...</div>
-) : (
-  <table border="5" cellSpacing="0" align="center">
-    <tr>
-      <td align="center" height="50" width="100">
-        <b>Day/Period</b>
-      </td>
-      {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
-        <td key={period} align="center" height="50">
-          <b>{period}</b>
-        </td>
-      ))}
-    </tr>
-    {days.map((day) => (
-      <tr key={day}>
-        <td align="center" height="50">
-          <b>{day}</b>
-        </td>
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
-          <td key={period} align="center" height="50">
-            {timetableData[day][`period${period}`].map((slot, slotIndex) => (
-              <div key={slotIndex} className="cell-container">
-                {slot.map((cell, cellIndex) => (
-                  <div key={cellIndex} className="cell-slot">
-<select
-  value={cell.subject}
-  onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'subject', event)}
->
+        <Box>Loading...</Box>
+      ) : (
+        <TableContainer>
+          <Table variant="striped">
+            <Tr fontWeight="bold">
+              <Td>
+                <Text>Day/Period</Text>
+              </Td>
 
-<option value="">Select Subject</option>
-    {availableSubjects.map((subject) => (
-      <option key={subject._id} value={subject.subName}>
-        {subject.subName}
-      </option>
-  ))}
-</select>
-<select
-  value={cell.room}
-  onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'room', event)}
->
-  <option value="">Select Room</option> {/* Add an empty option */}
-  {availableRooms.map((roomOption) => (
-    <option key={roomOption} value={roomOption}>
-      {roomOption}
-    </option>
-  ))}
-</select>
-<select
-  value={cell.faculty}
-  onChange={(event) => handleCellChange(day, period, slotIndex, cellIndex, 'faculty', event)}
->
-  <option value="">Select Faculty</option> {/* Add an empty option */}
-  {availableFaculties.map((faculty, index) => (
-    <option key={index} value={faculty}>
-      {faculty}
-    </option>
-  ))}
-</select>
-                  </div>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
+                <Td key={period}>
+                  <Text>
+                    <Center>{period}</Center>
+                  </Text>
+                </Td>
+              ))}
+            </Tr>
+            {days.map((day) => (
+              <Tr key={day} fontWeight="bold">
+                <Td>
+                  <Text>
+                    <Center>{day}</Center>
+                  </Text>
+                </Td>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
+                  <Td key={period}>
+                    {timetableData[day][`period${period}`].map(
+                      (slot, slotIndex) => (
+                        <Box key={slotIndex}>
+                          {slot.map((cell, cellIndex) => (
+                            <Box key={cellIndex}>
+                              <Select
+                                value={cell.subject}
+                                onChange={(event) =>
+                                  handleCellChange(
+                                    day,
+                                    period,
+                                    slotIndex,
+                                    cellIndex,
+                                    "subject",
+                                    event
+                                  )
+                                }
+                              >
+                                <option value="">Select Subject</option>
+                                {availableSubjects.map((subject) => (
+                                  <option
+                                    key={subject._id}
+                                    value={subject.subName}
+                                  >
+                                    {subject.subName}
+                                  </option>
+                                ))}
+                              </Select>
+                              <Select
+                                value={cell.room}
+                                onChange={(event) =>
+                                  handleCellChange(
+                                    day,
+                                    period,
+                                    slotIndex,
+                                    cellIndex,
+                                    "room",
+                                    event
+                                  )
+                                }
+                              >
+                                <option value="">Select Room</option>{" "}
+                                {/* Add an empty option */}
+                                {availableRooms.map((roomOption) => (
+                                  <option key={roomOption} value={roomOption}>
+                                    {roomOption}
+                                  </option>
+                                ))}
+                              </Select>
+                              <Select
+                                value={cell.faculty}
+                                onChange={(event) =>
+                                  handleCellChange(
+                                    day,
+                                    period,
+                                    slotIndex,
+                                    cellIndex,
+                                    "faculty",
+                                    event
+                                  )
+                                }
+                              >
+                                <option value="">Select Faculty</option>{" "}
+                                {/* Add an empty option */}
+                                {availableFaculties.map((faculty, index) => (
+                                  <option key={index} value={faculty}>
+                                    {faculty}
+                                  </option>
+                                ))}
+                              </Select>
+                            </Box>
+                          ))}
+                          {slotIndex === 0 && (
+                            <CustomPlusButton
+                              className="cell-split-button"
+                              onClick={() =>
+                                handleSplitCell(day, period, slotIndex)
+                              }
+                            >
+                              +
+                            </CustomPlusButton>
+                          )}
+                          {slotIndex === 0 && slot.length > 1 && (
+                            <CustomDeleteButton
+                              className="cell-delete-button"
+                              onClick={() =>
+                                handleDeleteCell(day, period, slotIndex)
+                              }
+                            >
+                              Delete
+                            </CustomDeleteButton>
+                          )}
+                        </Box>
+                      )
+                    )}
+                  </Td>
                 ))}
-                 {slotIndex === 0 && (
-      <CustomPlusButton
-        className="cell-split-button"
-        onClick={() => handleSplitCell(day, period, slotIndex)}
-      >
-        +
-      </CustomPlusButton>
-    )}
-    {slotIndex === 0 && slot.length > 1 && (
-      <CustomDeleteButton
-        className="cell-delete-button"
-        onClick={() => handleDeleteCell(day, period, slotIndex)}
-      >
-        Delete
-      </CustomDeleteButton>
-    )}
-              </div>
+              </Tr>
             ))}
-          </td>
-        ))}
-      </tr>
-    ))}
-  </table>
-)}
-      <CustomBlueButton onClick={handleSubmit}>Save Timetable</CustomBlueButton>
-<div>
-<div>
-<Heading>View Semester Timetable</Heading>
-        <label>Select Semester:</label>
-        <select
-          value={viewselectedSemester}
-          onChange={(e) => setViewSelectedSemester(e.target.value)}
-        >          <option value="">Select </option>
-
-          {semesters.map((semester, index) => (
-            <option key={index} value={semester}>
-              {semester}
-            </option>
-          ))}
-        </select>
-      </div>
-  
-
-<div>
-  {viewselectedSemester ? (
-    <div>
-      <Text fontSize="xl" color="blue" id="saveTime">
-         Last saved on: {savedTime ? savedTime: 'Not saved yet'}
-        </Text>
-      <ViewTimetable timetableData={viewData} />     
-<TimetableSummary timetableData={viewData} type={'sem'} code={currentCode} /> 
-    </div>
-
-    
-  ) : (
-    <p>Please select a Semester from the dropdown.</p>
-  )}
-</div>
-
-
-</div>
-<div>
-<div>
-<Heading>View Faculty Timetable</Heading>
-        <label>Select Faculty:</label>
-        <select
-          value={viewFaculty}
-          onChange={(e) => setViewFaculty(e.target.value)}
-        >
-          <option value="">Select </option>
-          {availableFaculties.map((faculty, index) => (
-            <option key={index} value={faculty}>
-              {faculty}
-            </option>
-          ))}
-        </select>
-      </div>
+          </Table>
+        </TableContainer>
+      )}
       
-      <div>
-  {viewFaculty ? (
-  
-  
-  <div>
-    <Text fontSize="xl" color="blue" id="saveTime">
-         Last saved on: {facultyUpdateTime ? facultyUpdateTime: 'Not saved yet'}
-        </Text>
-    <ViewTimetable timetableData={viewFacultyData} />
-<TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/> 
-</div>
-    ) : (
-    <p>Please select a faculty from the dropdown.</p>
-  )}
-</div>     
-</div>
+      <Button colorScheme='teal' mb='3' mt='5' ml='0' onClick={handleSubmit}>Save Timetable</Button>
+      
+      
+      <Box>
+      <Heading as="h1" size="xl" mt="6" mb="6">View Semester Timetable</Heading>
 
-<div>
-<Heading>View Room Timetable</Heading>
-        <label>Select Room:</label>
-        <select
-          value={viewRoom}
-          onChange={(e) => setViewRoom(e.target.value)}
-        >
-           <option value="">Select </option>
-          {availableRooms.map((room, index) => (
-            <option key={index} value={room}>
-              {room}
-            </option>
-          ))}
-        </select>
-      </div>
-  
-      <div>
-  {viewRoom ? (
-    <div>
-          <Text fontSize="xl" color="blue" id="saveTime">
-         Last saved on: {roomUpdateTime ? roomUpdateTime: 'Not saved yet'}
-        </Text>
+        <Box display='flex' mb='2.5'>
+          <Text fontWeight='bold'>Select Semester:</Text>
+          <Select
+            value={viewselectedSemester}
+            onChange={(e) => setViewSelectedSemester(e.target.value)}
+          >
+            {" "}
+            <option value="">Select </option>
+            {semesters.map((semester, index) => (
+              <option key={index} value={semester}>
+                {semester}
+              </option>
+            ))}
+          </Select>
+        </Box>
 
-    <ViewTimetable timetableData={viewRoomData} />
-{/* <TimetableSummary timetableData={viewRoomData} type={'room'} code={currentCode}/>  */}
-    
-    </div>
-  ) : (
-    <p>Please select a Room from the dropdown.</p>
-  )}
-</div>
+        <Box >
+          {viewselectedSemester ? (
+            <Box>
+              <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+                Last saved on: {savedTime ? savedTime : "Not saved yet"}
+              </Text>
+              <ViewTimetable timetableData={viewData} />
+              <TimetableSummary
+                timetableData={viewData}
+                type={"sem"}
+                code={currentCode}
+              />
+            </Box>
+          ) : (
+            <Text>Please select a Semester from the dropdown.</Text>
+          )}
+        </Box>
+      </Box>
+      <Box>
+        <Box>
+          <Heading as="h1" size="xl" mt="6" mb="6">View Faculty Timetable</Heading>
+          <Box display='flex' mb='2.5'>
+            <Text fontWeight='bold'>Select Faculty:</Text>
+            <Select
+              value={viewFaculty}
+              onChange={(e) => setViewFaculty(e.target.value)}
+            >
+              <option value="">Select </option>
+              {availableFaculties.map((faculty, index) => (
+                <option key={index} value={faculty}>
+                  {faculty}
+                </option>
+              ))}
+            </Select>
+          </Box>
+        </Box>
 
-</Container>
-    
+        <Box>
+          {viewFaculty ? (
+            <Box>
+              <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+                Last saved on:{" "}
+                {facultyUpdateTime ? facultyUpdateTime : "Not saved yet"}
+              </Text>
+              <ViewTimetable timetableData={viewFacultyData} />
+              <TimetableSummary
+                timetableData={viewFacultyData}
+                type={"faculty"}
+                code={currentCode}
+              />
+            </Box>
+          ) : (
+            <Text>Please select a faculty from the dropdown.</Text>
+          )}
+        </Box>
+      </Box>
+
+      <Box>
+        <Heading as="h1" size="xl" mt="6" mb="6">View Room Timetable</Heading>
+        <Box display='flex' mb='2.5'>
+          <Text fontWeight='bold'>Select Room:</Text>
+          <Select value={viewRoom} onChange={(e) => setViewRoom(e.target.value)}>
+            <option value="">Select </option>
+            {availableRooms.map((room, index) => (
+              <option key={index} value={room}>
+                {room}
+              </option>
+            ))}
+          </Select>
+        </Box>
+      </Box>
+
+      <Box mb='8'>
+        {viewRoom ? (
+          <Box>
+            <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+              Last saved on: {roomUpdateTime ? roomUpdateTime : "Not saved yet"}
+            </Text>
+
+            <ViewTimetable timetableData={viewRoomData} />
+            {/* <TimetableSummary timetableData={viewRoomData} type={'room'} code={currentCode}/>  */}
+          </Box>
+        ) : (
+          <Text>Please select a Room from the dropdown.</Text>
+        )}
+      </Box>
+    </Container>
   );
-  
 };
 
 export default Timetable;
