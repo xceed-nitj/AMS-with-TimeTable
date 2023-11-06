@@ -95,14 +95,14 @@ const [headTitle, setHeadTitle] = useState('');
         }
       };
   
-      const fetchFaculty = async (currentCode) => {
+      const fetchFaculty = async () => {
         try {
           const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`,{credentials: 'include',});
           if (response.ok) {
             const data = await response.json();
             // console.log('faculty response',data);
             setAvailableFaculties(data);
-            // console.log('faculties', availableFaculties);
+            console.log('faculties', availableFaculties);
           }
            
         } catch (error) {
@@ -166,16 +166,19 @@ const [headTitle, setHeadTitle] = useState('');
       const data1 = await response.json();
       const data=data1.timetableData;
       setFacultyUpdateTime(data1.updatedTime);
-      const initialData = generateInitialTimetableData(data,'faculty');
+      
+      const initialData =  generateInitialTimetableData(data,'faculty');
       return initialData;
     } catch (error) {
       console.error('Error fetching existing timetable data:', error);
       return {};
     }
   };
-  const fetchFacultyData = async (faculty) => {
+  const fetchFacultyData = async (currentCode, faculty) => {
     const data = await facultyData(currentCode, faculty);
-    setViewFacultyData(data);
+    // setTimetableData(data);
+return data;
+
   };
 
 // fetching room data
@@ -263,7 +266,7 @@ const roomData = async (currentCode, room) => {
         }
       }
     }
-    // console.log(initialData);
+    // console.log('intial',initialData);
     return initialData;
   };
 
@@ -434,7 +437,8 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   
       for (const faculty of availableFaculties) {
         console.log(faculty);        
-        const fetchedttdata = await fetchFacultyData(faculty);
+        const fetchedttdata = await fetchFacultyData( currentCode, faculty);
+        console.log('dataaaa faculty',fetchedttdata);        
         
         const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty'); 
         // console.log(summaryData)
@@ -450,6 +454,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           TTData:fetchedttdetails,
           headTitle: faculty,
         };
+        console.log(postData);
         setDownloadStatus("preparingDownload")
         downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty);
         setDownloadStatus("downloadStarted")
@@ -470,9 +475,9 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         });
     
         if (postResponse.ok) {
-          console.log(`Timetable data for semester ${semester} stored successfully.`);
+          console.log(`Timetable data for faculty ${faculty} stored successfully.`);
         } else {
-          console.error(`Error storing timetable data for semester ${semester}.`);
+          console.error(`Error storing timetable data for faculty ${faculty}.`);
         }
       }
     };
@@ -489,7 +494,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
     fetchAndStoreTimetableDataForAllSemesters();
       };
 
-      const handleDownloadAllFaculty = () => {
+  const handleDownloadAllFaculty = () => {
         fetchAndStoreTimetableDataForAllFaculty();
           };
     

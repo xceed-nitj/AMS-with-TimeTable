@@ -260,11 +260,20 @@ function LockedSummary() {
     return initialData;
   };
 
+// const navigate = useNavigate();
+  
+const handleDownloadClick = () => {
+  const pathArray = window.location.pathname.split('/').filter(part => part !== '');
+  const pathExceptLastPart = `/${pathArray.slice(0, -1).join('/')}`;
+  const pdfUrl = `${pathExceptLastPart}/generatepdf`;
+  window.location.href = pdfUrl;
+};
+
 
   return (
     <div>
-      <h1>Locked TimeTable Summary</h1>
-
+      <Heading>Locked TimeTable Summary</Heading>
+      <Button onClick={handleDownloadClick}>Download Timetable</Button>
       <h2>Semester timetable (locked)</h2>
       <select
         value={selectedSemester}
