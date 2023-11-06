@@ -35,6 +35,19 @@ mastersemRouter.get("/id/:id", async (req, res) => {
   }
 });
 
+mastersemRouter.get("/dept/:dept", async (req, res) => {
+  try {
+    const department = req.params.dept;
+    const resp = await mastersemController.getSemesterByDepartment(department);
+    res.status(200).json(resp);
+  } catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+
 mastersemRouter.put('/:id', async (req, res) => {
   try {
     const semesterId = req.params.id;
