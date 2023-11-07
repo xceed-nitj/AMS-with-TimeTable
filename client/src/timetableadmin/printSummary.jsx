@@ -54,7 +54,10 @@ const [headTitle, setHeadTitle] = useState('');
   const currentCode = parts[parts.length - 2];
   const apiUrl=getEnvironment();
 
+  const[downloadType, setDownloadType]=useState('')
+
   const [downloadStatus, setDownloadStatus]=useState('')
+  const [initiateStatus, setInitiateStatus]=useState('')
   const [slotStatus, setSlotStatus]=useState('')
   const [summaryStatus, setSummaryStatus]=useState('')
   const [noteStatus, setNoteStatus]=useState('')
@@ -411,9 +414,9 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         TTData:fetchedttdetails,
         headTitle: semester,
       };
-      setDownloadStatus("preparingDownload")
+      setPrepareStatus("preparingDownload")
       downloadPDF(fetchedttdata,summaryData,'sem',fetchedttdetails,lockTime,semester);
-      setDownloadStatus("downloadStarted")
+      setStartStatus("downloadStarted")
       setTimetableData(fetchedttdata);
       setSummaryData(summaryData);
       setType(type);
@@ -436,6 +439,8 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         console.error(`Error storing timetable data for semester ${semester}.`);
       }
     }
+      setCompleteStatus("downloadCompleted")    
+
   };
 
   const fetchAndStoreTimetableDataForAllFaculty = async () => {
@@ -510,10 +515,28 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
 
 
   const handleDownloadAllSemesters = () => {
+    setSlotStatus(null);
+    setSummaryStatus(null);
+    setNoteStatus(null);
+    setHeaderStatus(null);
+    setPrepareStatus(null);
+    setStartStatus(null);
+    setCompleteStatus(null);
+    setDownloadType('sem')
+    setInitiateStatus('starting')
     fetchAndStoreTimetableDataForAllSemesters();
       };
 
   const handleDownloadAllFaculty = () => {
+    setSlotStatus(null);
+    setSummaryStatus(null);
+    setNoteStatus(null);
+    setHeaderStatus(null);
+    setPrepareStatus(null);
+    setStartStatus(null);
+    setCompleteStatus(null);
+    setDownloadType('faculty')
+    setInitiateStatus('starting')
         fetchAndStoreTimetableDataForAllFaculty();
       };
     
@@ -523,6 +546,9 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           return (
             <div>
               {/* Your other components and UI elements */}
+              <Container maxW='4xl'>
+
+              <Heading>XCEED Express Download </Heading>
               <Button
                 onClick={handleDownloadAllSemesters}
                 colorScheme="teal"
@@ -531,42 +557,63 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
                 Download All Semesters
               </Button>
           
+ {/* Render the messages again for the second button */}
               <div className="message">
                 {downloadStatus === 'fetchingSemesters' && (
                   <p>
-                    {availableSems ? `No of available sems: ${availableSems.length}` : 'No semesters available'}
+                    {availableFaculties ? `No of Semesters data available: ${availableSems.length}` : 'No semester available'}
                   </p>
                 )}
-                {downloadStatus === 'fetchingSlotData' && (
-                  <p className={downloadStatus === 'fetchingSlotData' ? 'bold-message' : ''}>
+                {downloadType ==='sem' && 
+                initiateStatus === 'starting' && (
+                  <p className={initiateStatus === 'starting' ? 'bold-message' : ''}>
+                    Initiating download. It may take while! Sit back and relax!
+                  </p>
+                )}
+
+                  {downloadType ==='sem' &&
+                slotStatus === 'fetchingSlotData' && (
+                  <p className={slotStatus === 'fetchingSlotData' ? 'bold-message' : ''}>
                     Fetching slot data...
                   </p>
                 )}
-                {downloadStatus === 'fetchingSummaryData' && (
-                  <p className={downloadStatus === 'fetchingSummaryData' ? 'bold-message' : ''}>
+
+                {downloadType ==='sem' &&
+                summaryStatus === 'fetchingSummaryData' && (
+                  <p className={summaryStatus === 'fetchingSummaryData' ? 'bold-message' : ''}>
                     Fetching summary data...
                   </p>
                 )}
-                {downloadStatus === 'fetchingNotes' && (
-                  <p className={downloadStatus === 'fetchingNotes' ? 'bold-message' : ''}>
+                {downloadType ==='sem' &&
+                noteStatus === 'fetchingNotes' && (
+                  <p className={noteStatus === 'fetchingNotes' ? 'bold-message' : ''}>
                     Fetching notes...
                   </p>
                 )}
-                {downloadStatus === 'fetchingHeadersFooters' && (
-                  <p className={downloadStatus === 'fetchingHeadersFooters' ? 'bold-message' : ''}>
+                {downloadType ==='sem' &&
+                headerStatus === 'fetchingHeadersFooters' && (
+                  <p className={headerStatus === 'fetchingHeadersFooters' ? 'bold-message' : ''}>
                     Fetching headers and footers...
                   </p>
                 )}
-                {downloadStatus === 'preparingDownload' && (
-                  <p className={downloadStatus === 'preparingDownload' ? 'bold-message' : ''}>
+                {downloadType ==='sem' &&
+                prepareStatus === 'preparingDownload' && (
+                  <p className={prepareStatus === 'preparingDownload' ? 'bold-message' : ''}>
                     Preparing download...
                   </p>
                 )}
-                {downloadStatus === 'downloadStarted' && (
-                  <p className={downloadStatus === 'downloadStarted' ? 'bold-message' : ''}>
+                {downloadType ==='sem' &&
+                startStatus === 'downloadStarted' && (
+                  <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
                     Download in progress. Check downloads folder
                   </p>
                 )}
+                {downloadType ==='sem' &&
+                 completeStatus === 'downloadCompleted' && (
+  <p style={{ fontWeight: 'bold', color: 'green' }}>
+    Download Completed.
+  </p>
+)}
               </div>
           
               <Button
@@ -584,44 +631,64 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
                     {availableFaculties ? `No of Faculty: ${availableFaculties.length}` : 'No faculty available'}
                   </p>
                 )}
-                {slotStatus === 'fetchingSlotData' && (
+                {downloadType ==='faculty' && 
+                initiateStatus === 'starting' && (
+                  <p className={initiateStatus === 'starting' ? 'bold-message' : ''}>
+                    Initiating download. It may take while! Sit back and relax!
+                  </p>
+                )}
+
+                  {downloadType ==='faculty' &&
+                slotStatus === 'fetchingSlotData' && (
                   <p className={slotStatus === 'fetchingSlotData' ? 'bold-message' : ''}>
                     Fetching slot data...
                   </p>
                 )}
-                {summaryStatus === 'fetchingSummaryData' && (
+
+                {downloadType ==='faculty' &&
+                summaryStatus === 'fetchingSummaryData' && (
                   <p className={summaryStatus === 'fetchingSummaryData' ? 'bold-message' : ''}>
                     Fetching summary data...
                   </p>
                 )}
-                {noteStatus === 'fetchingNotes' && (
+                {downloadType ==='faculty' &&
+                noteStatus === 'fetchingNotes' && (
                   <p className={noteStatus === 'fetchingNotes' ? 'bold-message' : ''}>
                     Fetching notes...
                   </p>
                 )}
-                {headerStatus === 'fetchingHeadersFooters' && (
+                {downloadType ==='faculty' &&
+                headerStatus === 'fetchingHeadersFooters' && (
                   <p className={headerStatus === 'fetchingHeadersFooters' ? 'bold-message' : ''}>
                     Fetching headers and footers...
                   </p>
                 )}
-                {prepareStatus === 'preparingDownload' && (
+                {downloadType ==='faculty' &&
+                prepareStatus === 'preparingDownload' && (
                   <p className={prepareStatus === 'preparingDownload' ? 'bold-message' : ''}>
                     Preparing download...
                   </p>
                 )}
-                {startStatus === 'downloadStarted' && (
+                {downloadType ==='faculty' &&
+                startStatus === 'downloadStarted' && (
                   <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
                     Download in progress. Check downloads folder
                   </p>
                 )}
-                 {completeStatus === 'downloadCompleted' && (
+                {downloadType ==='faculty' &&
+                 completeStatus === 'downloadCompleted' && (
   <p style={{ fontWeight: 'bold', color: 'green' }}>
     Download Completed.
   </p>
 )}
 
+                 
+                 
               </div>
+              </Container>
+            
             </div>
+            
           );
           
   
