@@ -24,7 +24,7 @@ import { Button } from "@chakra-ui/button";
 
 // import PDFViewTimetable from '../filedownload/chakrapdf'
 
-function LockedSummary() {
+function LoadDistribution() {
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
@@ -49,27 +49,7 @@ function LockedSummary() {
 
 
   const semesters=availableSems;
-  useEffect(() => {
-    const fetchData = async (semester) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`,{credentials: 'include',});
-        const data = await response.json();
-        // console.log(data);
-        const initialData = generateInitialTimetableData(data,'sem');
-        return initialData;
-      } catch (error) {
-        console.error('Error fetching existing timetable data:', error);
-        return {};
-      }
-    };
- 
-    const fetchViewData = async (semester) => {
-      const data = await fetchData(semester);
-      setViewData(data);
-    };
-    fetchViewData(selectedSemester);
-  }, [selectedSemester]);
-
+  
   useEffect(() => {
     const facultyData = async (currentCode, faculty) => {
       try {
@@ -95,65 +75,10 @@ function LockedSummary() {
     fetchFacultyData(selectedFaculty);
   }, [selectedFaculty]);
 
-  useEffect(() => {
-    const roomData = async (currentCode, room) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room }`,{credentials: 'include',});
-        const data1 = await response.json();
-        const data=data1.timetableData;
-        setRoomLockedTime(data1.updatedTime);
-        const initialData = generateInitialTimetableData(data,'room');
-        return initialData;
-      } catch (error) {
-        console.error('Error fetching existing timetable data:', error);
-        return {};
-      }
-    };
-
-    const fetchRoomData = async (room) => {
-      const data = await roomData(currentCode, room);
-      setViewRoomData(data);
-    };
-
-    fetchRoomData(selectedRoom);
-  }, [selectedRoom]);
-
-
+  
   useEffect(() => {
         
-    const fetchSem = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`,{credentials: 'include',});
-        if (response.ok) {
-          const data = await response.json();
-          // console.log('filtered data',data)
-          const filteredSems = data.filter((sem) => sem.code === currentCode);
-          const semValues = filteredSems.map((sem) => sem.sem);
-
-          setAvailableSems(semValues);
-          // console.log('available semesters',availableSems)
-        }
-      } catch (error) {
-        console.error('Error fetching subject data:', error);
-      }
-    };
-
-    const fetchRoom = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/addroom?code=${currentCode}`,{credentials: 'include',});
-        if (response.ok) {
-          const data = await response.json();
-          const filteredSems = data.filter((room) => room.code === currentCode);
-          const semValues = filteredSems.map((room) => room.room);
-
-          setAvailableRooms(semValues);
-          // console.log('available rooms',availableRooms)
-        }
-      } catch (error) {
-        console.error('Error fetching subject data:', error);
-      }
-    };
-
+  
     const fetchFaculty = async (currentCode) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`,{credentials: 'include',});
@@ -182,8 +107,6 @@ function LockedSummary() {
         }
     };
 
-    fetchSem();
-    fetchRoom();
     fetchTime();
     fetchFaculty(currentCode); // Call the function to fetch subject data
   }, [apiUrl,currentCode,selectedSemester, selectedFaculty,selectedRoom]);
@@ -256,19 +179,41 @@ function LockedSummary() {
   };
 
 // const navigate = useNavigate();
-  
-const handleDownloadClick = () => {
-  const pathArray = window.location.pathname.split('/').filter(part => part !== '');
-  const pathExceptLastPart = `/${pathArray.slice(0, -1).join('/')}`;
-  const pdfUrl = `${pathExceptLastPart}/generatepdf`;
-  window.location.href = pdfUrl;
-};
 
+function calculateOccupiedSlots(schedule) {
+    const subjectSlots = {};
+    let totalHours = 0;
+    let facultyTotalHours = 0; // New variable to track faculty's total hours
+  
+    for (const day in schedule) {
+      const dayData = schedule[day];
+  
+      for (const period in dayData) {
+        const subjects = dayData[period];
+  
+        subjects.forEach((subject) => {
+          if (!subjectSlots[subject]) {
+            subjectSlots[subject] = 0;
+          }
+  
+          subjectSlots[subject]++;
+          totalHours++;
+          facultyTotalHours++; // Increment faculty's total hours for each subject
+        });
+      }
+    }
+  
+    return { subjectSlots, totalHours, facultyTotalHours };
+  }  // Example usage with a faculty schedule  
+
+
+const hoursCalculation = calculateOccupiedSlots(viewFacultyData)
+console.log(hoursCalculation)
 
   return (
     <div>
-      <Heading>Locked TimeTable Summary</Heading>
-      <Button onClick={handleDownloadClick}>Download Timetable</Button>
+      <Heading>Load distribution Summary</Heading>
+      {/* <Button onClick={handleDownloadClick}>Download Timetable</Button> */}
       <h2>Semester timetable (locked)</h2>
       <select
         value={selectedSemester}
@@ -361,4 +306,4 @@ const handleDownloadClick = () => {
   );
 }
 
-export default LockedSummary;
+export default LoadDistribution;
