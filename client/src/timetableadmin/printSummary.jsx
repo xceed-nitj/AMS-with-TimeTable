@@ -175,20 +175,21 @@ const [headTitle, setHeadTitle] = useState('');
       const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`,{credentials: 'include'});
       const data1 = await response.json();
       const data=data1.timetableData;
-      setFacultyUpdateTime(data1.updatedTime);
-      
+      console.log('updated time for faculty', data1.updatedTime)
+      const updateTime=data1.updatedTime;
+      console.log('faclty time', facultyUpdateTime)
       const initialData =  generateInitialTimetableData(data,'faculty');
-      return initialData;
+      return {initialData,updateTime};
     } catch (error) {
       console.error('Error fetching existing timetable data:', error);
       return {};
     }
   };
   const fetchFacultyData = async (currentCode, faculty) => {
-    const data = await facultyData(currentCode, faculty);
+    const {initialData,updateTime} = await facultyData(currentCode, faculty);
     // setTimetableData(data);
     setSlotStatus('fetchingSlotData')
-return data;
+    return {initialData,updateTime};
 
   };
 
@@ -453,12 +454,13 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   
       for (const faculty of availableFaculties) {
         console.log(faculty);        
-        const fetchedttdata = await fetchFacultyData( currentCode, faculty);
-        console.log('dataaaa faculty',fetchedttdata);        
+        const {initialData,updateTime} = await fetchFacultyData( currentCode, faculty);
+        const fetchedttdata= initialData;
+        // console.log('dataaaa faculty',fetchedttdata);        
         
         const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty'); 
         // console.log(summaryData)
-        const lockTime= facultyUpdateTime;
+        const lockTime= updateTime;
         setHeaderStatus("fetchingHeadersFooters")
         const postData = {
           session: fetchedttdetails[0].session,
