@@ -394,7 +394,13 @@ function LockedSummary() {
             <ViewTimetable timetableData={viewRoomData} />
             {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/>  */}
 
-            {/* <TimetableSummary timetableData={viewRoomData} type={'room'} />  */}
+            <TimetableSummary 
+            timetableData={viewRoomData} 
+            type={'room'}
+            code={currentCode}
+            time={roomlockedTime}
+            headTitle={selectedRoom}
+/> 
           </Box>
         ) : (
           <Text>Please select a Room from the dropdown.</Text>
