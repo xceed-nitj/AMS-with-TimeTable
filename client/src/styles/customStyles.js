@@ -57,7 +57,7 @@ export const CustomPlusButton = chakra("button", {
   export const CustomDeleteButton = chakra("button", {
     baseStyle: {
       color: "white", // Text color
-      bg: "red", // Brighter background color (you can adjust the shade)
+      bg: "red.600", // Brighter background color (you can adjust the shade)
       paddingX: 6, // Horizontal padding
       paddingY: 2, // Vertical padding
       borderRadius: "md", // Add some border radius for rounded corners
