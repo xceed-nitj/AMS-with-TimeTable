@@ -8,9 +8,12 @@
     width:100% !important
   }
   .logoContainer {
-    text-align: center; /* Center the content horizontally */
-    padding: 20px; /* Add padding as needed */
-  }
+    display: flex;
+    justify-content: center; /* Horizontally center content */
+    align-items: center; /* Vertically center content */
+    padding: 20px;
+}
+
   
   .appAside {
     width: 100%;

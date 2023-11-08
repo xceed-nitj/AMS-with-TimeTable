@@ -530,7 +530,7 @@ const Timetable = () => {
   return (
     <Container maxW="8xl">
       <Heading as="h1" size="xl" mt="6" mb="6">
-        GENERATE TIME TABLE
+        TIME TABLE ALLOTMENT
       </Heading>
       <Box display="flex" mt="3" mb="5">
         <Button m="1 auto" colorScheme="teal" onClick={handleAddSem}>

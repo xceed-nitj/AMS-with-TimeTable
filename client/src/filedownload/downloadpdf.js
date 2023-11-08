@@ -13,7 +13,7 @@ function downloadPDF(timetableData, summaryData, type, ttdata, updatedTime, head
 console.log('type',type)
 console.log('ttdataaaa',ttdata)
 console.log('passed time',updatedTime)
-console.log('passed time',headTitle)
+console.log('title',headTitle)
 
 const session = ttdata[0].session;
   const dept = ttdata[0].dept;
@@ -27,6 +27,9 @@ const session = ttdata[0].session;
     subheading = 'Degree & Sem:';
   } else if (type =='faculty') {
     subheading = 'Faculty Name: Dr.';
+  }
+  else if (type =='room') {
+    subheading = 'Room: ';
   }
   const subheading1=subheading;
 // console.log(subheading)
@@ -90,9 +93,9 @@ const session = ttdata[0].session;
     { text: 'Hours', bold: true, alignment: 'center', fontSize: 10 },
   ];
 
-  if (type !== 'room') {
+  // if (type !== 'room') {
     summaryTableHeader.push({ text: 'Subject Type', bold: true, fontSize: 10 });
-  }
+  // }
 
   if (type !== 'faculty') {
     summaryTableHeader.push({ text: 'Faculty Name', bold: true, fontSize: 10 });

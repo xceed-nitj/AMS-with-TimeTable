@@ -150,7 +150,7 @@ function AddSemComponent() {
   //   }, 1500)
 
   // }, [successMessage])
-
+  
   return (
     <Container maxW='4xl'>
       <Heading as="h1" size="xl" mt='6' mb='6'>

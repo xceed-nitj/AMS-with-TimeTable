@@ -98,7 +98,7 @@ const [headTitle, setHeadTitle] = useState('');
             const semValues = filteredSems.map((room) => room.room);
   
             setAvailableRooms(semValues);
-            // console.log('available rooms',availableRooms)
+            console.log('available rooms',availableRooms)
           }
         } catch (error) {
           console.error('Error fetching subject data:', error);
@@ -175,9 +175,9 @@ const [headTitle, setHeadTitle] = useState('');
       const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty }`,{credentials: 'include'});
       const data1 = await response.json();
       const data=data1.timetableData;
-      console.log('updated time for faculty', data1.updatedTime)
+      // console.log('updated time for faculty', data1.updatedTime)
       const updateTime=data1.updatedTime;
-      console.log('faclty time', facultyUpdateTime)
+      // console.log('faclty time', facultyUpdateTime)
       const initialData =  generateInitialTimetableData(data,'faculty');
       return {initialData,updateTime};
     } catch (error) {
@@ -200,9 +200,11 @@ const roomData = async (currentCode, room) => {
       const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room }`,{credentials: 'include'});
       const data1 = await response.json();
       const data=data1.timetableData;
-      setRoomUpdateTime(data1.updatedTime);
+      // setRoomUpdateTime(data1.updatedTime);
+      const updateTime=data1.updatedTime;
+
       const initialData = generateInitialTimetableData(data,'room');
-      return initialData;
+      return {initialData,updateTime};
     } catch (error) {
       console.error('Error fetching existing timetable data:', error);
       return {};
@@ -210,9 +212,10 @@ const roomData = async (currentCode, room) => {
  
   };
 
-  const fetchRoomData = async (room) => {
-    const data = await roomData(currentCode, room);
-    setViewRoomData(data);
+  const fetchRoomData = async (currentCode, room) => {
+    const  {initialData,updateTime} = await roomData(currentCode, room);
+    // setViewRoomData(initialData);
+    return {initialData,updateTime};
   };
 
 
@@ -508,7 +511,69 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
 
     };
     
+    const fetchAndStoreTimetableDataForAllRoom = async () => {
+      const subjectData = await  fetchSubjectData(currentCode);
+        setDownloadStatus("fetchingHeadersFooters")
+        
+    
+        const fetchedttdetails=await fetchTTData(currentCode);
+    
+    
+        for (const room of availableRooms) {
+          console.log('room', room);        
+          const {initialData,updateTime} = await fetchRoomData( currentCode, room);
+          const fetchedttdata= initialData;
+          console.log('dataaaa room',fetchedttdata);        
+          
+          const summaryData = generateSummary(fetchedttdata, subjectData, 'room'); 
+          console.log('room summary dara',summaryData)
+          const lockTime= updateTime;
+          setHeaderStatus("fetchingHeadersFooters")
+          const postData = {
+            session: fetchedttdetails[0].session,
+            name: room,
+            type: 'room',
+            timeTableData: fetchedttdata,
+            summaryData: summaryData,
+            updatedTime: lockTime,
+            TTData:fetchedttdetails,
+            headTitle: room,
+          };
+          console.log('posttt',postData);
+          setNoteStatus("fetchingNotes")
   
+          setDownloadStatus("preparingDownload")
+          setPrepareStatus("preparingDownload")
+  
+          downloadPDF(fetchedttdata,summaryData,'room',fetchedttdetails,lockTime,room);
+          setDownloadStatus("downloadStarted")
+          setStartStatus("downloadStarted")
+  
+          setTimetableData(fetchedttdata);
+          setSummaryData(summaryData);
+          setType(type);
+          setUpdatedTime(lockTime);
+          setHeadTitle(room);
+    
+          // Make a POST request to store the data in your schema
+          const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(postData),
+            credentials: 'include'
+          });
+      
+          if (postResponse.ok) {
+            console.log(`Timetable data for room ${room} stored successfully.`);
+          } else {
+            console.error(`Error storing timetable data for room ${rooom}.`);
+          }
+        }
+        setCompleteStatus("downloadCompleted")    
+  
+      };
 
 
 
@@ -543,7 +608,20 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
       };
     
 
-
+      const handleDownloadAllRoom = () => {
+        setSlotStatus(null);
+        setSummaryStatus(null);
+        setNoteStatus(null);
+        setHeaderStatus(null);
+        setPrepareStatus(null);
+        setStartStatus(null);
+        setCompleteStatus(null);
+        setDownloadType('room')
+        setInitiateStatus('starting')
+            fetchAndStoreTimetableDataForAllRoom();
+          };
+        
+    
 
           return (
             <div>
@@ -687,6 +765,75 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
                  
                  
               </div>
+  
+              <Button
+                onClick={handleDownloadAllRoom}
+                colorScheme="teal"
+                variant="solid"
+              >
+                Download All Room Time Table
+              </Button>
+          
+              {/* Render the messages again for the second button */}
+              <div className="message">
+                {downloadStatus === 'fetchingSemesters' && (
+                  <p>
+                    {availableFaculties ? `No of Rooms: ${availableRooms.length}` : 'No Room available'}
+                  </p>
+                )}
+                {downloadType ==='room' && 
+                initiateStatus === 'starting' && (
+                  <p className={initiateStatus === 'starting' ? 'bold-message' : ''}>
+                    Initiating download. It may take while! Sit back and relax!
+                  </p>
+                )}
+
+                  {downloadType ==='room' &&
+                slotStatus === 'fetchingSlotData' && (
+                  <p className={slotStatus === 'fetchingSlotData' ? 'bold-message' : ''}>
+                    Fetching slot data...
+                  </p>
+                )}
+
+                {downloadType ==='room' &&
+                summaryStatus === 'fetchingSummaryData' && (
+                  <p className={summaryStatus === 'fetchingSummaryData' ? 'bold-message' : ''}>
+                    Fetching summary data...
+                  </p>
+                )}
+                {downloadType ==='room' &&
+                noteStatus === 'fetchingNotes' && (
+                  <p className={noteStatus === 'fetchingNotes' ? 'bold-message' : ''}>
+                    Fetching notes...
+                  </p>
+                )}
+                {downloadType ==='room' &&
+                headerStatus === 'fetchingHeadersFooters' && (
+                  <p className={headerStatus === 'fetchingHeadersFooters' ? 'bold-message' : ''}>
+                    Fetching headers and footers...
+                  </p>
+                )}
+                {downloadType ==='room' &&
+                prepareStatus === 'preparingDownload' && (
+                  <p className={prepareStatus === 'preparingDownload' ? 'bold-message' : ''}>
+                    Preparing download...
+                  </p>
+                )}
+                {downloadType ==='room' &&
+                startStatus === 'downloadStarted' && (
+                  <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
+                    Download in progress. Check downloads folder
+                  </p>
+                )}
+                {downloadType ==='room' &&
+                 completeStatus === 'downloadCompleted' && (
+  <p style={{ fontWeight: 'bold', color: 'green' }}>
+    Download Completed.
+  </p>
+)}
+
+</div>
+  
               </Container>
             
             </div>
