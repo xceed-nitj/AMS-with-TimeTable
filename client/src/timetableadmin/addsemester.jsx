@@ -114,6 +114,7 @@ function AddSemComponent() {
 
         // setSuccessMessage('Semester added successfully!');
         toast({
+          position: 'top',
           title: 'Semester added',
           description: "Semester added successfully!",
           status: 'success',

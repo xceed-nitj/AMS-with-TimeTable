@@ -105,6 +105,7 @@ function AddRoomComponent() {
         // console.log('Data saved successfully:', data);
         // setSuccessMessage('Room added successfully!');
         toast({
+          position: 'top',
           title: "Room Added",
           // description: "",
           status: "success",

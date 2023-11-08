@@ -142,6 +142,7 @@ function Component() {
       .then(handleResponse)
       .then((data) => {
         toast({
+          position: 'top',
           title: "Faculty Added",
           description: "We've created your account for you.",
           status: "success",
