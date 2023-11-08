@@ -203,7 +203,7 @@ function AddSemComponent() {
                         fontWeight='medium'
                       >{sem.sem}</Text></Center></Td>
                     <Td><Center>
-                      <Button bg='teal' color='white' onClick={() => handleDelete(sem._id)}>Delete</Button>
+                      <Button bg='red.500' color='white' onClick={() => handleDelete(sem._id)}>Delete</Button>
                     </Center></Td>
                   </Tr>
                 ))}
