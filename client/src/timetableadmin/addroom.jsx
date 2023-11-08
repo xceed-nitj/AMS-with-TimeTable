@@ -171,25 +171,20 @@ function AddRoomComponent() {
             </option>
           ))}
         </Select>
+        <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleSubmit}>
+          Add Room
+        </Button>
       </Box>
-        <Box display='flex' mt='2' justifyContent='space-between'>
-          <Box display='flex' justifyContent='left'>
-            <Button bg="teal" color="white" ml="0" onClick={handleSubmit}>
-              Add Room
-            </Button>
-          </Box>
-          <Box display='flex' justifyContent='right'>
-            <Link to="/tt/viewmrooms">
-              <Button ml="0" mr=''>View Master Rooms</Button>
-            </Link>
-            <Box>
-              <FileDownloadButton
-                fileUrl="/room_template.xlsx"
-                fileName="Room_template.xlsx"
-              />
-            </Box>
-          </Box>
-        </Box>
+      <Link to="/tt/viewmrooms">
+        <Button ml="0">View Master Rooms</Button>
+      </Link>
+
+      <Box ml="-1">
+        <FileDownloadButton
+          fileUrl="/room_template.xlsx"
+          fileName="Room_template.xlsx"
+        />
+      </Box>
       <TableContainer>
         <Box>
           <Text as="b">Room Data</Text>
@@ -210,11 +205,11 @@ function AddRoomComponent() {
                   <Td>
                     <Center>{room.room} </Center>
                   </Td>
-                  <Td>i
+                  <Td>
                     <Center>
                       <Button
                         isLoading = {isLoading.state && isLoading.id == room._id}
-                        bg="red.500"
+                        bg="teal"
                         color="white"
                         onClick={() => handleDelete(room._id)}
                       >
