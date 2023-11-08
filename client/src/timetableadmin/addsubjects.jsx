@@ -16,6 +16,7 @@ import {
   CustomBlueButton,
   CustomDeleteButton,
 } from "../styles/customStyles";
+
 import {
   Table,
   TableContainer,
@@ -82,6 +83,7 @@ function Subject() {
             throw new Error(
               `Error: ${response.status} - ${response.statusText}`
             );
+
           }
           return response.json();
         })
@@ -93,6 +95,7 @@ function Subject() {
           console.error("Error:", error);
         });
     } else {
+
       setTableData([]);
     }
   };
@@ -108,6 +111,7 @@ function Subject() {
       fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`, {
         credentials: "include",
       }) // Replace with the actual endpoint
+
         .then((response) => {
           if (!response.ok) {
             throw new Error(
@@ -211,7 +215,6 @@ function Subject() {
       alert("Please select a CSV file before uploading.");
     }
   };
-
   useEffect(() => {
     fetchData();
     if (uploadState) {
@@ -240,12 +243,14 @@ function Subject() {
         updatedData[rowIndex] = editedData;
 
         fetch(`${apiUrl}/timetablemodule/subject/${editRowId}`, {
+
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(editedData),
           credentials: "include",
+
         })
           .then((response) => {
             if (!response.ok) {
@@ -256,11 +261,14 @@ function Subject() {
             return response.json();
           })
           .then((data) => {
+
             console.log("Update Success:", data);
+
             setTableData(updatedData);
             setEditRowId(null);
             setEditedData({
               _id: null, // Clear the edited data
+
               subjectFullName: "",
               type: "",
               subCode: "",
@@ -274,6 +282,7 @@ function Subject() {
           })
           .catch((error) => {
             console.error("Update Error:", error);
+
           });
       }
     }
@@ -282,8 +291,10 @@ function Subject() {
   const handleDelete = (_id) => {
     // Send a DELETE request to remove the selected row
     fetch(`${apiUrl}/timetablemodule/subject/${_id}`, {
+
       method: "DELETE",
       credentials: "include",
+
     })
       .then((response) => {
         if (!response.ok) {
@@ -292,13 +303,17 @@ function Subject() {
         return response.json();
       })
       .then((data) => {
+
         console.log("Delete Success:", data);
+
         // Remove the deleted row from the tableData
         const updatedData = tableData.filter((row) => row._id !== _id);
         setTableData(updatedData);
       })
       .catch((error) => {
+
         console.error("Delete Error:", error);
+
       });
   };
 
@@ -308,6 +323,7 @@ function Subject() {
 
   const handleAddSubject = () => {
     setEditedSData({
+
       subjectFullName: "",
       type: "",
       subCode: "",
@@ -317,12 +333,14 @@ function Subject() {
       dept: "",
       credits: "",
       code: currentCode,
+
     });
     setIsAddSubjectFormVisible(true);
   };
 
   const handleSaveNewSubject = () => {
     // Check for duplicate entry by subjectName
+
     const isDuplicateEntry = tableData.some(
       (row) => row.subjectFullName === editedSData.subjectFullName
     );
@@ -345,10 +363,12 @@ function Subject() {
             throw new Error(
               `Error: ${response.status} - ${response.statusText}`
             );
+
           }
           return response.json();
         })
         .then((data) => {
+
           console.log("Data saved successfully:", data);
           fetchData();
           handleCancelAddSubject();
@@ -359,6 +379,7 @@ function Subject() {
         });
     }
   };
+
 
   const handleDeleteAll = () => {
     if (currentCode) {
@@ -390,6 +411,7 @@ function Subject() {
     }
   };
   return (
+
     <Container maxW="7xl">
       <Heading as="h1" size="xl" mt="6" mb="6">
         Add Subject
@@ -397,12 +419,14 @@ function Subject() {
       {/* <p fontWeight='Bold'>Batch Upload:</p> */}
       Batch Upload:
       <Box mb="2" mt="2" display="flex">
+
         <Input
           type="file"
           accept=".xlsx"
           onChange={handleFileChange}
           name="XlsxFile"
         />
+
 
         <CustomBlueButton
           mt="-1"
@@ -444,6 +468,7 @@ function Subject() {
               <Input
                 border="1px"
                 borderColor="gray.300"
+
                 type="text"
                 placeholder="Subject"
                 value={editedSData.subjectFullName}
@@ -500,6 +525,7 @@ function Subject() {
                   setEditedSData({ ...editedSData, subName: e.target.value })
                 }
               />
+
             </Box>
 
             <Box display="flex" content="left">
@@ -510,6 +536,7 @@ function Subject() {
                 onChange={(e) =>
                   setEditedSData({ ...editedSData, sem: e.target.value })
                 }
+
               >
                 <option value="">Select Semester</option>
                 {semesters.map((semester) => (
@@ -518,6 +545,7 @@ function Subject() {
                   </option>
                 ))}
               </select>
+
             </Box>
 
             <Box display="flex" content="left">
@@ -526,6 +554,7 @@ function Subject() {
                 border="1px"
                 borderColor="gray.300"
                 mb="4"
+
                 type="text"
                 placeholder="Degree"
                 value={editedSData.degree}
@@ -563,6 +592,7 @@ function Subject() {
                   setEditedSData({ ...editedSData, credits: e.target.value })
                 }
               />
+
             </Box>
 
             <Box>
@@ -578,18 +608,22 @@ function Subject() {
           <CustomBlueButton ml="0" onClick={handleAddSubject}>
             Add Subject
           </CustomBlueButton>
+
         )}
       </Box>
       {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
       <CustomDeleteButton ml="0" onClick={handleDeleteAll}>
         Delete All
       </CustomDeleteButton>
+
       {/* Display the fetched data */}
       <h2>Table of Subject Data</h2>
       {isLoading ? ( // Check if data is loading
         <p>Loading data...</p>
       ) : (
+
         <Table>
+
           <thead>
             <tr>
               <th>Subject Name</th>
@@ -606,6 +640,7 @@ function Subject() {
           <tbody>
             {tableData.map((row) => (
               <tr key={row._id}>
+
                 <td>
                   {editRowId === row._id ? (
                     <Input
@@ -738,14 +773,17 @@ function Subject() {
                       <CustomBlueButton onClick={() => handleDelete(row._id)}>
                         Delete
                       </CustomBlueButton>
+
                     </>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
+
         </Table>
       )}
+
     </Container>
   );
 }
