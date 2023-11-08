@@ -13,7 +13,7 @@ import {
   Text,
   chakra,
 } from "@chakra-ui/react";
-import { CustomTh, CustomLink, CustomBlueButton } from "../styles/customStyles";
+import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
 import {
   Table,
   TableContainer,
@@ -296,18 +296,17 @@ function Component() {
                     </Td>
                     <Td>
                       <Center>
-                        <Button
+                        <CustomDeleteButton
                           isLoading={
                             isLoading.state && isLoading.id == faculty._id
                           }
-                          bg="teal"
-                          color="white"
+                         
                           onClick={() =>
                             handleDelete(faculty._id, individualFaculty)
                           }
                         >
                           Delete
-                        </Button>
+                        </CustomDeleteButton>
                       </Center>
                     </Td>
                   </Tr>

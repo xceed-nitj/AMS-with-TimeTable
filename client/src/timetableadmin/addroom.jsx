@@ -172,7 +172,8 @@ function AddRoomComponent() {
           ))}
         </Select>
       </Box >
-        <Box display='flex' mt='2' justifyContent='space-between'>
+        <Box display='flex' mt='2' justifyContent='space-between'
+        >
           <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleSubmit}>
             Add Room
           </Button>
