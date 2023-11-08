@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 // import subjectFile from '../assets/subject_template';
-import { Heading, Input } from '@chakra-ui/react';
+import { Box, Container, Heading, Input } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
@@ -352,41 +352,43 @@ function Subject() {
       };
 
   return (
-    <div>
-      <Heading>Add Subject</Heading>
+    <Container maxW='8xl'>
+      <Heading as="h1" size="xl" mt="6" mb="6">Add Subject</Heading>
+      {/* <p fontWeight='Bold'>Batch Upload:</p> */}
       Batch Upload:
-    
-      <Input
+      <Box mb='2' mt='2' display='flex'>
+        <Input 
         type="file"
         accept=".xlsx"
         onChange={handleFileChange}
         name="XlsxFile"
       />
-      <Button onClick={handleUpload}>Batch Upload</Button>
-     
-      <div>
+      
+      <Button  colorScheme='teal' ml='10' onClick={handleUpload}>Batch Upload</Button>
+      </Box>
+      <Box>
 
         {uploadMessage && (
           <p>{uploadMessage}</p>
         )}
-      </div>
+      </Box>
    
 
-      <FileDownloadButton
+      <FileDownloadButton  
         fileUrl='/subject_template.xlsx'
         fileName="subject_template.xlsx"
       />
        {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
 
        {/* Display available semesters */}
-       <div>
-        <h3>Available Semesters which can to be added:</h3>
+       <Box mt='5'>
+        <Heading as='h6' fontSize='xl' fontWeight='Bold'>Available Semesters which can to be added:</Heading>
         <ul>
           {semesterData.map((semester) => (
             <li key={semester.code}>{semester.sem}</li>
           ))}
         </ul>
-      </div>
+      </Box>
 
 
 <div>
@@ -527,7 +529,7 @@ function Subject() {
        )}
      
   
-    </div>
+    </Container>
   );
 }
 
