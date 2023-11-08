@@ -27,6 +27,8 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
+import Header from '../components/header';
+
 
 function Subject() {
   const currentURL = window.location.pathname;
@@ -411,11 +413,9 @@ function Subject() {
     }
   };
   return (
-
-    <Container maxW="7xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
-        Add Subject
-      </Heading>
+    <Container maxW='8xl'>
+      {/* <Heading as="h1" size="xl" mt="6" mb="6">Add Subject</Heading> */}
+      <Header title='Add Subject' />
       {/* <p fontWeight='Bold'>Batch Upload:</p> */}
       Batch Upload:
       <Box mb="2" mt="2" display="flex">

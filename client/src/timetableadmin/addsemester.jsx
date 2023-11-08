@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 import { useToast } from '@chakra-ui/react';
+import Header from '../components/header';
 
 
 // function SuccessMessage({ message }) {
@@ -154,9 +155,10 @@ function AddSemComponent() {
 
   return (
     <Container maxW='4xl'>
-      <Heading as="h1" size="xl" mt='6' mb='6'>
+      {/* <Heading as="h1" size="xl" mt='6' mb='6'>
         Add Semester
-      </Heading>
+      </Heading> */}
+      <Header title='Add Semester' />
         <Box>
           <FormControl mb='5'>
             <Text as='b'>
