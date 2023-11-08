@@ -41,12 +41,12 @@ export const CustomTealButton = chakra("button", {
   baseStyle: {
     color: "white", // Text color
     bg: "teal", // Brighter background color (you can adjust the shade)
-    paddingX: 6, // Horizontal padding
+    paddingX: 4, // Horizontal padding
     paddingY: 2,
     margin:0, // Vertical padding
     borderRadius: "md", // Add some border radius for rounded corners
     _hover: {
-      bg: "teal.500", // Brighter background color on hover
+      bg: "teal.700", // Brighter background color on hover
     },
     _active: {
       bg: "teal.800", // Background color when clicked
