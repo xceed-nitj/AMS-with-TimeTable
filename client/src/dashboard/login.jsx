@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from "../getenvironment";
 import './login.css'
 import logoImage from '../assets/logo.png'; 
-import logoVideo from '../assets/logo.mp4'; 
+import logoVideo from '../assets/video.mp4'; 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
