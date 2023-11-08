@@ -105,6 +105,7 @@ function AddRoomComponent() {
         // console.log('Data saved successfully:', data);
         // setSuccessMessage('Room added successfully!');
         toast({
+          position: 'top',
           title: "Room Added",
           // description: "",
           status: "success",
@@ -172,7 +173,8 @@ function AddRoomComponent() {
           ))}
         </Select>
       </Box >
-        <Box display='flex' mt='2' justifyContent='space-between'>
+        <Box display='flex' mt='2' justifyContent='space-between'
+        >
           <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleSubmit}>
             Add Room
           </Button>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import { AbsoluteCenter, Box, Center, Circle, Container, FormControl, FormLabel, Heading,Input, Select, Text } from '@chakra-ui/react';
-import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import {CustomTh, CustomLink,CustomBlueButton, CustomTealButton, CustomDeleteButton} from '../styles/customStyles'
 import {
   Table,
   TableContainer,
@@ -114,6 +114,7 @@ function AddSemComponent() {
 
         // setSuccessMessage('Semester added successfully!');
         toast({
+          position: 'top',
           title: 'Semester added',
           description: "Semester added successfully!",
           status: 'success',
@@ -175,8 +176,7 @@ function AddSemComponent() {
                 </option>
               ))}
             </Select>
-
-              <Button mt='0' ml='16' bg='teal' color='white' onClick={handleSubmit}>Add Sem</Button>
+              <CustomTealButton mt='0' ml='16' onClick={handleSubmit}>Add Sem</CustomTealButton>
             </Box>
           </FormControl>
         </Box>
@@ -203,7 +203,7 @@ function AddSemComponent() {
                         fontWeight='medium'
                       >{sem.sem}</Text></Center></Td>
                     <Td><Center>
-                      <Button bg='teal' color='white' onClick={() => handleDelete(sem._id)}>Delete</Button>
+                      <CustomDeleteButton onClick={() => handleDelete(sem._id)}>Delete</CustomDeleteButton>
                     </Center></Td>
                   </Tr>
                 ))}
