@@ -213,7 +213,7 @@ function Component() {
           <Select
             value={sem}
             onChange={(e) => setSem(e.target.value)}
-            isRequired
+            mb='2.5'
           >
             <option value="" disabled>
               Select Semester
@@ -224,13 +224,12 @@ function Component() {
               </option>
             ))}
           </Select>
-        </FormControl>
-        <FormControl isRequired mb="2.5">
+       
           <FormLabel>Department:</FormLabel>
           <Select
             value={selectedDepartment}
             onChange={handleDepartmentChange}
-            isRequired
+            mb='2.5'
           >
             <option value="">Select a Department</option>
             {availableDepartments.map((department) => (
@@ -239,14 +238,13 @@ function Component() {
               </option>
             ))}
           </Select>
-        </FormControl>
-        <FormControl isRequired mb="2.5">
+       
           <FormLabel>Faculty:</FormLabel>
 
           <Select
             value={selectedFaculty}
             onChange={(e) => setSelectedFaculty(e.target.value)}
-            isRequired
+            mb='2.5'
           >
             <option value="" key="default">
               Select a Faculty
@@ -257,12 +255,11 @@ function Component() {
               </option>
             ))}
           </Select>
-        </FormControl>
-        <FormControl>
           <Button
             type="submit"
             ml="0"
             mb="3"
+            width='200px'
             sx={{
               bgColor: "teal !important",
             }}
