@@ -15,6 +15,7 @@ import {
   CustomLink,
   CustomBlueButton,
   CustomDeleteButton,
+  CustomTealButton,
 } from "../styles/customStyles";
 
 import {
@@ -428,16 +429,17 @@ function Subject() {
         />
 
 
-        <CustomBlueButton
-          mt="-1"
+        <CustomTealButton
+          mt="-0.8"
+          ml='2'
           size="xl"
           py="0"
           w="200px"
-          h="50"
+          h="41"
           onClick={handleUpload}
         >
           Batch Upload
-        </CustomBlueButton>
+        </CustomTealButton>
       </Box>
       <Box>{uploadMessage && <p>{uploadMessage}</p>}</Box>
       <Box display="flex" justifyContent="space-between">
@@ -453,7 +455,7 @@ function Subject() {
             ))}
           </ul>
         </Box>
-        <Box mr="3.5">
+        <Box mr="-1.5">
           <FileDownloadButton
             fileUrl="/subject_template.xlsx"
             fileName="subject_template.xlsx"
@@ -605,9 +607,9 @@ function Subject() {
             </Box>
           </FormControl>
         ) : (
-          <CustomBlueButton ml="0" onClick={handleAddSubject}>
+          <CustomTealButton h='50' w='150px' mb='7' mt='3' onClick={handleAddSubject}>
             Add Subject
-          </CustomBlueButton>
+          </CustomTealButton>
 
         )}
       </Box>

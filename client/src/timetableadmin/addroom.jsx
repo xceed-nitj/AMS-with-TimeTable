@@ -23,6 +23,7 @@ import {
 import { Button } from "@chakra-ui/button";
 import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
+import Header from "../components/header";
 
 // function SuccessMessage({ message }) {
 //   return (
@@ -152,9 +153,10 @@ function AddRoomComponent() {
 
   return (
     <Container maxW="5xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
+      {/* <Heading as="h1" size="xl" mt="6" mb="6">
         Add Rooms
-      </Heading>
+      </Heading> */}
+      <Header title="Add Rooms"></Header>
 
       {/* <SuccessMessage message={successMessage} /> */}
       <Box>

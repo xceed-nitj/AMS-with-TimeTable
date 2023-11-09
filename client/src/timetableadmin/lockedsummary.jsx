@@ -26,6 +26,7 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
+import Header from "../components/header";
 
 // import PDFViewTimetable from '../filedownload/chakrapdf'
 
@@ -287,9 +288,7 @@ function LockedSummary() {
 
   return (
     <Container maxW="6xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
-        Locked TimeTable Summary
-      </Heading>
+      <Header title="Locked TimeTable Summary"></Header>
       {/* <Button onClick={handleDownloadClick}>Download Timetable</Button> */}
       <Box mb='6' display='flex' justifyContent='right' onClick={handleDownloadClick}>
         <Text color='blue'>

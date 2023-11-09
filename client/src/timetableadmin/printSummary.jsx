@@ -23,6 +23,7 @@ import {
 import { Button } from "@chakra-ui/button";
 import PDFDownloader from '../filedownload/downloadpdf';
 import PDFGenerator from '../filedownload/makepdf';
+import Header from '../components/header';
 
 
 
@@ -628,7 +629,8 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
               {/* Your other components and UI elements */}
               <Container maxW='4xl'>
 
-              <Heading>XCEED Express Download </Heading>
+              {/* <Heading>XCEED Express Download </Heading> */}
+              <Header title="XCEED Express Download"></Header>
               <Button
                 onClick={handleDownloadAllSemesters}
                 colorScheme="teal"
