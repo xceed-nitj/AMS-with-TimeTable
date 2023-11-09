@@ -29,6 +29,7 @@ function Subject() {
   const [semesterData, setSemesterData] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [duplicateEntryMessage, setDuplicateEntryMessage] = useState('');
+  const [duplicateEntries, setDuplicateEntries] = useState([]);
   const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false); 
 
   
@@ -130,6 +131,7 @@ function Subject() {
         });
     }
   }, [currentCode]);
+
   const handleUpload = () => {
     if (selectedFile) {
       const formData = new FormData();
@@ -150,16 +152,9 @@ function Subject() {
           return response.json();
         })
         .then((data) => {
-          console.log(data); // Handle the response from the server
-  
-          // Check for duplicate entries after the batch upload
-          const duplicateEntries = data.filter((entry) => {
-            return tableData.some((row) => row.subjectFullName === entry.subjectFullName);
-          });
-  
-          if (duplicateEntries.length > 0) {
-            const duplicateEntryMessage = `Duplicate entries detected for the following subjects: ${duplicateEntries.map((entry) => entry.subjectFullName).join(', ')}. Kindly delete these entries.`;
-            setDuplicateEntryMessage(duplicateEntryMessage);
+          if (data.duplicateSubjects && data.duplicateSubjects.length > 0) {
+            const duplicateSubnames = data.duplicateSubjects;
+            setDuplicateEntryMessage(`Duplicate entries found for: ${duplicateSubnames.join(', ')}`);
           } else {
             fetchData(); // Fetch data after a successful upload
             setDuplicateEntryMessage(''); // Reset duplicate entry message
@@ -181,6 +176,7 @@ function Subject() {
       alert('Please select a CSV file before uploading.');
     }
   };
+  
   
 
   useEffect(() => {
@@ -293,10 +289,10 @@ function Subject() {
     
       const handleSaveNewSubject = () => {
         // Check for duplicate entry by subjectName
-        const isDuplicateEntry = tableData.some((row) => row.subjectFullName === editedSData.subjectFullName);
+        const isDuplicateEntry = tableData.some((row) => row.subName === editedSData.subName);
     
         if (isDuplicateEntry) {
-          setDuplicateEntryMessage(`Duplicate entry for "${editedSData.subjectFullName}" is detected. Kindly delete the entry.`);
+          setDuplicateEntryMessage(`Duplicate entry for "${editedSData.subName}" is detected. Kindly delete the entry.`);
         } else {
           fetch(`${apiUrl}/timetablemodule/subject`, {
             method: 'POST',
@@ -371,8 +367,10 @@ function Subject() {
         fileUrl='/subject_template.xlsx'
         fileName="subject_template.xlsx"
       />
-       {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
 
+{duplicateEntryMessage && (
+        <p style={{ color: 'red' }}>{duplicateEntryMessage}</p>
+      )}
        {/* Display available semesters */}
        <div>
         <h3>Available Semesters which can to be added:</h3>
@@ -389,7 +387,7 @@ function Subject() {
         {isAddSubjectFormVisible ? ( 
           <div>
             <div>
-              <label>Subject Name:</label>
+              <label>Subject Abrreviation:</label>
               <input
                 type="text"
                 value={editedSData.subjectFullName}
@@ -413,7 +411,7 @@ function Subject() {
               />
             </div>
             <div>
-              <label>Subject Abrreviation:</label>
+              <label>Subject Name:</label>
               <input
                 type="text"
                 value={editedSData.subName}
@@ -468,7 +466,6 @@ function Subject() {
           <CustomBlueButton onClick={handleAddSubject}>Add Subject</CustomBlueButton>
         )}
       </div>
-      {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
 
 
       <Button onClick={handleDeleteAll}>Delete All</Button>
@@ -482,10 +479,10 @@ function Subject() {
       <table>
         <thead>
           <tr>
-            <th>Subject Name</th>
+            <th>Subject Abrreviation</th>
             <th>Type</th>
             <th>Subject Code</th>
-            <th>Subject Abrreviation</th>
+            <th>Subject Name</th>
             <th>Semester</th>
             <th>Degree</th>
             <th>Department</th>
