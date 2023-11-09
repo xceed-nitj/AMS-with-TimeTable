@@ -20,6 +20,7 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
+import Header from '../components/header';
 
 
 // import PDFViewTimetable from '../filedownload/chakrapdf'
@@ -212,7 +213,7 @@ console.log(hoursCalculation)
 
   return (
     <div>
-      <Heading>Load distribution Summary</Heading>
+      <Header title="Load distribution Summary"></Header>
       {/* <Button onClick={handleDownloadClick}>Download Timetable</Button> */}
       <h2>Semester timetable (locked)</h2>
       <select

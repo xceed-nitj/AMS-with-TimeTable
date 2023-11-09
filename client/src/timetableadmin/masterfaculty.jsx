@@ -3,6 +3,8 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import { Box, Container } from '@chakra-ui/react';
+import Header from '../components/header';
 
 function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -195,8 +197,9 @@ const apiUrl=getEnvironment();
 
 
   return (
-    <div>
-      <h1>Master Faculty </h1>
+    <Box>
+      {/* <h1>Master Faculty </h1> */}
+      <Header title='Master Faculty'></Header>
       <h2>Batch Upload</h2>
       <input
         type="file"
@@ -318,7 +321,7 @@ const apiUrl=getEnvironment();
       </table>
 
      
-    </div>
+    </Box>
   );
 }
 
