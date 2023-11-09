@@ -554,10 +554,10 @@ const Timetable = () => {
       </Box>
 
       <Box display="flex" justifyContent="space-between" mb="4">
-        <Text fontSize="xl" color="black" id="saveTime">
+        <Text fontSize="xl" color='telegram.500' id="saveTime">
           Last saved on: {savedTime ? savedTime : "Not saved yet"}
         </Text>
-        <Text fontSize="xl" color="black" id="lockTime">
+        <Text fontSize="xl" color='telegram.500' id="lockTime">
           Last locked on: {lockedTime ? lockedTime : "Not Locked yet"}
         </Text>
       </Box>
@@ -765,7 +765,7 @@ const Timetable = () => {
         <Box >
           {viewselectedSemester ? (
             <Box>
-              <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+              <Text color='telegram.500' id="saveTime" mb='2.5' mt='2.5'>
                 Last saved on: {savedTime ? savedTime : "Not saved yet"}
               </Text>
               <ViewTimetable timetableData={viewData} />
@@ -802,7 +802,7 @@ const Timetable = () => {
         <Box>
           {viewFaculty ? (
             <Box>
-              <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+              <Text color='telegram.500' id="saveTime" mb='2.5' mt='2.5'>
                 Last saved on:{" "}
                 {facultyUpdateTime ? facultyUpdateTime : "Not saved yet"}
               </Text>
@@ -837,7 +837,7 @@ const Timetable = () => {
       <Box mb='8'>
         {viewRoom ? (
           <Box>
-            <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+            <Text color='telegram.500' id="saveTime" mb='2.5' mt='2.5'>
               Last saved on: {roomUpdateTime ? roomUpdateTime : "Not saved yet"}
             </Text>
 
