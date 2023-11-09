@@ -91,7 +91,8 @@ class SubjectController{
           const  allcode=await TimeTableDto.getAllCodesOfSession(session);
           const final = [];
           for (const code of allcode) {
-            const subjects = await TimetableEntry.find({ code });
+            const subjects = await TimetableEntry.find({code});
+            // console.log(subjects)
             final.push(...subjects);
           }
           // console.log('finaldata',final)

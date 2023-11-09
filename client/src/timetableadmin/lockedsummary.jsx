@@ -286,6 +286,51 @@ function LockedSummary() {
     window.location.href = pdfUrl;
   };
 
+
+  const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
+  const [TTData, setTTData] = useState([]); // Initialize as an empty array
+
+  useEffect(() => {
+    const fetchSubjectData = async (currentCode) => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
+        const data = await response.json();
+        setSubjectData(data);
+        console.log('subjectdata',data)
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
+      }
+    };
+
+    const fetchTTData = async (currentCode) => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          // body: JSON.stringify(userData),
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        setTTData(data);
+      } catch (error) {
+        console.error('Error fetching TTdata:', error);
+      }
+    };
+
+
+
+    fetchSubjectData(currentCode);
+    fetchTTData(currentCode);
+
+
+  }, []);
+
+
+
+
   return (
     <Container maxW="6xl">
       <Header title="Locked TimeTable Summary"></Header>
@@ -322,6 +367,8 @@ function LockedSummary() {
               code={currentCode}
               time={lockedTime}
               headTitle={selectedSemester}
+              subjectData={subjectData}
+              TTData={TTData}
               />
           </Box>
           
@@ -359,6 +406,8 @@ function LockedSummary() {
               code={currentCode}
               time={facultyLockedTime}
               headTitle={selectedFaculty}
+              subjectData={subjectData}
+              TTData={TTData}
               />
             {/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
             {/* <PDFViewTimetable timetableData={viewFacultyData} /> */}

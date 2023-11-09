@@ -16,55 +16,9 @@ import { Button } from "@chakra-ui/button";
 import PDFGenerator from '../filedownload/makepdf';
 
 
-const TimetableSummary = ({ timetableData, code, type, time, headTitle }) => {
+const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData }) => {
 
-  const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
-  const [TTData, setTTData] = useState([]); // Initialize as an empty array
-
-
-  const apiUrl = getEnvironment();
-  const navigate = useNavigate();
-  const currentURL = window.location.pathname;
-
-
-const currentCode=code;
-  useEffect(() => {
-    const fetchSubjectData = async (currentCode) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
-        const data = await response.json();
-        setSubjectData(data);
-        // console.log('subjectdata',data)
-      } catch (error) {
-        console.error('Error fetching subject data:', error);
-      }
-    };
-
-    const fetchTTData = async (currentCode) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          // body: JSON.stringify(userData),
-          credentials: 'include'
-        });
-        
-        const data = await response.json();
-        setTTData(data);
-      } catch (error) {
-        console.error('Error fetching TTdata:', error);
-      }
-    };
-
-
-
-    fetchSubjectData(currentCode);
-    fetchTTData(currentCode);
-
-
-  }, []);
+  
   console.log('TT data',TTData);
 
 
@@ -105,6 +59,7 @@ const currentCode=code;
                     subjectFullName: foundSubject.subjectFullName,
                     subSem:foundSubject.sem,
                   };
+                  console.log('sum',summaryData[subject])
                 } else {
                   summaryData[subject].count++;
                   if (!summaryData[subject].faculties.includes(faculty)) {
@@ -120,7 +75,7 @@ const currentCode=code;
       }
     }
   }
-
+console.log('summary',  summaryData)
   return (
     <div>
       <h2>Timetable Summary</h2>
@@ -130,7 +85,7 @@ const currentCode=code;
           <th>Abbreviation</th>
             <th>Subject Code</th>
             <th>Subject Name</th>
-            {type !== 'room' && <th>Subject Type</th>}
+            <th>Subject Type</th>
             <th>Hours</th>
             {type !== 'faculty' && <th>Faculty Name</th>}
             {type !== 'room' && <th>Room No</th>}
@@ -143,7 +98,7 @@ const currentCode=code;
               <td>{subject}</td>
               <td>{summaryData[subject].subCode}</td>
               <td>{summaryData[subject].subjectFullName}</td>
-              {type !== 'room' && <td>{summaryData[subject].subType}</td>}
+              <td>{summaryData[subject].subType}</td>
               <td>{summaryData[subject].count}</td>
               {type !== 'faculty' && <td>{summaryData[subject].faculties.join(', ')}</td>}
               {type !== 'room' && <td>{summaryData[subject].rooms.join(', ')}</td>}
