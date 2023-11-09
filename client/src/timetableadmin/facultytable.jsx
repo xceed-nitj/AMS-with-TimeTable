@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
+import { Box } from '@chakra-ui/react';
+import Header from '../components/header';
 
 function FacultyTable() {
   const [facultyData, setFacultyData] = useState([]);
@@ -32,8 +34,9 @@ function FacultyTable() {
   }, []);
   
   return (
-    <div>
+    <Box>
       <h1>Faculty Timetable</h1>
+      {/* <Header title='Faculty Timetable'></Header> */}
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -62,7 +65,7 @@ function FacultyTable() {
           </tbody>
         </table>
       )}
-    </div>
+    </Box>
   );
 }
 

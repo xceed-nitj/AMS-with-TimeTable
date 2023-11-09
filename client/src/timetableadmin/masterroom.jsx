@@ -3,6 +3,8 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import { Box, Container } from '@chakra-ui/react';
+import Header from '../components/header';
 
 function MasterRoom() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -183,8 +185,8 @@ function MasterRoom() {
   };
 
   return (
-    <div>
-      <h1>Manage Master Rooms</h1>
+    <Box size='8xl' >
+      <Header title='Manage Master Rooms'></Header>
       <h2>Batch Upload</h2>
       <input
         type="file"
@@ -382,7 +384,7 @@ function MasterRoom() {
           ))}
         </tbody>
       </table>
-    </div>
+    </Box>
   );
 }
 

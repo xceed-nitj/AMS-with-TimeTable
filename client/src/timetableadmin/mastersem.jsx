@@ -3,6 +3,7 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
 import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
+import Header from '../components/header';
 
 function MasterSemester() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -179,7 +180,8 @@ function MasterSemester() {
 
   return (
     <div>
-      <h1>Manage Master Semesters</h1>
+      {/* <h1>Manage Master Semesters</h1> */}
+      <Header title='Manage Master Semesters'></Header>
       <h2>Batch Upload</h2>
       <input
         type="file"
