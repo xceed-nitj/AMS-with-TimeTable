@@ -11,8 +11,8 @@ const UserSchema = new Mongoose.Schema({
     required: true,
   },
   role: {
-    type: String,
-    default: "Basic",
+    type: [String],
+    default: ["Basic"],
     required: true,
   },
 });
