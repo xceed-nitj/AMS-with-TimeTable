@@ -158,9 +158,7 @@ function MasterSemester() {
 
       fetch(`${apiUrl}/upload/mastersem`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        
         body: formData,
         credentials: 'include'
       })
