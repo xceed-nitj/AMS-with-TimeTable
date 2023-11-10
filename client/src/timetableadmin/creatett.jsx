@@ -65,7 +65,7 @@ function CreateTimetable() {
 
     const fetchDepartments = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept`, {
+        const response = await fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

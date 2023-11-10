@@ -82,4 +82,15 @@ mastersemRouter.delete("/:id",ttadminRoute, async (req, res) => {
   }
 });
 
+mastersemRouter.get('/dept', async (req, res) => {
+  try {
+    const departments = await mastersemController.getDepartments(); 
+    res.status(200).json(departments);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
 module.exports = mastersemRouter;
