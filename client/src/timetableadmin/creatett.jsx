@@ -151,7 +151,7 @@ function CreateTimetable() {
 
       
       <FormControl isRequired mb='3' >
-      <FormLabel >Name :</FormLabel>
+      <FormLabel >Name of the Time Table Coordinator :</FormLabel>
           <Input
             type="text"
             name="name"
