@@ -117,8 +117,8 @@ exports.login = async (req, res, next) => {
         // Set the JWT token as a cookie
         res.cookie("jwt", token, {
           httpOnly: true,
-          maxAge: maxAge * 1000,
-          domain: "nitjtt.netlify.app",
+          maxAge: maxAge * 10000,
+          // domain: "nitjtt.netlify.app",
           secure: true,
           sameSite: 'none'
         });
