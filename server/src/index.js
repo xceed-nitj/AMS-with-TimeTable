@@ -46,7 +46,7 @@ app.use(cors({
     credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
   }));
 
-  // app.use('*',cors);
+  app.use('*',cors());
   
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
