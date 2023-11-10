@@ -35,6 +35,16 @@ addRoomRouter.post("/", async (req, res) => {
     }
   });
 
+  addRoomRouter.get("/code/:code", async (req, res) => {
+    try {
+      const currentCode = req.params.code;
+      const rooms = await addRoomController.getRooms(currentCode);
+      res.status(200).json(rooms);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
   addRoomRouter.put('/:id', async (req, res) => {
       try {
         const roomID = req.params.id;

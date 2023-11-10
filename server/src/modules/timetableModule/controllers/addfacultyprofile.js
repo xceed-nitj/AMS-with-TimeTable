@@ -26,7 +26,7 @@ class addFacultyController {
       
       async getAddedFaculty(req, res) {
        try {
-          const code=req.query.code
+          const code=req.query.code;
           const facultyList = await addFaculty.find({code});
           const allFaculty = [];
           facultyList.forEach((item) => {
