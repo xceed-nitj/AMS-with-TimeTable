@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import getEnvironment from "../getenvironment";
 import {
   Container,
   FormControl,
@@ -16,10 +18,13 @@ import {
   Text,
   useToast,
 } from "@chakra-ui/react";
-import { useNavigate } from "react-router-dom";
-import getEnvironment from "../getenvironment";
 import Header from "../components/header";
 import { CustomDeleteButton } from "../styles/customStyles";
+
+// function SuccessMessage({ message }) {
+//   return <div className="success-message">{message}</div>;
+// }
+
 
 function Component() {
   const toast = useToast();
