@@ -5,16 +5,17 @@ const { commonFields, updateTimestamps } = require('./commonFields');
 const noteSchema = new mongoose.Schema({
   sem: {
     type: String,
-    required: true,
   },
   faculty:{
     type:String,
-    required:true,
   },
   room: {
     type: String,
-    required:true,
   },
+  note: {
+    type: Array,
+    required:true,
+  }, 
   code: {
     type: String,
     required:true,
