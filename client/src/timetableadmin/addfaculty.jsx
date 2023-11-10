@@ -1,55 +1,38 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import getEnvironment from "../getenvironment";
 import {
-  Box,
-  Center,
   Container,
   FormControl,
   FormLabel,
   Heading,
-  Input,
   Select,
-  Text,
-  chakra,
-} from "@chakra-ui/react";
-import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
-import {
+  Checkbox,
+  Button,
   Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
   Thead,
+  Tbody,
   Tr,
-} from "@chakra-ui/table";
-import { Button } from "@chakra-ui/button";
-import { useToast } from "@chakra-ui/react";
+  Th,
+  Td,
+  Text,
+  useToast,
+} from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
+import getEnvironment from "../getenvironment";
 import Header from "../components/header";
-
-// function SuccessMessage({ message }) {
-//   return <div className="success-message">{message}</div>;
-// }
-
+import { CustomDeleteButton } from "../styles/customStyles";
 
 function Component() {
   const toast = useToast();
   const [sem, setSem] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [faculties, setFaculties] = useState([]);
-  const [selectedFaculty, setSelectedFaculty] = useState("");
-  // const [successMessage, setSuccessMessage] = useState("");
+  const [selectedFaculties, setSelectedFaculties] = useState([]);
   const [facultyData, setFacultyData] = useState([]);
   const [availableDepartments, setAvailableDepartments] = useState([]);
   const [availableSemesters, setAvailableSemesters] = useState([]);
   const [isLoading, setIsLoading] = useState({
     state: false,
     id: "",
-  });
-
-  const [editFacultyData] = useState({
-    facultyId: null,
-    facultyName: "",
   });
 
   const navigate = useNavigate();
@@ -60,7 +43,9 @@ function Component() {
   const apiUrl = getEnvironment();
 
   useEffect(() => {
-    fetch(`${apiUrl}/timetablemodule/addsem/sem/${currentCode}`,{credentials: 'include'})
+    fetch(`${apiUrl}/timetablemodule/addsem/sem/${currentCode}`, {
+      credentials: "include",
+    })
       .then(handleResponse)
       .then((data) => {
         setAvailableSemesters(data);
@@ -75,7 +60,9 @@ function Component() {
 
   useEffect(() => {
     if (selectedDepartment) {
-      fetch(`${apiUrl}/timetablemodule/faculty/dept/${selectedDepartment}`,{credentials: 'include',})
+      fetch(`${apiUrl}/timetablemodule/faculty/dept/${selectedDepartment}`, {
+        credentials: "include",
+      })
         .then(handleResponse)
         .then((data) => {
           setFaculties(data);
@@ -85,7 +72,9 @@ function Component() {
   }, [selectedDepartment]);
 
   const fetchFacultyData = () => {
-    fetch(`${apiUrl}/timetablemodule/addFaculty`,{credentials: 'include',})
+    fetch(`${apiUrl}/timetablemodule/addFaculty`, {
+      credentials: "include",
+    })
       .then(handleResponse)
       .then((data) => {
         const filteredFacultyData = data.filter(
@@ -97,7 +86,9 @@ function Component() {
   };
 
   const fetchAvailableDepartments = () => {
-    fetch(`${apiUrl}/timetablemodule/faculty/dept`,{credentials: 'include'})
+    fetch(`${apiUrl}/timetablemodule/faculty/dept`, {
+      credentials: "include",
+    })
       .then(handleResponse)
       .then((data) => {
         const formattedDepartments = data.map((department) => ({
@@ -125,36 +116,51 @@ function Component() {
     setSelectedDepartment(selectedDepartment);
   };
 
+  const handleCheckboxChange = (facultyName) => {
+    if (selectedFaculties.includes(facultyName)) {
+      setSelectedFaculties((prevSelected) =>
+        prevSelected.filter((faculty) => faculty !== facultyName)
+      );
+    } else {
+      setSelectedFaculties((prevSelected) => [...prevSelected, facultyName]);
+    }
+  };
+
   const handleSubmit = () => {
-    const dataToSave = {
+    const dataToSave = selectedFaculties.map((faculty) => ({
       sem: sem,
       code: currentCode,
-      faculty: selectedFaculty,
-    };
-
-    fetch(`${apiUrl}/timetablemodule/addFaculty`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(dataToSave),
-      credentials: 'include',
-    })
-      .then(handleResponse)
-      .then((data) => {
+      faculty: faculty,
+    }));
+  
+    Promise.all(
+      dataToSave.map((data) =>
+        fetch(`${apiUrl}/timetablemodule/addFaculty`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+          credentials: "include",
+        }).then(handleResponse)
+      )
+    )
+      .then(() => {
         toast({
-          position: 'top',
+          position: "top",
           title: "Faculty Added",
           description: "We've created your account for you.",
           status: "success",
           duration: 2000,
           isClosable: true,
         });
-        // setSuccessMessage('Data saved successfully!');
         fetchFacultyData();
+        setSelectedFaculties([]); // Clear the selected faculties array
       })
       .catch(handleError);
   };
+  
+  
 
   const handleDelete = (facultyId, facultyName) => {
     const facultyToDelete = facultyData.find(
@@ -177,7 +183,7 @@ function Component() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(facultyToDelete),
-        credentials: 'include',
+        credentials: "include",
       })
         .then(handleResponse)
         .then(() => {
@@ -195,14 +201,8 @@ function Component() {
 
   return (
     <Container maxW="5xl">
-      {/* <Heading as="h1" size="xl" mt="6" mb="6">
-        Add Faculty
-      </Heading> */}
-      <Header title="Add Faculty"></Header>
-      
-      {/* <SuccessMessage message={successMessage} /> */}
-      <chakra.form
-        mt="1"
+      <Header title="Add Faculty" />
+      <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSubmit();
@@ -213,7 +213,7 @@ function Component() {
           <Select
             value={sem}
             onChange={(e) => setSem(e.target.value)}
-            mb='2.5'
+            mb="2.5"
           >
             <option value="" disabled>
               Select Semester
@@ -224,12 +224,14 @@ function Component() {
               </option>
             ))}
           </Select>
-       
+        </FormControl>
+
+        <FormControl mb="2.5">
           <FormLabel>Department:</FormLabel>
           <Select
             value={selectedDepartment}
             onChange={handleDepartmentChange}
-            mb='2.5'
+            mb="2.5"
           >
             <option value="">Select a Department</option>
             {availableDepartments.map((department) => (
@@ -238,84 +240,65 @@ function Component() {
               </option>
             ))}
           </Select>
-       
-          <FormLabel>Faculty:</FormLabel>
-
-          <Select
-            value={selectedFaculty}
-            onChange={(e) => setSelectedFaculty(e.target.value)}
-            mb='2.5'
-          >
-            <option value="" key="default">
-              Select a Faculty
-            </option>
-            {faculties.map((faculty) => (
-              <option key={faculty.id} value={faculty.name}>
-                {faculty.name}
-              </option>
-            ))}
-          </Select>
-          <Button
-            type="submit"
-            ml="0"
-            mb="3"
-            width='200px'
-            sx={{
-              bgColor: "teal !important",
-            }}
-          >
-            Submit
-          </Button>
         </FormControl>
-      </chakra.form>
+
+        <FormControl mb="2.5">
+          <FormLabel>Faculty:</FormLabel>
+          {faculties.map((faculty) => (
+            <Checkbox
+              key={faculty.id}
+              isChecked={selectedFaculties.includes(faculty.name)}
+              onChange={() => handleCheckboxChange(faculty.name)}
+            >
+              {faculty.name}
+            </Checkbox>
+          ))}
+        </FormControl>
+
+        <Button
+          type="submit"
+          ml="0"
+          mb="3"
+          width="200px"
+          sx={{
+            bgColor: "teal !important",
+          }}
+        >
+          Submit
+        </Button>
+      </form>
+
       <div>
-        <TableContainer>
+        <Table>
           <Text as="b">Faculty Data</Text>
-          <Table variant={"striped"} mt="1">
-            <Thead>
-              <Tr>
-                <Th>
-                  <Center>Semester</Center>
-                </Th>
-                <Th>
-                  <Center>Faculty</Center>
-                </Th>
-                <Th>
-                  <Center>Actions</Center>
-                </Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {facultyData.map((faculty) =>
-                faculty.faculty.map((individualFaculty, index) => (
-                  <Tr key={`${faculty._id}-${index}`}>
-                    <Td>
-                      <Center>{faculty.sem}</Center>
-                    </Td>
-                    <Td>
-                      <Center>{individualFaculty}</Center>
-                    </Td>
-                    <Td>
-                      <Center>
-                        <CustomDeleteButton
-                          isLoading={
-                            isLoading.state && isLoading.id == faculty._id
-                          }
-                         
-                          onClick={() =>
-                            handleDelete(faculty._id, individualFaculty)
-                          }
-                        >
-                          Delete
-                        </CustomDeleteButton>
-                      </Center>
-                    </Td>
-                  </Tr>
-                ))
-              )}
-            </Tbody>
-          </Table>
-        </TableContainer>
+          <Thead>
+            <Tr>
+              <Th>Semester</Th>
+              <Th>Faculty</Th>
+              <Th>Actions</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {facultyData.map((faculty) =>
+              faculty.faculty.map((individualFaculty, index) => (
+                <Tr key={`${faculty._id}-${index}`}>
+                  <Td>{faculty.sem}</Td>
+                  <Td>{individualFaculty}</Td>
+                  <Td>
+                    <CustomDeleteButton
+                      isLoading={isLoading.state && isLoading.id == faculty._id}
+                      onClick={() =>
+                        handleDelete(faculty._id, individualFaculty)
+                      }
+                    >
+                      Delete
+                    </CustomDeleteButton>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Tbody>
+        </Table>
       </div>
     </Container>
   );
