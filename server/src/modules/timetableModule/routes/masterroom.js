@@ -47,6 +47,20 @@ masterroomRouter.post("/", async (req, res) => {
     }
   });
   
+  masterroomRouter.get("/getroom/:type", async (req, res) => {
+    try {
+      const type = req.params.type;
+      const resp = await masterroomController.getRoomByType(type);
+      res.status(200).json(resp);
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+  
+
+
 
     masterroomRouter.put('/:id', async (req, res) => {
       try {

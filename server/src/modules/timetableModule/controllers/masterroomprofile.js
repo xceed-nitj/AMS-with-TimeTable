@@ -26,6 +26,18 @@ class MroomController {
         }
       }
 
+
+      async getRoomByType(type) {
+        try {
+           const roomlist = await Masterroom.find({type:type});
+           return roomlist;
+         } catch (error) {
+           console.error(error); 
+           res.status(500).json({ error: "Internal server error" });
+         }
+       }
+ 
+
       async getRoomById(id) {
         if (!id) {
           throw new HttpException(400, "Invalid Id");

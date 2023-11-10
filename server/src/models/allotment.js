@@ -10,17 +10,14 @@ const allotmentSchema = new mongoose.Schema({
   },
   dept: {
     type: String,
-    required: true,
   },
   room: {
     type: String,
   },
-  day: {
-    type: String,
+  slot: {
+    type: [String],
   },
-  availableSlots: {
-    type: Array,
-  }, 
+
 });
 
 allotmentSchema.add(commonFields);

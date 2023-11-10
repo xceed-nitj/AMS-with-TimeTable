@@ -20,6 +20,7 @@ import Footer from './components/footer'
 import PrintSummary from './timetableadmin/printSummary'
 import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
+import AllotmentForm from './timetableadmin/allotment';
 
 
 function App() {
@@ -46,10 +47,11 @@ function App() {
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
           <Route path="/tt/:generatedLink/generatepdf" element={<PrintSummary />} />
           <Route path="/tt/:generatedLink/loaddistribution" element={<LoadDistribution />} />
-          <Route path="/tt/:generatedLink/note" element={<Note/>} />
+          <Route path="/tt/:generatedLink/addnote" element={<Note/>} />
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
           <Route path="/tt/print" element={<PrintButton/>} />
+          <Route path="/tt/allotment" element={<AllotmentForm/>}/>
         </Routes>
         {/* <Footer/> */}
       {/* </div> */}

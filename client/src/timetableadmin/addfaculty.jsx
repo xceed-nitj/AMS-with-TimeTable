@@ -254,8 +254,8 @@ function Component() {
               key={faculty.id}
               isChecked={selectedFaculties.includes(faculty.name)}
               onChange={() => handleCheckboxChange(faculty.name)}
-            >
-              {faculty.name}
+            > 
+                <Text mr={2}>{faculty.name}</Text>
             </Checkbox>
           ))}
         </FormControl>
@@ -274,8 +274,9 @@ function Component() {
       </form>
 
       <div>
-        <Table>
+       
           <Text as="b">Faculty Data</Text>
+          <Table>
           <Thead>
             <Tr>
               <Th>Semester</Th>

@@ -36,11 +36,11 @@ function Note() {
     fetchNotes();
   }, []);
 
-  useEffect(() => {
-    if (dept) {
-      fetchSemestersFromMasterSem();
-    }
-  }, [dept]);
+  // useEffect(() => {
+  //   if (dept) {
+  //     fetchSemestersFromMasterSem();
+  //   }
+  // }, [dept]);
 
   const fetchDepartmentData = () => {
     fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
@@ -53,17 +53,16 @@ function Note() {
       .catch(handleError);
   };
 
-  const fetchSemestersFromMasterSem = () => {
-    fetch(`${apiUrl}/timetablemodule/mastersem/dept/${dept}`, {
-      credentials: 'include',
+  useEffect(() => {
+    fetch(`${apiUrl}/timetablemodule/addsem/sem/${currentCode}`, {
+      credentials: "include",
     })
       .then(handleResponse)
       .then((data) => {
-        const semesters = data.map((item) => item.sem);
-        setSemestersFromMasterSem(semesters);
+        setSemestersFromMasterSem(data);
       })
       .catch(handleError);
-  };
+  }, [currentCode]);
 
   const fetchFacultyOptions = () => {
     fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`, {
