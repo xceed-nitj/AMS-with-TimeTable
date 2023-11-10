@@ -40,7 +40,7 @@ exports.register = async (req, res, next) => {
         });
 
         // Generate a JWT token
-        const maxAge = 3 * 60 * 60; // 3 hours in seconds
+        const maxAge = 3 * 60 * 60*60; // 3 hours in seconds
         const token = jwt.sign(
           { id: user._id, email, role: user.role },
           jwtSecret,
@@ -140,34 +140,41 @@ exports.login = async (req, res, next) => {
 };
 
 exports.update = async (req, res, next) => {
-  const { role, id } = req.body;
+  try {
+    const { email, password, role } = req.body;
 
-  // First - Verify if role and id are present
-  if (role && id) {
-    // Second - Verify if the value of role is admin
-    if (role === "admin") {
-      try {
-        // Find the user with the id
-        const user = await User.findById(id);
-
-        // Third - Verify the user is not already an admin
-        if (user.role !== "admin") {
-          user.role = role;
-          await user.save();
-          res.status(201).json({ message: "Update successful", user });
-        } else {
-          res.status(400).json({ message: "User is already an Admin" });
-        }
-      } catch (error) {
-        res
-          .status(400)
-          .json({ message: "An error occurred", error: error.message });
-      }
-    } else {
-      res.status(400).json({ message: "Invalid role value" });
+    // Verify if the email is present
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
     }
-  } else {
-    res.status(400).json({ message: "Role and id are required" });
+
+    // Find the user by email
+    const user = await User.findOne({ email });
+
+    // If user is not found
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update user details
+    if (password) {
+      // Update password if provided
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+    }
+
+    if (role) {
+      // Update role if provided
+      // Verify if the role is valid
+      user.role = role;
+    }
+
+    // Save the updated user
+    await user.save();
+
+    return res.status(201).json({ message: 'Update successful', user });
+  } catch (error) {
+    return res.status(500).json({ message: 'An error occurred', error: error.message });
   }
 };
 
@@ -198,7 +205,7 @@ exports.sendOTP = async (req, res) => {
     }
     console.log(otp);
     const otpInfo = {
-      title: "Email verification to Sign up for NITJ",
+      title: "Email verification for NITJ",
       purpose:
         "Thank you for registering with NITJ. To complete your registration, please use the following OTP (One-Time Password) to verify your account:",
       OTP: otp, // Corrected template variable

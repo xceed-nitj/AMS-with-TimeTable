@@ -24,7 +24,7 @@ async function ttadminRoute(req, res, next) {
     const user = await getUserDetails(userId);
     console.log(user);
 
-    if (!user.role || !user.role.includes("admin")) {
+    if (!user.role || !user.role.includes("ITTC")) {
       return res.status(401).json({ message: 'Only admins are authorized to access' });
     }
 
