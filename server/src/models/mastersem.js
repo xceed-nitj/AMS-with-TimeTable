@@ -22,9 +22,9 @@ const mastersemSchema = new mongoose.Schema({
 });
 
 
-mastersemSchema.add(commonFields);
+// mastersemSchema.add(commonFields);
 
-mastersemSchema.pre('save', updateTimestamps);
+// mastersemSchema.pre('save', updateTimestamps);
 
 const MasterSem = mongoose.model("MasterSem", mastersemSchema);
 

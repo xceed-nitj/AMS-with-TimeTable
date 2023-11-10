@@ -72,6 +72,20 @@ class MastersemController {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
+
+  async getDepartments() {
+    try {
+      const uniqueDepartments = await Mastersem.distinct('dept');
+      
+      return uniqueDepartments;
+    } catch (error) {
+      throw error; 
+    }
+  }
+
+
+
+
 }
 
 module.exports = MastersemController;

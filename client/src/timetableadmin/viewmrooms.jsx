@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
+import { Box } from '@chakra-ui/react';
+import Header from '../components/header';
 
 function MasterRoomTable() {
   const [masterRoomData, setMasterRoomData] = useState([]);
@@ -30,8 +32,9 @@ function MasterRoomTable() {
   }, []);
 
   return (
-    <div>
-      <h1>Master Room Information</h1>
+    <Box>
+      <Header title="Master Room Information"></Header>
+      {/* <Header title="Master Room Information"></Header> */}
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -62,7 +65,7 @@ function MasterRoomTable() {
           </tbody>
         </table>
       )}
-    </div>
+    </Box>
   );
 }
 

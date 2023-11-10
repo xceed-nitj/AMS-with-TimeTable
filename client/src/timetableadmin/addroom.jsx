@@ -10,7 +10,7 @@ import {
   Select,
   Text,
 } from "@chakra-ui/react";
-import { CustomTh, CustomLink, CustomBlueButton } from "../styles/customStyles";
+import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
 import {
   Table,
   TableContainer,
@@ -23,6 +23,7 @@ import {
 import { Button } from "@chakra-ui/button";
 import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
+import Header from "../components/header";
 
 // function SuccessMessage({ message }) {
 //   return (
@@ -105,6 +106,7 @@ function AddRoomComponent() {
         // console.log('Data saved successfully:', data);
         // setSuccessMessage('Room added successfully!');
         toast({
+          position: 'top',
           title: "Room Added",
           // description: "",
           status: "success",
@@ -151,9 +153,10 @@ function AddRoomComponent() {
 
   return (
     <Container maxW="5xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
+      {/* <Heading as="h1" size="xl" mt="6" mb="6">
         Add Rooms
-      </Heading>
+      </Heading> */}
+      <Header title="Add Rooms"></Header>
 
       {/* <SuccessMessage message={successMessage} /> */}
       <Box>
@@ -171,20 +174,23 @@ function AddRoomComponent() {
             </option>
           ))}
         </Select>
-        <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleSubmit}>
-          Add Room
-        </Button>
-      </Box>
-      <Link to="/tt/viewmrooms">
-        <Button ml="0">View Master Rooms</Button>
-      </Link>
-
-      <Box ml="-1">
-        <FileDownloadButton
-          fileUrl="/room_template.xlsx"
-          fileName="Room_template.xlsx"
-        />
-      </Box>
+      </Box >
+        <Box display='flex' mt='2' justifyContent='space-between'
+        >
+          <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleSubmit}>
+            Add Room
+          </Button>
+          
+                <Box ml="-1">
+                <Link to="/tt/viewmrooms">
+          <Button ml="0">View Master Rooms</Button>
+                </Link>
+          <FileDownloadButton
+            fileUrl="/room_template.xlsx"
+            fileName="Room_template.xlsx"
+          />
+                </Box>
+        </Box>
       <TableContainer>
         <Box>
           <Text as="b">Room Data</Text>
@@ -207,14 +213,13 @@ function AddRoomComponent() {
                   </Td>
                   <Td>
                     <Center>
-                      <Button
+                      <CustomDeleteButton
                         isLoading = {isLoading.state && isLoading.id == room._id}
-                        bg="teal"
-                        color="white"
+                       
                         onClick={() => handleDelete(room._id)}
                       >
                         Delete
-                      </Button>
+                      </CustomDeleteButton>
                     </Center>
                   </Td>
                 </Tr>

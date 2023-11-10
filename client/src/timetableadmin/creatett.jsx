@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import { Container } from "@chakra-ui/layout";
-import { Heading } from '@chakra-ui/react';
+import { FormControl, FormLabel, Heading, Input, Select } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
@@ -14,6 +14,7 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
+import { Center, Square, Circle } from '@chakra-ui/react'
 
 function CreateTimetable() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ function CreateTimetable() {
 
     const fetchDepartments = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept`, {
+        const response = await fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -143,43 +144,56 @@ function CreateTimetable() {
   const domainName = urlParts[2];
 
   return (
-    <Container maxW={"container.lg"}>
-      <Heading as="h1" size="xl">
+    <Container maxW='5xl'>
+      <Heading as="h1" size="xl" mt="6" mb="6">
         Create Time Table
       </Heading>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          placeholder="Name"
-        />
-        <select name="dept" value={formData.dept} onChange={handleInputChange}>
-          <option value="">Select a Department</option>
-          {departments.map((department, index) => (
-            <option key={index} value={department}>
-              {department}
-            </option>
-          ))}
-        </select>
-        <select
-          name="session"
-          value={formData.session}
-          onChange={handleInputChange}
-        >
-          <option value="">Select a Session</option>
-          {sessions.map((session, index) => (
-            <option key={index} value={session}>
-              {session}
-            </option>
-          ))}
-        </select>
-        <CustomBlueButton type="submit">Submit</CustomBlueButton>
-      </form>
+
+      
+      <FormControl isRequired mb='3' >
+      <FormLabel >Name :</FormLabel>
+          <Input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            placeholder="Name"
+            mb='2.5'
+          />
+
+          <FormLabel>Department:</FormLabel>
+          <Select name="dept" value={formData.dept} onChange={handleInputChange} mb='2.5'>
+            <option value="">Select a Department</option>
+            {departments.map((department, index) => (
+              <option key={index} value={department}>
+                {department}
+              </option>
+            ))}
+          </Select>
+
+          <FormLabel>Session:</FormLabel>
+          <Select
+            name="session"
+            value={formData.session}
+            onChange={handleInputChange}
+          >
+            <option value="">Select a Session</option>
+            {sessions.map((session, index) => (
+              <option key={index} value={session}>
+                {session}
+              </option>
+            ))}
+          </Select>
+          <CustomBlueButton type="submit" ml='0' width='200px' onClick={handleSubmit}>Submit</CustomBlueButton>
+      
+      </FormControl>
+
+
       <TableContainer>
         <Table
         variant='striped'
+        size="md" 
+        mt="1"
         >
           <Thead>
             <Tr>
@@ -192,16 +206,16 @@ function CreateTimetable() {
           <Tbody>
             {table.map((timetable) => (
               <Tr key={timetable._id}>
-                <Td>{timetable.name}</Td>
-                <Td>{timetable.session}</Td>
-                <Td>{timetable.dept}</Td>
-                <Td>
+                <Td><Center>{timetable.name}</Center></Td>
+                <Td><Center>{timetable.session}</Center></Td>
+                <Td><Center>{timetable.dept}</Center></Td>
+                <Td><Center>
                 <CustomLink
                 href={`http://${domainName}/tt/${timetable.code}`}
                 target="_blank" // Optional: If you want to open the link in a new tab
               >
                 {timetable.code}
-              </CustomLink>
+              </CustomLink></Center>
                 </Td>
               </Tr>
             ))}

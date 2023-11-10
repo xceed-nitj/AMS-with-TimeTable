@@ -54,6 +54,10 @@ class PDFGenerator extends React.Component {
     {
       subheading='Faculty Name: Dr.'
     }
+    else if(type=='room')
+    {
+      subheading='Room No:'
+    }
 
     // Add the table header
     // const tableHeader = ['Day/Period', ...[1, 2, 3, 4, 5, 6, 7, 8].map(period => period.toString())];
@@ -108,9 +112,9 @@ class PDFGenerator extends React.Component {
       { text: 'Hours', bold: true, alignment: 'center', fontSize: 10 },
     ];
     
-    if (type !== 'room') {
+    // if (type !== 'room') {
       summaryTableHeader.push({ text: 'Subject Type', bold: true, fontSize: 10 });
-    }
+    // }
     
     if (type !== 'faculty') {
       summaryTableHeader.push({ text: 'Faculty Name', bold: true, fontSize: 10 });

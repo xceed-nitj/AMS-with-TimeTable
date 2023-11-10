@@ -19,6 +19,7 @@ import Navbar from './components/navbar';
 import Footer from './components/footer'
 import PrintSummary from './timetableadmin/printSummary'
 import LoadDistribution from './timetableadmin/loaddistribution';
+import RegistrationForm from './dashboard/register';
 
 
 function App() {
@@ -32,7 +33,7 @@ function App() {
          
         <Routes>
         <Route path="/" element={<Login/>} />
-
+        <Route path="/register" element={<RegistrationForm/>} />
           <Route path="/tt/:generatedLink" element={<Timetable />} />
           <Route path="/dashboard" element={<CreateTimetable />} />
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />

@@ -13,7 +13,7 @@ import {
   Text,
   chakra,
 } from "@chakra-ui/react";
-import { CustomTh, CustomLink, CustomBlueButton } from "../styles/customStyles";
+import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
 import {
   Table,
   TableContainer,
@@ -25,6 +25,7 @@ import {
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
+import Header from "../components/header";
 
 // function SuccessMessage({ message }) {
 //   return <div className="success-message">{message}</div>;
@@ -142,6 +143,7 @@ function Component() {
       .then(handleResponse)
       .then((data) => {
         toast({
+          position: 'top',
           title: "Faculty Added",
           description: "We've created your account for you.",
           status: "success",
@@ -193,9 +195,11 @@ function Component() {
 
   return (
     <Container maxW="5xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
+      {/* <Heading as="h1" size="xl" mt="6" mb="6">
         Add Faculty
-      </Heading>
+      </Heading> */}
+      <Header title="Add Faculty"></Header>
+      
       {/* <SuccessMessage message={successMessage} /> */}
       <chakra.form
         mt="1"
@@ -209,7 +213,7 @@ function Component() {
           <Select
             value={sem}
             onChange={(e) => setSem(e.target.value)}
-            isRequired
+            mb='2.5'
           >
             <option value="" disabled>
               Select Semester
@@ -220,13 +224,12 @@ function Component() {
               </option>
             ))}
           </Select>
-        </FormControl>
-        <FormControl isRequired mb="2.5">
+       
           <FormLabel>Department:</FormLabel>
           <Select
             value={selectedDepartment}
             onChange={handleDepartmentChange}
-            isRequired
+            mb='2.5'
           >
             <option value="">Select a Department</option>
             {availableDepartments.map((department) => (
@@ -235,14 +238,13 @@ function Component() {
               </option>
             ))}
           </Select>
-        </FormControl>
-        <FormControl isRequired mb="2.5">
+       
           <FormLabel>Faculty:</FormLabel>
 
           <Select
             value={selectedFaculty}
             onChange={(e) => setSelectedFaculty(e.target.value)}
-            isRequired
+            mb='2.5'
           >
             <option value="" key="default">
               Select a Faculty
@@ -253,12 +255,11 @@ function Component() {
               </option>
             ))}
           </Select>
-        </FormControl>
-        <FormControl>
           <Button
             type="submit"
             ml="0"
             mb="3"
+            width='200px'
             sx={{
               bgColor: "teal !important",
             }}
@@ -296,18 +297,17 @@ function Component() {
                     </Td>
                     <Td>
                       <Center>
-                        <Button
+                        <CustomDeleteButton
                           isLoading={
                             isLoading.state && isLoading.id == faculty._id
                           }
-                          bg="teal"
-                          color="white"
+                         
                           onClick={() =>
                             handleDelete(faculty._id, individualFaculty)
                           }
                         >
                           Delete
-                        </Button>
+                        </CustomDeleteButton>
                       </Center>
                     </Td>
                   </Tr>

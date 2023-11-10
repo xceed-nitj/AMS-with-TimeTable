@@ -9,7 +9,7 @@ router.use('/tt', require("./classtimetable"));
 router.use('/addfaculty',protectRoute, require("./addfaculty")); 
 router.use('/lock', require("./locktimetable")); 
 router.use('/masterroom', require("./masterroom")); 
-router.use('/mastersem',protectRoute, require("./mastersem")); 
+router.use('/mastersem', require("./mastersem")); 
 router.use('/addroom', require("./addroom")); 
 router.use('/addsem', require("./addsem")); 
 router.use('/allotment', require("./allotment")); 

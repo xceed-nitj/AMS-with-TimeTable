@@ -54,7 +54,7 @@ router.post('/:objectType', upload.single('csvFile'), (req, res) => {
       console.error(err);
       res.status(500).send('Error deleting the file');
     } else {
-      res.send('CSV file uploaded, data saved to MongoDB, and file deleted.');
+      res.status(200).json({message:"sem added successfully"}) ;
     }
   });
 });
