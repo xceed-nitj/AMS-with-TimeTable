@@ -13,6 +13,7 @@ import Login from './dashboard/login';
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
+import Note from './timetableadmin/note';
 import PrintButton from './filedownload/printButton';
 import Navbar from './components/navbar';
 import Footer from './components/footer'
@@ -45,6 +46,7 @@ function App() {
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
           <Route path="/tt/:generatedLink/generatepdf" element={<PrintSummary />} />
           <Route path="/tt/:generatedLink/loaddistribution" element={<LoadDistribution />} />
+          <Route path="/tt/:generatedLink/note" element={<Note/>} />
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
           <Route path="/tt/print" element={<PrintButton/>} />

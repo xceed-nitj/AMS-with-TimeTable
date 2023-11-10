@@ -13,6 +13,16 @@ noteRouter.post("/", async (req, res) => {
   }
 });
 
+noteRouter.get("/code/:code", async (req, res) => {
+  try {
+    const currentCode = req.params.code; 
+    const notes = await noteController.getNote(currentCode); 
+    res.status(200).json(notes);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 noteRouter.get("/", async (req, res) => {
   try {
     await noteController.getNotes(req, res);
@@ -22,6 +32,7 @@ noteRouter.get("/", async (req, res) => {
       .json({ error: e?.message || "Internal Server Error" });
   }
 });
+
 
 noteRouter.get("/id/:id", async (req, res) => {
   try {

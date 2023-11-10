@@ -15,6 +15,15 @@ class addRoomController {
         }
       }
       
+      async getRooms(currentCode) {
+        try {
+          const uniqueRooms = await addRoom.distinct('room', { code: currentCode });
+          return uniqueRooms;
+        } catch (error) {
+          throw error;
+        }
+      }
+
       async getAddedRoom(req, res) {
        try {
           const roomList = await addRoom.find();

@@ -25,6 +25,16 @@ class NoteController {
     }
   }
 
+  async getNote(currentCode) {
+    try {
+      const notes = await Note.find({ code: currentCode }); 
+      return notes;
+    } catch (error) {
+      throw error;
+    }
+  }  
+  
+
   async getNoteById(id) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
