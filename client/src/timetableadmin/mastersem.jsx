@@ -24,20 +24,16 @@ function MasterSemester() {
   }, []);
 
   const fetchMasterSemesters = () => {
-    fetch(`${apiUrl}/timetablemodule/mastersem`,{credentials: 'include'})
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
-      })
+    fetch(`${apiUrl}/timetablemodule/mastersem`, { credentials: 'include' })
+      .then((response) => response.json())
       .then((data) => {
-        setMasterSems(data);
+        setMasterSems(data.reverse());
       })
       .catch((error) => {
         console.error('Error:', error);
       });
   };
+  
 
   const handleAddSemester = () => {
     setEditedSemester({
@@ -60,14 +56,9 @@ function MasterSemester() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(editedSemester),
-      credentials: 'include'
+      credentials: 'include',
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
-      })
+      .then((response) => response.json())
       .then((data) => {
         console.log('Data saved successfully:', data);
         fetchMasterSemesters();
@@ -77,6 +68,7 @@ function MasterSemester() {
         console.error('Error:', error);
       });
   };
+  
 
   const handleEditClick = (_id) => {
     setEditSemesterId(_id);
@@ -155,29 +147,23 @@ function MasterSemester() {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-
+  
       fetch(`${apiUrl}/upload/mastersem`, {
         method: 'POST',
-        
         body: formData,
-        credentials: 'include'
+        credentials: 'include',
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw  Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
+        .then((response) => response.json())
+        .then(() => {
+          fetchMasterSemesters();
+          setSelectedFile(null);
         })
-        .then((data) => {
-          fetchData(); 
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+        .catch((error) => console.error('Error:', error));
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
+  
 
   return (
     <div>
