@@ -113,7 +113,7 @@ const session = ttdata[0].session;
 
   Object.keys(summaryData).forEach((subject) => {
     const summaryRow = [];
-    summaryRow.push({ text: subject, fontSize: 10, alignment: 'center' });
+    summaryRow.push({ text: summaryData[subject].originalKeys.join(', '), fontSize: 10, alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subCode, fontSize: 10, alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subjectFullName, fontSize: 10 });
     summaryRow.push({ text: summaryData[subject].count, fontSize: 10, alignment: 'center' });

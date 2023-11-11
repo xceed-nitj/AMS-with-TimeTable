@@ -848,6 +848,7 @@ const Timetable = () => {
                 code={currentCode}
                 subjectData={subjectData}
                 TTData={TTData}
+                headTitle={viewselectedSemester}
               />
             </Box>
           ) : (

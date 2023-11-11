@@ -148,7 +148,7 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
       .then((data) => {
         toast({
           title: "Faculty Added",
-          description: "We've created your account for you.",
+          description: "Selected faculty added to the sem",
           status: "success",
           duration: 2000,
           isClosable: true,
@@ -260,6 +260,8 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
     value={faculty.name}
     isChecked={selectedFaculties.includes(faculty.name)}
     onChange={() => handleFacultyCheckboxChange(faculty.name)}
+    ml="2"
+    mb="2"
   >
     {faculty.name}
   </Checkbox>
