@@ -43,9 +43,9 @@ console.log(type)
               else if(type == 'room'){
                 foundSubject = subjectData.find(item => item.subName === subject && item.sem === room);
                 }
-              else
+              else if(type == 'sem')
               {
-              foundSubject = subjectData.find(item => item.subName === subject);
+              foundSubject = subjectData.find(item => item.subName === subject && item.sem === headTitle );
               }
               // Initialize or update the subject entry in the summaryData
               if (foundSubject) {
@@ -69,12 +69,55 @@ console.log(type)
                   }
                 }
               }
+
+
+
+
+              
             }
           });
         });
       }
     }
   }
+
+// Create an object to store merged entries
+const mergedSummaryData = {};
+
+for (const key in summaryData) {
+  const entry = summaryData[key];
+  const subCode = entry.subCode;
+
+  // Check if an entry with the same subCode already exists in the mergedSummaryData
+  if (!mergedSummaryData[subCode]) {
+    // If not, add the entry to the mergedSummaryData
+    mergedSummaryData[subCode] = { ...entry, originalKeys: [key] };
+  } else {
+    // If an entry with the same subCode exists, check faculty and type before merging
+    if (
+      entry.faculties.every(faculty => mergedSummaryData[subCode].faculties.includes(faculty)) &&
+      entry.subType === mergedSummaryData[subCode].subType
+    ) {
+      // Merge the data
+      mergedSummaryData[subCode].count += entry.count;
+      mergedSummaryData[subCode].faculties = [...new Set([...mergedSummaryData[subCode].faculties, ...entry.faculties])];
+      mergedSummaryData[subCode].rooms = [...new Set([...mergedSummaryData[subCode].rooms, ...entry.rooms])];
+      mergedSummaryData[subCode].originalKeys.push(key);
+      // Add any other merging logic as needed
+    } else {
+      // If faculty or type is different, treat as a new entry
+      mergedSummaryData[`${subCode}-${key}`] = { ...entry, originalKeys: [key] };
+    }
+  }
+}
+
+// Now, mergedSummaryData contains the merged entries with original keys
+console.log('merged data', mergedSummaryData);
+
+const sortedSummaryEntries = Object.values(mergedSummaryData).sort((a, b) =>
+  a.subCode.localeCompare(b.subCode)
+);
+
 console.log('summary',  summaryData)
   return (
     <div>
@@ -93,19 +136,19 @@ console.log('summary',  summaryData)
           </tr>
         </thead>
         <tbody>
-          {Object.keys(summaryData).map((subject) => (
-            <tr key={subject}>
-              <td>{subject}</td>
-              <td>{summaryData[subject].subCode}</td>
-              <td>{summaryData[subject].subjectFullName}</td>
-              <td>{summaryData[subject].subType}</td>
-              <td>{summaryData[subject].count}</td>
-              {type !== 'faculty' && <td>{summaryData[subject].faculties.join(', ')}</td>}
-              {type !== 'room' && <td>{summaryData[subject].rooms.join(', ')}</td>}
-              {type !=='sem' && <td>{summaryData[subject].subSem}</td>}
-            </tr>
-          ))}
-        </tbody>
+  {Object.keys(sortedSummaryEntries).map((subCode) => (
+    <tr key={subCode}>
+      <td>{sortedSummaryEntries[subCode].originalKeys.join(', ')}</td>
+      <td>{sortedSummaryEntries[subCode].subCode}</td>
+      <td>{sortedSummaryEntries[subCode].subjectFullName}</td>
+      <td>{sortedSummaryEntries[subCode].subType}</td>
+      <td>{sortedSummaryEntries[subCode].count}</td>
+      {type !== 'faculty' && <td>{sortedSummaryEntries[subCode].faculties.join(', ')}</td>}
+      {type !== 'room' && <td>{sortedSummaryEntries[subCode].rooms.join(', ')}</td>}
+      {type !== 'sem' && <td>{sortedSummaryEntries[subCode].subSem}</td>}
+    </tr>
+  ))}
+</tbody>
       </table>
 {time?<PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle}/>:null}
     </div>

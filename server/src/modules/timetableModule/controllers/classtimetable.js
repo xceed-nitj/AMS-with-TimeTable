@@ -202,32 +202,8 @@ class ClassTimeTableController {
       const records = await ClassTimeTableDto.findFacultyDataWithSession(session,facultyname);
       // console.log(records)
       const updatedTime= await ClassTimeTableDto.getLastUpdatedTime(records);
-      const subjects = await subjectController.getSubjectBySession(code);
-
-
-      function filterSubjectsBySlotData(subjects, slotData) {
-        const timetableSubjectNamesSet = new Set();
-        
-        // Use forEach to iterate over each entry in slotData
-        slotData.forEach(entry => {
-          timetableSubjectNamesSet.add(entry.subject);
-        });
-      
-        const uniqueSubjectNames = [...timetableSubjectNamesSet];
-        
-        // Filter subjects based on unique subject names
-        const uniqueSubjects = subjects.filter(subject => uniqueSubjectNames.includes(subject.subName));
-      console.log(uniqueSubjects)
-        return uniqueSubjects;
-      }
-      // Use flatMap to combine filtered subjects from all timetable entries
-      const filteredSubjects = records.flatMap(timetableEntry =>
-        filterSubjectsBySlotData(subjects, timetableEntry.slotData)
-      );
-      
-      console.log("length subjects", filteredSubjects.length);
-      console.log("length records", records.length);
-            
+      // const subjects = await subjectController.getSubjectBySession(code);
+   
       // Create an empty timetable data object
       const timetableData = {};
   

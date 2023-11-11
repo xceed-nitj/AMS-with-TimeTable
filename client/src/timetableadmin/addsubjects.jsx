@@ -345,12 +345,12 @@ function Subject() {
     // Check for duplicate entry by subjectName
 
     const isDuplicateEntry = tableData.some(
-      (row) => row.subjectFullName === editedSData.subjectFullName
+      (row) => row.subName === editedSData.subName
     );
 
     if (isDuplicateEntry) {
       setDuplicateEntryMessage(
-        `Duplicate entry for "${editedSData.subjectFullName}" is detected. Kindly delete the entry.`
+        `Duplicate entry for "${editedSData.subjectName}" is detected. Kindly delete the entry.`
       );
     } else {
       fetch(`${apiUrl}/timetablemodule/subject`, {

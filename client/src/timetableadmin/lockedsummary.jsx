@@ -448,6 +448,8 @@ function LockedSummary() {
             code={currentCode}
             time={roomlockedTime}
             headTitle={selectedRoom}
+            subjectData={subjectData}
+              TTData={TTData}
 /> 
           </Box>
         ) : (
