@@ -34,12 +34,13 @@ const apiUrl=getEnvironment();
         return response.json();
       })
       .then((data) => {
-        setTableData(data);
+        setTableData(data.reverse());
       })
       .catch((error) => {
         console.error('Error:', error);
       });
   };
+  
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -50,31 +51,22 @@ const apiUrl=getEnvironment();
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-
+  
       fetch(`${apiUrl}/upload/faculty`, {
         method: 'POST',
         body: formData,
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw  Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
+        .then((response) => response.json())
+        .then(() => {
+          fetchData();
+          setSelectedFile(null);
         })
-        .then((data) => {
-          console.log(data); // Handle the response from the server
-          fetchData(); // Fetch data after a successful upload
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+        .catch((error) => console.error('Error:', error));
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
-
-
- 
+   
     const handleEditClick = (_id) => {
       setEditRowId(_id);
     
@@ -178,21 +170,17 @@ const apiUrl=getEnvironment();
         body: JSON.stringify(editedData),
         credentials: 'include',
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
-        })
+        .then((response) => response.json())
         .then((data) => {
           console.log('Data saved successfully:', data);
           fetchData();
-          handleCancelAddFaculty(); 
+          handleCancelAddFaculty();
         })
         .catch((error) => {
           console.error('Error:', error);
         });
     };
+    
   
 
 
