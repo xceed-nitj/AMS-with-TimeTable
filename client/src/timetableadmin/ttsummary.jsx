@@ -19,8 +19,8 @@ import PDFGenerator from '../filedownload/makepdf';
 const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData }) => {
 
   
-  console.log('TT data',TTData);
-
+console.log('TT sl data',timetableData);
+console.log(type)
 
   const summaryData = {};
 
