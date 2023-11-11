@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
-import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 import { Box, Container } from '@chakra-ui/react';
 import Header from '../components/header';
 
@@ -11,7 +11,7 @@ function MasterRoom() {
   const [masterRooms, setMasterRooms] = useState([]);
   const [editedRoom, setEditedRoom] = useState({
     room: '',
-    type:'',
+    type: '',
     building: '',
     floor: '',
     dept: '',
@@ -19,7 +19,7 @@ function MasterRoom() {
     imageUrl: '',
   });
   const [editRoomId, setEditRoomId] = useState(null);
-  const [isAddRoomFormVisible, setIsAddRoomFormVisible] = useState(false); 
+  const [isAddRoomFormVisible, setIsAddRoomFormVisible] = useState(false);
 
   const apiUrl = getEnvironment();
 
@@ -27,62 +27,46 @@ function MasterRoom() {
     fetchMasterRooms();
   }, []);
 
+
   const fetchMasterRooms = () => {
     fetch(`${apiUrl}/timetablemodule/masterroom`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setMasterRooms(data);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
+      .then((response) => response.json())
+      .then((data) => setMasterRooms(data.reverse()))
+      .catch((error) => console.error('Error:', error));
   };
-
+  
   const handleAddRoom = () => {
     setEditedRoom({
       room: '',
-      type:'',
+      type: '',
       building: '',
       floor: '',
       dept: '',
       landMark: '',
       imageUrl: '',
     });
-    setIsAddRoomFormVisible(true); 
+    setIsAddRoomFormVisible(true);
   };
 
   const handleCancelAddRoom = () => {
-    setIsAddRoomFormVisible(false); 
+    setIsAddRoomFormVisible(false);
   };
 
   const handleSaveNewRoom = () => {
     fetch(`${apiUrl}/timetablemodule/masterroom`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editedRoom),
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
-      })
+      .then((response) => response.json())
       .then((data) => {
         console.log('Data saved successfully:', data);
         fetchMasterRooms();
-        handleCancelAddRoom(); 
+        handleCancelAddRoom();
       })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
+      .catch((error) => console.error('Error:', error));
   };
+  
 
   const handleEditClick = (_id) => {
     setEditRoomId(_id);
@@ -118,7 +102,7 @@ function MasterRoom() {
             setEditRoomId(null);
             setEditedRoom({
               room: '',
-              type:'',
+              type: '',
               building: '',
               floor: '',
               dept: '',
@@ -162,56 +146,40 @@ function MasterRoom() {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-
+  
       fetch(`${apiUrl}/upload/masterroom`, {
         method: 'POST',
         body: formData,
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw  Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
+        .then((response) => response.json())
+        .then(() => {
+          fetchMasterRooms();
+          setSelectedFile(null);
         })
-        .then((data) => {
-          fetchData(); 
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+        .catch((error) => console.error('Error:', error));
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
+  
 
   return (
-    <Box size='8xl' >
+    <Box size='8xl'>
       <Header title='Manage Master Rooms'></Header>
       <h2>Batch Upload</h2>
-      <input
-        type="file"
-        accept=".xlsx"
-        onChange={handleFileChange}
-        name="XlsxFile"
-      />
+      <input type='file' accept='.xlsx' onChange={handleFileChange} name='XlsxFile' />
       <CustomBlueButton onClick={handleUpload}>Upload Xlsx</CustomBlueButton>
       <div>
-    
-    <FileDownloadButton
-      fileUrl='/room_template.xlsx'
-      fileName="room_template.xlsx"
-    />
-  </div>
-
+        <FileDownloadButton fileUrl='/room_template.xlsx' fileName='room_template.xlsx' />
+      </div>
 
       <div>
-        
-        {isAddRoomFormVisible ? ( 
+        {isAddRoomFormVisible ? (
           <div>
             <div>
               <label>Room No:</label>
               <input
-                type="text"
+                type='text'
                 value={editedRoom.room}
                 onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
               />
@@ -219,16 +187,16 @@ function MasterRoom() {
             <div>
               <label>Type:</label>
               <input
-                type="text"
+                type='text'
                 value={editedRoom.type}
                 onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
               />
             </div>
- 
+
             <div>
               <label>Building:</label>
               <input
-                type="text"
+                type='text'
                 value={editedRoom.building}
                 onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
               />
@@ -236,7 +204,7 @@ function MasterRoom() {
             <div>
               <label>Floor:</label>
               <input
-                type="text"
+                type='text'
                 value={editedRoom.floor}
                 onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
               />
@@ -244,7 +212,7 @@ function MasterRoom() {
             <div>
               <label>Department:</label>
               <input
-                type="text"
+                type='text'
                 value={editedRoom.dept}
                 onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
               />
@@ -252,7 +220,7 @@ function MasterRoom() {
             <div>
               <label>Landmark:</label>
               <input
-                type="text"
+                type='text'
                 value={editedRoom.landMark}
                 onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
               />
@@ -260,7 +228,7 @@ function MasterRoom() {
             <div>
               <label>Image URL:</label>
               <input
-                type="text"
+                type='text'
                 value={editedRoom.imageUrl}
                 onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
               />
@@ -295,7 +263,7 @@ function MasterRoom() {
               <td>
                 {editRoomId === room._id ? (
                   <input
-                    type="text"
+                    type='text'
                     value={editedRoom.room}
                     onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
                   />
@@ -306,7 +274,7 @@ function MasterRoom() {
               <td>
                 {editRoomId === room._id ? (
                   <input
-                    type="text"
+                    type='text'
                     value={editedRoom.type}
                     onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
                   />
@@ -318,7 +286,7 @@ function MasterRoom() {
               <td>
                 {editRoomId === room._id ? (
                   <input
-                    type="text"
+                    type='text'
                     value={editedRoom.building}
                     onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
                   />
@@ -329,7 +297,7 @@ function MasterRoom() {
               <td>
                 {editRoomId === room._id ? (
                   <input
-                    type="text"
+                    type='text'
                     value={editedRoom.floor}
                     onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
                   />
@@ -340,7 +308,7 @@ function MasterRoom() {
               <td>
                 {editRoomId === room._id ? (
                   <input
-                    type="text"
+                    type='text'
                     value={editedRoom.dept}
                     onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
                   />
@@ -351,7 +319,7 @@ function MasterRoom() {
               <td>
                 {editRoomId === room._id ? (
                   <input
-                    type="text"
+                    type='text'
                     value={editedRoom.landMark}
                     onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
                   />
@@ -362,7 +330,7 @@ function MasterRoom() {
               <td>
                 {editRoomId === room._id ? (
                   <input
-                    type="text"
+                    type='text'
                     value={editedRoom.imageUrl}
                     onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
                   />
