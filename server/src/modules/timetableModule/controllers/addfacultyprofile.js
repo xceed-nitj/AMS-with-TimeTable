@@ -3,26 +3,34 @@ const addFaculty = require("../../../models/addfaculty");
 
 
 class addFacultyController {
-      async  AddFaculty(req, res) {
-        const { code, faculty, sem } = req.body;
-      
-        try {
-          const existingFaculty = await addFaculty.findOne({ code, sem });
-      
-          if (!existingFaculty) {
-            const newFaculty = new addFaculty({ code, sem, faculty });
-            await newFaculty.save();
-            res.json({ message: 'Faculty added successfully' });
-          } else {
-            existingFaculty.faculty.push(faculty);
-            await existingFaculty.save();
-            res.json({ message: 'Faculty added to the existing semester successfully' });
-          }
-        } catch (error) {
-          console.error(error);
-          res.status(500).json({ error: 'Internal server error' });
-        }
+  async  AddFaculty(req, res) {
+    const { code, faculty, sem } = req.body;
+  
+    try {
+      if (!code || !faculty || !sem) {
+        return res.status(400).json({ error: 'Missing required fields' });
       }
+  
+      const existingFaculty = await addFaculty.findOne({ code, sem });
+  
+      if (!existingFaculty) {
+        const newFaculty = new addFaculty({ code, sem, faculty: [faculty] });
+        await newFaculty.save();
+        res.json({ message: 'Faculty added successfully' });
+      } else {
+        // Use $addToSet to add faculty to the array without duplicates
+        await addFaculty.updateOne(
+          { code, sem },
+          { $addToSet: { faculty: { $each: faculty } } }
+        );
+  
+        res.json({ message: 'Faculty added to the existing semester successfully' });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
       
       async getAddedFaculty(req, res) {
        try {
