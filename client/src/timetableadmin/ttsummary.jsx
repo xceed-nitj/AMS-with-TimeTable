@@ -16,7 +16,7 @@ import { Button } from "@chakra-ui/button";
 import PDFGenerator from '../filedownload/makepdf';
 
 
-const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData }) => {
+const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData,notes }) => {
 
   
 console.log('TT sl data',timetableData);
@@ -150,7 +150,7 @@ console.log('summary',  summaryData)
   ))}
 </tbody>
       </table>
-{time?<PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle}/>:null}
+{time?<PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle} notes={notes}/>:null}
     </div>
   );
 };

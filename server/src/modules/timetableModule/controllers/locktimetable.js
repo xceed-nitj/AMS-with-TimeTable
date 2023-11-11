@@ -11,6 +11,9 @@ const TimeTableDto=new TimeTabledto();
 const ClassTimeTabledto = require("../dto/classtimetable");
 const ClassTimeTableDto = new ClassTimeTabledto();
 
+const NoteController=require("./noteprofile")
+const Notecontroller= new NoteController();
+
 const getIndianTime=require("../helper/getIndianTime") 
 
 class LockTimeTableController {
@@ -85,8 +88,8 @@ class LockTimeTableController {
         timetableData.sem = sem;
         timetableData.code = code;
       });
-  
-      res.status(200).json(timetableData);
+  const notes= await Notecontroller.getNoteByCode(code,'sem',sem)
+      res.status(200).json({timetableData,notes});
     } catch (error) {
       console.error(error);
       throw new Error('Error fetching and formatting data from the database');
@@ -96,7 +99,7 @@ class LockTimeTableController {
 
   async facultytt(req, res) {
     
-    // const code=req.params.code;
+    const code=req.params.code;
     let session ='';
    const  facultyname=req.params.faculty;      
        try {  
@@ -143,7 +146,9 @@ class LockTimeTableController {
         // Set the sem and code for the timetable
       });
       // console.log(timetableData)
-      res.status(200).json({timetableData,updatedTime});
+  const notes= await Notecontroller.getNoteByCode(code,'faculty',facultyname)
+
+      res.status(200).json({timetableData,updatedTime,notes});
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
@@ -189,8 +194,10 @@ class LockTimeTableController {
     timetableData[day][slot].push(formattedSlotData);
         // Set the sem and code for the timetable
       });
+  const notes= await Notecontroller.getNoteByCode(code,'room',roomno)
+
       // console.log('rooom data',timetableData)
-      res.status(200).json({timetableData, updatedTime});
+      res.status(200).json({timetableData, updatedTime,notes});
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });

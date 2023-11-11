@@ -38,6 +38,7 @@ class PDFGenerator extends React.Component {
     const ttdata=this.props.ttdata; 
     const updatedTime=this.props.updatedTime;
     const headTitle=this.props.headTitle;
+    const notes=this.props.notes;
 
     const session=ttdata[0].session;
     const dept=ttdata[0].dept;
@@ -260,7 +261,7 @@ class PDFGenerator extends React.Component {
               text: 'Summary:',
               fontSize: 12,
               bold: true,
-              margin: [0, 10, 40, 10],
+              margin: [0, 5, 40, 5],
               alignment: 'left',
             },
             {
@@ -270,31 +271,45 @@ class PDFGenerator extends React.Component {
                 alignment: 'center',
               },
             },
+           
+          ...(notes.length > 0
+            ? [
+                {
+                  text: 'Notes:',
+                  fontSize: 10,
+                  bold: true,
+                  margin: [0, 2, 0, 2], // top, right, bottom, left
+                },
+                {
+                  ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:10 }))),
+                },
+              ]
+            : []),
             {
-            table: {
-              widths: ['*', '*'], // Two equal-width columns
-              body: [
-                [
-                  {
-                    text: 'Time Table Incharge',
-                    fontSize: 12,
-                    bold: true,
-                    alignment: 'left',
-                    
-                  },
-                  {
-                    text: 'Head of the Department',
-                    fontSize: 12,
-                    bold: true,
-                    alignment: 'right',
-                    // margin: [10,10,10,10],
-                  },
+              table: {
+                widths: ['*', '*'], // Two equal-width columns
+                body: [
+                  [
+                    {
+                      text: 'Time Table Incharge',
+                      fontSize: 12,
+                      bold: true,
+                      alignment: 'left',
+                      
+                    },
+                    {
+                      text: 'Head of the Department',
+                      fontSize: 12,
+                      bold: true,
+                      alignment: 'right',
+                      // margin: [10,10,10,10],
+                    },
+                  ],
                 ],
-              ],
+              },
+              layout: 'noBorders',
+              margin: [0,30,0,0],
             },
-            layout: 'noBorders',
-            margin: [0,30,0,0],
-          },
 
 
             ],

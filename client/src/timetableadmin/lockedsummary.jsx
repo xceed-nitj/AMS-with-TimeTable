@@ -6,7 +6,7 @@ import ViewTimetable from "./viewtt";
 import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
 import { Container } from "@chakra-ui/layout";
-import { FormControl, FormLabel, Heading, Select } from "@chakra-ui/react";
+import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
 import {
   CustomTh,
   CustomLink,
@@ -34,7 +34,9 @@ function LockedSummary() {
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
-  const [message, setMessage] = useState();
+  const [semNotes, setSemNotes] = useState([]);
+  const [facultyNotes, setFacultyNotes] = useState([]);
+  const [roomNotes, setRoomNotes] = useState([]);
   const [selectedSemester, setSelectedSemester] = useState("");
   const [selectedFaculty, setSelectedFaculty] = useState("");
   const [selectedRoom, setSelectedRoom] = useState("");
@@ -67,8 +69,10 @@ function LockedSummary() {
           `${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`,
           { credentials: "include" }
         );
-        const data = await response.json();
-        // console.log(data);
+        const data1 = await response.json();
+        const data=data1.timetableData;
+        setSemNotes(data1.notes)
+        console.log('semnotes',data1.notes);
         const initialData = generateInitialTimetableData(data, "sem");
         return initialData;
       } catch (error) {
@@ -94,6 +98,7 @@ function LockedSummary() {
         const data1 = await response.json();
         const data = data1.timetableData;
         setFacultyLockedTime(data1.updatedTime);
+        setFacultyNotes(data1.notes);
         const initialData = generateInitialTimetableData(data, "faculty");
         return initialData;
       } catch (error) {
@@ -120,6 +125,7 @@ function LockedSummary() {
         const data1 = await response.json();
         const data = data1.timetableData;
         setRoomLockedTime(data1.updatedTime);
+        setRoomNotes(data1.notes);
         const initialData = generateInitialTimetableData(data, "room");
         return initialData;
       } catch (error) {
@@ -369,9 +375,31 @@ function LockedSummary() {
               headTitle={selectedSemester}
               subjectData={subjectData}
               TTData={TTData}
+              notes={semNotes}
               />
+      <Box>
+  {semNotes.length > 0 ? (
+    <div>
+      <Text fontSize="xl" fontWeight="bold">
+        Notes:
+      </Text>
+      {semNotes.map((noteArray, index) => (
+        <UnorderedList key={index}>
+          {noteArray.map((note, noteIndex) => (
+            <ListItem key={noteIndex}>{note}</ListItem>
+          ))}
+        </UnorderedList>
+      ))}
+    </div>
+  ) : (
+    <Text>No notes added for this selection.</Text>
+  )}
+</Box>
+
+
+
           </Box>
-          
+          // {semNotes? <p>semNotes</p>:null}          
           ) : (
             <Text>Please select a Semester from the dropdown.</Text>
             )}
@@ -408,10 +436,32 @@ function LockedSummary() {
               headTitle={selectedFaculty}
               subjectData={subjectData}
               TTData={TTData}
+              notes={facultyNotes}
               />
             {/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
             {/* <PDFViewTimetable timetableData={viewFacultyData} /> */}
             {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
+
+            <Box>
+  {facultyNotes.length>0 ? (
+    <div>
+      <Text fontSize="xl" fontWeight="bold">
+        Notes:
+      </Text>
+      {facultyNotes.map((noteArray, index) => (
+        <UnorderedList key={index}>
+          {noteArray.map((note, noteIndex) => (
+            <ListItem key={noteIndex}>{note}</ListItem>
+          ))}
+        </UnorderedList>
+      ))}
+    </div>
+  ) : (
+    <Text>No notes added for this selection.</Text>
+  )}
+</Box>
+
+
           </Box>
         ) : (
           <Text>Please select a faculty from the dropdown.</Text>
@@ -450,7 +500,30 @@ function LockedSummary() {
             headTitle={selectedRoom}
             subjectData={subjectData}
               TTData={TTData}
-/> 
+              notes={roomNotes}
+
+/>
+<Box>
+  {roomNotes.length>0 ? (
+    <div>
+      <Text fontSize="xl" fontWeight="bold">
+        Notes:
+      </Text>
+      {roomNotes.map((noteArray, index) => (
+        <UnorderedList key={index}>
+          {noteArray.map((note, noteIndex) => (
+            <ListItem key={noteIndex}>{note}</ListItem>
+          ))}
+        </UnorderedList>
+      ))}
+    </div>
+  ) : (
+    <Text>No notes added for this selection.</Text>
+  )}
+</Box>
+
+
+
           </Box>
         ) : (
           <Text>Please select a Room from the dropdown.</Text>

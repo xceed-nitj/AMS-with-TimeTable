@@ -14,7 +14,7 @@ import {
   CustomPlusButton,
   CustomDeleteButton,
 } from "../styles/customStyles";
-import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+import { Box, Text, Portal, ChakraProvider, UnorderedList, ListItem } from "@chakra-ui/react";
 import { Center, Square, Circle } from "@chakra-ui/react";
 
 import {
@@ -459,6 +459,10 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/addroom`);
   };
+  const handleAddNote = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/addnote`);
+  };
   const handleViewSummary = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/lockedsummary`);
@@ -612,22 +616,25 @@ const Timetable = () => {
           <Button m="1 auto" colorScheme="teal" onClick={handleAddFaculty}>
             Add Faculty
           </Button>
+          <Button m="1 auto" colorScheme="teal" onClick={handleAddNote}>
+            Add Note
+          </Button>
         </Box>
         <Box mr='-1.5'>
-          <Button m="1 auto" colorScheme="teal" onClick={handleLockTT}>
+          <Button m="1 auto" colorScheme="orange" onClick={handleLockTT}>
             Lock TT
           </Button>
-          <Button m="1 auto" colorScheme="teal" onClick={handleViewSummary}>
+          <Button m="1 auto" colorScheme="orange" onClick={handleViewSummary}>
             View/Download Locked TT
           </Button>
         </Box>
       </Box>
 
       <Box display="flex" justifyContent="space-between" mb="4">
-        <Text fontSize="xl" color="telegram.500" id="saveTime">
+        <Text fontSize="xl" color="red" id="saveTime">
           Last saved on: {savedTime ? savedTime : "Not saved yet"}
         </Text>
-        <Text fontSize="xl" color="telegram.500" id="lockTime">
+        <Text fontSize="xl" color="red" id="lockTime">
           Last locked on: {lockedTime ? lockedTime : "Not Locked yet"}
         </Text>
       </Box>
@@ -838,7 +845,7 @@ const Timetable = () => {
         <Box>
           {viewselectedSemester ? (
             <Box>
-              <Text color="telegram.500" id="saveTime" mb="2.5" mt="2.5">
+              <Text color="red" id="saveTime" mb="2.5" mt="2.5">
                 Last saved on: {savedTime ? savedTime : "Not saved yet"}
               </Text>
               <ViewTimetable timetableData={viewData} />
@@ -850,8 +857,29 @@ const Timetable = () => {
                 TTData={TTData}
                 headTitle={viewselectedSemester}
               />
-            </Box>
-          ) : (
+           
+      {/* <Box>
+  {semNotes.length > 0 ? (
+    <div>
+      <Text fontSize="xl" fontWeight="bold">
+        Notes:
+      </Text>
+      {semNotes.map((noteArray, index) => (
+        <UnorderedList key={index}>
+          {noteArray.map((note, noteIndex) => (
+            <ListItem key={noteIndex}>{note}</ListItem>
+          ))}
+        </UnorderedList>
+      ))}
+    </div>
+  ) : (
+    <Text>No notes added for this selection.</Text>
+  )}
+</Box> */}
+
+      </Box>
+        
+) : (
             <Text>Please select a Semester from the dropdown.</Text>
           )}
         </Box>
@@ -880,7 +908,7 @@ const Timetable = () => {
         <Box>
           {viewFaculty ? (
             <Box>
-              <Text color="telegram.500" id="saveTime" mb="2.5" mt="2.5">
+              <Text color="red" id="saveTime" mb="2.5" mt="2.5">
                 Last saved on:{" "}
                 {facultyUpdateTime ? facultyUpdateTime : "Not saved yet"}
               </Text>
@@ -922,7 +950,7 @@ const Timetable = () => {
       <Box mb="8">
         {viewRoom ? (
           <Box>
-            <Text color="telegram.500" id="saveTime" mb="2.5" mt="2.5">
+            <Text color="red" id="saveTime" mb="2.5" mt="2.5">
               Last saved on: {roomUpdateTime ? roomUpdateTime : "Not saved yet"}
             </Text>
 

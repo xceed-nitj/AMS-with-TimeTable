@@ -13,7 +13,7 @@ import Login from './dashboard/login';
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
-import Note from './timetableadmin/note';
+import Note from './timetableadmin/addnote';
 import PrintButton from './filedownload/printButton';
 import Navbar from './components/navbar';
 import Footer from './components/footer'
