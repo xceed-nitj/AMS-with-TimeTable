@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import getEnvironment from '../getenvironment';
 import {
   Container,
-  FormControl,
   FormLabel,
   Heading,
-  Input,
   Select,
   Button,
   Checkbox
@@ -18,14 +16,13 @@ const AllotmentForm = () => {
       { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
     ],
     openElectiveAllotments: [
-      { dept: '', room: '' },
+      { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
     ],
   });
-  // const apiUrl = getEnvironment();
 
   const [departments, setDepartments] = useState([]);
   const [rooms, setRooms] = useState([]);
-  const [sessions,setSessions]=useState([]);
+  const [sessions, setSessions] = useState([]);
   const apiUrl = getEnvironment();
 
   useEffect(() => {
@@ -69,6 +66,7 @@ const AllotmentForm = () => {
         console.error("Error:", error);
       }
     };
+
     const fetchSessions = async () => {
       try {
         const response = await fetch(
@@ -99,10 +97,10 @@ const AllotmentForm = () => {
 
   const handleChange = (e, deptIndex, roomIndex, type) => {
     const { name, value, type: inputType, checked } = e.target;
-  
+
     setFormData((prevData) => {
       const updatedAllotments = [...prevData[type]];
-  
+
       if (name === 'dept') {
         updatedAllotments[deptIndex][name] = value;
       } else if (name === 'room') {
@@ -117,15 +115,13 @@ const AllotmentForm = () => {
           [name]: inputType === 'checkbox' ? checked : value,
         };
       }
-  
+
       return {
         ...prevData,
         [type]: updatedAllotments,
       };
     });
   };
-  
-
 
   const handleAddRoom = (deptIndex, type) => {
     const updatedAllotments = [...formData[type]];
@@ -157,70 +153,55 @@ const AllotmentForm = () => {
     }));
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+  const handleAddRoomOpenElective = (deptIndex) => {
+    const updatedAllotments = [...formData.openElectiveAllotments];
+    updatedAllotments[deptIndex].rooms.push({ room: '', morningSlot: false, afternoonSlot: false });
+
+    setFormData((prevData) => ({
+      ...prevData,
+      openElectiveAllotments: updatedAllotments,
+    }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-      credentials: 'include',
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+        credentials: 'include',
+      });
 
-    });
-console.log('formdata',formData)
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      console.log('Allotment created successfully');
+    } catch (error) {
+      console.error('Error creating allotment:', error.message);
     }
-
-    // Handle the response, you might want to redirect or show a success message
-    console.log('Allotment created successfully');
-
-    // // Optionally, reset the form
-    // setFormData({
-    //   session: '',
-    //   centralisedAllotments: [
-    //     { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
-    //   ],
-    //   openElectiveAllotments: [
-    //     { dept: '', room: '' },
-    //   ],
-    // });
-  } catch (error) {
-    // Handle errors, show an error message, etc.
-    console.error('Error creating allotment:', error.message);
-  }
-};
-
-
-
+  };
 
   return (
     <form onSubmit={handleSubmit}>
       <Heading>Allotment</Heading>
       <FormLabel>Session:</FormLabel>
-          <Select
-            name="session"
-            value={formData.session}
-            onChange={handleInputChange}
-          >
-            <option value="">Select a Session</option>
-            {sessions.map((session, index) => (
-              <option key={index} value={session}>
-                {session}
-              </option>
-            ))}
-          </Select>
+      <Select
+        name="session"
+        value={formData.session}
+        onChange={(e) => setFormData({ ...formData, session: e.target.value })}
+      >
+        <option value="">Select a Session</option>
+        {sessions.map((session, index) => (
+          <option key={index} value={session}>
+            {session}
+          </option>
+        ))}
+      </Select>
 
       <Heading>Centralised Room Allotment</Heading>
       <table>
@@ -250,60 +231,60 @@ console.log('formdata',formData)
                 </Select>
               </td>
               <td>
-  {allotment.rooms.map((room, roomIndex) => (
-    <div key={`centralisedRoom-${deptIndex}-${roomIndex}`}>
-      <Select
-        name="room"
-        value={room.room}
-        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-      >
-        <option key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`} value="">
-          Select Room
-        </option>
-        {rooms.map((room, index) => (
-          <option key={`centralisedRoom-${index}`} value={room}>
-            {room}
-          </option>
-        ))}
-      </Select>
-      {/* Checkbox for Morning Slot */}
-      <Checkbox
-        name="morningSlot"
-        isChecked={room.morningSlot}
-        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-      >
-        Morning Slot
-      </Checkbox>
-      {/* Checkbox for Afternoon Slot */}
-      <Checkbox
-        name="afternoonSlot"
-        isChecked={room.afternoonSlot}
-        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-      >
-        Afternoon Slot
-      </Checkbox>
-      {/* Button to remove this room */}
-      <Button
-        type="Button"
-        onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
-      >
-        Remove Room
-      </Button>
-    </div>
-  ))}
-  {/* Button to add a new room for this department */}
-  <Button type="Button" onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}>
-    Add Room
-  </Button>
-</td>
-
+                {allotment.rooms.map((room, roomIndex) => (
+                  <div key={`centralisedRoom-${deptIndex}-${roomIndex}`}>
+                    <Select
+                      name="room"
+                      value={room.room}
+                      onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+                    >
+                      <option key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`} value="">
+                        Select Room
+                      </option>
+                      {rooms.map((room, index) => (
+                        <option key={`centralisedRoom-${index}`} value={room}>
+                          {room}
+                        </option>
+                      ))}
+                    </Select>
+                    <Checkbox
+                      name="morningSlot"
+                      isChecked={room.morningSlot}
+                      onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+                    >
+                      Morning Slot
+                    </Checkbox>
+                    <Checkbox
+                      name="afternoonSlot"
+                      isChecked={room.afternoonSlot}
+                      onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+                    >
+                      Afternoon Slot
+                    </Checkbox>
+                    <Button
+                      type="Button"
+                      onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
+                    >
+                      Remove Room
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="Button"
+                  onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}
+                >
+                  Add Room
+                </Button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* Button to add a new allotment */}
-      <Button type="Button" onClick={() => handleAddAllotment('centralisedAllotments')}>
+      <Button
+        type="Button"
+        onClick={() => handleAddAllotment('centralisedAllotments')}
+      >
         Add Allotment
       </Button>
 
@@ -335,26 +316,35 @@ console.log('formdata',formData)
                 </Select>
               </td>
               <td>
-                <Select
-                  name="room"
-                  value={allotment.room}
-                  onChange={(e) => handleChange(e, deptIndex, null, 'openElectiveAllotments')}
-                >
-                  <option key={`openElectiveDefaultRoom-${deptIndex}`} value="">
-                    Select Room
-                  </option>
-                  {rooms.map((room, index) => (
-                    <option key={`openElectiveRoom-${index}`} value={room}>
-                      {room}
-                    </option>
-                  ))}
-                </Select>
-                {/* Button to remove this room */}
+                {allotment.rooms.map((room, roomIndex) => (
+                  <div key={`openElectiveRoom-${deptIndex}-${roomIndex}`}>
+                    <Select
+                      name="room"
+                      value={room.room}
+                      onChange={(e) => handleChange(e, deptIndex, roomIndex, 'openElectiveAllotments')}
+                    >
+                      <option key={`openElectiveDefaultRoom-${deptIndex}-${roomIndex}`} value="">
+                        Select Room
+                      </option>
+                      {rooms.map((room, index) => (
+                        <option key={`openElectiveRoom-${index}`} value={room}>
+                          {room}
+                        </option>
+                      ))}
+                    </Select>
+                      <Button
+                      type="Button"
+                      onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
+                    >
+                      Remove Room
+                    </Button>
+                  </div>
+                ))}
                 <Button
                   type="Button"
-                  onClick={() => handleRemoveRoom(deptIndex, null, 'openElectiveAllotments')}
+                  onClick={() => handleAddRoomOpenElective(deptIndex)}
                 >
-                  Remove Room
+                  Add Room
                 </Button>
               </td>
             </tr>
@@ -362,8 +352,10 @@ console.log('formdata',formData)
         </tbody>
       </table>
 
-      {/* Button to add a new allotment */}
-      <Button type="Button" onClick={() => handleAddAllotment('openElectiveAllotments')}>
+      <Button
+        type="Button"
+        onClick={() => handleAddAllotment('openElectiveAllotments')}
+      >
         Add Allotment
       </Button>
 
