@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const { commonFields, updateTimestamps } = require('./commonFields');
+const Schema = mongoose.Schema;
+
 
 
 // Define your Mongoose schema based on the interface
@@ -8,14 +10,11 @@ const allotmentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  dept: {
-    type: String,
+  centralisedAllotments: {
+    type: Schema.Types.Mixed,
   },
-  room: {
-    type: String,
-  },
-  slot: {
-    type: [String],
+  openElectiveAllotments: {
+    type: Schema.Types.Mixed,
   },
 
 });

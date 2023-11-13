@@ -22,6 +22,7 @@ import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
 import AllotmentForm from './timetableadmin/allotment';
 import MasterDelete from './timetableadmin/masterdelete';
+import AdminPage from './timetableadmin/admin';
 
 function App() {
   return (
@@ -53,6 +54,8 @@ function App() {
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
           <Route path="/tt/print" element={<PrintButton/>} />
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
+          <Route path="/tt/admin" element={<AdminPage/>}/>
+
         </Routes>
         {/* <Footer/> */}
       {/* </div> */}

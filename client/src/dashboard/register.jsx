@@ -73,7 +73,7 @@ const RegistrationForm = () => {
 
       const data = await response.json();
       setSuccess(data.message); // Set success message
-      console.log('Response:', data);
+      // console.log('Response:', data);
     } catch (error) {
       setError('Error occurred while processing the request.');
       setSuccess(''); // Clear success message on error

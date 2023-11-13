@@ -89,7 +89,7 @@ subjectRouter.post("/", async (req, res) => {
       const code=req.params.code;
       // const sub=req.params.subname;
       const subjects = await subjectController.getSubjectBySession(code); 
-      console.log("subject ocde", subjects)
+      // console.log("subject ocde", subjects)
 
       res.status(200).json(subjects);
     } catch (error) {

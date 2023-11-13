@@ -82,7 +82,7 @@ addFacultyRouter.post("/", async (req, res) => {
       try {
       const code=req.params.code;
       const sem=req.params.sem;
-      const faculty=await addFacultyRouter.getFilteredFaculty(code,sem) ; 
+      const faculty=await addFacultyController.getFilteredFaculty(code,sem); 
       res.status(200).json(faculty);
       } catch (e) {
         res

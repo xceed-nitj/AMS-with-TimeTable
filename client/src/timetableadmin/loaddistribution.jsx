@@ -58,7 +58,7 @@ function LoadDistribution() {
         const data1 = await response.json();
         const data=data1.timetableData;
         setFacultyLockedTime(data1.updatedTime);
-        console.log(data)
+        // console.log(data)
         const initialData = generateInitialTimetableData(data,'faculty');
         return initialData;
       } catch (error) {
