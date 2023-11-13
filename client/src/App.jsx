@@ -21,7 +21,7 @@ import PrintSummary from './timetableadmin/printSummary'
 import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
 import AllotmentForm from './timetableadmin/allotment';
-
+import MasterDelete from './timetableadmin/masterdelete';
 
 function App() {
   return (
@@ -43,6 +43,7 @@ function App() {
           <Route path="/tt/:generatedLink/addsem" element={<AddSem />} />
           <Route path="/tt/masterroom" element={<MasterRoom />} />
           <Route path="/tt/mastersem" element={<MasterSem />} />
+          <Route path="/tt/masterdelete" element={<MasterDelete />} />
           <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
           <Route path="/tt/:generatedLink/generatepdf" element={<PrintSummary />} />

@@ -104,6 +104,17 @@ LockTimeTableRouter.get("/viewsem/:code", async (req, res) => {
   }
 });
 
+LockTimeTableRouter.delete("/deletebycode/:code", async (req, res) => {
+  try {
+    const code = req.params.code;
+    await locktimetableController.deleteLockedTableByCode(code);
+    res.status(200).json({ response: `Locked Time Table with code ${code} deleted successfully` });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 
 
   module.exports = LockTimeTableRouter;

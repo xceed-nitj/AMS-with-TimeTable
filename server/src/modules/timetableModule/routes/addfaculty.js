@@ -82,7 +82,7 @@ addFacultyRouter.post("/", async (req, res) => {
       try {
       const code=req.params.code;
       const sem=req.params.sem;
-      const faculty=await addFacultyController.getFilteredFaculty(code,sem) ; 
+      const faculty=await addFacultyRouter.getFilteredFaculty(code,sem) ; 
       res.status(200).json(faculty);
       } catch (e) {
         res
@@ -91,5 +91,14 @@ addFacultyRouter.post("/", async (req, res) => {
       }
     });
   
+    addFacultyRouter.delete("/deletebycode/:code", async (req, res) => {
+      try {
+        const code = req.params.code;
+        await addFacultyController.deleteFacultyByCode(code);
+        res.status(200).json({ response: `Faculty with code ${code} deleted successfully` });
+      } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
+    });
 
   module.exports = addFacultyRouter;

@@ -74,7 +74,21 @@ class AddSemController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
+
+
+      async deleteSemByCode(code) {
+        try {
+    
+          await addSem.deleteMany({ code });
+    
+        } catch (error) {
+          throw new Error("Failed to delete sem by code");
+        }
+      }
+
     }
+
+
 
 
 module.exports = AddSemController;

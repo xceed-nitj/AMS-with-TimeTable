@@ -72,6 +72,17 @@ class addRoomController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
+
+      async deleteRoomByCode(code) {
+        try {
+    
+          await addRoom.deleteMany({ code });
+    
+        } catch (error) {
+          throw new Error("Failed to delete room by code");
+        }
+      }
+
     }
 
 
