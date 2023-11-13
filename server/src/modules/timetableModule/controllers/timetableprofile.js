@@ -138,6 +138,17 @@ class TableController {
       }
     }
 
+    
+  async deleteTableByCode(code) {
+    try {
+
+      await TimeTable.deleteMany({ code });
+
+    } catch (error) {
+      throw new Error("Failed to delete by code");
+    }
+  }
+
 
 }
 module.exports = TableController;

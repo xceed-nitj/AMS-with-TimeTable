@@ -72,6 +72,16 @@ addRoomRouter.post("/", async (req, res) => {
       }
     });
 
+    addRoomRouter.delete("/deletebycode/:code", async (req, res) => {
+      try {
+        const code = req.params.code;
+        await addRoomController.deleteRoomByCode(code);
+        res.status(200).json({ response: `Rooms with code ${code} deleted successfully` });
+      } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
+    });
+
 
 
   module.exports = addRoomRouter;

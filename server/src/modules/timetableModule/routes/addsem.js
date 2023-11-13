@@ -74,6 +74,17 @@ addSemRouter.post("/", async (req, res) => {
       }
     });
 
+    addSemRouter.delete("/deletebycode/:code", async (req, res) => {
+      try {
+        const code = req.params.code;
+        await addSemController.deleteSemByCode(code);
+        res.status(200).json({ response: `Sem with code ${code} deleted successfully` });
+      } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
+    });
+   
+
 
 
   module.exports = addSemRouter;

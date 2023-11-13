@@ -219,6 +219,16 @@ class LockTimeTableController {
       saveTimeIST
     };
   }
+
+  async deleteLockedTableByCode(code) {
+    try {
+
+      await LockSem.deleteMany({ code });
+
+    } catch (error) {
+      throw new Error("Failed to delete by code");
+    }
+  }
     
 
 }

@@ -280,6 +280,16 @@ class ClassTimeTableController {
     }
   }
 
+  async deleteClassTableByCode(code) {
+    try {
+
+      await ClassTable.deleteMany({ code });
+
+    } catch (error) {
+      throw new Error("Failed to delete by code");
+    }
+  }
+
 
 }
 module.exports = ClassTimeTableController;

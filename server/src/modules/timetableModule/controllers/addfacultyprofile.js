@@ -96,7 +96,7 @@ class addFacultyController {
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
-      };
+      }
 
       async getFaculty(){
         try {
@@ -106,9 +106,17 @@ class addFacultyController {
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
-      };
+      }
 
-
+      async deleteFacultyByCode(code) {
+        try {
+    
+          await addFaculty.deleteMany({ code });
+    
+        } catch (error) {
+          throw new Error("Failed to delete faculty by code");
+        }
+      }
 
     }
 
