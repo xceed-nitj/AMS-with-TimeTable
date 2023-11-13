@@ -2,18 +2,28 @@ const HttpException = require("../../../models/http-exception");
 const AddAllotment = require("../../../models/allotment");
 
 class AllotmentController {
-      async  AddAllotment(req, res) {
-        const newallotment = req.body;
-        try {
-          const createdallotment = await AddAllotment.create(newallotment);
-          res.json(createdallotment)
-          return;
-        } catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
-        }
+  async AddAllotment(req, res) {
+    const newallotment = req.body;
+    const session = newallotment.session;
+  
+    try {
+      const existingAllotment = await AddAllotment.findOne({ session: session });
+  
+      if (!existingAllotment) {
+        // If the session doesn't exist, create a new allotment
+        const createdAllotment = await AddAllotment.create(newallotment);
+        res.json(createdAllotment);
+      } else {
+        // If the session exists, update the existing allotment
+        const updatedAllotment = await AddAllotment.updateOne({ session: session }, newallotment);
+        res.json(updatedAllotment);
       }
-      
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+        
       async getAllotment(req, res) {
        try {
           const list = await AddAllotment.find();

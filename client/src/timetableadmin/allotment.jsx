@@ -1,169 +1,373 @@
 import React, { useEffect, useState } from 'react';
 import getEnvironment from '../getenvironment';
+import {
+  Container,
+  FormControl,
+  FormLabel,
+  Heading,
+  Input,
+  Select,
+  Button,
+  Checkbox
+} from '@chakra-ui/react';
 
 const AllotmentForm = () => {
-  // State to hold form data
   const [formData, setFormData] = useState({
     session: '',
-    dept: '',
-    room: '',
-    morningSlot: false,
-    afternoonSlot: false,
+    centralisedAllotments: [
+      { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
+    ],
+    openElectiveAllotments: [
+      { dept: '', room: '' },
+    ],
   });
+  // const apiUrl = getEnvironment();
 
   const [departments, setDepartments] = useState([]);
   const [rooms, setRooms] = useState([]);
-
+  const [sessions,setSessions]=useState([]);
   const apiUrl = getEnvironment();
 
-  // Fetch departments and rooms on component mount
   useEffect(() => {
-    fetchDepartments();
-    fetchRooms();
-  }, []); // Empty dependency array means this effect runs once when the component mounts
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDepartments(data);
+        } else {
+          console.error("Failed to fetch departments");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
 
-  // Handler for input changes
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const fetchMasterRooms = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/masterroom?type=Centralised Classroom`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const roomNames = data.map(room => room.room);
+          setRooms(roomNames);
+        } else {
+          console.error("Failed to fetch departments");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+    const fetchSessions = async () => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/allotment/session`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setSessions(data);
+        } else {
+          console.error("Failed to fetch sessions");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+
+    fetchSessions();
+    fetchDepartments();
+    fetchMasterRooms();
+
+  }, []);
+
+  const handleChange = (e, deptIndex, roomIndex, type) => {
+    const { name, value, type: inputType, checked } = e.target;
+  
+    setFormData((prevData) => {
+      const updatedAllotments = [...prevData[type]];
+  
+      if (name === 'dept') {
+        updatedAllotments[deptIndex][name] = value;
+      } else if (name === 'room') {
+        if (roomIndex !== null) {
+          updatedAllotments[deptIndex].rooms[roomIndex][name] = value;
+        } else {
+          updatedAllotments[deptIndex][name] = value;
+        }
+      } else {
+        updatedAllotments[deptIndex].rooms[roomIndex] = {
+          ...updatedAllotments[deptIndex].rooms[roomIndex],
+          [name]: inputType === 'checkbox' ? checked : value,
+        };
+      }
+  
+      return {
+        ...prevData,
+        [type]: updatedAllotments,
+      };
+    });
+  };
+  
+
+
+  const handleAddRoom = (deptIndex, type) => {
+    const updatedAllotments = [...formData[type]];
+    updatedAllotments[deptIndex].rooms.push({ room: '', morningSlot: false, afternoonSlot: false });
+
     setFormData((prevData) => ({
       ...prevData,
-      [name]: type === 'checkbox' ? checked : value,
+      [type]: updatedAllotments,
     }));
   };
 
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      } else {
-        console.error('Failed to fetch departments');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
+  const handleRemoveRoom = (deptIndex, roomIndex, type) => {
+    const updatedAllotments = [...formData[type]];
+    updatedAllotments[deptIndex].rooms.splice(roomIndex, 1);
+
+    setFormData((prevData) => ({
+      ...prevData,
+      [type]: updatedAllotments,
+    }));
   };
 
-  const fetchRooms = async () => {
-    try {
-      const type = 'Centralised Classroom';
-      const response = await fetch(`${apiUrl}/timetablemodule/masterroom/getroom/${type}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setRooms(data);
-      } else {
-        console.error('Failed to fetch rooms');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
+  const handleAddAllotment = (type) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      [type]: [
+        ...prevData[type],
+        { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
+      ],
+    }));
   };
 
-  // Handler for form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      // Make a POST request using fetch
-      const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      // Handle the response, you might want to redirect or show a success message
-      console.log('Allotment created successfully');
-
-      // Optionally, reset the form
-      setFormData({
-        session: '',
-        dept: '',
-        room: '',
-        morningSlot: false,
-        afternoonSlot: false,
-      });
-    } catch (error) {
-      // Handle errors, show an error message, etc.
-      console.error('Error creating allotment:', error.message);
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+      credentials: 'include',
+
+    });
+console.log('formdata',formData)
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    // Handle the response, you might want to redirect or show a success message
+    console.log('Allotment created successfully');
+
+    // // Optionally, reset the form
+    // setFormData({
+    //   session: '',
+    //   centralisedAllotments: [
+    //     { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
+    //   ],
+    //   openElectiveAllotments: [
+    //     { dept: '', room: '' },
+    //   ],
+    // });
+  } catch (error) {
+    // Handle errors, show an error message, etc.
+    console.error('Error creating allotment:', error.message);
+  }
+};
+
+
+
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>
-        Session:
-        <input type="text" name="session" value={formData.session} onChange={handleChange} />
-      </label>
+      <Heading>Allotment</Heading>
+      <FormLabel>Session:</FormLabel>
+          <Select
+            name="session"
+            value={formData.session}
+            onChange={handleInputChange}
+          >
+            <option value="">Select a Session</option>
+            {sessions.map((session, index) => (
+              <option key={index} value={session}>
+                {session}
+              </option>
+            ))}
+          </Select>
 
-      <label>
-        Department:
-        <select name="dept" value={formData.dept} onChange={handleChange}>
-          <option value="">Select Department</option>
-          {departments.map((department) => (
-            <option key={department.id} value={department.name}>
-              {department.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Room:
-        {rooms.map((room) => (
-          <div key={room.id}>
-            <input
-              type="checkbox"
-              name="room"
-              value={room.name}
-              checked={formData.room === room.name}
-              onChange={handleChange}
-            />
-            {room.name}
-          </div>
+      <Heading>Centralised Room Allotment</Heading>
+      <table>
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Room</th>
+          </tr>
+        </thead>
+        <tbody>
+          {formData.centralisedAllotments.map((allotment, deptIndex) => (
+            <tr key={`centralisedDeptRow-${deptIndex}`}>
+              <td>
+                <Select
+                  name="dept"
+                  value={allotment.dept}
+                  onChange={(e) => handleChange(e, deptIndex, null, 'centralisedAllotments')}
+                >
+                  <option key={`centralisedDefaultDept-${deptIndex}`} value="">
+                    Select Department
+                  </option>
+                  {departments.map((department, index) => (
+                    <option key={`centralisedDept-${index}`} value={department}>
+                      {department}
+                    </option>
+                  ))}
+                </Select>
+              </td>
+              <td>
+  {allotment.rooms.map((room, roomIndex) => (
+    <div key={`centralisedRoom-${deptIndex}-${roomIndex}`}>
+      <Select
+        name="room"
+        value={room.room}
+        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+      >
+        <option key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`} value="">
+          Select Room
+        </option>
+        {rooms.map((room, index) => (
+          <option key={`centralisedRoom-${index}`} value={room}>
+            {room}
+          </option>
         ))}
-      </label>
+      </Select>
+      {/* Checkbox for Morning Slot */}
+      <Checkbox
+        name="morningSlot"
+        isChecked={room.morningSlot}
+        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+      >
+        Morning Slot
+      </Checkbox>
+      {/* Checkbox for Afternoon Slot */}
+      <Checkbox
+        name="afternoonSlot"
+        isChecked={room.afternoonSlot}
+        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+      >
+        Afternoon Slot
+      </Checkbox>
+      {/* Button to remove this room */}
+      <Button
+        type="Button"
+        onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
+      >
+        Remove Room
+      </Button>
+    </div>
+  ))}
+  {/* Button to add a new room for this department */}
+  <Button type="Button" onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}>
+    Add Room
+  </Button>
+</td>
 
-      <label>
-        Morning Slot:
-        <input
-          type="checkbox"
-          name="morningSlot"
-          checked={formData.morningSlot}
-          onChange={handleChange}
-        />
-      </label>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-      <label>
-        Afternoon Slot:
-        <input
-          type="checkbox"
-          name="afternoonSlot"
-          checked={formData.afternoonSlot}
-          onChange={handleChange}
-        />
-      </label>
+      {/* Button to add a new allotment */}
+      <Button type="Button" onClick={() => handleAddAllotment('centralisedAllotments')}>
+        Add Allotment
+      </Button>
 
-      <button type="submit">Submit</button>
+      <Heading>Open Elective Room Allotment</Heading>
+      <table>
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Room</th>
+          </tr>
+        </thead>
+        <tbody>
+          {formData.openElectiveAllotments.map((allotment, deptIndex) => (
+            <tr key={`openElectiveDeptRow-${deptIndex}`}>
+              <td>
+                <Select
+                  name="dept"
+                  value={allotment.dept}
+                  onChange={(e) => handleChange(e, deptIndex, null, 'openElectiveAllotments')}
+                >
+                  <option key={`openElectiveDefaultDept-${deptIndex}`} value="">
+                    Select Department
+                  </option>
+                  {departments.map((department, index) => (
+                    <option key={`openElectiveDept-${index}`} value={department}>
+                      {department}
+                    </option>
+                  ))}
+                </Select>
+              </td>
+              <td>
+                <Select
+                  name="room"
+                  value={allotment.room}
+                  onChange={(e) => handleChange(e, deptIndex, null, 'openElectiveAllotments')}
+                >
+                  <option key={`openElectiveDefaultRoom-${deptIndex}`} value="">
+                    Select Room
+                  </option>
+                  {rooms.map((room, index) => (
+                    <option key={`openElectiveRoom-${index}`} value={room}>
+                      {room}
+                    </option>
+                  ))}
+                </Select>
+                {/* Button to remove this room */}
+                <Button
+                  type="Button"
+                  onClick={() => handleRemoveRoom(deptIndex, null, 'openElectiveAllotments')}
+                >
+                  Remove Room
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Button to add a new allotment */}
+      <Button type="Button" onClick={() => handleAddAllotment('openElectiveAllotments')}>
+        Add Allotment
+      </Button>
+
+      <Button type="submit">Submit</Button>
     </form>
   );
 };

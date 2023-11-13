@@ -302,7 +302,7 @@ function LockedSummary() {
         const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
         const data = await response.json();
         setSubjectData(data);
-        console.log('subjectdata',data)
+        // console.log('subjectdata',data)
       } catch (error) {
         console.error('Error fetching subject data:', error);
       }

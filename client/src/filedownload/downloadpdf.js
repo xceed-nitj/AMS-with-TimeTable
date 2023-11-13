@@ -10,10 +10,10 @@ pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdf
 
 function downloadPDF(timetableData, summaryData, type, ttdata, updatedTime, headTitle,notes) {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-console.log('type',type)
-console.log('ttdataaaa',timetableData)
-console.log('passed time',updatedTime)
-console.log('title',headTitle)
+// console.log('type',type)
+// console.log('ttdataaaa',timetableData)
+// console.log('passed time',updatedTime)
+// console.log('title',headTitle)
 
 const session = ttdata[0].session;
   const dept = ttdata[0].dept;

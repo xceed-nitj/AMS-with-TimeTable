@@ -17,9 +17,18 @@ class MroomController {
 
       async getRoom(req, res) {
        try {
+          if(req.query.type)
+          {
+            const roomtype=req.query.type
+            const roomlist = await Masterroom.find({type:roomtype});
+            res.json(roomlist)
+            return;
+          }
+          else{
           const roomlist = await Masterroom.find();
           res.json(roomlist)
           return;
+          }
         } catch (error) {
           console.error(error); 
           res.status(500).json({ error: "Internal server error" });
