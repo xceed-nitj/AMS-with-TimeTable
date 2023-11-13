@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const mailSender = require("../../modules/usermanagement/mailsender");
-require('../commonFields');
+require("../commonFields");
 
 const Schema = mongoose.Schema;
 const otpSchema = new Schema({
@@ -15,7 +15,7 @@ const otpSchema = new Schema({
   createAt: {
     type: Date,
     default: Date.now(),
-    expires: 2 * 60,
+    expires: 5 * 60,
   },
 });
 
