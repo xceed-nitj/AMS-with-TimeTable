@@ -88,6 +88,17 @@ function AddRoomComponent() {
   };
 
   const handleSubmit = () => {
+    if (rooms.some((room) => room.room === selectedMasterRoom)) {
+      toast({
+        position: 'top',
+        title: "Room Already Added",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
+    }
+  
     const dataToSave = {
       room: selectedMasterRoom,
       code: currentCode,
