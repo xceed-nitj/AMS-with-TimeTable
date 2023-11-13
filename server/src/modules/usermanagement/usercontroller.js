@@ -1,4 +1,3 @@
-
 const User = require("../../models/usermanagement/user");
 
 const bcrypt = require("bcryptjs");
@@ -40,7 +39,7 @@ exports.register = async (req, res, next) => {
         });
 
         // Generate a JWT token
-        const maxAge = 3 * 60 * 60*60; // 3 hours in seconds
+        const maxAge = 3 * 60 * 60 * 60; // 3 hours in seconds
         const token = jwt.sign(
           { id: user._id, email, role: user.role },
           jwtSecret,
@@ -120,7 +119,7 @@ exports.login = async (req, res, next) => {
           maxAge: maxAge * 10000,
           // domain: "nitjtt.netlify.app",
           secure: true,
-          sameSite: 'none'
+          sameSite: "none",
         });
 
         res.status(200).json({
@@ -145,7 +144,7 @@ exports.update = async (req, res, next) => {
 
     // Verify if the email is present
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return res.status(400).json({ message: "Email is required" });
     }
 
     // Find the user by email
@@ -153,7 +152,7 @@ exports.update = async (req, res, next) => {
 
     // If user is not found
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Update user details
@@ -172,13 +171,67 @@ exports.update = async (req, res, next) => {
     // Save the updated user
     await user.save();
 
-    return res.status(201).json({ message: 'Update successful', user });
+    return res.status(201).json({ message: "Update successful", user });
   } catch (error) {
-    return res.status(500).json({ message: 'An error occurred', error: error.message });
+    return res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
   }
 };
 
-exports.sendOTP = async (req, res) => {
+const sendOTP = async (email) => {
+  try {
+    const checkuser = await User.findOne({ email: email });
+    if (!checkuser) {
+      console.log("User not exists");
+      return {
+        success: false,
+        message: "User not exists",
+      };
+    }
+
+    let result = await OTP.findOne({ email });
+    var otp = null;
+    if (result) {
+      otp = result.otp;
+      console.log("OTP already exists:", otp);
+    } else {
+      otp = otpGenerator.generate(6, {
+        lowerCaseAlphabets: false,
+        upperCaseAlphabets: false,
+        specialChars: false,
+      });
+      await OTP.create({ email, otp });
+      console.log("New OTP generated:", otp);
+    }
+
+    console.log(otp);
+    const otpInfo = {
+      title: "Email verification for NITJ",
+      purpose:
+        "Thank you for registering with NITJ. To complete your registration, please use the following OTP (One-Time Password) to verify your account:",
+      OTP: otp,
+    };
+
+    const otpBody = fs.readFileSync(ejsTemplatePath, "utf-8");
+    const renderedHTML = ejs.render(otpBody, otpInfo);
+
+    // Add await here
+    await mailSender(email, "Sign Up verification", renderedHTML);
+
+    return {
+      success: true,
+      message: "OTP sent successfully",
+    };
+  } catch (e) {
+    console.log("Error in sending OTP ", e);
+    return {
+      success: false,
+      message: "Error in sending OTP",
+    };
+  }
+};
+exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const checkuser = await User.findOne({ email: email });
@@ -190,43 +243,74 @@ exports.sendOTP = async (req, res) => {
       });
     }
 
-    let result = await OTP.findOne({ email });
-    var otp = null;
-    if (result) {
-      otp = result.opt;
-      console.log("here");
-    } else {
-      otp = otpGenerator.generate(6, {
-        lowerCaseAlphabets: false,
-        upperCaseAlphabets: false,
-        specialChars: false,
-      });
-      await OTP.create({ email, otp });
-    }
-    console.log(otp);
-    const otpInfo = {
-      title: "Email verification for NITJ",
-      purpose:
-        "Thank you for registering with NITJ. To complete your registration, please use the following OTP (One-Time Password) to verify your account:",
-      OTP: otp, // Corrected template variable
-    };
-
-    // Assuming ejsTemplatePath is defined
-    const otpBody = fs.readFileSync(ejsTemplatePath, "utf-8");
-    const renderedHTML = ejs.render(otpBody, otpInfo);
-
-    // Assuming mailSender is defined
-    mailSender(email, "Sign Up verification", renderedHTML);
+    // Generate and send OTP
+    const otp = await sendOTP(email);
 
     return res.status(200).json({
       success: true,
       message: "OTP sent successfully",
+      otp: otp, // Send the OTP to the client for verification
     });
   } catch (e) {
     console.log("Error in sending OTP ", e);
     return res.status(402).json({
       success: false,
       message: "Error in sending OTP",
+    });
+  }
+};
+const verifyOTP = async (email, enteredOTP) => {
+  try {
+    const otpRecord = await OTP.findOne({ email });
+
+    if (!otpRecord) {
+      console.log("No OTP record found for the user");
+      return false;
+    }
+
+    const storedOTP = otpRecord.otp;
+
+    // Compare the entered OTP with the stored OTP
+    return enteredOTP === storedOTP;
+  } catch (error) {
+    console.log("Error verifying OTP: ", error);
+    return false;
+  }
+};
+
+// Reset Password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    // Verify the OTP
+    const isOTPValid = await verifyOTP(email, otp);
+
+    if (!isOTPValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    // Update the password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const user = await User.findOneAndUpdate(
+      { email: email },
+      { $set: { password: hashedPassword } },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+      user,
+    });
+  } catch (e) {
+    console.log("Error in resetting password ", e);
+    return res.status(500).json({
+      success: false,
+      message: "Error in resetting password",
     });
   }
 };
