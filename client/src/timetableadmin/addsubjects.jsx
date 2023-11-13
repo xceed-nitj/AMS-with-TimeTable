@@ -75,13 +75,13 @@ function Subject() {
 
   useEffect(() => {
     fetchData();
-  }, [currentCode]); // Trigger a fetch when the code changes
+  }, [currentCode]); 
 
   const fetchData = () => {
     if (currentCode) {
       fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`, {
         credentials: "include",
-      }) // Replace with the actual endpoint
+      }) 
         .then((response) => {
           if (!response.ok) {
             throw new Error(
@@ -109,12 +109,11 @@ function Subject() {
     setSelectedFile(file);
   };
 
-  // Fetch available semesters when the component mounts
   useEffect(() => {
     if (currentCode) {
       fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`, {
         credentials: "include",
-      }) // Replace with the actual endpoint
+      }) 
 
         .then((response) => {
           if (!response.ok) {
@@ -125,7 +124,6 @@ function Subject() {
           return response.json();
         })
         .then((data) => {
-          // Assuming that the data is an array of semesters
           const filteredSemesters = data.filter(
             (semester) => semester.code === currentCode
           );
@@ -136,13 +134,33 @@ function Subject() {
         });
     }
   }, [currentCode]);
+ 
+  useEffect(() => {
+    if (currentCode) {
+      fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const filteredSemesters = data.filter((semester) => semester.code === currentCode);
+          setSemesters(filteredSemesters); // Store the semesters in the state
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+  }, [currentCode]);
+  
 
 
   const handleUpload = () => {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-      formData.append('code', currentCode); // Add the currentCode to the form data
+      formData.append('code', currentCode); 
       setIsLoading(true);
   
       fetch(`${apiUrl}/upload/subject`, {
@@ -163,8 +181,8 @@ function Subject() {
             setDuplicateEntryMessage(data.message);
             
           } else {
-            fetchData(); // Fetch data after a successful upload
-            setDuplicateEntryMessage(''); // Reset duplicate entry message
+            fetchData(); 
+            setDuplicateEntryMessage(''); 
           }
           setIsLoading(false);
         })
@@ -186,15 +204,12 @@ function Subject() {
   useEffect(() => {
     fetchData();
     if (uploadState) {
-      // Only fetch data again when uploadState is true
-      setUploadState(false); // Reset uploadState
+      setUploadState(false);
     }
   }, [currentCode, uploadState]);
 
   const handleEditClick = (_id) => {
     setEditRowId(_id);
-
-    // Find the row with the specified _id and set its data to the "editedData" state
     const editedRow = tableData.find((row) => row._id === _id);
     if (editedRow) {
       setEditedData({ ...editedRow });
@@ -202,9 +217,7 @@ function Subject() {
   };
 
   const handleSaveEdit = () => {
-    // Make a PUT request to update the data for the selected row
     if (editRowId) {
-      // Find the index of the row with the specified _id in the tableData array
       const rowIndex = tableData.findIndex((row) => row._id === editRowId);
       if (rowIndex !== -1) {
         const updatedData = [...tableData];
@@ -235,7 +248,7 @@ function Subject() {
             setTableData(updatedData);
             setEditRowId(null);
             setEditedData({
-              _id: null, // Clear the edited data
+              _id: null, 
 
               subjectFullName: "",
               type: "",
@@ -257,7 +270,6 @@ function Subject() {
   };
 
   const handleDelete = (_id) => {
-    // Send a DELETE request to remove the selected row
     fetch(`${apiUrl}/timetablemodule/subject/${_id}`, {
 
       method: "DELETE",
@@ -273,8 +285,6 @@ function Subject() {
       .then((data) => {
 
         console.log("Delete Success:", data);
-
-        // Remove the deleted row from the tableData
         const updatedData = tableData.filter((row) => row._id !== _id);
         setTableData(updatedData);
       })
@@ -307,8 +317,6 @@ function Subject() {
   };
 
   const handleSaveNewSubject = () => {
-    // Check for duplicate entry by subjectName
-
     const isDuplicateEntry = tableData.some(
       (row) => row.subName === editedSData.subName
     );
@@ -340,7 +348,7 @@ function Subject() {
           console.log("Data saved successfully:", data);
           fetchData();
           handleCancelAddSubject();
-          addsetDuplicateEntryMessage(""); // Reset duplicate entry message
+          addsetDuplicateEntryMessage(""); 
         })
         .catch((error) => {
           console.error("Error:", error);
@@ -370,7 +378,7 @@ function Subject() {
           })
           .then((data) => {
             console.log("Delete All Success:", data);
-            fetchData(); // Fetch data after a successful delete
+            fetchData(); 
           })
           .catch((error) => {
             console.error("Delete All Error:", error);
@@ -413,7 +421,7 @@ function Subject() {
 
         <Box mt="5">
           <Heading as="h6" fontSize="xl" fontWeight="Bold">
-            Available Semesters which can to be added:
+            Available Semesters which can be added:
           </Heading>
           <ul>
             {semesterData.map((semester) => (
@@ -432,7 +440,7 @@ function Subject() {
         {isAddSubjectFormVisible ? (
           <FormControl borderRadius="md">
             <Box display="flex" content="left">
-              <FormLabel>Subject Name:</FormLabel>
+              <FormLabel>Subject Abbreviation:</FormLabel>
               <Input
                 border="1px"
                 borderColor="gray.300"
@@ -457,7 +465,7 @@ function Subject() {
                 border="1px"
                 borderColor="gray.300"
                 type="text"
-                placeholder="Type"
+                placeholder="Core/Elective"
                 value={editedSData.type}
                 onChange={(e) =>
                   setEditedSData({ ...editedSData, type: e.target.value })
@@ -481,13 +489,13 @@ function Subject() {
             </Box>
 
             <Box display="flex" content="left">
-              <FormLabel>Subject Abrreviation:</FormLabel>
+              <FormLabel>Subject Full Name:</FormLabel>
               <Input
                 border="1px"
                 mb="4"
                 borderColor="gray.300"
                 type="text"
-                placeholder="Subject Abrreviation"
+                placeholder="Subject Name"
                 value={editedSData.subName}
                 onChange={(e) =>
                   setEditedSData({ ...editedSData, subName: e.target.value })
@@ -594,10 +602,10 @@ function Subject() {
 
           <thead>
             <tr>
-              <th>Subject Name</th>
+              <th>Subject Abbreviation</th>
               <th>Type</th>
               <th>Subject Code</th>
-              <th>Subject Abrreviation</th>
+              <th>Subject Full Name</th>
               <th>Semester</th>
               <th>Degree</th>
               <th>Department</th>
