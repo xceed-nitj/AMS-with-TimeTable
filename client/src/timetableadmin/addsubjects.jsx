@@ -142,7 +142,7 @@ function Subject() {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-      formData.append('code', currentCode);
+      formData.append('code', currentCode); // Add the currentCode to the form data
       setIsLoading(true);
   
       fetch(`${apiUrl}/upload/subject`, {
@@ -159,16 +159,13 @@ function Subject() {
           return response.json();
         })
         .then((data) => {
-          // Check for duplicate entries
-          if (data.duplicateSubjects && data.duplicateSubjects.length > 0) {
-            setDuplicateEntryMessage(
-              `Duplicate entries found for: ${data.duplicateSubjects.join(', ')},kindly delete it!`
-            );
+          if (data.message) {
+            setDuplicateEntryMessage(data.message);
+            
           } else {
             fetchData(); // Fetch data after a successful upload
             setDuplicateEntryMessage(''); // Reset duplicate entry message
           }
-  
           setIsLoading(false);
         })
         .catch((error) => {

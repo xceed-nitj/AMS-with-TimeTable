@@ -24,47 +24,71 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Functions for different objectTypes to find duplicates
+async function findDuplicatesByType(objectType, code) {
+  if (objectType === 'subject') {
+    return await findDuplicateSubjects(code);
+  }
+  // else if (objectType === 'anotherType') {
+  //   return await findDuplicatesForAnotherType(code);
+  // }
+  return [];
+}
+
 router.post('/:objectType', upload.single('csvFile'), async (req, res) => {
+  
   const filePath = req.file.path;
   const file = reader.readFile(filePath);
   const sheetsArray = file.SheetNames;
-  const duplicateSubjectsSet = new Set(); // Use a Set to store unique duplicate subjects
+  const duplicateSet = new Map(); // Use a Map to store unique duplicates for each object type
+  const objectType = req.params.objectType;
 
   for (let i = 0; i < sheetsArray.length; i++) {
     const sheet = reader.utils.sheet_to_json(file.Sheets[sheetsArray[i]]);
+    const mongooseSchema = require(modelPaths[objectType]);
 
     for (const row of sheet) {
-      const objectType = req.params.objectType;
-      const mongooseSchema = require(modelPaths[objectType]);
+      const currentCode = req.body.code;
+      row.code=currentCode;
 
-      if (objectType === 'subject') {
-        const currentCode = req.body.code;
-        row.code = currentCode;
-        const duplicates = await findDuplicateSubjects(currentCode);
+      const duplicates = await findDuplicatesByType(objectType, currentCode);
 
-        if (duplicates.length > 0) {
-          duplicates.forEach((duplicate) => {
-            duplicateSubjectsSet.add(duplicate);
-          });
+      if (duplicates.length > 0) {
+        if (!duplicateSet.has(objectType)) {
+          duplicateSet.set(objectType, new Set());
         }
+
+        duplicates.forEach((duplicate) => {
+          duplicateSet.get(objectType).add(duplicate);
+        });
       }
+    
 
       const schema = new mongooseSchema(row);
       schema.save();
     }
   }
 
-  // Delete the uploaded file after saving data to MongoDB
   fs.unlink(filePath, (err) => {
     if (err) {
       console.error(err);
       res.status(500).send('Error deleting the file');
     } else {
-      const duplicateSubjectsArray = Array.from(duplicateSubjectsSet);
-      if (duplicateSubjectsArray.length > 0) {
-        res.status(200).json({ message: 'Duplicate entries detected for the following subjects:', duplicateSubjects: duplicateSubjectsArray });
+      const duplicatesObject = {};
+      duplicateSet.forEach((value, key) => {
+        duplicatesObject[key] = Array.from(value);
+      });
+
+      const objectKeys = Object.keys(duplicatesObject);
+      let message = '';
+
+      if (objectKeys.length > 0) {
+        objectKeys.forEach((key) => {
+          message += `Duplicate entries detected for ${key}: ${duplicatesObject[key]}\n`;
+        });
+        res.status(200).json({ message });
       } else {
-        res.send('CSV file uploaded, data saved to MongoDB, and file deleted.');
+        res.send(`CSV file uploaded, data saved to MongoDB for ${objectType}, and file deleted.`);
       }
     }
   });
