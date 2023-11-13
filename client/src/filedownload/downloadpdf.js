@@ -8,10 +8,10 @@ import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
 
-function downloadPDF(timetableData, summaryData, type, ttdata, updatedTime, headTitle) {
+function downloadPDF(timetableData, summaryData, type, ttdata, updatedTime, headTitle,notes) {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 console.log('type',type)
-console.log('ttdataaaa',ttdata)
+console.log('ttdataaaa',timetableData)
 console.log('passed time',updatedTime)
 console.log('title',headTitle)
 
@@ -19,6 +19,7 @@ const session = ttdata[0].session;
   const dept = ttdata[0].dept;
   const updatedTime1 =updatedTime;
   const headTitle1 =headTitle;
+  const printNotes=notes;
 
   const tableData = [];
   let subheading = '';
@@ -221,6 +222,23 @@ const session = ttdata[0].session;
               alignment: 'center',
             },
           },
+          ...(notes
+            ? [
+                {
+                  text: 'Notes:',
+                  fontSize: 10,
+                  bold: true,
+                  margin: [0, 2, 0, 2], // top, right, bottom, left
+                },
+                {
+                  ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:10 }))),
+                },
+              ]
+            : []),
+
+
+
+
           {
             columns: [
               {

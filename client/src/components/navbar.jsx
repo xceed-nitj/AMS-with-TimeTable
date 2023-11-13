@@ -47,7 +47,7 @@ function Navbar({ isAuthenticated }) {
               
             </Text>
           </Flex>
-          <Flex align="center">
+          {/* <Flex align="center">
             <Link color="white" href=" " pr={4}>
               Dashboard
             </Link>
@@ -60,7 +60,7 @@ function Navbar({ isAuthenticated }) {
             <Link color="white" href="#resources">
               Resources
             </Link>
-          </Flex>
+          </Flex> */}
           {isAuthenticated ? (
             <Button colorScheme="white" size="sm">
               

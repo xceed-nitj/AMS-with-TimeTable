@@ -132,11 +132,13 @@ const [headTitle, setHeadTitle] = useState('');
     try {
       // console.log('sem value',semester);
       // console.log('current code', currentCode);
-      const response = await fetch(`${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`,{credentials: 'include'});
-      const data = await response.json();
-      // console.log(data);
+      const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`,{credentials: 'include'});
+      const data1 = await response.json();
+      console.log('fetched',data1);
+      const data=data1.timetableData;
+      const notes=data1.notes;
       const initialData = generateInitialTimetableData(data,'sem');
-      return initialData;
+      return {initialData,notes};
     } catch (error) {
       console.error('Error fetching existing timetable data:', error);
       return {};
@@ -161,11 +163,11 @@ const [headTitle, setHeadTitle] = useState('');
 
   const fetchTimetableData = async (semester) => {
     setDownloadStatus("fetchingSlotData")
-    const data = await fetchData(semester);
-    setTimetableData(data);
+    const {initialData,notes} = await fetchData(semester);
+    // setTimetableData(initialData);
     setDownloadStatus("fetchingSummaryData")
-    
-    return(data);
+    console.log('semdata',initialData)
+    return {initialData,notes};
     
 };
 
@@ -178,19 +180,20 @@ const [headTitle, setHeadTitle] = useState('');
       const data=data1.timetableData;
       // console.log('updated time for faculty', data1.updatedTime)
       const updateTime=data1.updatedTime;
+      const notes=data1.notes;
       // console.log('faclty time', facultyUpdateTime)
       const initialData =  generateInitialTimetableData(data,'faculty');
-      return {initialData,updateTime};
+      return {initialData,updateTime,notes};
     } catch (error) {
       console.error('Error fetching existing timetable data:', error);
       return {};
     }
   };
   const fetchFacultyData = async (currentCode, faculty) => {
-    const {initialData,updateTime} = await facultyData(currentCode, faculty);
+    const {initialData,updateTime,notes} = await facultyData(currentCode, faculty);
     // setTimetableData(data);
     setSlotStatus('fetchingSlotData')
-    return {initialData,updateTime};
+    return {initialData,updateTime,notes};
 
   };
 
@@ -203,9 +206,10 @@ const roomData = async (currentCode, room) => {
       const data=data1.timetableData;
       // setRoomUpdateTime(data1.updatedTime);
       const updateTime=data1.updatedTime;
+      const notes=data1.notes;
 
       const initialData = generateInitialTimetableData(data,'room');
-      return {initialData,updateTime};
+      return {initialData,updateTime,notes};
     } catch (error) {
       console.error('Error fetching existing timetable data:', error);
       return {};
@@ -214,9 +218,9 @@ const roomData = async (currentCode, room) => {
   };
 
   const fetchRoomData = async (currentCode, room) => {
-    const  {initialData,updateTime} = await roomData(currentCode, room);
+    const  {initialData,updateTime,notes} = await roomData(currentCode, room);
     // setViewRoomData(initialData);
-    return {initialData,updateTime};
+    return {initialData,updateTime,notes};
   };
 
 
@@ -443,7 +447,11 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
 
     for (const semester of availableSems) {
       
-      const fetchedttdata = await fetchTimetableData(semester);
+      const {initialData,notes} = await fetchTimetableData(semester);
+
+      const fetchedttdata = initialData;
+      console.log('semdddddd',initialData)
+      const semNotes=notes;
       
       const summaryData = generateSummary(fetchedttdata, subjectData, 'sem', semester); 
       console.log(summaryData)
@@ -460,7 +468,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         headTitle: semester,
       };
       setPrepareStatus("preparingDownload")
-      downloadPDF(fetchedttdata,summaryData,'sem',fetchedttdetails,lockTime,semester);
+      downloadPDF(fetchedttdata,summaryData,'sem',fetchedttdetails,lockTime,semester,semNotes);
       setStartStatus("downloadStarted")
       setTimetableData(fetchedttdata);
       setSummaryData(summaryData);
@@ -498,8 +506,9 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   
       for (const faculty of availableFaculties) {
         console.log(faculty);        
-        const {initialData,updateTime} = await fetchFacultyData( currentCode, faculty);
+        const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
         const fetchedttdata= initialData;
+        const facultyNotes=notes;
         // console.log('dataaaa faculty',fetchedttdata);        
         
         const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
@@ -522,7 +531,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         setDownloadStatus("preparingDownload")
         setPrepareStatus("preparingDownload")
 
-        downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty);
+        downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty,facultyNotes);
         setDownloadStatus("downloadStarted")
         setStartStatus("downloadStarted")
 
@@ -562,9 +571,10 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
     
         for (const room of availableRooms) {
           console.log('room', room);        
-          const {initialData,updateTime} = await fetchRoomData( currentCode, room);
+          const {initialData,updateTime,notes} = await fetchRoomData( currentCode, room);
           const fetchedttdata= initialData;
-          console.log('dataaaa room',fetchedttdata);        
+          const roomNotes=notes;
+          // console.log('dataaaa room',fetchedttdata);        
           
           const summaryData = generateSummary(fetchedttdata, subjectData, 'room',room); 
           console.log('room summary dara',summaryData)
@@ -580,13 +590,13 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
             TTData:fetchedttdetails,
             headTitle: room,
           };
-          console.log('posttt',postData);
+          // console.log('posttt',postData);
           setNoteStatus("fetchingNotes")
   
           setDownloadStatus("preparingDownload")
           setPrepareStatus("preparingDownload")
   
-          downloadPDF(fetchedttdata,summaryData,'room',fetchedttdetails,lockTime,room);
+          downloadPDF(fetchedttdata,summaryData,'room',fetchedttdetails,lockTime,room,roomNotes);
           setDownloadStatus("downloadStarted")
           setStartStatus("downloadStarted")
   

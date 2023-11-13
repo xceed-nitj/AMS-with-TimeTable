@@ -34,6 +34,22 @@ class NoteController {
     }
   }  
   
+  async getNoteByCode(code, fieldName, fieldValue) {
+    try {
+      const query = { code: code };
+      query[fieldName] = fieldValue;
+  
+      const notes = await Note.find(query).select('note'); // Use the select method to retrieve only the 'note' field
+      const noteArray = notes.map(note => note.note);
+  
+      return noteArray;
+    } catch (error) {
+      throw error;
+    }
+  }
+  
+
+
 
   async getNoteById(id) {
     if (!id) {
