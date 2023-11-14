@@ -477,20 +477,20 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
       setHeadTitle(semester);
 
       // Make a POST request to store the data in your schema
-      const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(postData),
-        credentials: 'include'
-      });
+      // const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(postData),
+      //   credentials: 'include'
+      // });
   
-      if (postResponse.ok) {
-        console.log(`Timetable data for semester ${semester} stored successfully.`);
-      } else {
-        console.error(`Error storing timetable data for semester ${semester}.`);
-      }
+      // if (postResponse.ok) {
+      //   console.log(`Timetable data for semester ${semester} stored successfully.`);
+      // } else {
+      //   console.error(`Error storing timetable data for semester ${semester}.`);
+      // }
     }
       setCompleteStatus("downloadCompleted")    
 
