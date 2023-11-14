@@ -222,7 +222,7 @@ const session = ttdata[0].session;
               alignment: 'center',
             },
           },
-          ...(notes
+          ...(notes.length > 0
             ? [
                 {
                   text: 'Notes:',
