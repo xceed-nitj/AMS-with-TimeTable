@@ -12,9 +12,11 @@ const allotmentSchema = new mongoose.Schema({
   },
   centralisedAllotments: {
     type: Schema.Types.Mixed,
+    // default: null
   },
   openElectiveAllotments: {
     type: Schema.Types.Mixed,
+    // default: null 
   },
 
 });

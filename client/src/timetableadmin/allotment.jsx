@@ -10,15 +10,15 @@ import {
 } from '@chakra-ui/react';
 
 const AllotmentForm = () => {
-  const [formData, setFormData] = useState({
-    session: '',
-    centralisedAllotments: [
-      { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
-    ],
-    openElectiveAllotments: [
-      { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
-    ],
-  });
+    const [formData, setFormData] = useState({
+      session: '',
+      centralisedAllotments: [
+        { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
+      ],
+      openElectiveAllotments: [
+        { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
+      ],
+    });
 
   const [departments, setDepartments] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -114,8 +114,8 @@ const AllotmentForm = () => {
   
           setFormData({
             session: allotmentData.session,
-            centralisedAllotments: allotmentData.centralisedAllotments,
-            openElectiveAllotments: allotmentData.openElectiveAllotments,
+            centralisedAllotments: allotmentData.centralisedAllotments ||[],
+            openElectiveAllotments: allotmentData.openElectiveAllotments || [],
           });
         } else {
           console.error('Failed to fetch existing data');
@@ -195,6 +195,18 @@ const AllotmentForm = () => {
     }));
   };
 
+  const handleRemoveAllotment = (deptIndex, type) => {
+    const updatedAllotments = [...formData[type]];
+    updatedAllotments.splice(deptIndex, 1);
+  
+    setFormData((prevData) => ({
+      ...prevData,
+      [type]: updatedAllotments,
+    }));
+  };
+  
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -245,6 +257,7 @@ const AllotmentForm = () => {
           <tr>
             <th>Department</th>
             <th>Room</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -312,6 +325,14 @@ const AllotmentForm = () => {
                   Add Room
                 </Button>
               </td>
+              <td>
+              <Button
+                type="button"
+                onClick={() => handleRemoveAllotment(deptIndex, 'centralisedAllotments')}
+              >
+                Remove Allotment
+              </Button>
+            </td>
             </tr>
           ))}
         </tbody>
@@ -330,6 +351,7 @@ const AllotmentForm = () => {
           <tr>
             <th>Department</th>
             <th>Room</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -383,6 +405,14 @@ const AllotmentForm = () => {
                   Add Room
                 </Button>
               </td>
+              <td>
+              <Button
+                type="button"
+                onClick={() => handleRemoveAllotment(deptIndex, 'openElectiveAllotments')}
+              >
+                Remove Allotment
+              </Button>
+            </td>
             </tr>
           ))}
         </tbody>
