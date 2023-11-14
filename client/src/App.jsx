@@ -23,6 +23,7 @@ import RegistrationForm from './dashboard/register';
 import AllotmentForm from './timetableadmin/allotment';
 import MasterDelete from './timetableadmin/masterdelete';
 import AdminPage from './timetableadmin/admin';
+import ViewAllotmentPage from './timetableadmin/viewroomallotment';
 
 function App() {
   return (
@@ -50,6 +51,8 @@ function App() {
           <Route path="/tt/:generatedLink/generatepdf" element={<PrintSummary />} />
           <Route path="/tt/:generatedLink/loaddistribution" element={<LoadDistribution />} />
           <Route path="/tt/:generatedLink/addnote" element={<Note/>} />
+          <Route path="/tt/:generatedLink/roomallotment" element={<ViewAllotmentPage/>} />
+
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
           <Route path="/tt/print" element={<PrintButton/>} />

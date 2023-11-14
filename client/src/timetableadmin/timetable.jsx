@@ -463,6 +463,11 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/addnote`);
   };
+
+  const handleViewRoom = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/roomallotment`);
+  };
   const handleViewSummary = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/lockedsummary`);
@@ -619,6 +624,10 @@ const Timetable = () => {
           <Button m="1 auto" colorScheme="teal" onClick={handleAddNote}>
             Add Note
           </Button>
+          <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
+            view Alloted Rooms
+          </Button>
+
         </Box>
         <Box mr='-1.5'>
           <Button m="1 auto" colorScheme="orange" onClick={handleLockTT}>

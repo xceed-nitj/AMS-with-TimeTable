@@ -1,6 +1,10 @@
 const HttpException = require("../../../models/http-exception");
 const AddAllotment = require("../../../models/allotment");
 
+
+const TimeTabledto = require("../dto/timetable");
+const TimeTableDto = new TimeTabledto();
+
 class AllotmentController {
   async AddAllotment(req, res) {
     const newallotment = req.body;
@@ -26,9 +30,24 @@ class AllotmentController {
         
       async getAllotment(req, res) {
        try {
-          const list = await AddAllotment.find();
-          res.json(list)
-          return;
+        let session=''
+        if(req.query.code)
+        {
+        session= await TimeTableDto.getSessionByCode(req.query.code)
+        }
+        else
+        {  
+        session=req.query.session;
+        }
+
+        try {
+          const list = await AddAllotment.find({ session});
+          return list;
+        } catch (error) {
+          console.error('Error fetching allotment:', error);
+          res.status(500).json({ error: 'Internal server error' });
+        }
+        
         } catch (error) {
           console.error(error); 
           res.status(500).json({ error: "Internal server error" });

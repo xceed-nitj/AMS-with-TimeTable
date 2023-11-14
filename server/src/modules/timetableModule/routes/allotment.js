@@ -15,7 +15,9 @@ allotmentRouter.post("/", async (req, res) => {
 
   allotmentRouter.get("/", async (req, res) => {
     try {
-      await allotmentController.getAllotment(req,res) ;
+      const list=await allotmentController.getAllotment(req,res) ;
+      console.log(list)
+      res.status(200).json(list);
     } catch (e) {
       res
         .status(e?.status || 500)

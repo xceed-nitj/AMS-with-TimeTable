@@ -24,7 +24,7 @@ const AllotmentForm = () => {
   const [rooms, setRooms] = useState([]);
   const [sessions, setSessions] = useState([]);
   const apiUrl = getEnvironment();
-
+  const [session,setSession]=useState();
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
@@ -94,6 +94,38 @@ const AllotmentForm = () => {
     fetchMasterRooms();
 
   }, []);
+
+    const fetchExistingData = async (session) => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/allotment?session=${session}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Data from backend:', data);
+  
+          // Assuming you have only one item in the array (as per your example)
+          const [allotmentData] = data;
+  
+          setFormData({
+            session: allotmentData.session,
+            centralisedAllotments: allotmentData.centralisedAllotments,
+            openElectiveAllotments: allotmentData.openElectiveAllotments,
+          });
+        } else {
+          console.error('Failed to fetch existing data');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+
+    // fetchExistingData(sessions[0]);
 
   const handleChange = (e, deptIndex, roomIndex, type) => {
     const { name, value, type: inputType, checked } = e.target;
@@ -191,12 +223,16 @@ const AllotmentForm = () => {
       <Heading>Allotment</Heading>
       <FormLabel>Session:</FormLabel>
       <Select
-        name="session"
-        value={formData.session}
-        onChange={(e) => setFormData({ ...formData, session: e.target.value })}
-      >
+  name="session"
+  value={formData.session}
+  onChange={(e) => {
+    const selectedSession = e.target.value;
+    setSession(selectedSession);
+    setFormData({ ...formData, session: selectedSession });
+    fetchExistingData(selectedSession);
+  }}>
         <option value="">Select a Session</option>
-        {sessions.map((session, index) => (
+        { sessions.length > 0 && sessions.map((session, index) => (
           <option key={index} value={session}>
             {session}
           </option>
