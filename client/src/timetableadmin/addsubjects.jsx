@@ -440,7 +440,7 @@ function Subject() {
         {isAddSubjectFormVisible ? (
           <FormControl borderRadius="md">
             <Box display="flex" content="left">
-              <FormLabel>Subject Abbreviation:</FormLabel>
+              <FormLabel>Subject Full Name:</FormLabel>
               <Input
                 border="1px"
                 borderColor="gray.300"
@@ -489,7 +489,7 @@ function Subject() {
             </Box>
 
             <Box display="flex" content="left">
-              <FormLabel>Subject Full Name:</FormLabel>
+              <FormLabel>Subject Abbreviation:</FormLabel>
               <Input
                 border="1px"
                 mb="4"
@@ -602,10 +602,11 @@ function Subject() {
 
           <thead>
             <tr>
-              <th>Subject Abbreviation</th>
+            <th>Subject Full Name</th>
+
               <th>Type</th>
               <th>Subject Code</th>
-              <th>Subject Full Name</th>
+              <th>Subject Abbreviation</th>
               <th>Semester</th>
               <th>Degree</th>
               <th>Department</th>
