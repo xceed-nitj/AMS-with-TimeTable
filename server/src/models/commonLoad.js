@@ -18,6 +18,14 @@ const commonLoadSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  subType: {
+    type: String,
+    required: true,
+  },
+  sem: {
+    type: String,
+    required: true,
+  },
   hrs: {
     type: Number,
     required: true,

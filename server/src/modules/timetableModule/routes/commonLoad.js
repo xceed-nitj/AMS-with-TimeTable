@@ -45,6 +45,18 @@ commonLoadRouter.get("/code/:code", async (req, res) => {
     }
   });
 
+  commonLoadRouter.get("/:code/:faculty", async (req, res) => {
+    try {
+      const code = req.params.code;
+      const faculty=req.params.faculty;
+      const loads = await commonLoadController.getCommonLoadForFaculty(faculty,code);
+      res.status(200).json(loads);
+    } catch (error) {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+
   commonLoadRouter.get("/Session/:code", async (req, res) => {
     try {
       const code = req.params.code;

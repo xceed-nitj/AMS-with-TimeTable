@@ -54,7 +54,16 @@ class CommonLoadController {
     }
   }
 
-  async getCommonLoadByCode(code, faculty) {
+  async getCommonLoadByCode(code) {
+    try {
+      const commonLoads = await CommonLoad.find({ code: code});
+      return commonLoads;
+    } catch (error) {
+      throw new Error("Failed to get common loads by code");
+    }
+  }
+
+  async getCommonLoadForFaculty(faculty,code) {
     try {
       const commonLoads = await CommonLoad.find({ code: code, faculty: faculty });
       return commonLoads;
@@ -62,6 +71,8 @@ class CommonLoadController {
       throw new Error("Failed to get common loads by code");
     }
   }
+
+
 
   async getCommonLoadBySession(session,faculty) {
     try {
