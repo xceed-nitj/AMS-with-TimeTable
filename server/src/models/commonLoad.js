@@ -2,27 +2,27 @@ const mongoose = require("mongoose");
 const { commonFields, updateTimestamps } = require('./commonFields');
 
 const commonLoadSchema = new mongoose.Schema({
-  Faculty: {
+  faculty: {
     type: String,
     required: true,
   },
-  SubCode: {
+  subCode: {
     type: String,
     required: true,
   },
-  SubFullName: {
+  subFullName: {
     type: String,
     required: true,
   },
-  SubName: {
+  subName: {
     type: String,
     required: true,
   },
-  Hrs: {
+  hrs: {
     type: Number,
     required: true,
   },
-  Code: {
+  code: {
     type: String,
     required: true,
   },

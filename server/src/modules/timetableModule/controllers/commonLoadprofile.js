@@ -1,9 +1,20 @@
 const HttpException = require("../../../models/http-exception");
 const CommonLoad = require("../../../models/commonLoad");
 
+const CommonLoaddto = require("../dto/commonload");
+const CommonLoadDto = new CommonLoaddto();
+
+
+const TimeTabledto = require("../dto/timetable");
+const TimeTableDto = new TimeTabledto();
+
 class CommonLoadController {
   async createCommonLoad(req, res) {
     const newCommonLoad = req.body;
+    const ttdept = await TimeTableDto.getTTdetailsByCode(req.body.code);
+    const checkFaculty=await CommonLoadDto.IsFacultyBelongsToDept(req.body.faculty,ttdept.dept) 
+    if(checkFaculty)
+    {
     try {
       const createdCommonLoad = await CommonLoad.create(newCommonLoad);
       res.json(createdCommonLoad);
@@ -12,6 +23,11 @@ class CommonLoadController {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });
     }
+  }
+  else
+  {
+    res.status(200).json({ message: "Faculty dont belong to your department! Contact Admin!" });
+  }
   }
 
   async getAllCommonLoads(req, res) {
@@ -38,18 +54,18 @@ class CommonLoadController {
     }
   }
 
-  async getCommonLoadByCode(code) {
+  async getCommonLoadByCode(code, faculty) {
     try {
-      const commonLoads = await CommonLoad.find({ code: code });
+      const commonLoads = await CommonLoad.find({ code: code, faculty: faculty });
       return commonLoads;
     } catch (error) {
       throw new Error("Failed to get common loads by code");
     }
   }
 
-  async getCommonLoadBySession(code) {
+  async getCommonLoadBySession(session,faculty) {
     try {
-      const timetableEntry = await TimeTable.findOne({ code: code });
+      const timetableEntry = await TimeTable.findOne({ code: code, faculty:faculty });
   
       if (!timetableEntry) {
         throw new Error("Session not found for the provided code");
