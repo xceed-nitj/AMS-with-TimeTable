@@ -1,8 +1,14 @@
 const TimeTable = require("../../../models/timetable");
+const addRoom = require("../../../models/addroom");
+
 const User = require("../../../models/usermanagement/user");
 
 const generateUniqueLink = require("../helper/createlink");
 const HttpException = require("../../../models/http-exception");
+const getRoomByDepartment =require("./masterroomprofile");
+const masterroomprofile = require("./masterroomprofile");
+const AddAllotment = require("../../../models/allotment")
+const MasterRoomProfile = new masterroomprofile();
 
 
 class TableController {
@@ -26,6 +32,29 @@ class TableController {
           user: userId
         });
         const createdTT = await newTimeTable.save(); 
+        const deptrooms= await MasterRoomProfile.getRoomByDepartment(data.dept);
+
+        for (const room of deptrooms) {
+          await addRoom.create({ room: room.room, code: newCode });
+        }
+        
+          const roomdata= await AddAllotment.find({session: data.session})
+          console.log(roomdata);
+          const centralisedAllotments = roomdata[0].centralisedAllotments;
+          const openElectiveAllotments = roomdata[0].openElectiveAllotments;
+
+  // Search in centralised allotments
+          const centralisedDept = centralisedAllotments.find((item) => item.dept === data.dept) || { rooms: [] };
+
+  // Search in open elective allotments
+          const electiveDept = openElectiveAllotments.find((item) => item.dept === data.dept) || { rooms: [] };
+
+  // Combine rooms from both allotments
+          const combinedRooms = [...centralisedDept.rooms, ...electiveDept.rooms];
+          for (const room of combinedRooms) {
+            await addRoom.create({ room: room.room, code: newCode });
+          }
+  
         res.json(createdTT);
       } 
       catch (error) {
