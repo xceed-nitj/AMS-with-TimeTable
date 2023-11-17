@@ -16,10 +16,10 @@ import { Button } from "@chakra-ui/button";
 import PDFGenerator from '../filedownload/makepdf';
 
 
-const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData,notes }) => {
+const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData,notes,commonLoad }) => {
 
   
-console.log('TT sl data',timetableData);
+console.log('commonload data',commonLoad);
 console.log(type)
 
   const summaryData = {};
@@ -112,13 +112,42 @@ for (const key in summaryData) {
 }
 
 // Now, mergedSummaryData contains the merged entries with original keys
-console.log('merged data', mergedSummaryData);
+console.log('merged data', commonLoad);
 
-const sortedSummaryEntries = Object.values(mergedSummaryData).sort((a, b) =>
+const sortedSummary = Object.values(mergedSummaryData).sort((a, b) =>
   a.subCode.localeCompare(b.subCode)
 );
+console.log('sorted data', sortedSummary );
 
-console.log('summary',  summaryData)
+// let sortedSummaryEntries={};
+
+let sortedSummaryEntries = { ...sortedSummary }; // Assuming sortedSummary is an existing object
+
+if (commonLoad) {
+  commonLoad.forEach((commonLoadItem) => {
+    sortedSummaryEntries = {
+      ...sortedSummaryEntries,
+      [commonLoadItem.subCode]: {
+        ...sortedSummaryEntries[commonLoadItem.subCode],
+        count: commonLoadItem.hrs,
+        faculties: [],
+        originalKeys: [commonLoadItem.subName],
+        rooms: [],
+        subCode: commonLoadItem.subCode,
+        subjectFullName: commonLoadItem.subFullName,
+        subType: commonLoadItem.subType,
+        subSem: commonLoadItem.sem,
+        // code: commonLoadItem.code,
+        // add other fields from commonLoadItem as needed
+      },
+    };
+  });
+}
+
+// Now, sortedSummaryEntries contains the merged data from commonLoad
+console.log(sortedSummaryEntries);
+
+console.log('summary',  sortedSummaryEntries)
   return (
     <div>
       <h2>Timetable Summary</h2>
@@ -150,7 +179,7 @@ console.log('summary',  summaryData)
   ))}
 </tbody>
       </table>
-{time?<PDFGenerator timetableData={timetableData} summaryData={summaryData} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle} notes={notes}/>:null}
+{time?<PDFGenerator timetableData={timetableData} summaryData={sortedSummaryEntries} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle} notes={notes}/>:null}
     </div>
   );
 };

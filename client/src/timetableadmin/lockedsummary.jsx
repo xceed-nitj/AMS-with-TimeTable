@@ -40,6 +40,7 @@ function LockedSummary() {
   const [selectedSemester, setSelectedSemester] = useState("");
   const [selectedFaculty, setSelectedFaculty] = useState("");
   const [selectedRoom, setSelectedRoom] = useState("");
+  const [commonLoad, setCommonLoad]=useState();
 
   const apiUrl = getEnvironment();
   const navigate = useNavigate();
@@ -112,6 +113,23 @@ function LockedSummary() {
       setViewFacultyData(data);
     };
 
+      const fetchCommonLoad = async (currentCode, viewFaculty) => {
+        try {
+          const response = await fetch(
+            `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
+            { credentials: "include" }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            // console.log('faculty response',data[0]);
+            setCommonLoad(data);
+            console.log('coomomo load', data);
+          }
+        } catch (error) {
+          console.error("Error fetching commonload:", error);
+        }
+      };
+    fetchCommonLoad(currentCode, selectedFaculty); // Call the function to fetch subject data
     fetchFacultyData(selectedFaculty);
   }, [selectedFaculty]);
 
@@ -437,6 +455,7 @@ function LockedSummary() {
               subjectData={subjectData}
               TTData={TTData}
               notes={facultyNotes}
+              commonLoad={commonLoad}
               />
             {/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
             {/* <PDFViewTimetable timetableData={viewFacultyData} /> */}

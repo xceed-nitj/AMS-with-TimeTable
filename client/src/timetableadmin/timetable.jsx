@@ -46,6 +46,7 @@ const Timetable = () => {
 
   const [facultyUpdateTime, setFacultyUpdateTime] = useState();
   const [roomUpdateTime, setRoomUpdateTime] = useState();
+  const [commonLoad, setCommonLoad]=useState();
   // const availableRooms = ['L-201', 'L-209','room1','room2'];
   // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
   // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
@@ -175,11 +176,30 @@ const Timetable = () => {
         return {};
       }
     };
+    const fetchCommonLoad = async (currentCode, viewFaculty) => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
+          { credentials: "include" }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          // console.log('faculty response',data[0]);
+          setCommonLoad(data);
+          console.log('coomomo load', data);
+        }
+      } catch (error) {
+        console.error("Error fetching commonload:", error);
+      }
+    };
+
     const fetchFacultyData = async (faculty) => {
       const data = await facultyData(currentCode, faculty);
       setViewFacultyData(data);
     };
     fetchFacultyData(viewFaculty);
+    fetchCommonLoad(currentCode, viewFaculty); // Call the function to fetch subject data
+
   }, [viewFaculty, currentCode, viewData]);
 
   useEffect(() => {
@@ -262,9 +282,10 @@ const Timetable = () => {
       }
     };
 
+
     fetchSubjects();
     fetchRoom();
-    fetchFaculty(); // Call the function to fetch subject data
+    fetchFaculty();
   }, [selectedSemester, viewData, currentCode]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
@@ -865,6 +886,7 @@ const Timetable = () => {
                 subjectData={subjectData}
                 TTData={TTData}
                 headTitle={viewselectedSemester}
+                commonLoad={commonLoad}
               />
            
       {/* <Box>
@@ -928,6 +950,7 @@ const Timetable = () => {
                 code={currentCode}
                 subjectData={subjectData}
                 TTData={TTData}
+                commonLoad={commonLoad}
               />
             </Box>
           ) : (
