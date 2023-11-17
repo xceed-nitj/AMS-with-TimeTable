@@ -84,6 +84,16 @@ class SubjectController{
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       };
+
+      async getSubjectByCode(code) {
+        try {
+          const subject = await TimetableEntry.find({ code });
+          return subject;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      }
+      
       
       async getSubjectBySession (code){
         try {
