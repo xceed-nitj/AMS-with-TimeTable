@@ -7,9 +7,7 @@ commonLoadRouter.post("/", async (req, res) => {
   try {
     await commonLoadController.createCommonLoad(req, res);
   } catch (e) {
-    res
-      .status(e?.status || 500)
-      .json({ error: e?.message || "Internal Server Error" });
+    res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
   }
 });
 

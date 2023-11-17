@@ -9,26 +9,17 @@ const TimeTabledto = require("../dto/timetable");
 const TimeTableDto = new TimeTabledto();
 
 class CommonLoadController {
-  async createCommonLoad(req, res) {
-    const newCommonLoad = req.body;
-    const ttdept = await TimeTableDto.getTTdetailsByCode(req.body.code);
-    const checkFaculty=await CommonLoadDto.IsFacultyBelongsToDept(req.body.faculty,ttdept.dept) 
-    if(checkFaculty)
-    {
-    try {
-      const createdCommonLoad = await CommonLoad.create(newCommonLoad);
-      res.json(createdCommonLoad);
-      return;
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  }
-  else
-  {
-    res.status(200).json({ message: "Faculty dont belong to your department! Contact Admin!" });
-  }
-  }
+    async createCommonLoad(req, res) {
+        const newCommonLoad = req.body;
+        try {
+          const createdCommonLoad = await CommonLoad.create(newCommonLoad );
+          res.json(createdCommonLoad);
+          return;
+        } catch (error) {
+          console.error(error); 
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
 
   async getAllCommonLoads(req, res) {
     try {

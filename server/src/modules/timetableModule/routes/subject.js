@@ -97,6 +97,18 @@ subjectRouter.post("/", async (req, res) => {
     }
   });
 
+  subjectRouter.get("/code/:code", async (req, res) => {
+    try {
+      const code = req.params.code;
+      const subject = await subjectController.getSubjectByCode(code);
+      res.status(200).json(subject);
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+
   subjectRouter.delete("/deletebycode/:code", async (req, res) => {
     try {
       const code = req.params.code;

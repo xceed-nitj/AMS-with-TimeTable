@@ -24,6 +24,7 @@ import AllotmentForm from './timetableadmin/allotment';
 import MasterDelete from './timetableadmin/masterdelete';
 import AdminPage from './timetableadmin/admin';
 import ViewAllotmentPage from './timetableadmin/viewroomallotment';
+import CommonLoad from './timetableadmin/commonload';
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
           <Route path="/tt/:generatedLink/loaddistribution" element={<LoadDistribution />} />
           <Route path="/tt/:generatedLink/addnote" element={<Note/>} />
           <Route path="/tt/:generatedLink/roomallotment" element={<ViewAllotmentPage/>} />
+          <Route path="/tt/:generatedLink/commonload" element={<CommonLoad/>} />
 
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
