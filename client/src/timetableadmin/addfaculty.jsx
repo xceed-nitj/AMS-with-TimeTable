@@ -130,31 +130,12 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
   };
 
   const handleSubmit = () => {
-    const existingFacultyForSem = facultyData.find((faculty) => faculty.sem === sem);
-  
-    if (existingFacultyForSem) {
-      const duplicateFaculties = selectedFaculties.filter((faculty) =>
-        existingFacultyForSem.faculty.includes(faculty)
-      );
-  
-      if (duplicateFaculties.length > 0) {
-        toast({
-          title: "Faculty Already Added",
-          description: "Selected faculty already exists for this semester",
-          status: "error",
-          duration: 2000,
-          isClosable: true,
-        });
-        return;
-      }
-    }
-  
     const dataToSave = {
       sem: sem,
       code: currentCode,
       faculty: selectedFaculties,
     };
-  
+
     fetch(`${apiUrl}/timetablemodule/addFaculty`, {
       method: "POST",
       headers: {
@@ -172,11 +153,11 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
           duration: 2000,
           isClosable: true,
         });
+        // setSuccessMessage('Data saved successfully!');
         fetchFacultyData();
       })
       .catch(handleError);
   };
-  
 
   const handleDelete = (facultyId, facultyName) => {
     const facultyToDelete = facultyData.find(
@@ -220,17 +201,6 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
       if (prevSelectedFaculties.includes(facultyName)) {
         return prevSelectedFaculties.filter((name) => name !== facultyName);
       } else {
-        const existingFaculty = facultyData.find((faculty) => faculty.sem === sem);
-        if (existingFaculty && existingFaculty.faculty.includes(facultyName)) {
-          toast({
-            title: "Faculty Already Added",
-            description: "Selected faculty already exists for this semester",
-            status: "error",
-            duration: 2000,
-            isClosable: true,
-          });
-          return prevSelectedFaculties;
-        }
         return [...prevSelectedFaculties, facultyName];
       }
     });
