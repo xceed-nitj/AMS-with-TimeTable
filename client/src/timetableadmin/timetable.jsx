@@ -184,7 +184,7 @@ const Timetable = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          // console.log('faculty response',data[0]);
+          console.log('faculty common response',data);
           setCommonLoad(data);
           console.log('coomomo load', data);
         }
@@ -484,7 +484,10 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/addnote`);
   };
-
+  const handleAddCommonLoad = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/addcommonload`);
+  };
   const handleViewRoom = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/roomallotment`);
@@ -644,6 +647,9 @@ const Timetable = () => {
           </Button>
           <Button m="1 auto" colorScheme="teal" onClick={handleAddNote}>
             Add Note
+          </Button>
+          <Button m="1 auto" colorScheme="teal" onClick={handleAddCommonLoad}>
+            Add Common Load
           </Button>
           <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
             view Alloted Rooms

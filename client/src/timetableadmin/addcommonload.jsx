@@ -33,6 +33,10 @@ function CommonLoadComponent() {
   const [subFullName, setSubFullName] = useState("");
   const [subName, setSubName] = useState("");
   const [hrs, setHrs] = useState("");
+  const [subType, setSubType] = useState("");
+  const [subSem, setSubSem] = useState("");
+
+
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [faculties, setFaculties] = useState([]);
   const [selectedFaculties, setSelectedFaculties] = useState([]);
@@ -95,7 +99,7 @@ function CommonLoadComponent() {
   };
 
   const fetchCommonLoadData = () => {
-    fetch(`${apiUrl}/timetablemodule/commonLoad`, { credentials: 'include' })
+    fetch(`${apiUrl}/timetablemodule/commonLoad/code/${currentCode}`, { credentials: 'include' })
       .then(handleResponse)
       .then((data) => {
         setCommonLoadData(data);
@@ -120,6 +124,8 @@ function CommonLoadComponent() {
       subCode: subCode,
       subFullName: subFullName,
       subName: subName,
+      subType:subType,
+      sem:subSem,
       hrs: hrs,
       code: currentCode,
     }));
@@ -183,6 +189,9 @@ function CommonLoadComponent() {
     if (selectedSubject) {
       setSubFullName(selectedSubject.subjectFullName);
       setSubName(selectedSubject.subName);
+      setSubType(selectedSubject.type);
+      setSubSem(selectedSubject.sem);
+
     }
   };
 
@@ -197,6 +206,10 @@ function CommonLoadComponent() {
     setSubFullName(selectedCommonLoad.subFullName);
     setSubName(selectedCommonLoad.subName);
     setHrs(selectedCommonLoad.hrs);
+    setSubType(selectedCommonLoad.subType);
+    setSubSem(selectedCommonLoad.subSem);
+
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -206,6 +219,9 @@ function CommonLoadComponent() {
     setSubCode("");
     setSubFullName("");
     setSubName("");
+    setSubType("");
+    setSubSem("");
+
     setHrs("");
   };
 
@@ -215,6 +231,9 @@ function CommonLoadComponent() {
       subCode: subCode,
       subFullName: subFullName,
       subName: subName,
+      subType:subType,
+      subSem:subSem,
+
       hrs: hrs,
       code: currentCode,
     };
@@ -251,8 +270,10 @@ function CommonLoadComponent() {
   return (
     <Container maxW="5xl">
       <Heading as="h1" size="xl" mt="6" mb="6">
-        CommonLoad
+        Common Load Data
       </Heading>
+      This page can be used for major project allocation to faculty members. The load will appear directly in the summary data.
+      
       <chakra.form
         mt="1"
         onSubmit={(e) => {
@@ -276,25 +297,50 @@ function CommonLoadComponent() {
           </Select>
         </FormControl>
         <FormControl>
-          <FormLabel>SubName:</FormLabel>
+          <FormLabel>Subject Abbrevation:</FormLabel>
           <Input
             type="text"
             value={subName}
             onChange={(e) => setSubName(e.target.value)}
-            placeholder="Enter SubName"
+            placeholder="SubName will be shown automatically. Select code!"
             isRequired
+            isDisabled={true} 
           />
         </FormControl>
         <FormControl>
-          <FormLabel>SubFullName:</FormLabel>
+          <FormLabel>Subject  Full Name:</FormLabel>
           <Input
             type="text"
             value={subFullName}
             onChange={(e) => setSubFullName(e.target.value)}
-            placeholder="Enter SubFullName"
+            placeholder="SubFullName will be shown automatically"
             isRequired
+            isDisabled={true} 
           />
         </FormControl>
+        <FormControl>
+          <FormLabel>Subject Type:</FormLabel>
+          <Input
+            type="text"
+            value={subType}
+            onChange={(e) => setSubType(e.target.value)}
+            placeholder="Subject type will be shown automatically"
+            isRequired
+            isDisabled={true} 
+          />
+        </FormControl>
+        <FormControl>
+          <FormLabel>Subject Semester:</FormLabel>
+          <Input
+            type="text"
+            value={subSem}
+            onChange={(e) => setSubSem(e.target.value)}
+            placeholder="Subject Semester will be shown automatically"
+            isRequired
+            isDisabled={true} 
+          />
+        </FormControl>
+
         <FormControl mb="2.5">
           <FormLabel>Faculty:</FormLabel>
           {faculties.map((faculty, index) => (
@@ -352,6 +398,9 @@ function CommonLoadComponent() {
                   <Center>SubName</Center>
                 </Th>
                 <Th>
+                  <Center>Subject Type</Center>
+                </Th>
+                <Th>
                   <Center>Hrs</Center>
                 </Th>
                 <Th>
@@ -373,6 +422,9 @@ function CommonLoadComponent() {
                   </Td>
                   <Td>
                     <Center>{commonLoad.subName}</Center>
+                  </Td>
+                  <Td>
+                    <Center>{commonLoad.subType}</Center>
                   </Td>
                   <Td>
                     <Center>{commonLoad.hrs}</Center>
