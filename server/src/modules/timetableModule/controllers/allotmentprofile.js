@@ -1,9 +1,12 @@
 const HttpException = require("../../../models/http-exception");
 const AddAllotment = require("../../../models/allotment");
-
+const addRoom=require("../../../models/addroom");
 
 const TimeTabledto = require("../dto/timetable");
 const TimeTableDto = new TimeTabledto();
+
+const AddRoomController = require("../controllers/addroomprofile");
+const addRoomController = new AddRoomController();
 
 class AllotmentController {
   async AddAllotment(req, res) {
@@ -12,14 +15,32 @@ class AllotmentController {
   
     try {
       const existingAllotment = await AddAllotment.findOne({ session: session });
-  
+      
       if (!existingAllotment) {
         // If the session doesn't exist, create a new allotment
-        const createdAllotment = await AddAllotment.create(newallotment);
+        const createdAllotment = await AddAllotment.create(newallotment);  
         res.json(createdAllotment);
       } else {
         // If the session exists, update the existing allotment
         const updatedAllotment = await AddAllotment.updateOne({ session: session }, newallotment);
+        
+        const codes = await TimeTableDto.getAllCodesOfSession(session);
+        for (let code of codes)
+        {
+          await addRoomController.deleteCentralisedRoomByCode(code);
+          const ttdetails = await TimeTableDto.getTTdetailsByCode(code);
+          const centralisedAllotments = newallotment.centralisedAllotments;
+          const openElectiveAllotments = newallotment.openElectiveAllotments;
+          const centralisedDept = centralisedAllotments.find((item) => item.dept === ttdetails.dept) || { rooms: [] };
+          const electiveDept = openElectiveAllotments.find((item) => item.dept === ttdetails.dept) || { rooms: [] };
+          const combinedRooms = [...centralisedDept.rooms, ...electiveDept.rooms];
+          if(combinedRooms)
+          {
+          for (const room of combinedRooms) {
+            await addRoom.create({ room: room.room, code: code, type:'Centralised Classroom' });
+          }
+        }
+      }
         res.json(updatedAllotment);
       }
     } catch (error) {

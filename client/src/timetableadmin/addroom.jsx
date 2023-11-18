@@ -6,11 +6,15 @@ import {
   Box,
   Center,
   Container,
+  FormControl,
+  FormLabel,
   Heading,
+  Input,
   Select,
   Text,
-} from "@chakra-ui/react";
-import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
+  chakra,
+  Checkbox,
+} from "@chakra-ui/react";import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
 import {
   Table,
   TableContainer,
@@ -44,6 +48,9 @@ function AddRoomComponent() {
   // const [successMessage, setSuccessMessage] = useState('');
   const [masterRooms, setMasterRooms] = useState([]);
   const [selectedMasterRoom, setSelectedMasterRoom] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [availableDepartment, setAvailableDepartment] = useState([]);
+
 
   const navigate = useNavigate();
   const apiUrl = getEnvironment();
@@ -54,8 +61,21 @@ function AddRoomComponent() {
 
   useEffect(() => {
     fetchRoomsData();
-    fetchMasterRooms();
+    // fetchMasterRooms();
+    fetchAvailableDepartments();
   }, []);
+
+  useEffect(() => {
+    if (selectedDepartment) {
+      fetch(`${apiUrl}/timetablemodule/masterroom/dept/${selectedDepartment}`,{credentials: 'include',})
+        .then(handleResponse)
+        .then((data) => {
+          setMasterRooms(data);
+        })
+        .catch(handleError);
+    }
+  }, [selectedDepartment]);
+
 
   const fetchRoomsData = () => {
     fetch(`${apiUrl}/timetablemodule/addroom`,{credentials: 'include'})
@@ -67,14 +87,29 @@ function AddRoomComponent() {
       .catch(handleError);
   };
 
-  const fetchMasterRooms = () => {
-    fetch(`${apiUrl}/timetablemodule/masterroom`,{credentials: 'include'})
+  // const fetchMasterRooms = () => {
+  //   fetch(`${apiUrl}/timetablemodule/masterroom`,{credentials: 'include'})
+  //     .then(handleResponse)
+  //     .then((data) => {
+  //       setMasterRooms(data);
+  //     })
+  //     .catch(handleError);
+  // };
+  const fetchAvailableDepartments = () => {
+    fetch(`${apiUrl}/timetablemodule/faculty/dept`,{credentials: 'include'})
       .then(handleResponse)
       .then((data) => {
-        setMasterRooms(data);
+        const formattedDepartments = data.map((department) => ({
+          value: department,
+          label: department,
+        }));
+        setAvailableDepartment(formattedDepartments);
       })
       .catch(handleError);
   };
+
+
+
 
   const handleResponse = (response) => {
     if (!response.ok) {
@@ -99,8 +134,13 @@ function AddRoomComponent() {
       return;
     }
   
+    const selectedRoomObject = masterRooms.find(
+      (masterRoom) => masterRoom.room === selectedMasterRoom
+    );
+
     const dataToSave = {
       room: selectedMasterRoom,
+      type: selectedRoomObject.type,
       code: currentCode,
     };
 
@@ -155,7 +195,10 @@ function AddRoomComponent() {
         )
       });
   };
-
+  const handleDepartmentChange = (e) => {
+    const selectedDepartment = e.target.value;
+    setSelectedDepartment(selectedDepartment);
+  };
   // useEffect(()=>{
   //   setTimeout(() => {
   //     setSuccessMessage('')
@@ -174,6 +217,32 @@ function AddRoomComponent() {
         <Box mb="1">
           <Text as="b">Room</Text>
         </Box>
+        {/* <Select
+          value={selectedMasterRoom}
+          onChange={(e) => setSelectedMasterRoom(e.target.value)}
+        >
+          <option value="">Select a Room</option>
+          {masterRooms.map((masterRoom) => (
+            <option key={masterRoom._id} value={masterRoom.room}>
+              {masterRoom.room}
+            </option>
+          ))}
+        </Select> */}
+                <FormControl isRequired mb="2.5">
+          <FormLabel>Department:</FormLabel>
+          <Select
+            value={selectedDepartment}
+            onChange={handleDepartmentChange}
+            isRequired
+          >
+            <option value="">Select a Department</option>
+            {availableDepartment.map((department) => (
+              <option key={department.value} value={department.value}>
+                {department.label}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
         <Select
           value={selectedMasterRoom}
           onChange={(e) => setSelectedMasterRoom(e.target.value)}
@@ -184,7 +253,8 @@ function AddRoomComponent() {
               {masterRoom.room}
             </option>
           ))}
-        </Select>
+        </Select> 
+
       </Box >
         <Box display='flex' mt='2' justifyContent='space-between'
         >
@@ -212,6 +282,10 @@ function AddRoomComponent() {
                   <Center>Room</Center>
                 </Th>
                 <Th>
+                  <Center>Room Type</Center>
+                </Th>
+
+                <Th>
                   <Center>Actions</Center>
                 </Th>
               </Tr>
@@ -221,6 +295,10 @@ function AddRoomComponent() {
                 <Tr key={room._id}>
                   <Td>
                     <Center>{room.room} </Center>
+                  </Td>
+                  
+                  <Td>
+                    <Center>{room.type} </Center>
                   </Td>
                   <Td>
                     <Center>

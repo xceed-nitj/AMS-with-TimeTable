@@ -33,10 +33,12 @@ class TableController {
         });
         const createdTT = await newTimeTable.save(); 
         const deptrooms= await MasterRoomProfile.getRoomByDepartment(data.dept);
-
+        if (deptrooms)
+        {
         for (const room of deptrooms) {
-          await addRoom.create({ room: room.room, code: newCode });
+          await addRoom.create({ room: room.room, code: newCode, type:room.type });
         }
+      }
         
           const roomdata= await AddAllotment.find({session: data.session})
           console.log(roomdata);
@@ -51,9 +53,12 @@ class TableController {
 
   // Combine rooms from both allotments
           const combinedRooms = [...centralisedDept.rooms, ...electiveDept.rooms];
+          if(combinedRooms)
+          {
           for (const room of combinedRooms) {
-            await addRoom.create({ room: room.room, code: newCode });
+            await addRoom.create({ room: room.room, code: newCode, type:'Centralised Classroom' });
           }
+        }
   
         res.json(createdTT);
       } 

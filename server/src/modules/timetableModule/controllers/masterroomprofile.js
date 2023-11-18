@@ -66,7 +66,7 @@ class MroomController {
         }
         try {
           const data = await Masterroom.find({ dept: department });
-          if (!data) throw new HttpException(400, "No faculty members found in this department");
+          if (!data) throw new HttpException(400, "No room found in this department");
           return data;
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");

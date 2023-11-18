@@ -1,5 +1,6 @@
 const HttpException = require("../../../models/http-exception");
 const addRoom = require("../../../models/addroom");
+const MasterRoom = require("../../../models/masterroom");
 
 
 class addRoomController {
@@ -83,9 +84,24 @@ class addRoomController {
         }
       }
 
+      async deleteCentralisedRoomByCode(code) {
+        try {
+          const getcentralisedroom = await addRoom.find({code,type:'Centralised Classroom'})
+          const roomIdsToDelete = getcentralisedroom.map(room => room._id);
+
+          await addRoom.deleteMany({ _id: { $in: roomIdsToDelete } });
+    
+        } catch (error) {
+          throw new Error("Failed to delete centralised room");
+        }
+      }
+
+
+
     }
 
 
+    
 module.exports = addRoomController;
 
 
