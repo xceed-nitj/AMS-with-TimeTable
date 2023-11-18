@@ -6,7 +6,8 @@ import {
   Heading,
   Select,
   Button,
-  Checkbox
+  Checkbox,
+  Box
 } from '@chakra-ui/react';
 
 const AllotmentForm = () => {
@@ -76,6 +77,7 @@ const AllotmentForm = () => {
             headers: {
               "Content-Type": "application/json",
             },
+            credentials: 'include'
           }
         );
         if (response.ok) {
@@ -231,18 +233,23 @@ const AllotmentForm = () => {
   };
 
   return (
+    <Container maxW="5xl">
+    <Box>
+
     <form onSubmit={handleSubmit}>
       <Heading>Allotment</Heading>
       <FormLabel>Session:</FormLabel>
       <Select
   name="session"
   value={formData.session}
+  
   onChange={(e) => {
     const selectedSession = e.target.value;
     setSession(selectedSession);
     setFormData({ ...formData, session: selectedSession });
     fetchExistingData(selectedSession);
   }}>
+  
         <option value="">Select a Session</option>
         { sessions.length > 0 && sessions.map((session, index) => (
           <option key={index} value={session}>
@@ -310,12 +317,7 @@ const AllotmentForm = () => {
                     >
                       Afternoon Slot
                     </Checkbox>
-                    <Button
-                      type="Button"
-                      onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
-                    >
-                      Remove Room
-                    </Button>
+                    
                   </div>
                 ))}
                 <Button
@@ -324,6 +326,12 @@ const AllotmentForm = () => {
                 >
                   Add Room
                 </Button>
+                <Button
+                      type="Button"
+                      onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
+                    >
+                      Remove Room
+                    </Button>
               </td>
               <td>
               <Button
@@ -390,12 +398,6 @@ const AllotmentForm = () => {
                         </option>
                       ))}
                     </Select>
-                      <Button
-                      type="Button"
-                      onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
-                    >
-                      Remove Room
-                    </Button>
                   </div>
                 ))}
                 <Button
@@ -404,6 +406,13 @@ const AllotmentForm = () => {
                 >
                   Add Room
                 </Button>
+                <Button
+                      type="Button"
+                      onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
+                    >
+                      Remove Room
+                    </Button>
+
               </td>
               <td>
               <Button
@@ -427,6 +436,9 @@ const AllotmentForm = () => {
 
       <Button type="submit">Submit</Button>
     </form>
+</Box>
+    </Container>
+
   );
 };
 
