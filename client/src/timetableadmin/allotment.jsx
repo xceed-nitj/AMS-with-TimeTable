@@ -310,51 +310,52 @@ const AllotmentForm = () => {
                 </Select>
               </td>
               <td>
-                {allotment.rooms.map((room, roomIndex) => (
-                  <div key={`centralisedRoom-${deptIndex}-${roomIndex}`}>
-                    <Select
-                      name="room"
-                      value={room.room}
-                      onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-                    >
-                      <option key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`} value="">
-                        Select Room
-                      </option>
-                      {rooms.map((room, index) => (
-                        <option key={`centralisedRoom-${index}`} value={room}>
-                          {room}
-                        </option>
-                      ))}
-                    </Select>
-                    <Checkbox
-                      name="morningSlot"
-                      isChecked={room.morningSlot}
-                      onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-                    >
-                      Morning Slot
-                    </Checkbox>
-                    <Checkbox
-                      name="afternoonSlot"
-                      isChecked={room.afternoonSlot}
-                      onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-                    >
-                      Afternoon Slot
-                    </Checkbox>
-                    
+  {allotment.rooms.map((room, roomIndex) => (
+    <div key={`centralisedRoom-${deptIndex}-${roomIndex}`}>
+      <Select
+        name="room"
+        value={room.room}
+        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+      >
+        <option key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`} value="">
+          Select Room
+        </option>
+        {rooms.map((room, index) => (
+          <option key={`centralisedRoom-${index}`} value={room}>
+            {room}
+          </option>
+        ))}
+      </Select>
+      <Checkbox
+        name="morningSlot"
+        isChecked={room.morningSlot}
+        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+      >
+        Morning Slot
+      </Checkbox>
+      <Checkbox
+        name="afternoonSlot"
+        isChecked={room.afternoonSlot}
+        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+      >
+        Afternoon Slot
+      </Checkbox>
+      <Button
+        type="Button"
+        onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}
+      >
+        Add Room
+      </Button>
+      <Button
+        type="Button"
+        onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
+      >
+        Remove Room
+      </Button>
+                  
                   </div>
                 ))}
-                <Button
-                  type="Button"
-                  onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}
-                >
-                  Add Room
-                </Button>
-                <Button
-                      type="Button"
-                      onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
-                    >
-                      Remove Room
-                    </Button>
+               
               </td>
               <td>
               <Button
