@@ -340,6 +340,7 @@ const AllotmentForm = () => {
       >
         Afternoon Slot
       </Checkbox>
+      <div>
       <Button
         type="Button"
         onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}
@@ -352,7 +353,7 @@ const AllotmentForm = () => {
       >
         Remove Room
       </Button>
-                  
+      </div>       
                   </div>
                 ))}
                
@@ -407,46 +408,47 @@ const AllotmentForm = () => {
                 </Select>
               </td>
               <td>
-                {allotment.rooms.map((room, roomIndex) => (
-                  <div key={`openElectiveRoom-${deptIndex}-${roomIndex}`}>
-                    <Select
-                      name="room"
-                      value={room.room}
-                      onChange={(e) => handleChange(e, deptIndex, roomIndex, 'openElectiveAllotments')}
-                    >
-                      <option key={`openElectiveDefaultRoom-${deptIndex}-${roomIndex}`} value="">
-                        Select Room
-                      </option>
-                      {rooms.map((room, index) => (
-                        <option key={`openElectiveRoom-${index}`} value={room}>
-                          {room}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                ))}
-                <Button
-                  type="Button"
-                  onClick={() => handleAddRoomOpenElective(deptIndex)}
-                >
-                  Add Room
-                </Button>
-                <Button
-                      type="Button"
-                      onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
-                    >
-                      Remove Room
-                    </Button>
+  {allotment.rooms.map((room, roomIndex) => (
+    <div key={`openElectiveRoom-${deptIndex}-${roomIndex}`}>
+      <Select
+        name="room"
+        value={room.room}
+        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'openElectiveAllotments')}
+      >
+        <option key={`openElectiveDefaultRoom-${deptIndex}-${roomIndex}`} value="">
+          Select Room
+        </option>
+        {rooms.map((room, index) => (
+          <option key={`openElectiveRoom-${index}`} value={room}>
+            {room}
+          </option>
+        ))}
+      </Select>
+      {/* Other controls (e.g., checkboxes) here */}
+      <Button
+        type="Button"
+        onClick={() => handleAddRoomOpenElective(deptIndex)}
+      >
+        Add Room
+      </Button>
+      <Button
+        type="Button"
+        onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
+      >
+        Remove Room
+      </Button>
+    </div>
 
-              </td>
-              <td>
-              <Button
-                type="button"
-                onClick={() => handleRemoveAllotment(deptIndex, 'openElectiveAllotments')}
-              >
-                Remove Allotment
-              </Button>
-            </td>
+))}
+</td>
+<td>
+  <Button
+    type="button"
+    onClick={() => handleRemoveAllotment(deptIndex, 'openElectiveAllotments')}
+  >
+    Remove Allotment
+  </Button>
+  </td>
             </tr>
           ))}
         </tbody>
