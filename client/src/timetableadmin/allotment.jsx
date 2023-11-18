@@ -7,8 +7,11 @@ import {
   Select,
   Button,
   Checkbox,
-  Box
+  Box,
+  Text
 } from '@chakra-ui/react';
+import { useToast } from "@chakra-ui/react";
+
 
 const AllotmentForm = () => {
     const [formData, setFormData] = useState({
@@ -26,6 +29,8 @@ const AllotmentForm = () => {
   const [sessions, setSessions] = useState([]);
   const apiUrl = getEnvironment();
   const [session,setSession]=useState();
+  const toast = useToast();
+
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
@@ -227,6 +232,15 @@ const AllotmentForm = () => {
       }
 
       console.log('Allotment created successfully');
+      toast({
+        position: 'top',
+        title: "Allotment Updated Successfully",
+        // description: "",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+
     } catch (error) {
       console.error('Error creating allotment:', error.message);
     }
@@ -242,21 +256,30 @@ const AllotmentForm = () => {
       <Select
   name="session"
   value={formData.session}
-  
+  isInvalid={!formData.session}  // Highlight the field if it's empty
+  errorBorderColor="red.300"      // Customize the border color for the error state
   onChange={(e) => {
     const selectedSession = e.target.value;
     setSession(selectedSession);
     setFormData({ ...formData, session: selectedSession });
     fetchExistingData(selectedSession);
-  }}>
-  
-        <option value="">Select a Session</option>
-        { sessions.length > 0 && sessions.map((session, index) => (
-          <option key={index} value={session}>
-            {session}
-          </option>
-        ))}
-      </Select>
+  }}
+>
+  <option value="">Select a Session</option>
+  {sessions.length > 0 &&
+    sessions.map((session, index) => (
+      <option key={index} value={session}>
+        {session}
+      </option>
+    ))}
+</Select>
+{!formData.session && (
+  <Text color="red.500" fontSize="sm">
+    {/* Display an error message */}
+    Session is required.
+  </Text>
+)}
+
 
       <Heading>Centralised Room Allotment</Heading>
       <table>
@@ -352,6 +375,7 @@ const AllotmentForm = () => {
       >
         Add Allotment
       </Button>
+      <Button type="submit">Submit</Button>
 
       <Heading>Open Elective Room Allotment</Heading>
       <table>

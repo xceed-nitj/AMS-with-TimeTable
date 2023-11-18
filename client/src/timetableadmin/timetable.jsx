@@ -57,7 +57,7 @@ const Timetable = () => {
   const [viewFaculty, setViewFaculty] = useState(availableFaculties[0]);
   const [viewRoom, setViewRoom] = useState(availableRooms[0]);
 
-  const [selectedSemester, setSelectedSemester] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState(availableSems[0]||"");
   const selectedCell = null;
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -157,7 +157,7 @@ const Timetable = () => {
     };
 
     fetchViewData(viewselectedSemester);
-  }, [selectedSemester, currentCode, apiUrl, viewselectedSemester]);
+  }, [selectedSemester, viewselectedSemester, timetableData, savedTime]);
 
   useEffect(() => {
     const facultyData = async (currentCode, faculty) => {
@@ -200,7 +200,7 @@ const Timetable = () => {
     fetchFacultyData(viewFaculty);
     fetchCommonLoad(currentCode, viewFaculty); // Call the function to fetch subject data
 
-  }, [viewFaculty, currentCode, viewData]);
+  }, [viewFaculty, viewData]);
 
   useEffect(() => {
     const roomData = async (currentCode, room) => {
@@ -226,11 +226,11 @@ const Timetable = () => {
     };
 
     fetchRoomData(viewRoom);
-  }, [viewRoom, currentCode, viewData]);
+  }, [viewRoom, viewData]);
 
   useEffect(() => {
     // Fetch subject data from the database and populate availableSubjects
-    const fetchSubjects = async () => {
+    const fetchSubjects = async (currentCode,selectedSemester) => {
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/subject/filteredsubject/${currentCode}/${selectedSemester}`,
@@ -246,7 +246,7 @@ const Timetable = () => {
       }
     };
 
-    const fetchRoom = async () => {
+    const fetchRoom = async (currentCode) => {
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/addroom?code=${currentCode}`,
@@ -265,7 +265,7 @@ const Timetable = () => {
       }
     };
 
-    const fetchFaculty = async () => {
+    const fetchFaculty = async (currentCode,selectedSemester) => {
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/addfaculty/filteredfaculty/${currentCode}/${selectedSemester}`,
@@ -283,10 +283,10 @@ const Timetable = () => {
     };
 
 
-    fetchSubjects();
-    fetchRoom();
-    fetchFaculty();
-  }, [selectedSemester, viewData, currentCode]);
+    fetchSubjects(currentCode,selectedSemester);
+    fetchRoom(currentCode);
+    fetchFaculty(currentCode,selectedSemester);
+  }, [selectedSemester, viewData, currentCode,apiUrl]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -355,7 +355,7 @@ const Timetable = () => {
   useEffect(() => {
     const fetchSubjectData = async (currentCode) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`,{credentials: "include"});
         const data = await response.json();
         setSubjectData(data);
         // console.log('subjectdata',data)
