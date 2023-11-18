@@ -3,7 +3,10 @@ const masterroomRouter = express.Router();
 const MasterroomController = require("../controllers/masterroomprofile");
 const masterroomController = new MasterroomController();
 
-masterroomRouter.post("/", async (req, res) => {
+const ttadminRoute=require("../../usermanagement/ttadminroute")
+
+
+masterroomRouter.post("/",ttadminRoute, async (req, res) => {
     try {
       await masterroomController.createRoom(req, res);
     } catch (e) {
@@ -62,7 +65,7 @@ masterroomRouter.post("/", async (req, res) => {
 
 
 
-    masterroomRouter.put('/:id', async (req, res) => {
+    masterroomRouter.put('/:id',ttadminRoute, async (req, res) => {
       try {
         const roomId = req.params.id;
         const updatedId = req.body;
@@ -77,7 +80,7 @@ masterroomRouter.post("/", async (req, res) => {
       }
     });
 
-    masterroomRouter.delete("/:id", async (req, res) => {
+    masterroomRouter.delete("/:id",ttadminRoute, async (req, res) => {
       try {
         const roomId = req.params.id;
         await masterroomController.deleteId(roomId);

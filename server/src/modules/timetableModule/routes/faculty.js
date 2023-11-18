@@ -3,7 +3,10 @@ const facultyRouter = express.Router();
 const FacultyController = require("../controllers/facultyprofile");
 const facultyController = new FacultyController();
 
-facultyRouter.post("/", async (req, res) => {
+const ttadminRoute=require("../../usermanagement/ttadminroute")
+
+
+facultyRouter.post("/",ttadminRoute, async (req, res) => {
     try {
       await facultyController.createFaculty(req, res);
     } catch (e) {
@@ -56,10 +59,7 @@ facultyRouter.post("/", async (req, res) => {
     }
   });
   
-  
-  
-
-    facultyRouter.put('/:id', async (req, res) => {
+    facultyRouter.put('/:id',ttadminRoute, async (req, res) => {
       try {
         const facultyId = req.params.id;
         const updatedId = req.body;
@@ -74,7 +74,7 @@ facultyRouter.post("/", async (req, res) => {
       }
     });
 
-    facultyRouter.delete("/:id", async (req, res) => {
+    facultyRouter.delete("/:id",ttadminRoute, async (req, res) => {
       try {
         const facultyId = req.params.id;
         await facultyController.deleteId(facultyId);
@@ -85,7 +85,5 @@ facultyRouter.post("/", async (req, res) => {
           .json({ error: e?.message || "Internal Server Error" });
       }
     });
-
-
 
   module.exports = facultyRouter;
