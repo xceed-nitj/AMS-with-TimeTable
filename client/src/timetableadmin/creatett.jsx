@@ -50,6 +50,7 @@ function CreateTimetable() {
             headers: {
               "Content-Type": "application/json",
             },
+          credentials: 'include',
           }
         );
         if (response.ok) {
@@ -70,6 +71,7 @@ function CreateTimetable() {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: 'include',
         });
         if (response.ok) {
           const data = await response.json();
