@@ -118,25 +118,29 @@ function MasterRoom() {
   };
 
   const handleDelete = (_id) => {
-    fetch(`${apiUrl}/timetablemodule/masterroom/${_id}`, {
-      method: 'DELETE',
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
+    const confirmDelete = window.confirm("Are you sure you want to delete this entry?");
+  
+    if (confirmDelete) {
+      fetch(`${apiUrl}/timetablemodule/masterroom/${_id}`, {
+        method: 'DELETE',
       })
-      .then((data) => {
-        console.log('Delete Success:', data);
-        const updatedData = masterRooms.filter((room) => room._id !== _id);
-        setMasterRooms(updatedData);
-      })
-      .catch((error) => {
-        console.error('Delete Error:', error);
-      });
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log('Delete Success:', data);
+          const updatedData = masterRooms.filter((room) => room._id !== _id);
+          setMasterRooms(updatedData);
+        })
+        .catch((error) => {
+          console.error('Delete Error:', error);
+        });
+    }
   };
-
+  
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);

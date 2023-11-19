@@ -270,31 +270,30 @@ function Subject() {
   };
 
   const handleDelete = (_id) => {
-    fetch(`${apiUrl}/timetablemodule/subject/${_id}`, {
-
-      method: "DELETE",
-      credentials: "include",
-
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
+    const isConfirmed = window.confirm("Are you sure you want to delete this entry?");
+    
+    if (isConfirmed) {
+      fetch(`${apiUrl}/timetablemodule/subject/${_id}`, {
+        method: "DELETE",
+        credentials: "include",
       })
-      .then((data) => {
-
-        console.log("Delete Success:", data);
-        const updatedData = tableData.filter((row) => row._id !== _id);
-        setTableData(updatedData);
-      })
-      .catch((error) => {
-
-        console.error("Delete Error:", error);
-
-      });
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Delete Success:", data);
+          const updatedData = tableData.filter((row) => row._id !== _id);
+          setTableData(updatedData);
+        })
+        .catch((error) => {
+          console.error("Delete Error:", error);
+        });
+    }
   };
-
+  
   const handleCancelAddSubject = () => {
     setIsAddSubjectFormVisible(false);
   };
