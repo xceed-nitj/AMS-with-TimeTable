@@ -26,6 +26,8 @@ import {
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
+import Header from "../components/header";
+
 
 // function SuccessMessage({ message }) {
 //   return <div className="success-message">{message}</div>;
@@ -209,9 +211,10 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
 
   return (
     <Container maxW="5xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
+      <Header title="Add Faculty"></Header>
+      {/* <Heading as="h1" size="xl" mt="6" mb="6">
         Add Faculty
-      </Heading>
+      </Heading> */}
       {/* <SuccessMessage message={successMessage} /> */}
       <chakra.form
         mt="1"

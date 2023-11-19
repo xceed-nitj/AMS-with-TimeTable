@@ -133,7 +133,7 @@ function MasterRoomTable() {
                   bg="teal.300"
                   color="white"
                   borderWidth="2px"
-                  onClick={() => handleSort('floor')}
+                  // onClick={() => handleSort('floor')}
                 >
                   Floor {getSortIcon('floor')}
                 </Th>
@@ -149,7 +149,7 @@ function MasterRoomTable() {
                   bg="teal.300"
                   color="white"
                   borderWidth="2px"
-                  onClick={() => handleSort('landMark')}
+                  // onClick={() => handleSort('landMark')}
                 >
                   Landmark {getSortIcon('landMark')}
                 </Th>

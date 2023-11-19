@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import getEnvironment from "../getenvironment";
+import Header from "../components/header";
+
 import {
   Box,
   Center,
@@ -269,9 +271,8 @@ function CommonLoadComponent() {
 
   return (
     <Container maxW="5xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
-        Common Load Data
-      </Heading>
+      <Header title="Common Load Allocation"></Header>
+    
       This page can be used for major project allocation to faculty members. The load will appear directly in the summary data.
       
       <chakra.form

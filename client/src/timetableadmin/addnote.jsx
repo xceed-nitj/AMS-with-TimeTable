@@ -9,6 +9,8 @@ import {
   Select,
   Button,
 } from '@chakra-ui/react';
+import Header from "../components/header";
+
 
 function Note() {
   const apiUrl = getEnvironment();
@@ -220,9 +222,8 @@ function Note() {
 
   return (
     <Container maxW="5xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
-        {isEditing ? 'Edit Note' : 'Add Note'}
-      </Heading>
+     <Header title="Add Note"></Header>
+     
       <form
         onSubmit={(e) => {
           e.preventDefault();

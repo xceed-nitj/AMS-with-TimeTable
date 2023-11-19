@@ -16,7 +16,7 @@ import {
 } from "../styles/customStyles";
 import { Box, Text, Portal, ChakraProvider, UnorderedList, ListItem } from "@chakra-ui/react";
 import { Center, Square, Circle } from "@chakra-ui/react";
-
+import { Button, useToast } from '@chakra-ui/react';
 import {
   Table,
   TableContainer,
@@ -26,7 +26,7 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/table";
-import { Button } from "@chakra-ui/button";
+// import { Button } from "@chakra-ui/button";
 import { Stack, HStack, VStack } from "@chakra-ui/react";
 import Header from "../components/header";
 
@@ -65,6 +65,7 @@ const Timetable = () => {
   const currentCode = parts[parts.length - 1];
   // console.log('Code:', code);
   const apiUrl = getEnvironment();
+  const toast = useToast();
 
   useEffect(() => {
     const fetchSem = async () => {
@@ -565,6 +566,10 @@ const Timetable = () => {
   };
 
   const handleLockTT = async () => {
+
+    const isConfirmed = window.confirm('Are you sure you want to lock the timetable?');
+
+    if (isConfirmed) {
     // Mark the function as async
     setMessage("Data is being saved....");
     // await handleSubmit();
@@ -586,10 +591,17 @@ const Timetable = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(data.message);
-        console.log(data.updatedTime);
-
-        setLockedTime(data.updatedTime);
+        console.log('response from backend for lock',data);
+        // console.log(data.updatedTime);
+        setMessage("");
+        toast({
+          title: 'Timetable Locked',
+          status: 'success',
+          duration: 6000,
+          isClosable: true,
+          position: 'top', 
+        });    
+        // setLockedTime(data.updatedTime);
       } else {
         console.error(
           "Failed to send data to the backend. HTTP status:",
@@ -598,9 +610,21 @@ const Timetable = () => {
       }
     } catch (error) {
       console.error("Error sending data to the backend:", error);
-    } finally {
-      setMessage("Data Locked successfully");
-    }
+    } 
+  } else {
+    toast({
+      title: 'Timetable Lock Failed',
+      description: 'An error occurred while attempting to lock the timetable.',
+      status: 'error',
+      duration: 6000,
+      isClosable: true,
+      position: 'top', 
+    });
+    
+
+  }
+
+
   };
 
   const [showMessage, setShowMessage] = useState(true);

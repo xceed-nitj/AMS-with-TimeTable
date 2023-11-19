@@ -1,4 +1,3 @@
-// Import React and other necessary dependencies
 import React, { useEffect, useState } from 'react';
 import getEnvironment from '../getenvironment';
 import {
@@ -9,32 +8,28 @@ import {
   Tbody,
   Tr,
   Th,
+  Text,
   Td,
 } from '@chakra-ui/react';
+import Header from "../components/header";
 
-// Create the ViewAllotmentPage component
+
 const ViewAllotmentPage = () => {
-  // State to store form data
   const [formData, setFormData] = useState({
     session: '',
     centralisedAllotments: [],
     openElectiveAllotments: [],
   });
 
-  // Function to get the API URL
   const apiUrl = getEnvironment();
-
-  // Get the current URL and extract the code from it
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 2];
 
-  // Fetch existing data when the component mounts
   useEffect(() => {
     fetchExistingData(currentCode);
   }, []);
 
-  // Function to fetch existing data
   const fetchExistingData = async (currentCode) => {
     try {
       console.log(currentCode);
@@ -50,7 +45,6 @@ const ViewAllotmentPage = () => {
         const data = await response.json();
         console.log('Data from backend:', data);
 
-        // Assuming you have only one item in the array (as per your example)
         const [allotmentData] = data;
 
         setFormData({
@@ -66,20 +60,29 @@ const ViewAllotmentPage = () => {
     }
   };
 
-  // Render the component
   return (
-    <Container centerContent maxW="2xl">
-      <Heading>Alloted Room For the Current Session</Heading>
+    <Container maxW="5xl">
+      {/* <Heading >Alloted Room For the Current Session</Heading> */}
+      <div>
+      <Header title="Alloted Rooms "></Header>
+      </div>
       {/* Centralised Room Table */}
-      Centralised Room Allotment
-      <Table variant="simple" style={{ marginBottom: '20px' }}>
-        
+      <Table variant="striped" colorScheme="gray" style={{ marginBottom: '20px' }}>
+      <caption > <Text fontWeight="bold" fontSize="lg">Centralised Room Allotment</Text></caption>
         <Thead>
           <Tr>
-            <Th>Department</Th>
-            <Th>Rooms</Th>
-            <Th>Morning Slot</Th>
-            <Th>Afternoon Slot</Th>
+            <Th bg="teal.300"
+                  color="white"
+                  borderWidth="2px">Department</Th>
+            <Th bg="teal.300"
+                  color="white"
+                  borderWidth="2px">Rooms</Th>
+            <Th bg="teal.300"
+                  color="white"
+                  borderWidth="2px">Morning Slot</Th>
+            <Th bg="teal.300"
+                  color="white"
+                  borderWidth="2px">Afternoon Slot</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -112,13 +115,18 @@ const ViewAllotmentPage = () => {
         </Tbody>
       </Table>
 
-      Open Elective Room Allotment
       {/* Open Elective Allotment Table */}
-      <Table variant="simple">
-        <Thead>
+      <Table variant="striped" colorScheme="gray" style={{ marginBottom: '20px' }}>
+
+      <caption > <Text fontWeight="bold" fontSize="lg">Open Elective Room Allotment</Text></caption>
+             <Thead>
           <Tr>
-            <Th>Department</Th>
-            <Th>Rooms</Th>
+            <Th bg="teal.300"
+                  color="white"
+                  borderWidth="2px">Department</Th>
+            <Th bg="teal.300"
+                  color="white"
+                  borderWidth="2px">Rooms</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -140,5 +148,4 @@ const ViewAllotmentPage = () => {
   );
 };
 
-// Export the component
 export default ViewAllotmentPage;

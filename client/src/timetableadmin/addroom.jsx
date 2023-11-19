@@ -210,7 +210,7 @@ function AddRoomComponent() {
       {/* <Heading as="h1" size="xl" mt="6" mb="6">
         Add Rooms
       </Heading> */}
-      <Header title="Add Rooms"></Header>
+      <Header title="Add Rooms "></Header>
 
       {/* <SuccessMessage message={successMessage} /> */}
       <Box>
