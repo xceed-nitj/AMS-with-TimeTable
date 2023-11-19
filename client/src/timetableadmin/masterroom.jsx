@@ -29,7 +29,7 @@ function MasterRoom() {
 
 
   const fetchMasterRooms = () => {
-    fetch(`${apiUrl}/timetablemodule/masterroom`)
+    fetch(`${apiUrl}/timetablemodule/masterroom`, {credentials: 'include'})
       .then((response) => response.json())
       .then((data) => setMasterRooms(data.reverse()))
       .catch((error) => console.error('Error:', error));
@@ -57,6 +57,7 @@ function MasterRoom() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editedRoom),
+      credentials: 'include',
     })
       .then((response) => response.json())
       .then((data) => {
@@ -89,6 +90,7 @@ function MasterRoom() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(editedRoom),
+          credentials: 'include'
         })
           .then((response) => {
             if (!response.ok) {
@@ -122,7 +124,7 @@ function MasterRoom() {
   
     if (confirmDelete) {
       fetch(`${apiUrl}/timetablemodule/masterroom/${_id}`, {
-        method: 'DELETE',
+        method: 'DELETE', credentials: 'include'
       })
         .then((response) => {
           if (!response.ok) {
@@ -154,6 +156,7 @@ function MasterRoom() {
       fetch(`${apiUrl}/upload/masterroom`, {
         method: 'POST',
         body: formData,
+        credentials: 'include'
       })
         .then((response) => response.json())
         .then(() => {
