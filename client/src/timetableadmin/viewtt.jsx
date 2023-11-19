@@ -19,7 +19,7 @@ import PDFGenerator from '../filedownload/makepdf';
 const ViewTimetable = ({ timetableData,tableSummary,headerDetails }) => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-
+console.log('data sent to view',timetableData)
   // const [pdfData, setPdfData] = useState(null);
   const [pdfData, setPdfData] = useState(null);
 

@@ -59,7 +59,7 @@ function Subject() {
     code: currentCode,
   });
 
-  const [editedSData, setEditedSData] = useState({
+   const [editedSData, setEditedSData] = useState({
     subjectFullName: "",
     type: "",
     subCode: "",
@@ -514,7 +514,7 @@ function Subject() {
 
               >
                 <option value="">Select Semester</option>
-                {semesters.map((semester) => (
+                {semesterData.map((semester) => (
                   <option key={semester._id} value={semester.sem}>
                     {semester.sem}
                   </option>

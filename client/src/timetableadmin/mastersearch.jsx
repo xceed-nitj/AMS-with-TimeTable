@@ -118,7 +118,7 @@ useEffect(()=>
 
 
   useEffect(() => {
-    const fetchData = async (semester) => {
+    const fetchData = async (semester, currentCode) => {
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`,
@@ -127,8 +127,9 @@ useEffect(()=>
         const data1 = await response.json();
         const data=data1.timetableData;
         setSemNotes(data1.notes)
-        console.log('semnotes',data1.notes);
+        console.log('data received from',data);
         const initialData = generateInitialTimetableData(data, "sem");
+        setViewData(initialData);
         return initialData;
       } catch (error) {
         console.error("Error fetching existing timetable data:", error);
@@ -136,11 +137,14 @@ useEffect(()=>
       }
     };
 
-    const fetchViewData = async (semester) => {
-      const data = await fetchData(semester);
-      setViewData(data);
+    const fetchViewData = async (semester, currentCode) => {
+      console.log('selected sem',semester)
+      console.log('selected code',currentCode)
+
+      const data = await fetchData(semester,currentCode);
+      console.log('returned data after fetch', data)
     };
-    fetchViewData(selectedSemester);
+    fetchViewData(selectedSemester,currentCode);
   }, [selectedSemester]);
 
   useEffect(() => {
@@ -206,12 +210,12 @@ useEffect(()=>
       }
     };
 
-    const fetchRoomData = async (room) => {
+    const fetchRoomData = async (currentCode,room) => {
       const data = await roomData(currentCode, room);
       setViewRoomData(data);
     };
 
-    fetchRoomData(selectedRoom);
+    fetchRoomData(currentCode, selectedRoom);
   }, [selectedRoom]);
 
   useEffect(() => {
@@ -351,11 +355,11 @@ useEffect(()=>
         }
       }
     }
-    // console.log(initialData);
+    console.log('initialdata',initialData);
     return initialData;
   };
 
-  // const navigate = useNavigate();
+  // const navigate view= useNavigate();
 
   const handleDownloadClick = () => {
     const pathArray = window.location.pathname
@@ -408,7 +412,7 @@ useEffect(()=>
     fetchTTData(currentCode);
 
 
-  }, []);
+  }, [currentCode]);
 
 
   return (

@@ -64,8 +64,9 @@ class LockTimeTableController {
 
   async classtt(req, res) {
     try {
-      const sem = req.params.sem;
       const code = req.params.code;
+      const sem = req.params.sem;
+
       const records = await LockSem.find({ sem, code });
       const timetableData = {};  
       records.forEach((record) => {
