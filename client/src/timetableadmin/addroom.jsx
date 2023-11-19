@@ -172,29 +172,32 @@ function AddRoomComponent() {
   };
 
   const handleDelete = (roomId) => {
-    setIsLoading({
-      state : true, 
-      id : roomId
-    });
-
-    fetch(`${apiUrl}/timetablemodule/addroom/${roomId}`, {
-      method: "DELETE",
-      credentials: 'include',
-    })
-      .then(handleResponse)
-      .then(() => {
-        fetchRoomsData();
-      })
-      .catch(handleError)
-      .finally(() => {
-        setIsLoading(
-          {
-            ... isLoading,
-            state : false
-          }
-        )
+    const isConfirmed = window.confirm("Are you sure you want to delete this room?");
+    
+    if (isConfirmed) {
+      setIsLoading({
+        state: true,
+        id: roomId,
       });
+  
+      fetch(`${apiUrl}/timetablemodule/addroom/${roomId}`, {
+        method: "DELETE",
+        credentials: 'include',
+      })
+        .then(handleResponse)
+        .then(() => {
+          fetchRoomsData();
+        })
+        .catch(handleError)
+        .finally(() => {
+          setIsLoading({
+            ...isLoading,
+            state: false,
+          });
+        });
+    }
   };
+  
   const handleDepartmentChange = (e) => {
     const selectedDepartment = e.target.value;
     setSelectedDepartment(selectedDepartment);

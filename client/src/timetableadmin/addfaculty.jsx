@@ -165,38 +165,45 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
     const facultyToDelete = facultyData.find(
       (faculty) => faculty._id === facultyId
     );
-
+  
     if (facultyToDelete) {
-      setIsLoading({
-        state: true,
-        id: facultyId,
-      });
-      const updatedFaculty = facultyToDelete.faculty.filter(
-        (name) => name !== facultyName
+      const isConfirmed = window.confirm(
+        `Are you sure you want to delete ${facultyName}?`
       );
-      facultyToDelete.faculty = updatedFaculty;
-
-      fetch(`${apiUrl}/timetablemodule/addFaculty/${facultyId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(facultyToDelete),
-        credentials: 'include',
-      })
-        .then(handleResponse)
-        .then(() => {
-          fetchFacultyData();
-        })
-        .catch(handleError)
-        .finally(() => {
-          setIsLoading({
-            ...isLoading,
-            state: false,
-          });
+  
+      if (isConfirmed) {
+        setIsLoading({
+          state: true,
+          id: facultyId,
         });
+        const updatedFaculty = facultyToDelete.faculty.filter(
+          (name) => name !== facultyName
+        );
+        facultyToDelete.faculty = updatedFaculty;
+  
+        fetch(`${apiUrl}/timetablemodule/addFaculty/${facultyId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(facultyToDelete),
+          credentials: 'include',
+        })
+          .then(handleResponse)
+          .then(() => {
+            fetchFacultyData();
+          })
+          .catch(handleError)
+          .finally(() => {
+            setIsLoading({
+              ...isLoading,
+              state: false,
+            });
+          });
+      }
     }
   };
+  
 
   const handleFacultyCheckboxChange = (facultyName) => {
     setSelectedFaculties((prevSelectedFaculties) => {

@@ -133,17 +133,21 @@ function AddSemComponent() {
   };
 
   const handleDelete = (semId) => {
-    fetch(`${apiUrl}/timetablemodule/addSem/${semId}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    })
-      .then(handleResponse)
-      .then(() => {
-        // console.log('Sem deleted successfully');
-        fetchSemData();
+    const isConfirmed = window.confirm('Are you sure you want to delete this semester?');
+  
+    if (isConfirmed) {
+      fetch(`${apiUrl}/timetablemodule/addSem/${semId}`, {
+        method: 'DELETE',
+        credentials: 'include',
       })
-      .catch(handleError);
+        .then(handleResponse)
+        .then(() => {
+          fetchSemData();
+        })
+        .catch(handleError);
+    }
   };
+  
 
   // useEffect(()=>{
 
