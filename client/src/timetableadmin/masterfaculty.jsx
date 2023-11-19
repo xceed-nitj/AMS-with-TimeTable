@@ -55,6 +55,7 @@ const apiUrl=getEnvironment();
       fetch(`${apiUrl}/upload/faculty`, {
         method: 'POST',
         body: formData,
+        credentials: 'include'
       })
         .then((response) => response.json())
         .then(() => {
