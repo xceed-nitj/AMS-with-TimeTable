@@ -160,11 +160,17 @@ function CommonLoadComponent() {
   };
 
   const handleDelete = (commonLoadId) => {
+    const shouldDelete = window.confirm("Are you sure you want to delete this CommonLoad?");
+    
+    if (!shouldDelete) {
+      return; 
+    }
+  
     setIsLoading({
       state: true,
       id: commonLoadId,
     });
-
+  
     fetch(`${apiUrl}/timetablemodule/commonLoad/${commonLoadId}`, {
       method: "DELETE",
       credentials: 'include',
@@ -172,6 +178,15 @@ function CommonLoadComponent() {
       .then(handleResponse)
       .then(() => {
         fetchCommonLoadData();
+      })
+      .then(() => {
+        toast({
+          title: "CommonLoad Deleted",
+          description: "CommonLoad data deleted successfully",
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
       })
       .catch(handleError)
       .finally(() => {
@@ -181,6 +196,7 @@ function CommonLoadComponent() {
         });
       });
   };
+  
 
   const handleChange = (e) => {
     const selectedSubCode = e.target.value;

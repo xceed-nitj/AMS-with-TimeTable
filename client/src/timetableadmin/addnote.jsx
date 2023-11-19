@@ -208,17 +208,22 @@ function Note() {
   };
   
 
-  const handleDelete = (Id) => {
-    fetch(`${apiUrl}/timetablemodule/note/${Id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    })
-      .then(handleResponse)
-      .then(() => {
-        fetchNotes();
+  const handleDelete = (id) => {
+    const isConfirmed = window.confirm('Are you sure you want to delete this note?');
+  
+    if (isConfirmed) {
+      fetch(`${apiUrl}/timetablemodule/note/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
       })
-      .catch(handleError);
+        .then(handleResponse)
+        .then(() => {
+          fetchNotes();
+        })
+        .catch(handleError);
+    }
   };
+  
 
   return (
     <Container maxW="5xl">

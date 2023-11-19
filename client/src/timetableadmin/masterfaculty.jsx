@@ -122,28 +122,35 @@ const apiUrl=getEnvironment();
       }
     };
 
-    const handleDelete = (_id) => {
-      // Send a DELETE request to remove the selected row
-      fetch(`${apiUrl}/timetablemodule/faculty/${_id}`, {
-        method: 'DELETE',
-        credentials: 'include'
+    // ...
+
+const handleDelete = (_id) => {
+  const confirmDelete = window.confirm("Are you sure you want to delete this entry?");
+  
+  if (confirmDelete) {
+    fetch(`${apiUrl}/timetablemodule/faculty/${_id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        return response.json();
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          console.log('Delete Success:', data);
-          // Remove the deleted row from the tableData
-          const updatedData = tableData.filter((row) => row._id !== _id);
-          setTableData(updatedData);
-        })
-        .catch((error) => {
-          console.error('Delete Error:', error);
-        });
-    };
+      .then((data) => {
+        console.log('Delete Success:', data);
+        const updatedData = tableData.filter((row) => row._id !== _id);
+        setTableData(updatedData);
+      })
+      .catch((error) => {
+        console.error('Delete Error:', error);
+      });
+  }
+};
+
+// ...
+
     const handleCancelAddFaculty = () => {
       setIsAddFacultyFormVisible(false); 
     };

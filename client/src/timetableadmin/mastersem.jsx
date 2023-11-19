@@ -118,26 +118,30 @@ function MasterSemester() {
   };
 
   const handleDelete = (_id) => {
-    fetch(`${apiUrl}/timetablemodule/mastersem/${_id}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
+    const confirmDelete = window.confirm("Are you sure you want to delete this entry?");
+  
+    if (confirmDelete) {
+      fetch(`${apiUrl}/timetablemodule/mastersem/${_id}`, {
+        method: 'DELETE',
+        credentials: 'include',
       })
-      .then((data) => {
-        console.log('Delete Success:', data);
-        const updatedData = masterSems.filter((semester) => semester._id !== _id);
-        setMasterSems(updatedData);
-      })
-      .catch((error) => {
-        console.error('Delete Error:', error);
-      });
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log('Delete Success:', data);
+          const updatedData = masterSems.filter((semester) => semester._id !== _id);
+          setMasterSems(updatedData);
+        })
+        .catch((error) => {
+          console.error('Delete Error:', error);
+        });
+    }
   };
-
+  
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
