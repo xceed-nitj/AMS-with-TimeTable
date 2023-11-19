@@ -317,7 +317,9 @@ function LockedSummary() {
   useEffect(() => {
     const fetchSubjectData = async (currentCode) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
+        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`,
+        { credentials: "include" }
+        );
         const data = await response.json();
         setSubjectData(data);
         // console.log('subjectdata',data)
