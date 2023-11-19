@@ -78,6 +78,31 @@ TableRouter.post("/", async (req, res) => {
     }
   });
 
+  TableRouter.get("/sess/allsessanddept", async (req, res) => {
+    try {
+      const session = await tableController.getAllSessAndDept();
+      res.status(200).json(session);
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+  TableRouter.get("/getcode/:session/:dept", async (req, res) => {
+    try {
+      const dept=req.params.dept;
+      const session=req.params.session;
+      const code = await tableController.getCodeOfDept(dept,session);
+      res.status(200).json(code.code);
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+
   TableRouter.delete("/deletebycode/:code", async (req, res) => {
     try {
       const code = req.params.code;

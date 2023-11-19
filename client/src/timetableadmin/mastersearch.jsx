@@ -30,7 +30,7 @@ import Header from "../components/header";
 
 // import PDFViewTimetable from '../filedownload/chakrapdf'
 
-function LockedSummary() {
+function MasterView() {
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
   const [viewRoomData, setViewRoomData] = useState({});
@@ -43,16 +43,11 @@ function LockedSummary() {
   const [commonLoad, setCommonLoad]=useState();
 
   const apiUrl = getEnvironment();
-  const navigate = useNavigate();
-  const currentURL = window.location.pathname;
-  const parts = currentURL.split("/");
-  const currentCode = parts[parts.length - 2];
+  // const navigate = useNavigate();
+  // const currentURL = window.location.pathname;
+  // const parts = currentURL.split("/");
+  // const currentCode = parts[parts.length - 2];
 
-  // // Define your options for semesters, faculty, and rooms
-  // const availableRooms = ['L-201', 'L-209','room1','room2'];
-  // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
-  //   'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
-  // const semesters=['B.Sc (2 sem)','B.Sc (4 sem)','M.Sc (2 sem)','M.Sc (4 sem)','d-sem1','d-sem2']
 
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
@@ -62,7 +57,66 @@ function LockedSummary() {
   const [facultyLockedTime, setFacultyLockedTime] = useState();
   const [roomlockedTime, setRoomLockedTime] = useState();
 
+  const [allsessions, setAllSessions]=useState([]);
+  const [availableDepts, setAvailableDepts] = useState([]);
+  const [currentCode, setCurrentCode] = useState('');
+  const [selectedSession, setSelectedSession]=useState('');
+  const [selectedDept, setSelectedDept]=useState('');
+
   const semesters = availableSems;
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/timetable/sess/allsessanddept`,
+          { credentials: "include" }
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+        // console.log(data)
+        const { uniqueSessions, uniqueDept } = data;
+  
+        setAllSessions(uniqueSessions);
+        setAvailableDepts(uniqueDept);
+  
+        console.log('Received session data:', uniqueSessions);
+        console.log('Received department data:', uniqueDept);
+      } catch (error) {
+        console.error("Error fetching existing timetable data:", error);
+      }
+    };
+  
+    fetchSessions();
+  }, []); // Empty dependency array means this effect runs once on mount
+  
+useEffect(()=>
+{
+  const fetchCode= async (session, dept) => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/timetable/getcode/${session}/${dept}`,
+        { credentials: "include" }
+      );
+      const data1 = await response.json();
+
+      setCurrentCode(data1)
+      // setAvailableDepts(dept)
+      console.log('received code:',data1)
+      // console.log('received dept data:',dept)
+
+    } catch (error) {
+      console.error("Error fetching existing timetable data:", error);
+      return {};
+    }
+  }
+  fetchCode(selectedSession,selectedDept);
+},[selectedSession,selectedDept])
+
+
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
@@ -161,17 +215,19 @@ function LockedSummary() {
   }, [selectedRoom]);
 
   useEffect(() => {
-    const fetchSem = async () => {
+    const fetchSem = async (currentCode) => {
       try {
+        console.log('currentcode used for',currentCode)
         const response = await fetch(
           `${apiUrl}/timetablemodule/addsem?code=${currentCode}`,
           { credentials: "include" }
         );
         if (response.ok) {
           const data = await response.json();
-          // console.log('filtered data',data)
+          console.log(data)
           const filteredSems = data.filter((sem) => sem.code === currentCode);
           const semValues = filteredSems.map((sem) => sem.sem);
+          console.log('filtered semester data', filteredSems)
 
           setAvailableSems(semValues);
           // console.log('available semesters',availableSems)
@@ -233,7 +289,7 @@ function LockedSummary() {
       }
     };
 
-    fetchSem();
+    fetchSem(currentCode);
     fetchRoom();
     fetchTime();
     fetchFaculty(currentCode); // Call the function to fetch subject data
@@ -357,16 +413,44 @@ function LockedSummary() {
 
   return (
     <Container maxW="6xl">
-      <Header title="Locked TimeTable Summary"></Header>
-      <Button onClick={handleDownloadClick}>Click here for Batch Download</Button>
-      {/* <Box mb='6' display='flex' justifyContent='right' onClick={handleDownloadClick}>
-        <BUtton color='blue'>
-          click here for Batch Download 
-        </Button>
-      </Box> */}
-      <FormControl>
-          <FormLabel fontWeight="bold">Semester timetable (locked)
+      <Header title="View TimeTable "></Header>
+      <FormLabel fontWeight="bold">Select Session:
           </FormLabel>
+
+          <Select
+            value={selectedSession}
+            onChange={(e) => setSelectedSession(e.target.value)}
+          >
+            <option value="">Select Session</option>
+            {allsessions.map((session, index) => (
+              <option key={index} value={session}>
+                {session}
+              </option>
+            ))}
+          </Select>
+
+          <FormLabel fontWeight="bold">Select Department:
+          </FormLabel>
+
+          <Select
+            value={selectedDept}
+            onChange={(e) => setSelectedDept(e.target.value)}
+          >
+            <option value="">Select Department</option>
+            {availableDepts.map((dept, index) => (
+              <option key={index} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </Select>
+
+
+
+
+      <FormControl>
+          <FormLabel fontWeight="bold">View Semester timetable:
+          </FormLabel>
+
           <Select
             value={selectedSemester}
             onChange={(e) => setSelectedSemester(e.target.value)}
@@ -553,4 +637,5 @@ function LockedSummary() {
   );
 }
 
-export default LockedSummary;
+export default MasterView;
+

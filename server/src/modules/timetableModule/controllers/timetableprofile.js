@@ -183,6 +183,27 @@ class TableController {
     }
   }
 
+  async getAllSessAndDept() {
+    try {
+      const uniqueSessions = await TimeTable.distinct('session');
+      const uniqueDept = await TimeTable.distinct('dept');
+
+      return {uniqueSessions, uniqueDept};
+    } catch (error) {
+      throw error; 
+    }
+  }
+
+  async getCodeOfDept(dept, session) {
+    try {
+      const code= await TimeTable.findOne({dept, session});
+      return code;
+    } catch (error) {
+      throw error; 
+    }
+  }
+
+
 
 }
 module.exports = TableController;

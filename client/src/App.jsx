@@ -25,7 +25,7 @@ import MasterDelete from './timetableadmin/masterdelete';
 import AdminPage from './timetableadmin/admin';
 import ViewAllotmentPage from './timetableadmin/viewroomallotment';
 import CommonLoad from './timetableadmin/addcommonload';
-
+import MasterView from './timetableadmin/mastersearch';
 function App() {
   return (
     <Router>
@@ -60,6 +60,7 @@ function App() {
           <Route path="/tt/print" element={<PrintButton/>} />
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
+          <Route path="/tt/masterview" element={<MasterView/>}/>
 
         </Routes>
         {/* <Footer/> */}
