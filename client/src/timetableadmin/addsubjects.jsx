@@ -9,6 +9,10 @@ import {
   Box,
   FormLabel,
   FormControl,
+  Select,
+  UnorderedList,
+  Text,
+  Center,
 } from "@chakra-ui/react";
 import {
   CustomTh,
@@ -394,6 +398,8 @@ function Subject() {
       <Box mb="2" mt="2" display="flex">
 
         <Input
+          py='1'
+          px='2'
           type="file"
           accept=".xlsx"
           onChange={handleFileChange}
@@ -418,15 +424,15 @@ function Subject() {
       <Box display="flex" justifyContent="space-between">
         {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
 
-        <Box mt="5">
+        <Box mt='1'>
           <Heading as="h6" fontSize="xl" fontWeight="Bold">
             Available Semesters which can be added:
           </Heading>
-          <ul>
+          <UnorderedList>
             {semesterData.map((semester) => (
               <li key={semester.code}>{semester.sem}</li>
             ))}
-          </ul>
+          </UnorderedList>
         </Box>
         <Box mr="-1.5">
           <FileDownloadButton
@@ -437,14 +443,14 @@ function Subject() {
       </Box>
       <Box>
         {isAddSubjectFormVisible ? (
-          <FormControl borderRadius="md">
-            <Box display="flex" content="left">
+          <FormControl borderRadius="md" >
+            <Box mt='4'>
               <FormLabel>Subject Full Name:</FormLabel>
               <Input
                 border="1px"
                 borderColor="gray.300"
-
                 type="text"
+                mb='4'
                 placeholder="Subject"
                 value={editedSData.subjectFullName}
                 onChange={(e) =>
@@ -456,11 +462,10 @@ function Subject() {
               />
             </Box>
 
-            <Box display="flex" content="left">
+            <Box>
               <FormLabel>Type:</FormLabel>
               <Input
                 mb="4"
-                ml="3"
                 border="1px"
                 borderColor="gray.300"
                 type="text"
@@ -472,7 +477,7 @@ function Subject() {
               />
             </Box>
 
-            <Box display="flex" content="left">
+            <Box>
               <FormLabel>Subject Code:</FormLabel>
               <Input
                 border="1px"
@@ -487,7 +492,7 @@ function Subject() {
               />
             </Box>
 
-            <Box display="flex" content="left">
+            <Box>
               <FormLabel>Subject Abbreviation:</FormLabel>
               <Input
                 border="1px"
@@ -503,10 +508,9 @@ function Subject() {
 
             </Box>
 
-            <Box display="flex" content="left">
+            <Box mb="4">
               <FormLabel>Semester:</FormLabel>
-              <select
-                mb="4"
+              <Select
                 value={editedSData.sem}
                 onChange={(e) =>
                   setEditedSData({ ...editedSData, sem: e.target.value })
@@ -519,11 +523,11 @@ function Subject() {
                     {semester.sem}
                   </option>
                 ))}
-              </select>
+              </Select>
 
             </Box>
 
-            <Box display="flex" content="left">
+            <Box>
               <FormLabel>Degree:</FormLabel>
               <Input
                 border="1px"
@@ -539,7 +543,7 @@ function Subject() {
               />
             </Box>
 
-            <Box display="flex" content="left">
+            <Box>
               <FormLabel>Department:</FormLabel>
               <Input
                 border="1px"
@@ -554,7 +558,7 @@ function Subject() {
               />
             </Box>
 
-            <Box display="flex" content="left">
+            <Box>
               <FormLabel>Credits: </FormLabel>
               <Input
                 border="1px"
@@ -570,195 +574,211 @@ function Subject() {
 
             </Box>
 
-            <Box>
+            <Box  display='flex' justifyContent='space-between'>
+              <CustomBlueButton width='36' onClick={handleCancelAddSubject}>
+                Cancel
+              </CustomBlueButton>
               <CustomBlueButton onClick={handleSaveNewSubject}>
                 Save New Subject
-              </CustomBlueButton>
-              <CustomBlueButton onClick={handleCancelAddSubject}>
-                Cancel
               </CustomBlueButton>
             </Box>
           </FormControl>
         ) : (
-          <CustomTealButton h='50' w='150px' mb='7' mt='3' onClick={handleAddSubject}>
+          <CustomTealButton  w='150px' mb='5' mt='3' onClick={handleAddSubject}>
             Add Subject
           </CustomTealButton>
 
         )}
       </Box>
       {addduplicateEntryMessage && <p>{addduplicateEntryMessage}</p>}
-      <CustomDeleteButton ml="0" onClick={handleDeleteAll}>
+      <CustomDeleteButton ml='0' width='150px' onClick={handleDeleteAll}>
         Delete All
       </CustomDeleteButton>
 
-      {/* Display the fetched data */}
-      <h2>Table of Subject Data</h2>
-      {isLoading ? ( // Check if data is loading
-        <p>Loading data...</p>
-      ) : (
-
-        <Table>
-
-          <thead>
-            <tr>
-            <th>Subject Full Name</th>
-
-              <th>Type</th>
-              <th>Subject Code</th>
-              <th>Subject Abbreviation</th>
-              <th>Semester</th>
-              <th>Degree</th>
-              <th>Department</th>
-              <th>Credits</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tableData.map((row) => (
-              <tr key={row._id}>
-
-                <td>
-                  {editRowId === row._id ? (
-                    <Input
-                      type="text"
-                      value={editedData.subjectFullName}
-                      onChange={(e) =>
-                        setEditedData({
-                          ...editedData,
-                          subjectFullName: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    row.subjectFullName
-                  )}
-                </td>
-                <td>
-                  {editRowId === row._id ? (
-                    <Input
-                      type="text"
-                      value={editedData.type}
-                      onChange={(e) =>
-                        setEditedData({ ...editedData, type: e.target.value })
-                      }
-                    />
-                  ) : (
-                    row.type
-                  )}
-                </td>
-                <td>
-                  {editRowId === row._id ? (
-                    <Input
-                      type="text"
-                      value={editedData.subCode}
-                      onChange={(e) =>
-                        setEditedData({
-                          ...editedData,
-                          subCode: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    row.subCode
-                  )}
-                </td>
-                <td>
-                  {editRowId === row._id ? (
-                    <Input
-                      type="text"
-                      value={editedData.subName}
-                      onChange={(e) =>
-                        setEditedData({
-                          ...editedData,
-                          subName: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    row.subName
-                  )}
-                </td>
-                <td>
-                  {editRowId === row._id ? (
-                    <Input
-                      type="text"
-                      value={editedData.sem}
-                      onChange={(e) =>
-                        setEditedData({ ...editedData, sem: e.target.value })
-                      }
-                    />
-                  ) : (
-                    row.sem
-                  )}
-                </td>
-                <td>
-                  {editRowId === row._id ? (
-                    <Input
-                      type="text"
-                      value={editedData.degree}
-                      onChange={(e) =>
-                        setEditedData({ ...editedData, degree: e.target.value })
-                      }
-                    />
-                  ) : (
-                    row.degree
-                  )}
-                </td>
-                <td>
-                  {editRowId === row._id ? (
-                    <Input
-                      type="text"
-                      value={editedData.dept}
-                      onChange={(e) =>
-                        setEditedData({ ...editedData, dept: e.target.value })
-                      }
-                    />
-                  ) : (
-                    row.dept
-                  )}
-                </td>
-                <td>
-                  {editRowId === row._id ? (
-                    <Input
-                      type="text"
-                      value={editedData.credits}
-                      onChange={(e) =>
-                        setEditedData({
-                          ...editedData,
-                          credits: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    row.credits
-                  )}
-                </td>
-
-                <td>
-                  {editRowId === row._id ? (
-                    <CustomBlueButton onClick={handleSaveEdit}>
-                      Save
-                    </CustomBlueButton>
-                  ) : (
-                    <>
-                      <CustomBlueButton
-                        onClick={() => handleEditClick(row._id)}
-                      >
-                        Edit
-                      </CustomBlueButton>
-                      <CustomBlueButton onClick={() => handleDelete(row._id)}>
-                        Delete
-                      </CustomBlueButton>
-
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-
-        </Table>
-      )}
+      <TableContainer mt='2'>
+        <Text as='b'>Table of Subject Data</Text>
+        {/* Display the fetched data */}
+        {isLoading ? ( // Check if data is loading
+          <Text>Loading data...</Text>
+          ) : (
+            <Table
+            mt='5'
+            variant='striped'
+            >
+            <Thead>
+              <Tr>
+              <Th>Subject Full Name</Th>
+                <Th><Center>Type</Center></Th>
+                <Th><Center>Subject Code</Center></Th>
+                <Th><Center>Subject Abbreviation</Center></Th>
+                <Th><Center>Semester</Center></Th>
+                <Th><Center>Degree</Center></Th>
+                <Th><Center>Department</Center></Th>
+                <Th><Center>Credits</Center></Th>
+                <Th><Center>Actions</Center></Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {tableData.map((row) => (
+                <Tr key={row._id}>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                        type="text"
+                        value={editedData.subjectFullName}
+                        onChange={(e) =>
+                          setEditedData({
+                            ...editedData,
+                            subjectFullName: e.target.value,
+                            })
+                          }
+                          />
+                      ) : (
+                        row.subjectFullName
+                        )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                        type="text"
+                        value={editedData.type}
+                        onChange={(e) =>
+                          setEditedData({ ...editedData, type: e.target.value })
+                          }
+                        />
+                      ) : (
+                        row.type
+                        )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                        type="text"
+                        value={editedData.subCode}
+                        onChange={(e) =>
+                            setEditedData({
+                              ...editedData,
+                              subCode: e.target.value,
+                            })
+                          }
+                          />
+                          ) : (
+                            row.subCode
+                          )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.subName}
+                          onChange={(e) =>
+                            setEditedData({
+                              ...editedData,
+                              subName: e.target.value,
+                            })
+                          }
+                          />
+                      ) : (
+                        row.subName
+                        )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                        type="text"
+                        value={editedData.sem}
+                        onChange={(e) =>
+                          setEditedData({ ...editedData, sem: e.target.value })
+                        }
+                        />
+                        ) : (
+                          row.sem
+                          )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.degree}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, degree: e.target.value })
+                          }
+                          />
+                          ) : (
+                            row.degree
+                            )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.dept}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, dept: e.target.value })
+                          }
+                          />
+                          ) : (
+                            row.dept
+                            )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.credits}
+                          onChange={(e) =>
+                            setEditedData({
+                              ...editedData,
+                              credits: e.target.value,
+                            })
+                          }
+                          />
+                          ) : (
+                            row.credits
+                      )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <CustomBlueButton onClick={handleSaveEdit}>
+                          Save
+                        </CustomBlueButton>
+                      ) : (
+                        <>
+                          <CustomBlueButton
+                            onClick={() => handleEditClick(row._id)}
+                          >
+                            Edit
+                          </CustomBlueButton>
+                          <CustomBlueButton onClick={() => handleDelete(row._id)}>
+                            Delete
+                          </CustomBlueButton>
+                        </>
+                      )}
+                    </Center>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        )}
+      </TableContainer>
 
     </Container>
   );
