@@ -23,9 +23,9 @@ export const CustomLink = chakra("a", {
 export const CustomBlueButton = chakra("button", {
   baseStyle: {
     color: "white", // Text color
-    bg: "blue", // Brighter background color (you can adjust the shade)
-    paddingX: 6, // Horizontal padding
-    paddingY: 3,
+    bg: "blue.600", // Brighter background color (you can adjust the shade)
+    paddingX: 4, // Horizontal padding
+    paddingY: 2,
     margin:5, // Vertical padding
     borderRadius: "md", // Add some border radius for rounded corners
     _hover: {

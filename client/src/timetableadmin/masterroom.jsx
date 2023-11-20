@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
-import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
-import { Box, Container } from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton, CustomTealButton } from '../styles/customStyles';
+import { Box, Container, FormControl, FormLabel, Input, Text } from '@chakra-ui/react';
 import Header from '../components/header';
 
 function MasterRoom() {
@@ -171,84 +171,94 @@ function MasterRoom() {
   
 
   return (
-    <Box size='8xl'>
+    <Container maxW='7xl'>
       <Header title='Manage Master Rooms'></Header>
-      <h2>Batch Upload</h2>
-      <input type='file' accept='.xlsx' onChange={handleFileChange} name='XlsxFile' />
-      <CustomBlueButton onClick={handleUpload}>Upload Xlsx</CustomBlueButton>
-      <div>
+      <FormControl>
+        <FormLabel>Batch Upload</FormLabel>
+        <Box mb="2" mt="2" display='flex'>
+          <Input py='1' px='2' type='file' accept='.xlsx' onChange={handleFileChange} name='XlsxFile' />
+          <CustomTealButton
+          ml='5'
+          w="200px"
+          h="41"
+          width='xs' onClick={handleUpload}>
+            Upload Xlsx
+          </CustomTealButton>
+        </Box>
+      </FormControl>
+      <Box>
         <FileDownloadButton fileUrl='/room_template.xlsx' fileName='room_template.xlsx' />
-      </div>
+      </Box>
 
-      <div>
+      <Box>
         {isAddRoomFormVisible ? (
-          <div>
-            <div>
-              <label>Room No:</label>
-              <input
+          <FormControl>
+            <Box>
+              <FormLabel>Room No:</FormLabel>
+              <Input
                 type='text'
                 value={editedRoom.room}
                 onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Type:</label>
-              <input
+            </Box>
+            <Box>
+              <FormLabel>Type:</FormLabel>
+              <Input
                 type='text'
                 value={editedRoom.type}
                 onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
               />
-            </div>
+            </Box>
 
-            <div>
-              <label>Building:</label>
-              <input
+            <Box>
+              <FormLabel>Building:</FormLabel>
+              <Input
                 type='text'
                 value={editedRoom.building}
                 onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Floor:</label>
-              <input
+            </Box>
+            <Box>
+              <FormLabel>Floor:</FormLabel>
+              <Input
                 type='text'
                 value={editedRoom.floor}
                 onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Department:</label>
-              <input
+            </Box>
+            <Box>
+              <FormLabel>Department:</FormLabel>
+              <Input
                 type='text'
                 value={editedRoom.dept}
                 onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Landmark:</label>
-              <input
+            </Box>
+            <Box>
+              <FormLabel>Landmark:</FormLabel>
+              <Input
                 type='text'
                 value={editedRoom.landMark}
                 onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Image URL:</label>
-              <input
+            </Box>
+            <Box>
+              <FormLabel>Image URL:</FormLabel>
+              <Input
                 type='text'
                 value={editedRoom.imageUrl}
                 onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
               />
-            </div>
-            <div>
+            </Box>
+            <Box>
               <CustomBlueButton onClick={handleSaveNewRoom}>Save New Room</CustomBlueButton>
               <CustomBlueButton onClick={handleCancelAddRoom}>Cancel</CustomBlueButton>
-            </div>
-          </div>
+            </Box>
+          </FormControl>
         ) : (
           <CustomBlueButton onClick={handleAddRoom}>Add Master Room</CustomBlueButton>
         )}
-      </div>
+      </Box>
 
       <h2>Master Rooms Data</h2>
       <table>
@@ -359,7 +369,7 @@ function MasterRoom() {
           ))}
         </tbody>
       </table>
-    </Box>
+    </Container>
   );
 }
 
