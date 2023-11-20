@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const dotenv = require('dotenv');
 const cors = require("cors");
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -19,24 +20,24 @@ const checkDatabaseConnection = (req, res, next) => {
       res.status(500).json({ error: 'Database connection is not established' });
     }
   };
-  
+
   mongoose.connection.on('connected', () => {
     // Iterate through all models and apply the hook
     mongoose.modelNames().forEach((modelName) => {
       const model = mongoose.model(modelName);
       model.schema.pre('save', function (next) {
         const currentDate = new Date();
-      
+
         if (!this.created_at) {
           this.created_at = currentDate;
         }
-      
+
         this.updated_at = currentDate;
         next();
       });
     });
   });
-  
+
 // CORS configuration
 app.use(cors({
     origin: ['http://localhost:5173','https://nitjtt.netlify.app'], // Change this to your allowed origins or '*' to allow all origins
@@ -45,11 +46,12 @@ app.use(cors({
     allowedHeaders: 'Content-Type',
     credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
   }));
-  
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(checkDatabaseConnection);
+app.use(express.static(path.join(__dirname+"/../../client/dist")));
 
 // Routes
 
@@ -65,8 +67,8 @@ app.use("/attendancemodule", attendanceModule);
 const usermanagementModule=require("./modules/usermanagement/routes")
 app.use("/auth", usermanagementModule);
 
-app.get('/', (req, res) => {
-    res.send("Hello India");
+app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname+'/../../client/dist/index.html'));
 });
 
 
@@ -79,7 +81,7 @@ mongoose
     .then(() => {
         console.log("Connected to MongoDB");
         // Start the Express server once connected to MongoDB
-        app.listen(8000, () => {
+        app.listen(8010, () => {
             console.log("Server started on port 8000");
         });
     })

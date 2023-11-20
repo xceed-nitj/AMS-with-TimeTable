@@ -35,7 +35,7 @@ class PDFGenerator extends React.Component {
     const timetableData = this.props.timetableData; // Assuming you pass the timetable data as a prop
     const summaryData = this.props.summaryData;
     const type=this.props.type;
-    const ttdata=this.props.ttdata; 
+    const ttdata=this.props.ttdata;
     const updatedTime=this.props.updatedTime;
     const headTitle=this.props.headTitle;
     const notes=this.props.notes;
@@ -70,7 +70,7 @@ class PDFGenerator extends React.Component {
     let cellContents=[];
     // Add the table rows
     let cellData;
-      
+
     // Handle lunch break
     if (period === 5) {
       // Merge the 5th column into a single cell
@@ -101,7 +101,7 @@ class PDFGenerator extends React.Component {
               stack: cellContents,
               alignment: 'center', // Set the desired alignment for the entire row
             });
-        
+
     }
       tableData.push(row);
     });
@@ -112,25 +112,25 @@ class PDFGenerator extends React.Component {
       { text: 'Subject Name', bold: true, fontSize: 10 },
       { text: 'Hours', bold: true, alignment: 'center', fontSize: 10 },
     ];
-    
+
     // if (type !== 'room') {
       summaryTableHeader.push({ text: 'Subject Type', bold: true, fontSize: 10 });
     // }
-    
+
     if (type !== 'faculty') {
       summaryTableHeader.push({ text: 'Faculty Name', bold: true, fontSize: 10 });
     }
-    
+
     if (type !== 'room') {
       summaryTableHeader.push({ text: 'Room No', bold: true, fontSize: 10 });
     }
-    
+
     if (type !== 'sem') {
       summaryTableHeader.push({ text: 'Semester', bold: true, fontSize: 10 });
     }
-    
+
     summaryTableData.push(summaryTableHeader);
-    
+
     // Iterate through the summary data and add rows to the table
     Object.keys(summaryData).forEach((subject) => {
       const summaryRow = [];
@@ -139,22 +139,22 @@ class PDFGenerator extends React.Component {
       summaryRow.push({ text: summaryData[subject].subjectFullName, fontSize: 10 });
       summaryRow.push({ text: summaryData[subject].count, fontSize: 10,alignment: 'center' });
       summaryRow.push({ text: summaryData[subject].subType, fontSize: 10, alignment: 'center' });
-    
+
       if (type !== 'faculty') {
         summaryRow.push({ text: summaryData[subject].faculties.join(', '), fontSize: 10 });
       }
-    
+
       if (type !== 'room') {
         summaryRow.push({ text: summaryData[subject].rooms.join(', '), fontSize: 10 });
       }
-    
+
       if (type !== 'sem') {
         summaryRow.push({ text: summaryData[subject].subSem, fontSize: 10 });
       }
-    
+
       summaryTableData.push(summaryRow);
     });
-    
+
 
     // const signatures = [
     //   { text: 'Time Table Coordinator', bold: true },
@@ -171,7 +171,7 @@ class PDFGenerator extends React.Component {
 
     const footerImage = new Image();
     footerImage.src = footer; // Replace with the actual path to your image
-    
+
     // Once the image is loaded, convert it to a data URL and update the state
     footerImage.onload = () => {
       const footerCanvas = document.createElement('canvas');
@@ -180,10 +180,10 @@ class PDFGenerator extends React.Component {
       footerCanvas.height = footerImage.height;
       footerContext.drawImage(footerImage, 0, 0);
       const footerImageDataURL = footerCanvas.toDataURL('image/png');
-    
+
       this.setState({ footerImageDataURL });
     };
-    
+
 
 
     const headerImage = new Image();
@@ -197,7 +197,7 @@ class PDFGenerator extends React.Component {
       canvas.height = headerImage.height;
       context.drawImage(headerImage, 0, 0);
       const headerImageDataURL = canvas.toDataURL('image/png');
-      
+
       this.setState({ headerImageDataURL }, () => {
         const documentDefinition = {
           pageOrientation: 'landscape',
@@ -218,7 +218,7 @@ class PDFGenerator extends React.Component {
               bold: true,
               margin: [15, 15, 40, 10],
               alignment: 'center', // Adjust the width as needed
-              
+
             },
             {
               table: {
@@ -248,7 +248,7 @@ class PDFGenerator extends React.Component {
               },
               layout: 'noBorders', // Remove table borders
             },
-        
+
             {
               table: {
                 // alignment: 'justify',
@@ -271,7 +271,7 @@ class PDFGenerator extends React.Component {
                 alignment: 'center',
               },
             },
-           
+
           ...(notes.length > 0
             ? [
                 {
@@ -295,7 +295,7 @@ class PDFGenerator extends React.Component {
                       fontSize: 12,
                       bold: true,
                       alignment: 'left',
-                      
+
                     },
                     {
                       text: 'Head of the Department',
@@ -313,10 +313,10 @@ class PDFGenerator extends React.Component {
 
 
             ],
-         
+
 
         };
-    
+
         pdfMake.createPdf(documentDefinition).open();
       });
     };
