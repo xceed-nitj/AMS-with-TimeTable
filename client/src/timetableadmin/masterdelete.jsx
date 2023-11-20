@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import getEnvironment from "../getenvironment";
-import { Button, Input, Text } from "@chakra-ui/react";
+import { Box, Button, Center, Container, Input, Table, TableContainer, Td, Text, Tr } from "@chakra-ui/react";
 import Header from '../components/header';
+import { CustomDeleteButton } from "../styles/customStyles";
 
 function Del() {
   const [code, setCode] = useState('');
@@ -49,45 +50,67 @@ function Del() {
   };
 
   return (
-    <div>
-      <h1>Delete Entries</h1>
-      <label htmlFor="codeInput">Code:</label>
-      <Input type="text" id="codeInput" value={code} onChange={handleInputChange} />
+    <Container maxW='6xl'>
+      <Header title='Delete Entries'></Header>
+      <Box mb='3'  >
+        <Text as='b' mb='2'>Code:</Text>
+        <Input type="text" id="codeInput" value={code} onChange={handleInputChange} />
+      </Box>
 
 
       {deleteMessage && <Text color="green">{deleteMessage}</Text>}
-
-      <table>
-        <tr>
-          <td> Delete Subject data for this code:</td>
-          <td><Button onClick={() => deleteEntry('subject')} disabled={!isInputValid}>Delete</Button></td>
-        </tr>
-        <tr>
-          <td>Delete Semester data for this code:</td>
-          <td><Button onClick={() => deleteEntry('addsem')} disabled={!isInputValid}>Delete</Button></td>
-        </tr>
-        <tr>
-          <td>Delete Faculty data for this code:</td>
-          <td><Button onClick={() => deleteEntry('addfaculty')} disabled={!isInputValid}>Delete</Button></td>
-        </tr>
-        <tr>
-          <td>Delete Room data for this code:</td>
-          <td><Button onClick={() => deleteEntry('addroom')} disabled={!isInputValid}>Delete</Button></td>
-        </tr>
-        <tr>
-          <td>Delete Class Table for this code:</td>
-          <td><Button onClick={() => deleteEntry('tt')} disabled={!isInputValid}>Delete</Button></td>
-        </tr>
-        <tr>
-          <td>Delete Locked Time Table for this code:</td>
-          <td><Button onClick={() => deleteEntry('lock')} disabled={!isInputValid}>Delete</Button></td>
-        </tr>
-        <tr>
-          <td>Delete Session for this code:</td>
-          <td><Button onClick={() => deleteEntry('timetable')} disabled={!isInputValid}>Delete</Button></td>
-        </tr>
-      </table>
-    </div>
+<TableContainer>
+  
+        <Table
+        variant='striped'
+        size="md" 
+        mt="1"
+        >
+          <Tr>
+            <Td fontWeight='bold'><Center>Delete Subject data for this code:</Center></Td>
+            <Td><Center>
+              <CustomDeleteButton onClick={() => deleteEntry('subject')} disabled={!isInputValid}>Delete</CustomDeleteButton>
+            </Center></Td>
+          </Tr>
+          <Tr>
+            <Td fontWeight='bold'><Center>Delete Semester data for this code:</Center></Td>
+            <Td><Center>
+              <CustomDeleteButton onClick={() => deleteEntry('addsem')} disabled={!isInputValid}>Delete</CustomDeleteButton>
+            </Center></Td>
+          </Tr>
+          <Tr>
+            <Td fontWeight='bold'><Center>Delete Faculty data for this code:</Center></Td>
+            <Td><Center>
+              <CustomDeleteButton onClick={() => deleteEntry('addfaculty')} disabled={!isInputValid}>Delete</CustomDeleteButton>
+            </Center></Td>
+          </Tr>
+          <Tr>
+            <Td fontWeight='bold'><Center>Delete Room data for this code:</Center></Td>
+            <Td><Center>
+              <CustomDeleteButton onClick={() => deleteEntry('addroom')} disabled={!isInputValid}>Delete</CustomDeleteButton>
+            </Center></Td>
+          </Tr>
+          <Tr>
+            <Td  fontWeight='bold'><Center>Delete Class Table for this code:</Center></Td>
+            <Td><Center>
+              <CustomDeleteButton onClick={() => deleteEntry('tt')} disabled={!isInputValid}>Delete</CustomDeleteButton>
+            </Center></Td>
+          </Tr>
+          <Tr>
+            <Td fontWeight='bold'><Center>Delete Locked Time Table for this code:</Center></Td>
+            <Td><Center>
+              <CustomDeleteButton onClick={() => deleteEntry('lock')} disabled={!isInputValid}>Delete</CustomDeleteButton>
+            </Center></Td>
+          </Tr>
+          <Tr>
+            <Td fontWeight='bold'><Center>Delete Session for this code:</Center></Td>
+            <Td><Center>
+              <CustomDeleteButton onClick={() => deleteEntry('timetable')} disabled={!isInputValid}>Delete</CustomDeleteButton>
+            </Center></Td>
+          </Tr>
+        </Table>
+</TableContainer>
+    </Container>
   );
 }
 
