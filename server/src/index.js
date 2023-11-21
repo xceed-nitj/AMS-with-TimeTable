@@ -7,7 +7,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 // Load environment variables from .env file
-dotenv.config();
+dotenv.config({path:'../.env'});
 
 // Middleware
 
