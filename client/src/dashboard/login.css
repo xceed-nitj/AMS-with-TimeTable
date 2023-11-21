@@ -1,18 +1,12 @@
 .App {
-    height: 100vh;
-    display: flex;
-    color: rgb(9, 9, 9);
-  }
+  height: 100vh;
+  color: rgb(9, 9, 9);
+}
   body
   {
     width:100% !important
   }
-  .logoContainer {
-    display: flex;
-    justify-content: center; /* Horizontally center content */
-    align-items: center; /* Vertically center content */
-    padding: 20px;
-}
+
 
   
   .appAside {
@@ -156,3 +150,25 @@
     padding: 10px 100px 10px 0px;
   }
   
+
+  /* KEYFRAMES */
+
+/* Styles for mobile screens (up to 767px) */
+@media screen and (max-width: 767px) {
+  .logoContainer {
+    display: none;
+  }
+}
+
+/* Styles for laptop screens (768px and above) */
+@media screen and (min-width: 768px) {
+  .logoContainer {
+    display: flex;
+    justify-content: center; /* Horizontally center content */
+    align-items: center; /* Vertically center content */
+    padding: 20px;
+  }
+  .App {
+    display: flex;
+  }
+}
