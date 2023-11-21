@@ -3,8 +3,6 @@ function getEnvironment() {
     const currentURL = window.location.href;
     const development='http://localhost:8010'
     const production='https://nitjtt.onrender.com'
-    const instituteServer='https://xceed.nitj.ac.in'
-
 
     if (currentURL.includes('localhost')) {
       return development;
@@ -12,7 +10,7 @@ function getEnvironment() {
       return production;
     } else {
       // Default to a specific environment or handle other cases
-      return instituteServer;
+      return development;
     }
   }
 
