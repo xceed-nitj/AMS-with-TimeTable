@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
-import { CustomTh, CustomLink, CustomBlueButton, CustomTealButton } from '../styles/customStyles';
-import { Box, Container, FormControl, FormLabel, Input, Text } from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton, CustomTealButton, CustomDeleteButton } from '../styles/customStyles';
+import { Box, Center, Container, FormControl, FormLabel, Input, Table, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
 import Header from '../components/header';
 
 function MasterRoom() {
@@ -171,7 +171,7 @@ function MasterRoom() {
   
 
   return (
-    <Container maxW='7xl'>
+    <Container maxW='8xl'>
       <Header title='Manage Master Rooms'></Header>
       <FormControl>
         <FormLabel>Batch Upload</FormLabel>
@@ -186,14 +186,14 @@ function MasterRoom() {
           </CustomTealButton>
         </Box>
       </FormControl>
-      <Box>
+      <Box ml='-1'>
         <FileDownloadButton fileUrl='/room_template.xlsx' fileName='room_template.xlsx' />
       </Box>
 
       <Box>
         {isAddRoomFormVisible ? (
           <FormControl>
-            <Box>
+            <Box mb='3'>
               <FormLabel>Room No:</FormLabel>
               <Input
                 type='text'
@@ -201,7 +201,7 @@ function MasterRoom() {
                 onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
               />
             </Box>
-            <Box>
+            <Box mb='3'>
               <FormLabel>Type:</FormLabel>
               <Input
                 type='text'
@@ -210,7 +210,7 @@ function MasterRoom() {
               />
             </Box>
 
-            <Box>
+            <Box mb='3'>
               <FormLabel>Building:</FormLabel>
               <Input
                 type='text'
@@ -218,7 +218,7 @@ function MasterRoom() {
                 onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
               />
             </Box>
-            <Box>
+            <Box mb='3'>
               <FormLabel>Floor:</FormLabel>
               <Input
                 type='text'
@@ -226,7 +226,7 @@ function MasterRoom() {
                 onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
               />
             </Box>
-            <Box>
+            <Box mb='3'>
               <FormLabel>Department:</FormLabel>
               <Input
                 type='text'
@@ -234,7 +234,7 @@ function MasterRoom() {
                 onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
               />
             </Box>
-            <Box>
+            <Box mb='3'>
               <FormLabel>Landmark:</FormLabel>
               <Input
                 type='text'
@@ -242,7 +242,7 @@ function MasterRoom() {
                 onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
               />
             </Box>
-            <Box>
+            <Box mb='3'>
               <FormLabel>Image URL:</FormLabel>
               <Input
                 type='text'
@@ -250,125 +250,141 @@ function MasterRoom() {
                 onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
               />
             </Box>
-            <Box>
-              <CustomBlueButton onClick={handleSaveNewRoom}>Save New Room</CustomBlueButton>
-              <CustomBlueButton onClick={handleCancelAddRoom}>Cancel</CustomBlueButton>
+            <Box display='flex' justifyContent='space-between'>
+              <CustomBlueButton width='150px' onClick={handleCancelAddRoom}>Cancel</CustomBlueButton>
+              <CustomBlueButton width='200px' onClick={handleSaveNewRoom}>Save New Room</CustomBlueButton>
             </Box>
           </FormControl>
         ) : (
-          <CustomBlueButton onClick={handleAddRoom}>Add Master Room</CustomBlueButton>
+          <CustomBlueButton ml='0' onClick={handleAddRoom}>Add Master Room</CustomBlueButton>
         )}
       </Box>
 
-      <h2>Master Rooms Data</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Room</th>
-            <th>Type</th>
-            <th>Building</th>
-            <th>Floor</th>
-            <th>Department</th>
-            <th>Landmark</th>
-            <th>Image URL</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Text as='b'>Master Rooms Data</Text>
+      <Table>
+        <Thead>
+          <Tr>
+            <Th><Center>Room</Center></Th>
+            <Th><Center>Type</Center></Th>
+            <Th><Center>Building</Center></Th>
+            <Th><Center>Floor</Center></Th>
+            <Th><Center>Department</Center></Th>
+            <Th><Center>Department</Center></Th>
+            <Th><Center>Image URL</Center></Th>
+            <Th><Center>Action</Center></Th>
+          </Tr>
+        </Thead>
+        <Tbody>
           {masterRooms.map((room) => (
-            <tr key={room._id}>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type='text'
-                    value={editedRoom.room}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
-                  />
-                ) : (
-                  room.room
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type='text'
-                    value={editedRoom.type}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
-                  />
-                ) : (
-                  room.type
-                )}
-              </td>
+            <Tr key={room._id}>
+              <Td><Center>
+                
+                  {editRoomId === room._id ? (
+                    <Input
+                      type='text'
+                      value={editedRoom.room}
+                      onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
+                    />
+                  ) : (
+                    room.room
+                  )}
+              </Center>
+              </Td>
+              <Td><Center>
+                
+                  {editRoomId === room._id ? (
+                    <Input
+                      type='text'
+                      value={editedRoom.type}
+                      onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
+                    />
+                  ) : (
+                    room.type
+                  )}
+              </Center>
+              </Td>
 
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type='text'
-                    value={editedRoom.building}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
-                  />
-                ) : (
-                  room.building
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type='text'
-                    value={editedRoom.floor}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
-                  />
-                ) : (
-                  room.floor
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type='text'
-                    value={editedRoom.dept}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
-                  />
-                ) : (
-                  room.dept
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type='text'
-                    value={editedRoom.landMark}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
-                  />
-                ) : (
-                  room.landMark
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type='text'
-                    value={editedRoom.imageUrl}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
-                  />
-                ) : (
-                  room.imageUrl
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
-                ) : (
-                  <>
-                    <CustomBlueButton onClick={() => handleEditClick(room._id)}>Edit</CustomBlueButton>
-                    <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
-                  </>
-                )}
-              </td>
-            </tr>
+              <Td><Center>
+                
+                  {editRoomId === room._id ? (
+                    <input
+                      type='text'
+                      value={editedRoom.building}
+                      onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
+                    />
+                  ) : (
+                    room.building
+                  )}
+              </Center>
+              </Td>
+              <Td><Center>
+                
+                  {editRoomId === room._id ? (
+                    <input
+                      type='text'
+                      value={editedRoom.floor}
+                      onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
+                    />
+                  ) : (
+                    room.floor
+                  )}
+              </Center>
+              </Td>
+              <Td><Center>
+                
+                  {editRoomId === room._id ? (
+                    <input
+                      type='text'
+                      value={editedRoom.dept}
+                      onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
+                    />
+                  ) : (
+                    room.dept
+                  )}
+              </Center>
+              </Td>
+              <Td><Center>
+                
+                  {editRoomId === room._id ? (
+                    <input
+                      type='text'
+                      value={editedRoom.landMark}
+                      onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
+                    />
+                  ) : (
+                    room.landMark
+                  )}
+              </Center>
+              </Td>
+              <Td><Center>
+                
+                  {editRoomId === room._id ? (
+                    <input
+                      type='text'
+                      value={editedRoom.imageUrl}
+                      onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
+                    />
+                  ) : (
+                    room.imageUrl
+                  )}
+              </Center>
+              </Td>
+              <Td><Center>
+                
+                  {editRoomId === room._id ? (
+                    <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
+                  ) : (
+                    <>
+                      <CustomBlueButton onClick={() => handleEditClick(room._id)}>Edit</CustomBlueButton>
+                      <CustomDeleteButton onClick={() => handleDelete(room._id)}>Delete</CustomDeleteButton>
+                    </>
+                  )}
+              </Center>
+              </Td>
+            </Tr>
           ))}
-        </tbody>
-      </table>
+        </Tbody>
+      </Table>
     </Container>
   );
 }
