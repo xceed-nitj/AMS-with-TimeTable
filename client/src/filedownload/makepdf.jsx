@@ -77,6 +77,7 @@ class PDFGenerator extends React.Component {
       row.push({
         // colSpan: 4,
         text: 'Lunch',
+        fontSize: 12,
         alignment: 'center', // Adjust alignment as needed
       });
       continue; // Skip the rest of the loop for this period
@@ -203,12 +204,12 @@ class PDFGenerator extends React.Component {
           pageOrientation: 'landscape',
           header: {
               image: this.state.headerImageDataURL, // Use the data URL from state
-              width: 450,
+              width: 300,
               alignment: 'center', // Adjust the width as needed
           },
           footer: {
             image: this.state.footerImageDataURL, // Use the data URL from state
-            width: 400,
+            width: 250,
             alignment: 'center', // Adjust the width as needed
         },
           content: [
@@ -216,7 +217,7 @@ class PDFGenerator extends React.Component {
               text: `Department of ${dept}`,
               fontSize: 12,
               bold: true,
-              margin: [15, 15, 40, 10],
+              margin: [5, 0, 40,0],
               alignment: 'center', // Adjust the width as needed
 
             },
@@ -254,12 +255,13 @@ class PDFGenerator extends React.Component {
                 // alignment: 'justify',
                 // widths: [70, 60, 60, 60, 60, 60, 60, 60, 60], // Adjust the column widths as needed
                 body: tableData,
+                fontSize: 10,
                 alignment: 'center'
               },
             },
             {
               text: 'Summary:',
-              fontSize: 12,
+              fontSize: 10,
               bold: true,
               margin: [0, 5, 40, 5],
               alignment: 'left',
@@ -281,7 +283,7 @@ class PDFGenerator extends React.Component {
                   margin: [0, 2, 0, 2], // top, right, bottom, left
                 },
                 {
-                  ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:10 }))),
+                  ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:8 }))),
                 },
               ]
             : []),
@@ -292,14 +294,14 @@ class PDFGenerator extends React.Component {
                   [
                     {
                       text: 'Time Table Incharge',
-                      fontSize: 12,
+                      fontSize: 10,
                       bold: true,
                       alignment: 'left',
 
                     },
                     {
                       text: 'Head of the Department',
-                      fontSize: 12,
+                      fontSize: 10,
                       bold: true,
                       alignment: 'right',
                       // margin: [10,10,10,10],

@@ -493,6 +493,10 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/roomallotment`);
   };
+  const handleMasterView = () => {
+    // Navigate to the "Add Room" page
+    navigate('/tt/masterview');
+  };
   const handleViewSummary = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/lockedsummary`);
@@ -678,6 +682,9 @@ const Timetable = () => {
           <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
             view Alloted Rooms
           </Button>
+          <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
+            Master View
+          </Button>
 
         </Box>
         <Box mr='-1.5'>
@@ -685,7 +692,7 @@ const Timetable = () => {
             Lock TT
           </Button>
           <Button m="1 auto" colorScheme="orange" onClick={handleViewSummary}>
-            View/Download Locked TT
+            View Locked TT
           </Button>
         </Box>
       </Box>
