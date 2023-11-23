@@ -2,9 +2,11 @@ const express = require("express");
 const subjectRouter = express.Router();
 const SubjectController = require("../controllers/subjectprofile");
 const subjectController = new SubjectController();
+const protectRoute =require("../../usermanagement/privateroute")
 
 
-subjectRouter.post("/", async (req, res) => {
+
+subjectRouter.post("/",protectRoute, async (req, res) => {
     try {
       await subjectController.createTimetableEntry(req, res);
     } catch (e) {

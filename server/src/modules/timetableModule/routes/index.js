@@ -4,7 +4,7 @@ const protectRoute =require("../../usermanagement/privateroute")
 
 router.use('/timetable', protectRoute, require("./timetable")); 
 router.use('/faculty', protectRoute,require("./faculty")); 
-router.use('/subject',protectRoute, require("./subject")); 
+router.use('/subject', require("./subject")); 
 router.use('/tt',protectRoute, require("./classtimetable")); 
 router.use('/addfaculty',protectRoute,require("./addfaculty")); 
 router.use('/lock',protectRoute, require("./locktimetable")); 
