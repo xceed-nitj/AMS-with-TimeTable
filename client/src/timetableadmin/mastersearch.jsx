@@ -512,7 +512,7 @@ useEffect(()=>
       </Box>
       {/* Faculty Dropdown */}
       <FormControl>
-        <FormLabel fontWeight='bold'>Faculty timetable (yet to be completed)</FormLabel>
+        <FormLabel fontWeight='bold'>Faculty timetable</FormLabel>
         <Select
           value={selectedFaculty}
           onChange={(e) => setSelectedFaculty(e.target.value)}
@@ -575,7 +575,7 @@ useEffect(()=>
           )}
       </Box>
     <FormControl>
-     <FormLabel fontWeight='bold' >Room timetable (yet to be completed)</FormLabel>
+     <FormLabel fontWeight='bold' >Room timetable</FormLabel>
       {/* Room Dropdown */}
       <Select
         value={selectedRoom}
