@@ -125,6 +125,15 @@ function MasterRoomTable() {
                   bg="teal.300"
                   color="white"
                   borderWidth="2px"
+                  // onClick={() => handleSort('building')}
+                >
+                  Type
+                </Th>
+
+                <Th
+                  bg="teal.300"
+                  color="white"
+                  borderWidth="2px"
                   onClick={() => handleSort('building')}
                 >
                   Building {getSortIcon('building')}
@@ -159,6 +168,7 @@ function MasterRoomTable() {
               {filteredRooms.map((room) => (
                 <Tr key={room._id}>
                   <Td borderWidth="2px">{room.room}</Td>
+                  <Td borderWidth="2px">{room.type}</Td>
                   <Td borderWidth="2px">{room.building}</Td>
                   <Td borderWidth="2px">{room.floor}</Td>
                   <Td borderWidth="2px">{room.dept}</Td>
