@@ -161,12 +161,12 @@ const session = ttdata[0].session;
         pageOrientation: 'landscape',
         header: {
           image: headerImageDataURL,
-          width: 450,
+          width: 300,
           alignment: 'center',
         },
         footer: {
           image: footerImageDataURL,
-          width: 400,
+          width: 250,
           alignment: 'center',
         },
         content: [
@@ -174,7 +174,7 @@ const session = ttdata[0].session;
             text: `Department of ${dept}`,
             fontSize: 12,
             bold: true,
-            margin: [15, 15, 40, 10],
+            margin: [5, 0, 40, 0],
             alignment: 'center',
           },
           {
@@ -198,7 +198,7 @@ const session = ttdata[0].session;
                 alignment: 'right',
               },
             ],
-            margin: [0, 0, 0, 10], // Add top margin if needed
+            margin: [0, 0, 0, 0], // Add top margin if needed
           },
 
 
@@ -212,7 +212,7 @@ const session = ttdata[0].session;
             text: 'Summary:',
             fontSize: 12,
             bold: true,
-            margin: [0, 10, 40, 10],
+            margin: [0, 5, 40, 5],
             alignment: 'left',
           },
           {
