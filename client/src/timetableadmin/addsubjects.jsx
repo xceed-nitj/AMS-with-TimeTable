@@ -613,8 +613,8 @@ function Subject() {
                 <Th><Center>Subject Abbreviation</Center></Th>
                 <Th><Center>Semester</Center></Th>
                 <Th><Center>Degree</Center></Th>
-                <Th><Center>Department</Center></Th>
-                <Th><Center>Credits</Center></Th>
+                {/* <Th><Center>Department</Center></Th> */}
+                {/* <Th><Center>Credits</Center></Th> */}
                 <Th><Center>Actions</Center></Th>
               </Tr>
             </Thead>
@@ -720,7 +720,7 @@ function Subject() {
                             )}
                     </Center>
                   </Td>
-                  <Td>
+                  {/* <Td>
                     <Center>
                       {editRowId === row._id ? (
                         <Input
@@ -734,8 +734,8 @@ function Subject() {
                             row.dept
                             )}
                     </Center>
-                  </Td>
-                  <Td>
+                  </Td> */}
+                  {/* <Td>
                     <Center>
                       {editRowId === row._id ? (
                         <Input
@@ -752,7 +752,7 @@ function Subject() {
                             row.credits
                       )}
                     </Center>
-                  </Td>
+                  </Td> */}
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
@@ -761,14 +761,14 @@ function Subject() {
                         </CustomBlueButton>
                       ) : (
                         <>
-                          <CustomBlueButton
+                          <CustomTealButton
                             onClick={() => handleEditClick(row._id)}
                           >
                             Edit
-                          </CustomBlueButton>
-                          <CustomBlueButton onClick={() => handleDelete(row._id)}>
+                          </CustomTealButton>
+                          <CustomDeleteButton onClick={() => handleDelete(row._id)}>
                             Delete
-                          </CustomBlueButton>
+                          </CustomDeleteButton>
                         </>
                       )}
                     </Center>

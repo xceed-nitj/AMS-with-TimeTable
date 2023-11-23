@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import FileDownloadButton from "../filedownload/filedownload";
 import {
@@ -51,6 +51,8 @@ function AddRoomComponent() {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [availableDepartment, setAvailableDepartment] = useState([]);
 
+  const location = useLocation();
+  const currentPathname = location.pathname;
 
   const navigate = useNavigate();
   const apiUrl = getEnvironment();
@@ -65,6 +67,8 @@ function AddRoomComponent() {
     fetchAvailableDepartments();
   }, []);
 
+
+
   useEffect(() => {
     if (selectedDepartment) {
       fetch(`${apiUrl}/timetablemodule/masterroom/dept/${selectedDepartment}`,{credentials: 'include',})
@@ -76,6 +80,21 @@ function AddRoomComponent() {
     }
   }, [selectedDepartment]);
 
+
+  const handleViewRoom = () => {
+    // Find the last occurrence of "/"
+    const lastSlashIndex = currentPathname.lastIndexOf("/");
+  
+    // Get the portion of the string before the last slash
+    const parentPath = currentPathname.substring(0, lastSlashIndex);
+  
+    // Construct the new path by appending "/roomallotment"
+    const newPath = `${parentPath}/roomallotment`;
+  
+    // Navigate to the new path
+    navigate(newPath);
+  };
+  
 
   const fetchRoomsData = () => {
     fetch(`${apiUrl}/timetablemodule/addroom`,{credentials: 'include'})
@@ -269,10 +288,10 @@ function AddRoomComponent() {
                 <Link to="/tt/viewmrooms">
           <Button ml="0">View Master Rooms</Button>
                 </Link>
-          <FileDownloadButton
-            fileUrl="/room_template.xlsx"
-            fileName="Room_template.xlsx"
-          />
+                <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleViewRoom}>
+            View Centrally Alloted Rooms
+          </Button>
+
                 </Box>
         </Box>
       <TableContainer>
