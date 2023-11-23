@@ -1,21 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import getEnvironment from '../getenvironment';
-import FileDownloadButton from '../filedownload/filedownload';
+import React, { useState, useEffect } from "react";
+import getEnvironment from "../getenvironment";
+import FileDownloadButton from "../filedownload/filedownload";
 
-import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
-import Header from '../components/header';
+import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
+import Header from "../components/header";
+import {
+  Box,
+  Center,
+  Container,
+  FormControl,
+  FormLabel,
+  Input,
+  Table,
+  TableCaption,
+  TableContainer,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/react";
 
 function MasterSemester() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [masterSems, setMasterSems] = useState([]);
   const [editedSemester, setEditedSemester] = useState({
-    sem: '',
-    type: '',
-    dept: '',
-    degree: '',
+    sem: "",
+    type: "",
+    dept: "",
+    degree: "",
   });
   const [editSemesterId, setEditSemesterId] = useState(null);
-  const [isAddSemesterFormVisible, setIsAddSemesterFormVisible] = useState(false);
+  const [isAddSemesterFormVisible, setIsAddSemesterFormVisible] =
+    useState(false);
 
   const apiUrl = getEnvironment();
 
@@ -24,23 +42,22 @@ function MasterSemester() {
   }, []);
 
   const fetchMasterSemesters = () => {
-    fetch(`${apiUrl}/timetablemodule/mastersem`, { credentials: 'include' })
+    fetch(`${apiUrl}/timetablemodule/mastersem`, { credentials: "include" })
       .then((response) => response.json())
       .then((data) => {
         setMasterSems(data.reverse());
       })
       .catch((error) => {
-        console.error('Error:', error);
+        console.error("Error:", error);
       });
   };
-  
 
   const handleAddSemester = () => {
     setEditedSemester({
-      sem: '',
-      type: '',
-      dept: '',
-      degree: '',
+      sem: "",
+      type: "",
+      dept: "",
+      degree: "",
     });
     setIsAddSemesterFormVisible(true);
   };
@@ -51,24 +68,23 @@ function MasterSemester() {
 
   const handleSaveNewSemester = () => {
     fetch(`${apiUrl}/timetablemodule/mastersem`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(editedSemester),
-      credentials: 'include',
+      credentials: "include",
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Data saved successfully:', data);
+        console.log("Data saved successfully:", data);
         fetchMasterSemesters();
         handleCancelAddSemester();
       })
       .catch((error) => {
-        console.error('Error:', error);
+        console.error("Error:", error);
       });
   };
-  
 
   const handleEditClick = (_id) => {
     setEditSemesterId(_id);
@@ -80,50 +96,56 @@ function MasterSemester() {
 
   const handleSaveEdit = () => {
     if (editSemesterId) {
-      const rowIndex = masterSems.findIndex((semester) => semester._id === editSemesterId);
+      const rowIndex = masterSems.findIndex(
+        (semester) => semester._id === editSemesterId
+      );
       if (rowIndex !== -1) {
         const updatedData = [...masterSems];
         updatedData[rowIndex] = editedSemester;
 
         fetch(`${apiUrl}/timetablemodule/mastersem/${editSemesterId}`, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(editedSemester),
-          credentials: 'include'
+          credentials: "include",
         })
           .then((response) => {
             if (!response.ok) {
-              throw new Error(`Error: ${response.status} - ${response.statusText}`);
+              throw new Error(
+                `Error: ${response.status} - ${response.statusText}`
+              );
             }
             return response.json();
           })
           .then((data) => {
-            console.log('Update Success:', data);
+            console.log("Update Success:", data);
             setMasterSems(updatedData);
             setEditSemesterId(null);
             setEditedSemester({
-              sem: '',
-              type: '',
-              dept: '',
-              degree: '',
+              sem: "",
+              type: "",
+              dept: "",
+              degree: "",
             });
           })
           .catch((error) => {
-            console.error('Update Error:', error);
+            console.error("Update Error:", error);
           });
       }
     }
   };
 
   const handleDelete = (_id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this entry?");
-  
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this entry?"
+    );
+
     if (confirmDelete) {
       fetch(`${apiUrl}/timetablemodule/mastersem/${_id}`, {
-        method: 'DELETE',
-        credentials: 'include',
+        method: "DELETE",
+        credentials: "include",
       })
         .then((response) => {
           if (!response.ok) {
@@ -132,16 +154,18 @@ function MasterSemester() {
           return response.json();
         })
         .then((data) => {
-          console.log('Delete Success:', data);
-          const updatedData = masterSems.filter((semester) => semester._id !== _id);
+          console.log("Delete Success:", data);
+          const updatedData = masterSems.filter(
+            (semester) => semester._id !== _id
+          );
           setMasterSems(updatedData);
         })
         .catch((error) => {
-          console.error('Delete Error:', error);
+          console.error("Delete Error:", error);
         });
     }
   };
-  
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
@@ -150,162 +174,228 @@ function MasterSemester() {
   const handleUpload = () => {
     if (selectedFile) {
       const formData = new FormData();
-      formData.append('csvFile', selectedFile);
-  
+      formData.append("csvFile", selectedFile);
+
       fetch(`${apiUrl}/upload/mastersem`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
-        credentials: 'include',
+        credentials: "include",
       })
         .then((response) => response.json())
         .then(() => {
           fetchMasterSemesters();
           setSelectedFile(null);
         })
-        .catch((error) => console.error('Error:', error));
+        .catch((error) => console.error("Error:", error));
     } else {
-      alert('Please select a CSV file before uploading.');
+      alert("Please select a CSV file before uploading.");
     }
   };
-  
 
   return (
-    <div>
+    <Container maxW="6xl">
       {/* <h1>Manage Master Semesters</h1> */}
-      <Header title='Manage Master Semesters'></Header>
-      <h2>Batch Upload</h2>
-      <input
+      <Header title="Manage Master Semesters"></Header>
+      <Text as="b">Batch Upload</Text>
+      <Input
+        px="1.5"
+        py="1"
+        mt="1.5"
         type="file"
         accept=".xlsx"
         onChange={handleFileChange}
         name="XlsxFile"
       />
-      <CustomBlueButton onClick={handleUpload}>Upload Xlsx</CustomBlueButton>
-      <div>
-    
-    <FileDownloadButton
-      fileUrl='/room_template.xlsx'
-      fileName="room_template.xlsx"
-    />
-  </div>
-      <div>
+      <Box display="flex" justifyContent="space-between">
+        <Box>
+          <CustomBlueButton ml="0" mt="4" onClick={handleUpload}>
+            Upload Xlsx
+          </CustomBlueButton>
+        </Box>
+        <Box mt="3" mr="-1">
+          <FileDownloadButton
+            fileUrl="/room_template.xlsx"
+            fileName="room_template.xlsx"
+          />
+        </Box>
+      </Box>
+      <Box>
         {isAddSemesterFormVisible ? (
-          <div>
-            <div>
-              <label>Semester:</label>
-              <input
+          <FormControl>
+            <Box>
+              <FormLabel>Semester:</FormLabel>
+              <Input
                 type="text"
                 value={editedSemester.sem}
-                onChange={(e) => setEditedSemester({ ...editedSemester, sem: e.target.value })}
+                onChange={(e) =>
+                  setEditedSemester({ ...editedSemester, sem: e.target.value })
+                }
               />
-            </div>
-            <div>
-              <label>Type:</label>
-              <input
+            </Box>
+            <Box mt="3">
+              <FormLabel>Type:</FormLabel>
+              <Input
                 type="text"
                 value={editedSemester.type}
-                onChange={(e) => setEditedSemester({ ...editedSemester, type: e.target.value })}
+                onChange={(e) =>
+                  setEditedSemester({ ...editedSemester, type: e.target.value })
+                }
               />
-            </div>
-            <div>
-              <label>Department:</label>
-              <input
+            </Box>
+            <Box mt="3">
+              <FormLabel>Department:</FormLabel>
+              <Input
                 type="text"
                 value={editedSemester.dept}
-                onChange={(e) => setEditedSemester({ ...editedSemester, dept: e.target.value })}
+                onChange={(e) =>
+                  setEditedSemester({ ...editedSemester, dept: e.target.value })
+                }
               />
-            </div>
-            <div>
-              <label>Degree:</label>
-              <input
+            </Box>
+            <Box mt="3">
+              <FormLabel>Degree:</FormLabel>
+              <Input
                 type="text"
                 value={editedSemester.degree}
-                onChange={(e) => setEditedSemester({ ...editedSemester, degree: e.target.value })}
+                onChange={(e) =>
+                  setEditedSemester({
+                    ...editedSemester,
+                    degree: e.target.value,
+                  })
+                }
               />
-            </div>
-            <div>
-              <CustomBlueButton onClick={handleSaveNewSemester}>Save New Semester</CustomBlueButton>
-              <CustomBlueButton onClick={handleCancelAddSemester}>Cancel</CustomBlueButton>
-            </div>
-          </div>
+            </Box>
+            <Box display="flex" justifyContent="space-between">
+              <CustomBlueButton ml="0" onClick={handleSaveNewSemester}>
+                Save New Semester
+              </CustomBlueButton>
+              <CustomBlueButton mr="0" onClick={handleCancelAddSemester}>
+                Cancel
+              </CustomBlueButton>
+            </Box>
+          </FormControl>
         ) : (
-          <CustomBlueButton onClick={handleAddSemester}>Add Master Semester</CustomBlueButton>
+          <CustomBlueButton ml='0' onClick={handleAddSemester}>
+            Add Master Semester
+          </CustomBlueButton>
         )}
-      </div>
+      </Box>
 
-      <h2>Master Semesters Data</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Semester</th>
-            <th>Type</th>
-            <th>Department</th>
-            <th>Degree</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {masterSems.map((semester) => (
-            <tr key={semester._id}>
-              <td>
-                {editSemesterId === semester._id ? (
-                  <input
-                    type="text"
-                    value={editedSemester.sem}
-                    onChange={(e) => setEditedSemester({ ...editedSemester, sem: e.target.value })}
-                  />
-                ) : (
-                  semester.sem
-                )}
-              </td>
-              <td>
-                {editSemesterId === semester._id ? (
-                  <input
-                    type="text"
-                    value={editedSemester.type}
-                    onChange={(e) => setEditedSemester({ ...editedSemester, type: e.target.value })}
-                  />
-                ) : (
-                  semester.type
-                )}
-              </td>
-              <td>
-                {editSemesterId === semester._id ? (
-                  <input
-                    type="text"
-                    value={editedSemester.dept}
-                    onChange={(e) => setEditedSemester({ ...editedSemester, dept: e.target.value })}
-                  />
-                ) : (
-                  semester.dept
-                )}
-              </td>
-              <td>
-                {editSemesterId === semester._id ? (
-                  <input
-                    type="text"
-                    value={editedSemester.degree}
-                    onChange={(e) => setEditedSemester({ ...editedSemester, degree: e.target.value })}
-                  />
-                ) : (
-                  semester.degree
-                )}
-              </td>
-              <td>
-                {editSemesterId === semester._id ? (
-                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
-                ) : (
-                  <>
-                    <CustomBlueButton onClick={() => handleEditClick(semester._id)}>Edit</CustomBlueButton>
-                    <CustomBlueButton onClick={() => handleDelete(semester._id)}>Delete</CustomBlueButton>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+<TableContainer>
+        <Text as='b' >Master Semesters Data</Text>
+        <Table 
+        mt='2'
+        variant='striped'
+        >
+          <Thead>
+            <Tr>
+              <Th><Center>Semester</Center></Th>
+              <Th><Center>Type</Center></Th>
+              <Th><Center>Department</Center></Th>
+              <Th><Center>Degree</Center></Th>
+              <Th><Center>Action</Center></Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {masterSems.map((semester) => (
+              <Tr key={semester._id}>
+                <Td><Center>
+                  {editSemesterId === semester._id ? (
+                    <input
+                      type="text"
+                      value={editedSemester.sem}
+                      onChange={(e) =>
+                        setEditedSemester({
+                          ...editedSemester,
+                          sem: e.target.value,
+                        })
+                      }
+                    />
+                  ) : (
+                    semester.sem
+                  )}</Center>
+                </Td>
+                <Td><Center>
+                    {editSemesterId === semester._id ? (
+                      <input
+                        type="text"
+                        value={editedSemester.type}
+                        onChange={(e) =>
+                          setEditedSemester({
+                            ...editedSemester,
+                            type: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      semester.type
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editSemesterId === semester._id ? (
+                      <input
+                        type="text"
+                        value={editedSemester.dept}
+                        onChange={(e) =>
+                          setEditedSemester({
+                            ...editedSemester,
+                            dept: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      semester.dept
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editSemesterId === semester._id ? (
+                      <input
+                        type="text"
+                        value={editedSemester.degree}
+                        onChange={(e) =>
+                          setEditedSemester({
+                            ...editedSemester,
+                            degree: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      semester.degree
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editSemesterId === semester._id ? (
+                      <CustomBlueButton onClick={handleSaveEdit}>
+                        Save
+                      </CustomBlueButton>
+                    ) : (
+                      <>
+                        <CustomBlueButton
+                          onClick={() => handleEditClick(semester._id)}
+                        >
+                          Edit
+                        </CustomBlueButton>
+                        <CustomDeleteButton
+                          onClick={() => handleDelete(semester._id)}
+                        >
+                          Delete
+                        </CustomDeleteButton>
+                      </>
+                    )}
+                </Center>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+</TableContainer>
+    </Container>
   );
 }
 
