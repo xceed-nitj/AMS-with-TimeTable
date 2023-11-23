@@ -14,7 +14,7 @@ class addFacultyController {
       const existingFaculty = await addFaculty.findOne({ code, sem });
   
       if (!existingFaculty) {
-        const newFaculty = new addFaculty({ code, sem, faculty: [faculty] });
+        const newFaculty = new addFaculty({ code, sem, faculty: Array.isArray(faculty) ? faculty : [faculty] });
         await newFaculty.save();
         res.json({ message: 'Faculty added successfully' });
       } else {
