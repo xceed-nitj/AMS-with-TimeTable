@@ -92,7 +92,7 @@ const generateSummaryTablePDF = (allFacultySummaries,session,dept) => {
       {
         table: {
           headerRows: 1,
-          widths: [30, 150, '*', '*', '*', '*',30, 50],
+          widths: [30, 150, 100, 100, 200, '*',30, 50],
         alignment: 'center',
 
           body: [
