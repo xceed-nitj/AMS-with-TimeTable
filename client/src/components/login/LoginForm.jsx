@@ -51,7 +51,7 @@ const LoginForm = () => {
         md: '2rem',
       }}>
       <FormHeader />
-      <form>
+      <form onSubmit={handleSubmit}>
         <VStack spacing={4} width='100%'>
           <Input
             type='email'
