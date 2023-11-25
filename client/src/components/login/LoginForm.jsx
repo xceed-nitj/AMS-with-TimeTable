@@ -1,7 +1,15 @@
 import React, { useState } from 'react'
 import FormHeader from './FormHeader'
 import getEnvironment from '../../getenvironment'
-import { Button, Input, Text, VStack, Flex } from '@chakra-ui/react'
+import {
+  Button,
+  Input,
+  Text,
+  VStack,
+  Flex,
+  FormControl,
+  FormLabel,
+} from '@chakra-ui/react'
 
 const LoginForm = () => {
   const [email, setEmail] = useState('')
@@ -57,19 +65,26 @@ const LoginForm = () => {
       <FormHeader />
       <form onSubmit={handleSubmit}>
         <VStack spacing={4} width='100%'>
-          <Input
-            type='email'
-            placeholder='Enter your email'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Input
-            type='password'
-            placeholder='Enter your password'
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            isRequired
-          />
+          <FormControl>
+            <FormLabel>Email</FormLabel>
+
+            <Input
+              type='email'
+              placeholder='Enter your email'
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Password</FormLabel>
+            <Input
+              type='password'
+              placeholder='Enter your password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              isRequired
+            />
+          </FormControl>
           <Button
             isLoading={isLoading}
             type='submit'
