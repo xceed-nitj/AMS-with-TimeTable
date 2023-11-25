@@ -1003,7 +1003,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
     {downloadType ==='load' &&
     startStatus === 'downloadStarted' && (
       <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
-        Download in progress. Check downloads folder
+        Download in progress!! Last few miles to go!
       </p>
     )}
     {downloadType ==='load' &&

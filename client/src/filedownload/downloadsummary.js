@@ -30,7 +30,7 @@ const generateSummaryTablePDF = (allFacultySummaries,session,dept) => {
         { text: subIndex === 0 ? faculty : '', rowSpan: subIndex === 0 ? summaryData.length : 1},
         { text: summary.subSem || '', alignment: 'center' },
         { text: summary.subCode || '', alignment: 'center' },
-        { text: summary.subjectFullName || '', alignment: 'center' },
+        { text: summary.subjectFullName || '', alignment: 'left' },
         { text: summary.subType || '', alignment: 'center' },
         { text: summary.count || 0, alignment: 'center' }, // Assuming 'count' represents the number of hours for each entry
         { text: totalHrs, rowSpan: summaryData.length, alignment: 'center' },
@@ -92,7 +92,7 @@ const generateSummaryTablePDF = (allFacultySummaries,session,dept) => {
       {
         table: {
           headerRows: 1,
-          widths: [30, 150, 100, 100, 200, '*',30, 50],
+          widths: [30, 100, 90, 90, 180, '*',30, 50],
         alignment: 'center',
 
           body: [
