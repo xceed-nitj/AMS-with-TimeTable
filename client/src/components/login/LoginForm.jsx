@@ -7,9 +7,11 @@ const LoginForm = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const apiUrl = getEnvironment()
 
   const handleSubmit = async (e) => {
+    setIsLoading(true)
     e.preventDefault()
 
     const userData = { email, password }
@@ -35,6 +37,8 @@ const LoginForm = () => {
     } catch (error) {
       console.error('An error occurred', error)
       setMessage('An error occurred. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
   return (
@@ -67,9 +71,10 @@ const LoginForm = () => {
             isRequired
           />
           <Button
+            isLoading={isLoading}
+            type='submit'
             colorScheme='blackAlpha'
-            bg={'blackAlpha.900'}
-            onClick={handleSubmit}
+            bg={'blackAlpha.900 !important'}
             width={'100%'}>
             Login
           </Button>
