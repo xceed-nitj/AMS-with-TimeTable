@@ -17,10 +17,10 @@ const FormHeader = () => {
           md: '5rem',
           lg: '6rem',
         }}
-        // display={{
-        //   base: 'none',
-        //   md: 'block',
-        // }}
+        display={{
+          base: 'none',
+          md: 'block',
+        }}
         marginInline={'auto'}
         src={logoImage}
         alt='NITJ Logo'
