@@ -10,6 +10,8 @@ import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
 import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
 import downloadPDF from '../filedownload/downloadpdf';
+import generateSummaryTablePDF from '../filedownload/downloadsummary'
+
 
 import {
   Table,
@@ -24,7 +26,6 @@ import { Button } from "@chakra-ui/button";
 import PDFDownloader from '../filedownload/downloadpdf';
 import PDFGenerator from '../filedownload/makepdf';
 import Header from '../components/header';
-
 
 
 const PrintSummary = () => {
@@ -500,7 +501,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
     const subjectData = await  fetchSubjectData(currentCode);
       setDownloadStatus("fetchingHeadersFooters")
       
-  
+      const allFacultySummaries = [];
       const fetchedttdetails=await fetchTTData(currentCode);
   
   
@@ -512,6 +513,8 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         // console.log('dataaaa faculty',fetchedttdata);        
         
         const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+        allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
+
         // console.log(summaryData)
         const lockTime= updateTime;
         setHeaderStatus("fetchingHeadersFooters")
@@ -525,7 +528,8 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           TTData:fetchedttdetails,
           headTitle: faculty,
         };
-        console.log(postData);
+        // console.log(postData);
+        console.log('All Faculty Summaries:', allFacultySummaries);
         setNoteStatus("fetchingNotes")
 
         setDownloadStatus("preparingDownload")
@@ -541,23 +545,9 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         setUpdatedTime(lockTime);
         setHeadTitle(faculty);
   
-        // Make a POST request to store the data in your schema
-        const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(postData),
-          credentials: 'include'
-        });
-    
-        if (postResponse.ok) {
-          console.log(`Timetable data for faculty ${faculty} stored successfully.`);
-        } else {
-          console.error(`Error storing timetable data for faculty ${faculty}.`);
-        }
       }
       setCompleteStatus("downloadCompleted")    
+      // generateSummaryTablePDF(allFacultySummaries, fetchedttdetails[0].session, fetchedttdetails[0].dept)
 
     };
     
@@ -627,6 +617,61 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
       };
 
 
+      const fetchLoadAllocation = async () => {
+        const subjectData = await  fetchSubjectData(currentCode);
+          setDownloadStatus("fetchingHeadersFooters")
+          
+          const allFacultySummaries = [];
+          const fetchedttdetails=await fetchTTData(currentCode);
+      
+      
+          for (const faculty of availableFaculties) {
+            console.log(faculty);        
+            const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
+            const fetchedttdata= initialData;
+            const facultyNotes=notes;
+            // console.log('dataaaa faculty',fetchedttdata);        
+            
+            const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+            allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
+    
+            // console.log(summaryData)
+            const lockTime= updateTime;
+            setHeaderStatus("fetchingHeadersFooters")
+            const postData = {
+              session: fetchedttdetails[0].session,
+              name: faculty,
+              type: 'faculty',
+              timeTableData: fetchedttdata,
+              summaryData: summaryData,
+              updatedTime: lockTime,
+              TTData:fetchedttdetails,
+              headTitle: faculty,
+            };
+            // console.log(postData);
+            console.log('All Faculty Summaries:', allFacultySummaries);
+            // setNoteStatus("fetchingNotes")
+    
+            setDownloadStatus("preparingDownload")
+            setPrepareStatus("preparingDownload")
+    
+            // downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty,facultyNotes);
+            setDownloadStatus("downloadStarted")
+            setStartStatus("downloadStarted")
+    
+            setTimetableData(fetchedttdata);
+            setSummaryData(summaryData);
+            setType(type);
+            setUpdatedTime(lockTime);
+            setHeadTitle(faculty);
+      
+          }
+          setCompleteStatus("downloadCompleted")    
+          generateSummaryTablePDF(allFacultySummaries, fetchedttdetails[0].session, fetchedttdetails[0].dept)
+    
+        };
+        
+
 
   // Call the function to fetch and store data for all available semesters sequentially
 //   fetchAndStoreTimetableDataForAllSemesters();
@@ -674,6 +719,20 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         
     
 
+          const handleDownloadLoadDistribution = () => {
+            setSlotStatus(null);
+            setSummaryStatus(null);
+            setNoteStatus(null);
+            setHeaderStatus(null);
+            setPrepareStatus(null);
+            setStartStatus(null);
+            setCompleteStatus(null);
+            setDownloadType('load')
+            setInitiateStatus('starting')
+                fetchLoadAllocation();
+              };
+            
+        
           return (
             <div>
               {/* Your other components and UI elements */}
@@ -884,8 +943,79 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   </p>
 )}
 
+                
+</div>
+
+  <Button
+    onClick={handleDownloadLoadDistribution}
+    colorScheme="teal"
+    variant="solid"
+  >
+    Download Session Load Allocation
+  </Button>
+
+
+  {/* Render the messages again for the second button */}
+  <div className="message">
+    {downloadStatus === 'fetchingSemesters' && (
+      <p>
+        {availableFaculties ? `No of Faculties: ${availableFaculties.length}` : 'No Faculty available'}
+      </p>
+    )}
+    {downloadType ==='load' && 
+    initiateStatus === 'starting' && (
+      <p className={initiateStatus === 'starting' ? 'bold-message' : ''}>
+        Initiating download. It may take while! Sit back and relax!
+      </p>
+    )}
+
+      {downloadType ==='load' &&
+    slotStatus === 'fetchingSlotData' && (
+      <p className={slotStatus === 'fetchingSlotData' ? 'bold-message' : ''}>
+        Fetching slot data...
+      </p>
+    )}
+
+    {downloadType ==='load' &&
+    summaryStatus === 'fetchingSummaryData' && (
+      <p className={summaryStatus === 'fetchingSummaryData' ? 'bold-message' : ''}>
+        Fetching summary data...
+      </p>
+    )}
+    {downloadType ==='load' &&
+    noteStatus === 'fetchingNotes' && (
+      <p className={noteStatus === 'fetchingNotes' ? 'bold-message' : ''}>
+        Fetching notes...
+      </p>
+    )}
+    {downloadType ==='load' &&
+    headerStatus === 'fetchingHeadersFooters' && (
+      <p className={headerStatus === 'fetchingHeadersFooters' ? 'bold-message' : ''}>
+        Fetching headers and footers...
+      </p>
+    )}
+    {downloadType ==='load' &&
+    prepareStatus === 'preparingDownload' && (
+      <p className={prepareStatus === 'preparingDownload' ? 'bold-message' : ''}>
+        Preparing download...
+      </p>
+    )}
+    {downloadType ==='load' &&
+    startStatus === 'downloadStarted' && (
+      <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
+        Download in progress. Check downloads folder
+      </p>
+    )}
+    {downloadType ==='load' &&
+     completeStatus === 'downloadCompleted' && (
+<p style={{ fontWeight: 'bold', color: 'green' }}>
+Download Completed.
+</p>
+)}
 </div>
   
+
+ 
               </Container>
             
             </div>
