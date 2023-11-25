@@ -1,13 +1,32 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="logocrop.jpeg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>XCEED-NITJ</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" id="favicon" type="image/svg+xml" href="logo-mark-white.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XCEED NITJ</title>
+  <script>
+    function setFavicon() {
+      const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const favicon = document.getElementById('favicon');
+
+      if (darkModeMediaQuery.matches) {
+        favicon.href = 'logo-mark-white.svg';
+      } else {
+        favicon.href = 'logo-mark-black.svg';
+      }
+    }
+
+    setFavicon();
+
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(e => setFavicon());
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>
