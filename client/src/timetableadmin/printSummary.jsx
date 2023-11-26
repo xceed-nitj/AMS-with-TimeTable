@@ -750,7 +750,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         
             }
             setCompleteStatus("downloadCompleted")    
-            generateSummaryTablePDF(allFacultySummaries,deptFaculties, fetchedttdetails[0].session, fetchedttdetails[0].dept)
+            generateSummaryTablePDF(allFacultySummaries,filteredFaculties, fetchedttdetails[0].session, fetchedttdetails[0].dept)
       
           };
 
