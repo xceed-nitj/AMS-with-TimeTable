@@ -100,13 +100,14 @@ const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept
             ],
           };
         },
-        pageDidDraw: function (data) {
+        didDrawPage: function (data) {
           const pageSize = data.pageContext.pageSize;
           const pageMargins = data.pageContext.pageMargins;
           const tableHeight = 30; // Adjust this value based on your table's height
-            
+          
           if (data.table && data.table.body.length > 0) {
-            const tableBottomY = data.table.page.cursor.y + tableHeight;
+            const lastRow = data.table.body[data.table.body.length - 1];
+            const tableBottomY = lastRow[0].y + lastRow[0].height;
       
             if (tableBottomY > (pageSize.height - pageMargins.bottom)) {
               // The table will continue on the next page, draw the bottom border
