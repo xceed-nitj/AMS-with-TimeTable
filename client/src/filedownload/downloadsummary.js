@@ -6,14 +6,30 @@ import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 
 pdfMake.vfs = pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
-const generateSummaryTablePDF = (allFacultySummaries, session, dept) => {
+const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept) => {
+  
+  const sortedFacultySummaries = allFacultySummaries.sort((a, b) => {
+    const designationOrder = {
+      'Professor': 1,
+      'Associate Professor': 2,
+      'Assistant Professor Grade-i': 3,
+      'Assistant Professor Grade-ii': 4,
+    };
+  
+    const orderA = designationOrder[deptfaculty.find(f => f.name === a.faculty)?.designation] || 0;
+    const orderB = designationOrder[deptfaculty.find(f => f.name === b.faculty)?.designation] || 0;
+  
+    return orderA - orderB;
+  });
+    
   const facultyTotals = new Map();
   const rows = [];
   let sNo = 0;
 
-  allFacultySummaries.forEach((facultyObj, index) => {
+  sortedFacultySummaries.forEach((facultyObj, index) => {
     const faculty = facultyObj.faculty;
     const summaryData = facultyObj.summaryData;
+    const facultyDetails = deptfaculty.find((f) => f.name === faculty);
 
     // Initialize total hours for each faculty
     facultyTotals.set(faculty, 0);
@@ -31,6 +47,7 @@ const generateSummaryTablePDF = (allFacultySummaries, session, dept) => {
       const row = [
         { text: isFirstRow ? sNo : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center' },
         { text: isFirstRow ? faculty : '', rowSpan: isFirstRow ? summaryData.length : 1 },
+        { text: facultyDetails ? facultyDetails.designation : '', rowSpan: isFirstRow ? summaryData.length : 1 },
         { text: summary.subSem || '', alignment: 'center' },
         { text: summary.subCode || '', alignment: 'center' },
         { text: summary.subjectFullName || '', alignment: 'left' },
@@ -96,12 +113,13 @@ const generateSummaryTablePDF = (allFacultySummaries, session, dept) => {
           {
             table: {
               headerRows: 1,
-              widths: [30, 150, '*', '*', '*', '*', 30, 50],
+              widths: [30, 150, '*','*', '*', '*', '*', 30, 50],
               alignment: 'center',
               body: [
                 [
                   { text: 'S.No', alignment: 'center' },
                   { text: 'Faculty Name', alignment: 'center' },
+                  { text: 'Designation', alignment: 'center' }, // Add a new column for designation
                   { text: 'Semester', alignment: 'center' },
                   { text: 'Subject Code', alignment: 'center' },
                   { text: 'Subject Name', alignment: 'center' },
