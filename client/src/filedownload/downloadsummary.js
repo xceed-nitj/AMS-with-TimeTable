@@ -99,13 +99,14 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
         margin: [40, -30, 40, 10], // Adjust margins as needed
         stack: [
           // Draw a line above the footer image
-          { canvas: [{ type: 'line', x1: 0, y1: 23, x2: 762, y2: 23, lineWidth: 1, lineColor: 'black' }] },
+        
+          { canvas: [{ type: 'line', x1: 0, y1: 22, x2: 762, y2: 22, lineWidth: 1, lineColor: 'black' }] },
           // Add the footer image
           { text: '\n' },
           { image: footerImageDataURL, width: 250, alignment: 'center' },
         ],
       },
-      
+      pageMargins: [40, 40, 40, 60],
       content: [
         {
           text: `Department of ${dept}`,
