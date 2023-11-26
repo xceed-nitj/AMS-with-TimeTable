@@ -394,7 +394,7 @@ function generateSummary(timetableData, subjectData, type, headTitle){
                     subjectFullName: foundSubject.subjectFullName,
                     subSem:foundSubject.sem,
                   };
-                  console.log('sum',summaryData[subject])
+                  // console.log('sum',summaryData[subject])
                 } else {
                   summaryData[subject].count++;
                   if (!summaryData[subject].faculties.includes(faculty)) {

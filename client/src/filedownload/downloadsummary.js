@@ -105,8 +105,7 @@ const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept
           const pageMargins = data.pageContext.pageMargins;
       
           data.pdf
-            .line(40, pageSize.height - pageMargins.bottom, pageSize.width - pageMargins.right, pageSize.height - pageMargins.bottom)
-            .line(40, pageMargins.top, 40, pageSize.height - pageMargins.bottom);
+            .line(40, pageSize.height - pageMargins.bottom, pageSize.width - pageMargins.right, pageSize.height - pageMargins.bottom);
         },
         content: [
           {
@@ -122,7 +121,7 @@ const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept
           {
             table: {
               headerRows: 1,
-              widths: [30, 150, '*','*', '*', '*', '*', 30, 50],
+              widths: [30, 150, '*', '*', '*', '*', '*', 30, 50],
               alignment: 'center',
               body: [
                 [
@@ -138,6 +137,15 @@ const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept
                 ],
                 ...rows,
               ],
+            },
+            // Draw the bottom border for each row
+            heights: function (row, i, node) {
+              if (i === node.table.body.length - 1) {
+                const startY = node.table.page.cursor.y;
+                const endY = startY + node.table.height;
+                node.table.page.pdf.line(40, endY, 560, endY);
+              }
+              return node.table.heights[i];
             },
           },
         ],
