@@ -821,7 +821,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
                 setPrepareStatus(null);
                 setStartStatus(null);
                 setCompleteStatus(null);
-                setDownloadType('Dload')
+                setDownloadType('load')
                 setInitiateStatus('starting')
                     fetchDeptLoadAllocation();
                   };
@@ -956,7 +956,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
                 {downloadType ==='faculty' &&
                 startStatus === 'downloadStarted' && (
                   <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
-                    Download in progress. Check downloads folder
+                    Download in progress. Last few miles to go...
                   </p>
                 )}
                 {downloadType ==='faculty' &&
@@ -1026,7 +1026,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
                 {downloadType ==='room' &&
                 startStatus === 'downloadStarted' && (
                   <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
-                    Download in progress. Check downloads folder
+                    Download in progress. Last few miles to go!!
                   </p>
                 )}
                 {downloadType ==='room' &&
@@ -1080,7 +1080,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
     {downloadType ==='load' &&
     noteStatus === 'fetchingNotes' && (
       <p className={noteStatus === 'fetchingNotes' ? 'bold-message' : ''}>
-        Fetching notes...
+        Fetching department faculties..
       </p>
     )}
     {downloadType ==='load' &&

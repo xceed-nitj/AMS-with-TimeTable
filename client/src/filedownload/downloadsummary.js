@@ -14,6 +14,7 @@ const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept
       'Associate Professor': 2,
       'Assistant Professor Grade-i': 3,
       'Assistant Professor Grade-ii': 4,
+      'Assistant Professor': 5,
     };
   
     const orderA = designationOrder[deptfaculty.find(f => f.name === a.faculty)?.designation] || 0;
@@ -98,6 +99,14 @@ const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept
               { type: 'line', x1: 40, y1: 780, x2: 560, y2: 780, lineWidth: 1, lineColor: 'black' },
             ],
           };
+        },
+        pageDidDraw: function (data) {
+          const pageSize = data.pageContext.pageSize;
+          const pageMargins = data.pageContext.pageMargins;
+      
+          data.pdf
+            .line(40, pageSize.height - pageMargins.bottom, pageSize.width - pageMargins.right, pageSize.height - pageMargins.bottom)
+            .line(40, pageMargins.top, 40, pageSize.height - pageMargins.bottom);
         },
         content: [
           {
