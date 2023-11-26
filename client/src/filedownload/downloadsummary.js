@@ -103,9 +103,16 @@ const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept
         pageDidDraw: function (data) {
           const pageSize = data.pageContext.pageSize;
           const pageMargins = data.pageContext.pageMargins;
+          const tableHeight = 30; // Adjust this value based on your table's height
+            
+          if (data.table && data.table.body.length > 0) {
+            const tableBottomY = data.table.page.cursor.y + tableHeight;
       
-          data.pdf
-            .line(40, pageSize.height - pageMargins.bottom, pageSize.width - pageMargins.right, pageSize.height - pageMargins.bottom);
+            if (tableBottomY > (pageSize.height - pageMargins.bottom)) {
+              // The table will continue on the next page, draw the bottom border
+              data.pdf.line(40, pageSize.height - pageMargins.bottom, 560, pageSize.height - pageMargins.bottom);
+            }
+          }
         },
         content: [
           {
