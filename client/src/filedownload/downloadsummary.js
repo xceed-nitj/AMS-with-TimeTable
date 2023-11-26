@@ -2,157 +2,178 @@ import * as pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import header from '../assets/header.png';
 import footer from '../assets/footer.png';
-import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 
 pdfMake.vfs = pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
-const generateSummaryTablePDF = (allFacultySummaries, deptfaculty, session, dept) => {
-  
-  const sortedFacultySummaries = allFacultySummaries.sort((a, b) => {
-    const designationOrder = {
-      'Professor': 1,
-      'Associate Professor': 2,
-      'Assistant Professor Grade-i': 3,
-      'Assistant Professor Grade-ii': 4,
-      'Assistant Professor': 5,
-    };
-  
-    const orderA = designationOrder[deptfaculty.find(f => f.name === a.faculty)?.designation] || 0;
-    const orderB = designationOrder[deptfaculty.find(f => f.name === b.faculty)?.designation] || 0;
-  
-    return orderA - orderB;
-  });
-    
-  const facultyTotals = new Map();
-  const rows = [];
-  let sNo = 0;
+const loadImage = (src) => new Promise((resolve, reject) => {
+  const image = new Image();
+  image.onload = () => resolve(image);
+  image.onerror = reject;
+  image.src = src;
+});
 
-  sortedFacultySummaries.forEach((facultyObj, index) => {
-    const faculty = facultyObj.faculty;
-    const summaryData = facultyObj.summaryData;
-    const facultyDetails = deptfaculty.find((f) => f.name === faculty);
+const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session, dept) => {
+  try {
+    const [headerImage, footerImage] = await Promise.all([
+      loadImage(header),
+      loadImage(footer),
+    ]);
 
-    // Initialize total hours for each faculty
-    facultyTotals.set(faculty, 0);
+    const headerCanvas = document.createElement('canvas');
+    const headerContext = headerCanvas.getContext('2d');
+    headerCanvas.width = headerImage.width;
+    headerCanvas.height = headerImage.height;
+    headerContext.drawImage(headerImage, 0, 0);
+    const headerImageDataURL = headerCanvas.toDataURL('image/png');
 
-    // Calculate total hours for each faculty based on the sum of 'count' values in summaryData
-    const totalHrs = summaryData.reduce((total, summary) => total + (summary.count || 0), 0);
-    facultyTotals.set(faculty, totalHrs);
+    const footerCanvas = document.createElement('canvas');
+    const footerContext = footerCanvas.getContext('2d');
+    footerCanvas.width = footerImage.width;
+    footerCanvas.height = footerImage.height;
+    footerContext.drawImage(footerImage, 0, 0);
+    const footerImageDataURL = footerCanvas.toDataURL('image/png');
 
-    const facultyRows = summaryData.map((summary, subIndex) => {
-      const isFirstRow = subIndex === 0;
+    const facultyTotals = new Map();
+    const rows = [];
+    let sNo = 0;
 
-      // Increment sNo only for the first row of each faculty
-      sNo = isFirstRow ? sNo + 1 : sNo;
-
-      const row = [
-        { text: isFirstRow ? sNo : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center' },
-        { text: isFirstRow ? faculty : '', rowSpan: isFirstRow ? summaryData.length : 1 },
-        { text: facultyDetails ? facultyDetails.designation : '', rowSpan: isFirstRow ? summaryData.length : 1 },
-        { text: summary.subSem || '', alignment: 'center' },
-        { text: summary.subCode || '', alignment: 'center' },
-        { text: summary.subjectFullName || '', alignment: 'left' },
-        { text: summary.subType || '', alignment: 'center' },
-        { text: summary.count || 0, alignment: 'center' },
-        { text: isFirstRow ? totalHrs : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center' },
-      ];
-
-      return row;
-    });
-
-    rows.push(...facultyRows);
-  });
-
-  const headerImage = new Image();
-  headerImage.src = header;
-
-  headerImage.onload = () => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    canvas.width = headerImage.width;
-    canvas.height = headerImage.height;
-    context.drawImage(headerImage, 0, 0);
-    const headerImageDataURL = canvas.toDataURL('image/png');
-
-    const footerImage = new Image();
-    footerImage.src = footer;
-
-    footerImage.onload = () => {
-      const footerCanvas = document.createElement('canvas');
-      const footerContext = footerCanvas.getContext('2d');
-      footerCanvas.width = footerImage.width;
-      footerCanvas.height = footerImage.height;
-      footerContext.drawImage(footerImage, 0, 0);
-      const footerImageDataURL = footerCanvas.toDataURL('image/png');
-
-      const docDefinition = {
-        pageOrientation: 'landscape',
-        header: {
-          image: headerImageDataURL,
-          width: 300,
-          alignment: 'center',
-        },
-        footer: function (currentPage, pageCount) {
-          // Draw a line at the bottom of each page
-          return {
-            canvas: [
-              { type: 'line', x1: 40, y1: 780, x2: 560, y2: 780, lineWidth: 1, lineColor: 'black' },
-            ],
-          };
-        },
-        afterPageContent: function (currentPage, pageCount, pageSize) {
-          const pageMargins = { left: 40, right: 40, top: 40, bottom: 40 };
-          const tableHeight = 30; // Adjust this value based on your table's height
-      
-          if (currentPage != pageCount) {
-            // Draw the bottom border on each page
-            pdfMake.doc.line(pageMargins.left, pageSize.height - pageMargins.bottom, pageSize.width - pageMargins.right, pageSize.height - pageMargins.bottom);
-          }
-        },        content: [
-          {
-            text: `Department of ${dept}`,
-            fontSize: 12,
-            bold: true,
-            margin: [5, 0, 40, 0],
-            alignment: 'center',
-          },
-          { text: '\n' },
-          { text: `Faculty Load Allocation for the session ${session}`, alignment: 'center' },
-          { text: '\n' },
-          {
-            table: {
-              headerRows: 1,
-              widths: [30, 150, '*', '*', '*', '*', '*', 30, 50],
-              alignment: 'center',
-              body: [
-                [
-                  { text: 'S.No', alignment: 'center' },
-                  { text: 'Faculty Name', alignment: 'center' },
-                  { text: 'Designation', alignment: 'center' }, // Add a new column for designation
-                  { text: 'Semester', alignment: 'center' },
-                  { text: 'Subject Code', alignment: 'center' },
-                  { text: 'Subject Name', alignment: 'center' },
-                  { text: 'Type', alignment: 'center' },
-                  { text: 'Hrs', alignment: 'center' },
-                  { text: 'Total Hrs', alignment: 'center' },
-                ],
-                ...rows,
-              ],
-            },
-          },
-        ],
-        styles: {
-          header: {
-            fontSize: 18,
-            bold: true,
-            alignment: 'center',
-          },
-        },
+    const sortedFacultySummaries = allFacultySummaries.sort((a, b) => {
+      const designationOrder = {
+        'Professor': 1,
+        'Associate Professor': 2,
+        'Assistant Professor Grade-i': 3,
+        'Assistant Professor Grade-ii': 4,
+        'Assistant Professor': 5,
       };
 
-      pdfMake.createPdf(docDefinition).open();
+      const orderA = designationOrder[deptfaculty.find(f => f.name === a.faculty)?.designation] || 0;
+      const orderB = designationOrder[deptfaculty.find(f => f.name === b.faculty)?.designation] || 0;
+
+      return orderA - orderB;
+    });
+
+    sortedFacultySummaries.forEach((facultyObj, index) => {
+      const faculty = facultyObj.faculty;
+      const summaryData = facultyObj.summaryData;
+      const facultyDetails = deptfaculty.find((f) => f.name === faculty);
+
+      // Initialize total hours for each faculty
+      facultyTotals.set(faculty, 0);
+
+      // Calculate total hours for each faculty based on the sum of 'count' values in summaryData
+      const totalHrs = summaryData.reduce((total, summary) => total + (summary.count || 0), 0);
+      facultyTotals.set(faculty, totalHrs);
+
+      const facultyRows = summaryData.map((summary, subIndex) => {
+        const isFirstRow = subIndex === 0;
+
+        // Increment sNo only for the first row of each faculty
+        sNo = isFirstRow ? sNo + 1 : sNo;
+
+        const row = [
+          { text: isFirstRow ? sNo : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center' },
+          { text: isFirstRow ? faculty : '', rowSpan: isFirstRow ? summaryData.length : 1 },
+          { text: facultyDetails ? facultyDetails.designation : '', rowSpan: isFirstRow ? summaryData.length : 1 },
+          { text: summary.subSem || '', alignment: 'center' },
+          { text: summary.subCode || '', alignment: 'center' },
+          { text: summary.subjectFullName || '', alignment: 'left' },
+          { text: summary.subType || '', alignment: 'center' },
+          { text: summary.count || 0, alignment: 'center' },
+          { text: isFirstRow ? totalHrs : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center' },
+        ];
+
+        return row;
+      });
+
+      rows.push(...facultyRows);
+    });
+
+    const docDefinition = {
+      pageOrientation: 'landscape',
+      header: {
+        image: headerImageDataURL,
+        width: 300,
+        alignment: 'center',
+      },
+      footer: {
+        margin: [40, -30, 40, 10], // Adjust margins as needed
+        stack: [
+          // Draw a line above the footer image
+          { canvas: [{ type: 'line', x1: 0, y1: 23, x2: 762, y2: 23, lineWidth: 1, lineColor: 'black' }] },
+          // Add the footer image
+          { text: '\n' },
+          { image: footerImageDataURL, width: 250, alignment: 'center' },
+        ],
+      },
+      
+      content: [
+        {
+          text: `Department of ${dept}`,
+          fontSize: 12,
+          bold: true,
+          margin: [5, 0, 40, 0],
+          alignment: 'center',
+        },
+        { text: '\n' },
+        { text: `Faculty Load Allocation for the session ${session}`, alignment: 'center' },
+        { text: '\n' },
+        {
+          table: {
+            headerRows: 1,
+            widths: [30, 150, '*', '*', '*', '*', '*', 30, 50],
+            alignment: 'center',
+            body: [
+              [
+                { text: 'S.No', alignment: 'center' },
+                { text: 'Faculty Name', alignment: 'center' },
+                { text: 'Designation', alignment: 'center' }, // Add a new column for designation
+                { text: 'Semester', alignment: 'center' },
+                { text: 'Subject Code', alignment: 'center' },
+                { text: 'Subject Name', alignment: 'center' },
+                { text: 'Type', alignment: 'center' },
+                { text: 'Hrs', alignment: 'center' },
+                { text: 'Total Hrs', alignment: 'center' },
+              ],
+              ...rows,
+            ],
+          },
+        },
+        {
+          columns: [
+            {
+              text: 'Time Table Incharge',
+              fontSize: 12,
+              bold: true,
+              alignment: 'left',
+            },
+            {
+              text: 'Head of the Department',
+              fontSize: 12,
+              bold: true,
+              alignment: 'right',
+            },
+          ],
+          margin: [0, 20, 0, 0],
+        },
+      ],
+      // defaultStyle: {
+      //   fontSize: 10,
+      // },
+      // pageMargins: [40, 40, 40, 60],
+      
+      styles: {
+        header: {
+          fontSize: 18,
+          bold: true,
+          alignment: 'center',
+        },
+      },
     };
-  };
+    
+    pdfMake.createPdf(docDefinition).open();
+  } catch (error) {
+    console.error('Error during PDF generation:', error);
+  }
 };
 
 export default generateSummaryTablePDF;
