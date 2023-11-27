@@ -74,11 +74,11 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
           { text: isFirstRow ? sNo : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center',minHeight: 20,pageBreak: 'auto'  },
           { text: isFirstRow ? faculty : '', rowSpan: isFirstRow ? summaryData.length : 1 ,minHeight: 20,pageBreak: 'auto' },
           { text: facultyDetails ? facultyDetails.designation : '', rowSpan: isFirstRow ? summaryData.length : 1,minHeight: 20,pageBreak: 'auto'  },
-          { text: summary.subSem || '', alignment: 'center',pageBreak: 'auto' },
-          { text: summary.subCode || '', alignment: 'center',pageBreak: 'auto' },
-          { text: summary.subjectFullName || '', alignment: 'left',pageBreak: 'auto' },
-          { text: summary.subType || '', alignment: 'center',pageBreak: 'auto' },
-          { text: summary.count || 0, alignment: 'center',pageBreak: 'auto' },
+          { text: summary.subSem || '', alignment: 'center', minHeight: 20,pageBreak: 'auto' },
+          { text: summary.subCode || '', alignment: 'center',minHeight: 20,pageBreak: 'auto' },
+          { text: summary.subjectFullName || '', alignment: 'left',minHeight: 20,pageBreak: 'auto' },
+          { text: summary.subType || '', alignment: 'center',minHeight: 20,pageBreak: 'auto' },
+          { text: summary.count || 0, alignment: 'center',minHeight: 20,pageBreak: 'auto' },
           { text: isFirstRow ? totalHrs : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center',pageBreak: 'auto' },
         ];
 
@@ -94,19 +94,19 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
         image: headerImageDataURL,
         width: 300,
         alignment: 'center',
-      },
-      // footer: {
-      //   // margin: [40, 30, 40, 10], // Adjust margins as needed
-      //   stack: [
-      //     // Draw a line above the footer image
+              },
+      footer: {
+        margin: [40, -30, 40, 0], // Adjust margins as needed
+        stack: [
+          // Draw a line above the footer image
         
-      //     // { canvas: [{ type: 'line', x1: 0, y1: 22, x2: 762, y2: 22, lineWidth: 1, lineColor: 'black' }] },
-      //     // Add the footer image
-      //     // { text: '\n' },
-      //     { image: footerImageDataURL, width: 250, alignment: 'center' },
-      //   ],
-      // },
-      // pageMargins: [40, 40, 40, 60],
+          { canvas: [{ type: 'line', x1: 0, y1: 26, x2: 762, y2: 26, lineWidth: 1, lineColor: 'black' }] },
+          // Add the footer image
+          { text: '\n' },
+           { image: footerImageDataURL, width: 250, alignment: 'center' },
+        ],
+      },
+      pageMargins: [40, 40, 40, 60],
       content: [
         {
           text: `Department of ${dept}`,
@@ -119,7 +119,7 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
         {
           table: {
             headerRows: 1,
-            widths: [30, 100, 70, 80, 80, '*', 70, 20, 30],
+            widths: [30, 100, 70, 80, 80, 200, 70, 20, 30],
             alignment: 'center',
             body: [
               [
@@ -156,7 +156,7 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
         },
       ],
       defaultStyle: {
-        fontSize: 10,
+        fontSize: 12,
         pageBreak: 'auto'
       },
       // pageMargins: [40, 40, 40, 60],

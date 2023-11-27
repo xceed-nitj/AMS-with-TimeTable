@@ -66,7 +66,9 @@ const ViewAllotmentPage = () => {
       <div>
       <Header title="Alloted Rooms "></Header>
       </div>
-      {/* Centralised Room Table */}
+      <Text color="red">
+    Kindly keep 10:30 and 11:30 slots on Wednesday, Thursday, and Friday reserved for open electives. All open elective courses (6th & 8th) will commence in these slots only.
+  </Text> {/* Centralised Room Table */}
       <Table variant="striped" colorScheme="gray" style={{ marginBottom: '20px' }}>
       <caption > <Text fontWeight="bold" fontSize="lg">Centralised Room Allotment</Text></caption>
         <Thead>
