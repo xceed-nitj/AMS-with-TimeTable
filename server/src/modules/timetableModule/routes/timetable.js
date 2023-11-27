@@ -5,7 +5,7 @@ const tableController = new TableController();
 const protectRoute =require("../../usermanagement/privateroute")
 
 
-TableRouter.get("/", async (req, res) => {
+TableRouter.get("/",protectRoute, async (req, res) => {
   try {
     await tableController.getUserTable(req,res) ;
   } 
@@ -17,7 +17,7 @@ TableRouter.get("/", async (req, res) => {
 });
 
 
-TableRouter.get("/:id", async (req, res) => {
+TableRouter.get("/:id",protectRoute, async (req, res) => {
   try {
     const id = req.params.id;
     const resp = await tableController.getTableById(id);
