@@ -37,7 +37,7 @@ const LoginForm = () => {
       if (response.ok) {
         const responseData = await response.json()
         setMessage(responseData.message)
-        window.location.href = '/tt/dashboard'
+        window.location.href = '/userroles'
       } else {
         const errorData = await response.json()
         setMessage(`Login failed: ${errorData.message}`)
