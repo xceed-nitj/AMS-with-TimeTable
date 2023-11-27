@@ -1,7 +1,7 @@
 // AllocatedRolesPage.jsx
 
 import React, { useState, useEffect } from "react";
-import { ChakraProvider, Box, Text, VStack, Spinner, Table, Thead, Tbody, Tr, Th, Td, Link as ChakraLink } from "@chakra-ui/react";
+import { ChakraProvider,Container, Box, Text, VStack, Spinner, Table, Thead, Tbody, Tr, Th, Td, Link as ChakraLink } from "@chakra-ui/react";
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
@@ -45,6 +45,7 @@ const AllocatedRolesPage = () => {
 
   return (
     <ChakraProvider>
+          <Container maxW="container.lg">
       <Box p={4}>
         {isLoading ? (
           <Spinner />
@@ -69,7 +70,7 @@ const AllocatedRolesPage = () => {
                       <Tr key={index}>
                         <Td>{index + 1}</Td>
                         <Td>{role === "ITTC" ? (<Text>Institute Time Table Coordinator</Text>):null}
-                        {role === "DTTC" ? (<Text>Department Time Table Coordinator</Text>):null}
+                        {role === "DTTI" ? (<Text>Department Time Table Coordinator</Text>):null}
                         </Td>
                         <Td>
                           {role === "ITTC" ? (
@@ -77,7 +78,7 @@ const AllocatedRolesPage = () => {
                               ITTC Admin Page
                             </ChakraLink>
                           ) : null}
-                          {role === "DTTC" ? (
+                          {role === "DTTI" ? (
                             <ChakraLink href="/tt/dashboard" color="teal.500">
                               Time Table Dashboard
                             </ChakraLink>
@@ -90,6 +91,7 @@ const AllocatedRolesPage = () => {
           </VStack>
         )}
       </Box>
+      </Container>
     </ChakraProvider>
   );
 };
