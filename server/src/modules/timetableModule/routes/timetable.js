@@ -2,6 +2,7 @@ const express = require("express");
 const TableRouter = express.Router();
 const TableController = require("../controllers/timetableprofile");
 const tableController = new TableController();
+const protectRoute =require("../../usermanagement/privateroute")
 
 
 TableRouter.get("/", async (req, res) => {
@@ -28,7 +29,7 @@ TableRouter.get("/:id", async (req, res) => {
   }
 });
 
-TableRouter.post("/", async (req, res) => {
+TableRouter.post("/",protectRoute, async (req, res) => {
     try { 
       await tableController.createTable(req, res);
     } 
@@ -39,7 +40,7 @@ TableRouter.post("/", async (req, res) => {
     }
   });
 
-  TableRouter.put('/:id', async (req, res) => {
+  TableRouter.put('/:id',protectRoute, async (req, res) => {
     try {
       const tableId = req.params.id;
       const updatedId = req.body;
@@ -54,7 +55,7 @@ TableRouter.post("/", async (req, res) => {
     }
   });
 
-  TableRouter.delete("/:id", async (req, res) => {
+  TableRouter.delete("/:id",protectRoute, async (req, res) => {
     try {
       const tableId = req.params.id;
       await tableController.deleteId(tableId);
@@ -103,7 +104,7 @@ TableRouter.post("/", async (req, res) => {
   });
 
 
-  TableRouter.delete("/deletebycode/:code", async (req, res) => {
+  TableRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {
     try {
       const code = req.params.code;
       await tableController.deleteTableByCode(code);

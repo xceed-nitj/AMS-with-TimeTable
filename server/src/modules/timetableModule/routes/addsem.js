@@ -2,8 +2,9 @@ const express = require("express");
 const addSemRouter = express.Router();
 const AddSemController = require("../controllers/addsemprofile");
 const addSemController = new AddSemController();
+const protectRoute =require("../../usermanagement/privateroute")
 
-addSemRouter.post("/", async (req, res) => {
+addSemRouter.post("/",protectRoute, async (req, res) => {
     try {
       await addSemController.AddSem(req, res);
     } catch (e) {
@@ -47,7 +48,7 @@ addSemRouter.post("/", async (req, res) => {
     }
   });
 
-  addSemRouter.put('/:id', async (req, res) => {
+  addSemRouter.put('/:id',protectRoute, async (req, res) => {
       try {
         const semID = req.params.id;
         const updatedId = req.body;
@@ -62,7 +63,7 @@ addSemRouter.post("/", async (req, res) => {
       }
     });
 
-    addSemRouter.delete("/:id", async (req, res) => {
+    addSemRouter.delete("/:id",protectRoute, async (req, res) => {
       try {
         const semID = req.params.id;
         await addSemController.deleteId(semID);
@@ -74,7 +75,7 @@ addSemRouter.post("/", async (req, res) => {
       }
     });
 
-    addSemRouter.delete("/deletebycode/:code", async (req, res) => {
+    addSemRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {
       try {
         const code = req.params.code;
         await addSemController.deleteSemByCode(code);

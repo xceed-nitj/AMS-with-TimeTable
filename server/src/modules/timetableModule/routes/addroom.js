@@ -2,8 +2,9 @@ const express = require("express");
 const addRoomRouter = express.Router();
 const AddRoomController = require("../controllers/addroomprofile");
 const addRoomController = new AddRoomController();
+const protectRoute =require("../../usermanagement/privateroute")
 
-addRoomRouter.post("/", async (req, res) => {
+addRoomRouter.post("/",protectRoute, async (req, res) => {
     try {
       await addRoomController.AddRoom(req, res);
     } catch (e) {
@@ -45,7 +46,7 @@ addRoomRouter.post("/", async (req, res) => {
     }
   });
 
-  addRoomRouter.put('/:id', async (req, res) => {
+  addRoomRouter.put('/:id',protectRoute, async (req, res) => {
       try {
         const roomID = req.params.id;
         const updatedId = req.body;
@@ -60,7 +61,7 @@ addRoomRouter.post("/", async (req, res) => {
       }
     });
 
-    addRoomRouter.delete("/:id", async (req, res) => {
+    addRoomRouter.delete("/:id",protectRoute, async (req, res) => {
       try {
         const roomID = req.params.id;
         await addRoomController.deleteId(roomID);
@@ -72,7 +73,7 @@ addRoomRouter.post("/", async (req, res) => {
       }
     });
 
-    addRoomRouter.delete("/deletebycode/:code", async (req, res) => {
+    addRoomRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {
       try {
         const code = req.params.code;
         await addRoomController.deleteRoomByCode(code);

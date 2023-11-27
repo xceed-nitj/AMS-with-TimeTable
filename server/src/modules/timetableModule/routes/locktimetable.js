@@ -2,9 +2,9 @@ const express = require("express");
 const LockTimeTableRouter = express.Router();
 const LockTimeTableController = require("../controllers/locktimetable");
 const locktimetableController = new LockTimeTableController();
+const protectRoute =require("../../usermanagement/privateroute")
 
-
-LockTimeTableRouter.post("/locktt", async (req, res) => {
+LockTimeTableRouter.post("/locktt",protectRoute, async (req, res) => {
     try { 
       await locktimetableController.locktt(req, res);
     } 
@@ -104,7 +104,7 @@ LockTimeTableRouter.get("/viewsem/:code", async (req, res) => {
   }
 });
 
-LockTimeTableRouter.delete("/deletebycode/:code", async (req, res) => {
+LockTimeTableRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {
   try {
     const code = req.params.code;
     await locktimetableController.deleteLockedTableByCode(code);

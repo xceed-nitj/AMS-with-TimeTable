@@ -4,9 +4,10 @@ const FacultyController = require("../controllers/facultyprofile");
 const facultyController = new FacultyController();
 
 const ttadminRoute=require("../../usermanagement/ttadminroute")
+const protectRoute =require("../../usermanagement/privateroute")
 
 
-facultyRouter.post("/",ttadminRoute, async (req, res) => {
+facultyRouter.post("/",ttadminRoute,protectRoute, async (req, res) => {
     try {
       await facultyController.createFaculty(req, res);
     } catch (e) {
