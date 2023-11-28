@@ -122,5 +122,18 @@ subjectRouter.post("/",protectRoute, async (req, res) => {
   });
  
 
+  subjectRouter.get("/firstyearsubject/:code/:dept", async (req, res) => {
+    try {
+      const code=req.params.code;
+      const dept=req.params.dept;
+      const subjects = await subjectController.getFirstYearDeptSubject(code,dept); 
+      res.status(200).json(subjects);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+
+
 
   module.exports = subjectRouter;

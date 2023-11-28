@@ -4,6 +4,13 @@ const HttpException = require("../../../models/http-exception");
 const TimeTabledto = require("../dto/timetable");
 const TimeTableDto = new TimeTabledto();
 
+
+const TableController = require("../controllers/timetableprofile");
+const tableController = new TableController();
+
+
+
+
 class SubjectController{
       async createTimetableEntry(req,res) {
         const newSub = req.body;
@@ -84,6 +91,21 @@ class SubjectController{
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       };
+
+      async getFirstYearDeptSubject (code, dept){
+        try {
+          const session = await TimeTableDto.getSessionByCode(code);
+          const firstyear=await tableController.getCodeOfDept('Basic Sciences', session)
+          const firstyearcode=firstyear.code;
+          const subjects = await TimetableEntry.find({ code: firstyearcode, dept });
+      
+      return subjects;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      };
+
+
 
       async getSubjectByCode(code) {
         try {
