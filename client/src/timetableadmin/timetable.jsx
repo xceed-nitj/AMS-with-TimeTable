@@ -643,7 +643,7 @@ const Timetable = () => {
 
   const handleScroll = () => {
     const scrollPosition = window.scrollY;
-    const scrollThreshold = 1100; // Adjust this value to control when the message disappears
+    const scrollThreshold = 2100; // Adjust this value to control when the message disappears
 
     if (scrollPosition > scrollThreshold) {
       setShowMessage(false);
