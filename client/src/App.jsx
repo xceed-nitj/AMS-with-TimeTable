@@ -28,6 +28,7 @@ import CommonLoad from './timetableadmin/addcommonload';
 import MasterView from './timetableadmin/mastersearch';
 import AllocatedRolesPage from './dashboard/allotedroles';
 import FirstYearLoad from './timetableadmin/firstyearload';
+import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 function App() {
   return (
     <Router>
@@ -47,6 +48,7 @@ function App() {
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
           <Route path="/tt/:generatedLink/addroom" element={<AddRoom />} />
           <Route path="/tt/:generatedLink/firstyearload" element={<FirstYearLoad />} />
+          <Route path="/tt/:generatedLink/firstyearfaculty" element={<FirstYearFaculty />} />
 
           <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
           <Route path="/tt/:generatedLink/addsem" element={<AddSem />} />
