@@ -569,13 +569,6 @@ console.log(timetableData)
                               +
                             </CustomPlusButton>
                           )}
-                          {slotIndex === 0 && slot.length > 1 && (
-                            <CustomDeleteButton
-                              className="cell-delete-button"
-                            >
-                              Delete
-                            </CustomDeleteButton>
-                          )}
                         </Box>
                       )
                     )}
