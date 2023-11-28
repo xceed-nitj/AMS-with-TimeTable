@@ -102,4 +102,32 @@ addFacultyRouter.post("/",protectRoute, async (req, res) => {
       }
     });
 
+    addFacultyRouter.get("/firstyearfaculty/:dept/:code", async (req, res) => {
+      try {
+      const code=req.params.code;
+      const dept=req.params.dept;
+      const faculty=await addFacultyController.getFirstYearDeptFaculty(code,dept); 
+      res.status(200).json(faculty);
+      } catch (e) {
+        res
+          .status(e?.status || 500)
+          .json({ error: e?.message || "Internal Server Error" });
+      }
+    });
+
+    addFacultyRouter.put("/deletefirstyearfaculty/:code/:sem/:faculty", async (req, res) => {
+      try {
+      const code=req.params.code;
+      const sem=req.params.sem;
+      const faculty=req.params.faculty;
+      const filteredfaculty=await addFacultyController.deleteFirstYearDeptFaculty(code,sem,faculty); 
+      res.status(200).json(filteredfaculty);
+      } catch (e) {
+        res
+          .status(e?.status || 500)
+          .json({ error: e?.message || "Internal Server Error" });
+      }
+    });
+
+
   module.exports = addFacultyRouter;

@@ -72,10 +72,13 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
 
   useEffect(() => {
     fetchTTData(currentCode);
+
   }, []);
 
   useEffect(() => {
     fetchFirstYearSubjects(currentCode, currentDepartment);
+    fetchFacultyData(currentCode,currentDepartment);
+
   }, [currentDepartment]);
 
   const fetchTTData = async (currentCode) => {
@@ -142,17 +145,67 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
     }
   }, [currentDepartment]);
 
-  const fetchFacultyData = () => {
-    fetch(`${apiUrl}/timetablemodule/addFaculty`,{credentials: 'include',})
-      .then(handleResponse)
-      .then((data) => {
-        const filteredFacultyData = data.filter(
-          (faculty) => faculty.code === firstYearCode
-        );
-        setFacultyData(filteredFacultyData);
-      })
-      .catch(handleError);
+  // const fetchFacultyData = () => {
+  //   fetch(,{credentials: 'include',})
+  //     .then(handleResponse)
+  //     .then((data) => {
+  //       const filteredFacultyData = data.filter(
+  //         (faculty) => faculty.code === firstYearCode
+  //       );
+  //       setFacultyData(filteredFacultyData);
+  //     })
+  //     .catch(handleError);
+  // };
+
+
+  const fetchFacultyData = async (currentCode, currentDepartment) => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/addfaculty/firstyearfaculty/${currentDepartment}/${currentCode}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+      console.log("facdata", data);
+
+      setFacultyData(data);
+    } catch (error) {
+      console.error("Error fetching TTdata:", error);
+    }
   };
+
+
+
+  const deleteFacultyData = async (currentCode, sem, faculty) => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/addfaculty/deletefirstyearfaculty/${currentCode}/${sem}/${faculty}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+      console.log("delteddata", data);
+
+      // setFacultyData(data);
+      fetchFacultyData(currentCode,currentDepartment);
+    } catch (error) {
+      console.error("Error fetching TTdata:", error);
+    }
+  };
+
+
 
   const handleResponse = (response) => {
     if (!response.ok) {
@@ -191,51 +244,36 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
           isClosable: true,
         });
         // setSuccessMessage('Data saved successfully!');
-        fetchFacultyData();
+        fetchFacultyData(currentCode, currentDepartment);
       })
       .catch(handleError);
   };
 
-  const handleDelete = (facultyId, facultyName) => {
-    const facultyToDelete = facultyData.find(
-      (faculty) => faculty._id === facultyId
-    );
-  
+  const handleDelete = (index, facultyName) => {
+    const facultyToDelete = facultyData[index];
+    const facultySem=facultyData[index].sem;
     if (facultyToDelete) {
       const isConfirmed = window.confirm(
         `Are you sure you want to delete ${facultyName}?`
       );
   
       if (isConfirmed) {
-        setIsLoading({
-          state: true,
-          id: facultyId,
-        });
-        const updatedFaculty = facultyToDelete.faculty.filter(
-          (name) => name !== facultyName
-        );
-        facultyToDelete.faculty = updatedFaculty;
+        // setIsLoading({
+        //   state: true,
+        //   id: index,
+        // });
   
-        fetch(`${apiUrl}/timetablemodule/addFaculty/${facultyId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(facultyToDelete),
-          credentials: 'include',
-        })
-          .then(handleResponse)
-          .catch(handleError)
-          .finally(() => {
-            setIsLoading({
-              ...isLoading,
-              state: false,
-            });
-          });
+        // Remove the faculty from the data
+        const updatedFacultyData = [...facultyData];
+        updatedFacultyData.splice(index, 1);
+        setFacultyData(updatedFacultyData);
+  
+        // Call the delete API
+        deleteFacultyData(currentCode, facultySem, facultyName);
       }
     }
   };
-  
+    
   const handleFacultyCheckboxChange = (facultyName) => {
     setSelectedFaculties((prevSelectedFaculties) => {
       if (prevSelectedFaculties.includes(facultyName)) {
@@ -322,39 +360,33 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
               </Tr>
             </Thead>
             <Tbody>
-              {facultyData.map((faculty) =>
-                faculty.faculty.map((individualFaculty, index) => (
-                  <Tr key={`${faculty._id}-${index}`}>
-                    <Td>
-                      <Center>{faculty.sem}</Center>
-                    </Td>
-                    <Td>
-                      <Center>{individualFaculty}</Center>
-                    </Td>
-                    <Td>
-                      <Center>
-                        <Button
-                          isLoading={
-                            isLoading.state && isLoading.id == faculty._id
-                          }
-                          bg="teal"
-                          color="white"
-                          onClick={() =>
-                            handleDelete(faculty._id, individualFaculty)
-                          }
-                        >
-                          Delete
-                        </Button>
-                      </Center>
-                    </Td>
-                  </Tr>
-                ))
-              )}
+              {facultyData.map((facultyItem, index) => (
+                <Tr key={index}>
+                  <Td>
+                    <Center>{facultyItem.sem}</Center>
+                  </Td>
+                  <Td>
+                    <Center>{facultyItem.faculty}</Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      <Button
+                        colorScheme="red"
+                        onClick={() =>
+                          handleDelete(index, facultyItem.faculty)
+                        }
+                        isLoading={isLoading.state && isLoading.id === index}
+                      >
+                        Delete
+                      </Button>
+                    </Center>
+                  </Td>
+                </Tr>
+              ))}
             </Tbody>
           </Table>
         </TableContainer>
       </div>
-
     </Container>
   );
 }
