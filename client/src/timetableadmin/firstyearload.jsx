@@ -8,6 +8,7 @@ import {
   Container,
   FormControl,
   FormLabel,
+  Portal,
   Heading,
   Input,
   Select,
@@ -42,7 +43,7 @@ import Header from "../components/header";
 function FirstYearLoad() {
   const toast = useToast();
   const [rooms, setRooms] = useState([]);
-  const [newRoom, setNewRoom] = useState("");
+  const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState({
     state: false,
     id: "",
@@ -274,15 +275,24 @@ function FirstYearLoad() {
 
     // Update the state with the modified data
     setTimetableData(updatedData);
+    // setTimetableData((prevData) => ({
+    //   ...prevData,
+    //   [day]: {
+    //     ...prevData[day],
+    //     [`period${period}`]: [...prevData[day][`period${period}`]],
+    //   },
+    // }));
+
   };
+
   const saveSlotData = async (day, slot, slotData) => {
     // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
-    const code = currentCode;
+    const code = firstYearCode;
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ slotData, code, sem });
 
-    // console.log('Slot JSON Data to Send:', dataToSend);
+    console.log('Slot JSON Data to Send:', dataToSend);
 
     try {
       const response = await fetch(Url, {
@@ -309,12 +319,12 @@ function FirstYearLoad() {
   const handleSubmit = async () => {
     // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/savett`;
-    const code = currentCode;
+    const code = firstYearCode;
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ timetableData, code });
 
     // console.log('Data is getting saved');
-
+console.log(timetableData)
     setMessage("Data is being saved....");
     try {
       const response = await fetch(Url, {
@@ -365,9 +375,10 @@ function FirstYearLoad() {
     }
   };
 
+  const [showMessage, setShowMessage] = useState(true);
 
   return (
-    <Container maxW="5xl">
+    <Container maxW="7xl">
       <Header title="First Year Faculty Allotment"></Header>
 
       <Box>
@@ -405,6 +416,27 @@ function FirstYearLoad() {
       <Button m="1 auto" colorScheme="teal" onClick={handleAddFirstYearFaculty}>
             Add First Year Faculty
           </Button>
+          <Portal>
+        <Box
+          bg={showMessage && message ? "rgba(255, 100, 0, 0.9)" : 0} // Brighter yellow with some transparency
+          color="white"
+          textAlign="center"
+          fontWeight="bold"
+          fontSize="1.5rem"
+          position="fixed"
+          top="30%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+          zIndex="999"
+          borderRadius="20px" // Adding curved borders
+          p="10px" // Padding to make it a bit larger
+          opacity={showMessage ? 1 : 0}
+        >
+          <Text>{message}</Text>
+        </Box>
+      </Portal>
+
+
 
           <Box display="flex" mb="2.5">
         <Text fontWeight="bold" mb="1.5">
@@ -470,7 +502,7 @@ function FirstYearLoad() {
                                 }
                                 isDisabled
                               >
-                                <option value="">Select Subject</option>
+                                <option value={cell.subject}>{cell.subject || "Select Subject"}</option>
                                 {availableSubjects.map((subject) => (
                                   <option
                                     key={subject._id}
@@ -478,6 +510,7 @@ function FirstYearLoad() {
                                   >
                                     {subject.subName}
                                   </option>
+                                  
                                 ))}
                               </Select>
                               <Select
@@ -494,8 +527,9 @@ function FirstYearLoad() {
                                 }
                                 isDisabled
                               >
-                                <option value="">Select Room</option>{" "}
-                                {/* Add an empty option */}
+                                {/* <option value="">Select Room</option>{" "} */}
+                                <option value={cell.room}>{cell.room || "Select room"}</option>
+
                                 {availableRooms.map((roomOption) => (
                                   <option key={roomOption} value={roomOption}>
                                     {roomOption}
@@ -514,9 +548,11 @@ function FirstYearLoad() {
                                     event
                                   )
                                 }
+                                disabled={!subjects.some(subject => subject === cell.subject)}
                               >
-                                <option value="">Select Faculty</option>{" "}
-                                {/* Add an empty option */}
+                                <option value={cell.faculty}>{cell.faculty || "Select Subject"}</option>
+                                {/* <option value="">Select Faculty</option>{" "} */}
+                                
                                 {availableFaculties.map((faculty, index) => (
                                   <option key={index} value={faculty}>
                                     {faculty}
