@@ -26,6 +26,7 @@ import AdminPage from './timetableadmin/admin';
 import ViewAllotmentPage from './timetableadmin/viewroomallotment';
 import CommonLoad from './timetableadmin/addcommonload';
 import MasterView from './timetableadmin/mastersearch';
+import AllocatedRolesPage from './dashboard/allotedroles';
 function App() {
   return (
     <Router>
@@ -39,7 +40,9 @@ function App() {
         <Route path="/" element={<Login/>} />
         <Route path="/register" element={<RegistrationForm/>} />
           <Route path="/tt/:generatedLink" element={<Timetable />} />
-          <Route path="/dashboard" element={<CreateTimetable />} />
+          <Route path="/tt/dashboard" element={<CreateTimetable />} />
+          <Route path="/userroles" element={<AllocatedRolesPage />} />
+
           <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
           <Route path="/tt/:generatedLink/addroom" element={<AddRoom />} />
           <Route path="/tt/masterfaculty" element={<MasterFaculty />} />

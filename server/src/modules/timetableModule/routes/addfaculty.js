@@ -2,8 +2,9 @@ const express = require("express");
 const addFacultyRouter = express.Router();
 const AddFacultyController = require("../controllers/addfacultyprofile");
 const addFacultyController = new AddFacultyController();
+const protectRoute =require("../../usermanagement/privateroute")
 
-addFacultyRouter.post("/", async (req, res) => {
+addFacultyRouter.post("/",protectRoute, async (req, res) => {
     try {
       await addFacultyController.AddFaculty(req, res);
     } catch (e) {
@@ -51,7 +52,7 @@ addFacultyRouter.post("/", async (req, res) => {
     }
   });
 
-  addFacultyRouter.put('/:id', async (req, res) => {
+  addFacultyRouter.put('/:id',protectRoute, async (req, res) => {
       try {
         const facultyId = req.params.id;
         const updatedId = req.body;
@@ -66,7 +67,7 @@ addFacultyRouter.post("/", async (req, res) => {
       }
     });
 
-    addFacultyRouter.delete("/:id", async (req, res) => {
+    addFacultyRouter.delete("/:id",protectRoute, async (req, res) => {
       try {
         const facultyId = req.params.id;
         await addFacultyController.deleteId(facultyId);
@@ -91,7 +92,7 @@ addFacultyRouter.post("/", async (req, res) => {
       }
     });
   
-    addFacultyRouter.delete("/deletebycode/:code", async (req, res) => {
+    addFacultyRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {
       try {
         const code = req.params.code;
         await addFacultyController.deleteFacultyByCode(code);

@@ -10,6 +10,8 @@ import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
 import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
 import downloadPDF from '../filedownload/downloadpdf';
+import generateSummaryTablePDF from '../filedownload/downloadsummary'
+
 
 import {
   Table,
@@ -26,11 +28,12 @@ import PDFGenerator from '../filedownload/makepdf';
 import Header from '../components/header';
 
 
-
 const PrintSummary = () => {
 
 // Initialize as an empty array
-const [TTData, setTTData] = useState([]); // Initialize as an empty array
+const [TTData, setTTData] = useState([]);
+const [deptFaculties, setDeptFaculties] = useState([]);
+
 const [timetableData, setTimetableData] = useState({});
 const [summaryData, setSummaryData] = useState({});
 const [type, setType] = useState(''); 
@@ -99,13 +102,15 @@ const [headTitle, setHeadTitle] = useState('');
             const semValues = filteredSems.map((room) => room.room);
   
             setAvailableRooms(semValues);
-            console.log('available rooms',availableRooms)
+            // console.log('available rooms',availableRooms)
           }
         } catch (error) {
           console.error('Error fetching subject data:', error);
         }
       };
   
+    
+
       const fetchFaculty = async () => {
         try {
           const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`,{credentials: 'include',});
@@ -113,13 +118,14 @@ const [headTitle, setHeadTitle] = useState('');
             const data = await response.json();
             // console.log('faculty response',data);
             setAvailableFaculties(data);
-            console.log('faculties', availableFaculties);
+            // console.log('faculties', availableFaculties);
           }
            
         } catch (error) {
           console.error('Error fetching subject data:', error);
         }
       };
+
 
       fetchSem();
       fetchRoom(currentCode);
@@ -134,7 +140,7 @@ const [headTitle, setHeadTitle] = useState('');
       // console.log('current code', currentCode);
       const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`,{credentials: 'include'});
       const data1 = await response.json();
-      console.log('fetched',data1);
+      // console.log('fetched',data1);
       const data=data1.timetableData;
       const notes=data1.notes;
       const initialData = generateInitialTimetableData(data,'sem');
@@ -151,7 +157,7 @@ const [headTitle, setHeadTitle] = useState('');
       // console.log('current code', currentCode);
       const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`,{credentials: 'include'});
       const data = await response.json();
-      console.log('time daata', data)
+      // console.log('time daata', data)
       setLockedTime(data.updatedTime.lockTimeIST)
       setSavedTime( data.updatedTime.saveTimeIST)
       return data.updatedTime.lockTimeIST;
@@ -166,7 +172,7 @@ const [headTitle, setHeadTitle] = useState('');
     const {initialData,notes} = await fetchData(semester);
     // setTimetableData(initialData);
     setDownloadStatus("fetchingSummaryData")
-    console.log('semdata',initialData)
+    // console.log('semdata',initialData)
     return {initialData,notes};
     
 };
@@ -320,13 +326,33 @@ const roomData = async (currentCode, room) => {
       
       const data = await response.json();
       // console.log('ttdata',data)
-    //   setTTData(data);
+    setTTData(data);
       return data;
     //   
     } catch (error) {
       console.error('Error fetching TTdata:', error);
     }
   };
+
+
+  const fetchDeptFaculty = async (currentCode) => {
+    try {
+      const fetchedttdetails=await fetchTTData(currentCode);
+
+      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`,{credentials: 'include',});
+      if (response.ok) {
+        const data = await response.json();
+        // console.log('faculty response',data);
+        setDeptFaculties(data);
+        console.log('deptfaculties', data);
+        return data;
+      }
+       
+    } catch (error) {
+      console.error('Error fetching subject data:', error);
+    }
+  };
+
 
 
 
@@ -368,7 +394,7 @@ function generateSummary(timetableData, subjectData, type, headTitle){
                     subjectFullName: foundSubject.subjectFullName,
                     subSem:foundSubject.sem,
                   };
-                  console.log('sum',summaryData[subject])
+                  // console.log('sum',summaryData[subject])
                 } else {
                   summaryData[subject].count++;
                   if (!summaryData[subject].faculties.includes(faculty)) {
@@ -431,8 +457,6 @@ const sortedSummaryEntries = Object.values(mergedSummaryData).sort((a, b) =>
   return sortedSummaryEntries;
 }
 
-
-  
 // Function to fetch and store data for all available semesters sequentially
 const fetchAndStoreTimetableDataForAllSemesters = async () => {
   const subjectData = await  fetchSubjectData(currentCode);
@@ -450,11 +474,11 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
       const {initialData,notes} = await fetchTimetableData(semester);
 
       const fetchedttdata = initialData;
-      console.log('semdddddd',initialData)
+      // console.log('semdddddd',initialData)
       const semNotes=notes;
       
       const summaryData = generateSummary(fetchedttdata, subjectData, 'sem', semester); 
-      console.log(summaryData)
+      // console.log(summaryData)
       const lockTime= await fetchTime();
 
       const postData = {
@@ -500,18 +524,20 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
     const subjectData = await  fetchSubjectData(currentCode);
       setDownloadStatus("fetchingHeadersFooters")
       
-  
+      const allFacultySummaries = [];
       const fetchedttdetails=await fetchTTData(currentCode);
   
   
       for (const faculty of availableFaculties) {
-        console.log(faculty);        
+        // console.log(faculty);        
         const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
         const fetchedttdata= initialData;
         const facultyNotes=notes;
         // console.log('dataaaa faculty',fetchedttdata);        
         
         const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+        allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
+
         // console.log(summaryData)
         const lockTime= updateTime;
         setHeaderStatus("fetchingHeadersFooters")
@@ -525,7 +551,8 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           TTData:fetchedttdetails,
           headTitle: faculty,
         };
-        console.log(postData);
+        // console.log(postData);
+        // console.log('All Faculty Summaries:', allFacultySummaries);
         setNoteStatus("fetchingNotes")
 
         setDownloadStatus("preparingDownload")
@@ -541,23 +568,9 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         setUpdatedTime(lockTime);
         setHeadTitle(faculty);
   
-        // Make a POST request to store the data in your schema
-        const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(postData),
-          credentials: 'include'
-        });
-    
-        if (postResponse.ok) {
-          console.log(`Timetable data for faculty ${faculty} stored successfully.`);
-        } else {
-          console.error(`Error storing timetable data for faculty ${faculty}.`);
-        }
       }
       setCompleteStatus("downloadCompleted")    
+      // generateSummaryTablePDF(allFacultySummaries, fetchedttdetails[0].session, fetchedttdetails[0].dept)
 
     };
     
@@ -570,14 +583,14 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
     
     
         for (const room of availableRooms) {
-          console.log('room', room);        
+          // console.log('room', room);        
           const {initialData,updateTime,notes} = await fetchRoomData( currentCode, room);
           const fetchedttdata= initialData;
           const roomNotes=notes;
           // console.log('dataaaa room',fetchedttdata);        
           
           const summaryData = generateSummary(fetchedttdata, subjectData, 'room',room); 
-          console.log('room summary dara',summaryData)
+          // console.log('room summary dara',summaryData)
           const lockTime= updateTime;
           setHeaderStatus("fetchingHeadersFooters")
           const postData = {
@@ -607,26 +620,139 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           setHeadTitle(room);
     
           // Make a POST request to store the data in your schema
-          const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(postData),
-            credentials: 'include'
-          });
+          // const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
+          //   method: 'POST',
+          //   headers: {
+          //     'Content-Type': 'application/json',
+          //   },
+          //   body: JSON.stringify(postData),
+          //   credentials: 'include'
+          // });
       
-          if (postResponse.ok) {
-            console.log(`Timetable data for room ${room} stored successfully.`);
-          } else {
-            console.error(`Error storing timetable data for room ${rooom}.`);
-          }
+          // if (postResponse.ok) {
+          //   console.log(`Timetable data for room ${room} stored successfully.`);
+          // } else {
+          //   console.error(`Error storing timetable data for room ${rooom}.`);
+          // }
         }
         setCompleteStatus("downloadCompleted")    
   
       };
 
 
+      // const fetchLoadAllocation = async () => {
+      //   const subjectData = await  fetchSubjectData(currentCode);
+      //     setDownloadStatus("fetchingHeadersFooters")
+          
+      //     const allFacultySummaries = [];
+      //     const fetchedttdetails=await fetchTTData(currentCode);
+      
+      
+      //     for (const faculty of availableFaculties) {
+      //       console.log(faculty);        
+      //       const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
+      //       const fetchedttdata= initialData;
+      //       const facultyNotes=notes;
+      //       // console.log('dataaaa faculty',fetchedttdata);        
+            
+      //       const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+      //       allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
+    
+      //       // console.log(summaryData)
+      //       const lockTime= updateTime;
+      //       setHeaderStatus("fetchingHeadersFooters")
+      //       const postData = {
+      //         session: fetchedttdetails[0].session,
+      //         name: faculty,
+      //         type: 'faculty',
+      //         timeTableData: fetchedttdata,
+      //         summaryData: summaryData,
+      //         updatedTime: lockTime,
+      //         TTData:fetchedttdetails,
+      //         headTitle: faculty,
+      //       };
+      //       // console.log(postData);
+      //       console.log('All Faculty Summaries:', allFacultySummaries);
+      //       // setNoteStatus("fetchingNotes")
+    
+      //       setDownloadStatus("preparingDownload")
+      //       setPrepareStatus("preparingDownload")
+    
+      //       // downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty,facultyNotes);
+      //       setDownloadStatus("downloadStarted")
+      //       setStartStatus("downloadStarted")
+    
+      //       setTimetableData(fetchedttdata);
+      //       setSummaryData(summaryData);
+      //       setType(type);
+      //       setUpdatedTime(lockTime);
+      //       setHeadTitle(faculty);
+      
+      //     }
+      //     setCompleteStatus("downloadCompleted")    
+      //     generateSummaryTablePDF(allFacultySummaries, fetchedttdetails[0].session, fetchedttdetails[0].dept)
+    
+      //   };
+        
+
+        const fetchDeptLoadAllocation = async () => {
+          const subjectData = await  fetchSubjectData(currentCode);
+            setDownloadStatus("fetchingHeadersFooters")
+            
+            const allFacultySummaries = [];
+            const fetchedttdetails=await fetchTTData(currentCode);
+        
+            const filteredFaculties = await fetchDeptFaculty(currentCode);
+            const facultyNames = [];
+
+            for (const faculty of filteredFaculties) {
+              facultyNames.push(faculty.name);
+              }
+            for (const faculty of facultyNames) {
+              // console.log(faculty);        
+              const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
+              const fetchedttdata= initialData;
+              const facultyNotes=notes;
+              // console.log('dataaaa faculty',fetchedttdata);        
+              
+              const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+              allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
+      
+              // console.log(summaryData)
+              const lockTime= updateTime;
+              setHeaderStatus("fetchingHeadersFooters")
+              const postData = {
+                session: fetchedttdetails[0].session,
+                name: faculty,
+                type: 'faculty',
+                timeTableData: fetchedttdata,
+                summaryData: summaryData,
+                updatedTime: lockTime,
+                TTData:fetchedttdetails,
+                headTitle: faculty,
+              };
+              // console.log(postData);
+              // console.log('All Faculty Summaries:', allFacultySummaries);
+              // setNoteStatus("fetchingNotes")
+      
+              setDownloadStatus("preparingDownload")
+              setPrepareStatus("preparingDownload")
+      
+              // downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty,facultyNotes);
+              setDownloadStatus("downloadStarted")
+              setStartStatus("downloadStarted")
+      
+              setTimetableData(fetchedttdata);
+              setSummaryData(summaryData);
+              setType(type);
+              setUpdatedTime(lockTime);
+              setHeadTitle(faculty);
+        
+            }
+            setCompleteStatus("downloadCompleted")    
+            generateSummaryTablePDF(allFacultySummaries,filteredFaculties, fetchedttdetails[0].session, fetchedttdetails[0].dept)
+      
+          };
 
   // Call the function to fetch and store data for all available semesters sequentially
 //   fetchAndStoreTimetableDataForAllSemesters();
@@ -674,6 +800,32 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         
     
 
+          // const handleDownloadLoadDistribution = () => {
+          //   setSlotStatus(null);
+          //   setSummaryStatus(null);
+          //   setNoteStatus(null);
+          //   setHeaderStatus(null);
+          //   setPrepareStatus(null);
+          //   setStartStatus(null);
+          //   setCompleteStatus(null);
+          //   setDownloadType('load')
+          //   setInitiateStatus('starting')
+          //       fetchLoadAllocation();
+          //     };
+            
+              const handleDownloadDeptLoadDistribution = () => {
+                setSlotStatus(null);
+                setSummaryStatus(null);
+                setNoteStatus(null);
+                setHeaderStatus(null);
+                setPrepareStatus(null);
+                setStartStatus(null);
+                setCompleteStatus(null);
+                setDownloadType('load')
+                setInitiateStatus('starting')
+                    fetchDeptLoadAllocation();
+                  };
+            
           return (
             <div>
               {/* Your other components and UI elements */}
@@ -804,7 +956,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
                 {downloadType ==='faculty' &&
                 startStatus === 'downloadStarted' && (
                   <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
-                    Download in progress. Check downloads folder
+                    Download in progress. Last few miles to go...
                   </p>
                 )}
                 {downloadType ==='faculty' &&
@@ -874,7 +1026,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
                 {downloadType ==='room' &&
                 startStatus === 'downloadStarted' && (
                   <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
-                    Download in progress. Check downloads folder
+                    Download in progress. Last few miles to go!!
                   </p>
                 )}
                 {downloadType ==='room' &&
@@ -884,8 +1036,80 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   </p>
 )}
 
+                
 </div>
+
   
+
+<Button
+    onClick={handleDownloadDeptLoadDistribution}
+    colorScheme="teal"
+    variant="solid"
+  >
+    Download Department Load Allocation
+  </Button>
+
+
+  {/* Render the messages again for the second button */}
+  <div className="message">
+    {downloadStatus === 'fetchingSemesters' && (
+      <p>
+        {availableFaculties ? `No of Faculties: ${availableFaculties.length}` : 'No Faculty available'}
+      </p>
+    )}
+    {downloadType ==='load' && 
+    initiateStatus === 'starting' && (
+      <p className={initiateStatus === 'starting' ? 'bold-message' : ''}>
+        Initiating download. It may take while! Sit back and relax!
+      </p>
+    )}
+
+      {downloadType ==='load' &&
+    slotStatus === 'fetchingSlotData' && (
+      <p className={slotStatus === 'fetchingSlotData' ? 'bold-message' : ''}>
+        Fetching slot data...
+      </p>
+    )}
+
+    {downloadType ==='load' &&
+    summaryStatus === 'fetchingSummaryData' && (
+      <p className={summaryStatus === 'fetchingSummaryData' ? 'bold-message' : ''}>
+        Fetching summary data...
+      </p>
+    )}
+    {downloadType ==='load' &&
+    noteStatus === 'fetchingNotes' && (
+      <p className={noteStatus === 'fetchingNotes' ? 'bold-message' : ''}>
+        Fetching department faculties..
+      </p>
+    )}
+    {downloadType ==='load' &&
+    headerStatus === 'fetchingHeadersFooters' && (
+      <p className={headerStatus === 'fetchingHeadersFooters' ? 'bold-message' : ''}>
+        Fetching headers and footers...
+      </p>
+    )}
+    {downloadType ==='load' &&
+    prepareStatus === 'preparingDownload' && (
+      <p className={prepareStatus === 'preparingDownload' ? 'bold-message' : ''}>
+        Preparing download...
+      </p>
+    )}
+    {downloadType ==='load' &&
+    startStatus === 'downloadStarted' && (
+      <p className={startStatus === 'downloadStarted' ? 'bold-message' : ''}>
+        Download in progress!! Last few miles to go!
+      </p>
+    )}
+    {downloadType ==='load' &&
+     completeStatus === 'downloadCompleted' && (
+<p style={{ fontWeight: 'bold', color: 'green' }}>
+Download Completed.
+</p>
+)}
+</div>
+
+ 
               </Container>
             
             </div>
