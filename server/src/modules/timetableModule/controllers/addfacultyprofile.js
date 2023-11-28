@@ -1,5 +1,13 @@
 const HttpException = require("../../../models/http-exception");
 const addFaculty = require("../../../models/addfaculty");
+const Faculty=require("../../../models/faculty");
+
+const TimeTabledto = require("../dto/timetable");
+const TimeTableDto = new TimeTabledto();
+
+
+const TableController = require("../controllers/timetableprofile");
+const tableController = new TableController();
 
 
 class addFacultyController {
@@ -118,9 +126,63 @@ class addFacultyController {
         }
       }
 
+      async deleteFirstYearDeptFaculty(code, sem, facultyname) {
+        try {
+          const session = await TimeTableDto.getSessionByCode(code);
+          const firstYear = await tableController.getCodeOfDept('Basic Sciences', session);
+          const firstYearCode = firstYear.code;
+      
+          // Fetch faculty data based on code and sem
+          const faculty = await addFaculty.findOne({ code: firstYearCode, sem });
+      
+          if (faculty) {
+            // Filter out the specified facultyname from the faculty array
+            faculty.faculty = faculty.faculty.filter(name => name !== facultyname);
+            await faculty.save();
+
+          
+            
+
+          return faculty;
+          } else {
+            throw new Error("Faculty not found");
+          }
+      
+        } catch (error) {
+          throw new Error("Failed to delete faculty by code");
+        }
+      }
+      
+
+
+      async getFirstYearDeptFaculty(code, dept) {
+        try {
+          const session = await TimeTableDto.getSessionByCode(code);
+          const firstYear = await tableController.getCodeOfDept('Basic Sciences', session);
+          const firstYearCode = firstYear.code;
+          const faculty = await addFaculty.find({ code: firstYearCode });
+          const facultyArray = [];
+      
+          for (const item of faculty) {
+            const facultyValues = item.faculty;
+      
+            for (const facultyName of facultyValues) {
+              const deptFaculty = await Faculty.findOne({ name: facultyName, dept });
+      
+              if (deptFaculty) {
+                facultyArray.push({sem:item.sem, faculty:facultyName});
+              }
+            }
+          }
+      
+          return facultyArray;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      }
+      
+
     }
-
-
 module.exports = addFacultyController;
 
 

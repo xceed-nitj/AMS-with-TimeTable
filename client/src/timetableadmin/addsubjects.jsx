@@ -720,7 +720,7 @@ function Subject() {
                             )}
                     </Center>
                   </Td>
-                  {/* <Td>
+                   <Td>
                     <Center>
                       {editRowId === row._id ? (
                         <Input
@@ -734,7 +734,7 @@ function Subject() {
                             row.dept
                             )}
                     </Center>
-                  </Td> */}
+                  </Td> 
                   {/* <Td>
                     <Center>
                       {editRowId === row._id ? (

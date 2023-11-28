@@ -476,6 +476,10 @@ const Timetable = () => {
     // Navigate to the current URL with an additional path segment
     navigate(`${currentPathname}/addsem`);
   };
+  const handleFirstYear = () => {
+    // Navigate to the current URL with an additional path segment
+    navigate(`${currentPathname}/firstyearload`);
+  };
 
   const handleAddRoom = () => {
     // Navigate to the "Add Room" page
@@ -643,7 +647,7 @@ const Timetable = () => {
 
   const handleScroll = () => {
     const scrollPosition = window.scrollY;
-    const scrollThreshold = 1100; // Adjust this value to control when the message disappears
+    const scrollThreshold = 2100; // Adjust this value to control when the message disappears
 
     if (scrollPosition > scrollThreshold) {
       setShowMessage(false);
@@ -659,6 +663,13 @@ const Timetable = () => {
       <Heading as="h1" size="xl" mt="6" mb="6">
         TIME TABLE ALLOTMENT
       </Heading>
+      <Box display="left">
+        {/* <Box ml='-1.5'> */}
+      <Button mx="auto" colorScheme="red" onClick={handleFirstYear}>
+            First Year Faculty Allotment
+          </Button>
+         
+</Box>
       <Box display="flex" justifyContent="space-between">
         <Box ml='-1.5'>
           <Button m="1 auto" colorScheme="teal" onClick={handleAddSem}>
@@ -684,8 +695,7 @@ const Timetable = () => {
           </Button>
           <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
             Master View
-          </Button>
-
+          </Button> 
         </Box>
         <Box mr='-1.5'>
           <Button m="1 auto" colorScheme="orange" onClick={handleLockTT}>
