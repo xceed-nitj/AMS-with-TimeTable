@@ -353,10 +353,28 @@ const roomData = async (currentCode, room) => {
     }
   };
 
+const [commonLoad, setCommonLoad]=useState('');
+
+    const fetchCommonLoad = async (currentCode, viewFaculty) => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
+          { credentials: "include" }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          console.log('faculty common response',data);
+          setCommonLoad(data);
+          console.log('coomomo load', data);
+        }
+      } catch (error) {
+        console.error("Error fetching commonload:", error);
+      }
+    };
 
 
 
-function generateSummary(timetableData, subjectData, type, headTitle){
+function generateSummary(timetableData, subjectData, type, headTitle, commonLoad){
   const summaryData = {};
 
   // Iterate through the timetable data to calculate the summary
@@ -453,6 +471,30 @@ const sortedSummaryEntries = Object.values(mergedSummaryData).sort((a, b) =>
   a.subCode.localeCompare(b.subCode)
 );
 
+if (commonLoad) {
+  commonLoad.forEach((commonLoadItem) => {
+    sortedSummaryEntries = {
+      ...sortedSummaryEntries,
+      [commonLoadItem.subCode]: {
+        ...sortedSummaryEntries[commonLoadItem.subCode],
+        count: commonLoadItem.hrs,
+        faculties: [],
+        originalKeys: [commonLoadItem.subName],
+        rooms: [],
+        subCode: commonLoadItem.subCode,
+        subjectFullName: commonLoadItem.subFullName,
+        subType: commonLoadItem.subType,
+        subSem: commonLoadItem.sem,
+        // code: commonLoadItem.code,
+        // add other fields from commonLoadItem as needed
+      },
+    };
+  });
+}
+
+
+
+
   // console.log('summary dataaaa',summaryData)
   return sortedSummaryEntries;
 }
@@ -530,12 +572,13 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   
       for (const faculty of availableFaculties) {
         // console.log(faculty);        
+
         const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
         const fetchedttdata= initialData;
         const facultyNotes=notes;
         // console.log('dataaaa faculty',fetchedttdata);        
-        
-        const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+        const projectLoad=await fetchCommonLoad(currentCode, faculty);
+        const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty, projectLoad); 
         allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
 
         // console.log(summaryData)

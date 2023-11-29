@@ -20,6 +20,9 @@ const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectDa
 
   
 console.log('commonload data',commonLoad);
+
+
+
 console.log(type)
 
   const summaryData = {};
