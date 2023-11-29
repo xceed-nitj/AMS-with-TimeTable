@@ -94,25 +94,35 @@ for (const key in summaryData) {
     mergedSummaryData[subCode] = { ...entry, originalKeys: [key] };
   } else {
     // If an entry with the same subCode exists, check faculty and type before merging
-    if (
-      entry.faculties.every(faculty => mergedSummaryData[subCode].faculties.includes(faculty)) &&
-      entry.subType === mergedSummaryData[subCode].subType
-    ) {
-      // Merge the data
-      mergedSummaryData[subCode].count += entry.count;
-      mergedSummaryData[subCode].faculties = [...new Set([...mergedSummaryData[subCode].faculties, ...entry.faculties])];
-      mergedSummaryData[subCode].rooms = [...new Set([...mergedSummaryData[subCode].rooms, ...entry.rooms])];
-      mergedSummaryData[subCode].originalKeys.push(key);
-      // Add any other merging logic as needed
+    if (!mergedSummaryData[subCode]) {
+      // If not, add the entry to the mergedSummaryData
+      mergedSummaryData[subCode] = { ...entry, originalKeys: [key] };
     } else {
-      // If faculty or type is different, treat as a new entry
-      mergedSummaryData[`${subCode}-${key}`] = { ...entry, originalKeys: [key] };
+      // If an entry with the same subCode exists, check if all relevant fields are the same before merging
+      const existingEntry = mergedSummaryData[subCode];
+      const isDifferent =
+        !arraysEqual(existingEntry.originalKeys, entry.originalKeys) ||
+        !arraysEqual(existingEntry.faculties, entry.faculties) ||
+        !arraysEqual(existingEntry.rooms, entry.rooms) ||
+        existingEntry.subType !== entry.subType;
+  
+      if (!isDifferent) {
+        // Merge the data
+        existingEntry.count += entry.count;
+        existingEntry.faculties = [...new Set([...existingEntry.faculties, ...entry.faculties])];
+        existingEntry.rooms = [...new Set([...existingEntry.rooms, ...entry.rooms])];
+        existingEntry.originalKeys.push(...entry.originalKeys);
+        // Add any other merging logic as needed
+      } else {
+        // If any relevant field is different, treat as a new entry
+        mergedSummaryData[`${subCode}-${key}`] = { ...entry, originalKeys: [key] };
+      }
     }
   }
 }
 
 // Now, mergedSummaryData contains the merged entries with original keys
-console.log('merged data', commonLoad);
+console.log('merged data', mergedSummaryData);
 
 const sortedSummary = Object.values(mergedSummaryData).sort((a, b) =>
   a.subCode.localeCompare(b.subCode)
@@ -145,7 +155,7 @@ if (commonLoad) {
 }
 
 // Now, sortedSummaryEntries contains the merged data from commonLoad
-console.log(sortedSummaryEntries);
+// console.log(sortedSummaryEntries);
 
 console.log('summary',  sortedSummaryEntries)
   return (
