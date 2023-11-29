@@ -53,6 +53,7 @@ console.log(type)
               // Initialize or update the subject entry in the summaryData
               if (foundSubject) {
                 if (!summaryData[subject]) {
+                  console.log('subcode inside',foundSubject.subCode)
                   summaryData[subject] = {
                     subCode: foundSubject.subCode,
                     count: 1,
@@ -67,9 +68,13 @@ console.log(type)
                   summaryData[subject].count++;
                   if (!summaryData[subject].faculties.includes(faculty)) {
                     summaryData[subject].faculties.push(faculty);
-                    summaryData[subject].rooms.push(room);
-
                   }
+              
+                  // Handle rooms
+                  if (!summaryData[subject].rooms.includes(room)) {
+                    summaryData[subject].rooms.push(room);
+                  }
+
                 }
               }
 
