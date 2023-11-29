@@ -92,13 +92,23 @@ class PDFGenerator extends React.Component {
     cellData.forEach(slot => {
       slot.forEach(cell => {
         cellContents.push({
-          text: cell.subject,
-          fontSize: 12, // Set the font size (adjust as needed)
-        // Set the text to bold (adjust as needed)
+          text: `${cell.subject}\n`,
+          fontSize: 12, // Set the font size for cell.subject (adjust as needed)
+          // Set other properties as needed
         });
+    
+        // If you want a separate style for cell.room
+        if (cell.room) {
+        cellContents.push({
+          text: `(${cell.room})`,
+          fontSize: 10, // Set the font size for cell.room
+          // Set other properties as needed
+        });
+      }
       });
+    
     });
-            row.push({
+                row.push({
               stack: cellContents,
               alignment: 'center', // Set the desired alignment for the entire row
             });

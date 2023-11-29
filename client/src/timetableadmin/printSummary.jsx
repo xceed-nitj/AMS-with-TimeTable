@@ -364,8 +364,9 @@ const [commonLoad, setCommonLoad]=useState('');
         if (response.ok) {
           const data = await response.json();
           console.log('faculty common response',data);
-          setCommonLoad(data);
-          console.log('coomomo load', data);
+          // setCommonLoad(data);
+          // console.log('coomomo load', data);
+          // return data;
         }
       } catch (error) {
         console.error("Error fetching commonload:", error);
@@ -576,8 +577,9 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
         const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
         const fetchedttdata= initialData;
         const facultyNotes=notes;
-        // console.log('dataaaa faculty',fetchedttdata);        
         const projectLoad=await fetchCommonLoad(currentCode, faculty);
+        // console.log('dataaaa projectfaculty',projectLoad);        
+
         const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty, projectLoad); 
         allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
 

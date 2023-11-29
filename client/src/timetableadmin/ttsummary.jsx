@@ -67,7 +67,7 @@ console.log(type)
                   summaryData[subject].count++;
                   if (!summaryData[subject].faculties.includes(faculty)) {
                     summaryData[subject].faculties.push(faculty);
-                    // summaryData[subject].rooms.push(room);
+                    summaryData[subject].rooms.push(room);
 
                   }
                 }
