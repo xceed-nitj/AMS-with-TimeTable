@@ -103,7 +103,7 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
         alignment: 'center',
               },
       footer: {
-        margin: [40, -30, 40, 0], // Adjust margins as needed
+        margin: [40, 10, 40, 0], // Adjust margins as needed
         stack: [
           // Draw a line above the footer image
         
