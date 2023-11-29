@@ -129,6 +129,14 @@ const sortedSummary = Object.values(mergedSummaryData).sort((a, b) =>
 );
 
 function arraysEqual(arr1, arr2) {
+  if (!arr1 && !arr2) {
+    return true; // both undefined, consider them equal
+  }
+
+  if ((!arr1 && arr2) || (arr1 && !arr2)) {
+    return false; // one is undefined and the other is not, consider them different
+  }
+
   return arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]);
 }
 
