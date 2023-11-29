@@ -672,22 +672,6 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           setType(type);
           setUpdatedTime(lockTime);
           setHeadTitle(room);
-    
-          // Make a POST request to store the data in your schema
-          // const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
-          //   method: 'POST',
-          //   headers: {
-          //     'Content-Type': 'application/json',
-          //   },
-          //   body: JSON.stringify(postData),
-          //   credentials: 'include'
-          // });
-      
-          // if (postResponse.ok) {
-          //   console.log(`Timetable data for room ${room} stored successfully.`);
-          // } else {
-          //   console.error(`Error storing timetable data for room ${rooom}.`);
-          // }
         }
         setCompleteStatus("downloadCompleted")    
   
@@ -768,11 +752,12 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
               const fetchedttdata= initialData;
               const facultyNotes=notes;
               // console.log('dataaaa faculty',fetchedttdata);        
-              
-              const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+              const projectLoad= await fetchCommonLoad(currentCode, faculty) 
+              // const projectLoad='';            
+              const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty, projectLoad); 
               allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
       
-              // console.log(summaryData)
+              console.log(summaryData)
               const lockTime= updateTime;
               setHeaderStatus("fetchingHeadersFooters")
               const postData = {
@@ -803,8 +788,10 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
               setHeadTitle(faculty);
         
             }
-            setCompleteStatus("downloadCompleted")    
+            console.log(allFacultySummaries)
             generateSummaryTablePDF(allFacultySummaries,filteredFaculties, fetchedttdetails[0].session, fetchedttdetails[0].dept)
+
+            setCompleteStatus("downloadCompleted")    
       
           };
 
