@@ -56,24 +56,31 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
       const faculty = facultyObj.faculty;
       const summaryData = facultyObj.summaryData;
       const facultyDetails = deptfaculty.find((f) => f.name === faculty);
-
+    
+      // Ensure summaryData is an object before proceeding
+      if (typeof summaryData === 'object' && summaryData !== null) {
+        // Convert the object values to an array
+        const summaryDataArray = Object.values(summaryData);
       // Initialize total hours for each faculty
       facultyTotals.set(faculty, 0);
 
-      // Calculate total hours for each faculty based on the sum of 'count' values in summaryData
-      const totalHrs = summaryData.reduce((total, summary) => total + (summary.count || 0), 0);
+      let totalHrs = 0;
+
+      for (let i = 0; i < summaryDataArray.length; i++) {
+        totalHrs += summaryDataArray[i].count || 0;
+      }
+  
       facultyTotals.set(faculty, totalHrs);
-
-      const facultyRows = summaryData.map((summary, subIndex) => {
+  
+      const facultyRows = summaryDataArray.map((summary, subIndex) => {
         const isFirstRow = subIndex === 0;
-
         // Increment sNo only for the first row of each faculty
         sNo = isFirstRow ? sNo + 1 : sNo;
 
         const row = [
           { text: isFirstRow ? sNo : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center',minHeight: 20,pageBreak: 'auto'  },
           { text: isFirstRow ? faculty : '', rowSpan: isFirstRow ? summaryData.length : 1 ,minHeight: 20,pageBreak: 'auto' },
-          { text: facultyDetails ? facultyDetails.designation : '', rowSpan: isFirstRow ? summaryData.length : 1,minHeight: 20,pageBreak: 'auto'  },
+          { text: isFirstRow ? facultyDetails.designation : '', rowSpan: isFirstRow ? summaryData.length : 1,minHeight: 20,pageBreak: 'auto'  },
           { text: summary.subSem || '', alignment: 'center', minHeight: 20,pageBreak: 'auto' },
           { text: summary.subCode || '', alignment: 'center',minHeight: 20,pageBreak: 'auto' },
           { text: summary.subjectFullName || '', alignment: 'left',minHeight: 20,pageBreak: 'auto' },
@@ -84,10 +91,10 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
 
         return row;
       });
-
+    // }
       rows.push(...facultyRows);
+  }
     });
-
     const docDefinition = {
       pageOrientation: 'landscape',
       header: {
@@ -96,11 +103,11 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
         alignment: 'center',
               },
       footer: {
-        margin: [40, -30, 40, 0], // Adjust margins as needed
+        margin: [40, 10, 40, 0], // Adjust margins as needed
         stack: [
           // Draw a line above the footer image
         
-          { canvas: [{ type: 'line', x1: 0, y1: 26, x2: 762, y2: 26, lineWidth: 1, lineColor: 'black' }] },
+          // { canvas: [{ type: 'line', x1: 0, y1: 26, x2: 762, y2: 26, lineWidth: 1, lineColor: 'black' }] },
           // Add the footer image
           { text: '\n' },
            { image: footerImageDataURL, width: 250, alignment: 'center' },

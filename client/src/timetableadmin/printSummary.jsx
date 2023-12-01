@@ -353,10 +353,31 @@ const roomData = async (currentCode, room) => {
     }
   };
 
+const [commonLoad, setCommonLoad]=useState('');
+
+const fetchCommonLoad = async (currentCode, viewFaculty) => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
+          { credentials: "include" }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          console.log('faculty common response',data);
+          setCommonLoad(data);
+          // console.log('coomomo load', data);
+          return data;
+        }
+      } catch (error) {
+        console.error("Error fetching commonload:", error);
+      }
+    };
 
 
 
-function generateSummary(timetableData, subjectData, type, headTitle){
+function generateSummary(timetableData, subjectData, type, headTitle, commonLoad){
+  console.log(headTitle)
+  console.log('load',commonLoad)
   const summaryData = {};
 
   // Iterate through the timetable data to calculate the summary
@@ -399,9 +420,13 @@ function generateSummary(timetableData, subjectData, type, headTitle){
                   summaryData[subject].count++;
                   if (!summaryData[subject].faculties.includes(faculty)) {
                     summaryData[subject].faculties.push(faculty);
-                    // summaryData[subject].rooms.push(room);
-
                   }
+              
+                  // Handle rooms
+                  if (!summaryData[subject].rooms.includes(room)) {
+                    summaryData[subject].rooms.push(room);
+                  }
+
                 }
               }
 
@@ -416,44 +441,71 @@ function generateSummary(timetableData, subjectData, type, headTitle){
     }
   }
 
-// Create an object to store merged entries
-const mergedSummaryData = {};
+  const mergedSummaryData = {};
 
-for (const key in summaryData) {
-  const entry = summaryData[key];
-  const subCode = entry.subCode;
-
-  // Check if an entry with the same subCode already exists in the mergedSummaryData
-  if (!mergedSummaryData[subCode]) {
-    // If not, add the entry to the mergedSummaryData
-    mergedSummaryData[subCode] = { ...entry, originalKeys: [key] };
-  } else {
-    // If an entry with the same subCode exists, check faculty and type before merging
-    if (
-      entry.faculties.every(faculty => mergedSummaryData[subCode].faculties.includes(faculty)) &&
-      entry.subType === mergedSummaryData[subCode].subType
-    ) {
-      // Merge the data
-      mergedSummaryData[subCode].count += entry.count;
-      mergedSummaryData[subCode].faculties = [...new Set([...mergedSummaryData[subCode].faculties, ...entry.faculties])];
-      mergedSummaryData[subCode].rooms = [...new Set([...mergedSummaryData[subCode].rooms, ...entry.rooms])];
-      mergedSummaryData[subCode].originalKeys.push(key);
-      // Add any other merging logic as needed
-    } else {
-      // If faculty or type is different, treat as a new entry
-      mergedSummaryData[`${subCode}-${key}`] = { ...entry, originalKeys: [key] };
+  for (const key in summaryData) {
+    const entry = summaryData[key];
+    const subCode = entry.subCode;
+  
+    let isMerged = false;
+  
+    // Check against all existing entries in mergedSummaryData
+    for (const existingKey in mergedSummaryData) {
+      const existingEntry = mergedSummaryData[existingKey];
+  
+      if (
+        entry.faculties.every(faculty => existingEntry.faculties.includes(faculty)) &&
+        entry.subType === existingEntry.subType &&
+        entry.rooms.every(room => existingEntry.rooms.includes(room))
+      ) {
+        // Merge the data
+        existingEntry.count += entry.count;
+        existingEntry.faculties = [...new Set([...existingEntry.faculties, ...entry.faculties])];
+        existingEntry.originalKeys.push(key);
+        isMerged = true;
+        // Add any other merging logic as needed
+        break; // Stop checking further if merged
+      }
+    }
+  
+    // If not merged, create a new entry
+    if (!isMerged) {
+      mergedSummaryData[key] = { ...entry, originalKeys: [key] };
     }
   }
-}
-
+  
 // Now, mergedSummaryData contains the merged entries with original keys
 // console.log('merged data', mergedSummaryData);
 
-const sortedSummaryEntries = Object.values(mergedSummaryData).sort((a, b) =>
+const sortedSummary = Object.values(mergedSummaryData).sort((a, b) =>
   a.subCode.localeCompare(b.subCode)
 );
 
-  // console.log('summary dataaaa',summaryData)
+let sortedSummaryEntries = { ...sortedSummary }; // Assuming sortedSummary is an existing object
+
+
+if (commonLoad) {
+  commonLoad.forEach((commonLoadItem) => {
+    sortedSummaryEntries = {
+      ...sortedSummaryEntries,
+      [commonLoadItem.subCode]: {
+        ...sortedSummaryEntries[commonLoadItem.subCode],
+        count: commonLoadItem.hrs,
+        faculties: [],
+        originalKeys: [commonLoadItem.subName],
+        rooms: [],
+        subCode: commonLoadItem.subCode,
+        subjectFullName: commonLoadItem.subFullName,
+        subType: commonLoadItem.subType,
+        subSem: commonLoadItem.sem,
+        // code: commonLoadItem.code,
+        // add other fields from commonLoadItem as needed
+      },
+    };
+  });
+}
+
+  console.log('summary dataaaa',sortedSummaryEntries)
   return sortedSummaryEntries;
 }
 
@@ -520,7 +572,7 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
 
   };
 
-  const fetchAndStoreTimetableDataForAllFaculty = async () => {
+ const fetchAndStoreTimetableDataForAllFaculty = async () => {
     const subjectData = await  fetchSubjectData(currentCode);
       setDownloadStatus("fetchingHeadersFooters")
       
@@ -530,12 +582,14 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   
       for (const faculty of availableFaculties) {
         // console.log(faculty);        
+
         const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
         const fetchedttdata= initialData;
         const facultyNotes=notes;
-        // console.log('dataaaa faculty',fetchedttdata);        
-        
-        const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+        const projectLoad=await fetchCommonLoad(currentCode, faculty);
+        // console.log('dataaaa projectfaculty',projectLoad);        
+
+        const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty, projectLoad); 
         allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
 
         // console.log(summaryData)
@@ -618,22 +672,6 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
           setType(type);
           setUpdatedTime(lockTime);
           setHeadTitle(room);
-    
-          // Make a POST request to store the data in your schema
-          // const postResponse = await fetch(`${apiUrl}/timetablemodule/lockfaculty`, {
-          //   method: 'POST',
-          //   headers: {
-          //     'Content-Type': 'application/json',
-          //   },
-          //   body: JSON.stringify(postData),
-          //   credentials: 'include'
-          // });
-      
-          // if (postResponse.ok) {
-          //   console.log(`Timetable data for room ${room} stored successfully.`);
-          // } else {
-          //   console.error(`Error storing timetable data for room ${rooom}.`);
-          // }
         }
         setCompleteStatus("downloadCompleted")    
   
@@ -714,11 +752,12 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
               const fetchedttdata= initialData;
               const facultyNotes=notes;
               // console.log('dataaaa faculty',fetchedttdata);        
-              
-              const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
+              const projectLoad= await fetchCommonLoad(currentCode, faculty) 
+              // const projectLoad='';            
+              const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty, projectLoad); 
               allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
       
-              // console.log(summaryData)
+              console.log(summaryData)
               const lockTime= updateTime;
               setHeaderStatus("fetchingHeadersFooters")
               const postData = {
@@ -749,8 +788,10 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
               setHeadTitle(faculty);
         
             }
-            setCompleteStatus("downloadCompleted")    
+            console.log(allFacultySummaries)
             generateSummaryTablePDF(allFacultySummaries,filteredFaculties, fetchedttdetails[0].session, fetchedttdetails[0].dept)
+
+            setCompleteStatus("downloadCompleted")    
       
           };
 
