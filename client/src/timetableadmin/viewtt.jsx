@@ -58,10 +58,25 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
                     </td>
                     {[1, 2, 3, 4, 'Lunch', 5, 6, 7, 8].map((period) => (
                       <td key={period} align="center" height="50">
-                        {period === 'Lunch' ? (
-                          <div className="cell-container">
-                            <p>Lunch</p>
-                          </div>
+                        {period === 'Lunch'  ? (
+                           <div className="cell-container">
+                           {/* Check if lunch data exists for the current day */}
+                           {timetableData[day]['lunch'] && timetableData[day]['lunch'].length > 0 ? (
+                             timetableData[day]['lunch'].map((slot, slotIndex) => (
+                              <div key={slotIndex} className="cell-container">
+                              {slot.map((cell, cellIndex) => (
+                                <div key={cellIndex} className="cell-slot">
+                                  <p>{cell.subject}</p>
+                                  <p>{cell.room}</p>
+                                  <p>{cell.faculty}</p>
+                                </div>
+                              ))}
+                            </div>
+                             ))
+                           ) : (
+                             <p>Lunch</p>
+                           )}
+                         </div>
                         ) : (
                           timetableData[day][`period${period}`].map((slot, slotIndex) => (
                             <div key={slotIndex} className="cell-container">
