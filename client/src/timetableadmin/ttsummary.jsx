@@ -103,6 +103,7 @@ console.log(type)
       if (
         entry.faculties.every(faculty => existingEntry.faculties.includes(faculty)) &&
         entry.subType === existingEntry.subType &&
+        entry.subjectFullName === existingEntry.subjectFullName &&
         entry.rooms.every(room => existingEntry.rooms.includes(room))
       ) {
         // Merge the data
