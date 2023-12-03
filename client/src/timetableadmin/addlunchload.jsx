@@ -59,7 +59,7 @@ const LunchLoad = () => {
       };
       fetchSem();
       fetchLunchLoad();
-    }, [apiUrl, currentCode]);
+    }, []);
   
     useEffect(() => {
       const fetchSubjects = async (currentCode, selectedSemester) => {
@@ -112,7 +112,7 @@ const LunchLoad = () => {
       fetchSubjects(currentCode, selectedSemester);
       fetchRoom(currentCode);
       fetchFaculty(currentCode, selectedSemester);
-    }, [selectedSemester, currentCode, apiUrl]);
+    }, [selectedSemester]);
   
     const handleInputChange = (field, value) => {
       setFormData({
@@ -165,7 +165,7 @@ const LunchLoad = () => {
         setResponseMessage(`Error making POST request: ${error.message}`);
       }
     };
-// console.log(lunchData)
+console.log('lunchdaataa',lunchData)
 
 const handleDelete = (id) => {
     const isConfirmed = window.confirm('Are you sure you want to delete this alloment?');
@@ -197,6 +197,7 @@ const handleDelete = (id) => {
     })
       .then(handleResponse)
       .then((data) => {
+    console.log("lunchdata",data.lunchrecords)
         setLunchData(data.lunchrecords);
       })
       .catch(handleError);
@@ -310,11 +311,13 @@ const handleDelete = (id) => {
             Submit
           </Button>
           <Container maxW="6xl" centerContent>
-
-          <Table variant="striped">
+  {lunchData.length === 0 ? (
+    <p>***</p>
+  ) : (
+    <Table variant="striped">
       <Thead>
         <Tr>
-        <Th>Semester</Th>
+          <Th>Semester</Th>
           <Th>Day</Th>
           <Th>Subject</Th>
           <Th>Faculty</Th>
@@ -339,7 +342,8 @@ const handleDelete = (id) => {
         ))}
       </Tbody>
     </Table>
-    </Container>
+  )}
+</Container>
 
       </Container>
 

@@ -160,7 +160,7 @@ async savelunchslot(req, res) {
       await classTableInstance.save();
       console.log(`Saved class table data for ${day} - ${slot}`);
     }
-    const lunchrecords = await ClassTable.find({slot:'lunch',code});
+    const lunchrecords = await ClassTable.find({slot:'lunch',code,'slotData.0': { $exists: true }});
     res.status(200).json({lunchrecords})
     // return lunchrecords
   } catch (error) {
@@ -171,7 +171,7 @@ async savelunchslot(req, res) {
 
 async getlunchslot(req, res) {
   const code = req.params.code;
-    const lunchrecords = await ClassTable.find({slot:'lunch',code});
+    const lunchrecords = await ClassTable.find({slot:'lunch',code, 'slotData.0': { $exists: true }});
     res.status(200).json({lunchrecords})
   } catch (error) {
   console.error(error);
