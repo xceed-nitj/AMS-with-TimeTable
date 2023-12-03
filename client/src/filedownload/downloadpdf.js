@@ -268,25 +268,32 @@ const session = ttdata[0].session;
           },
         
           {
-            columns: [
-              {
-                text: 'Time Table Incharge',
-                fontSize: 11,
-                bold: true,
-                alignment: 'left',
-              },
-              {
-                text: 'Head of the Department',
-                fontSize: 11,
-                bold: true,
-                alignment: 'right',
-              },
-            ],
-            margin: [0, 20, 0, 0],
+            table: {
+              widths: ['*', '*'], // Two equal-width columns
+              body: [
+                [
+                  {
+                    text: 'Time Table Incharge',
+                    fontSize: 10,
+                    bold: true,
+                    alignment: 'left',
+
+                  },
+                  {
+                    text: 'Head of the Department',
+                    fontSize: 10,
+                    bold: true,
+                    alignment: 'right',
+                    // margin: [10,10,10,10],
+                  },
+                ],
+              ],
+            },
+            margin: [0,20,0,0],
             layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
             pageBreak: 'auto',
           },
-            // layout: 'noBorders',
+ // layout: 'noBorders',
             // margin: [0, 30, 0, 0],
         ]
       }

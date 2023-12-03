@@ -277,7 +277,7 @@ class PDFGenerator extends React.Component {
               : []),
   
 
-            type === 'sem' ? { text: '(summary of the timetable given in the next page)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
+            type === 'sem' ? { text: '(summary of the timetable given below)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
 
             // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
             {
@@ -319,6 +319,7 @@ class PDFGenerator extends React.Component {
                   ],
                 ],
               },
+              margin: [0,20,0,0],
               layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
               pageBreak: 'auto',
             },
