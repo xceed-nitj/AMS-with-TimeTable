@@ -174,6 +174,8 @@ class PDFGenerator extends React.Component {
     });
 
 
+    
+
 
     const footerImage = new Image();
     footerImage.src = footer; // Replace with the actual path to your image
@@ -316,17 +318,21 @@ class PDFGenerator extends React.Component {
                       fontSize: 10,
                       bold: true,
                       alignment: 'right',
-                      // margin: [10,10,10,10],
+                      // 
                     },
                   ],
+                  
                 ],
+                
               },
               layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
+              margin: [0,0,20,20],
            
             },
 
             ],
-            pageBreak: 'auto',
+            pageBreak: 'after',
+
           }
         ]
 
