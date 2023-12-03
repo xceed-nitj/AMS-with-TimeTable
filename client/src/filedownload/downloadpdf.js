@@ -84,7 +84,7 @@ const session = ttdata[0].session;
         slot.forEach(cell => {
           cellContents.push({
             text: `${cell.subject}\n`,
-            fontSize: 12, // Set the font size for cell.subject (adjust as needed)
+            fontSize: 11, // Set the font size for cell.subject (adjust as needed)
             // Set other properties as needed
           });
       
@@ -232,6 +232,21 @@ const session = ttdata[0].session;
               alignment: 'center',
             },
           },
+
+          ...(notes && notes.length > 0
+            ? [
+                {
+                  text: 'Notes:',
+                  fontSize: 10,
+                  bold: true,
+                  margin: [0, 2, 0, 2], // top, right, bottom, left
+                },
+                {
+                  ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:10 }))),
+                },
+              ]
+            : []),
+
           type === 'sem' ? { text: '(summary of the timetable given in the next page)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
 
             type === 'sem' ? { text: '', pageBreak: 'before' } : null,
@@ -250,23 +265,7 @@ const session = ttdata[0].session;
               alignment: 'center',
             },
           },
-          ...(notes && notes.length > 0
-            ? [
-                {
-                  text: 'Notes:',
-                  fontSize: 10,
-                  bold: true,
-                  margin: [0, 2, 0, 2], // top, right, bottom, left
-                },
-                {
-                  ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:10 }))),
-                },
-              ]
-            : []),
-
-
-
-
+        
           {
             columns: [
               {

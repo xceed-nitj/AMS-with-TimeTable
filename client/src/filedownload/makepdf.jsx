@@ -100,7 +100,7 @@ class PDFGenerator extends React.Component {
       slot.forEach(cell => {
         cellContents.push({
           text: `${cell.subject}\n`,
-          fontSize: 12, // Set the font size for cell.subject (adjust as needed)
+          fontSize: 11, // Set the font size for cell.subject (adjust as needed)
           // Set other properties as needed
         });
     
