@@ -2,8 +2,10 @@ const express = require("express");
 const noteRouter = express.Router();
 const NoteController = require("../controllers/noteprofile");
 const noteController = new NoteController();
+const protectRoute =require("../../usermanagement/privateroute")
 
-noteRouter.post("/", async (req, res) => {
+
+noteRouter.post("/",protectRoute, async (req, res) => {
   try {
     await noteController.createNote(req, res);
   } catch (e) {
@@ -46,7 +48,7 @@ noteRouter.get("/id/:id", async (req, res) => {
   }
 });
 
-noteRouter.put('/:id', async (req, res) => {
+noteRouter.put('/:id',protectRoute, async (req, res) => {
   try {
     const noteId = req.params.id;
     const updatedNote = req.body;
@@ -59,7 +61,7 @@ noteRouter.put('/:id', async (req, res) => {
   }
 });
 
-noteRouter.delete("/:id", async (req, res) => {
+noteRouter.delete("/:id",protectRoute, async (req, res) => {
   try {
     const noteId = req.params.id;
     await noteController.deleteNote(noteId);

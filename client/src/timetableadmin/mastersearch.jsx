@@ -174,6 +174,7 @@ useEffect(()=>
       const fetchCommonLoad = async (currentCode, viewFaculty) => {
         try {
           const response = await fetch(
+            
             `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
             { credentials: "include" }
           );

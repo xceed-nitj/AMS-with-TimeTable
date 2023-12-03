@@ -14,7 +14,7 @@ router.use('/addroom', require("./addroom"));
 router.use('/addsem', require("./addsem")); 
 router.use('/allotment',protectRoute, require("./allotment")); 
 router.use('/lockfaculty', protectRoute,require("./lockfaculty")); 
-router.use('/note',protectRoute, require("./note")); 
-router.use('/commonLoad',protectRoute, require("./commonLoad")); 
+router.use('/note', require("./note")); 
+router.use('/commonLoad', require("./commonLoad")); 
 module.exports = router;
 
