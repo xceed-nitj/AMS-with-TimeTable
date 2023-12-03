@@ -227,7 +227,7 @@ class PDFGenerator extends React.Component {
               text: `Department of ${dept}`,
               fontSize: 12,
               bold: true,
-              margin: [5, 0, 40,0],
+              margin: [5, 10, 40,5],
               alignment: 'center', // Adjust the width as needed
 
             },
@@ -269,7 +269,7 @@ class PDFGenerator extends React.Component {
                 alignment: 'center'
               },
             },
-              { text: '(summary of the timetable given below)', fontSize: 10, alignment:'left',margin:[0,5,0,0] },
+            type === 'sem' ? { text: '(summary of the timetable given in the next page)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
 
             type === 'sem' ? { text: '', pageBreak: 'before' } : null,
             {
