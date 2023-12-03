@@ -269,6 +269,9 @@ class PDFGenerator extends React.Component {
                 alignment: 'center'
               },
             },
+              { text: '(summary of the timetable given below)', fontSize: 10, alignment:'left',margin:[0,5,0,0] },
+
+            type === 'sem' ? { text: '', pageBreak: 'before' } : null,
             {
               text: 'Summary:',
               fontSize: 10,
