@@ -111,6 +111,13 @@ const session = ttdata[0].session;
   });
 
   const summaryTableData = [];
+    
+  const summaryTitleRow = [
+    { text: 'Summary', bold: true, alignment: 'left', colSpan: 7, border: [false, false, false, false] },
+    {}, {}, {}, {},{},{} // Empty cells to match the colSpan
+  ];
+  summaryTableData.push(summaryTitleRow);
+
   const summaryTableHeader = [
     { text: 'Abbreviation', bold: true, alignment: 'center', fontSize: 10 },
     { text: 'Subject Code', bold: true, fontSize: 10 },
@@ -136,12 +143,13 @@ const session = ttdata[0].session;
 
   summaryTableData.push(summaryTableHeader);
 
+  // Iterate through the summary data and add rows to the table
   Object.keys(summaryData).forEach((subject) => {
     const summaryRow = [];
     summaryRow.push({ text: summaryData[subject].originalKeys.join(', '), fontSize: 10, alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subCode, fontSize: 10, alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subjectFullName, fontSize: 10 });
-    summaryRow.push({ text: summaryData[subject].count, fontSize: 10, alignment: 'center' });
+    summaryRow.push({ text: summaryData[subject].count, fontSize: 10,alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subType, fontSize: 10, alignment: 'center' });
 
     if (type !== 'faculty') {
@@ -158,6 +166,21 @@ const session = ttdata[0].session;
 
     summaryTableData.push(summaryRow);
   });
+
+  const summarySignRow = [
+    { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 6, border: [false, false, false, false] },
+    {}, {}, {}, {},{}, // Empty cells to match the colSpan
+    { text: 'Head of the Department', bold: true, alignment: 'right', border: [false, false, false, false] },
+  
+  ];
+
+  const blankRow = [{text:'',colSpan:7,border: [false, false, false, false] }, {}, {}, {}, {},{},{}];
+summaryTableData.push(blankRow);
+summaryTableData.push(blankRow);
+// summaryTableData.push(blankRow);
+// summaryTableData.push(blankRow);
+
+  summaryTableData.push(summarySignRow);
 
   const headerImage = new Image();
   headerImage.src = header;
@@ -252,47 +275,48 @@ const session = ttdata[0].session;
             stack: [
             // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
 
-          {
-            text: 'Summary:',
-            fontSize: 10,
-            bold: true,
-            margin: [0, 5, 40, 5],
-            alignment: 'left',
-          },
+          // {
+          //   text: 'Summary:',
+          //   fontSize: 10,
+          //   bold: true,
+          //   margin: [0, 5, 40, 5],
+          //   alignment: 'left',
+          // },
           {
             table: {
               fontSize: 10,
               body: summaryTableData,
               alignment: 'center',
+              pageBreak: 'auto',
             },
           },
         
-          {
-            table: {
-              widths: ['*', '*'], // Two equal-width columns
-              body: [
-                [
-                  {
-                    text: 'Time Table Incharge',
-                    fontSize: 10,
-                    bold: true,
-                    alignment: 'left',
+          // {
+          //   table: {
+          //     widths: ['*', '*'], // Two equal-width columns
+          //     body: [
+          //       [
+          //         {
+          //           text: 'Time Table Incharge',
+          //           fontSize: 10,
+          //           bold: true,
+          //           alignment: 'left',
 
-                  },
-                  {
-                    text: 'Head of the Department',
-                    fontSize: 10,
-                    bold: true,
-                    alignment: 'right',
-                    // margin: [10,10,10,10],
-                  },
-                ],
-              ],
-            },
-            margin: [0,20,0,0],
-            layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
-            pageBreak: 'auto',
-          },
+          //         },
+          //         {
+          //           text: 'Head of the Department',
+          //           fontSize: 10,
+          //           bold: true,
+          //           alignment: 'right',
+          //           // margin: [10,10,10,10],
+          //         },
+          //       ],
+          //     ],
+          //   },
+          //   margin: [0,20,0,0],
+          //   layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
+          //   pageBreak: 'auto',
+          // },
  // layout: 'noBorders',
             // margin: [0, 30, 0, 0],
         ]

@@ -124,6 +124,13 @@ class PDFGenerator extends React.Component {
       tableData.push(row);
     });
     const summaryTableData = [];
+    
+    const summaryTitleRow = [
+      { text: 'Summary', bold: true, alignment: 'left', colSpan: 7, border: [false, false, false, false] },
+      {}, {}, {}, {},{},{} // Empty cells to match the colSpan
+    ];
+    summaryTableData.push(summaryTitleRow);
+
     const summaryTableHeader = [
       { text: 'Abbreviation', bold: true, alignment: 'center', fontSize: 10 },
       { text: 'Subject Code', bold: true, fontSize: 10 },
@@ -173,9 +180,20 @@ class PDFGenerator extends React.Component {
       summaryTableData.push(summaryRow);
     });
 
-
+    const summarySignRow = [
+      { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 6, border: [false, false, false, false] },
+      {}, {}, {}, {},{}, // Empty cells to match the colSpan
+      { text: 'Head of the Department', bold: true, alignment: 'right', border: [false, false, false, false] },
     
+    ];
 
+    const blankRow = [{text:'',colSpan:7,border: [false, false, false, false] }, {}, {}, {}, {},{},{}];
+summaryTableData.push(blankRow);
+summaryTableData.push(blankRow);
+// summaryTableData.push(blankRow);
+// summaryTableData.push(blankRow);
+
+    summaryTableData.push(summarySignRow);
 
     const footerImage = new Image();
     footerImage.src = footer; // Replace with the actual path to your image
@@ -286,13 +304,13 @@ class PDFGenerator extends React.Component {
               stack: [
                 // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
 
-            {
-              text: 'Summary:',
-              fontSize: 10,
-              bold: true,
-              margin: [0, 5, 40, 5],
-              alignment: 'left',
-            },
+            // {
+            //   text: 'Summary:',
+            //   fontSize: 10,
+            //   bold: true,
+            //   margin: [0, 5, 40, 5],
+            //   alignment: 'left',
+            // },
             {
               table: {
                 fontSize: 10,
@@ -301,37 +319,37 @@ class PDFGenerator extends React.Component {
               },
             },
 
-            {
-              table: {
-                widths: ['*', '*'], // Two equal-width columns
-                body: [
-                  [
-                    {
-                      text: 'Time Table Incharge',
-                      fontSize: 10,
-                      bold: true,
-                      alignment: 'left',
+            // {
+            //   table: {
+            //     widths: ['*', '*'], // Two equal-width columns
+            //     body: [
+            //       [
+            //         {
+            //           text: 'Time Table Incharge',
+            //           fontSize: 10,
+            //           bold: true,
+            //           alignment: 'left',
 
-                    },
-                    {
-                      text: 'Head of the Department',
-                      fontSize: 10,
-                      bold: true,
-                      alignment: 'right',
-                      // 
-                    },
-                  ],
+            //         },
+            //         {
+            //           text: 'Head of the Department',
+            //           fontSize: 10,
+            //           bold: true,
+            //           alignment: 'right',
+            //           // 
+            //         },
+            //       ],
                   
-                ],
+            //     ],
                 
-              },
-              layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
-              margin: [0,0,20,20],
+            //   },
+            //   // layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
+            //   // margin: [0,0,20,20],
            
-            },
+            // },
 
             ],
-            pageBreak: 'after',
+            // pageBreak: 'auto',
 
           }
         ]
