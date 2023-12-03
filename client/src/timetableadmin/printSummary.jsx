@@ -232,39 +232,73 @@ const roomData = async (currentCode, room) => {
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    const periods = [1, 2, 3, 4, 5, 6, 7, 8];
-  
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const periods = [1, 2, 3, 4, 5, 6, 7, 8, 'lunch'];
+
     for (const day of days) {
       initialData[day] = {};
       for (const period of periods) {
-        initialData[day][`period${period}`] = [];
+        if(period =='lunch')
+        {
+          initialData[day]['lunch'] = [];
+
+          if (fetchedData[day] && fetchedData[day]['lunch']) {
+            const slotData = fetchedData[day]['lunch'];
   
+            for (const slot of slotData) {
+              const slotSubjects = [];
+              let faculty = ""; // Declare faculty here
+              let room = "";
+              for (const slotItem of slot) {
+                const subj = slotItem.subject || "";
+                if (type == "room") {
+                  room = slotItem.sem || "";
+                } else {
+                  room = slotItem.room || "";
+                }
+                if (type == "faculty") {
+                  faculty = slotItem.sem || "";
+                } else {
+                  faculty = slotItem.faculty || "";
+                }
+                // Only push the values if they are not empty
+                if (subj || room || faculty) {
+                  slotSubjects.push({
+                    subject: subj,
+                    room: room,
+                    faculty: faculty,
+                  });
+                }
+                initialData[day]['lunch'].push(slotSubjects);  
+
+              }
+            }
+          }
+
+        }
+        else
+        {
+        initialData[day][`period${period}`] = [];
+
         if (fetchedData[day] && fetchedData[day][`period${period}`]) {
           const slotData = fetchedData[day][`period${period}`];
-          
+
           for (const slot of slotData) {
             const slotSubjects = [];
-            let faculty = ''; // Declare faculty here
-            let room='';
+            let faculty = ""; // Declare faculty here
+            let room = "";
             for (const slotItem of slot) {
-              const subj = slotItem.subject || '';
-              if (type == 'room')
-              {
-                room = slotItem.sem || '';
+              const subj = slotItem.subject || "";
+              if (type == "room") {
+                room = slotItem.sem || "";
+              } else {
+                room = slotItem.room || "";
               }
-              else
-              {
-                room=slotItem.room ||'';
+              if (type == "faculty") {
+                faculty = slotItem.sem || "";
+              } else {
+                faculty = slotItem.faculty || "";
               }
-              if (type == 'faculty')
-              {
-              faculty = slotItem.sem || '';
-              }
-              else
-              {
-              faculty = slotItem.faculty || '';
-              } 
               // Only push the values if they are not empty
               if (subj || room || faculty) {
                 slotSubjects.push({
@@ -274,16 +308,16 @@ const roomData = async (currentCode, room) => {
                 });
               }
             }
-  
+
             // Push an empty array if no data is available for this slot
             if (slotSubjects.length === 0) {
               slotSubjects.push({
-                subject: '',
-                room: '',
-                faculty: '',
+                subject: "",
+                room: "",
+                faculty: "",
               });
             }
-  
+
             initialData[day][`period${period}`].push(slotSubjects);
           }
         } else {
@@ -291,10 +325,14 @@ const roomData = async (currentCode, room) => {
           initialData[day][`period${period}`].push([]);
         }
       }
+      }
+  
     }
-    // console.log('intial',initialData);
+  
+    console.log("initial datat to be received",initialData);
     return initialData;
   };
+
 
 //   fetchTimetableData(selectedSemester);
 //   fetchFacultyData(viewFaculty);

@@ -58,7 +58,8 @@ const session = ttdata[0].session;
 
       if (period === 5) {
         cellData = timetableData[day]['lunch'];
-        if(cellData.length==0)
+        console.log(cellData)
+        if(!cellData || cellData.length==0)
         {      
         console.log(cellData)
         // cellData='Lunch'
@@ -68,14 +69,17 @@ const session = ttdata[0].session;
           fontSize: 10,
           alignment: 'center', // Adjust alignment as needed
         });
+        
         continue;
       }
+      // continue;
       } else if (period < 5) {
         cellData = timetableData[day][`period${period}`];
       } else {
         cellData = timetableData[day][`period${period - 1}`];
       }
-
+      if(cellData)
+      {
       cellData.forEach(slot => {
         slot.forEach(cell => {
           cellContents.push({
@@ -95,7 +99,7 @@ const session = ttdata[0].session;
         });
       
       });
-  
+    }
 
       row.push({
         stack: cellContents,

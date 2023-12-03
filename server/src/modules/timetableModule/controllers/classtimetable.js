@@ -1,4 +1,6 @@
 const ClassTable = require("../../../models/classtimetable");
+const LockSem = require("../../../models/locksem");
+
 const HttpException = require("../../../models/http-exception");
 
 const ClassTimeTabledto = require("../dto/classtimetable");
@@ -182,7 +184,15 @@ async deletelunchslot(req, res) {
     throw new HttpException(400, "Invalid Id");
   }
   try {
+    const deletedata=await ClassTable.findById(id)
+    const query={
+      sem:deletedata.sem,
+      day:deletedata.day,
+      slot:'lunch'
+    }
+    await LockSem.deleteOne(query);
     await ClassTable.findByIdAndDelete(id);
+
   } catch (e) {
     throw new HttpException(500, e.message || "Internal Server Error");
   }
