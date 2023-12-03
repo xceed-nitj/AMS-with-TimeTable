@@ -282,7 +282,9 @@ class PDFGenerator extends React.Component {
             // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
             {
               stack: [
-                {
+                type === 'sem' ? { text: '', pageBreak: 'before' } : null,
+
+            {
               text: 'Summary:',
               fontSize: 10,
               bold: true,
@@ -319,12 +321,10 @@ class PDFGenerator extends React.Component {
                   ],
                 ],
               },
+              layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
+              pageBreak: 'auto',
             },
-            {
-            // margin: [0,20,0,0],
-            layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
-            pageBreak: 'auto',
-          }
+
             ],
           }
         ]
