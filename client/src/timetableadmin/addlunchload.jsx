@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, FormControl, FormLabel, Input, Select,HStack, VStack,  Container, Box, Text } from '@chakra-ui/react';
+import { Button, FormControl, FormLabel, useToast , Input,Table,Thead,Tr,Th,Td,Tbody, Select,HStack, VStack,  Container, Box, Text } from '@chakra-ui/react';
 import getEnvironment from '../getenvironment';
 import Header from "../components/header";
 
@@ -7,6 +7,8 @@ import Header from "../components/header";
 
 
 const LunchLoad = () => {
+  const toast = useToast();
+
     const apiUrl = getEnvironment();
     const currentURL = window.location.pathname;
     const parts = currentURL.split('/');
@@ -32,6 +34,8 @@ const LunchLoad = () => {
     const [availableFaculties, setAvailableFaculties] = useState([]);
     const [availableSubjects, setAvailableSubjects] = useState([]);
     const [selectedSemester, setSelectedSemester] = useState([]);
+    const [lunchData, setLunchData] = useState([]);
+
 
     const semesters=availableSems;
   
@@ -54,6 +58,7 @@ const LunchLoad = () => {
         }
       };
       fetchSem();
+      fetchLunchLoad();
     }, [apiUrl, currentCode]);
   
     useEffect(() => {
@@ -142,12 +147,72 @@ const LunchLoad = () => {
         });
   
         const responseData = await response.json();
-        setResponseMessage(`POST request successful: ${JSON.stringify(responseData)}`);
-      } catch (error) {
+        console.log(responseData)
+        if(responseData.lunchrecords)
+        {
+            toast({
+                position: 'top',
+                title: "Lunch Slot Added",
+                // description: "",
+                status: "success",
+                duration: 2000,
+                isClosable: true,
+              });
+        }
+        // setResponseMessage(`POST request successful: ${JSON.stringify(responseData)}`);
+        setLunchData(responseData.lunchrecords)
+    } catch (error) {
         setResponseMessage(`Error making POST request: ${error.message}`);
       }
     };
+// console.log(lunchData)
+
+const handleDelete = (id) => {
+    const isConfirmed = window.confirm('Are you sure you want to delete this alloment?');
   
+    if (isConfirmed) {
+      fetch(`${apiUrl}/timetablemodule/tt/deletelunchslot/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+        .then(handleResponse)
+        .then(() => {
+            toast({
+                position: 'top',
+                title: "Slot deleted",
+                // description: "",
+                status: "success",
+                duration: 2000,
+                isClosable: true,
+              });
+          fetchLunchLoad();
+        })
+        .catch(handleError);
+    }
+  };
+  
+  const fetchLunchLoad = () => {
+    fetch(`${apiUrl}/timetablemodule/tt/getlunchslot/${currentCode}`, {
+      credentials: 'include',
+    })
+      .then(handleResponse)
+      .then((data) => {
+        setLunchData(data.lunchrecords);
+      })
+      .catch(handleError);
+  };
+
+  const handleResponse = (response) => {
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    }
+    return response.json();
+  };
+
+  const handleError = (error) => {
+    console.error('Error:', error);
+  };
+
     return (
       <Container maxW="9xl" centerContent>
      <Header title="Add Lunch Hour load"></Header>
@@ -244,8 +309,41 @@ const LunchLoad = () => {
         <Button colorScheme="teal" onClick={handlePostRequest}>
             Submit
           </Button>
+          <Container maxW="6xl" centerContent>
+
+          <Table variant="striped">
+      <Thead>
+        <Tr>
+        <Th>Semester</Th>
+          <Th>Day</Th>
+          <Th>Subject</Th>
+          <Th>Faculty</Th>
+          <Th>Room</Th>
+          <Th>Action</Th> {/* Add delete button column */}
+        </Tr>
+      </Thead>
+      <Tbody>
+        {lunchData.map((record) => (
+          <Tr key={record._id}>
+            <Td>{record.sem}</Td>
+            <Td>{record.day}</Td>
+            <Td>{record.slotData[0].subject}</Td>
+            <Td>{record.slotData[0].faculty}</Td>
+            <Td>{record.slotData[0].room}</Td>
+            <Td>
+              <Button colorScheme="red" onClick={() => handleDelete(record._id)}>
+                Delete
+              </Button>
+            </Td>
+          </Tr>
+        ))}
+      </Tbody>
+    </Table>
+    </Container>
 
       </Container>
+
+      
     );
   };
   

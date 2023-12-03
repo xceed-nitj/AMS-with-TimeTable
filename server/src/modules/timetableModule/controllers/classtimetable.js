@@ -159,13 +159,34 @@ async savelunchslot(req, res) {
       console.log(`Saved class table data for ${day} - ${slot}`);
     }
     const lunchrecords = await ClassTable.find({slot:'lunch',code});
-    return lunchrecords
+    res.status(200).json({lunchrecords})
+    // return lunchrecords
   } catch (error) {
   console.error(error);
   res.status(500).json({ error: "Internal server error" });
 }
 }
 
+async getlunchslot(req, res) {
+  const code = req.params.code;
+    const lunchrecords = await ClassTable.find({slot:'lunch',code});
+    res.status(200).json({lunchrecords})
+  } catch (error) {
+  console.error(error);
+  res.status(500).json({ error: "Internal server error" });
+}
+
+async deletelunchslot(req, res) {
+  const id=req.params.id
+  if (!id) {
+    throw new HttpException(400, "Invalid Id");
+  }
+  try {
+    await ClassTable.findByIdAndDelete(id);
+  } catch (e) {
+    throw new HttpException(500, e.message || "Internal Server Error");
+  }
+}
 
   async classtt(req, res) {
     try {

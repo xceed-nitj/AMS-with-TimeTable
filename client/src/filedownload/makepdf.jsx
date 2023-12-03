@@ -42,7 +42,7 @@ class PDFGenerator extends React.Component {
 
     const session=ttdata[0].session;
     const dept=ttdata[0].dept;
-    // console.log('summaryDate',summaryData)
+    console.log('summarytimeDate',timetableData)
     const tableData = [];
     const { headerImageDataURL } = this.state; // Use the header image URL from the state
 
@@ -74,13 +74,20 @@ class PDFGenerator extends React.Component {
     // Handle lunch break
     if (period === 5) {
       // Merge the 5th column into a single cell
+      cellData = timetableData[day]['lunch'];
+      if(cellData.length==0)
+      {      
+      console.log(cellData)
+      // cellData='Lunch'
       row.push({
         // colSpan: 4,
         text: 'Lunch',
-        fontSize: 11,
+        fontSize: 10,
         alignment: 'center', // Adjust alignment as needed
       });
-      continue; // Skip the rest of the loop for this period
+      continue;
+    }
+      // continue; // Skip the rest of the loop for this period
     } else if (period < 5) {
       // Periods before lunch
       cellData = timetableData[day][`period${period}`];
@@ -93,7 +100,7 @@ class PDFGenerator extends React.Component {
       slot.forEach(cell => {
         cellContents.push({
           text: `${cell.subject}\n`,
-          fontSize: 11, // Set the font size for cell.subject (adjust as needed)
+          fontSize: 12, // Set the font size for cell.subject (adjust as needed)
           // Set other properties as needed
         });
     
@@ -166,18 +173,6 @@ class PDFGenerator extends React.Component {
       summaryTableData.push(summaryRow);
     });
 
-
-    // const signatures = [
-    //   { text: 'Time Table Coordinator', bold: true },
-    //   { text: ' ', bold: true },
-    //   { text: '', bold: true },
-    //   { text: '', bold: true },
-    //   { text: '', bold: true },
-    //   { text: '', bold: true },
-    //   { text: 'Head of the Department', bold: true },
-    // ];
-
-    // summaryTableData.push(signatures);
 
 
     const footerImage = new Image();
@@ -262,13 +257,25 @@ class PDFGenerator extends React.Component {
 
             {
               table: {
-                // alignment: 'justify',
-                // widths: [70, 60, 60, 60, 60, 60, 60, 60, 60], // Adjust the column widths as needed
                 body: tableData,
                 fontSize: 10,
                 alignment: 'center'
               },
             },
+            ...(notes.length > 0
+              ? [
+                  {
+                    text: 'Notes:',
+                    fontSize: 10,
+                    bold: true,
+                    margin: [0, 2, 0, 2], // top, right, bottom, left
+                  },
+                  {
+                    ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:8 }))),
+                  },
+                ]
+              : []),
+  
             type === 'sem' ? { text: '(summary of the timetable given in the next page)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
 
             type === 'sem' ? { text: '', pageBreak: 'before' } : null,
@@ -287,19 +294,6 @@ class PDFGenerator extends React.Component {
               },
             },
 
-          ...(notes.length > 0
-            ? [
-                {
-                  text: 'Notes:',
-                  fontSize: 10,
-                  bold: true,
-                  margin: [0, 2, 0, 2], // top, right, bottom, left
-                },
-                {
-                  ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:8 }))),
-                },
-              ]
-            : []),
             {
               table: {
                 widths: ['*', '*'], // Two equal-width columns

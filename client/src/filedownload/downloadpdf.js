@@ -57,11 +57,19 @@ const session = ttdata[0].session;
       let cellData;
 
       if (period === 5) {
+        cellData = timetableData[day]['lunch'];
+        if(cellData.length==0)
+        {      
+        console.log(cellData)
+        // cellData='Lunch'
         row.push({
+          // colSpan: 4,
           text: 'Lunch',
-          alignment: 'center',
+          fontSize: 10,
+          alignment: 'center', // Adjust alignment as needed
         });
         continue;
+      }
       } else if (period < 5) {
         cellData = timetableData[day][`period${period}`];
       } else {
@@ -72,7 +80,7 @@ const session = ttdata[0].session;
         slot.forEach(cell => {
           cellContents.push({
             text: `${cell.subject}\n`,
-            fontSize: 11, // Set the font size for cell.subject (adjust as needed)
+            fontSize: 12, // Set the font size for cell.subject (adjust as needed)
             // Set other properties as needed
           });
       
@@ -186,7 +194,7 @@ const session = ttdata[0].session;
             text: `Department of ${dept}`,
             fontSize: 12,
             bold: true,
-            margin: [5, 0, 40, 0],
+            margin: [5, 10, 40, 5],
             alignment: 'center',
           },
           {
@@ -220,9 +228,13 @@ const session = ttdata[0].session;
               alignment: 'center',
             },
           },
+          type === 'sem' ? { text: '(summary of the timetable given in the next page)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
+
+            type === 'sem' ? { text: '', pageBreak: 'before' } : null,
+
           {
             text: 'Summary:',
-            fontSize: 12,
+            fontSize: 10,
             bold: true,
             margin: [0, 5, 40, 5],
             alignment: 'left',

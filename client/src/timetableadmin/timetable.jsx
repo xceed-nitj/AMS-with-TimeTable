@@ -536,6 +536,10 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/addcommonload`);
   };
+  const handleAddLunchSlot = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/addlunchload`);
+  };
   const handleViewRoom = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/roomallotment`);
@@ -711,7 +715,12 @@ const Timetable = () => {
       <Button mx="auto" colorScheme="red" onClick={handleFirstYear}>
             First Year Faculty Allotment
           </Button>
-         
+          <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
+           View Centrally Alloted Rooms
+          </Button>
+          <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
+            Master View of Time Table (any sem/dept)
+          </Button>
 </Box>
       <Box display="flex" justifyContent="space-between">
         <Box ml='-1.5'>
@@ -733,12 +742,10 @@ const Timetable = () => {
           <Button m="1 auto" colorScheme="teal" onClick={handleAddCommonLoad}>
             Add Common Load
           </Button>
-          <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
-            view Alloted Rooms
+          <Button m="1 auto" colorScheme="teal" onClick={handleAddLunchSlot}>
+            Add Lunch slots
           </Button>
-          <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
-            Master View
-          </Button> 
+          
         </Box>
         <Box mr='-1.5'>
           <Button m="1 auto" colorScheme="orange" onClick={handleLockTT}>

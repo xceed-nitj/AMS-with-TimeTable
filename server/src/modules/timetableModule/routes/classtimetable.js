@@ -78,7 +78,6 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     try { 
       const lunchrecord = await classtimetableController.savelunchslot(req, res);
       res.status(200).json(lunchrecord);
-
     } 
     catch (e) {
       res
@@ -87,5 +86,28 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     }
   });
 
+  ClassTimeTableRouter.get("/getlunchslot/:code", async (req, res) => {
+    try { 
+      const record = await classtimetableController.getlunchslot(req, res);
+      // res.status(200).json(record);
+    } 
+    catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
+  ClassTimeTableRouter.delete("/deletelunchslot/:id", async (req, res) => {
+    try { 
+      const record = await classtimetableController.deletelunchslot(req, res);
+      res.status(200).json({message:"record deleted successfully"});
+    } 
+    catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
 
   module.exports = ClassTimeTableRouter;
