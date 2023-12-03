@@ -126,7 +126,7 @@ class PDFGenerator extends React.Component {
     const summaryTableData = [];
     
     const summaryTitleRow = [
-      { text: 'Summary', bold: true, alignment: 'left', colSpan: 7, border: [false, false, false, false] },
+      { text: 'Summary', bold: true, alignment: 'left', colSpan: 7, pageBreak:'auto',border: [false, false, false, false] },
       {}, {}, {}, {},{},{} // Empty cells to match the colSpan
     ];
     summaryTableData.push(summaryTitleRow);
@@ -181,9 +181,9 @@ class PDFGenerator extends React.Component {
     });
 
     const summarySignRow = [
-      { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 6, border: [false, false, false, false] },
+      { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 5, border: [false, false, false, false] },
       {}, {}, {}, {},{}, // Empty cells to match the colSpan
-      { text: 'Head of the Department', bold: true, alignment: 'right', border: [false, false, false, false] },
+      { text: 'Head of the Department', bold: true, alignment: 'right',colSpan: 2, border: [false, false, false, false] },
     
     ];
 
@@ -299,9 +299,7 @@ summaryTableData.push(blankRow);
 
             type === 'sem' ? { text: '(summary of the timetable given below)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
 
-            // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
-            {
-              stack: [
+            // type === 'sem' ? { text: '', pageBreak: '' } : null,
                 // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
 
             // {
@@ -312,50 +310,24 @@ summaryTableData.push(blankRow);
             //   alignment: 'left',
             // },
             {
+
+            stack:[
+            {
               table: {
                 fontSize: 10,
                 body: summaryTableData,
                 alignment: 'center',
               },
-            },
+            },    
+                    
+          ],
+          pageBreak: 'always',
 
-            // {
-            //   table: {
-            //     widths: ['*', '*'], // Two equal-width columns
-            //     body: [
-            //       [
-            //         {
-            //           text: 'Time Table Incharge',
-            //           fontSize: 10,
-            //           bold: true,
-            //           alignment: 'left',
-
-            //         },
-            //         {
-            //           text: 'Head of the Department',
-            //           fontSize: 10,
-            //           bold: true,
-            //           alignment: 'right',
-            //           // 
-            //         },
-            //       ],
-                  
-            //     ],
-                
-            //   },
-            //   // layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
-            //   // margin: [0,0,20,20],
-           
-            // },
-
+        }
+        
             ],
             // pageBreak: 'auto',
-
           }
-        ]
-
-
-        };
 
         pdfMake.createPdf(documentDefinition).open();
       });

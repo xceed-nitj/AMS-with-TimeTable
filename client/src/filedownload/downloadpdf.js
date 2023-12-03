@@ -283,14 +283,19 @@ summaryTableData.push(blankRow);
           //   alignment: 'left',
           // },
           {
-            table: {
-              fontSize: 10,
-              body: summaryTableData,
-              alignment: 'center',
-              pageBreak: 'auto',
-            },
-          },
-        
+            stack: [
+              // ... other content
+              {
+                table: {
+                  fontSize: 10,
+                  body: summaryTableData,
+                  alignment: 'center',
+                },
+                pageBreak: 'auto', // or set to 'before' if needed
+              },
+              // ... other content
+            ]
+          }
           // {
           //   table: {
           //     widths: ['*', '*'], // Two equal-width columns
