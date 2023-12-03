@@ -189,7 +189,7 @@ useEffect(()=>
       };
     fetchCommonLoad(currentCode, selectedFaculty); // Call the function to fetch subject data
     fetchFacultyData(selectedFaculty);
-  }, [selectedFaculty]);
+  }, [currentCode,selectedFaculty]);
 
   useEffect(() => {
     const roomData = async (currentCode, room) => {

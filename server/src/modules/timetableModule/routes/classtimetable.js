@@ -74,6 +74,18 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     }
   });
 
+  ClassTimeTableRouter.post("/savelunchslot", async (req, res) => {
+    try { 
+      const lunchrecord = await classtimetableController.savelunchslot(req, res);
+      res.status(200).json(lunchrecord);
+
+    } 
+    catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
 
 
   module.exports = ClassTimeTableRouter;

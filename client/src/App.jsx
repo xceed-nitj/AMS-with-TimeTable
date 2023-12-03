@@ -29,6 +29,7 @@ import MasterView from './timetableadmin/mastersearch';
 import AllocatedRolesPage from './dashboard/allotedroles';
 import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
+import LunchLoad from './timetableadmin/addlunchload';
 function App() {
   return (
     <Router>
@@ -62,6 +63,7 @@ function App() {
           <Route path="/tt/:generatedLink/addnote" element={<Note/>} />
           <Route path="/tt/:generatedLink/roomallotment" element={<ViewAllotmentPage/>} />
           <Route path="/tt/:generatedLink/addcommonload" element={<CommonLoad/>} />
+          <Route path="/tt/:generatedLink/addlunchload" element={<LunchLoad/>} />
 
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
