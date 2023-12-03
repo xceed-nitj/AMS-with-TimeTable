@@ -291,7 +291,8 @@ summaryTableData.push(blankRow);
                   body: summaryTableData,
                   alignment: 'center',
                 },
-                pageBreak: 'auto', // or set to 'before' if needed
+                margin:[0,10,10,10],
+                // or set to 'before' if needed
               },
               // ... other content
             ]
