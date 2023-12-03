@@ -170,7 +170,7 @@ const session = ttdata[0].session;
   const summarySignRow = [
     { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 6, border: [false, false, false, false] },
     {}, {}, {}, {},{}, // Empty cells to match the colSpan
-    { text: 'Head of the Department', bold: true, alignment: 'right', border: [false, false, false, false] },
+    { text: 'Head of the Department', bold: true, alignment: 'right',colSpan: 2, border: [false, false, false, false] },
   
   ];
 
@@ -283,21 +283,21 @@ summaryTableData.push(blankRow);
           //   alignment: 'left',
           // },
           {
-            stack: [
-              // ... other content
-              {
-                table: {
-                  fontSize: 10,
-                  body: summaryTableData,
-                  alignment: 'center',
-                },
-                margin:[0,10,10,10],
-                // or set to 'before' if needed
-              },
-              // ... other content
-            ]
-          }
-          // {
+            unbreakable: true,
+          stack:[
+          {
+            table: {
+              fontSize: 10,
+              body: summaryTableData,
+              alignment: 'center',
+            },
+            margin:[0,5,10,10],
+          },    
+                  
+        ],
+      
+      }
+                // {
           //   table: {
           //     widths: ['*', '*'], // Two equal-width columns
           //     body: [

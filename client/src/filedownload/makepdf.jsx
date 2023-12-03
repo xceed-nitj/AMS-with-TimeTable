@@ -183,7 +183,7 @@ class PDFGenerator extends React.Component {
     const summarySignRow = [
       { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 6, border: [false, false, false, false] },
       {}, {}, {}, {},{}, // Empty cells to match the colSpan
-      { text: 'Head of the Department', bold: true, alignment: 'right', border: [false, false, false, false] },
+      { text: 'HOD', bold: true, alignment: 'right',colSpan:1, border: [false, false, false, false] },
     
     ];
 
@@ -310,7 +310,7 @@ summaryTableData.push(blankRow);
             //   alignment: 'left',
             // },
             {
-
+              unbreakable: true,
             stack:[
             {
               table: {
@@ -318,12 +318,11 @@ summaryTableData.push(blankRow);
                 body: summaryTableData,
                 alignment: 'center',
               },
-              margin:[0,10,10,10],
+              margin:[0,5,10,10],
             },    
                     
           ],
-          pageBreak: 'always',
-
+        
         }
         
             ],
