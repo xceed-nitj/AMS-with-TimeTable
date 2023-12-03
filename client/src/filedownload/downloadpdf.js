@@ -72,7 +72,7 @@ const session = ttdata[0].session;
         slot.forEach(cell => {
           cellContents.push({
             text: `${cell.subject}\n`,
-            fontSize: 12, // Set the font size for cell.subject (adjust as needed)
+            fontSize: 11, // Set the font size for cell.subject (adjust as needed)
             // Set other properties as needed
           });
       
@@ -80,7 +80,7 @@ const session = ttdata[0].session;
           if (cell.room) {
           cellContents.push({
             text: `(${cell.room})`,
-            fontSize: 10, // Set the font size for cell.room
+            fontSize: 9, // Set the font size for cell.room
             // Set other properties as needed
           });
         }

@@ -77,7 +77,7 @@ class PDFGenerator extends React.Component {
       row.push({
         // colSpan: 4,
         text: 'Lunch',
-        fontSize: 12,
+        fontSize: 11,
         alignment: 'center', // Adjust alignment as needed
       });
       continue; // Skip the rest of the loop for this period
@@ -93,7 +93,7 @@ class PDFGenerator extends React.Component {
       slot.forEach(cell => {
         cellContents.push({
           text: `${cell.subject}\n`,
-          fontSize: 12, // Set the font size for cell.subject (adjust as needed)
+          fontSize: 11, // Set the font size for cell.subject (adjust as needed)
           // Set other properties as needed
         });
     
@@ -101,7 +101,7 @@ class PDFGenerator extends React.Component {
         if (cell.room) {
         cellContents.push({
           text: `(${cell.room})`,
-          fontSize: 10, // Set the font size for cell.room
+          fontSize: 9, // Set the font size for cell.room
           // Set other properties as needed
         });
       }
