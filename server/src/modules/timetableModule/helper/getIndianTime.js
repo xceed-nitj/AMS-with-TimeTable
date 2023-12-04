@@ -2,7 +2,7 @@ const getIndianTime = (timestamp) => {
   const date = new Date(timestamp);
 
   // Specify the IST offset in minutes (GMT+5:30)
-  const ISTOffsetMinutes = 330; // 5 hours and 30 minutes
+  const ISTOffsetMinutes = 0; // 5 hours and 30 minutes
 
   // Set the UTC hours and minutes with the IST offset
   date.setUTCHours(date.getUTCHours() + ISTOffsetMinutes / 60);

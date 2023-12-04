@@ -292,11 +292,51 @@ const Timetable = () => {
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    const periods = [1, 2, 3, 4, 5, 6, 7, 8];
+    const periods = [1, 2, 3, 4, 5, 6, 7, 8, 'lunch'];
 
     for (const day of days) {
       initialData[day] = {};
       for (const period of periods) {
+        if(period =='lunch')
+        {
+          initialData[day]['lunch'] = [];
+
+          if (fetchedData[day] && fetchedData[day]['lunch']) {
+            const slotData = fetchedData[day]['lunch'];
+  
+            for (const slot of slotData) {
+              const slotSubjects = [];
+              let faculty = ""; // Declare faculty here
+              let room = "";
+              for (const slotItem of slot) {
+                const subj = slotItem.subject || "";
+                if (type == "room") {
+                  room = slotItem.sem || "";
+                } else {
+                  room = slotItem.room || "";
+                }
+                if (type == "faculty") {
+                  faculty = slotItem.sem || "";
+                } else {
+                  faculty = slotItem.faculty || "";
+                }
+                // Only push the values if they are not empty
+                if (subj || room || faculty) {
+                  slotSubjects.push({
+                    subject: subj,
+                    room: room,
+                    faculty: faculty,
+                  });
+                }
+                initialData[day]['lunch'].push(slotSubjects);  
+
+              }
+            }
+          }
+
+        }
+        else
+        {
         initialData[day][`period${period}`] = [];
 
         if (fetchedData[day] && fetchedData[day][`period${period}`]) {
@@ -344,8 +384,11 @@ const Timetable = () => {
           initialData[day][`period${period}`].push([]);
         }
       }
+      }
+  
     }
-    // console.log(initialData);
+  
+    console.log("initial datat to be received",initialData);
     return initialData;
   };
 
@@ -492,6 +535,10 @@ const Timetable = () => {
   const handleAddCommonLoad = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/addcommonload`);
+  };
+  const handleAddLunchSlot = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/addlunchload`);
   };
   const handleViewRoom = () => {
     // Navigate to the "Add Room" page
@@ -668,7 +715,12 @@ const Timetable = () => {
       <Button mx="auto" colorScheme="red" onClick={handleFirstYear}>
             First Year Faculty Allotment
           </Button>
-         
+          <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
+           View Centrally Alloted Rooms
+          </Button>
+          <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
+            Master View of Time Table (any sem/dept)
+          </Button>
 </Box>
       <Box display="flex" justifyContent="space-between">
         <Box ml='-1.5'>
@@ -690,12 +742,10 @@ const Timetable = () => {
           <Button m="1 auto" colorScheme="teal" onClick={handleAddCommonLoad}>
             Add Common Load
           </Button>
-          <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
-            view Alloted Rooms
+          <Button m="1 auto" colorScheme="teal" onClick={handleAddLunchSlot}>
+            Add Lunch slots
           </Button>
-          <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
-            Master View
-          </Button> 
+          
         </Box>
         <Box mr='-1.5'>
           <Button m="1 auto" colorScheme="orange" onClick={handleLockTT}>

@@ -1,4 +1,6 @@
 const ClassTable = require("../../../models/classtimetable");
+const LockSem = require("../../../models/locksem");
+
 const HttpException = require("../../../models/http-exception");
 
 const ClassTimeTabledto = require("../dto/classtimetable");
@@ -108,28 +110,6 @@ class ClassTimeTableController {
 
     }
       if (isSlotAvailable) {
-        // const existingRecord = await ClassTable.findOne(query);
-    //   if (existingRecord) {
-    //     existingRecord.slotData = slotData;
-    //     await existingRecord.save();
-    //     console.log(`Updated class table data for ${day} - ${slot}`);
-    //   } else{
-    //     const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
-    //     console.log(slotData)
-    //     console.log(slotData.subject)
-    //     if (!(slotData.subject=='' && slotData.faculty=='' && slotData.room==''))
-    //     {
-    //     const classTableInstance = new ClassTable({
-    //       day,
-    //       slot,
-    //       slotData,
-    //       code,
-    //       sem,
-    //       timetable: timetableObject,
-    //     });
-    //     await classTableInstance.save();
-    //     console.log(`Saved class table data for ${day} - ${slot}`);
-      
       res.status(200).json({ message: "Slot is available" });
     }else {
         res.status(200).json({
@@ -141,6 +121,81 @@ class ClassTimeTableController {
     console.error(error);
     res.status(500).json({ error: "Internal server error" });
 }
+}
+
+
+async savelunchslot(req, res) {
+  const day = req.body.formData.day;
+  const slot = req.body.formData.slot;
+  const slotData = req.body.formData.slotData; // Access the slotData object
+  const code = req.body.code;
+  const sem = req.body.selectedSemester;
+  // console.log('sem',sem)
+  try {
+    const query = {
+      day,
+      slot,
+      code,
+      sem,
+    };
+
+    const existingRecord = await ClassTable.findOne(query);
+
+    if (existingRecord) {
+      // If a record already exists, update it with the new slotData
+      existingRecord.slotData = slotData;
+      await existingRecord.save();
+      console.log(`Updated class table data for ${day} - ${slot}`);
+    } else {
+      // If no record exists, create a new one with the slotData
+      const timetableObject= await ClassTimeTableDto.findTimeTableIdByCode(code);
+      const classTableInstance = new ClassTable({
+        day,
+        slot,
+        slotData,
+        code,
+        sem,
+        timetable:timetableObject,
+      });
+      await classTableInstance.save();
+      console.log(`Saved class table data for ${day} - ${slot}`);
+    }
+    const lunchrecords = await ClassTable.find({slot:'lunch',code,'slotData.0': { $exists: true }});
+    res.status(200).json({lunchrecords})
+    // return lunchrecords
+  } catch (error) {
+  console.error(error);
+  res.status(500).json({ error: "Internal server error" });
+}
+}
+
+async getlunchslot(req, res) {
+  const code = req.params.code;
+    const lunchrecords = await ClassTable.find({slot:'lunch',code, 'slotData.0': { $exists: true }});
+    res.status(200).json({lunchrecords})
+  } catch (error) {
+  console.error(error);
+  res.status(500).json({ error: "Internal server error" });
+}
+
+async deletelunchslot(req, res) {
+  const id=req.params.id
+  if (!id) {
+    throw new HttpException(400, "Invalid Id");
+  }
+  try {
+    const deletedata=await ClassTable.findById(id)
+    const query={
+      sem:deletedata.sem,
+      day:deletedata.day,
+      slot:'lunch'
+    }
+    await LockSem.deleteOne(query);
+    await ClassTable.findByIdAndDelete(id);
+
+  } catch (e) {
+    throw new HttpException(500, e.message || "Internal Server Error");
+  }
 }
 
   async classtt(req, res) {

@@ -29,9 +29,16 @@ console.log(type)
 
   // Iterate through the timetable data to calculate the summary
   for (const day in timetableData) {
-    for (let period = 1; period <= 8; period++) {
-      const slots = timetableData[day][`period${period}`];
-
+    for (let period = 1; period <= 9; period++) {
+      let slots=''
+      if (period==9)
+      {
+      slots=timetableData[day]['lunch'];
+      }
+      else
+      {
+      slots = timetableData[day][`period${period}`];
+      }
       // Check if the slot is not empty
       if (slots) {
         slots.forEach((slot) => {
@@ -103,6 +110,7 @@ console.log(type)
       if (
         entry.faculties.every(faculty => existingEntry.faculties.includes(faculty)) &&
         entry.subType === existingEntry.subType &&
+        entry.subjectFullName === existingEntry.subjectFullName &&
         entry.rooms.every(room => existingEntry.rooms.includes(room))
       ) {
         // Merge the data

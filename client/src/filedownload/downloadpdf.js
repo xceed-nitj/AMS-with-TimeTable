@@ -57,22 +57,34 @@ const session = ttdata[0].session;
       let cellData;
 
       if (period === 5) {
+        cellData = timetableData[day]['lunch'];
+        console.log(cellData)
+        if(!cellData || cellData.length==0)
+        {      
+        console.log(cellData)
+        // cellData='Lunch'
         row.push({
+          // colSpan: 4,
           text: 'Lunch',
-          alignment: 'center',
+          fontSize: 10,
+          alignment: 'center', // Adjust alignment as needed
         });
+        
         continue;
+      }
+      // continue;
       } else if (period < 5) {
         cellData = timetableData[day][`period${period}`];
       } else {
         cellData = timetableData[day][`period${period - 1}`];
       }
-
+      if(cellData)
+      {
       cellData.forEach(slot => {
         slot.forEach(cell => {
           cellContents.push({
             text: `${cell.subject}\n`,
-            fontSize: 12, // Set the font size for cell.subject (adjust as needed)
+            fontSize: 11, // Set the font size for cell.subject (adjust as needed)
             // Set other properties as needed
           });
       
@@ -80,14 +92,14 @@ const session = ttdata[0].session;
           if (cell.room) {
           cellContents.push({
             text: `(${cell.room})`,
-            fontSize: 10, // Set the font size for cell.room
+            fontSize: 9, // Set the font size for cell.room
             // Set other properties as needed
           });
         }
         });
       
       });
-  
+    }
 
       row.push({
         stack: cellContents,
@@ -99,6 +111,13 @@ const session = ttdata[0].session;
   });
 
   const summaryTableData = [];
+    
+  const summaryTitleRow = [
+    { text: 'Summary', bold: true, alignment: 'left', colSpan: 7, border: [false, false, false, false] },
+    {}, {}, {}, {},{},{} // Empty cells to match the colSpan
+  ];
+  summaryTableData.push(summaryTitleRow);
+
   const summaryTableHeader = [
     { text: 'Abbreviation', bold: true, alignment: 'center', fontSize: 10 },
     { text: 'Subject Code', bold: true, fontSize: 10 },
@@ -124,12 +143,13 @@ const session = ttdata[0].session;
 
   summaryTableData.push(summaryTableHeader);
 
+  // Iterate through the summary data and add rows to the table
   Object.keys(summaryData).forEach((subject) => {
     const summaryRow = [];
     summaryRow.push({ text: summaryData[subject].originalKeys.join(', '), fontSize: 10, alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subCode, fontSize: 10, alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subjectFullName, fontSize: 10 });
-    summaryRow.push({ text: summaryData[subject].count, fontSize: 10, alignment: 'center' });
+    summaryRow.push({ text: summaryData[subject].count, fontSize: 10,alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subType, fontSize: 10, alignment: 'center' });
 
     if (type !== 'faculty') {
@@ -146,6 +166,21 @@ const session = ttdata[0].session;
 
     summaryTableData.push(summaryRow);
   });
+
+  const summarySignRow = [
+    { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 6, border: [false, false, false, false] },
+    {}, {}, {}, {},{}, // Empty cells to match the colSpan
+    { text: 'HoD', bold: true, alignment: 'right',colSpan: 2, border: [false, false, false, false] },
+  
+  ];
+
+  const blankRow = [{text:'',colSpan:7,border: [false, false, false, false] }, {}, {}, {}, {},{},{}];
+summaryTableData.push(blankRow);
+summaryTableData.push(blankRow);
+// summaryTableData.push(blankRow);
+// summaryTableData.push(blankRow);
+
+  summaryTableData.push(summarySignRow);
 
   const headerImage = new Image();
   headerImage.src = header;
@@ -186,7 +221,7 @@ const session = ttdata[0].session;
             text: `Department of ${dept}`,
             fontSize: 12,
             bold: true,
-            margin: [5, 0, 40, 0],
+            margin: [5, 10, 40, 5],
             alignment: 'center',
           },
           {
@@ -220,20 +255,7 @@ const session = ttdata[0].session;
               alignment: 'center',
             },
           },
-          {
-            text: 'Summary:',
-            fontSize: 12,
-            bold: true,
-            margin: [0, 5, 40, 5],
-            alignment: 'left',
-          },
-          {
-            table: {
-              fontSize: 10,
-              body: summaryTableData,
-              alignment: 'center',
-            },
-          },
+
           ...(notes && notes.length > 0
             ? [
                 {
@@ -248,28 +270,63 @@ const session = ttdata[0].session;
               ]
             : []),
 
-
-
-
+          type === 'sem' ? { text: '(summary of the timetable given below)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
           {
-            columns: [
-              {
-                text: 'Time Table Incharge',
-                fontSize: 12,
-                bold: true,
-                alignment: 'left',
-              },
-              {
-                text: 'Head of the Department',
-                fontSize: 12,
-                bold: true,
-                alignment: 'right',
-              },
-            ],
-            margin: [0, 20, 0, 0],
-          },
-            // layout: 'noBorders',
+            stack: [
+            // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
+
+          // {
+          //   text: 'Summary:',
+          //   fontSize: 10,
+          //   bold: true,
+          //   margin: [0, 5, 40, 5],
+          //   alignment: 'left',
+          // },
+          {
+            unbreakable: true,
+          stack:[
+          {
+            table: {
+              fontSize: 10,
+              body: summaryTableData,
+              alignment: 'center',
+            },
+            margin:[0,5,10,10],
+          },    
+                  
+        ],
+      
+      }
+                // {
+          //   table: {
+          //     widths: ['*', '*'], // Two equal-width columns
+          //     body: [
+          //       [
+          //         {
+          //           text: 'Time Table Incharge',
+          //           fontSize: 10,
+          //           bold: true,
+          //           alignment: 'left',
+
+          //         },
+          //         {
+          //           text: 'Head of the Department',
+          //           fontSize: 10,
+          //           bold: true,
+          //           alignment: 'right',
+          //           // margin: [10,10,10,10],
+          //         },
+          //       ],
+          //     ],
+          //   },
+          //   margin: [0,20,0,0],
+          //   layout: 'noBorders', // Use 'noBorders' layout for accurate height calculation
+          //   pageBreak: 'auto',
+          // },
+ // layout: 'noBorders',
             // margin: [0, 30, 0, 0],
+        ]
+      }
         ],
       };
 

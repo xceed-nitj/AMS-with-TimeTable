@@ -42,7 +42,7 @@ class PDFGenerator extends React.Component {
 
     const session=ttdata[0].session;
     const dept=ttdata[0].dept;
-    // console.log('summaryDate',summaryData)
+    console.log('summarytimeDate',timetableData)
     const tableData = [];
     const { headerImageDataURL } = this.state; // Use the header image URL from the state
 
@@ -74,13 +74,20 @@ class PDFGenerator extends React.Component {
     // Handle lunch break
     if (period === 5) {
       // Merge the 5th column into a single cell
+      cellData = timetableData[day]['lunch'];
+      if(cellData.length==0)
+      {      
+      console.log(cellData)
+      // cellData='Lunch'
       row.push({
         // colSpan: 4,
         text: 'Lunch',
-        fontSize: 12,
+        fontSize: 10,
         alignment: 'center', // Adjust alignment as needed
       });
-      continue; // Skip the rest of the loop for this period
+      continue;
+    }
+      // continue; // Skip the rest of the loop for this period
     } else if (period < 5) {
       // Periods before lunch
       cellData = timetableData[day][`period${period}`];
@@ -93,7 +100,7 @@ class PDFGenerator extends React.Component {
       slot.forEach(cell => {
         cellContents.push({
           text: `${cell.subject}\n`,
-          fontSize: 12, // Set the font size for cell.subject (adjust as needed)
+          fontSize: 11, // Set the font size for cell.subject (adjust as needed)
           // Set other properties as needed
         });
     
@@ -101,7 +108,7 @@ class PDFGenerator extends React.Component {
         if (cell.room) {
         cellContents.push({
           text: `(${cell.room})`,
-          fontSize: 10, // Set the font size for cell.room
+          fontSize: 9, // Set the font size for cell.room
           // Set other properties as needed
         });
       }
@@ -117,6 +124,13 @@ class PDFGenerator extends React.Component {
       tableData.push(row);
     });
     const summaryTableData = [];
+    
+    const summaryTitleRow = [
+      { text: 'Summary', bold: true, alignment: 'left', colSpan: 7, pageBreak:'auto',border: [false, false, false, false] },
+      {}, {}, {}, {},{},{} // Empty cells to match the colSpan
+    ];
+    summaryTableData.push(summaryTitleRow);
+
     const summaryTableHeader = [
       { text: 'Abbreviation', bold: true, alignment: 'center', fontSize: 10 },
       { text: 'Subject Code', bold: true, fontSize: 10 },
@@ -166,19 +180,20 @@ class PDFGenerator extends React.Component {
       summaryTableData.push(summaryRow);
     });
 
+    const summarySignRow = [
+      { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 6, border: [false, false, false, false] },
+      {}, {}, {}, {},{}, // Empty cells to match the colSpan
+      { text: 'HOD', bold: true, alignment: 'right',colSpan:1, border: [false, false, false, false] },
+    
+    ];
 
-    // const signatures = [
-    //   { text: 'Time Table Coordinator', bold: true },
-    //   { text: ' ', bold: true },
-    //   { text: '', bold: true },
-    //   { text: '', bold: true },
-    //   { text: '', bold: true },
-    //   { text: '', bold: true },
-    //   { text: 'Head of the Department', bold: true },
-    // ];
+    const blankRow = [{text:'',colSpan:7,border: [false, false, false, false] }, {}, {}, {}, {},{},{}];
+summaryTableData.push(blankRow);
+summaryTableData.push(blankRow);
+// summaryTableData.push(blankRow);
+// summaryTableData.push(blankRow);
 
-    // summaryTableData.push(signatures);
-
+    summaryTableData.push(summarySignRow);
 
     const footerImage = new Image();
     footerImage.src = footer; // Replace with the actual path to your image
@@ -227,7 +242,7 @@ class PDFGenerator extends React.Component {
               text: `Department of ${dept}`,
               fontSize: 12,
               bold: true,
-              margin: [5, 0, 40,0],
+              margin: [5, 10, 40,5],
               alignment: 'center', // Adjust the width as needed
 
             },
@@ -262,72 +277,57 @@ class PDFGenerator extends React.Component {
 
             {
               table: {
-                // alignment: 'justify',
-                // widths: [70, 60, 60, 60, 60, 60, 60, 60, 60], // Adjust the column widths as needed
                 body: tableData,
                 fontSize: 10,
                 alignment: 'center'
               },
             },
+            ...(notes.length > 0
+              ? [
+                  {
+                    text: 'Notes:',
+                    fontSize: 10,
+                    bold: true,
+                    margin: [0, 2, 0, 2], // top, right, bottom, left
+                  },
+                  {
+                    ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:8 }))),
+                  },
+                ]
+              : []),
+  
+
+            type === 'sem' ? { text: '(summary of the timetable given below)', fontSize: 10, alignment:'left',margin:[0,5,0,0] }:null,
+
+            // type === 'sem' ? { text: '', pageBreak: '' } : null,
+                // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
+
+            // {
+            //   text: 'Summary:',
+            //   fontSize: 10,
+            //   bold: true,
+            //   margin: [0, 5, 40, 5],
+            //   alignment: 'left',
+            // },
             {
-              text: 'Summary:',
-              fontSize: 10,
-              bold: true,
-              margin: [0, 5, 40, 5],
-              alignment: 'left',
-            },
+              unbreakable: true,
+            stack:[
             {
               table: {
                 fontSize: 10,
                 body: summaryTableData,
                 alignment: 'center',
               },
-            },
-
-          ...(notes.length > 0
-            ? [
-                {
-                  text: 'Notes:',
-                  fontSize: 10,
-                  bold: true,
-                  margin: [0, 2, 0, 2], // top, right, bottom, left
-                },
-                {
-                  ul: notes.map(noteArray => noteArray.map(note => ({ text: note, fontSize:8 }))),
-                },
-              ]
-            : []),
-            {
-              table: {
-                widths: ['*', '*'], // Two equal-width columns
-                body: [
-                  [
-                    {
-                      text: 'Time Table Incharge',
-                      fontSize: 10,
-                      bold: true,
-                      alignment: 'left',
-
-                    },
-                    {
-                      text: 'Head of the Department',
-                      fontSize: 10,
-                      bold: true,
-                      alignment: 'right',
-                      // margin: [10,10,10,10],
-                    },
-                  ],
-                ],
-              },
-              layout: 'noBorders',
-              margin: [0,30,0,0],
-            },
-
-
+              margin:[0,5,10,10],
+            },    
+                    
+          ],
+        
+        }
+        
             ],
-
-
-        };
+            // pageBreak: 'auto',
+          }
 
         pdfMake.createPdf(documentDefinition).open();
       });

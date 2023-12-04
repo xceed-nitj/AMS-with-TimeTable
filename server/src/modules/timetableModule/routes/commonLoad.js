@@ -2,8 +2,10 @@ const express = require("express");
 const commonLoadRouter = express.Router();
 const CommonLoadController = require("../controllers/commonLoadprofile");
 const commonLoadController = new CommonLoadController();
+const protectRoute =require("../../usermanagement/privateroute")
 
-commonLoadRouter.post("/", async (req, res) => {
+
+commonLoadRouter.post("/",protectRoute, async (req, res) => {
   try {
     await commonLoadController.createCommonLoad(req, res);
   } catch (e) {
@@ -68,7 +70,7 @@ commonLoadRouter.get("/code/:code", async (req, res) => {
   });
   
 
-commonLoadRouter.put('/:id', async (req, res) => {
+commonLoadRouter.put('/:id',protectRoute, async (req, res) => {
   try {
     const commonLoadID = req.params.id;
     const updatedData = req.body;
@@ -81,7 +83,7 @@ commonLoadRouter.put('/:id', async (req, res) => {
   }
 });
 
-commonLoadRouter.delete("/:id", async (req, res) => {
+commonLoadRouter.delete("/:id",protectRoute, async (req, res) => {
   try {
     const commonLoadID = req.params.id;
     await commonLoadController.deleteCommonLoad(commonLoadID);
