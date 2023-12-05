@@ -269,9 +269,10 @@ const roomData = async (currentCode, room) => {
                     faculty: faculty,
                   });
                 }
+              }
                 initialData[day]['lunch'].push(slotSubjects);  
 
-              }
+              
             }
           }
 

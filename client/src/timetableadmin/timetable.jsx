@@ -328,9 +328,10 @@ const Timetable = () => {
                     faculty: faculty,
                   });
                 }
+              }
                 initialData[day]['lunch'].push(slotSubjects);  
 
-              }
+              
             }
           }
 
