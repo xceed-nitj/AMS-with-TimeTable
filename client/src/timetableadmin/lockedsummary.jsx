@@ -278,9 +278,10 @@ function LockedSummary() {
                     faculty: faculty,
                   });
                 }
+              }
                 initialData[day]['lunch'].push(slotSubjects);  
 
-              }
+              
             }
           }
 

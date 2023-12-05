@@ -125,53 +125,56 @@ class ClassTimeTableController {
 
 
 async savelunchslot(req, res) {
-  const day = req.body.formData.day;
-  const slot = req.body.formData.slot;
-  const slotData = req.body.formData.slotData; // Access the slotData object
   const code = req.body.code;
   const sem = req.body.selectedSemester;
-  // console.log('sem',sem)
+  const lunchData = req.body.lunchData;
+
   try {
-    const query = {
-      day,
-      slot,
-      code,
-      sem,
-    };
+    for (const lunchItem of lunchData) {
+      const { day, slot, slotData } = lunchItem;
 
-    const existingRecord = await ClassTable.findOne(query);
-
-    if (existingRecord) {
-      // If a record already exists, update it with the new slotData
-      existingRecord.slotData = slotData;
-      await existingRecord.save();
-      console.log(`Updated class table data for ${day} - ${slot}`);
-    } else {
-      // If no record exists, create a new one with the slotData
-      const timetableObject= await ClassTimeTableDto.findTimeTableIdByCode(code);
-      const classTableInstance = new ClassTable({
+      const query = {
         day,
         slot,
-        slotData,
         code,
         sem,
-        timetable:timetableObject,
-      });
-      await classTableInstance.save();
-      console.log(`Saved class table data for ${day} - ${slot}`);
+      };
+
+      const existingRecord = await ClassTable.findOne(query);
+
+      if (existingRecord) {
+        // If a record already exists, update it with the new slotData
+        existingRecord.slotData = slotData;
+        await existingRecord.save();
+        console.log(`Updated class table data for ${day} - ${slot}`);
+      } else {
+        // If no record exists, create a new one with the slotData
+        const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
+        const classTableInstance = new ClassTable({
+          day,
+          slot,
+          slotData,
+          code,
+          sem,
+          timetable: timetableObject,
+        });
+        await classTableInstance.save();
+        console.log(`Saved class table data for ${day} - ${slot}`);
+      }
     }
-    const lunchrecords = await ClassTable.find({slot:'lunch',code,'slotData.0': { $exists: true }});
-    res.status(200).json({lunchrecords})
-    // return lunchrecords
+
+    const lunchrecords = await ClassTable.find({ slot: 'lunch', code, 'slotData.0': { $exists: true } });
+    res.status(200).json({ lunchrecords });
   } catch (error) {
-  console.error(error);
-  res.status(500).json({ error: "Internal server error" });
-}
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 }
 
 async getlunchslot(req, res) {
   const code = req.params.code;
     const lunchrecords = await ClassTable.find({slot:'lunch',code, 'slotData.0': { $exists: true }});
+    console.log(lunchrecords)
     res.status(200).json({lunchrecords})
   } catch (error) {
   console.error(error);

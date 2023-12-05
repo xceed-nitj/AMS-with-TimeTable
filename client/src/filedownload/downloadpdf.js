@@ -170,7 +170,7 @@ const session = ttdata[0].session;
   const summarySignRow = [
     { text: 'TimeTable Incharge', bold: true, alignment: 'left', colSpan: 6, border: [false, false, false, false] },
     {}, {}, {}, {},{}, // Empty cells to match the colSpan
-    { text: 'HoD', bold: true, alignment: 'right',colSpan: 2, border: [false, false, false, false] },
+    { text: 'HoD', bold: true, alignment: 'right',colSpan: 1, border: [false, false, false, false] },
   
   ];
 
