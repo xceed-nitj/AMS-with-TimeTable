@@ -103,7 +103,7 @@ function FirstYearLoad() {
         setCurrentSession(data[0].session);
       }
 
-      console.log("tt", data);
+      // console.log("tt", data);
     } catch (error) {
       console.error("Error fetching TTdata:", error);
     }
@@ -123,16 +123,16 @@ function FirstYearLoad() {
       );
 
       const data = await response.json();
-      console.log("subdata", data);
+      // console.log("subdata", data);
 
       setAvailableSubjects(data);
 
       const uniqueSubjects = [...new Set(data.map((item) => item.subName))];
-      console.log(uniqueSubjects)
+      // console.log(uniqueSubjects)
 
 
       const uniqueSemesters = [...new Set(data.map((item) => item.sem))];
-      console.log(uniqueSemesters)
+      // console.log(uniqueSemesters)
       setAvailableSems(uniqueSemesters);   
       setSubjects(uniqueSubjects);
       setSelectedSemester(uniqueSemesters[0]);
@@ -163,8 +163,8 @@ function FirstYearLoad() {
   useEffect(() => {
     const fetchData = async (semester,firstYearCode) => {
       try {
-        console.log('sem value',semester);
-        console.log('current code', firstYearCode);
+        // console.log('sem value',semester);
+        // console.log('current code', firstYearCode);
         const response = await fetch(
           `${apiUrl}/timetablemodule/tt/viewclasstt/${firstYearCode}/${semester}`,
           { credentials: "include" }
@@ -182,7 +182,7 @@ function FirstYearLoad() {
     const fetchTimetableData = async (semester, firstYearCode) => {
 
       const data = await fetchData(semester,firstYearCode);
-      console.log('timetable data fetched:', data)
+      // console.log('timetable data fetched:', data)
       setTimetableData(data);
     };
 
@@ -292,7 +292,7 @@ function FirstYearLoad() {
     const sem = selectedSemester;
     const dataToSend = JSON.stringify({ slotData, code, sem });
 
-    console.log('Slot JSON Data to Send:', dataToSend);
+    // console.log('Slot JSON Data to Send:', dataToSend);
 
     try {
       const response = await fetch(Url, {
@@ -324,7 +324,7 @@ function FirstYearLoad() {
     const dataToSend = JSON.stringify({ timetableData, code });
 
     // console.log('Data is getting saved');
-console.log(timetableData)
+// console.log(timetableData)
     setMessage("Data is being saved....");
     try {
       const response = await fetch(Url, {
@@ -367,7 +367,7 @@ console.log(timetableData)
       );
 
       const data = await response.json();
-      console.log("facdata", data);
+      // console.log("facdata", data);
       const filteredFaculty = data.filter(item => item.sem === Semester).map(item => item.faculty);
       setAvailableFaculties(filteredFaculty);
     } catch (error) {

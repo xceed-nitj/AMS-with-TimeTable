@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, VStack, Input } from '@chakra-ui/react';
+import { Button, VStack, Input, Heading } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 
@@ -46,13 +46,15 @@ const AdminPage = () => {
 
   return (
     <VStack spacing={4} align="stretch">
+    <Heading>Admin page</Heading>
+
       <form onSubmit={handleSubmit}>
         <Input
           type="text"
           name="session"
           value={formData.session}
           onChange={handleChange}
-          placeholder="Enter Session"
+          placeholder="Enter New Session"
         />
         <Button type="submit" colorScheme="teal">
           Create Allotment
@@ -74,6 +76,10 @@ const AdminPage = () => {
       <Link to="/tt/allotment">
         <Button colorScheme="teal">Go Room Allotment</Button>
       </Link>
+      <Link to="/tt/allotment">
+        <Button colorScheme="teal">Institute Faculty load </Button>
+      </Link>
+
     </VStack>
   );
 };

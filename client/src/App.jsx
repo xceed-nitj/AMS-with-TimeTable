@@ -30,6 +30,7 @@ import AllocatedRolesPage from './dashboard/allotedroles';
 import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
+import InstituteLoad from './timetableadmin/instituteload';
 function App() {
   return (
     <Router>
@@ -71,6 +72,7 @@ function App() {
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
           <Route path="/tt/masterview" element={<MasterView/>}/>
+          <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
 
         </Routes>
         {/* <Footer/> */}
