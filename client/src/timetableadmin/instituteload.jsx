@@ -105,7 +105,7 @@ function InstituteLoad() {
       // setAvailableDepts(dept)
       console.log('received code:',data1)
       // console.log('received dept data:',dept)
-
+      return data1;
     } catch (error) {
       console.error("Error fetching existing timetable data:", error);
       return {};
@@ -119,8 +119,8 @@ function InstituteLoad() {
         );
         const data1 = await response.json();
         const data = data1.timetableData;
-        setFacultyLockedTime(data1.updatedTime);
-        setFacultyNotes(data1.notes);
+        // setFacultyLockedTime(data1.updatedTime);
+        // setFacultyNotes(data1.notes);
         const initialData = generateInitialTimetableData(data, "faculty");
         return initialData;
       } catch (error) {
@@ -129,10 +129,10 @@ function InstituteLoad() {
       }
     };
 
-    const fetchFacultyData = async (faculty) => {
-      const data = await facultyData(currentCode, faculty);
-      setViewFacultyData(data);
-    };
+    // const fetchFacultyData = async (faculty) => {
+    //   const data = await facultyData(currentCode, faculty);
+    //   setViewFacultyData(data);
+    // };
 
       const fetchCommonLoad = async (currentCode, viewFaculty) => {
         try {
@@ -151,8 +151,8 @@ function InstituteLoad() {
           console.error("Error fetching commonload:", error);
         }
       };
-    fetchCommonLoad(currentCode, selectedFaculty); // Call the function to fetch subject data
-    fetchFacultyData(selectedFaculty);
+    // fetchCommonLoad(currentCode, selectedFaculty); // Call the function to fetch subject data
+    // fetchFacultyData(selectedFaculty);
 
   // useEffect(() => {
   //   const roomData = async (currentCode, room) => {
@@ -181,7 +181,6 @@ function InstituteLoad() {
   //   fetchRoomData(currentCode, selectedRoom);
   // }, [selectedRoom]);
 
-  useEffect(() => {
     const fetchSem = async (currentCode) => {
       try {
         console.log('currentcode used for',currentCode)
@@ -223,15 +222,15 @@ function InstituteLoad() {
       }
     };
 
-    const fetchFaculty = async (currentCode) => {
+    const fetchFaculty = async (newCode) => {
       try {
         const response = await fetch(
-          `${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`,
+          `${apiUrl}/timetablemodule/addfaculty/all?code=${newCode}`,
           { credentials: "include" }
         );
         if (response.ok) {
           const data = await response.json();
-          // console.log('faculty response',data);
+          console.log('faculty response',data);
           setAvailableFaculties(data);
           // console.log('faculties', availableFaculties);
         }
@@ -256,11 +255,6 @@ function InstituteLoad() {
       }
     };
 
-    fetchSem(currentCode);
-    fetchRoom();
-    fetchTime();
-    fetchFaculty(currentCode); // Call the function to fetch subject data
-  }, [apiUrl, currentCode, selectedSemester, selectedFaculty, selectedRoom]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -361,27 +355,17 @@ function InstituteLoad() {
   
     }
   
-    console.log("initial datat to be received",initialData);
+    // console.log("initial datat to be received",initialData);
     return initialData;
   };
 
 
   // const navigate view= useNavigate();
 
-  const handleDownloadClick = () => {
-    const pathArray = window.location.pathname
-      .split("/")
-      .filter((part) => part !== "");
-    const pathExceptLastPart = `/${pathArray.slice(0, -1).join("/")}`;
-    const pdfUrl = `${pathExceptLastPart}/generatepdf`;
-    window.location.href = pdfUrl;
-  };
-
 
   const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
   const [TTData, setTTData] = useState([]); // Initialize as an empty array
 
-  useEffect(() => {
     const fetchSubjectData = async (currentCode) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`,
@@ -413,14 +397,70 @@ function InstituteLoad() {
       }
     };
 
+    const countHoursByDegreeAndSemester = (timetableData) => {
+      const degreeSemesterCount = {};
+    
+      // Iterate through each day
+      for (const day in timetableData) {
+        const dayData = timetableData[day];
+    
+        // Iterate through each period in the day
+        for (const period in dayData) {
+          const periodData = dayData[period];
+    
+          // Iterate through each entry in the period
+          for (const entry of periodData) {
+            // Check if there is an entry and it has a faculty property
+            if (entry.length > 0 && entry[0].hasOwnProperty("faculty")) {
+              const faculty = entry[0].faculty;
+    
+              // Extract degree and semester from the faculty value
+              const [degree, deptCode, semester] = faculty.split('-');
+    
+              // Update the count for the degree and semester
+              const key = `${degree}-${semester}`;
+              if (!degreeSemesterCount[key]) {
+                degreeSemesterCount[key] = 1;
+              } else {
+                degreeSemesterCount[key]++;
+              }
+            }
+          }
+        }
+      }
+    
+      return degreeSemesterCount;
+    };
 
+useEffect(()=>{
 
-    fetchSubjectData(currentCode);
-    fetchTTData(currentCode);
+    const fetchLoad = async (session) => {
+      setFacultyHoursCount({});
+      for (const dept of availableDepts) {
+        // Fetch the code for the current session and department
+        const newCode = await fetchCode(session, dept);
+  
+        // Fetch faculty data for each available faculty
+        for (const faculty of availableFaculties) {
+          const newFacultyData = await facultyData(newCode, faculty);
+          const result = countHoursByDegreeAndSemester(newFacultyData);
+  
+          // Accumulate faculty hours count
+          setFacultyHoursCount((prevCount) => ({
+            ...prevCount,
+            [faculty]: result,
+          }));
+        }
+      }
+    };
 
+    fetchLoad(selectedSession);
+  },[selectedSession]);
 
-  }, [currentCode]);
+  const [facultyHoursCount, setFacultyHoursCount] = useState({});
 
+  console.log('faculuy hrs', facultyHoursCount)
+  
 
   return (
     <Container maxW="6xl">
@@ -440,211 +480,33 @@ function InstituteLoad() {
             ))}
           </Select>
 
-          <FormLabel fontWeight="bold">Select Department:
-          </FormLabel>
-
-          <Select
-            value={selectedDept}
-            onChange={(e) => setSelectedDept(e.target.value)}
-          >
-            <option value="">Select Department</option>
-            {availableDepts.map((dept, index) => (
-              <option key={index} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </Select>
-
-
-
-
-      <FormControl>
-          <FormLabel fontWeight="bold">View Semester timetable:
-          </FormLabel>
-
-          <Select
-            value={selectedSemester}
-            onChange={(e) => setSelectedSemester(e.target.value)}
-          >
-            <option value="">Select Semester</option>
-            {semesters.map((semester, index) => (
-              <option key={index} value={semester}>
-                {semester}
-              </option>
-            ))}
-          </Select>
-      <Box mb='5'>
-        {selectedSemester ? (
-          <Box>
-            <Text color="black" id="saveTime" mb="2.5" mt="2.5">
-              Last saved on: {lockedTime ? lockedTime : "Not saved yet"}
-            </Text>
-            <ViewTimetable timetableData={viewData} />
-            <TimetableSummary
-              timetableData={viewData}
-              type={"sem"}
-              code={currentCode}
-              time={lockedTime}
-              headTitle={selectedSemester}
-              subjectData={subjectData}
-              TTData={TTData}
-              notes={semNotes}
-              />
-      <Box>
-  {semNotes.length > 0 ? (
-    <div>
-      <Text fontSize="xl" fontWeight="bold">
-        Notes:
-      </Text>
-      {semNotes.map((noteArray, index) => (
-        <UnorderedList key={index}>
-          {noteArray.map((note, noteIndex) => (
-            <ListItem key={noteIndex}>{note}</ListItem>
-          ))}
-        </UnorderedList>
-      ))}
-    </div>
-  ) : (
-    <Text>No notes added for this selection.</Text>
-  )}
-</Box>
+    <table>
+      <thead>
+        <tr>
+          <th>Faculty</th>
+          <th>B.Tech Sem 1</th>
+          <th>B.Tech Sem 2</th>
+          <th>B.Tech Sem 3</th>
+          <th>B.Tech Sem 4</th>
+          {/* Add similar columns for other degrees and semesters */}
+        </tr>
+      </thead>
+      <tbody>
+      {Object.keys(facultyHoursCount).map((faculty) => (
+  <tr key={faculty}>
+    <td>{faculty}</td>
+    {[1, 2, 3, 4].map((semester) => (
+      <td key={`${faculty}-${semester}`}>
+        {facultyHoursCount[faculty][`B.Tech-${semester}`] || 0}
+      </td>
+    ))}
+  </tr>
+))}
+</tbody>
+    </table>
 
 
-
-          </Box>
-          // {semNotes? <p>semNotes</p>:null}          
-          ) : (
-            <Text>Please select a Semester from the dropdown.</Text>
-            )}
-      </Box>
-      {/* Faculty Dropdown */}
-      <FormControl>
-        <FormLabel fontWeight='bold'>Faculty timetable</FormLabel>
-        <Select
-          value={selectedFaculty}
-          onChange={(e) => setSelectedFaculty(e.target.value)}
-          >
-          <option value="">Select Faculty</option>
-          {availableFaculties.map((faculty, index) => (
-            <option key={index} value={faculty}>
-              {faculty}
-            </option>
-          ))}
-        </Select>
-      </FormControl>
-      <Box mb='5'>
-        {selectedFaculty ? (
-          <Box>
-            <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
-              Last saved on:{" "}
-              {facultyLockedTime ? facultyLockedTime : "Not saved yet"}
-            </Text>
-
-            <ViewTimetable timetableData={viewFacultyData} />
-            <TimetableSummary
-              timetableData={viewFacultyData}
-              type={"faculty"}
-              code={currentCode}
-              time={facultyLockedTime}
-              headTitle={selectedFaculty}
-              subjectData={subjectData}
-              TTData={TTData}
-              notes={facultyNotes}
-              commonLoad={commonLoad}
-              />
-            {/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
-            {/* <PDFViewTimetable timetableData={viewFacultyData} /> */}
-            {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
-
-            <Box>
-  {facultyNotes.length>0 ? (
-    <div>
-      <Text fontSize="xl" fontWeight="bold">
-        Notes:
-      </Text>
-      {facultyNotes.map((noteArray, index) => (
-        <UnorderedList key={index}>
-          {noteArray.map((note, noteIndex) => (
-            <ListItem key={noteIndex}>{note}</ListItem>
-          ))}
-        </UnorderedList>
-      ))}
-    </div>
-  ) : (
-    <Text>No notes added for this selection.</Text>
-  )}
-</Box>
-
-
-          </Box>
-        ) : (
-          <Text>Please select a faculty from the dropdown.</Text>
-          )}
-      </Box>
-    <FormControl>
-     <FormLabel fontWeight='bold' >Room timetable</FormLabel>
-      {/* Room Dropdown */}
-      <Select
-        value={selectedRoom}
-        onChange={(e) => setSelectedRoom(e.target.value)}
-        >
-        <option value="">Select Room</option>
-        {availableRooms.map((room, index) => (
-          <option key={index} value={room}>
-            {room}
-          </option>
-        ))}
-      </Select>
-      </FormControl>
-      <Box mb='5'>
-        {selectedRoom ? (
-          <Box>
-            <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
-              Last saved on: {roomlockedTime ? roomlockedTime : "Not saved yet"}
-            </Text>
-
-            <ViewTimetable timetableData={viewRoomData} />
-            {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/>  */}
-
-            <TimetableSummary 
-            timetableData={viewRoomData} 
-            type={'room'}
-            code={currentCode}
-            time={roomlockedTime}
-            headTitle={selectedRoom}
-            subjectData={subjectData}
-              TTData={TTData}
-              notes={roomNotes}
-
-/>
-<Box>
-  {roomNotes.length>0 ? (
-    <div>
-      <Text fontSize="xl" fontWeight="bold">
-        Notes:
-      </Text>
-      {roomNotes.map((noteArray, index) => (
-        <UnorderedList key={index}>
-          {noteArray.map((note, noteIndex) => (
-            <ListItem key={noteIndex}>{note}</ListItem>
-          ))}
-        </UnorderedList>
-      ))}
-    </div>
-  ) : (
-    <Text>No notes added for this selection.</Text>
-  )}
-</Box>
-
-
-
-          </Box>
-        ) : (
-          <Text>Please select a Room from the dropdown.</Text>
-          )}
-      </Box>
-      </FormControl>
-    </Container>
+</Container>
   );
 }
 
