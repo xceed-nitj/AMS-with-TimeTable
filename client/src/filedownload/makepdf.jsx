@@ -42,7 +42,7 @@ class PDFGenerator extends React.Component {
 
     const session=ttdata[0].session;
     const dept=ttdata[0].dept;
-    console.log('summarytimeDate',timetableData)
+    // console.log('summarytimeDate',timetableData)
     const tableData = [];
     const { headerImageDataURL } = this.state; // Use the header image URL from the state
 
@@ -77,7 +77,7 @@ class PDFGenerator extends React.Component {
       cellData = timetableData[day]['lunch'];
       if(cellData.length==0)
       {      
-      console.log(cellData)
+      // console.log(cellData)
       // cellData='Lunch'
       row.push({
         // colSpan: 4,

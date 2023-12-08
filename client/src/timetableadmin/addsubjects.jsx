@@ -247,7 +247,7 @@ function Subject() {
           })
           .then((data) => {
 
-            console.log("Update Success:", data);
+            // console.log("Update Success:", data);
 
             setTableData(updatedData);
             setEditRowId(null);
@@ -288,7 +288,7 @@ function Subject() {
           return response.json();
         })
         .then((data) => {
-          console.log("Delete Success:", data);
+          // console.log("Delete Success:", data);
           const updatedData = tableData.filter((row) => row._id !== _id);
           setTableData(updatedData);
         })
@@ -348,7 +348,7 @@ function Subject() {
         })
         .then((data) => {
 
-          console.log("Data saved successfully:", data);
+          // console.log("Data saved successfully:", data);
           fetchData();
           handleCancelAddSubject();
           addsetDuplicateEntryMessage(""); 
@@ -380,7 +380,7 @@ function Subject() {
             return response.json();
           })
           .then((data) => {
-            console.log("Delete All Success:", data);
+            // console.log("Delete All Success:", data);
             fetchData(); 
           })
           .catch((error) => {

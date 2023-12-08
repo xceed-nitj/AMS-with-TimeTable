@@ -51,9 +51,9 @@ class LockTimeTableController {
             }
           }
       const timenow=Date.now();
-      console.log(timenow)
+      // console.log(timenow)
       const formattedtime= getIndianTime(timenow);
-      console.log(formattedtime)
+      // console.log(formattedtime)
       res.status(200).json({ message: 'Data Locked successfully!', updatedTime: formattedtime});
       
         } catch (err) {

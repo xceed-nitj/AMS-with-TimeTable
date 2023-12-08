@@ -38,7 +38,7 @@ class ClassTimeTableController {
             // If a record already exists, update it with the new slotData
             existingRecord.slotData = slotData;
             await existingRecord.save();
-            console.log(`Updated class table data for ${day} - ${slot}`);
+            // console.log(`Updated class table data for ${day} - ${slot}`);
           } else {
             // If no record exists, create a new one with the slotData
             const timetableObject= await ClassTimeTableDto.findTimeTableIdByCode(code);
@@ -51,7 +51,7 @@ class ClassTimeTableController {
               timetable:timetableObject,
             });
             await classTableInstance.save();
-            console.log(`Saved class table data for ${day} - ${slot}`);
+            // console.log(`Saved class table data for ${day} - ${slot}`);
           }
         }
       }
@@ -69,7 +69,7 @@ class ClassTimeTableController {
     const slotData = req.body.slotData; // Access the slotData object
     const code = req.body.code;
     const sem = req.body.sem;
-    console.log('sem',sem)
+    // console.log('sem',sem)
     try {
       const query = {
         day,
@@ -146,7 +146,7 @@ async savelunchslot(req, res) {
         // If a record already exists, update it with the new slotData
         existingRecord.slotData = slotData;
         await existingRecord.save();
-        console.log(`Updated class table data for ${day} - ${slot}`);
+        // console.log(`Updated class table data for ${day} - ${slot}`);
       } else {
         // If no record exists, create a new one with the slotData
         const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
@@ -159,7 +159,7 @@ async savelunchslot(req, res) {
           timetable: timetableObject,
         });
         await classTableInstance.save();
-        console.log(`Saved class table data for ${day} - ${slot}`);
+        // console.log(`Saved class table data for ${day} - ${slot}`);
       }
     }
 
@@ -174,7 +174,7 @@ async savelunchslot(req, res) {
 async getlunchslot(req, res) {
   const code = req.params.code;
     const lunchrecords = await ClassTable.find({slot:'lunch',code, 'slotData.0': { $exists: true }});
-    console.log(lunchrecords)
+    // console.log(lunchrecords)
     res.status(200).json({lunchrecords})
   } catch (error) {
   console.error(error);
@@ -252,7 +252,7 @@ async deletelunchslot(req, res) {
   async facultytt(req, res) {
     const facultyname = req.params.facultyname; 
     const code=req.params.code;
-    console.log('facultyname:', facultyname);
+    // console.log('facultyname:', facultyname);
     try {
       // Query the ClassTable collection based on the 'faculty' field
       // const facultydata = await ClassTable.find({ faculty: facultyname });

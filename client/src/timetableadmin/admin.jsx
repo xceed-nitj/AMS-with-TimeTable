@@ -35,7 +35,7 @@ const AdminPage = () => {
         throw new Error('Network response was not ok');
       }
 
-      console.log('Allotment created successfully');
+      // console.log('Allotment created successfully');
       setFormData({
         session: '',
       });

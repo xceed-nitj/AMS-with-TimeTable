@@ -75,7 +75,7 @@ const LunchLoad = () => {
         );
   
         setLunchData(filteredLunchData);
-        console.log("subject fetched data", filteredLunchData);
+        // console.log("subject fetched data", filteredLunchData);
   
         if (filteredLunchData.length > 0) {
           const firstRecord = filteredLunchData[0];
@@ -97,7 +97,7 @@ const LunchLoad = () => {
         if (response.ok) {
           const data = await response.json();
           setAvailableSubjects(data);
-          console.log("subject data", data);
+          // console.log("subject data", data);
         }
       } catch (error) {
         console.error("Error fetching subject data:", error);
@@ -217,8 +217,8 @@ const handleAddSlotRow = () => {
           slotData,
         }));
   
-      console.log('data to be sent', selectedSemesterData);
-      console.log('apiurl', apiUrl);
+      // console.log('data to be sent', selectedSemesterData);
+      // console.log('apiurl', apiUrl);
   
       const response = await fetch(
         `${apiUrl}/timetablemodule/tt/savelunchslot`,
@@ -251,7 +251,7 @@ const handleAddSlotRow = () => {
         });
       }
       setLunchData(responseData.lunchrecords);
-      console.log("subject fetched data", responseData.lunchrecords);
+      // console.log("subject fetched data", responseData.lunchrecords);
     } catch (error) {
       console.error(`Error making POST request: ${error.message}`);
     }

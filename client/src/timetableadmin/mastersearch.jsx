@@ -105,7 +105,8 @@ useEffect(()=>
 
       setCurrentCode(data1)
       // setAvailableDepts(dept)
-      console.log('received code:',data1)
+      // console.log('received code:',data1)
+
       // console.log('received dept data:',dept)
 
     } catch (error) {
@@ -127,7 +128,7 @@ useEffect(()=>
         const data1 = await response.json();
         const data=data1.timetableData;
         setSemNotes(data1.notes)
-        console.log('data received from...',data);
+        // console.log('data received from...',data);
         const initialData = generateInitialTimetableData(data, "sem");
         setViewData(initialData);
         return initialData;
@@ -138,8 +139,8 @@ useEffect(()=>
     };
 
     const fetchViewData = async (semester, currentCode) => {
-      console.log('selected sem',semester)
-      console.log('selected code',currentCode)
+      // console.log('selected sem',semester)
+      // console.log('selected code',currentCode)
 
       const data = await fetchData(semester,currentCode);
       // console.log('returned data after fetch', data)
@@ -182,7 +183,7 @@ useEffect(()=>
             const data = await response.json();
             // console.log('faculty response',data[0]);
             setCommonLoad(data);
-            console.log('coomomo load', data);
+            // console.log('coomomo load', data);
           }
         } catch (error) {
           console.error("Error fetching commonload:", error);
@@ -222,14 +223,14 @@ useEffect(()=>
   useEffect(() => {
     const fetchSem = async (currentCode) => {
       try {
-        console.log('currentcode used for',currentCode)
+        // console.log('currentcode used for',currentCode)
         const response = await fetch(
           `${apiUrl}/timetablemodule/addsem?code=${currentCode}`,
           { credentials: "include" }
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data)
+          // console.log(data)
           const filteredSems = data.filter((sem) => sem.code === currentCode);
           const semValues = filteredSems.map((sem) => sem.sem);
           // console.log('filtered semester data', filteredSems)
@@ -264,7 +265,7 @@ useEffect(()=>
     const fetchFaculty = async (currentCode) => {
       try {
       const fetchedttdetails=await fetchTTData(currentCode);
-        console.log("fetchedttdetails", fetchedttdetails)
+        // console.log("fetchedttdetails", fetchedttdetails)
       const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`,{credentials: 'include',});
       if (response.ok) {
         const data = await response.json();
@@ -272,7 +273,7 @@ useEffect(()=>
 
         // console.log('faculty response',data);
         setAvailableFaculties(facultydata);
-        console.log('deptfaculties', facultydata);
+        // console.log('deptfaculties', facultydata);
         return data;
       }
        
