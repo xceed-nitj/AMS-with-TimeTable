@@ -264,13 +264,15 @@ useEffect(()=>
     const fetchFaculty = async (currentCode) => {
       try {
       const fetchedttdetails=await fetchTTData(currentCode);
-
+        console.log("fetchedttdetails", fetchedttdetails)
       const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`,{credentials: 'include',});
       if (response.ok) {
         const data = await response.json();
+        const facultydata = data.map(faculty => faculty.name);
+
         // console.log('faculty response',data);
-        setAvailableFaculties(data);
-        console.log('deptfaculties', data);
+        setAvailableFaculties(facultydata);
+        console.log('deptfaculties', facultydata);
         return data;
       }
        
@@ -457,24 +459,6 @@ useEffect(()=>
       }
     };
 
-    const fetchTTData = async (currentCode) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          // body: JSON.stringify(userData),
-          credentials: 'include'
-        });
-        
-        const data = await response.json();
-        setTTData(data);
-      } catch (error) {
-        console.error('Error fetching TTdata:', error);
-      }
-    };
-
 
 
     fetchSubjectData(currentCode);
@@ -526,7 +510,7 @@ useEffect(()=>
         <>
     <Container maxW="6xl">
     <Center my={4}>
-        <Text color="blue">Select semester (or) faculty (or) room to view their timetable</Text>
+        <Text color="blue">Select semester or</Text>
       </Center>
       <FormControl>
           <FormLabel fontWeight="bold">View Semester timetable:
@@ -592,7 +576,7 @@ useEffect(()=>
       </Center>
       {/* Faculty Dropdown */}
       <FormControl>
-        <FormLabel fontWeight='bold'>View Faculty timetable</FormLabel>
+        <FormLabel fontWeight='bold'>Faculty timetable</FormLabel>
         <Select
           value={selectedFaculty}
           onChange={(e) => setSelectedFaculty(e.target.value)}
@@ -659,7 +643,7 @@ useEffect(()=>
       </Center>
 
     <FormControl>
-     <FormLabel fontWeight='bold' >View Room timetable</FormLabel>
+     <FormLabel fontWeight='bold' >Room timetable</FormLabel>
       {/* Room Dropdown */}
       <Select
         value={selectedRoom}
