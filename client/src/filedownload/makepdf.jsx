@@ -187,7 +187,7 @@ class PDFGenerator extends React.Component {
       }
 
       if (type !== 'sem') {
-        summaryRow.push({ text: summaryData[subject].subSem, fontSize: 10 });
+        summaryRow.push({ text: summaryData[subject].faculties.join(', '), fontSize: 10 });
       }
 
       summaryTableData.push(summaryRow);
