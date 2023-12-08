@@ -14,7 +14,7 @@ import {
   CustomPlusButton,
   CustomDeleteButton,
 } from "../styles/customStyles";
-import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+import { Box, Text,Center, Portal, ChakraProvider } from "@chakra-ui/react";
 
 import {
   Table,
@@ -263,20 +263,21 @@ useEffect(()=>
 
     const fetchFaculty = async (currentCode) => {
       try {
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`,
-          { credentials: "include" }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          // console.log('faculty response',data);
-          setAvailableFaculties(data);
-          // console.log('faculties', availableFaculties);
-        }
-      } catch (error) {
-        console.error("Error fetching subject data:", error);
+      const fetchedttdetails=await fetchTTData(currentCode);
+
+      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`,{credentials: 'include',});
+      if (response.ok) {
+        const data = await response.json();
+        // console.log('faculty response',data);
+        setAvailableFaculties(data);
+        console.log('deptfaculties', data);
+        return data;
       }
-    };
+       
+    } catch (error) {
+      console.error('Error fetching subject data:', error);
+    }
+  };
 
     const fetchTime = async () => {
       try {
@@ -299,6 +300,29 @@ useEffect(()=>
     fetchTime();
     fetchFaculty(currentCode); // Call the function to fetch subject data
   }, [apiUrl, currentCode, selectedSemester, selectedFaculty, selectedRoom]);
+
+  const fetchTTData = async (currentCode) => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // body: JSON.stringify(userData),
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      // console.log('ttdata',data)
+    setTTData(data);
+      return data;
+    //   
+    } catch (error) {
+      console.error('Error fetching TTdata:', error);
+    }
+  };
+
+
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -399,7 +423,7 @@ useEffect(()=>
   
     }
   
-    console.log("initial datat to be received",initialData);
+    // console.log("initial datat to be received",initialData);
     return initialData;
   };
 
@@ -461,7 +485,7 @@ useEffect(()=>
 
 
   return (
-    <Container maxW="6xl">
+    <Container maxW="7xl">
       <Header title="View TimeTable "></Header>
       <FormLabel fontWeight="bold">Select Session:
           </FormLabel>
@@ -469,6 +493,7 @@ useEffect(()=>
           <Select
             value={selectedSession}
             onChange={(e) => setSelectedSession(e.target.value)}
+            isRequired
           >
             <option value="">Select Session</option>
             {allsessions.map((session, index) => (
@@ -484,6 +509,7 @@ useEffect(()=>
           <Select
             value={selectedDept}
             onChange={(e) => setSelectedDept(e.target.value)}
+            isRequired
           >
             <option value="">Select Department</option>
             {availableDepts.map((dept, index) => (
@@ -494,8 +520,14 @@ useEffect(()=>
           </Select>
 
 
-
-
+          {selectedSession === '' || selectedDept === '' ? (
+        <Text color="red">Please select Session and Department to proceed further.</Text>
+      ) : (
+        <>
+    <Container maxW="6xl">
+    <Center my={4}>
+        <Text color="blue">Select semester (or) faculty (or) room to view their timetable</Text>
+      </Center>
       <FormControl>
           <FormLabel fontWeight="bold">View Semester timetable:
           </FormLabel>
@@ -555,9 +587,12 @@ useEffect(()=>
             <Text>Please select a Semester from the dropdown.</Text>
             )}
       </Box>
+      <Center my={4}>
+        <Text>(or)</Text>
+      </Center>
       {/* Faculty Dropdown */}
       <FormControl>
-        <FormLabel fontWeight='bold'>Faculty timetable</FormLabel>
+        <FormLabel fontWeight='bold'>View Faculty timetable</FormLabel>
         <Select
           value={selectedFaculty}
           onChange={(e) => setSelectedFaculty(e.target.value)}
@@ -619,8 +654,12 @@ useEffect(()=>
           <Text>Please select a faculty from the dropdown.</Text>
           )}
       </Box>
+      <Center my={4}>
+        <Text>(or)</Text>
+      </Center>
+
     <FormControl>
-     <FormLabel fontWeight='bold' >Room timetable</FormLabel>
+     <FormLabel fontWeight='bold' >View Room timetable</FormLabel>
       {/* Room Dropdown */}
       <Select
         value={selectedRoom}
@@ -682,6 +721,11 @@ useEffect(()=>
           )}
       </Box>
       </FormControl>
+      </Container>
+        
+        </>
+      )}
+
     </Container>
   );
 }
