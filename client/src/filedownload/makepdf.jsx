@@ -112,6 +112,19 @@ class PDFGenerator extends React.Component {
           // Set other properties as needed
         });
       }
+
+      if(type=='faculty')
+      {
+        if (cell.faculty) {
+          cellContents.push({
+            text: `[${cell.faculty}]`,
+            fontSize: 10, // Set the font size for cell.room
+            // Set other properties as needed
+          });
+        }
+
+      }
+
       });
     
     });
