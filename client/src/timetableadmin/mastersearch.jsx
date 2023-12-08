@@ -511,7 +511,7 @@ useEffect(()=>
         <>
     <Container maxW="6xl">
     <Center my={4}>
-        <Text color="blue">Select semester or</Text>
+        <Text color="blue">Select semester (or) faculty (or) room to view the time table</Text>
       </Center>
       <FormControl>
           <FormLabel fontWeight="bold">View Semester timetable:
@@ -577,7 +577,7 @@ useEffect(()=>
       </Center>
       {/* Faculty Dropdown */}
       <FormControl>
-        <FormLabel fontWeight='bold'>Faculty timetable</FormLabel>
+        <FormLabel fontWeight='bold'>View Faculty timetable</FormLabel>
         <Select
           value={selectedFaculty}
           onChange={(e) => setSelectedFaculty(e.target.value)}
@@ -644,7 +644,7 @@ useEffect(()=>
       </Center>
 
     <FormControl>
-     <FormLabel fontWeight='bold' >Room timetable</FormLabel>
+     <FormLabel fontWeight='bold' >View Room timetable</FormLabel>
       {/* Room Dropdown */}
       <Select
         value={selectedRoom}
