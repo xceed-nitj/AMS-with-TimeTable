@@ -76,7 +76,7 @@ const AdminPage = () => {
       <Link to="/tt/allotment">
         <Button colorScheme="teal">Go Room Allotment</Button>
       </Link>
-      <Link to="/tt/allotment">
+      <Link to="/tt/admin/instituteload">
         <Button colorScheme="teal">Institute Faculty load </Button>
       </Link>
 
