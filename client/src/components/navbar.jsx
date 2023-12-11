@@ -41,7 +41,7 @@ const Navbar = () => {
       try {
         const userDetails = await getUserDetails();
         setUserDetails(userDetails);
-        console.log(userDetails)
+        // console.log(userDetails)
         setIsAuthenticated(true);
       } catch (error) {
         // Handle error (e.g., display an error message or redirect to an error page)

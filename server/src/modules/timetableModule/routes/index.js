@@ -3,7 +3,7 @@ const router = express.Router();
 const protectRoute =require("../../usermanagement/privateroute")
 
 router.use('/timetable', require("./timetable")); 
-router.use('/faculty', protectRoute, require("./faculty")); 
+router.use('/faculty', require("./faculty")); 
 router.use('/subject', require("./subject")); 
 router.use('/tt',protectRoute, require("./classtimetable")); 
 router.use('/addfaculty',require("./addfaculty")); 

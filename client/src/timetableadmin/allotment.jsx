@@ -114,7 +114,7 @@ const AllotmentForm = () => {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('Data from backend:', data);
+          // console.log('Data from backend:', data);
   
           // Assuming you have only one item in the array (as per your example)
           const [allotmentData] = data;
@@ -231,7 +231,7 @@ const AllotmentForm = () => {
         throw new Error('Network response was not ok');
       }
 
-      console.log('Allotment created successfully');
+      // console.log('Allotment created successfully');
       toast({
         position: 'top',
         title: "Allotment Updated Successfully",

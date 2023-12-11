@@ -42,7 +42,7 @@ class PDFGenerator extends React.Component {
 
     const session=ttdata[0].session;
     const dept=ttdata[0].dept;
-    console.log('summarytimeDate',timetableData)
+    // console.log('summarytimeDate',timetableData)
     const tableData = [];
     const { headerImageDataURL } = this.state; // Use the header image URL from the state
 
@@ -77,7 +77,7 @@ class PDFGenerator extends React.Component {
       cellData = timetableData[day]['lunch'];
       if(cellData.length==0)
       {      
-      console.log(cellData)
+      // console.log(cellData)
       // cellData='Lunch'
       row.push({
         // colSpan: 4,
@@ -112,6 +112,19 @@ class PDFGenerator extends React.Component {
           // Set other properties as needed
         });
       }
+
+      if(type=='faculty')
+      {
+        if (cell.faculty) {
+          cellContents.push({
+            text: `[${cell.faculty}]`,
+            fontSize: 10, // Set the font size for cell.room
+            // Set other properties as needed
+          });
+        }
+
+      }
+
       });
     
     });
@@ -174,7 +187,7 @@ class PDFGenerator extends React.Component {
       }
 
       if (type !== 'sem') {
-        summaryRow.push({ text: summaryData[subject].subSem, fontSize: 10 });
+        summaryRow.push({ text: summaryData[subject].faculties.join(', '), fontSize: 10 });
       }
 
       summaryTableData.push(summaryRow);

@@ -96,6 +96,20 @@ const session = ttdata[0].session;
             // Set other properties as needed
           });
         }
+        if(type=='faculty')
+        {
+          if (cell.faculty) {
+            cellContents.push({
+              text: `[${cell.faculty}]`,
+              fontSize: 10, // Set the font size for cell.room
+              // Set other properties as needed
+            });
+          }
+  
+        }
+  
+
+
         });
       
       });
@@ -161,8 +175,9 @@ const session = ttdata[0].session;
     }
 
     if (type !== 'sem') {
-      summaryRow.push({ text: summaryData[subject].subSem, fontSize: 10 });
+      summaryRow.push({ text: summaryData[subject].faculties.join(', '), fontSize: 10 });
     }
+
 
     summaryTableData.push(summaryRow);
   });

@@ -41,6 +41,7 @@ function InstituteLoad() {
   const [selectedFaculty, setSelectedFaculty] = useState("");
   const [selectedRoom, setSelectedRoom] = useState("");
   const [commonLoad, setCommonLoad]=useState();
+  const [currentDept, setCurrentDept]=useState();
 
   const apiUrl = getEnvironment();
   // const navigate = useNavigate();
@@ -52,6 +53,8 @@ function InstituteLoad() {
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [availableFaculties, setAvailableFaculties] = useState([]);
+  const [facultyHoursCount, setFacultyHoursCount] = useState({});
+
 
   // const [lockedTime, setLockedTime] = useState();
   // const [facultyLockedTime, setFacultyLockedTime] = useState();
@@ -91,6 +94,7 @@ function InstituteLoad() {
     };
   
     fetchSessions();
+
   }, []); // Empty dependency array means this effect runs once on mount
   
   const fetchCode= async (session, dept) => {
@@ -222,22 +226,25 @@ function InstituteLoad() {
       }
     };
 
-    const fetchFaculty = async (newCode) => {
+    const fetchFaculty = async (currentCode) => {
       try {
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/addfaculty/all?code=${newCode}`,
-          { credentials: "include" }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          console.log('faculty response',data);
-          setAvailableFaculties(data);
-          // console.log('faculties', availableFaculties);
-        }
-      } catch (error) {
-        console.error("Error fetching subject data:", error);
+      const fetchedttdetails=await fetchTTData(currentCode);
+        console.log("fetchedttdetails", fetchedttdetails)
+      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`,{credentials: 'include',});
+      if (response.ok) {
+        const data = await response.json();
+        const facultydata = data.map(faculty => faculty.name);
+
+        console.log('faculty response',facultydata);
+        setAvailableFaculties(facultydata);
+        // console.log('deptfaculties', facultydata);
+        return facultydata;
       }
-    };
+       
+    } catch (error) {
+      console.error('Error fetching subject data:', error);
+    }
+  };
 
     const fetchTime = async () => {
       try {
@@ -391,7 +398,9 @@ function InstituteLoad() {
         });
         
         const data = await response.json();
+        // console.log('ttdata', data)
         setTTData(data);
+        return data;
       } catch (error) {
         console.error('Error fetching TTdata:', error);
       }
@@ -436,13 +445,21 @@ useEffect(()=>{
 
     const fetchLoad = async (session) => {
       setFacultyHoursCount({});
+      console.log('dept available:',availableDepts)
       for (const dept of availableDepts) {
         // Fetch the code for the current session and department
+        setCurrentDept(dept);
         const newCode = await fetchCode(session, dept);
-  
+      console.log('dept code available:',newCode)
+
+        const facultylist= await fetchFaculty(newCode);
         // Fetch faculty data for each available faculty
-        for (const faculty of availableFaculties) {
+        console.log('faculty available:',facultylist)
+
+        for (const faculty of facultylist) {
           const newFacultyData = await facultyData(newCode, faculty);
+          console.log('faculty data available:',newFacultyData)
+
           const result = countHoursByDegreeAndSemester(newFacultyData);
   
           // Accumulate faculty hours count
@@ -457,7 +474,6 @@ useEffect(()=>{
     fetchLoad(selectedSession);
   },[selectedSession]);
 
-  const [facultyHoursCount, setFacultyHoursCount] = useState({});
 
   console.log('faculuy hrs', facultyHoursCount)
   
@@ -483,7 +499,8 @@ useEffect(()=>{
     <table>
       <thead>
         <tr>
-          <th>Faculty</th>
+          <th>Faculty Name</th>
+          <th>Department</th>
           <th>B.Tech Sem 1</th>
           <th>B.Tech Sem 2</th>
           <th>B.Tech Sem 3</th>
@@ -495,6 +512,8 @@ useEffect(()=>{
       {Object.keys(facultyHoursCount).map((faculty) => (
   <tr key={faculty}>
     <td>{faculty}</td>
+    <td>{currentDept}</td>
+
     {[1, 2, 3, 4].map((semester) => (
       <td key={`${faculty}-${semester}`}>
         {facultyHoursCount[faculty][`B.Tech-${semester}`] || 0}

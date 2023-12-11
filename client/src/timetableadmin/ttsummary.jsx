@@ -110,6 +110,7 @@ console.log(type)
       if (
         entry.faculties.every(faculty => existingEntry.faculties.includes(faculty)) &&
         entry.subType === existingEntry.subType &&
+        entry.subSem === existingEntry.subSem &&
         entry.subjectFullName === existingEntry.subjectFullName &&
         entry.rooms.every(room => existingEntry.rooms.includes(room))
       ) {
@@ -192,7 +193,7 @@ console.log('summary',  sortedSummaryEntries)
       <td>{sortedSummaryEntries[subCode].count}</td>
       {type !== 'faculty' && <td>{sortedSummaryEntries[subCode].faculties.join(', ')}</td>}
       {type !== 'room' && <td>{sortedSummaryEntries[subCode].rooms.join(', ')}</td>}
-      {type !== 'sem' && <td>{sortedSummaryEntries[subCode].subSem}</td>}
+      {type !== 'sem' && <td>{sortedSummaryEntries[subCode].faculties.join(', ')}</td>}
     </tr>
   ))}
 </tbody>
