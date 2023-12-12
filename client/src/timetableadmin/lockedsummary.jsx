@@ -402,7 +402,7 @@ function LockedSummary() {
   return (
     <Container maxW="6xl">
       <Header title="Locked TimeTable Summary"></Header>
-      <Button onClick={handleDownloadClick}>Click here for Batch Download</Button>
+      <Button colorScheme="orange" onClick={handleDownloadClick}>Click here for Batch Download</Button>
       {/* <Box mb='6' display='flex' justifyContent='right' onClick={handleDownloadClick}>
         <BUtton color='blue'>
           click here for Batch Download 

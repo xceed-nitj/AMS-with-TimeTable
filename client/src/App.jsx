@@ -31,6 +31,7 @@ import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
+import MergePDFComponent from './filedownload/mergepdfdocuments';
 function App() {
   return (
     <Router>
@@ -73,6 +74,7 @@ function App() {
           <Route path="/tt/admin" element={<AdminPage/>}/>
           <Route path="/tt/masterview" element={<MasterView/>}/>
           <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
+          <Route path="/tt/:generatedLink/generatepdf/mergepdf" element={<MergePDFComponent />} />
 
         </Routes>
         {/* <Footer/> */}

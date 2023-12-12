@@ -11,6 +11,7 @@ import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteBu
 import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
 import downloadPDF from '../filedownload/downloadpdf';
 import generateSummaryTablePDF from '../filedownload/downloadsummary'
+import { Link } from "react-router-dom";
 
 
 import {
@@ -70,6 +71,8 @@ const [headTitle, setHeadTitle] = useState('');
   const [startStatus, setStartStatus]=useState('')
   const [completeStatus, setCompleteStatus]=useState('')
 
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   useEffect(() => {
 
@@ -1196,6 +1199,13 @@ Download Completed.
 </p>
 )}
 </div>
+<Link to={`${currentPath}/mergepdf`}>
+            <Button colorScheme="orange">
+             Click here to Navigate to Merge PDF Page!!
+            </Button>
+         
+                </Link>
+
 
  
               </Container>
