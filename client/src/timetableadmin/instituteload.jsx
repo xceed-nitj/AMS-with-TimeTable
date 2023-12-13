@@ -500,11 +500,17 @@ useEffect(()=>{
       <thead>
         <tr>
           <th>Faculty Name</th>
-          <th>Department</th>
+          {/* <th>Department</th> */}
           <th>B.Tech Sem 1</th>
           <th>B.Tech Sem 2</th>
           <th>B.Tech Sem 3</th>
           <th>B.Tech Sem 4</th>
+          <th>B.Tech Sem 5</th>
+          <th>B.Tech Sem 6</th>
+          <th>B.Tech Sem 7</th>
+          <th>B.Tech Sem 8</th>
+          <th>M.Tech Sem 1</th>
+          <th>M.Tech Sem 2</th>
           {/* Add similar columns for other degrees and semesters */}
         </tr>
       </thead>
@@ -512,13 +518,19 @@ useEffect(()=>{
       {Object.keys(facultyHoursCount).map((faculty) => (
   <tr key={faculty}>
     <td>{faculty}</td>
-    <td>{currentDept}</td>
+    {/* <td>{currentDept}</td> */}
 
-    {[1, 2, 3, 4].map((semester) => (
+    {[1, 2, 3, 4,5,6,7,8].map((semester) => (
       <td key={`${faculty}-${semester}`}>
         {facultyHoursCount[faculty][`B.Tech-${semester}`] || 0}
       </td>
     ))}
+    
+    {[1, 2].map((semester) => (
+                <td key={`${faculty}-${semester}`}>
+                  {facultyHoursCount[faculty][`M.Tech-${semester}`] || 0}
+                </td>
+              ))}
   </tr>
 ))}
 </tbody>
