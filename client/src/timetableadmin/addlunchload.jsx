@@ -187,6 +187,15 @@ const handleAddSlotRow = () => {
   const handleDeleteSlot = (rowIndex, slotIndex) => {
     const updatedSlotData = [...lunchData[rowIndex].slotData];
     updatedSlotData.splice(slotIndex, 1);
+
+    if (updatedSlotData.length === 0) {
+      // If empty, replace it with the initial value
+      updatedSlotData.push({
+        subject: "",
+        faculty: "",
+        room: "",
+      });
+    }
   
     const updatedLunchData = [...lunchData];
     updatedLunchData[rowIndex].slotData = updatedSlotData;

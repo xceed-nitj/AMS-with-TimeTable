@@ -520,7 +520,7 @@ useEffect(()=>{
     <td>{faculty}</td>
     {/* <td>{currentDept}</td> */}
 
-    {[1, 2, 3, 4,5,6,7,8].map((semester) => (
+    {[section, 2, 3, 4,5,6,7,8].map((semester) => (
       <td key={`${faculty}-${semester}`}>
         {facultyHoursCount[faculty][`B.Tech-${semester}`] || 0}
       </td>
