@@ -329,9 +329,10 @@ const Timetable = () => {
                   });
                 }
               }
-                initialData[day]['lunch'].push(slotSubjects);  
 
-              
+              if (slotSubjects.length > 0) {
+                initialData[day]['lunch'].push(slotSubjects);
+              }          
             }
           }
 

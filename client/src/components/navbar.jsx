@@ -6,16 +6,13 @@ import {
   Box,
   Flex,
   Text,
-  Button,
   ChakraProvider,
   extendTheme,
   Link,
   Image,
   Spacer,
-  Spinner,
+  Button,
 } from "@chakra-ui/react";
-// import Cookies from "js-cookie";
-
 
 const theme = extendTheme({
   components: {
@@ -35,13 +32,13 @@ const Navbar = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
         const userDetails = await getUserDetails();
         setUserDetails(userDetails);
-        // console.log(userDetails)
         setIsAuthenticated(true);
       } catch (error) {
         // Handle error (e.g., display an error message or redirect to an error page)
@@ -77,29 +74,34 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      // Send a request to the server's logout route
       const response = await fetch(`${apiUrl}/user/getuser/logout`, {
         method: "POST",
         credentials: 'include',
       });
-  
+
       if (!response.ok) {
         throw new Error("Failed to logout");
       }
-      // deleteCookie("jwt");
       navigate("/");
     } catch (error) {
       console.error("Error during logout:", error.message);
     }
   };
-    // Define an array of routes where you want to exclude the Navbar
+
+  const handleHover = () => {
+    setHovered(true);
+  };
+
+  const handleLeave = () => {
+    setHovered(false);
+  };
+
   const excludedRoutes = ["/"];
 
-  // Check if the current route is in the excludedRoutes array
   const isExcluded = excludedRoutes.includes(location.pathname);
 
   if (isLoading || isExcluded) {
-    return null; // Exclude Navbar in certain routes
+    return null;
   }
 
   return (
@@ -122,8 +124,32 @@ const Navbar = () => {
               )}
             </Text>
           ) : (
-            <Link color="white" href="/">
-              Login
+            <Link 
+              href="/"
+              color="white"
+              fontWeight="bold"
+              p="2"
+              borderRadius="md"
+              transition="all 0.2s ease-in-out"
+              _hover={{
+                // transform: 'translateY(-2px)',
+                boxShadow: 'lg',
+                bg: 'pink.500',
+                text: hovered ? 'XCEED to SUCCEED' : 'Login',
+              }}
+              _focus={{
+                boxShadow: 'outline',
+              }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                width: '160px',
+                bg: 'red.500',
+              }}
+              onMouseOver={handleHover}
+              onMouseLeave={handleLeave}
+            >
+              {hovered ? 'XCEED To succeed ' : 'Login To XCEED :-('}
             </Link>
           )}
         </Flex>

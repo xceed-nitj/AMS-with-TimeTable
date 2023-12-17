@@ -193,7 +193,7 @@ console.log('summary',  sortedSummaryEntries)
       <td>{sortedSummaryEntries[subCode].count}</td>
       {type !== 'faculty' && <td>{sortedSummaryEntries[subCode].faculties.join(', ')}</td>}
       {type !== 'room' && <td>{sortedSummaryEntries[subCode].rooms.join(', ')}</td>}
-      {type !== 'sem' && <td>{sortedSummaryEntries[subCode].faculties.join(', ')}</td>}
+      {type !== 'sem' && type !== 'room'?<td>{sortedSummaryEntries[subCode].faculties.join(', ')}</td>: type !== 'sem' && <td>{sortedSummaryEntries[subCode].rooms.join(', ')}</td>}
     </tr>
   ))}
 </tbody>

@@ -167,6 +167,8 @@ class PDFGenerator extends React.Component {
       summaryTableHeader.push({ text: 'Semester', bold: true, fontSize: 10 });
     }
 
+
+    
     summaryTableData.push(summaryTableHeader);
 
     // Iterate through the summary data and add rows to the table
@@ -186,8 +188,14 @@ class PDFGenerator extends React.Component {
         summaryRow.push({ text: summaryData[subject].rooms.join(', '), fontSize: 10 });
       }
 
-      if (type !== 'sem') {
+      if (type !== 'sem' && type !== 'room') {
         summaryRow.push({ text: summaryData[subject].faculties.join(', '), fontSize: 10 });
+      }
+      else{
+        if (type !== 'sem')
+        {
+        summaryRow.push({ text: summaryData[subject].rooms.join(', '), fontSize: 10 });
+        }
       }
 
       summaryTableData.push(summaryRow);
