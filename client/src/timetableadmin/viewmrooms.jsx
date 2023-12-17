@@ -112,7 +112,6 @@ function MasterRoomTable() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </Box>
-        <Text color="blue">CREDITS: Geo Location contributed by Nandhini, IPE (Batch of 2021-2025)</Text>
         {loading ? (
           <p>Loading...</p>
         ) : (
@@ -195,9 +194,12 @@ function MasterRoomTable() {
                 </Tr>
               ))}
             </Tbody>
+
           </Table>
         )}
       </Box>
+      <Text color="blue">CREDITS: Geo Location contributed by Nandhini, IPE (Batch of 2021-2025)</Text>
+
     </Container>
    
   );
