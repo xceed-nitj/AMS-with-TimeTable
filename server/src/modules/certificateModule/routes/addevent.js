@@ -1,6 +1,6 @@
 const express = require("express");
 const addEventRouter = express.Router();
-const AddEventController = require("../controllers/addeventController");
+const AddEventController = require("../controllers/addevent");
 const addEventController = new AddEventController();
 
 // Route to create a new event
@@ -8,7 +8,7 @@ addEventRouter.post("/", async (req, res) => {
   
   try {
     console.log(req.body); 
-    await addEventController.createEvent(req, res);
+    await addEventController.addEvent(req, res);
   } catch (e) {
     res
       .status(e?.status || 500)
@@ -21,7 +21,7 @@ addEventRouter.get("/", async (req, res) => {
   try {
     console.log("Route hit");
 
-    const allEvents = await addEventController.getAllEvents();
+    const allEvents = await addEventController.getAllEvents(req,res);
     res.status(200).json(allEvents);
   } catch (e) {
     res

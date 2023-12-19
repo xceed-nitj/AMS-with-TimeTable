@@ -5,12 +5,13 @@ class AddEventController {
   async addEvent(req, res) {
     const newEvent = req.body;
     try {
+      console.log('Request Body:', newEvent);  
       const createdEvent = await addEvent.create(newEvent);
       res.json(createdEvent);
       return;
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Internal server error", details: error.message });
     }
   }
 

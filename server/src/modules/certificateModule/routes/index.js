@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-router.use('/addevent', require("./addeventRoute")); 
-router.use('/certificate', require("./certificateRoute")); 
-router.use('/participant', require("./participantRoute"));
+router.use('/addevent', require("./addevent")); 
+router.use('/certificate', require("./certificate")); 
+router.use('/participant', require("./participant"));
 router.use((req, res) => {
     res.status(404).json({ error: 'Not Found' });
   });

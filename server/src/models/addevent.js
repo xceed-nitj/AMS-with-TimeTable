@@ -7,29 +7,29 @@ const organiserTypes = ["department", "club", "center"];
 const addEventSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required:true,
   },
   user: {
     type: String,
-    required: true,
+    
   },
   ExpiryDate: {
     type: Date,
-    required: true,
+    
   }, 
   ParticipantType:{
     type: String,
-    required: true,
+    
     enum: participantTypes,
   },
   OrganiserType: {
     type: String,
-    required: true,
+    
     enum: organiserTypes,
   },
   EventType:{
     type: String,
-    required: true,
+    
   }
 });
 
