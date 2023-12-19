@@ -30,7 +30,7 @@ const ParticipantSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  title1:{
+  title2:{
     type: String,
     required: true,
   },

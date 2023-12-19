@@ -7,7 +7,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 // Load environment variables from .env file
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({path:'../.env'});
 
 // Middleware
 
@@ -74,7 +74,7 @@ const newusermanagementModule=require("./modules/usermanagement/routes/index")
 app.use("/user", newusermanagementModule);
 
 app.get('/*', (req, res) => {
-    res.sendFile(path.join(__dirname+'/../../client/index.html'));
+  res.sendFile(path.join(__dirname+'/../../client/dist/index.html'));
 });
 
 

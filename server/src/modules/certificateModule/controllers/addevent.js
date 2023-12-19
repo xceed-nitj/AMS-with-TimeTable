@@ -1,5 +1,5 @@
 const HttpException = require("../../../models/http-exception");
-const addEvent = require("../../../models/addevent");
+const addEvent = require("../../../models/certificateModule/addevent");
 
 class AddEventController {
   async addEvent(req, res) {
