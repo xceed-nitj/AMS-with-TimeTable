@@ -74,7 +74,7 @@ const newusermanagementModule=require("./modules/usermanagement/routes/index")
 app.use("/user", newusermanagementModule);
 
 app.get('/*', (req, res) => {
-  res.sendFile(path.join(__dirname+'/../../client/dist/index.html'));
+    res.sendFile(path.join(__dirname+'/../../client/index.html'));
 });
 
 
