@@ -14,6 +14,7 @@ import {
   Td,
   chakra,
 } from "@chakra-ui/react";
+import { FaMapMarkerAlt } from 'react-icons/fa';
 
 import Header from '../components/header';
 
@@ -94,6 +95,10 @@ function MasterRoomTable() {
     return '';
   };
 
+  const redirectToMap = (landmark) => {
+    window.open(landmark, '_blank'); // Open the link in a new tab
+  };
+
   return (
     <Container maxW="5xl">
       <Box>
@@ -160,7 +165,7 @@ function MasterRoomTable() {
                   borderWidth="2px"
                   // onClick={() => handleSort('landMark')}
                 >
-                  Landmark {getSortIcon('landMark')}
+                  Location {getSortIcon('landMark')}
                 </Th>
               </Tr>
             </Thead>
@@ -172,13 +177,29 @@ function MasterRoomTable() {
                   <Td borderWidth="2px">{room.building}</Td>
                   <Td borderWidth="2px">{room.floor}</Td>
                   <Td borderWidth="2px">{room.dept}</Td>
-                  <Td borderWidth="2px">{room.landMark}</Td>
+                  {/* <Td borderWidth="2px">{room.landMark}</Td> */}
+                  <Td borderWidth="2px">
+                {(
+                  <chakra.span
+                    cursor="pointer"
+                    onClick={() => redirectToMap(room.landMark)}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <FaMapMarkerAlt color="red" size={30} />
+                  </chakra.span>
+                )}
+              </Td>
                 </Tr>
               ))}
             </Tbody>
+
           </Table>
         )}
       </Box>
+      <Text color="blue">CREDITS: Geo Location contributed by Nandhini, IPE (Batch of 2021-2025)</Text>
+
     </Container>
    
   );
