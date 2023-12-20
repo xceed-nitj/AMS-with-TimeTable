@@ -14,7 +14,7 @@ import {
   CustomPlusButton,
   CustomDeleteButton,
 } from "../styles/customStyles";
-import { Box, Text,Center, Portal, ChakraProvider } from "@chakra-ui/react";
+import { Box, Text, HStack, Center, Portal, ChakraProvider } from "@chakra-ui/react";
 
 import {
   Table,
@@ -470,10 +470,28 @@ useEffect(()=>
 
   }, [currentCode]);
 
+  const handleRoomClick = () => {
+    const pathArray = window.location.pathname
+      .split("/")
+      .filter((part) => part !== "");
+    const pathExceptLastPart = `/${pathArray.slice(0, -1).join("/")}`;
+    const pdfUrl = `${pathExceptLastPart}/viewmrooms`;
+    window.location.href = pdfUrl;
+  };
+
+
 
   return (
     <Container maxW="7xl">
       <Header title="View TimeTable "></Header>
+      <HStack>
+    {/* Empty spacer to push the button to the right */}
+    <Box flex="1" />
+    
+    <Button colorScheme="green" onClick={handleRoomClick} style={{ marginLeft: 'auto' }}>
+      Geo Locate Classrooms
+    </Button>
+  </HStack>
       <FormLabel fontWeight="bold">Select Session:
           </FormLabel>
 

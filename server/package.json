@@ -23,5 +23,7 @@
     "nodemon": "^3.0.1",
     "otp-generator": "^4.0.1",
     "xlsx": "^0.18.5"
-  }
+  },
+  "author": "",
+  "description": ""
 }

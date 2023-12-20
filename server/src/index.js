@@ -54,6 +54,8 @@ app.use(checkDatabaseConnection);
 app.use(express.static(path.join(__dirname+"/../../client/dist")));
 
 // Routes
+const certificateModule = require("./modules/certificateModule/routes/index");
+app.use("/certificateModule", certificateModule);
 
 const timetableModule = require("./modules/timetableModule/routes/index");
 app.use("/timetablemodule", timetableModule);
@@ -63,6 +65,7 @@ app.use("/upload", uploadModule);
 
 const attendanceModule = require("./modules/attendanceModule/routes/index");
 app.use("/attendancemodule", attendanceModule);
+
 
 const usermanagementModule=require("./modules/usermanagement/routes")
 app.use("/auth", usermanagementModule);
@@ -76,6 +79,7 @@ app.get('/*', (req, res) => {
 
 
 // Connect to MongoDB and listen for events
+
 mongoose
     .connect(process.env.MONGO_URL, {
         useNewUrlParser: true,
