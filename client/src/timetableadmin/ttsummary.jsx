@@ -131,12 +131,12 @@ console.log(type)
   }
   
 // Now, mergedSummaryData contains the merged entries with original keys
-console.log('merged data', mergedSummaryData);
+// console.log('merged data', mergedSummaryData);
 
 const sortedSummary = Object.values(mergedSummaryData).sort((a, b) =>
   a.subCode.localeCompare(b.subCode)
 );
-console.log('sorted data', sortedSummary );
+// console.log('sorted data', sortedSummary );
 
 // let sortedSummaryEntries={};
 
@@ -164,12 +164,13 @@ if (commonLoad) {
 }
 
 // Now, sortedSummaryEntries contains the merged data from commonLoad
-console.log(sortedSummaryEntries);
+// console.log(sortedSummaryEntries);
 
-console.log('summary',  sortedSummaryEntries)
+// console.log('summary',  sortedSummaryEntries)
   return (
     <div>
       <h2>Timetable Summary</h2>
+      <TableContainer>
       <table border="1" cellSpacing="0" align="center">
         <thead>
           <tr>
@@ -198,6 +199,7 @@ console.log('summary',  sortedSummaryEntries)
   ))}
 </tbody>
       </table>
+      </TableContainer>
 {time?<PDFGenerator timetableData={timetableData} summaryData={sortedSummaryEntries} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle} notes={notes}/>:null}
     </div>
   );
