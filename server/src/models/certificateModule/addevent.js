@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { commonFields, updateTimestamps } = require('./commonFields');
+const { commonFields, updateTimestamps } = require('../commonFields');
 const participantTypes = ["internal", "external"];
 const organiserTypes = ["department", "club", "center"];
 

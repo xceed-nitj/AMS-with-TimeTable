@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { commonFields, updateTimestamps } = require('./commonFields');
+const { commonFields, updateTimestamps } = require('../commonFields');
 const participantTypes = ["participation", "prize"];
 
 // Define your Mongoose schema based on the interface
