@@ -134,8 +134,8 @@ const Navbar = () => {
               _hover={{
                 // transform: 'translateY(-2px)',
                 boxShadow: 'lg',
-                bg: 'pink.500',
-                text: hovered ? 'XCEED to SUCCEED' : 'Login',
+                bg: 'red.500',
+                text: hovered ? 'For Faculty Only' : 'Login',
               }}
               _focus={{
                 boxShadow: 'outline',
@@ -149,7 +149,7 @@ const Navbar = () => {
               onMouseOver={handleHover}
               onMouseLeave={handleLeave}
             >
-              {hovered ? 'XCEED To succeed ' : 'Login To XCEED :-('}
+              {hovered ? 'For Members only! ' : 'Login To XCEED'}
             </Link>
           )}
         </Flex>
