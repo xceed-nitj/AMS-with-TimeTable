@@ -13,6 +13,7 @@ import {
   Th,
   Td,
   chakra,
+  Stack,
 } from "@chakra-ui/react";
 import { FaMapMarkerAlt } from 'react-icons/fa';
 
@@ -115,7 +116,9 @@ function MasterRoomTable() {
         {loading ? (
           <p>Loading...</p>
         ) : (
-          <Table variant="striped" colorScheme="gray" borderWidth="2px">
+          <Stack direction={['column', 'row']} spacing="4">
+            <Box overflowX="auto">
+<Table variant="striped" colorScheme="gray" borderWidth="2px">
             <Thead>
               <Tr>
                 <Th
@@ -196,6 +199,8 @@ function MasterRoomTable() {
             </Tbody>
 
           </Table>
+          </Box>
+          </Stack>
         )}
       </Box>
       <Text color="blue">CREDITS: Geo Location contributed by Nandhini, IPE (Batch of 2021-2025)</Text>
