@@ -89,7 +89,7 @@ mongoose
         console.log("Connected to MongoDB");
         // Start the Express server once connected to MongoDB
         app.listen(8010, () => {
-            console.log("Server started on port 8000");
+            console.log("Server started on port 8010");
         });
     })
     .catch((err) => {
