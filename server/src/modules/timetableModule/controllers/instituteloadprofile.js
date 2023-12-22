@@ -87,20 +87,17 @@ class InstituteLoadController {
                     } else {
                       // If the record doesn't exist, create a new record
                       // console.log('Creating New Record:', slotItem.faculty);
-                      if (facultyDetails[0] && facultyDetails[0].dept && facultyDetails[0].designation)
-                      {
                       const loadInstance = new instituteLoad({
                         session: currentSession,
                         name: slotItem.faculty,
-                        dept: facultyDetails[0].dept ||'',
-                        designation: facultyDetails[0].designation||'',
+                        dept: facultyDetails[0] ? facultyDetails[0].dept : null,
+                        designation: facultyDetails[0] ? facultyDetails[0].designation : null,                      
                         sem: [semDetails[0].type],
                         type: [subDetails[0].type],
                         load: 1, // You can modify this based on your actual structure
                       });
       
                       await loadInstance.save();
-                    }
                   }
                   }
                 }
