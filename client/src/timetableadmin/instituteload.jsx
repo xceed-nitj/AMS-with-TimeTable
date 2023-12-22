@@ -159,6 +159,21 @@ function InstituteLoad() {
     return facultyWiseLoad;
   }  
 
+  const Usemesters = [...new Set(Object.keys(availableLoad).flatMap(faculty => Object.keys(availableLoad[faculty])))];
+  const types = ['Theory', 'Laboratory', 'Tutorial', 'Project'];
+  
+  // Generate a set of unique columns based on available data
+  const uniqueColumns = new Set();
+  Object.keys(availableLoad).forEach((faculty) => {
+    Usemesters.forEach((semester) => {
+      types.forEach((type) => {
+        uniqueColumns.add(`${faculty}-${semester}-${type}`);
+      });
+    });
+  });
+  
+
+
   return (
     <Container maxW="6xl">
       <Header title="View TimeTable "></Header>
@@ -209,25 +224,22 @@ function InstituteLoad() {
             ))}
           </Select>
 
-          <table>
+
+<table>
   <thead>
     <tr>
       <th>Faculty</th>
-      {Object.keys(availableLoad).map((faculty) => (
-        Object.keys(availableLoad[faculty]).map((semester) => (
-          <React.Fragment key={`${faculty}-${semester}`}>
-            <th colSpan={4}>{`${semester}`}</th>
-          </React.Fragment>
-        ))
+      {[...Usemesters].map((semester) => (
+        <React.Fragment key={`header-${semester}`}>
+          <th colSpan={types.length}>{semester}</th>
+        </React.Fragment>
       ))}
     </tr>
     <tr>
       <th></th>
-      {Object.keys(availableLoad).map((faculty) => (
-        Object.keys(availableLoad[faculty]).map((semester) => (
-          ['Theory', 'Laboratory', 'Tutorial', 'Project'].map((type) => (
-            <th key={`${faculty}-${semester}-${type}`}>{type}</th>
-          ))
+      {[...Usemesters].map((semester) => (
+        types.map((type) => (
+          <th key={`header-${semester}-${type}`}>{type}</th>
         ))
       ))}
     </tr>
@@ -236,8 +248,8 @@ function InstituteLoad() {
     {Object.keys(availableLoad).map((faculty) => (
       <tr key={faculty}>
         <td>{faculty}</td>
-        {Object.keys(availableLoad[faculty]).map((semester) => (
-          ['Theory', 'Laboratory', 'Tutorial', 'Project'].map((type) => (
+        {[...Usemesters].map((semester) => (
+          types.map((type) => (
             <td key={`${faculty}-${semester}-${type}`}>
               {availableLoad[faculty]?.[semester]?.[type] || 0}
             </td>
