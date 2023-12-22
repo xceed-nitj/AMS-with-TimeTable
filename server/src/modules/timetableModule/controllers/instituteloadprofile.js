@@ -14,6 +14,7 @@ const masterSemController = new MasterSemController();
 const LockSem = require("../../../models/locksem");
 const MasterSem = require("../../../models/mastersem");
 const Subject = require("../../../models/subject");
+const Faculty = require("../../../models/faculty");
 
 
 class InstituteLoadController {
@@ -41,30 +42,65 @@ class InstituteLoadController {
         }
       }
     
-async calculateInstituteLoad(req, res) {
-    try {
-      const currentSession = req.params.session; 
-      const allcodes = await TimeTableDto.getAllCodesOfSession(currentSession);
-      for (const code of allcodes) {
-        const codeData = await LockSem.find({code});
-        for (const data of codeData) {
-          if(data.slotData.length>0 && data.slotData[0]!='')
-          {
-            const semDetails= await MasterSem.find({sem:data.sem})
-            for (const slotItem of data.slotData) {
-                const subDetails= await Subject.find({subName:slotItem.subject})
+      async calculateInstituteLoad(req, res) {
+        try {
+          const currentSession = req.params.session; 
+          const allcodes = await TimeTableDto.getAllCodesOfSession(currentSession);
+          await instituteLoad.deleteMany({session:currentSession})
+
+          for (const code of allcodes) {
+            const codeData = await LockSem.find({ code });
+      
+            for (const data of codeData) {
+              if (data.slotData.length > 0 && data.slotData[0] !== '') {
+                const semDetails = await MasterSem.find({ sem: data.sem });
+      
+                for (const slotItem of data.slotData) {
+                  if (slotItem.subject && slotItem.faculty) {
+                    const subDetails = await Subject.find({ subName: slotItem.subject });
+                    const facultyDetails =await Faculty.find({name:slotItem.faculty})
+                    // Check if a record with the same faculty name exists
+                    const existingRecord = await instituteLoad.findOne({ session: currentSession, name: slotItem.faculty });
+      
+                    if (existingRecord) {
+                      // If the record exists, push the new data into the arrays
+                      await instituteLoad.updateOne(
+                        { _id: existingRecord._id },
+                        {
+                          $push: {
+                            sem: semDetails[0].type,
+                            type: subDetails[0].type,
+                            load: 1 , // You can modify this based on your actual structure
+                          },
+                        }
+                      );
+                    } else {
+                      // If the record doesn't exist, create a new record
+                      const loadInstance = new instituteLoad({
+                        session: currentSession,
+                        name: slotItem.faculty,
+                        dept: facultyDetails[0].dept,
+                        designation: facultyDetails[0].designation,
+                        sem: [semDetails[0].type],
+                        type: [subDetails[0].type],
+                        load: 1 , // You can modify this based on your actual structure
+                      });
+      
+                      await loadInstance.save();
+                    }
+                  }
+                }
+              }
             }
-
           }
-        }  
+      
+          res.status(200).json({ message: "Institute load calculation completed successfully" });
+        } catch (error) {
+          console.error(error); 
+          res.status(500).json({ error: "Internal server error" });
+        }
       }
-
-              } catch (error) {
-           console.error(error); 
-           res.status(500).json({ error: "Internal server error" });
-         }
-       }
-     
+        
 
       async deleteId(id) {
         if (!id) {

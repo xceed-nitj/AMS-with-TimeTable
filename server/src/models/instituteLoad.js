@@ -12,25 +12,24 @@ const instituteLoadSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  dept: {
+    type: String,
+    required: true,
+  },
+  designation: {
+    type: String,
+    required: true,
+  },
   sem: {
     type: Array,
     required: true,
   },
-  lecture: {
+  type: {
     type: Array,
   },
-  tutorial: {
-    type: Array,
-  },
-  lab: {
-    type: Array,
-  },
-  project: {
-    type: Array,
-  },
-  others: {
-    type: Array,
-  },
+load:{
+  type: Array,
+    },
   strength:{
     type: Array,
     // required: true,
