@@ -87,7 +87,7 @@ class InstituteLoadController {
                     } else {
                       // If the record doesn't exist, create a new record
                       // console.log('Creating New Record:', slotItem.faculty);
-                      if (facultyDetails && facultyDetails[0].dept && facultyDetails[0].designation)
+                      if (facultyDetails[0] && facultyDetails[0].dept && facultyDetails[0].designation)
                       {
                       const loadInstance = new instituteLoad({
                         session: currentSession,
