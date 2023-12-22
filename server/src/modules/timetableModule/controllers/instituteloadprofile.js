@@ -50,10 +50,12 @@ class InstituteLoadController {
           await instituteLoad.deleteMany({ session: currentSession });
       
           for (const code of allcodes) {
+              console.log('Processing code:', code);
+            
             const codeData = await LockSem.find({ code });
-      
+
+            
             for (const data of codeData) {
-              console.log('Processing Data:', code);
               if (data.slotData.length > 0 && data.slotData[0] !== '') {
                 const semDetails = await MasterSem.find({ sem: data.sem });
       
@@ -62,7 +64,7 @@ class InstituteLoadController {
                   if (slotItem.subject && slotItem.faculty) {
                     const subDetails = await Subject.find({ subName: slotItem.subject });
                     const facultyDetails = await Faculty.find({ name: slotItem.faculty });
-                    console.log(facultyDetails)
+                    // console.log(facultyDetails)
                     // Check if a record with the same faculty name exists
                     const existingRecord = await instituteLoad.findOne({
                       session: currentSession,
@@ -85,6 +87,8 @@ class InstituteLoadController {
                     } else {
                       // If the record doesn't exist, create a new record
                       // console.log('Creating New Record:', slotItem.faculty);
+                      if (facultyDetails && facultyDetails[0].dept && facultyDetails[0].designation)
+                      {
                       const loadInstance = new instituteLoad({
                         session: currentSession,
                         name: slotItem.faculty,
@@ -97,6 +101,7 @@ class InstituteLoadController {
       
                       await loadInstance.save();
                     }
+                  }
                   }
                 }
               }
