@@ -99,7 +99,7 @@ function InstituteLoad() {
   
   const handleCalculateLoad = () => {
     // Make a request to your backend with the entered session value
-    fetch(`${apiUrl}/timetablemodule/instituteLoad/all`)
+    fetch(`${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`)
       .then(response => response.json())
       .then(data => {
         // Handle the data in your frontend (e.g., update UI)
