@@ -38,7 +38,7 @@ function InstituteLoad() {
   // const [facultyNotes, setFacultyNotes] = useState([]);
   // const [roomNotes, setRoomNotes] = useState([]);
   const [selectedSemester, setSelectedSemester] = useState("");
-  const [selectedFaculty, setSelectedFaculty] = useState("");
+  const [loadFaculty, setLoadFaculty] = useState({});
   const [selectedRoom, setSelectedRoom] = useState("");
   const [commonLoad, setCommonLoad]=useState();
   const [currentDept, setCurrentDept]=useState();
@@ -123,8 +123,11 @@ function InstituteLoad() {
   
         const data = await response.json();
   
-        setAvailableLoad(data);
-        console.log('load data', data)
+        console.log('load data', data);
+        const calculatedLoad = calculateFacultyWiseLoad(data);
+        console.log('calculated load',calculatedLoad)
+        setAvailableLoad(calculatedLoad);
+
       } catch (error) {
         console.error("Error fetching existing timetable data:", error);
       }
@@ -135,30 +138,26 @@ function InstituteLoad() {
   }, [selectedDept]); // Empty dependency array means this effect runs once on mount
 
 
-  function calculateTotalLoad(data) {
-    const totalLoad = {};
+  function calculateFacultyWiseLoad(data) {
+    const facultyWiseLoad = {};
   
-    data.sem.forEach((sem, index) => {
-      const type = data.type[index];
-      const load = data.load[index];
+    data.forEach((faculty) => {
+      const { name, sem, type, load } = faculty;
   
-      // Initialize the semester if not already present
-      if (!totalLoad[sem]) {
-        totalLoad[sem] = {};
-      }
+      facultyWiseLoad[name] = facultyWiseLoad[name] || {};
   
-      // Initialize the type if not already present
-      if (!totalLoad[sem][type]) {
-        totalLoad[sem][type] = 0;
-      }
+      sem.forEach((s, index) => {
+        const t = type[index];
+        const l = load[index];
   
-      // Increment the total load for the given semester and type
-      totalLoad[sem][type] += load;
+        facultyWiseLoad[name][s] = facultyWiseLoad[name][s] || {};
+        facultyWiseLoad[name][s][t] = (facultyWiseLoad[name][s][t] || 0) + l;
+      });
     });
   
-    return totalLoad;
-  }
-  
+    console.log(facultyWiseLoad);
+    return facultyWiseLoad;
+  }  
 
   return (
     <Container maxW="6xl">
@@ -209,6 +208,46 @@ function InstituteLoad() {
               </option>
             ))}
           </Select>
+
+          <table>
+  <thead>
+    <tr>
+      <th>Faculty</th>
+      {Object.keys(availableLoad).map((faculty) => (
+        Object.keys(availableLoad[faculty]).map((semester) => (
+          <React.Fragment key={`${faculty}-${semester}`}>
+            <th colSpan={4}>{`${semester}`}</th>
+          </React.Fragment>
+        ))
+      ))}
+    </tr>
+    <tr>
+      <th></th>
+      {Object.keys(availableLoad).map((faculty) => (
+        Object.keys(availableLoad[faculty]).map((semester) => (
+          ['Theory', 'Laboratory', 'Tutorial', 'Project'].map((type) => (
+            <th key={`${faculty}-${semester}-${type}`}>{type}</th>
+          ))
+        ))
+      ))}
+    </tr>
+  </thead>
+  <tbody>
+    {Object.keys(availableLoad).map((faculty) => (
+      <tr key={faculty}>
+        <td>{faculty}</td>
+        {Object.keys(availableLoad[faculty]).map((semester) => (
+          ['Theory', 'Laboratory', 'Tutorial', 'Project'].map((type) => (
+            <td key={`${faculty}-${semester}-${type}`}>
+              {availableLoad[faculty]?.[semester]?.[type] || 0}
+            </td>
+          ))
+        ))}
+      </tr>
+    ))}
+  </tbody>
+</table>
+
 
 </Container>
   );
