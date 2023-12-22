@@ -46,15 +46,14 @@ class InstituteLoadController {
         try {
           const currentSession = req.params.session; 
           const allcodes = await TimeTableDto.getAllCodesOfSession(currentSession);
-          // console.log('All Codes:', allcodes);
+          console.log('All Codes:', allcodes);
           await instituteLoad.deleteMany({ session: currentSession });
       
           for (const code of allcodes) {
-            // console.log('Processing Code:', code);
             const codeData = await LockSem.find({ code });
       
             for (const data of codeData) {
-              // console.log('Processing Data:', data);
+              console.log('Processing Data:', code);
               if (data.slotData.length > 0 && data.slotData[0] !== '') {
                 const semDetails = await MasterSem.find({ sem: data.sem });
       
@@ -63,7 +62,7 @@ class InstituteLoadController {
                   if (slotItem.subject && slotItem.faculty) {
                     const subDetails = await Subject.find({ subName: slotItem.subject });
                     const facultyDetails = await Faculty.find({ name: slotItem.faculty });
-      
+                    console.log(facultyDetails)
                     // Check if a record with the same faculty name exists
                     const existingRecord = await instituteLoad.findOne({
                       session: currentSession,
@@ -89,8 +88,8 @@ class InstituteLoadController {
                       const loadInstance = new instituteLoad({
                         session: currentSession,
                         name: slotItem.faculty,
-                        dept: facultyDetails[0].dept,
-                        designation: facultyDetails[0].designation,
+                        dept: facultyDetails[0].dept ||'',
+                        designation: facultyDetails[0].designation||'',
                         sem: [semDetails[0].type],
                         type: [subDetails[0].type],
                         load: 1, // You can modify this based on your actual structure
