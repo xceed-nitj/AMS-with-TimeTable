@@ -46,36 +46,46 @@ class InstituteLoadController {
         try {
           const currentSession = req.params.session; 
           const allcodes = await TimeTableDto.getAllCodesOfSession(currentSession);
-          await instituteLoad.deleteMany({session:currentSession})
-
+          // console.log('All Codes:', allcodes);
+          await instituteLoad.deleteMany({ session: currentSession });
+      
           for (const code of allcodes) {
+            // console.log('Processing Code:', code);
             const codeData = await LockSem.find({ code });
       
             for (const data of codeData) {
+              // console.log('Processing Data:', data);
               if (data.slotData.length > 0 && data.slotData[0] !== '') {
                 const semDetails = await MasterSem.find({ sem: data.sem });
       
                 for (const slotItem of data.slotData) {
+                  // console.log('Processing Slot Item:', slotItem);
                   if (slotItem.subject && slotItem.faculty) {
                     const subDetails = await Subject.find({ subName: slotItem.subject });
-                    const facultyDetails =await Faculty.find({name:slotItem.faculty})
+                    const facultyDetails = await Faculty.find({ name: slotItem.faculty });
+      
                     // Check if a record with the same faculty name exists
-                    const existingRecord = await instituteLoad.findOne({ session: currentSession, name: slotItem.faculty });
+                    const existingRecord = await instituteLoad.findOne({
+                      session: currentSession,
+                      name: slotItem.faculty
+                    });
       
                     if (existingRecord) {
                       // If the record exists, push the new data into the arrays
+                      // console.log('Updating Existing Record:', existingRecord);
                       await instituteLoad.updateOne(
                         { _id: existingRecord._id },
                         {
                           $push: {
                             sem: semDetails[0].type,
                             type: subDetails[0].type,
-                            load: 1 , // You can modify this based on your actual structure
+                            load: 1, // You can modify this based on your actual structure
                           },
                         }
                       );
                     } else {
                       // If the record doesn't exist, create a new record
+                      // console.log('Creating New Record:', slotItem.faculty);
                       const loadInstance = new instituteLoad({
                         session: currentSession,
                         name: slotItem.faculty,
@@ -83,7 +93,7 @@ class InstituteLoadController {
                         designation: facultyDetails[0].designation,
                         sem: [semDetails[0].type],
                         type: [subDetails[0].type],
-                        load: 1 , // You can modify this based on your actual structure
+                        load: 1, // You can modify this based on your actual structure
                       });
       
                       await loadInstance.save();
@@ -93,14 +103,15 @@ class InstituteLoadController {
               }
             }
           }
-      
-          res.status(200).json({ message: "Institute load calculation completed successfully" });
+          const loads = await instituteLoad.find({ session: currentSession });
+      // return loads;
+          res.status(200).json({loads, message: "Institute load calculation completed successfully" });
         } catch (error) {
           console.error(error); 
           res.status(500).json({ error: "Internal server error" });
         }
       }
-        
+      
 
       async deleteId(id) {
         if (!id) {

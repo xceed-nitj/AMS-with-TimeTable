@@ -20,8 +20,8 @@ InstituteLoadRouter.post("/", async (req, res) => {
 
  InstituteLoadRouter.get("/:session", async (req, res) => {
     try {
-      await InstituteLoadController.calculateInstituteLoad(req, res);
-      // res.status(200).json(sem);
+     await InstituteLoadController.calculateInstituteLoad(req, res);
+      // res.status(200).json(loads);
     } catch (error) {
       res.status(500).json({ error: 'Internal Server Error' });
     }
