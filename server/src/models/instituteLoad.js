@@ -14,11 +14,9 @@ const instituteLoadSchema = new mongoose.Schema({
   },
   dept: {
     type: String,
-    required: true,
   },
   designation: {
     type: String,
-    required: true,
   },
   sem: {
     type: Array,
