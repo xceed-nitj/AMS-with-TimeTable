@@ -27,5 +27,15 @@ InstituteLoadRouter.post("/", async (req, res) => {
     }
   });
 
+  
+ InstituteLoadRouter.get("/:session/:dept", async (req, res) => {
+  try {
+   await InstituteLoadController.getInstituteLoad(req, res);
+    // res.status(200).json(loads);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
    
   module.exports = InstituteLoadRouter;

@@ -32,10 +32,11 @@ class InstituteLoadController {
     
       async getInstituteLoad(req, res) {
        try {
-        const session=req.body.session;
-          const instituteLoad = await instituteLoad.find({session});
-          res.json(instituteLoad)
-          return;
+        const session=req.params.session;
+        const dept=req.params.dept;
+          const loads= await instituteLoad.find({session,dept});
+          res.json(loads)
+          // return;
         } catch (error) {
           console.error(error); 
           res.status(500).json({ error: "Internal server error" });

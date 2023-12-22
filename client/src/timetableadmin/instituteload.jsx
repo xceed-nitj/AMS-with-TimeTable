@@ -62,7 +62,7 @@ function InstituteLoad() {
 
   const [allsessions, setAllSessions]=useState([]);
   const [availableDepts, setAvailableDepts] = useState([]);
-  const [currentCode, setCurrentCode] = useState('');
+  const [availableLoad, setAvailableLoad] = useState({});
   const [selectedSession, setSelectedSession]=useState('');
   const [selectedDept, setSelectedDept]=useState('');
 
@@ -99,7 +99,7 @@ function InstituteLoad() {
   
   const handleCalculateLoad = () => {
     // Make a request to your backend with the entered session value
-    fetch(`${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`)
+    fetch(`${apiUrl}/timetablemodule/instituteLoad/all`)
       .then(response => response.json())
       .then(data => {
         // Handle the data in your frontend (e.g., update UI)
@@ -110,6 +110,54 @@ function InstituteLoad() {
       });
   };
 
+  useEffect(() => {
+    const fetchDepartmentFacultyData = async (selectedSession,selectedDept) => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/instituteLoad/${selectedSession}/${selectedDept}`,
+          { credentials: "include" }
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+  
+        setAvailableLoad(data);
+        console.log('load data', data)
+      } catch (error) {
+        console.error("Error fetching existing timetable data:", error);
+      }
+    };
+  
+    fetchDepartmentFacultyData(selectedSession,selectedDept);
+
+  }, [selectedDept]); // Empty dependency array means this effect runs once on mount
+
+
+  function calculateTotalLoad(data) {
+    const totalLoad = {};
+  
+    data.sem.forEach((sem, index) => {
+      const type = data.type[index];
+      const load = data.load[index];
+  
+      // Initialize the semester if not already present
+      if (!totalLoad[sem]) {
+        totalLoad[sem] = {};
+      }
+  
+      // Initialize the type if not already present
+      if (!totalLoad[sem][type]) {
+        totalLoad[sem][type] = 0;
+      }
+  
+      // Increment the total load for the given semester and type
+      totalLoad[sem][type] += load;
+    });
+  
+    return totalLoad;
+  }
   
 
   return (
@@ -132,6 +180,36 @@ function InstituteLoad() {
           <Button colorScheme="blue" onClick={handleCalculateLoad}>
           Calculate Load
         </Button>
+        <FormLabel fontWeight="bold">Select Department for Faculty Load:
+          </FormLabel>
+          <FormLabel fontWeight="bold">Select Session:
+          </FormLabel>
+
+          <Select
+            value={selectedSession}
+            onChange={(e) => setSelectedSession(e.target.value)}
+          >
+            <option value="">Select Session</option>
+            {allsessions.map((session, index) => (
+              <option key={index} value={session}>
+                {session}
+              </option>
+            ))}
+          </Select>
+
+
+          <Select
+            value={selectedDept}
+            onChange={(e) => setSelectedDept(e.target.value)}
+          >
+            <option value="">Select Department</option>
+            {availableDepts.map((dept, index) => (
+              <option key={index} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </Select>
+
 </Container>
   );
 }

@@ -3577,15 +3577,6 @@
     "@pdf-lib/upng" "^1.0.1"
     "pako" "^1.0.11"
     "tslib" "^1.11.1"
-
-"pdfjs-dist@^4.0.269":
-  "integrity" "sha512-jjWO56tcOjnmPqDf8PmXDeZ781AGvpHMYI3HhNtaFKTRXXPaD1ArSrhVe38/XsrIQJ0onISCND/vuXaWJkiDWw=="
-  "resolved" "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-4.0.269.tgz"
-  "version" "4.0.269"
-  optionalDependencies:
-    "canvas" "^2.11.2"
-    "path2d-polyfill" "^2.0.1"
-
 "pdfmake@^0.2.8":
   "integrity" "sha512-lI+amfIaUL8CrPhndxFdhIgMj9JB49Sj4DARltKC1gLm/5NsPohZqfB+D+II8HymtPB6eugUFD5oBxmzO57qHA=="
   "resolved" "https://registry.npmjs.org/pdfmake/-/pdfmake-0.2.8.tgz"
