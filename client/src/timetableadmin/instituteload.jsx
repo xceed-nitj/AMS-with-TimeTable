@@ -8,7 +8,7 @@ import "./Timetable.css";
 import Papa from 'papaparse';
 // import { saveAs } from 'file-saver';
 
-import { Container } from "@chakra-ui/layout";
+import {   Container } from "@chakra-ui/layout";
 import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
 import {
   CustomTh,
@@ -17,7 +17,8 @@ import {
   CustomPlusButton,
   CustomDeleteButton,
 } from "../styles/customStyles";
-import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+
+  import { Box,   useToast,Text, Portal, ChakraProvider } from "@chakra-ui/react";
 
 
 import {
@@ -48,6 +49,7 @@ function InstituteLoad() {
   const [currentDept, setCurrentDept]=useState();
 
   const apiUrl = getEnvironment();
+  const toast = useToast();
   // const navigate = useNavigate();
   // const currentURL = window.location.pathname;
   // const parts = currentURL.split("/");
@@ -70,7 +72,7 @@ function InstituteLoad() {
   const [selectedSession, setSelectedSession]=useState('');
   const [selectedDept, setSelectedDept]=useState('');
   const [facultyDesignation, setFacultyDesignation]=useState({});
-
+  const [loading, setLoading] = useState(false);
 
   const semesters = availableSems;
 
@@ -104,15 +106,24 @@ function InstituteLoad() {
   }, []); // Empty dependency array means this effect runs once on mount
   
   const handleCalculateLoad = () => {
+    setLoading(true); 
     // Make a request to your backend with the entered session value
     fetch(`${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`)
       .then(response => response.json())
       .then(data => {
         // Handle the data in your frontend (e.g., update UI)
-        console.log(data);
+        // console.log(data);
+        setLoading(false);
       })
       .catch(error => {
         console.error('Error fetching institute load details:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch institute load details",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
       });
   };
 
@@ -274,8 +285,9 @@ function InstituteLoad() {
 
    return (
     <Container maxW="6xl">
-      <Header title="View TimeTable "></Header>
-      <FormLabel fontWeight="bold">Select Session:</FormLabel>
+      <Header title="Load Distribution "></Header>
+      <Text>Perform load calculation first. It will take approximately 15 min and then go for department load calculation</Text>
+      <FormLabel fontWeight="bold">Select Session to calculate load:</FormLabel>
       <Select
         value={selectedSession}
         onChange={(e) => setSelectedSession(e.target.value)}
@@ -287,11 +299,12 @@ function InstituteLoad() {
           </option>
         ))}
       </Select>
-      <Button colorScheme="blue" onClick={handleCalculateLoad}>
+      <Button colorScheme="blue" onClick={handleCalculateLoad} isLoading={loading}>
         Calculate Load
       </Button>
-      <FormLabel fontWeight="bold">Select Department for Faculty Load:</FormLabel>
-      <FormLabel fontWeight="bold">Select Session:</FormLabel>
+      <Header title="Departmentwise load distribution"></Header>
+
+      {/* <FormLabel fontWeight="bold">Select Session:</FormLabel> */}
       <Select
         value={selectedSession}
         onChange={(e) => setSelectedSession(e.target.value)}
@@ -314,9 +327,14 @@ function InstituteLoad() {
           </option>
         ))}
       </Select>
+      
       <>
+
+
+ 
      
 <TableContainer>  
+{Usemesters.length > 0 && (
         <table>
         <thead>
   <tr>
@@ -424,12 +442,15 @@ function InstituteLoad() {
   ))}
 </tbody>
 
+<Button colorScheme="blue"  onClick={handleDownloadCSV}>
+        Download Load Distribution in CSV
+      </Button>
         </table>
+        
+)}
         </TableContainer>
       </>
-      <Button colorScheme="blue" onClick={handleDownloadCSV}>
-        Download CSV
-      </Button>
+     
     </Container>
   
   );
