@@ -21,6 +21,7 @@
     "html2pdf.js": "^0.10.1",
     "jspdf": "^2.5.1",
     "node": "^21.1.0",
+    "papaparse": "^5.4.1",
     "pdf-lib": "^1.17.1",
     "pdfmake": "^0.2.8",
     "react": "^18.2.0",
@@ -30,7 +31,10 @@
     "react-modal": "^3.16.1",
     "react-router-dom": "^6.17.0",
     "react-to-print": "^2.14.15",
-    "vfs": "^0.2.2"
+    "react-xlsx": "^0.4.10",
+    "vfs": "^0.2.2",
+    "xlsx": "^0.18.5",
+    "xlsx-populate": "^1.21.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
