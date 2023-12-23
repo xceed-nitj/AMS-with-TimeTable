@@ -6,7 +6,7 @@ import EditCertificate from "./EditCertificate"
 import { useState } from "react"
 import CertificateTemplate from "./CertificateTemplates";
 import mySvg from "../assets/temp1.svg"
-import Template01 from "./Templates/01";
+import Template01 from "./Templates/03_sarthak";
 
 
 
