@@ -48,7 +48,7 @@ function InstituteLoad() {
   // const currentURL = window.location.pathname;
   // const parts = currentURL.split("/");
   // const currentCode = parts[parts.length - 2];
-
+  const [excludeTheory, setExcludeTheory] = useState(false);
 
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
@@ -171,98 +171,174 @@ function InstituteLoad() {
       });
     });
   });
-  
+   const totalLoads = {}; 
 
-
-  return (
+   return (
     <Container maxW="6xl">
       <Header title="View TimeTable "></Header>
-      <FormLabel fontWeight="bold">Select Session:
-          </FormLabel>
+      <FormLabel fontWeight="bold">Select Session:</FormLabel>
+      <Select
+        value={selectedSession}
+        onChange={(e) => setSelectedSession(e.target.value)}
+      >
+        <option value="">Select Session</option>
+        {allsessions.map((session, index) => (
+          <option key={index} value={session}>
+            {session}
+          </option>
+        ))}
+      </Select>
+      <Button colorScheme="blue" onClick={handleCalculateLoad}>
+        Calculate Load
+      </Button>
+      <FormLabel fontWeight="bold">Select Department for Faculty Load:</FormLabel>
+      <FormLabel fontWeight="bold">Select Session:</FormLabel>
+      <Select
+        value={selectedSession}
+        onChange={(e) => setSelectedSession(e.target.value)}
+      >
+        <option value="">Select Session</option>
+        {allsessions.map((session, index) => (
+          <option key={index} value={session}>
+            {session}
+          </option>
+        ))}
+      </Select>
+      <Select
+        value={selectedDept}
+        onChange={(e) => setSelectedDept(e.target.value)}
+      >
+        <option value="">Select Department</option>
+        {availableDepts.map((dept, index) => (
+          <option key={index} value={dept}>
+            {dept}
+          </option>
+        ))}
+      </Select>
+      <>
+        {/* Checkbox for excluding theory loads */}
+        <label>
+          <input
+            type="checkbox"
+            checked={excludeTheory}
+            onChange={() => setExcludeTheory(!excludeTheory)}
+          />
+          Exclude Theory Loads
+        </label>
+<TableContainer>  
+        <table>
+        <thead>
+  <tr>
+  <th >Faculty</th>
+    {Usemesters
+      .sort((a, b) => {
+        const getTypeOrder = (type) => {
+          const typeOrder = {
+            'b.tech': 0,
+            'm.tech': 1,
+            'b.sc':2,
+            'm.sc':3,
+            'b.sc-b.ed':4,
+            'p.hd':5
+            // Add conditions for other program types if needed
+          };
+          return typeOrder[type.toLowerCase()];
+        };
 
-          <Select
-            value={selectedSession}
-            onChange={(e) => setSelectedSession(e.target.value)}
-          >
-            <option value="">Select Session</option>
-            {allsessions.map((session, index) => (
-              <option key={index} value={session}>
-                {session}
-              </option>
-            ))}
-          </Select>
-          <Button colorScheme="blue" onClick={handleCalculateLoad}>
-          Calculate Load
-        </Button>
-        <FormLabel fontWeight="bold">Select Department for Faculty Load:
-          </FormLabel>
-          <FormLabel fontWeight="bold">Select Session:
-          </FormLabel>
+        const typeOrderA = getTypeOrder(a.split('-')[0]);
+        const typeOrderB = getTypeOrder(b.split('-')[0]);
 
-          <Select
-            value={selectedSession}
-            onChange={(e) => setSelectedSession(e.target.value)}
-          >
-            <option value="">Select Session</option>
-            {allsessions.map((session, index) => (
-              <option key={index} value={session}>
-                {session}
-              </option>
-            ))}
-          </Select>
+        // First, arrange by program type
+        if (typeOrderA !== typeOrderB) {
+          return typeOrderA - typeOrderB;
+        }
 
+        // If the program types are the same, arrange by semester number
+        const numberA = parseInt(a.split('-')[1]);
+        const numberB = parseInt(b.split('-')[1]);
 
-          <Select
-            value={selectedDept}
-            onChange={(e) => setSelectedDept(e.target.value)}
-          >
-            <option value="">Select Department</option>
-            {availableDepts.map((dept, index) => (
-              <option key={index} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </Select>
-
-
-<table>
-  <thead>
-    <tr>
-      <th>Faculty</th>
-      {[...Usemesters].map((semester) => (
+        return numberA - numberB;
+      })
+      .map((semester) => (
         <React.Fragment key={`header-${semester}`}>
           <th colSpan={types.length}>{semester}</th>
         </React.Fragment>
       ))}
-    </tr>
-    <tr>
-      <th></th>
-      {[...Usemesters].map((semester) => (
-        types.map((type) => (
-          <th key={`header-${semester}-${type}`}>{type}</th>
-        ))
-      ))}
-    </tr>
-  </thead>
-  <tbody>
-    {Object.keys(availableLoad).map((faculty) => (
-      <tr key={faculty}>
-        <td>{faculty}</td>
-        {[...Usemesters].map((semester) => (
-          types.map((type) => (
-            <td key={`${faculty}-${semester}-${type}`}>
-              {availableLoad[faculty]?.[semester]?.[type] || 0}
-            </td>
-          ))
-        ))}
-      </tr>
-    ))}
-  </tbody>
-</table>
+    <th rowSpan="2">Tutorial+Lab Load</th>
+    <th rowSpan="2">Project Load</th>
+    <th rowSpan="2">Total Faculty Load</th>
+  </tr>
+  <tr>
+    <th></th>
+    {Usemesters.map((semester) =>
+      types.map((type) => {
+        // Only render headers for 'Theory' if excludeTheory is false
+        if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+          return (
+            <th key={`header-${semester}-${type}`}>{type}</th>
+          );
+        }
+        return null;
+      })
+    )}
+    <th></th>
+  </tr>
+</thead>
 
 
-</Container>
+<tbody>
+  {Object.keys(availableLoad).map((faculty) => (
+    <tr key={faculty}>
+      <td>{faculty}</td>
+      {[...Usemesters].map((semester) =>
+        types.map((type) => {
+          if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+            const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
+            const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
+
+            totalLoads[faculty] = totalLoads[faculty] || 0;
+            totalLoads[faculty] += adjustedLoadValue;
+
+            return (
+              <td key={`${faculty}-${semester}-${type}`}>
+                {adjustedLoadValue}
+              </td>
+            );
+          }
+          return null;
+        })
+      )}
+      {/* Sum of 'Tutorial', 'Laboratory', and 'Project' for each faculty */}
+      <td key={`${faculty}-tutorial-laboratory-project-sum`}>
+        {Object.keys(availableLoad[faculty] || {}).map((semester) => {
+          const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
+          const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
+          // const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
+
+          return tutorialLoad + laboratoryLoad ;
+        }).reduce((sum, value) => sum + value, 0)}
+      </td>
+      {/* Separate column for 'Project' load */}
+      <td key={`${faculty}-project-sum`}>
+        {Object.keys(availableLoad[faculty] || {}).map((semester) => {
+          const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
+          return projectLoad;
+        }).reduce((sum, value) => sum + value, 0)}
+      </td>
+ 
+      {/* Total load for each faculty */}
+      <td>{totalLoads[faculty]}</td>
+    </tr>
+  ))}
+</tbody>
+
+        </table>
+        </TableContainer>
+      </>
+    </Container>
   );
+  
+  
 }
 
 export default InstituteLoad;
