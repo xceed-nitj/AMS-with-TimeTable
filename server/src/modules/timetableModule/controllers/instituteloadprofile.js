@@ -12,6 +12,8 @@ const MasterSemController= require("./mastersemprofile")
 const masterSemController = new MasterSemController();
 
 const LockSem = require("../../../models/locksem");
+const CommonLoad = require("../../../models/commonLoad");
+
 const MasterSem = require("../../../models/mastersem");
 const Subject = require("../../../models/subject");
 const Faculty = require("../../../models/faculty");
@@ -53,8 +55,48 @@ class InstituteLoadController {
           for (const code of allcodes) {
               console.log('Processing code:', code);
             
-            const codeData = await LockSem.find({ code });
+            const codeData2 = await CommonLoad.find({ code });
 
+            for(const data of codeData2){
+              const subDetails = await Subject.find({ subName: data.subName });
+              const facultyDetails = await Faculty.find({ name: data.faculty });
+              const semDetails = await MasterSem.find({ sem: data.sem });
+          
+              const existingRecord = await instituteLoad.findOne({
+                session: currentSession,
+                name: data.faculty
+              });
+
+              if (existingRecord) {
+                // If the record exists, push the new data into the arrays
+                // console.log('Updating Existing Record:', existingRecord);
+                await instituteLoad.updateOne(
+                  { _id: existingRecord._id },
+                  {
+                    $push: {
+                      sem: semDetails[0].type,
+                      type: subDetails[0].type,
+                      load: data.hrs, // You can modify this based on your actual structure
+                    },
+                  }
+                );
+              } else {
+                // If the record doesn't exist, create a new record
+                // console.log('Creating New Record:', slotItem.faculty);
+                const loadInstance = new instituteLoad({
+                  session: currentSession,
+                  name: data.faculty,
+                  dept: facultyDetails[0] ? facultyDetails[0].dept : null,
+                  designation: facultyDetails[0] ? facultyDetails[0].designation : null,                      
+                  sem: [semDetails[0].type],
+                  type: [subDetails[0].type],
+                  load: data.hrs, // You can modify this based on your actual structure
+                });
+                console.log('commonlaod',loadInstance)  
+                await loadInstance.save();
+            }       
+            }
+            const codeData = await LockSem.find({ code });
             
             for (const data of codeData) {
               if (data.slotData.length > 0 && data.slotData[0] !== '') {
