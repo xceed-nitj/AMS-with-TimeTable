@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import jsPDF from "jspdf";
+// import jsPDF from "jspdf";
 import { useNavigate, useLocation, Form } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import ViewTimetable from "./viewtt";
 import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
-import { Container } from "@chakra-ui/layout";
+import Papa from 'papaparse';
+// import { saveAs } from 'file-saver';
+
+import {   Container } from "@chakra-ui/layout";
 import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
 import {
   CustomTh,
@@ -14,7 +17,9 @@ import {
   CustomPlusButton,
   CustomDeleteButton,
 } from "../styles/customStyles";
-import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+
+  import { Box,   useToast,Text, Portal, ChakraProvider } from "@chakra-ui/react";
+
 
 import {
   Table,
@@ -44,6 +49,7 @@ function InstituteLoad() {
   const [currentDept, setCurrentDept]=useState();
 
   const apiUrl = getEnvironment();
+  const toast = useToast();
   // const navigate = useNavigate();
   // const currentURL = window.location.pathname;
   // const parts = currentURL.split("/");
@@ -65,6 +71,8 @@ function InstituteLoad() {
   const [availableLoad, setAvailableLoad] = useState({});
   const [selectedSession, setSelectedSession]=useState('');
   const [selectedDept, setSelectedDept]=useState('');
+  const [facultyDesignation, setFacultyDesignation]=useState({});
+  const [loading, setLoading] = useState(false);
 
   const semesters = availableSems;
 
@@ -98,15 +106,24 @@ function InstituteLoad() {
   }, []); // Empty dependency array means this effect runs once on mount
   
   const handleCalculateLoad = () => {
+    setLoading(true); 
     // Make a request to your backend with the entered session value
     fetch(`${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`)
       .then(response => response.json())
       .then(data => {
         // Handle the data in your frontend (e.g., update UI)
-        console.log(data);
+        // console.log(data);
+        setLoading(false);
       })
       .catch(error => {
         console.error('Error fetching institute load details:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch institute load details",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
       });
   };
 
@@ -126,8 +143,11 @@ function InstituteLoad() {
         console.log('load data', data);
         const calculatedLoad = calculateFacultyWiseLoad(data);
         console.log('calculated load',calculatedLoad)
-        setAvailableLoad(calculatedLoad);
+        const desig = fetchFacultyDesignation(data);
 
+    
+    setAvailableLoad(calculatedLoad)
+    setFacultyDesignation(desig)
       } catch (error) {
         console.error("Error fetching existing timetable data:", error);
       }
@@ -138,26 +158,44 @@ function InstituteLoad() {
   }, [selectedDept]); // Empty dependency array means this effect runs once on mount
 
 
-  function calculateFacultyWiseLoad(data) {
-    const facultyWiseLoad = {};
+  function fetchFacultyDesignation(data) {
+    // const facultyWiseLoad = {};
+    const facultyDesignation={}
   
     data.forEach((faculty) => {
-      const { name, sem, type, load } = faculty;
+      const { name, designation} = faculty;
+      facultyDesignation[name]=designation ||{};
+    // console.log('Faculty Wise Load:', facultyWiseLoad);
+    });
+    return facultyDesignation;
+  }
+
+  function calculateFacultyWiseLoad(data) {
+    const facultyWiseLoad = {};
+    // const facultyDesignation={}
   
+    data.forEach((faculty) => {
+      const { name, sem, type, load , designation} = faculty;
+      // facultyDesignation[name]=designation ||{};
+
       facultyWiseLoad[name] = facultyWiseLoad[name] || {};
+      // facultyWiseLoad[designation] = facultyWiseLoad[designation] || {};
   
       sem.forEach((s, index) => {
         const t = type[index];
         const l = load[index];
+  
+        console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
   
         facultyWiseLoad[name][s] = facultyWiseLoad[name][s] || {};
         facultyWiseLoad[name][s][t] = (facultyWiseLoad[name][s][t] || 0) + l;
       });
     });
   
-    console.log(facultyWiseLoad);
+    // console.log('Faculty Wise Load:', facultyWiseLoad);
     return facultyWiseLoad;
-  }  
+  }
+  
 
   const Usemesters = [...new Set(Object.keys(availableLoad).flatMap(faculty => Object.keys(availableLoad[faculty])))];
   const types = ['Theory', 'Laboratory', 'Tutorial', 'Project'];
@@ -173,10 +211,83 @@ function InstituteLoad() {
   });
    const totalLoads = {}; 
 
+
+   const [csvData, setCsvData] = useState("");
+
+   // ... (existing code)
+
+   const handleDownloadCSV = () => {
+    const csvData = convertToCSV();
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+    link.download = "table_data.csv";
+    link.style.display = "none";
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+  };
+
+ // ... (existing code)
+
+ const convertToCSV = () => {
+  let csvContent = `Session: ${selectedSession}, Department: ${selectedDept}\n`;
+  csvContent += "Faculty,Designation"; // Include Designation in the header
+
+  Usemesters.forEach((semester) => {
+    types.forEach((type) => {
+      if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+        csvContent += `,${semester}-${type}`;
+      }
+    });
+  });
+
+  csvContent += ",Tutorial+Lab Load,Project Load,Total Faculty Load\n";
+
+  Object.keys(availableLoad).forEach((faculty) => {
+    csvContent += `${faculty},${facultyDesignation[faculty]}`; // Include Designation in the row
+
+    Usemesters.forEach((semester) => {
+      types.forEach((type) => {
+        if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+          const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
+          const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
+          csvContent += `,${adjustedLoadValue}`;
+        }
+      });
+    });
+
+    const tutorialLabLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
+      const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
+      const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
+      return tutorialLoad + laboratoryLoad;
+    }).reduce((sum, value) => sum + value, 0);
+
+    const projectLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
+      const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
+      return projectLoad;
+    }).reduce((sum, value) => sum + value, 0);
+
+    const totalLoad = totalLoads[faculty] || 0;
+
+    csvContent += `,${tutorialLabLoad},${projectLoad},${totalLoad}\n`;
+  });
+
+  return csvContent;
+};
+
+// ... (existing code)
+
+  
+
    return (
     <Container maxW="6xl">
-      <Header title="View TimeTable "></Header>
-      <FormLabel fontWeight="bold">Select Session:</FormLabel>
+      <Header title="Load Distribution "></Header>
+      <Text>Perform load calculation first. It will take approximately 15 min and then go for department load calculation</Text>
+      <FormLabel fontWeight="bold">Select Session to calculate load:</FormLabel>
       <Select
         value={selectedSession}
         onChange={(e) => setSelectedSession(e.target.value)}
@@ -188,11 +299,12 @@ function InstituteLoad() {
           </option>
         ))}
       </Select>
-      <Button colorScheme="blue" onClick={handleCalculateLoad}>
+      <Button colorScheme="blue" onClick={handleCalculateLoad} isLoading={loading}>
         Calculate Load
       </Button>
-      <FormLabel fontWeight="bold">Select Department for Faculty Load:</FormLabel>
-      <FormLabel fontWeight="bold">Select Session:</FormLabel>
+      <Header title="Departmentwise load distribution"></Header>
+
+      {/* <FormLabel fontWeight="bold">Select Session:</FormLabel> */}
       <Select
         value={selectedSession}
         onChange={(e) => setSelectedSession(e.target.value)}
@@ -215,21 +327,19 @@ function InstituteLoad() {
           </option>
         ))}
       </Select>
+      
       <>
-        {/* Checkbox for excluding theory loads */}
-        <label>
-          <input
-            type="checkbox"
-            checked={excludeTheory}
-            onChange={() => setExcludeTheory(!excludeTheory)}
-          />
-          Exclude Theory Loads
-        </label>
+
+
+ 
+     
 <TableContainer>  
+{Usemesters.length > 0 && (
         <table>
         <thead>
   <tr>
-  <th >Faculty</th>
+  <th rowSpan="2">Faculty</th>
+  <th rowSpan="2">Designation</th>
     {Usemesters
       .sort((a, b) => {
         const getTypeOrder = (type) => {
@@ -239,7 +349,8 @@ function InstituteLoad() {
             'b.sc':2,
             'm.sc':3,
             'b.sc-b.ed':4,
-            'p.hd':5
+            'ph.d':5,
+            'mba':6
             // Add conditions for other program types if needed
           };
           return typeOrder[type.toLowerCase()];
@@ -269,19 +380,17 @@ function InstituteLoad() {
     <th rowSpan="2">Total Faculty Load</th>
   </tr>
   <tr>
-    <th></th>
-    {Usemesters.map((semester) =>
-      types.map((type) => {
-        // Only render headers for 'Theory' if excludeTheory is false
-        if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
-          return (
-            <th key={`header-${semester}-${type}`}>{type}</th>
-          );
-        }
-        return null;
-      })
-    )}
-    <th></th>
+    {[...Usemesters].map((semester) =>
+  types.map((type) => {
+    // Only render headers for 'Theory' if excludeTheory is false
+    if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+      return (
+        <th key={`header-${semester}-${type}`}>{`${type}`}</th>
+      );
+    }
+    return null;
+  })
+)}
   </tr>
 </thead>
 
@@ -290,6 +399,7 @@ function InstituteLoad() {
   {Object.keys(availableLoad).map((faculty) => (
     <tr key={faculty}>
       <td>{faculty}</td>
+      <td>{facultyDesignation[faculty]}</td>
       {[...Usemesters].map((semester) =>
         types.map((type) => {
           if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
@@ -332,10 +442,17 @@ function InstituteLoad() {
   ))}
 </tbody>
 
+<Button colorScheme="blue"  onClick={handleDownloadCSV}>
+        Download Load Distribution in CSV
+      </Button>
         </table>
+        
+)}
         </TableContainer>
       </>
+     
     </Container>
+  
   );
   
   
