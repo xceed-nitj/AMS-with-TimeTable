@@ -10,6 +10,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <Router>
       <Template01 />
     </Router>
-
   </React.StrictMode>,
 )
