@@ -7,7 +7,8 @@ class AddEventController {
     try {
       console.log('Request Body:', newEvent);  
       const createdEvent = await addEvent.create(newEvent);
-      return createdEvent;
+      res.json(createdEvent);
+      return;
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error", details: error.message });
@@ -17,7 +18,8 @@ class AddEventController {
   async getAllEvents(req, res) {
     try {
       const eventList = await addEvent.find();
-      return eventList;
+      console.log("Fetching events");
+      res.json(eventList);
     } catch (e) {
       console.error(e);
   
@@ -47,8 +49,7 @@ class AddEventController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const updatedEvent=await addEvent.findByIdAndUpdate(id, eventData);
-      return updatedEvent;
+      await addEvent.findByIdAndUpdate(id, eventData);
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
