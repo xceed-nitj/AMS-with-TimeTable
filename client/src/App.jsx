@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Timetable from './timetableadmin/timetable';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
@@ -16,7 +15,6 @@ import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
 import PrintButton from './filedownload/printButton';
 import Navbar from './components/navbar';
-import Footer from './components/footer'
 import PrintSummary from './timetableadmin/printSummary'
 import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
@@ -32,6 +30,7 @@ import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import MergePDFComponent from './filedownload/mergepdfdocuments';
+import Home from './pages/Home'
 function App() {
   return (
     <Router>
@@ -41,8 +40,10 @@ function App() {
         {/* <h1>XCEED-Timetable Module</h1>  */}
         <Navbar/>
          
-        <Routes>
-        <Route path="/" element={<Login/>} />
+      <Routes>
+        <Route path="/" element={<Home/>} />
+        
+        <Route path="/login" element={<Login/>} />
         <Route path="/register" element={<RegistrationForm/>} />
           <Route path="/tt/:generatedLink" element={<Timetable />} />
           <Route path="/tt/dashboard" element={<CreateTimetable />} />
