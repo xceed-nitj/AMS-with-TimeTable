@@ -1,39 +1,38 @@
 const mongoose = require("mongoose");
 const { commonFields, updateTimestamps } = require('../commonFields');
 const participantTypes = ["participation", "prize"];
-const organiserTypes = ["department", "club", "center"];
 
 // Define your Mongoose schema based on the interface
 const ParticipantSchema = new mongoose.Schema({
   name: {
     type: String,
-    
+    required: true,
   },
   department: {
     type: String,
-    
+    required: true,
   },
   college: {
     type: String,
-    
+    required: true,
   }, 
   types:{
     type: String,
-    
+    required: true,
     enum: participantTypes,
   },
   position: {
-    type: Number,
-    
+    type: number,
+    required: true,
     enum: organiserTypes,
   },
   title1:{
     type: String,
-    
+    required: true,
   },
   title2:{
     type: String,
-    
+    required: true,
   },
 });
 
