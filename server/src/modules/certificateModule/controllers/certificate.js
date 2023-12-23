@@ -5,10 +5,11 @@ class AddcertificateController {
   async addcertificate(req, res) {
     const newcertificate = req.body;
     try {
-      console.log('Request Body:', newcertificate);  
+      
       const createdcertificate = await certificate.create(newcertificate);
       return createdcertificate;
-    } catch (error) {
+    } 
+    catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error", details: error.message });
     }
@@ -18,7 +19,8 @@ class AddcertificateController {
     try {
       const certificateList = await certificate.find();
       return certificateList;
-    } catch (e) {
+    } 
+    catch (e) {
       console.error(e);
   
       // Check if 'e' is an object with 'status' and 'message' properties
@@ -37,7 +39,8 @@ class AddcertificateController {
       const data = await certificate.findById(id);
       if (!data) throw new HttpException(400, "certificate does not exist");
       return data;
-    } catch (e) {
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
@@ -49,7 +52,8 @@ class AddcertificateController {
     try {
       const updatedcertificate=await certificate.findByIdAndUpdate(id, certificateData);
       return updatedcertificate;
-    } catch (e) {
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
@@ -60,7 +64,8 @@ class AddcertificateController {
     }
     try {
       await certificate.findByIdAndDelete(id);
-    } catch (e) {
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }

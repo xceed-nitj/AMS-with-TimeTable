@@ -5,10 +5,11 @@ class AddparticipantController {
   async addparticipant(req, res) {
     const newparticipant = req.body;
     try {
-      console.log('Request Body:', newparticipant);  
+      
       const createdparticipant = await participant.create(newparticipant);
       return createdparticipant;
-    } catch (error) {
+    } 
+    catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error", details: error.message });
     }
@@ -18,7 +19,8 @@ class AddparticipantController {
     try {
       const participantList = await participant.find();
       return participantList;
-    } catch (e) {
+    } 
+    catch (e) {
       console.error(e);
   
       // Check if 'e' is an object with 'status' and 'message' properties
@@ -37,7 +39,8 @@ class AddparticipantController {
       const data = await participant.findById(id);
       if (!data) throw new HttpException(400, "participant does not exist");
       return data;
-    } catch (e) {
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
@@ -49,7 +52,8 @@ class AddparticipantController {
     try {
       const updatedparticipant=await participant.findByIdAndUpdate(id, participantData);
       return updatedparticipant;
-    } catch (e) {
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
@@ -60,7 +64,8 @@ class AddparticipantController {
     }
     try {
       await participant.findByIdAndDelete(id);
-    } catch (e) {
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }

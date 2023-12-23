@@ -1,13 +1,15 @@
 const express = require("express");
 const participantRouter = express.Router();
-// const ParticipantController = require("../controllers/participantController");
-// const participantController = new ParticipantController();
+const ParticipantController = require("../controllers/participants");
+const participantController = new ParticipantController();
 
 // Route to create a new participant
 participantRouter.post("/", async (req, res) => {
   try {
-    await participantController.createParticipant(req, res);
-  } catch (e) {
+    const newparticipant=await participantController.addparticipant(req, res);
+    return res.status(200).json(newparticipant);
+  } 
+  catch (e) {
     res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
@@ -17,9 +19,10 @@ participantRouter.post("/", async (req, res) => {
 // Route to get all participants
 participantRouter.get("/", async (req, res) => {
   try {
-    const allParticipants = await participantController.getAllParticipants();
-    res.status(200).json(allParticipants);
-  } catch (e) {
+    const allParticipants = await participantController.getAllparticipants(req, res);
+    return res.status(200).json(allParticipants);
+  } 
+  catch (e) {
     res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
@@ -29,10 +32,11 @@ participantRouter.get("/", async (req, res) => {
 // Route to get a specific participant by ID
 participantRouter.get("/:participantId", async (req, res) => {
   try {
-    const participantId = req.params.participantId;
-    const participant = await participantController.getParticipantById(participantId);
-    res.status(200).json(participant);
-  } catch (e) {
+    const participantId = req.params?.participantId;
+    const participant = await participantController.getparticipantById(participantId);
+    return res.status(200).json(participant);
+  }
+   catch (e) {
     res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
@@ -42,11 +46,12 @@ participantRouter.get("/:participantId", async (req, res) => {
 // Route to update a specific participant by ID
 participantRouter.put('/:participantId', async (req, res) => {
   try {
-    const participantId = req.params.participantId;
+    const participantId = req.params?.participantId;
     const updatedParticipant = req.body;
-    await participantController.updateParticipant(participantId, updatedParticipant);
-    res.status(200).json({ response: "Participant updated successfully" });
-  } catch (e) {
+    const updatedone=await participantController.updateparticipant(participantId, updatedParticipant);
+   return res.status(200).json(updatedone);
+  } 
+  catch (e) {
     res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
@@ -56,10 +61,11 @@ participantRouter.put('/:participantId', async (req, res) => {
 // Route to delete a specific participant by ID
 participantRouter.delete("/:participantId", async (req, res) => {
   try {
-    const participantId = req.params.participantId;
-    await participantController.deleteParticipantById(participantId);
+    const participantId = req.params?.participantId;
+    await participantController.deleteparticipantById(participantId);
     res.status(200).json({ response: "Participant deleted successfully" });
-  } catch (e) {
+  } 
+  catch (e) {
     res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
