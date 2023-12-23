@@ -1,24 +1,26 @@
 const HttpException = require("../../../models/http-exception");
-const addEvent = require("../../../models/certificateModule/addevent");
+const participant = require("../../../models/certificateModule/participant");
 
-class AddEventController {
-  async addEvent(req, res) {
-    const newEvent = req.body;
+class AddparticipantController {
+  async addparticipant(req, res) {
+    const newparticipant = req.body;
     try {
-      console.log('Request Body:', newEvent);  
-      const createdEvent = await addEvent.create(newEvent);
-      return createdEvent;
-    } catch (error) {
+      
+      const createdparticipant = await participant.create(newparticipant);
+      return createdparticipant;
+    } 
+    catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error", details: error.message });
     }
   }
 
-  async getAllEvents(req, res) {
+  async getAllparticipants(req, res) {
     try {
-      const eventList = await addEvent.find();
-      return eventList;
-    } catch (e) {
+      const participantList = await participant.find();
+      return participantList;
+    } 
+    catch (e) {
       console.error(e);
   
       // Check if 'e' is an object with 'status' and 'message' properties
@@ -29,41 +31,44 @@ class AddEventController {
     }
     }
 
-  async getEventById(id) {
+  async getparticipantById(id) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const data = await addEvent.findById(id);
-      if (!data) throw new HttpException(400, "Event does not exist");
+      const data = await participant.findById(id);
+      if (!data) throw new HttpException(400, "participant does not exist");
       return data;
-    } catch (e) {
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 
-  async updateEvent(id, eventData) {
+  async updateparticipant(id, participantData) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const updatedEvent=await addEvent.findByIdAndUpdate(id, eventData);
-      return updatedEvent;
-    } catch (e) {
+      const updatedparticipant=await participant.findByIdAndUpdate(id, participantData);
+      return updatedparticipant;
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 
-  async deleteEventById(id) {
+  async deleteparticipantById(id) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      await addEvent.findByIdAndDelete(id);
-    } catch (e) {
+      await participant.findByIdAndDelete(id);
+    } 
+    catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 }
 
-module.exports = AddEventController;
+module.exports = AddparticipantController;
