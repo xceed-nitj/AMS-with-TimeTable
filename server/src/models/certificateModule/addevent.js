@@ -3,6 +3,7 @@ const { commonFields, updateTimestamps } = require('../commonFields');
 const participantTypes = ["internal", "external"];
 const organiserTypes = ["department", "club", "center"];
 
+
 // Define your Mongoose schema based on the interface
 const addEventSchema = new mongoose.Schema({
   name: {

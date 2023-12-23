@@ -47,6 +47,11 @@ app.use(cors({
     credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
   }));
 
+// default route
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+})
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -66,20 +71,26 @@ app.use("/upload", uploadModule);
 const attendanceModule = require("./modules/attendanceModule/routes/index");
 app.use("/attendancemodule", attendanceModule);
 
-
 const usermanagementModule=require("./modules/usermanagement/routes")
 app.use("/auth", usermanagementModule);
 
 const newusermanagementModule=require("./modules/usermanagement/routes/index")
 app.use("/user", newusermanagementModule);
 
+// handle not found error globally
 app.get('/*', (req, res) => {
-    res.sendFile(path.join(__dirname+'/../../client/dist/index.html'));
+  res.sendFile(path.join(__dirname+'/../../client/dist/index.html'));
+});
+
+// handle errors globally
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 
-// Connect to MongoDB and listen for events
 
+// Connect to MongoDB and listen for events
 mongoose
     .connect(process.env.MONGO_URL, {
         useNewUrlParser: true,
