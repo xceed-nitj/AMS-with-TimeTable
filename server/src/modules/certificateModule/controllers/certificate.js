@@ -1,23 +1,23 @@
 const HttpException = require("../../../models/http-exception");
-const addEvent = require("../../../models/certificateModule/addevent");
+const certificate = require("../../../models/certificateModule/certificate");
 
-class AddEventController {
-  async addEvent(req, res) {
-    const newEvent = req.body;
+class AddcertificateController {
+  async addcertificate(req, res) {
+    const newcertificate = req.body;
     try {
-      console.log('Request Body:', newEvent);  
-      const createdEvent = await addEvent.create(newEvent);
-      return createdEvent;
+      console.log('Request Body:', newcertificate);  
+      const createdcertificate = await certificate.create(newcertificate);
+      return createdcertificate;
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error", details: error.message });
     }
   }
 
-  async getAllEvents(req, res) {
+  async getAllcertificates(req, res) {
     try {
-      const eventList = await addEvent.find();
-      return eventList;
+      const certificateList = await certificate.find();
+      return certificateList;
     } catch (e) {
       console.error(e);
   
@@ -29,41 +29,41 @@ class AddEventController {
     }
     }
 
-  async getEventById(id) {
+  async getcertificateById(id) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const data = await addEvent.findById(id);
-      if (!data) throw new HttpException(400, "Event does not exist");
+      const data = await certificate.findById(id);
+      if (!data) throw new HttpException(400, "certificate does not exist");
       return data;
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 
-  async updateEvent(id, eventData) {
+  async updatecertificate(id, certificateData) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const updatedEvent=await addEvent.findByIdAndUpdate(id, eventData);
-      return updatedEvent;
+      const updatedcertificate=await certificate.findByIdAndUpdate(id, certificateData);
+      return updatedcertificate;
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 
-  async deleteEventById(id) {
+  async deletecertificateById(id) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      await addEvent.findByIdAndDelete(id);
+      await certificate.findByIdAndDelete(id);
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 }
 
-module.exports = AddEventController;
+module.exports = AddcertificateController;
