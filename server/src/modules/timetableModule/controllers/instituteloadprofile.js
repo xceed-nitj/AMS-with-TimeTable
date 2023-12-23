@@ -56,7 +56,7 @@ class InstituteLoadController {
               console.log('Processing code:', code);
             
             const codeData2 = await CommonLoad.find({ code });
-
+            console.log('commonload objects', codeData2)
             for(const data of codeData2){
               const subDetails = await Subject.find({ subName: data.subName });
               const facultyDetails = await Faculty.find({ name: data.faculty });

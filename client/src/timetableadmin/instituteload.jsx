@@ -239,7 +239,8 @@ function InstituteLoad() {
             'b.sc':2,
             'm.sc':3,
             'b.sc-b.ed':4,
-            'p.hd':5
+            'ph.d':5,
+            'mba':6
             // Add conditions for other program types if needed
           };
           return typeOrder[type.toLowerCase()];
