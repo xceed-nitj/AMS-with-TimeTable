@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import logo from "../assets/clublogo.png";
 import getEnvironment from '../getenvironment';
 import {
   Box,
@@ -13,7 +12,7 @@ import {
   Spacer,
   Button,
 } from "@chakra-ui/react";
-
+import { Link as RouterLink } from "react-router-dom";
 const theme = extendTheme({
   components: {
     Button: {
@@ -109,7 +108,9 @@ const Navbar = () => {
       <Box bg="black" py={2} px={4}>
         <Flex justify="space-between" align="center">
           <Flex align="center">
-            <Image src={logo} alt="Logo" h={10} w={40} mr={2} />
+            <RouterLink to='/'>
+              <Image src='/clublogo.png' alt="Logo" h={10} w={40} mr={2} />
+            </RouterLink>
           </Flex>
           <Spacer />
           {isAuthenticated ? (

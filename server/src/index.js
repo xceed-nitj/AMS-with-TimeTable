@@ -47,6 +47,11 @@ app.use(cors({
     credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
   }));
 
+// default route
+// app.get('/', (req, res) => {
+//     res.send('Hello World!');
+// })
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
