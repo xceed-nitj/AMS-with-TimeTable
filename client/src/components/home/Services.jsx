@@ -15,7 +15,7 @@ const Services = () => {
           <SectionHeader centered title="Our Services" />
           <p className="tw-text-center tw-max-w-4xl tw-mx-auto tw-mb-4">
             Xceed has an experienced team of developers, designers and mentors
-            dedicated to create web solutions based on your requirement. Here
+            dedicated to provide economical web based solutions as per your requirement. Here
             are some of our most demanded services.
           </p>
         </div>
@@ -30,27 +30,11 @@ const Services = () => {
               <PresentationChartLineIcon className="tw-w-5 tw-h-5 tw-text-cyan-600 lg:tw-w-6 lg:tw-h-6 dark:tw-text-cyan-300" />
             </div>
             <h3 className="tw-mb-2 tw-text-xl tw-font-bold dark:tw-text-white">
-              Timetable Module
+              Conference Module
             </h3>
             <p className="tw-mb-2 tw-text-gray-500 dark:tw-text-gray-400">
-              Plan it, create it, launch it. Collaborate seamlessly with all the
-              organization and hit your marketing goals every month with our
-              marketing plan.
-            </p>
-            <p className="tw-mb-2 tw-font-bold tw-text-cyan-600 dark:tw-text-cyan-300 tw-italic">
-              ₹ 10000 onwards
-            </p>
-          </div>
-          <div>
-            <div className="tw-flex tw-justify-center tw-items-center tw-mb-4 tw-w-10 tw-h-10 tw-rounded-full tw-bg-cyan-100 lg:tw-h-12 lg:tw-w-12 dark:tw-bg-cyan-900">
-              <AcademicCapIcon className="tw-w-5 tw-h-5 tw-text-cyan-600 lg:tw-w-6 lg:tw-h-6 dark:tw-text-cyan-300" />
-            </div>
-            <h3 className="tw-mb-2 tw-text-xl tw-font-bold dark:tw-text-white">
-              Portfolio Websites
-            </h3>
-            <p className="tw-mb-2 tw-text-gray-500 dark:tw-text-gray-400">
-              Protect your organization, devices and stay compliant with our
-              structured workflows and custom permissions made for you.
+            Elevate your conference experience with our expertly crafted conference website development services. We specialize in creating dynamic and responsive platforms that seamlessly blend functionality with aesthetic appeal.  
+            We prioritize security, ensuring a safe environment for user data and transactions. Let us elevate your conference to new heights with our innovative and tailored web solutions, keeping you at the forefront of event technology.
             </p>
             <p className="tw-mb-2 tw-font-bold tw-text-cyan-600 dark:tw-text-cyan-300 tw-italic">
               ₹ 7000 onwards
@@ -61,16 +45,30 @@ const Services = () => {
               <BriefcaseIcon className="tw-w-5 tw-h-5 tw-text-cyan-600 lg:tw-w-6 lg:tw-h-6 dark:tw-text-cyan-300" />
             </div>
             <h3 className="tw-mb-2 tw-text-xl tw-font-bold dark:tw-text-white">
-              Conference Websites
+              Short Term Course Page with Certificate Module
             </h3>
             <p className="tw-mb-2 tw-text-gray-500 dark:tw-text-gray-400">
-              Auto-assign tasks, send Slack messages, and much more. Now power
-              up with hundreds of new templates to help you get started.
+            Our service caters to your unique needs, offering a robust and customizable webpage to bring your short-term courses to a wide audience. With our Certificate Module, our team helps in design and generation of digital verifiable certificates. The participants can earn verifiable certificates, adding a credible dimension to their achievements. The certificate includes a secure verification link, bolstering the integrity of the credential.
             </p>
             <p className="tw-mb-2 tw-font-bold tw-text-cyan-600 dark:tw-text-cyan-300 tw-italic">
               ₹ 5000 onwards
             </p>
           </div>
+          <div>
+            <div className="tw-flex tw-justify-center tw-items-center tw-mb-4 tw-w-10 tw-h-10 tw-rounded-full tw-bg-cyan-100 lg:tw-h-12 lg:tw-w-12 dark:tw-bg-cyan-900">
+              <AcademicCapIcon className="tw-w-5 tw-h-5 tw-text-cyan-600 lg:tw-w-6 lg:tw-h-6 dark:tw-text-cyan-300" />
+            </div>
+            <h3 className="tw-mb-2 tw-text-xl tw-font-bold dark:tw-text-white">
+              Portfolio Websites
+            </h3>
+            <p className="tw-mb-2 tw-text-gray-500 dark:tw-text-gray-400">
+            We specialize in crafting visually stunning and functionally robust websites that showcase your work, talents, and achievements. From captivating visuals to intuitive navigation, our portfolio websites are designed to leave a lasting impression and effectively communicate your unique story. Let us bring your achievements to life online, creating a digital showcase that captivates and engages your audience.
+            </p>
+            <p className="tw-mb-2 tw-font-bold tw-text-cyan-600 dark:tw-text-cyan-300 tw-italic">
+              ₹ 5000 onwards
+            </p>
+          </div>
+          
         </div>
         {/* Modal toggle */}
         <button
@@ -147,11 +145,10 @@ const Services = () => {
               <AcademicCapIcon className="tw-w-5 tw-h-5 tw-text-cyan-600 lg:tw-w-6 lg:tw-h-6 dark:tw-text-cyan-300" />
             </div>
             <h3 className="tw-mb-2 tw-text-xl tw-font-bold dark:tw-text-white">
-              NITJ&apos;s Official Website
+              Digitalisation of the Institute Time Table
             </h3>
             <p className="tw-text-gray-500 dark:tw-text-gray-400">
-              Protect your organization, devices and stay compliant with our
-              structured workflows and custom permissions made for you.
+            Timetable Module is aimed at reducing the manual work to a great extent in generating time table online and to digitally view and share the time table to various stakeholders. Streamline your scheduling process with our user-friendly interface, allowing you to create student, teacher, and room timetables in one go. The Timetable Module is designed to be compatible with various devices, promoting accessibility for administrators, teachers, and students alike. Additionally, we've integrated Google location information for classrooms, enhancing convenience and accessibility.
             </p>
           </div>
           <div>
@@ -159,11 +156,10 @@ const Services = () => {
               <WrenchScrewdriverIcon className="tw-w-5 tw-h-5 tw-text-cyan-600 lg:tw-w-6 lg:tw-h-6 dark:tw-text-cyan-300" />
             </div>
             <h3 className="tw-mb-2 tw-text-xl tw-font-bold dark:tw-text-white">
-              Skill Development
+            Management of NITJ&apos;s Official Website
             </h3>
             <p className="tw-text-gray-500 dark:tw-text-gray-400">
-              Craft beautiful, delightful experiences for both marketing and
-              product with real cross-company collaboration.
+            This service is under the Website Development and Management Committe (WDMC) with multiple groups mentored by different faculty members of the institute. We specialize in providing tailored solutions that streamline the maintenance of our institute's website, ensuring seamless functionality and up-to-date information. From academic program updates and event announcements to faculty profiles and student resources, we offered an intuitive interface for effortless content management. Our services extend beyond mere website maintenance; we empower you to showcase the dynamic spirit of your institute, fostering engagement and connectivity. 
             </p>
           </div>
           <div>

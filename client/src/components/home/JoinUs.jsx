@@ -8,19 +8,7 @@ const JoinUs = () => {
         <div className="tw-gap-16 tw-items-center lg:tw-grid lg:tw-grid-cols-2">
           <div className="tw-font-light tw-text-gray-500 sm:tw-text-lg dark:tw-text-gray-400">
             <p className="tw-mb-4">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit
-              autem fugit possimus adipisci repellat eius consequatur dicta
-              perspiciatis expedita saepe id dolore sint quas deleniti,
-              praesentium architecto provident quae laborum amet veniam ipsum
-              obcaecati repellendus!
-            </p>
-            <p>
-              If you want to be part of Xceed Community where you get built
-              exciting applications, learn by doing and get support from other
-              developers mail us your resume at{" "}
-              <span className="tw-text-cyan-600  dark:tw-text-cyan-300">
-                xceed@nitj.ac.in
-              </span>
+            Embark on an exciting journey of growth and camaraderie by joining our student club! As a member, you'll have the opportunity to actively participate in a vibrant community that not only promotes academic excellence but also provides invaluable early services. Whether you're seeking mentorship, exclusive resources, or a platform to collaborate on innovative projects, our club is the ideal space for students eager to make the most of their educational experience. Join us in fostering a supportive environment where knowledge is shared, skills are honed, and lifelong connections are formed. Together, we're shaping the future and creating a dynamic community that empowers students to thrive in their academic pursuits and beyond. Join us and be a part of something extraordinary.
             </p>
           </div>
           <div className="">
@@ -39,6 +27,15 @@ const JoinUs = () => {
               above technologies who are available between 6pm to 11pm on
               working days.
             </p>
+            <p>
+              If you want to be part of XCEED Community where you get built
+              exciting applications, learn by doing and get support from other
+              developers mail us your resume at{" "}
+              <span className="tw-text-cyan-600  dark:tw-text-cyan-300">
+                xceed@nitj.ac.in
+              </span>
+            </p>
+
           </div>
         </div>
       </div>

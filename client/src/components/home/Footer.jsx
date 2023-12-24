@@ -5,7 +5,7 @@ const Footer = () => {
         <span className="tw-block tw-text-sm tw-text-gray-500 tw-text-center dark:tw-text-gray-400">
           &copy; 2023{" "}
           <a href="https://xceed.nitj.ac.in/" className="hover:tw-underline">
-            XCEED &trade;
+            XCEED-NITJ &trade;
           </a>
           . All Rights Reserved.
         </span>

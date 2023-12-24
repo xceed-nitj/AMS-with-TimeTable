@@ -7,10 +7,10 @@ const About = () => {
         <div className="tw-text-gray-500 sm:tw-text-lg dark:tw-text-gray-400">
           <SectionHeader title="About Xceed" />
           <p className="tw-mb-4">
-            Xceed is the premier technical club of NIT Jalandhar, driven by a
+            Xceed is the premier technical group of NIT Jalandhar under Website Development and Management Club, driven by a
             passion for technology and a commitment to excellence. Established
             with the aim of fostering a culture of innovation and skill
-            development, Xceed has been at the forefront of tw-transforming
+            development in coding, Xceed has been at the forefront of transforming
             ideas into impactful projects that benefit the entire college
             community.
           </p>
@@ -25,7 +25,7 @@ const About = () => {
               <dl className="tw-grid tw-justify-items-start tw-max-w-screen-md tw-gap-8 tw-mx-auto tw-text-gray-900 sm:tw-grid-cols-3 dark:tw-text-white">
                 <div className="tw-flex tw-flex-col tw-items-center tw-justify-center">
                   <dt className="tw-mb-2 tw-text-3xl md:tw-text-4xl tw-font-extrabold">
-                    50+
+                    30+
                   </dt>
                   <dd className="tw-font-light tw-text-gray-500 dark:tw-text-gray-400">
                     developers
@@ -33,7 +33,7 @@ const About = () => {
                 </div>
                 <div className="tw-flex tw-flex-col tw-items-center tw-justify-center">
                   <dt className="tw-mb-2 tw-text-3xl md:tw-text-4xl tw-font-extrabold">
-                    100+
+                    50+
                   </dt>
                   <dd className="tw-font-light tw-text-gray-500 dark:tw-text-gray-400">
                     contributors
@@ -41,7 +41,7 @@ const About = () => {
                 </div>
                 <div className="tw-flex tw-flex-col tw-items-center tw-justify-center">
                   <dt className="tw-mb-2 tw-text-3xl md:tw-text-4xl tw-font-extrabold">
-                    20+
+                    10+
                   </dt>
                   <dd className="tw-font-light tw-text-gray-500 dark:tw-text-gray-400">
                     projects
