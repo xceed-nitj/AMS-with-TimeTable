@@ -1,4 +1,4 @@
-import * as pdfMake from 'pdfmake/build/pdfmake';
+import pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import header from '../assets/header.png';
 import footer from '../assets/footer.png';
