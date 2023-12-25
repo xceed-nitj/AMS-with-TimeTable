@@ -170,23 +170,35 @@ const handleDelete = (_id) => {
     };
   
     const handleSaveNewFaculty = () => {
-      fetch(`${apiUrl}/timetablemodule/faculty`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editedData),
-        credentials: 'include',
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('Data saved successfully:', data);
-          fetchData();
-          handleCancelAddFaculty();
+      const isDuplicate = tableData.some((row) => row.name === editedData.name);
+
+      if (!editedData.facultyID || !editedData.name || !editedData.dept || !editedData.email||!editedData.designation) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+      
+  
+      if (isDuplicate) {
+        alert('Faculty with the same name already exists. Please enter a unique name.');
+      } else {
+        fetch(`${apiUrl}/timetablemodule/faculty`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editedData),
+          credentials: 'include',
         })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+          .then((response) => response.json())
+          .then((data) => {
+            console.log('Data saved successfully:', data);
+            fetchData();
+            handleCancelAddFaculty();
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+          });
+      }
     };
     
   
