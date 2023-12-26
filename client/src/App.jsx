@@ -9,6 +9,8 @@ import AddSem from './timetableadmin/addsemester';
 import AddRoom from './timetableadmin/addroom';
 import LockedSummary from './timetableadmin/lockedsummary';
 import Login from './dashboard/login';
+import ForgotPassword from './dashboard/ForgotPassword';
+
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
@@ -44,6 +46,8 @@ function App() {
         <Route path="/" element={<Home/>} />
         
         <Route path="/login" element={<Login/>} />
+        <Route path="/forgot-password" element={<ForgotPassword/>} />
+
         <Route path="/register" element={<RegistrationForm/>} />
           <Route path="/tt/:generatedLink" element={<Timetable />} />
           <Route path="/tt/dashboard" element={<CreateTimetable />} />
