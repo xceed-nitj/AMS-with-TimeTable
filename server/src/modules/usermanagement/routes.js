@@ -3,10 +3,10 @@ const router = express.Router();
 const {
   register,
   login,
-  update,
-  forgotPassword,
-  resetPassword, // Include the resetPassword function
+  update, // Include the resetPassword function
 } = require("./usercontroller");
+const { forgotPassword } = require("./forgotpasswordroute.js");
+const { resetPassword } = require("./resetpasswordroute.js");
 
 router.route("/login").post(login);
 router.route("/update").put(update);
