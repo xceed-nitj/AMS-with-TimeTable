@@ -15,7 +15,6 @@ import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
-import PrintButton from './filedownload/printButton';
 import Navbar from './components/navbar';
 import PrintSummary from './timetableadmin/printSummary'
 import LoadDistribution from './timetableadmin/loaddistribution';
@@ -74,7 +73,6 @@ function App() {
 
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
-          <Route path="/tt/print" element={<PrintButton/>} />
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
           <Route path="/tt/masterview" element={<MasterView/>}/>
