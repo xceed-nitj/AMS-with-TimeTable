@@ -23,14 +23,12 @@ const JoinUs = () => {
               <li>Mongo DB</li>
             </ul>
             <p className="tw-text-gray-500 sm:tw-text-lg dark:tw-text-gray-400">
-              We expect students to have intermediate to advance experience in
-              above technologies who are available between 6pm to 11pm on
+              We expect students to have intermediate to advanced level of knowledge in
+              above technologies who are expected to available on call between 6pm to 11pm on
               working days.
             </p>
             <p>
-              If you want to be part of XCEED Community where you get built
-              exciting applications, learn by doing and get support from other
-              developers mail us your resume at{" "}
+              If you want to be part of XCEED Community, mail us your resume (github link is mandatory) at{" "}
               <span className="tw-text-cyan-600  dark:tw-text-cyan-300">
                 xceed@nitj.ac.in
               </span>

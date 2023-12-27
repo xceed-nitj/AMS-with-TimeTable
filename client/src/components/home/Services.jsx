@@ -14,7 +14,7 @@ const Services = () => {
         <div className="tw-text-gray-500 sm:tw-text-lg dark:tw-text-gray-400">
           <SectionHeader centered title="Our Services" />
           <p className="tw-text-center tw-max-w-4xl tw-mx-auto tw-mb-4">
-            Xceed has an experienced team of developers, designers and mentors
+            XCEED has an experienced team of developers, designers and mentors
             dedicated to provide economical web based solutions as per your requirement. Here
             are some of our most demanded services.
           </p>
@@ -167,12 +167,11 @@ const Services = () => {
               <Cog6ToothIcon className="tw-w-5 tw-h-5 tw-text-cyan-600 lg:tw-w-6 lg:tw-h-6 dark:tw-text-cyan-300" />
             </div>
             <h3 className="tw-mb-2 tw-text-xl tw-font-bold dark:tw-text-white">
-              Workshops
+              FE Course & Hackathons
             </h3>
             <p className="tw-text-gray-500 dark:tw-text-gray-400">
-              Keep your company&apos;s lights on with customizable, iterative,
-              and structured workflows built for all efficient teams and
-              individual.
+            WDM Club at our esteemed institution has taken a pioneering step to offer a unique foundation elective course for first-year students. This course aims to provide an immersive and comprehensive introduction to web development, a critical technology in the field of software engineering which is the future!.
+The foundation elective course offered is designed to cater to students from diverse academic backgrounds. Inaddition to this, Through workshops, and hackathons, we aim to empower our members with the knowledge and practical experience necessary for success in the dynamic field of software development.
             </p>
           </div>
         </div>

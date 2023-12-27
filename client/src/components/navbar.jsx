@@ -95,7 +95,7 @@ const Navbar = () => {
     setHovered(false);
   };
 
-  const excludedRoutes = ["/login"];
+  const excludedRoutes = ["/login","/"];
 
   const isExcluded = excludedRoutes.includes(location.pathname);
 

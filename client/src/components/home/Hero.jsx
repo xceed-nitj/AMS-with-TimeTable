@@ -25,10 +25,10 @@ const Hero = () => {
           eXplore, Code, Enrich, Evolve &amp; Develop
         </h3>
         <p className="tw-mb-8 tw-text-lg tw-font-normal tw-text-gray-500 lg:tw-text-xl sm:tw-px-16 xl:tw-px-48 dark:tw-text-gray-400">
-          Here at At XCEED we are not just a group; we are a hub of innovation,
+          Here at XCEED-NITJ we are not just a developer community; we are a hub of innovation,
           collaboration, and excellence. From developing official college
           projects to pioneering initiatives that redefine the digital
-          landscape, Xceed stands as a testament to the prowess of our NITJ student
+          landscape of NITJ, XCEED stands as a testament to the prowess of our NITJ student
           community.
         </p>
         <div className="tw-flex tw-flex-col tw-mb-8 lg:tw-mb-16 tw-space-y-4 sm:tw-flex-row sm:tw-justify-center sm:tw-space-y-0 sm:tw-space-x-4">

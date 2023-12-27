@@ -165,11 +165,11 @@ class addFacultyController {
             const facultyValues = item.faculty;
       
             for (const facultyName of facultyValues) {
-              // const deptFaculty = await Faculty.findOne({ name: facultyName, dept });
+              const deptFaculty = await Faculty.findOne({ name: facultyName, dept });
       
-              // if (deptFaculty) {
+              if (deptFaculty) {
                 facultyArray.push({sem:item.sem, faculty:facultyName});
-              // }
+              }
             }
           }
       
