@@ -115,6 +115,21 @@ addFacultyRouter.post("/",protectRoute, async (req, res) => {
       }
     });
 
+    addFacultyRouter.get("/firstyearfacultybysem/:dept/:code/:sem", async (req, res) => {
+      try {
+      const code=req.params.code;
+      const dept=req.params.dept;
+      const sem=req.params.sem;
+
+      const faculty=await addFacultyController.getFirstYearDeptFacultyBySem(code,dept,sem); 
+      res.status(200).json(faculty);
+      } catch (e) {
+        res
+          .status(e?.status || 500)
+          .json({ error: e?.message || "Internal Server Error" });
+      }
+    });
+
     addFacultyRouter.put("/deletefirstyearfaculty/:code/:sem/:faculty", async (req, res) => {
       try {
       const code=req.params.code;

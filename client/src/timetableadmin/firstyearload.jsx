@@ -353,10 +353,10 @@ function FirstYearLoad() {
   };
 
 
-  const fetchFacultyData = async (currentCode, currentDepartment, Semester) => {
+  const fetchFacultyData = async (currentCode, currentDepartment, semester) => {
     try {
       const response = await fetch(
-        `${apiUrl}/timetablemodule/addfaculty/firstyearfaculty/${currentDepartment}/${currentCode}`,
+        `${apiUrl}/timetablemodule/addfaculty/firstyearfacultybysem/${currentDepartment}/${currentCode}/${semester}`,
         {
           method: "GET",
           headers: {
@@ -368,7 +368,7 @@ function FirstYearLoad() {
 
       const data = await response.json();
       // console.log("facdata", data);
-      const filteredFaculty = data.filter(item => item.sem === Semester).map(item => item.faculty);
+      const filteredFaculty = data.filter(item => item.sem === semester).map(item => item.faculty);
       setAvailableFaculties(filteredFaculty);
     } catch (error) {
       console.error("Error fetching TTdata:", error);
@@ -550,9 +550,7 @@ function FirstYearLoad() {
                                 }
                                 disabled={!subjects.some(subject => subject === cell.subject)}
                               >
-                                <option value={cell.faculty}>{cell.faculty || "Select Subject"}</option>
-                                {/* <option value="">Select Faculty</option>{" "} */}
-                                
+                               <option value="">Select Faculty</option>{" "}
                                 {availableFaculties.map((faculty, index) => (
                                   <option key={index} value={faculty}>
                                     {faculty}

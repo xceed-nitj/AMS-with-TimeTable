@@ -79,7 +79,7 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
     fetchFirstYearSubjects(currentCode, currentDepartment);
     fetchFacultyData(currentCode,currentDepartment);
 
-  }, [currentDepartment]);
+  }, [currentDepartment, facultyData]);
 
   const fetchTTData = async (currentCode) => {
     try {

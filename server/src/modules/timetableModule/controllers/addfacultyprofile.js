@@ -153,14 +153,39 @@ class addFacultyController {
         }
       }
       
-
-
       async getFirstYearDeptFaculty(code, dept) {
         try {
           const session = await TimeTableDto.getSessionByCode(code);
           const firstYear = await tableController.getCodeOfDept('Basic Sciences', session);
           const firstYearCode = firstYear.code;
           const faculty = await addFaculty.find({ code: firstYearCode });
+          const facultyArray = [];
+      
+          for (const item of faculty) {
+            const facultyValues = item.faculty;
+      
+            for (const facultyName of facultyValues) {
+              // const deptFaculty = await Faculty.findOne({ name: facultyName, dept });
+      
+              // if (deptFaculty) {
+                facultyArray.push({sem:item.sem, faculty:facultyName});
+              // }
+            }
+          }
+      
+          return facultyArray;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      }
+      
+
+      async getFirstYearDeptFacultyBySem(code,dept, sem) {
+        try {
+          const session = await TimeTableDto.getSessionByCode(code);
+          const firstYear = await tableController.getCodeOfDept('Basic Sciences', session);
+          const firstYearCode = firstYear.code;
+          const faculty = await addFaculty.find({ code: firstYearCode, sem });
           const facultyArray = [];
       
           for (const item of faculty) {
@@ -180,7 +205,6 @@ class addFacultyController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
-      
 
     }
 module.exports = addFacultyController;
