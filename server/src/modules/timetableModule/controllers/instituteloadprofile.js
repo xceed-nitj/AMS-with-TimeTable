@@ -53,11 +53,12 @@ class InstituteLoadController {
           await instituteLoad.deleteMany({ session: currentSession });
       
           for (const code of allcodes) {
-              console.log('Processing code:', code);
             
             const codeData2 = await CommonLoad.find({ code });
-            console.log('commonload objects', codeData2)
+            // console.log('commonload objects', codeData2)
             for(const data of codeData2){
+              console.log('Processing sem:',data.sem );
+
               const subDetails = await Subject.find({ subName: data.subName });
               const facultyDetails = await Faculty.find({ name: data.faculty });
               const semDetails = await MasterSem.find({ sem: data.sem });
@@ -75,7 +76,7 @@ class InstituteLoadController {
                   {
                     $push: {
                       sem: semDetails[0].type,
-                      type: subDetails[0].type,
+                      type: [subDetails[0].type]?[subDetails[0].type]:null,
                       load: data.hrs, // You can modify this based on your actual structure
                     },
                   }
@@ -89,10 +90,10 @@ class InstituteLoadController {
                   dept: facultyDetails[0] ? facultyDetails[0].dept : null,
                   designation: facultyDetails[0] ? facultyDetails[0].designation : null,                      
                   sem: [semDetails[0].type],
-                  type: [subDetails[0].type],
+                  type: [subDetails[0].type]?[subDetails[0].type]:null,
                   load: data.hrs, // You can modify this based on your actual structure
                 });
-                console.log('commonlaod',loadInstance)  
+                // console.log('commonlaod',loadInstance)  
                 await loadInstance.save();
             }       
             }
@@ -122,7 +123,7 @@ class InstituteLoadController {
                         {
                           $push: {
                             sem: semDetails[0].type,
-                            type: subDetails[0].type,
+                            type: [subDetails[0].type]?[subDetails[0].type]:null,
                             load: 1, // You can modify this based on your actual structure
                           },
                         }
@@ -136,7 +137,7 @@ class InstituteLoadController {
                         dept: facultyDetails[0] ? facultyDetails[0].dept : null,
                         designation: facultyDetails[0] ? facultyDetails[0].designation : null,                      
                         sem: [semDetails[0].type],
-                        type: [subDetails[0].type],
+                        type: [subDetails[0].type]?[subDetails[0].type]:null,
                         load: 1, // You can modify this based on your actual structure
                       });
       

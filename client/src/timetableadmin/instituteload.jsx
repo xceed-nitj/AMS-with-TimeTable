@@ -379,7 +379,7 @@ function InstituteLoad() {
     <th rowSpan="2">Project Load</th>
     <th rowSpan="2">Total Faculty Load</th>
   </tr>
-  <tr>
+  {/* <tr>
     {[...Usemesters].map((semester) =>
   types.map((type) => {
     // Only render headers for 'Theory' if excludeTheory is false
@@ -391,7 +391,7 @@ function InstituteLoad() {
     return null;
   })
 )}
-  </tr>
+  </tr> */}
 </thead>
 
 
