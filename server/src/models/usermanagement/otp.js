@@ -21,23 +21,29 @@ const otpSchema = new Schema({
 
 // pre middleware for sending email
 
-async function sendVerificationEmail(email, otp) {
+// Define a method for sending verification email
+otpSchema.methods.sendVerificationEmail = async function () {
   try {
     const mailresponse = await mailSender(
-      email,
+      this.email,
       "Verification Email from NITJ",
-      otp
+      this.otp
     );
-    console.log("mail send successful", mailresponse);
-  } catch (e) {
-    console.log("error during mail sending in otp schema ", e);
-    throw e;
+    console.log("Mail send successful", mailresponse);
+  } catch (error) {
+    console.log("Error during mail sending in otp schema ", error);
+    throw error;
   }
-}
+};
 
 otpSchema.pre("save", async function (next) {
-  await sendVerificationEmail(this.email, this.otp);
-  next();
+  try {
+    await this.sendVerificationEmail();
+    next();
+  } catch (error) {
+    console.log("Error during mail sending in otp schema ", error);
+    next(error);
+  }
 });
 
 module.exports = mongoose.model("OTP", otpSchema);
