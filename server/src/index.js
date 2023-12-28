@@ -48,9 +48,9 @@ app.use(cors({
   }));
 
 // default route
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-})
+// app.get('/', (req, res) => {
+//     res.send('Hello World!');
+// })
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
