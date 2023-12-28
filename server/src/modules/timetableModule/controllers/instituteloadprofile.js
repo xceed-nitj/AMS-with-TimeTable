@@ -100,6 +100,8 @@ class InstituteLoadController {
             const codeData = await LockSem.find({ code });
             
             for (const data of codeData) {
+              console.log('Processing sem:',data.sem );
+      
               if (data.slotData.length > 0 && data.slotData[0] !== '') {
                 const semDetails = await MasterSem.find({ sem: data.sem });
       
