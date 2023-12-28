@@ -89,7 +89,7 @@ class InstituteLoadController {
                   name: data.faculty,
                   dept: facultyDetails[0] ? facultyDetails[0].dept : null,
                   designation: facultyDetails[0] ? facultyDetails[0].designation : null,                      
-                  sem: [semDetails[0].type],
+                  sem: [semDetails[0].type]?[semDetails[0].type]:null,
                   type: [subDetails[0].type]?[subDetails[0].type]:null,
                   load: data.hrs, // You can modify this based on your actual structure
                 });
