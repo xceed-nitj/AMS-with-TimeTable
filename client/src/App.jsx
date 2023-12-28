@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Timetable from './timetableadmin/timetable';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
@@ -10,13 +9,13 @@ import AddSem from './timetableadmin/addsemester';
 import AddRoom from './timetableadmin/addroom';
 import LockedSummary from './timetableadmin/lockedsummary';
 import Login from './dashboard/login';
+import ForgotPassword from './dashboard/ForgotPassword';
+
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
-import PrintButton from './filedownload/printButton';
 import Navbar from './components/navbar';
-import Footer from './components/footer'
 import PrintSummary from './timetableadmin/printSummary'
 import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
@@ -32,6 +31,7 @@ import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import MergePDFComponent from './filedownload/mergepdfdocuments';
+import Home from './pages/Home'
 function App() {
   return (
     <Router>
@@ -41,8 +41,12 @@ function App() {
         {/* <h1>XCEED-Timetable Module</h1>  */}
         <Navbar/>
          
-        <Routes>
-        <Route path="/" element={<Login/>} />
+      <Routes>
+        <Route path="/" element={<Home/>} />
+        
+        <Route path="/login" element={<Login/>} />
+        <Route path="/forgot-password" element={<ForgotPassword/>} />
+
         <Route path="/register" element={<RegistrationForm/>} />
           <Route path="/tt/:generatedLink" element={<Timetable />} />
           <Route path="/tt/dashboard" element={<CreateTimetable />} />
@@ -69,7 +73,6 @@ function App() {
 
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           <Route path="/tt/viewtimetable" element={<LockedView/>} />
-          <Route path="/tt/print" element={<PrintButton/>} />
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
           <Route path="/tt/masterview" element={<MasterView/>}/>

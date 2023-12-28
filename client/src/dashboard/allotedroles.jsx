@@ -71,6 +71,9 @@ const AllocatedRolesPage = () => {
                         <Td>{index + 1}</Td>
                         <Td>{role === "ITTC" ? (<Text>Institute Time Table Coordinator</Text>):null}
                         {role === "DTTI" ? (<Text>Department Time Table Coordinator</Text>):null}
+                        {role === "CM" ? (<Text>Event Certificate Manager</Text>):null}
+                        {role === "admin" ? (<Text>XCEED Super User</Text>):null}
+
                         </Td>
                         <Td>
                           {role === "ITTC" ? (
@@ -83,6 +86,17 @@ const AllocatedRolesPage = () => {
                               Time Table Dashboard
                             </ChakraLink>
                           ) : null}
+                          {role === "CM" ? (
+                            <ChakraLink href="/cm/dashboard" color="teal.500">
+                              Certificate Management Dashboard
+                            </ChakraLink>
+                          ) : null}
+                           {role === "admin" ? (
+                            <ChakraLink href="/admin/dashboard" color="teal.500">
+                              XCEED admin Dashboard
+                            </ChakraLink>
+                          ) : null}
+
                         </Td>
                       </Tr>
                     ))}

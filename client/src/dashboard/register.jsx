@@ -7,7 +7,7 @@ const RegistrationForm = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    roles: ['DTTI'], // Set a default role or leave it empty
+    roles: [], // Set a default role or leave it empty
   });
 
   const [error, setError] = useState('');
@@ -16,24 +16,25 @@ const RegistrationForm = () => {
   const apiUrl = getEnvironment();
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const { name, value } = e.target;
 
-    // If the input is a checkbox, handle it differently
-    if (e.target.type === 'checkbox') {
-      // If the checkbox is checked, add the role to the array; otherwise, remove it
-      setFormData((prevData) => ({
-        ...prevData,
-        roles: e.target.checked
-          ? [...prevData.roles, value]
-          : prevData.roles.filter((role) => role !== value),
-      }));
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
-    }
-  };
+  // If the input is a checkbox, handle it differently
+  if (e.target.type === 'checkbox') {
+    // If the checkbox is checked, add the role to the array; otherwise, remove it
+    setFormData((prevData) => ({
+      ...prevData,
+      roles: e.target.checked
+        ? [...prevData.roles, value]
+        : prevData.roles.filter((role) => role !== value),
+    }));
+  } else {
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  }
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,7 +127,23 @@ const RegistrationForm = () => {
           >
             Department Time Table Coordinator
           </Checkbox>
-          {/* Add more roles as needed */}
+          <Checkbox
+            name="CM"
+            value="CM"
+            isChecked={formData.roles.includes('CM')}
+            onChange={handleInputChange}
+          >
+            Event Certificate Manager
+          </Checkbox>
+          <Checkbox
+            name="admin"
+            value="admin"
+            isChecked={formData.roles.includes('admin')}
+            onChange={handleInputChange}
+          >
+            XCEED admin
+          </Checkbox>
+
         </VStack>
         <Button colorScheme="teal" onClick={handleSubmit}>
           Register

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import jsPDF from "jspdf";
+// import jsPDF from "jspdf";
 import { useNavigate, useLocation, Form } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import ViewTimetable from "./viewtt";
 import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
-import { Container } from "@chakra-ui/layout";
+import Papa from 'papaparse';
+// import { saveAs } from 'file-saver';
+
+import {   Container } from "@chakra-ui/layout";
 import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
 import {
   CustomTh,
@@ -14,7 +17,9 @@ import {
   CustomPlusButton,
   CustomDeleteButton,
 } from "../styles/customStyles";
-import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";
+
+  import { Box,   useToast,Text, Portal, ChakraProvider } from "@chakra-ui/react";
+
 
 import {
   Table,
@@ -38,17 +43,18 @@ function InstituteLoad() {
   // const [facultyNotes, setFacultyNotes] = useState([]);
   // const [roomNotes, setRoomNotes] = useState([]);
   const [selectedSemester, setSelectedSemester] = useState("");
-  const [selectedFaculty, setSelectedFaculty] = useState("");
+  const [loadFaculty, setLoadFaculty] = useState({});
   const [selectedRoom, setSelectedRoom] = useState("");
   const [commonLoad, setCommonLoad]=useState();
   const [currentDept, setCurrentDept]=useState();
 
   const apiUrl = getEnvironment();
+  const toast = useToast();
   // const navigate = useNavigate();
   // const currentURL = window.location.pathname;
   // const parts = currentURL.split("/");
   // const currentCode = parts[parts.length - 2];
-
+  const [excludeTheory, setExcludeTheory] = useState(false);
 
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
@@ -62,9 +68,11 @@ function InstituteLoad() {
 
   const [allsessions, setAllSessions]=useState([]);
   const [availableDepts, setAvailableDepts] = useState([]);
-  const [currentCode, setCurrentCode] = useState('');
+  const [availableLoad, setAvailableLoad] = useState({});
   const [selectedSession, setSelectedSession]=useState('');
   const [selectedDept, setSelectedDept]=useState('');
+  const [facultyDesignation, setFacultyDesignation]=useState({});
+  const [loading, setLoading] = useState(false);
 
   const semesters = availableSems;
 
@@ -97,448 +105,357 @@ function InstituteLoad() {
 
   }, []); // Empty dependency array means this effect runs once on mount
   
-  const fetchCode= async (session, dept) => {
-    try {
-      const response = await fetch(
-        `${apiUrl}/timetablemodule/timetable/getcode/${session}/${dept}`,
-        { credentials: "include" }
-      );
-      const data1 = await response.json();
-
-      setCurrentCode(data1)
-      // setAvailableDepts(dept)
-      console.log('received code:',data1)
-      // console.log('received dept data:',dept)
-      return data1;
-    } catch (error) {
-      console.error("Error fetching existing timetable data:", error);
-      return {};
-    }
-  }
-    const facultyData = async (currentCode, faculty) => {
-      try {
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty}`,
-          { credentials: "include" }
-        );
-        const data1 = await response.json();
-        const data = data1.timetableData;
-        // setFacultyLockedTime(data1.updatedTime);
-        // setFacultyNotes(data1.notes);
-        const initialData = generateInitialTimetableData(data, "faculty");
-        return initialData;
-      } catch (error) {
-        console.error("Error fetching existing timetable data:", error);
-        return {};
-      }
-    };
-
-    // const fetchFacultyData = async (faculty) => {
-    //   const data = await facultyData(currentCode, faculty);
-    //   setViewFacultyData(data);
-    // };
-
-      const fetchCommonLoad = async (currentCode, viewFaculty) => {
-        try {
-          const response = await fetch(
-            
-            `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
-            { credentials: "include" }
-          );
-          if (response.ok) {
-            const data = await response.json();
-            // console.log('faculty response',data[0]);
-            setCommonLoad(data);
-            console.log('coomomo load', data);
-          }
-        } catch (error) {
-          console.error("Error fetching commonload:", error);
-        }
-      };
-    // fetchCommonLoad(currentCode, selectedFaculty); // Call the function to fetch subject data
-    // fetchFacultyData(selectedFaculty);
-
-  // useEffect(() => {
-  //   const roomData = async (currentCode, room) => {
-  //     try {
-  //       const response = await fetch(
-  //         `${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room}`,
-  //         { credentials: "include" }
-  //       );
-  //       const data1 = await response.json();
-  //       const data = data1.timetableData;
-  //       setRoomLockedTime(data1.updatedTime);
-  //       setRoomNotes(data1.notes);
-  //       const initialData = generateInitialTimetableData(data, "room");
-  //       return initialData;
-  //     } catch (error) {
-  //       console.error("Error fetching existing timetable data:", error);
-  //       return {};
-  //     }
-  //   };
-
-  //   const fetchRoomData = async (currentCode,room) => {
-  //     const data = await roomData(currentCode, room);
-  //     setViewRoomData(data);
-  //   };
-
-  //   fetchRoomData(currentCode, selectedRoom);
-  // }, [selectedRoom]);
-
-    const fetchSem = async (currentCode) => {
-      try {
-        console.log('currentcode used for',currentCode)
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/addsem?code=${currentCode}`,
-          { credentials: "include" }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          console.log(data)
-          const filteredSems = data.filter((sem) => sem.code === currentCode);
-          const semValues = filteredSems.map((sem) => sem.sem);
-          // console.log('filtered semester data', filteredSems)
-
-          setAvailableSems(semValues);
-          // console.log('available semesters',availableSems)
-        }
-      } catch (error) {
-        console.error("Error fetching subject data:", error);
-      }
-    };
-
-    const fetchRoom = async () => {
-      try {
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/addroom?code=${currentCode}`,
-          { credentials: "include" }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          const filteredSems = data.filter((room) => room.code === currentCode);
-          const semValues = filteredSems.map((room) => room.room);
-
-          setAvailableRooms(semValues);
-          // console.log('available rooms',availableRooms)
-        }
-      } catch (error) {
-        console.error("Error fetching subject data:", error);
-      }
-    };
-
-    const fetchFaculty = async (currentCode) => {
-      try {
-      const fetchedttdetails=await fetchTTData(currentCode);
-        console.log("fetchedttdetails", fetchedttdetails)
-      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`,{credentials: 'include',});
-      if (response.ok) {
-        const data = await response.json();
-        const facultydata = data.map(faculty => faculty.name);
-
-        console.log('faculty response',facultydata);
-        setAvailableFaculties(facultydata);
-        // console.log('deptfaculties', facultydata);
-        return facultydata;
-      }
-       
-    } catch (error) {
-      console.error('Error fetching subject data:', error);
-    }
-  };
-
-    const fetchTime = async () => {
-      try {
-        // console.log('sem value',semester);
-        // console.log('current code', currentCode);
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`,
-          { credentials: "include" }
-        );
-        const data = await response.json();
-        setLockedTime(data.updatedTime.lockTimeIST);
-        // setSavedTime( data.updatedTime.saveTimeIST)
-      } catch (error) {
-        console.error("Error fetching existing timetable data:", error);
-      }
-    };
-
-
-  const generateInitialTimetableData = (fetchedData, type) => {
-    const initialData = {};
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    const periods = [1, 2, 3, 4, 5, 6, 7, 8, 'lunch'];
-
-    for (const day of days) {
-      initialData[day] = {};
-      for (const period of periods) {
-        if(period =='lunch')
-        {
-          initialData[day]['lunch'] = [];
-
-          if (fetchedData[day] && fetchedData[day]['lunch']) {
-            const slotData = fetchedData[day]['lunch'];
-  
-            for (const slot of slotData) {
-              const slotSubjects = [];
-              let faculty = ""; // Declare faculty here
-              let room = "";
-              for (const slotItem of slot) {
-                const subj = slotItem.subject || "";
-                if (type == "room") {
-                  room = slotItem.sem || "";
-                } else {
-                  room = slotItem.room || "";
-                }
-                if (type == "faculty") {
-                  faculty = slotItem.sem || "";
-                } else {
-                  faculty = slotItem.faculty || "";
-                }
-                // Only push the values if they are not empty
-                if (subj || room || faculty) {
-                  slotSubjects.push({
-                    subject: subj,
-                    room: room,
-                    faculty: faculty,
-                  });
-                }
-                initialData[day]['lunch'].push(slotSubjects);  
-
-              }
-            }
-          }
-
-        }
-        else
-        {
-        initialData[day][`period${period}`] = [];
-
-        if (fetchedData[day] && fetchedData[day][`period${period}`]) {
-          const slotData = fetchedData[day][`period${period}`];
-
-          for (const slot of slotData) {
-            const slotSubjects = [];
-            let faculty = ""; // Declare faculty here
-            let room = "";
-            for (const slotItem of slot) {
-              const subj = slotItem.subject || "";
-              if (type == "room") {
-                room = slotItem.sem || "";
-              } else {
-                room = slotItem.room || "";
-              }
-              if (type == "faculty") {
-                faculty = slotItem.sem || "";
-              } else {
-                faculty = slotItem.faculty || "";
-              }
-              // Only push the values if they are not empty
-              if (subj || room || faculty) {
-                slotSubjects.push({
-                  subject: subj,
-                  room: room,
-                  faculty: faculty,
-                });
-              }
-            }
-
-            // Push an empty array if no data is available for this slot
-            if (slotSubjects.length === 0) {
-              slotSubjects.push({
-                subject: "",
-                room: "",
-                faculty: "",
-              });
-            }
-
-            initialData[day][`period${period}`].push(slotSubjects);
-          }
-        } else {
-          // Assign an empty array if day or period data is not available
-          initialData[day][`period${period}`].push([]);
-        }
-      }
-      }
-  
-    }
-  
-    // console.log("initial datat to be received",initialData);
-    return initialData;
-  };
-
-
-  // const navigate view= useNavigate();
-
-
-  const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
-  const [TTData, setTTData] = useState([]); // Initialize as an empty array
-
-    const fetchSubjectData = async (currentCode) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`,
-        { credentials: "include" }
-        );
-        const data = await response.json();
-        setSubjectData(data);
-        // console.log('subjectdata',data)
-      } catch (error) {
-        console.error('Error fetching subject data:', error);
-      }
-    };
-
-    const fetchTTData = async (currentCode) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          // body: JSON.stringify(userData),
-          credentials: 'include'
+  const handleCalculateLoad = () => {
+    setLoading(true); 
+    // Make a request to your backend with the entered session value
+    fetch(`${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`)
+      .then(response => response.json())
+      .then(data => {
+        // Handle the data in your frontend (e.g., update UI)
+        // console.log(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching institute load details:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch institute load details",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
         });
-        
+      });
+  };
+
+  useEffect(() => {
+    const fetchDepartmentFacultyData = async (selectedSession,selectedDept) => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/instituteLoad/${selectedSession}/${selectedDept}`,
+          { credentials: "include" }
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+  
         const data = await response.json();
-        // console.log('ttdata', data)
-        setTTData(data);
-        return data;
+  
+        console.log('load data', data);
+        const calculatedLoad = calculateFacultyWiseLoad(data);
+        console.log('calculated load',calculatedLoad)
+        const desig = fetchFacultyDesignation(data);
+
+    
+    setAvailableLoad(calculatedLoad)
+    setFacultyDesignation(desig)
       } catch (error) {
-        console.error('Error fetching TTdata:', error);
+        console.error("Error fetching existing timetable data:", error);
       }
     };
-
-    const countHoursByDegreeAndSemester = (timetableData) => {
-      const degreeSemesterCount = {};
-    
-      // Iterate through each day
-      for (const day in timetableData) {
-        const dayData = timetableData[day];
-    
-        // Iterate through each period in the day
-        for (const period in dayData) {
-          const periodData = dayData[period];
-    
-          // Iterate through each entry in the period
-          for (const entry of periodData) {
-            // Check if there is an entry and it has a faculty property
-            if (entry.length > 0 && entry[0].hasOwnProperty("faculty")) {
-              const faculty = entry[0].faculty;
-    
-              // Extract degree and semester from the faculty value
-              const [degree, deptCode, semester] = faculty.split('-');
-    
-              // Update the count for the degree and semester
-              const key = `${degree}-${semester}`;
-              if (!degreeSemesterCount[key]) {
-                degreeSemesterCount[key] = 1;
-              } else {
-                degreeSemesterCount[key]++;
-              }
-            }
-          }
-        }
-      }
-    
-      return degreeSemesterCount;
-    };
-
-useEffect(()=>{
-
-    const fetchLoad = async (session) => {
-      setFacultyHoursCount({});
-      console.log('dept available:',availableDepts)
-      for (const dept of availableDepts) {
-        // Fetch the code for the current session and department
-        setCurrentDept(dept);
-        const newCode = await fetchCode(session, dept);
-      console.log('dept code available:',newCode)
-
-        const facultylist= await fetchFaculty(newCode);
-        // Fetch faculty data for each available faculty
-        console.log('faculty available:',facultylist)
-
-        for (const faculty of facultylist) {
-          const newFacultyData = await facultyData(newCode, faculty);
-          console.log('faculty data available:',newFacultyData)
-
-          const result = countHoursByDegreeAndSemester(newFacultyData);
   
-          // Accumulate faculty hours count
-          setFacultyHoursCount((prevCount) => ({
-            ...prevCount,
-            [faculty]: result,
-          }));
-        }
-      }
-    };
+    fetchDepartmentFacultyData(selectedSession,selectedDept);
 
-    fetchLoad(selectedSession);
-  },[selectedSession]);
+  }, [selectedDept]); // Empty dependency array means this effect runs once on mount
 
 
-  console.log('faculuy hrs', facultyHoursCount)
+  function fetchFacultyDesignation(data) {
+    // const facultyWiseLoad = {};
+    const facultyDesignation={}
+  
+    data.forEach((faculty) => {
+      const { name, designation} = faculty;
+      facultyDesignation[name]=designation ||{};
+    // console.log('Faculty Wise Load:', facultyWiseLoad);
+    });
+    return facultyDesignation;
+  }
+
+  function calculateFacultyWiseLoad(data) {
+    const facultyWiseLoad = {};
+    // const facultyDesignation={}
+  
+    data.forEach((faculty) => {
+      const { name, sem, type, load , designation} = faculty;
+      // facultyDesignation[name]=designation ||{};
+
+      facultyWiseLoad[name] = facultyWiseLoad[name] || {};
+      // facultyWiseLoad[designation] = facultyWiseLoad[designation] || {};
+  
+      sem.forEach((s, index) => {
+        const t = type[index];
+        const l = load[index];
+  
+        console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
+  
+        facultyWiseLoad[name][s] = facultyWiseLoad[name][s] || {};
+        facultyWiseLoad[name][s][t] = (facultyWiseLoad[name][s][t] || 0) + l;
+      });
+    });
+  
+    // console.log('Faculty Wise Load:', facultyWiseLoad);
+    return facultyWiseLoad;
+  }
   
 
-  return (
+  const Usemesters = [...new Set(Object.keys(availableLoad).flatMap(faculty => Object.keys(availableLoad[faculty])))];
+  const types = ['Theory', 'Laboratory', 'Tutorial', 'Project'];
+  
+  // Generate a set of unique columns based on available data
+  const uniqueColumns = new Set();
+  Object.keys(availableLoad).forEach((faculty) => {
+    Usemesters.forEach((semester) => {
+      types.forEach((type) => {
+        uniqueColumns.add(`${faculty}-${semester}-${type}`);
+      });
+    });
+  });
+   const totalLoads = {}; 
+
+
+   const [csvData, setCsvData] = useState("");
+
+   // ... (existing code)
+
+   const handleDownloadCSV = () => {
+    const csvData = convertToCSV();
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+    link.download = "table_data.csv";
+    link.style.display = "none";
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+  };
+
+ // ... (existing code)
+
+ const convertToCSV = () => {
+  let csvContent = `Session: ${selectedSession}, Department: ${selectedDept}\n`;
+  csvContent += "Faculty,Designation"; // Include Designation in the header
+
+  Usemesters.forEach((semester) => {
+    types.forEach((type) => {
+      if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+        csvContent += `,${semester}-${type}`;
+      }
+    });
+  });
+
+  csvContent += ",Tutorial+Lab Load,Project Load,Total Faculty Load\n";
+
+  Object.keys(availableLoad).forEach((faculty) => {
+    csvContent += `${faculty},${facultyDesignation[faculty]}`; // Include Designation in the row
+
+    Usemesters.forEach((semester) => {
+      types.forEach((type) => {
+        if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+          const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
+          const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
+          csvContent += `,${adjustedLoadValue}`;
+        }
+      });
+    });
+
+    const tutorialLabLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
+      const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
+      const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
+      return tutorialLoad + laboratoryLoad;
+    }).reduce((sum, value) => sum + value, 0);
+
+    const projectLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
+      const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
+      return projectLoad;
+    }).reduce((sum, value) => sum + value, 0);
+
+    const totalLoad = totalLoads[faculty] || 0;
+
+    csvContent += `,${tutorialLabLoad},${projectLoad},${totalLoad}\n`;
+  });
+
+  return csvContent;
+};
+
+// ... (existing code)
+
+  
+
+   return (
     <Container maxW="6xl">
-      <Header title="View TimeTable "></Header>
-      <FormLabel fontWeight="bold">Select Session:
-          </FormLabel>
+      <Header title="Load Distribution "></Header>
+      <Text>Perform load calculation first. It will take approximately 15 min and then go for department load calculation</Text>
+      <FormLabel fontWeight="bold">Select Session to calculate load:</FormLabel>
+      <Select
+        value={selectedSession}
+        onChange={(e) => setSelectedSession(e.target.value)}
+      >
+        <option value="">Select Session</option>
+        {allsessions.map((session, index) => (
+          <option key={index} value={session}>
+            {session}
+          </option>
+        ))}
+      </Select>
+      <Button colorScheme="blue" onClick={handleCalculateLoad} isLoading={loading}>
+        Calculate Load
+      </Button>
+      <Header title="Departmentwise load distribution"></Header>
 
-          <Select
-            value={selectedSession}
-            onChange={(e) => setSelectedSession(e.target.value)}
-          >
-            <option value="">Select Session</option>
-            {allsessions.map((session, index) => (
-              <option key={index} value={session}>
-                {session}
-              </option>
-            ))}
-          </Select>
+      {/* <FormLabel fontWeight="bold">Select Session:</FormLabel> */}
+      <Select
+        value={selectedSession}
+        onChange={(e) => setSelectedSession(e.target.value)}
+      >
+        <option value="">Select Session</option>
+        {allsessions.map((session, index) => (
+          <option key={index} value={session}>
+            {session}
+          </option>
+        ))}
+      </Select>
+      <Select
+        value={selectedDept}
+        onChange={(e) => setSelectedDept(e.target.value)}
+      >
+        <option value="">Select Department</option>
+        {availableDepts.map((dept, index) => (
+          <option key={index} value={dept}>
+            {dept}
+          </option>
+        ))}
+      </Select>
+      
+      <>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Faculty Name</th>
-          {/* <th>Department</th> */}
-          <th>B.Tech Sem 1</th>
-          <th>B.Tech Sem 2</th>
-          <th>B.Tech Sem 3</th>
-          <th>B.Tech Sem 4</th>
-          <th>B.Tech Sem 5</th>
-          <th>B.Tech Sem 6</th>
-          <th>B.Tech Sem 7</th>
-          <th>B.Tech Sem 8</th>
-          <th>M.Tech Sem 1</th>
-          <th>M.Tech Sem 2</th>
-          {/* Add similar columns for other degrees and semesters */}
-        </tr>
-      </thead>
-      <tbody>
-      {Object.keys(facultyHoursCount).map((faculty) => (
-  <tr key={faculty}>
-    <td>{faculty}</td>
-    {/* <td>{currentDept}</td> */}
 
-    {[section, 2, 3, 4,5,6,7,8].map((semester) => (
-      <td key={`${faculty}-${semester}`}>
-        {facultyHoursCount[faculty][`B.Tech-${semester}`] || 0}
-      </td>
-    ))}
-    
-    {[1, 2].map((semester) => (
-                <td key={`${faculty}-${semester}`}>
-                  {facultyHoursCount[faculty][`M.Tech-${semester}`] || 0}
-                </td>
-              ))}
+ 
+     
+<TableContainer>  
+{Usemesters.length > 0 && (
+        <table>
+        <thead>
+  <tr>
+  <th rowSpan="2">Faculty</th>
+  <th rowSpan="2">Designation</th>
+    {Usemesters
+      .sort((a, b) => {
+        const getTypeOrder = (type) => {
+          const typeOrder = {
+            'b.tech': 0,
+            'm.tech': 1,
+            'b.sc':2,
+            'm.sc':3,
+            'b.sc-b.ed':4,
+            'ph.d':5,
+            'mba':6
+            // Add conditions for other program types if needed
+          };
+          return typeOrder[type.toLowerCase()];
+        };
+
+        const typeOrderA = getTypeOrder(a.split('-')[0]);
+        const typeOrderB = getTypeOrder(b.split('-')[0]);
+
+        // First, arrange by program type
+        if (typeOrderA !== typeOrderB) {
+          return typeOrderA - typeOrderB;
+        }
+
+        // If the program types are the same, arrange by semester number
+        const numberA = parseInt(a.split('-')[1]);
+        const numberB = parseInt(b.split('-')[1]);
+
+        return numberA - numberB;
+      })
+      .map((semester) => (
+        <React.Fragment key={`header-${semester}`}>
+          <th colSpan={types.length}>{semester}</th>
+        </React.Fragment>
+      ))}
+    <th rowSpan="2">Tutorial+Lab Load</th>
+    <th rowSpan="2">Project Load</th>
+    <th rowSpan="2">Total Faculty Load</th>
   </tr>
-))}
+  <tr>
+    {[...Usemesters].map((semester) =>
+  types.map((type) => {
+    // Only render headers for 'Theory' if excludeTheory is false
+    if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+      return (
+        <th key={`header-${semester}-${type}`}>{`${type}`}</th>
+      );
+    }
+    return null;
+  })
+)}
+  </tr>
+</thead>
+
+
+<tbody>
+  {Object.keys(availableLoad).map((faculty) => (
+    <tr key={faculty}>
+      <td>{faculty}</td>
+      <td>{facultyDesignation[faculty]}</td>
+      {[...Usemesters].map((semester) =>
+        types.map((type) => {
+          if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
+            const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
+            const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
+
+            totalLoads[faculty] = totalLoads[faculty] || 0;
+            totalLoads[faculty] += adjustedLoadValue;
+
+            return (
+              <td key={`${faculty}-${semester}-${type}`}>
+                {adjustedLoadValue}
+              </td>
+            );
+          }
+          return null;
+        })
+      )}
+      {/* Sum of 'Tutorial', 'Laboratory', and 'Project' for each faculty */}
+      <td key={`${faculty}-tutorial-laboratory-project-sum`}>
+        {Object.keys(availableLoad[faculty] || {}).map((semester) => {
+          const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
+          const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
+          // const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
+
+          return tutorialLoad + laboratoryLoad ;
+        }).reduce((sum, value) => sum + value, 0)}
+      </td>
+      {/* Separate column for 'Project' load */}
+      <td key={`${faculty}-project-sum`}>
+        {Object.keys(availableLoad[faculty] || {}).map((semester) => {
+          const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
+          return projectLoad;
+        }).reduce((sum, value) => sum + value, 0)}
+      </td>
+ 
+      {/* Total load for each faculty */}
+      <td>{totalLoads[faculty]}</td>
+    </tr>
+  ))}
 </tbody>
-    </table>
 
-
-</Container>
+<Button colorScheme="blue"  onClick={handleDownloadCSV}>
+        Download Load Distribution in CSV
+      </Button>
+        </table>
+        
+)}
+        </TableContainer>
+      </>
+     
+    </Container>
+  
   );
+  
+  
 }
 
 export default InstituteLoad;

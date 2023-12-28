@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useLocation, useNavigate } from "react-router-dom";
 import FormHeader from './FormHeader'
 import getEnvironment from '../../getenvironment'
 import {
@@ -17,6 +18,13 @@ const LoginForm = () => {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const apiUrl = getEnvironment()
+  const navigate = useNavigate();
+
+
+  const handleForgotPassword = () => {
+    // Navigate to the current URL with an additional path segment
+    navigate(`/forgot-password`);
+  };
 
   const handleSubmit = async (e) => {
     setIsLoading(true)
@@ -85,6 +93,9 @@ const LoginForm = () => {
               isRequired
             />
           </FormControl>
+          <Text mt={2} textAlign="center" color="blue.500" cursor="pointer" onClick={handleForgotPassword}>
+        Forgot Password ?
+      </Text>
           <Button
             isLoading={isLoading}
             type='submit'

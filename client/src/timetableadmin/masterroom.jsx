@@ -53,20 +53,37 @@ function MasterRoom() {
   };
 
   const handleSaveNewRoom = () => {
-    fetch(`${apiUrl}/timetablemodule/masterroom`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editedRoom),
-      credentials: 'include',
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Data saved successfully:', data);
-        fetchMasterRooms();
-        handleCancelAddRoom();
+    // Check if required fields are filled
+    const requiredFields = ['room', 'type', 'building'];
+    const missingFields = requiredFields.filter((field) => !editedRoom[field]);
+  
+    if (missingFields.length > 0) {
+      const missingFieldsMessage = `Please fill in the following required fields: ${missingFields.join(', ')}.`;
+      alert(missingFieldsMessage);
+      return;
+    }
+  
+    const isDuplicate = masterRooms.some((room) => room.room === editedRoom.room);
+  
+    if (isDuplicate) {
+      alert('Room with the same number already exists. Please enter a unique room number.');
+    } else {
+      fetch(`${apiUrl}/timetablemodule/masterroom`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editedRoom),
+        credentials: 'include',
       })
-      .catch((error) => console.error('Error:', error));
+        .then((response) => response.json())
+        .then((data) => {
+          console.log('Data saved successfully:', data);
+          fetchMasterRooms();
+          handleCancelAddRoom();
+        })
+        .catch((error) => console.error('Error:', error));
+    }
   };
+  
   
 
   const handleEditClick = (_id) => {

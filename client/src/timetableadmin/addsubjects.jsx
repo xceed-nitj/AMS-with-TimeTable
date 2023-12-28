@@ -613,7 +613,7 @@ function Subject() {
                 <Th><Center>Subject Abbreviation</Center></Th>
                 <Th><Center>Semester</Center></Th>
                 <Th><Center>Degree</Center></Th>
-                {/* <Th><Center>Department</Center></Th> */}
+                <Th><Center>Department</Center></Th>
                 {/* <Th><Center>Credits</Center></Th> */}
                 <Th><Center>Actions</Center></Th>
               </Tr>

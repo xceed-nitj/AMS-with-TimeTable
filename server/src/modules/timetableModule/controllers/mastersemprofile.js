@@ -83,6 +83,15 @@ class MastersemController {
     }
   }
 
+  async getSemDetails(sem) {
+    try {
+      const semdetails = await Mastersem.find({sem});
+      
+      return semdetails;
+    } catch (error) {
+      throw error; 
+    }
+  }
 
 
 

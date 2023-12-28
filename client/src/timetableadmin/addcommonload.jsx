@@ -418,6 +418,9 @@ function CommonLoadComponent() {
                   <Center>Subject Type</Center>
                 </Th>
                 <Th>
+                  <Center>Sem</Center>
+                </Th>
+                <Th>
                   <Center>Hrs</Center>
                 </Th>
                 <Th>
@@ -442,6 +445,9 @@ function CommonLoadComponent() {
                   </Td>
                   <Td>
                     <Center>{commonLoad.subType}</Center>
+                  </Td>
+                  <Td>
+                    <Center>{commonLoad.subSem}</Center>
                   </Td>
                   <Td>
                     <Center>{commonLoad.hrs}</Center>

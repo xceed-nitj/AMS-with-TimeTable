@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import logo from "../assets/clublogo.png";
 import getEnvironment from '../getenvironment';
 import {
   Box,
@@ -13,7 +12,7 @@ import {
   Spacer,
   Button,
 } from "@chakra-ui/react";
-
+import { Link as RouterLink } from "react-router-dom";
 const theme = extendTheme({
   components: {
     Button: {
@@ -96,7 +95,7 @@ const Navbar = () => {
     setHovered(false);
   };
 
-  const excludedRoutes = ["/"];
+  const excludedRoutes = ["/login","/"];
 
   const isExcluded = excludedRoutes.includes(location.pathname);
 
@@ -109,7 +108,9 @@ const Navbar = () => {
       <Box bg="black" py={2} px={4}>
         <Flex justify="space-between" align="center">
           <Flex align="center">
-            <Image src={logo} alt="Logo" h={10} w={40} mr={2} />
+            <RouterLink to='/'>
+              <Image src='/clublogo.png' alt="Logo" h={10} w={40} mr={2} />
+            </RouterLink>
           </Flex>
           <Spacer />
           {isAuthenticated ? (
@@ -134,8 +135,8 @@ const Navbar = () => {
               _hover={{
                 // transform: 'translateY(-2px)',
                 boxShadow: 'lg',
-                bg: 'pink.500',
-                text: hovered ? 'XCEED to SUCCEED' : 'Login',
+                bg: 'red.500',
+                text: hovered ? 'For Faculty Only' : 'Login',
               }}
               _focus={{
                 boxShadow: 'outline',
@@ -149,7 +150,7 @@ const Navbar = () => {
               onMouseOver={handleHover}
               onMouseLeave={handleLeave}
             >
-              {hovered ? 'XCEED To succeed ' : 'Login To XCEED :-('}
+              {hovered ? 'For Members only! ' : 'Login To XCEED'}
             </Link>
           )}
         </Flex>
