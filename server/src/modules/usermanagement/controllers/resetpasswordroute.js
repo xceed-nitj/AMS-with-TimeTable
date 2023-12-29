@@ -1,6 +1,6 @@
-const User = require("../../models/usermanagement/user");
+const User = require("../../../models/usermanagement/user");
 const bcrypt = require("bcryptjs");
-const OTP = require("../../models/usermanagement/otp");
+const OTP = require("../../../models/usermanagement/otp");
 const dotenv = require("dotenv");
 const path = require("path");
 dotenv.config();

@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const mailSender = require("../../modules/usermanagement/mailsender");
+const mailSender = require("../../modules/usermanagement/controllers/mailsender");
 require("../commonFields");
 
 const Schema = mongoose.Schema;
@@ -12,10 +12,9 @@ const otpSchema = new Schema({
     type: String,
     required: true,
   },
-  createAt: {
+  createdAt: {
     type: Date,
-    default: Date.now(),
-    expires: 5 * 60,
+    default: Date.now,
   },
 });
 
@@ -45,5 +44,13 @@ otpSchema.pre("save", async function (next) {
     next(error);
   }
 });
+otpSchema.statics.checkAndDeleteExpiredOTPs = async function () {
+  const expirationTime = new Date(Date.now() - 5 * 60 * 1000);
+  await this.deleteMany({ createdAt: { $lt: expirationTime } });
+};
+
+setInterval(() => {
+  mongoose.model("OTP").checkAndDeleteExpiredOTPs();
+}, 60 * 1000);
 
 module.exports = mongoose.model("OTP", otpSchema);
