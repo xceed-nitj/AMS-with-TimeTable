@@ -81,6 +81,7 @@ const Navbar = () => {
       if (!response.ok) {
         throw new Error("Failed to logout");
       }
+      console.log("logoout message", response.message)
       navigate("/");
     } catch (error) {
       console.error("Error during logout:", error.message);

@@ -26,8 +26,8 @@ otpSchema.methods.sendVerificationEmail = async function () {
   try {
     const mailresponse = await mailSender(
       this.email,
-      "Verification Email from NITJ",
-      this.otp
+      "OTP for password reset from XCEED",
+      `The OTP for password reset is ${this.otp} and it is valid for 10 minutes`
     );
     console.log("Mail send successful", mailresponse);
   } catch (error) {

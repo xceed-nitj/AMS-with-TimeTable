@@ -51,7 +51,7 @@ userRouter.get("/",verifyToken, async (req, res) => {
     try {
     //   await UserController.logout(req.user); // Pass the user object from the request
       res.clearCookie("jwt");
-      res.status(200).json({ message: "Logout successful" });
+      // res.status(200).json({ message: "Logout successful" });
     } catch (error) {
       console.error("Error during logout:", error.message);
       res.status(500).json({ error: "Internal Server Error" });
