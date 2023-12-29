@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import FileDownloadButton from "../filedownload/filedownload";
 import {
   Box,
   Center,
   Container,
+  FormControl,
+  FormLabel,
   Heading,
+  Input,
   Select,
   Text,
-} from "@chakra-ui/react";
-import { CustomTh, CustomLink, CustomBlueButton } from "../styles/customStyles";
+  chakra,
+  Checkbox,
+} from "@chakra-ui/react";import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
 import {
   Table,
   TableContainer,
@@ -23,6 +27,7 @@ import {
 import { Button } from "@chakra-ui/button";
 import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
+import Header from "../components/header";
 
 // function SuccessMessage({ message }) {
 //   return (
@@ -43,6 +48,11 @@ function AddRoomComponent() {
   // const [successMessage, setSuccessMessage] = useState('');
   const [masterRooms, setMasterRooms] = useState([]);
   const [selectedMasterRoom, setSelectedMasterRoom] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [availableDepartment, setAvailableDepartment] = useState([]);
+
+  const location = useLocation();
+  const currentPathname = location.pathname;
 
   const navigate = useNavigate();
   const apiUrl = getEnvironment();
@@ -53,8 +63,38 @@ function AddRoomComponent() {
 
   useEffect(() => {
     fetchRoomsData();
-    fetchMasterRooms();
+    // fetchMasterRooms();
+    fetchAvailableDepartments();
   }, []);
+
+
+
+  useEffect(() => {
+    if (selectedDepartment) {
+      fetch(`${apiUrl}/timetablemodule/masterroom/dept/${selectedDepartment}`,{credentials: 'include',})
+        .then(handleResponse)
+        .then((data) => {
+          setMasterRooms(data);
+        })
+        .catch(handleError);
+    }
+  }, [selectedDepartment]);
+
+
+  const handleViewRoom = () => {
+    // Find the last occurrence of "/"
+    const lastSlashIndex = currentPathname.lastIndexOf("/");
+  
+    // Get the portion of the string before the last slash
+    const parentPath = currentPathname.substring(0, lastSlashIndex);
+  
+    // Construct the new path by appending "/roomallotment"
+    const newPath = `${parentPath}/roomallotment`;
+  
+    // Navigate to the new path
+    navigate(newPath);
+  };
+  
 
   const fetchRoomsData = () => {
     fetch(`${apiUrl}/timetablemodule/addroom`,{credentials: 'include'})
@@ -66,14 +106,29 @@ function AddRoomComponent() {
       .catch(handleError);
   };
 
-  const fetchMasterRooms = () => {
-    fetch(`${apiUrl}/timetablemodule/masterroom`,{credentials: 'include'})
+  // const fetchMasterRooms = () => {
+  //   fetch(`${apiUrl}/timetablemodule/masterroom`,{credentials: 'include'})
+  //     .then(handleResponse)
+  //     .then((data) => {
+  //       setMasterRooms(data);
+  //     })
+  //     .catch(handleError);
+  // };
+  const fetchAvailableDepartments = () => {
+    fetch(`${apiUrl}/timetablemodule/faculty/dept`,{credentials: 'include'})
       .then(handleResponse)
       .then((data) => {
-        setMasterRooms(data);
+        const formattedDepartments = data.map((department) => ({
+          value: department,
+          label: department,
+        }));
+        setAvailableDepartment(formattedDepartments);
       })
       .catch(handleError);
   };
+
+
+
 
   const handleResponse = (response) => {
     if (!response.ok) {
@@ -87,8 +142,24 @@ function AddRoomComponent() {
   };
 
   const handleSubmit = () => {
+    if (rooms.some((room) => room.room === selectedMasterRoom)) {
+      toast({
+        position: 'top',
+        title: "Room Already Added",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
+    }
+  
+    const selectedRoomObject = masterRooms.find(
+      (masterRoom) => masterRoom.room === selectedMasterRoom
+    );
+
     const dataToSave = {
       room: selectedMasterRoom,
+      type: selectedRoomObject.type,
       code: currentCode,
     };
 
@@ -105,6 +176,7 @@ function AddRoomComponent() {
         // console.log('Data saved successfully:', data);
         // setSuccessMessage('Room added successfully!');
         toast({
+          position: 'top',
           title: "Room Added",
           // description: "",
           status: "success",
@@ -119,30 +191,36 @@ function AddRoomComponent() {
   };
 
   const handleDelete = (roomId) => {
-    setIsLoading({
-      state : true, 
-      id : roomId
-    });
-
-    fetch(`${apiUrl}/timetablemodule/addroom/${roomId}`, {
-      method: "DELETE",
-      credentials: 'include',
-    })
-      .then(handleResponse)
-      .then(() => {
-        fetchRoomsData();
-      })
-      .catch(handleError)
-      .finally(() => {
-        setIsLoading(
-          {
-            ... isLoading,
-            state : false
-          }
-        )
+    const isConfirmed = window.confirm("Are you sure you want to delete this room?");
+    
+    if (isConfirmed) {
+      setIsLoading({
+        state: true,
+        id: roomId,
       });
+  
+      fetch(`${apiUrl}/timetablemodule/addroom/${roomId}`, {
+        method: "DELETE",
+        credentials: 'include',
+      })
+        .then(handleResponse)
+        .then(() => {
+          fetchRoomsData();
+        })
+        .catch(handleError)
+        .finally(() => {
+          setIsLoading({
+            ...isLoading,
+            state: false,
+          });
+        });
+    }
   };
-
+  
+  const handleDepartmentChange = (e) => {
+    const selectedDepartment = e.target.value;
+    setSelectedDepartment(selectedDepartment);
+  };
   // useEffect(()=>{
   //   setTimeout(() => {
   //     setSuccessMessage('')
@@ -151,15 +229,42 @@ function AddRoomComponent() {
 
   return (
     <Container maxW="5xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
+      {/* <Heading as="h1" size="xl" mt="6" mb="6">
         Add Rooms
-      </Heading>
+      </Heading> */}
+      <Header title="Add Rooms "></Header>
 
       {/* <SuccessMessage message={successMessage} /> */}
       <Box>
         <Box mb="1">
           <Text as="b">Room</Text>
         </Box>
+        {/* <Select
+          value={selectedMasterRoom}
+          onChange={(e) => setSelectedMasterRoom(e.target.value)}
+        >
+          <option value="">Select a Room</option>
+          {masterRooms.map((masterRoom) => (
+            <option key={masterRoom._id} value={masterRoom.room}>
+              {masterRoom.room}
+            </option>
+          ))}
+        </Select> */}
+                <FormControl isRequired mb="2.5">
+          <FormLabel>Department:</FormLabel>
+          <Select
+            value={selectedDepartment}
+            onChange={handleDepartmentChange}
+            isRequired
+          >
+            <option value="">Select a Department</option>
+            {availableDepartment.map((department) => (
+              <option key={department.value} value={department.value}>
+                {department.label}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
         <Select
           value={selectedMasterRoom}
           onChange={(e) => setSelectedMasterRoom(e.target.value)}
@@ -170,21 +275,25 @@ function AddRoomComponent() {
               {masterRoom.room}
             </option>
           ))}
-        </Select>
-        <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleSubmit}>
-          Add Room
-        </Button>
-      </Box>
-      <Link to="/tt/viewmrooms">
-        <Button ml="0">View Master Rooms</Button>
-      </Link>
+        </Select> 
 
-      <Box ml="-1">
-        <FileDownloadButton
-          fileUrl="/room_template.xlsx"
-          fileName="Room_template.xlsx"
-        />
-      </Box>
+      </Box >
+        <Box display='flex' mt='2' justifyContent='space-between'
+        >
+          <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleSubmit}>
+            Add Room
+          </Button>
+          
+                <Box ml="-1">
+                <Link to="/tt/viewmrooms">
+          <Button ml="0">View Master Rooms</Button>
+                </Link>
+                <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleViewRoom}>
+            View Centrally Alloted Rooms
+          </Button>
+
+                </Box>
+        </Box>
       <TableContainer>
         <Box>
           <Text as="b">Room Data</Text>
@@ -194,6 +303,10 @@ function AddRoomComponent() {
                 <Th>
                   <Center>Room</Center>
                 </Th>
+                <Th>
+                  <Center>Room Type</Center>
+                </Th>
+
                 <Th>
                   <Center>Actions</Center>
                 </Th>
@@ -205,16 +318,19 @@ function AddRoomComponent() {
                   <Td>
                     <Center>{room.room} </Center>
                   </Td>
+                  
+                  <Td>
+                    <Center>{room.type} </Center>
+                  </Td>
                   <Td>
                     <Center>
-                      <Button
+                      <CustomDeleteButton
                         isLoading = {isLoading.state && isLoading.id == room._id}
-                        bg="teal"
-                        color="white"
+                       
                         onClick={() => handleDelete(room._id)}
                       >
                         Delete
-                      </Button>
+                      </CustomDeleteButton>
                     </Center>
                   </Td>
                 </Tr>

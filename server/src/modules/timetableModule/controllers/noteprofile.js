@@ -25,6 +25,32 @@ class NoteController {
     }
   }
 
+  async getNote(currentCode) {
+    try {
+      const notes = await Note.find({ code: currentCode }); 
+      return notes;
+    } catch (error) {
+      throw error;
+    }
+  }  
+  
+  async getNoteByCode(code, fieldName, fieldValue) {
+    try {
+      const query = { code: code };
+      query[fieldName] = fieldValue;
+  
+      const notes = await Note.find(query).select('note'); // Use the select method to retrieve only the 'note' field
+      const noteArray = notes.map(note => note.note);
+  
+      return noteArray;
+    } catch (error) {
+      throw error;
+    }
+  }
+  
+
+
+
   async getNoteById(id) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");

@@ -12,6 +12,7 @@ import {
   Select,
   Text,
   chakra,
+  Checkbox,
 } from "@chakra-ui/react";
 import { CustomTh, CustomLink, CustomBlueButton } from "../styles/customStyles";
 import {
@@ -25,6 +26,8 @@ import {
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
+import Header from "../components/header";
+
 
 // function SuccessMessage({ message }) {
 //   return <div className="success-message">{message}</div>;
@@ -41,6 +44,10 @@ function Component() {
   const [facultyData, setFacultyData] = useState([]);
   const [availableDepartments, setAvailableDepartments] = useState([]);
   const [availableSemesters, setAvailableSemesters] = useState([]);
+  // ...
+const [selectedFaculties, setSelectedFaculties] = useState([]);
+// ...
+
   const [isLoading, setIsLoading] = useState({
     state: false,
     id: "",
@@ -128,7 +135,7 @@ function Component() {
     const dataToSave = {
       sem: sem,
       code: currentCode,
-      faculty: selectedFaculty,
+      faculty: selectedFaculties,
     };
 
     fetch(`${apiUrl}/timetablemodule/addFaculty`, {
@@ -143,7 +150,7 @@ function Component() {
       .then((data) => {
         toast({
           title: "Faculty Added",
-          description: "We've created your account for you.",
+          description: "Selected faculty added to the sem",
           status: "success",
           duration: 2000,
           isClosable: true,
@@ -158,44 +165,63 @@ function Component() {
     const facultyToDelete = facultyData.find(
       (faculty) => faculty._id === facultyId
     );
-
+  
     if (facultyToDelete) {
-      setIsLoading({
-        state: true,
-        id: facultyId,
-      });
-      const updatedFaculty = facultyToDelete.faculty.filter(
-        (name) => name !== facultyName
+      const isConfirmed = window.confirm(
+        `Are you sure you want to delete ${facultyName}?`
       );
-      facultyToDelete.faculty = updatedFaculty;
-
-      fetch(`${apiUrl}/timetablemodule/addFaculty/${facultyId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(facultyToDelete),
-        credentials: 'include',
-      })
-        .then(handleResponse)
-        .then(() => {
-          fetchFacultyData();
-        })
-        .catch(handleError)
-        .finally(() => {
-          setIsLoading({
-            ...isLoading,
-            state: false,
-          });
+  
+      if (isConfirmed) {
+        setIsLoading({
+          state: true,
+          id: facultyId,
         });
+        const updatedFaculty = facultyToDelete.faculty.filter(
+          (name) => name !== facultyName
+        );
+        facultyToDelete.faculty = updatedFaculty;
+  
+        fetch(`${apiUrl}/timetablemodule/addFaculty/${facultyId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(facultyToDelete),
+          credentials: 'include',
+        })
+          .then(handleResponse)
+          .then(() => {
+            fetchFacultyData();
+          })
+          .catch(handleError)
+          .finally(() => {
+            setIsLoading({
+              ...isLoading,
+              state: false,
+            });
+          });
+      }
     }
   };
+  
+
+  const handleFacultyCheckboxChange = (facultyName) => {
+    setSelectedFaculties((prevSelectedFaculties) => {
+      if (prevSelectedFaculties.includes(facultyName)) {
+        return prevSelectedFaculties.filter((name) => name !== facultyName);
+      } else {
+        return [...prevSelectedFaculties, facultyName];
+      }
+    });
+  };
+  
 
   return (
     <Container maxW="5xl">
-      <Heading as="h1" size="xl" mt="6" mb="6">
+      <Header title="Add Faculty"></Header>
+      {/* <Heading as="h1" size="xl" mt="6" mb="6">
         Add Faculty
-      </Heading>
+      </Heading> */}
       {/* <SuccessMessage message={successMessage} /> */}
       <chakra.form
         mt="1"
@@ -236,24 +262,22 @@ function Component() {
             ))}
           </Select>
         </FormControl>
-        <FormControl isRequired mb="2.5">
-          <FormLabel>Faculty:</FormLabel>
+        <FormControl mb="2.5">
+  <FormLabel>Faculty:</FormLabel>
+  {faculties.map((faculty, index) => (
+  <Checkbox
+    key={index}
+    value={faculty.name}
+    isChecked={selectedFaculties.includes(faculty.name)}
+    onChange={() => handleFacultyCheckboxChange(faculty.name)}
+    ml="2"
+    mb="2"
+  >
+    {faculty.name}
+  </Checkbox>
+))}
+</FormControl>
 
-          <Select
-            value={selectedFaculty}
-            onChange={(e) => setSelectedFaculty(e.target.value)}
-            isRequired
-          >
-            <option value="" key="default">
-              Select a Faculty
-            </option>
-            {faculties.map((faculty) => (
-              <option key={faculty.id} value={faculty.name}>
-                {faculty.name}
-              </option>
-            ))}
-          </Select>
-        </FormControl>
         <FormControl>
           <Button
             type="submit"

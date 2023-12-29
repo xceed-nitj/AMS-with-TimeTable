@@ -1,5 +1,6 @@
 const HttpException = require("../../../models/http-exception");
 const addRoom = require("../../../models/addroom");
+const MasterRoom = require("../../../models/masterroom");
 
 
 class addRoomController {
@@ -15,6 +16,15 @@ class addRoomController {
         }
       }
       
+      async getRooms(currentCode) {
+        try {
+          const uniqueRooms = await addRoom.distinct('room', { code: currentCode });
+          return uniqueRooms;
+        } catch (error) {
+          throw error;
+        }
+      }
+
       async getAddedRoom(req, res) {
        try {
           const roomList = await addRoom.find();
@@ -63,9 +73,35 @@ class addRoomController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
+
+      async deleteRoomByCode(code) {
+        try {
+    
+          await addRoom.deleteMany({ code });
+    
+        } catch (error) {
+          throw new Error("Failed to delete room by code");
+        }
+      }
+
+      async deleteCentralisedRoomByCode(code) {
+        try {
+          const getcentralisedroom = await addRoom.find({code,type:'Centralised Classroom'})
+          const roomIdsToDelete = getcentralisedroom.map(room => room._id);
+
+          await addRoom.deleteMany({ _id: { $in: roomIdsToDelete } });
+    
+        } catch (error) {
+          throw new Error("Failed to delete centralised room");
+        }
+      }
+
+
+
     }
 
 
+    
 module.exports = addRoomController;
 
 

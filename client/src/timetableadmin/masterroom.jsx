@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
-import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import { CustomTh, CustomLink, CustomBlueButton, CustomTealButton, CustomDeleteButton } from '../styles/customStyles';
+import { Box, Center, Container, FormControl, FormLabel, Input, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
+import Header from '../components/header';
 
 function MasterRoom() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [masterRooms, setMasterRooms] = useState([]);
   const [editedRoom, setEditedRoom] = useState({
     room: '',
-    type:'',
+    type: '',
     building: '',
     floor: '',
     dept: '',
@@ -17,7 +19,7 @@ function MasterRoom() {
     imageUrl: '',
   });
   const [editRoomId, setEditRoomId] = useState(null);
-  const [isAddRoomFormVisible, setIsAddRoomFormVisible] = useState(false); 
+  const [isAddRoomFormVisible, setIsAddRoomFormVisible] = useState(false);
 
   const apiUrl = getEnvironment();
 
@@ -25,62 +27,64 @@ function MasterRoom() {
     fetchMasterRooms();
   }, []);
 
-  const fetchMasterRooms = () => {
-    fetch(`${apiUrl}/timetablemodule/masterroom`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setMasterRooms(data);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-  };
 
+  const fetchMasterRooms = () => {
+    fetch(`${apiUrl}/timetablemodule/masterroom`, {credentials: 'include'})
+      .then((response) => response.json())
+      .then((data) => setMasterRooms(data.reverse()))
+      .catch((error) => console.error('Error:', error));
+  };
+  
   const handleAddRoom = () => {
     setEditedRoom({
       room: '',
-      type:'',
+      type: '',
       building: '',
       floor: '',
       dept: '',
       landMark: '',
       imageUrl: '',
     });
-    setIsAddRoomFormVisible(true); 
+    setIsAddRoomFormVisible(true);
   };
 
   const handleCancelAddRoom = () => {
-    setIsAddRoomFormVisible(false); 
+    setIsAddRoomFormVisible(false);
   };
 
   const handleSaveNewRoom = () => {
-    fetch(`${apiUrl}/timetablemodule/masterroom`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(editedRoom),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
+    // Check if required fields are filled
+    const requiredFields = ['room', 'type', 'building'];
+    const missingFields = requiredFields.filter((field) => !editedRoom[field]);
+  
+    if (missingFields.length > 0) {
+      const missingFieldsMessage = `Please fill in the following required fields: ${missingFields.join(', ')}.`;
+      alert(missingFieldsMessage);
+      return;
+    }
+  
+    const isDuplicate = masterRooms.some((room) => room.room === editedRoom.room);
+  
+    if (isDuplicate) {
+      alert('Room with the same number already exists. Please enter a unique room number.');
+    } else {
+      fetch(`${apiUrl}/timetablemodule/masterroom`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editedRoom),
+        credentials: 'include',
       })
-      .then((data) => {
-        console.log('Data saved successfully:', data);
-        fetchMasterRooms();
-        handleCancelAddRoom(); 
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
+        .then((response) => response.json())
+        .then((data) => {
+          console.log('Data saved successfully:', data);
+          fetchMasterRooms();
+          handleCancelAddRoom();
+        })
+        .catch((error) => console.error('Error:', error));
+    }
   };
+  
+  
 
   const handleEditClick = (_id) => {
     setEditRoomId(_id);
@@ -103,6 +107,7 @@ function MasterRoom() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(editedRoom),
+          credentials: 'include'
         })
           .then((response) => {
             if (!response.ok) {
@@ -116,7 +121,7 @@ function MasterRoom() {
             setEditRoomId(null);
             setEditedRoom({
               room: '',
-              type:'',
+              type: '',
               building: '',
               floor: '',
               dept: '',
@@ -132,25 +137,29 @@ function MasterRoom() {
   };
 
   const handleDelete = (_id) => {
-    fetch(`${apiUrl}/timetablemodule/masterroom/${_id}`, {
-      method: 'DELETE',
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
+    const confirmDelete = window.confirm("Are you sure you want to delete this entry?");
+  
+    if (confirmDelete) {
+      fetch(`${apiUrl}/timetablemodule/masterroom/${_id}`, {
+        method: 'DELETE', credentials: 'include'
       })
-      .then((data) => {
-        console.log('Delete Success:', data);
-        const updatedData = masterRooms.filter((room) => room._id !== _id);
-        setMasterRooms(updatedData);
-      })
-      .catch((error) => {
-        console.error('Delete Error:', error);
-      });
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`${response.status} - ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log('Delete Success:', data);
+          const updatedData = masterRooms.filter((room) => room._id !== _id);
+          setMasterRooms(updatedData);
+        })
+        .catch((error) => {
+          console.error('Delete Error:', error);
+        });
+    }
   };
-
+  
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
@@ -160,229 +169,244 @@ function MasterRoom() {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-
+  
       fetch(`${apiUrl}/upload/masterroom`, {
         method: 'POST',
         body: formData,
+        credentials: 'include'
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw  Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
+        .then((response) => response.json())
+        .then(() => {
+          fetchMasterRooms();
+          setSelectedFile(null);
         })
-        .then((data) => {
-          fetchData(); 
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+        .catch((error) => console.error('Error:', error));
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
+  
 
   return (
-    <div>
-      <h1>Manage Master Rooms</h1>
-      <h2>Batch Upload</h2>
-      <input
-        type="file"
-        accept=".xlsx"
-        onChange={handleFileChange}
-        name="XlsxFile"
-      />
-      <CustomBlueButton onClick={handleUpload}>Upload Xlsx</CustomBlueButton>
-      <div>
-    
-    <FileDownloadButton
-      fileUrl='/room_template.xlsx'
-      fileName="room_template.xlsx"
-    />
-  </div>
+    <Container maxW='7xl'>
+      <Header title='Manage Master Rooms'></Header>
+      <FormControl>
+        <FormLabel>Batch Upload</FormLabel>
+        <Box mb="2" mt="2" display='flex'>
+          <Input py='1' px='2' type='file' accept='.xlsx' onChange={handleFileChange} name='XlsxFile' />
+          <CustomTealButton
+          ml='5'
+          w="200px"
+          h="41"
+          width='xs' onClick={handleUpload}>
+            Upload Xlsx
+          </CustomTealButton>
+        </Box>
+      </FormControl>
+      <Box ml='-1'>
+        <FileDownloadButton  fileUrl='/room_template.xlsx' fileName='room_template.xlsx' />
+      </Box>
 
-
-      <div>
-        
-        {isAddRoomFormVisible ? ( 
-          <div>
-            <div>
-              <label>Room No:</label>
-              <input
-                type="text"
+      <Box>
+        {isAddRoomFormVisible ? (
+          <FormControl>
+            <Box mt='1'>
+              <FormLabel>Room No:</FormLabel>
+              <Input
+                type='text'
                 value={editedRoom.room}
                 onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Type:</label>
-              <input
-                type="text"
+            </Box>
+            <Box mt='3'>
+              <FormLabel>Type:</FormLabel>
+              <Input
+                type='text'
                 value={editedRoom.type}
                 onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
               />
-            </div>
- 
-            <div>
-              <label>Building:</label>
-              <input
-                type="text"
+            </Box>
+
+            <Box  mt='3'>
+              <FormLabel>Building:</FormLabel>
+              <Input
+                type='text'
                 value={editedRoom.building}
                 onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Floor:</label>
-              <input
-                type="text"
+            </Box>
+            <Box  mt='3'>
+              <FormLabel>Floor:</FormLabel>
+              <Input
+                type='text'
                 value={editedRoom.floor}
                 onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Department:</label>
-              <input
-                type="text"
+            </Box>
+            <Box mt='3'>
+              <FormLabel>Department:</FormLabel>
+              <Input
+                type='text'
                 value={editedRoom.dept}
                 onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Landmark:</label>
-              <input
-                type="text"
+            </Box>
+            <Box mt='3'>
+              <FormLabel>Landmark:</FormLabel>
+              <Input
+                type='text'
                 value={editedRoom.landMark}
                 onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
               />
-            </div>
-            <div>
-              <label>Image URL:</label>
-              <input
-                type="text"
+            </Box>
+            <Box mt='3'>
+              <FormLabel>Image URL:</FormLabel>
+              <Input
+                type='text'
                 value={editedRoom.imageUrl}
                 onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
               />
-            </div>
-            <div>
-              <CustomBlueButton onClick={handleSaveNewRoom}>Save New Room</CustomBlueButton>
-              <CustomBlueButton onClick={handleCancelAddRoom}>Cancel</CustomBlueButton>
-            </div>
-          </div>
+            </Box>
+            <Box display='flex' justifyContent='space-between'>
+              <CustomBlueButton ml='0' onClick={handleSaveNewRoom}>Save New Room</CustomBlueButton>
+              <CustomBlueButton mr='0' width='150px'  onClick={handleCancelAddRoom}>Cancel</CustomBlueButton>
+            </Box>
+          </FormControl>
         ) : (
-          <CustomBlueButton onClick={handleAddRoom}>Add Master Room</CustomBlueButton>
+          <CustomBlueButton ml='0' mt='3' onClick={handleAddRoom}>Add Master Room</CustomBlueButton>
         )}
-      </div>
+      </Box>
 
-      <h2>Master Rooms Data</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Room</th>
-            <th>Type</th>
-            <th>Building</th>
-            <th>Floor</th>
-            <th>Department</th>
-            <th>Landmark</th>
-            <th>Image URL</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {masterRooms.map((room) => (
-            <tr key={room._id}>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type="text"
-                    value={editedRoom.room}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
-                  />
-                ) : (
-                  room.room
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type="text"
-                    value={editedRoom.type}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
-                  />
-                ) : (
-                  room.type
-                )}
-              </td>
-
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type="text"
-                    value={editedRoom.building}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
-                  />
-                ) : (
-                  room.building
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type="text"
-                    value={editedRoom.floor}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
-                  />
-                ) : (
-                  room.floor
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type="text"
-                    value={editedRoom.dept}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
-                  />
-                ) : (
-                  room.dept
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type="text"
-                    value={editedRoom.landMark}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
-                  />
-                ) : (
-                  room.landMark
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <input
-                    type="text"
-                    value={editedRoom.imageUrl}
-                    onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
-                  />
-                ) : (
-                  room.imageUrl
-                )}
-              </td>
-              <td>
-                {editRoomId === room._id ? (
-                  <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
-                ) : (
-                  <>
-                    <CustomBlueButton onClick={() => handleEditClick(room._id)}>Edit</CustomBlueButton>
-                    <CustomBlueButton onClick={() => handleDelete(room._id)}>Delete</CustomBlueButton>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      <TableContainer>
+        <Text as='b'>Master Rooms Data</Text>
+        <Table
+        mt='2'
+        variant='striped'
+        >
+          <Thead>
+            <Tr>
+              <Th ><Center>Room</Center></Th>
+              <Th><Center>Type</Center></Th>
+              <Th><Center>Building</Center></Th>
+              <Th><Center>Floor</Center></Th>
+              <Th><Center>Department</Center></Th>
+              <Th><Center>Landmark</Center></Th>
+              <Th><Center>Image URL</Center></Th>
+              <Th><Center>Action</Center></Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {masterRooms.map((room) => (
+              <Tr key={room._id}>
+                <Td><Center>
+                  
+                    {editRoomId === room._id ? (
+                      <Input
+                        type='text'
+                        value={editedRoom.room}
+                        onChange={(e) => setEditedRoom({ ...editedRoom, room: e.target.value })}
+                      />
+                    ) : (
+                      room.room
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editRoomId === room._id ? (
+                      <Input
+                        type='text'
+                        value={editedRoom.type}
+                        onChange={(e) => setEditedRoom({ ...editedRoom, type: e.target.value })}
+                      />
+                    ) : (
+                      room.type
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editRoomId === room._id ? (
+                      <Input
+                        type='text'
+                        value={editedRoom.building}
+                        onChange={(e) => setEditedRoom({ ...editedRoom, building: e.target.value })}
+                      />
+                    ) : (
+                      room.building
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editRoomId === room._id ? (
+                      <Input
+                        type='text'
+                        value={editedRoom.floor}
+                        onChange={(e) => setEditedRoom({ ...editedRoom, floor: e.target.value })}
+                      />
+                    ) : (
+                      room.floor
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editRoomId === room._id ? (
+                      <Input
+                        type='text'
+                        value={editedRoom.dept}
+                        onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
+                      />
+                    ) : (
+                      room.dept
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editRoomId === room._id ? (
+                      <Input
+                        type='text'
+                        value={editedRoom.landMark}
+                        onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
+                      />
+                    ) : (
+                      room.landMark
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editRoomId === room._id ? (
+                      <Input
+                        type='text'
+                        value={editedRoom.imageUrl}
+                        onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
+                      />
+                    ) : (
+                      room.imageUrl
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editRoomId === room._id ? (
+                      <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
+                    ) : (
+                      <>
+                        <CustomBlueButton onClick={() => handleEditClick(room._id)}>Edit</CustomBlueButton>
+                        <CustomDeleteButton onClick={() => handleDelete(room._id)}>Delete</CustomDeleteButton>
+                      </>
+                    )}
+                </Center>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </TableContainer>
+    </Container>
   );
 }
 

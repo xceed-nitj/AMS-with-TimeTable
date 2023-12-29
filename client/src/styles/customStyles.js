@@ -23,9 +23,9 @@ export const CustomLink = chakra("a", {
 export const CustomBlueButton = chakra("button", {
   baseStyle: {
     color: "white", // Text color
-    bg: "teal", // Brighter background color (you can adjust the shade)
-    paddingX: 6, // Horizontal padding
-    paddingY: 3,
+    bg: "blue.600", // Brighter background color (you can adjust the shade)
+    paddingX: 4, // Horizontal padding
+    paddingY: 2,
     margin:5, // Vertical padding
     borderRadius: "md", // Add some border radius for rounded corners
     _hover: {
@@ -33,6 +33,23 @@ export const CustomBlueButton = chakra("button", {
     },
     _active: {
       bg: "blue.800", // Background color when clicked
+    },
+  },
+});
+
+export const CustomTealButton = chakra("button", {
+  baseStyle: {
+    color: "white", // Text color
+    bg: "teal", // Brighter background color (you can adjust the shade)
+    paddingX: 4, // Horizontal padding
+    paddingY: 2,
+    margin:0, // Vertical padding
+    borderRadius: "md", // Add some border radius for rounded corners
+    _hover: {
+      bg: "teal.700", // Brighter background color on hover
+    },
+    _active: {
+      bg: "teal.800", // Background color when clicked
     },
   },
 });
@@ -57,7 +74,7 @@ export const CustomPlusButton = chakra("button", {
   export const CustomDeleteButton = chakra("button", {
     baseStyle: {
       color: "white", // Text color
-      bg: "red", // Brighter background color (you can adjust the shade)
+      bg: "red.600", // Brighter background color (you can adjust the shade)
       paddingX: 6, // Horizontal padding
       paddingY: 2, // Vertical padding
       borderRadius: "md", // Add some border radius for rounded corners

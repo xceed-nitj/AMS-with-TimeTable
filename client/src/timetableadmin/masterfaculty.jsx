@@ -3,6 +3,8 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import { Box, Container } from '@chakra-ui/react';
+import Header from '../components/header';
 
 function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -32,12 +34,13 @@ const apiUrl=getEnvironment();
         return response.json();
       })
       .then((data) => {
-        setTableData(data);
+        setTableData(data.reverse());
       })
       .catch((error) => {
         console.error('Error:', error);
       });
   };
+  
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -48,31 +51,23 @@ const apiUrl=getEnvironment();
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-
+  
       fetch(`${apiUrl}/upload/faculty`, {
         method: 'POST',
         body: formData,
+        credentials: 'include'
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw  Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
+        .then((response) => response.json())
+        .then(() => {
+          fetchData();
+          setSelectedFile(null);
         })
-        .then((data) => {
-          console.log(data); // Handle the response from the server
-          fetchData(); // Fetch data after a successful upload
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+        .catch((error) => console.error('Error:', error));
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
-
-
- 
+   
     const handleEditClick = (_id) => {
       setEditRowId(_id);
     
@@ -128,28 +123,35 @@ const apiUrl=getEnvironment();
       }
     };
 
-    const handleDelete = (_id) => {
-      // Send a DELETE request to remove the selected row
-      fetch(`${apiUrl}/timetablemodule/faculty/${_id}`, {
-        method: 'DELETE',
-        credentials: 'include'
+    // ...
+
+const handleDelete = (_id) => {
+  const confirmDelete = window.confirm("Are you sure you want to delete this entry?");
+  
+  if (confirmDelete) {
+    fetch(`${apiUrl}/timetablemodule/faculty/${_id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        return response.json();
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          console.log('Delete Success:', data);
-          // Remove the deleted row from the tableData
-          const updatedData = tableData.filter((row) => row._id !== _id);
-          setTableData(updatedData);
-        })
-        .catch((error) => {
-          console.error('Delete Error:', error);
-        });
-    };
+      .then((data) => {
+        console.log('Delete Success:', data);
+        const updatedData = tableData.filter((row) => row._id !== _id);
+        setTableData(updatedData);
+      })
+      .catch((error) => {
+        console.error('Delete Error:', error);
+      });
+  }
+};
+
+// ...
+
     const handleCancelAddFaculty = () => {
       setIsAddFacultyFormVisible(false); 
     };
@@ -168,35 +170,44 @@ const apiUrl=getEnvironment();
     };
   
     const handleSaveNewFaculty = () => {
-      fetch(`${apiUrl}/timetablemodule/faculty`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editedData),
-        credentials: 'include',
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          return response.json();
+      const isDuplicate = tableData.some((row) => row.name === editedData.name);
+
+      if (!editedData.facultyID || !editedData.name || !editedData.dept || !editedData.email||!editedData.designation) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+      
+  
+      if (isDuplicate) {
+        alert('Faculty with the same name already exists. Please enter a unique name.');
+      } else {
+        fetch(`${apiUrl}/timetablemodule/faculty`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editedData),
+          credentials: 'include',
         })
-        .then((data) => {
-          console.log('Data saved successfully:', data);
-          fetchData();
-          handleCancelAddFaculty(); 
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+          .then((response) => response.json())
+          .then((data) => {
+            console.log('Data saved successfully:', data);
+            fetchData();
+            handleCancelAddFaculty();
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+          });
+      }
     };
+    
   
 
 
   return (
-    <div>
-      <h1>Master Faculty </h1>
+    <Box>
+      {/* <h1>Master Faculty </h1> */}
+      <Header title='Master Faculty'></Header>
       <h2>Batch Upload</h2>
       <input
         type="file"
@@ -318,7 +329,7 @@ const apiUrl=getEnvironment();
       </table>
 
      
-    </div>
+    </Box>
   );
 }
 

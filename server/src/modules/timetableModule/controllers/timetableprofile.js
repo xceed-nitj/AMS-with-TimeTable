@@ -1,8 +1,14 @@
 const TimeTable = require("../../../models/timetable");
+const addRoom = require("../../../models/addroom");
+
 const User = require("../../../models/usermanagement/user");
 
 const generateUniqueLink = require("../helper/createlink");
 const HttpException = require("../../../models/http-exception");
+const getRoomByDepartment =require("./masterroomprofile");
+const masterroomprofile = require("./masterroomprofile");
+const AddAllotment = require("../../../models/allotment")
+const MasterRoomProfile = new masterroomprofile();
 
 
 class TableController {
@@ -12,11 +18,11 @@ class TableController {
       const userId=req.user.id;
       const existingTimeTable = await TimeTable.findOne({ user: userId, session: data.session });
 
-    // if (existingTimeTable) {
-    //   // If a timetable already exists, you can choose to return an error or update the existing one
-    //   // In this example, we return an error
-    //   return res.status(400).json({ error: "Timetable already exists for this session" });
-    // }
+    if (existingTimeTable) {
+      // If a timetable already exists, you can choose to return an error or update the existing one
+      // In this example, we return an error
+      return res.status(400).json({ error: "Timetable already exists for this session" });
+    }
       try {
         const newCode = await generateUniqueLink();
         //const userObject = await User.findById(userId)
@@ -26,6 +32,34 @@ class TableController {
           user: userId
         });
         const createdTT = await newTimeTable.save(); 
+        const deptrooms= await MasterRoomProfile.getRoomByDepartment(data.dept);
+        if (deptrooms)
+        {
+        for (const room of deptrooms) {
+          await addRoom.create({ room: room.room, code: newCode, type:room.type });
+        }
+      }
+        
+          const roomdata= await AddAllotment.find({session: data.session})
+          console.log(roomdata);
+          const centralisedAllotments = roomdata[0].centralisedAllotments;
+          const openElectiveAllotments = roomdata[0].openElectiveAllotments;
+
+  // Search in centralised allotments
+          const centralisedDept = centralisedAllotments.find((item) => item.dept === data.dept) || { rooms: [] };
+
+  // Search in open elective allotments
+          const electiveDept = openElectiveAllotments.find((item) => item.dept === data.dept) || { rooms: [] };
+
+  // Combine rooms from both allotments
+          const combinedRooms = [...centralisedDept.rooms, ...electiveDept.rooms];
+          if(combinedRooms)
+          {
+          for (const room of combinedRooms) {
+            await addRoom.create({ room: room.room, code: newCode, type:'Centralised Classroom' });
+          }
+        }
+  
         res.json(createdTT);
       } 
       catch (error) {
@@ -137,6 +171,38 @@ class TableController {
         throw new HttpException(500, e.message || "Internal Server Error");
       }
     }
+
+    
+  async deleteTableByCode(code) {
+    try {
+
+      await TimeTable.deleteMany({ code });
+
+    } catch (error) {
+      throw new Error("Failed to delete by code");
+    }
+  }
+
+  async getAllSessAndDept() {
+    try {
+      const uniqueSessions = await TimeTable.distinct('session');
+      const uniqueDept = await TimeTable.distinct('dept');
+
+      return {uniqueSessions, uniqueDept};
+    } catch (error) {
+      throw error; 
+    }
+  }
+
+  async getCodeOfDept(dept, session) {
+    try {
+      const code= await TimeTable.findOne({dept, session});
+      return code;
+    } catch (error) {
+      throw error; 
+    }
+  }
+
 
 
 }

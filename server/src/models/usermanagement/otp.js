@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const mailSender = require("../../modules/usermanagement/mailsender");
-require('../commonFields');
+const mailSender = require("../../modules/usermanagement/controllers/mailsender");
+require("../commonFields");
 
 const Schema = mongoose.Schema;
 const otpSchema = new Schema({
@@ -12,32 +12,45 @@ const otpSchema = new Schema({
     type: String,
     required: true,
   },
-  createAt: {
+  createdAt: {
     type: Date,
-    default: Date.now(),
-    expires: 2 * 60,
+    default: Date.now,
   },
 });
 
 // pre middleware for sending email
 
-async function sendVerificationEmail(email, otp) {
+// Define a method for sending verification email
+otpSchema.methods.sendVerificationEmail = async function () {
   try {
     const mailresponse = await mailSender(
-      email,
+      this.email,
       "Verification Email from NITJ",
-      otp
+      this.otp
     );
-    console.log("mail send successful", mailresponse);
-  } catch (e) {
-    console.log("error during mail sending in otp schema ", e);
-    throw e;
+    console.log("Mail send successful", mailresponse);
+  } catch (error) {
+    console.log("Error during mail sending in otp schema ", error);
+    throw error;
   }
-}
+};
 
 otpSchema.pre("save", async function (next) {
-  await sendVerificationEmail(this.email, this.otp);
-  next();
+  try {
+    await this.sendVerificationEmail();
+    next();
+  } catch (error) {
+    console.log("Error during mail sending in otp schema ", error);
+    next(error);
+  }
 });
+otpSchema.statics.checkAndDeleteExpiredOTPs = async function () {
+  const expirationTime = new Date(Date.now() - 10 * 60 * 1000);
+  await this.deleteMany({ createdAt: { $lt: expirationTime } });
+};
+
+setInterval(() => {
+  mongoose.model("OTP").checkAndDeleteExpiredOTPs();
+}, 60 * 1000);
 
 module.exports = mongoose.model("OTP", otpSchema);

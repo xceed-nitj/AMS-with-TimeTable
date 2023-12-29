@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import { AbsoluteCenter, Box, Center, Circle, Container, FormControl, FormLabel, Heading,Input, Select, Text } from '@chakra-ui/react';
-import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import {CustomTh, CustomLink,CustomBlueButton, CustomTealButton, CustomDeleteButton} from '../styles/customStyles'
 import {
   Table,
   TableContainer,
@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 import { useToast } from '@chakra-ui/react';
+import Header from '../components/header';
 
 
 // function SuccessMessage({ message }) {
@@ -114,6 +115,7 @@ function AddSemComponent() {
 
         // setSuccessMessage('Semester added successfully!');
         toast({
+          position: 'top',
           title: 'Semester added',
           description: "Semester added successfully!",
           status: 'success',
@@ -131,17 +133,21 @@ function AddSemComponent() {
   };
 
   const handleDelete = (semId) => {
-    fetch(`${apiUrl}/timetablemodule/addSem/${semId}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    })
-      .then(handleResponse)
-      .then(() => {
-        // console.log('Sem deleted successfully');
-        fetchSemData();
+    const isConfirmed = window.confirm('Are you sure you want to delete this semester?');
+  
+    if (isConfirmed) {
+      fetch(`${apiUrl}/timetablemodule/addSem/${semId}`, {
+        method: 'DELETE',
+        credentials: 'include',
       })
-      .catch(handleError);
+        .then(handleResponse)
+        .then(() => {
+          fetchSemData();
+        })
+        .catch(handleError);
+    }
   };
+  
 
   // useEffect(()=>{
 
@@ -150,12 +156,13 @@ function AddSemComponent() {
   //   }, 1500)
 
   // }, [successMessage])
-
+  
   return (
     <Container maxW='4xl'>
-      <Heading as="h1" size="xl" mt='6' mb='6'>
+      {/* <Heading as="h1" size="xl" mt='6' mb='6'>
         Add Semester
-      </Heading>
+      </Heading> */}
+      <Header title='Add Semester' />
         <Box>
           <FormControl mb='5'>
             <Text as='b'>
@@ -175,8 +182,7 @@ function AddSemComponent() {
                 </option>
               ))}
             </Select>
-
-              <Button mt='0' ml='16' bg='teal' color='white' onClick={handleSubmit}>Add Sem</Button>
+              <CustomTealButton mt='0' ml='16' onClick={handleSubmit}>Add Sem</CustomTealButton>
             </Box>
           </FormControl>
         </Box>
@@ -203,7 +209,7 @@ function AddSemComponent() {
                         fontWeight='medium'
                       >{sem.sem}</Text></Center></Td>
                     <Td><Center>
-                      <Button bg='teal' color='white' onClick={() => handleDelete(sem._id)}>Delete</Button>
+                      <CustomDeleteButton onClick={() => handleDelete(sem._id)}>Delete</CustomDeleteButton>
                     </Center></Td>
                   </Tr>
                 ))}

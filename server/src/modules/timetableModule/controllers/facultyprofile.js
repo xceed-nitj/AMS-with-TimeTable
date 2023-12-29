@@ -63,7 +63,7 @@ class FacultyController {
         }
       }
       
-
+    
       async updateID(id, announcement) {
         if (!id) {
           throw new HttpException(400, "Invalid Id");

@@ -17,14 +17,35 @@ class MroomController {
 
       async getRoom(req, res) {
        try {
+          if(req.query.type)
+          {
+            const roomtype=req.query.type
+            const roomlist = await Masterroom.find({type:roomtype});
+            res.json(roomlist)
+            return;
+          }
+          else{
           const roomlist = await Masterroom.find();
           res.json(roomlist)
           return;
+          }
         } catch (error) {
           console.error(error); 
           res.status(500).json({ error: "Internal server error" });
         }
       }
+
+
+      async getRoomByType(type) {
+        try {
+           const roomlist = await Masterroom.find({type:type});
+           return roomlist;
+         } catch (error) {
+           console.error(error); 
+           res.status(500).json({ error: "Internal server error" });
+         }
+       }
+ 
 
       async getRoomById(id) {
         if (!id) {
@@ -45,7 +66,7 @@ class MroomController {
         }
         try {
           const data = await Masterroom.find({ dept: department });
-          if (!data) throw new HttpException(400, "No faculty members found in this department");
+          if (!data) throw new HttpException(400, "No room found in this department");
           return data;
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
