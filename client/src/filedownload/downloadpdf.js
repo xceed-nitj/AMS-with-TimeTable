@@ -151,6 +151,7 @@ const session = ttdata[0].session;
     summaryTableHeader.push({ text: 'Room No', bold: true, fontSize: 10 });
   }
 
+  
   if (type !== 'sem') {
     summaryTableHeader.push({ text: 'Semester', bold: true, fontSize: 10 });
   }
@@ -174,8 +175,18 @@ const session = ttdata[0].session;
       summaryRow.push({ text: summaryData[subject].rooms.join(', '), fontSize: 10 });
     }
 
-    if (type !== 'sem') {
+    // if (type !== 'sem') {
+    //   summaryRow.push({ text: summaryData[subject].faculties.join(', '), fontSize: 10 });
+    // }
+
+    if (type !== 'sem' && type !== 'room') {
       summaryRow.push({ text: summaryData[subject].faculties.join(', '), fontSize: 10 });
+    }
+    else{
+      if (type !== 'sem')
+      {
+      summaryRow.push({ text: summaryData[subject].rooms.join(', '), fontSize: 10 });
+      }
     }
 
 
