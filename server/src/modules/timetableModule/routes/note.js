@@ -2,10 +2,9 @@ const express = require("express");
 const noteRouter = express.Router();
 const NoteController = require("../controllers/noteprofile");
 const noteController = new NoteController();
-const protectRoute =require("../../usermanagement/privateroute")
+const protectRoute = require("../../usermanagement/controllers/privateroute");
 
-
-noteRouter.post("/",protectRoute, async (req, res) => {
+noteRouter.post("/", protectRoute, async (req, res) => {
   try {
     await noteController.createNote(req, res);
   } catch (e) {
@@ -17,11 +16,11 @@ noteRouter.post("/",protectRoute, async (req, res) => {
 
 noteRouter.get("/code/:code", async (req, res) => {
   try {
-    const currentCode = req.params.code; 
-    const notes = await noteController.getNote(currentCode); 
+    const currentCode = req.params.code;
+    const notes = await noteController.getNote(currentCode);
     res.status(200).json(notes);
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -35,7 +34,6 @@ noteRouter.get("/", async (req, res) => {
   }
 });
 
-
 noteRouter.get("/id/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -48,7 +46,7 @@ noteRouter.get("/id/:id", async (req, res) => {
   }
 });
 
-noteRouter.put('/:id',protectRoute, async (req, res) => {
+noteRouter.put("/:id", protectRoute, async (req, res) => {
   try {
     const noteId = req.params.id;
     const updatedNote = req.body;
@@ -61,7 +59,7 @@ noteRouter.put('/:id',protectRoute, async (req, res) => {
   }
 });
 
-noteRouter.delete("/:id",protectRoute, async (req, res) => {
+noteRouter.delete("/:id", protectRoute, async (req, res) => {
   try {
     const noteId = req.params.id;
     await noteController.deleteNote(noteId);

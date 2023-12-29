@@ -6,36 +6,34 @@ const InstituteLoadController = new instituteLoadController();
 const TimeTabledto = require("../dto/timetable");
 const TimeTableDto = new TimeTabledto();
 
-const protectRoute =require("../../usermanagement/privateroute");
+const protectRoute = require("../../usermanagement/controllers/privateroute");
 
 InstituteLoadRouter.post("/", async (req, res) => {
-    try {
-      await instituteLoadController.AddInstituteLoad(req, res);
-    } catch (e) {
-      res
-        .status(e?.status || 500)
-        .json({ error: e?.message || "Internal Server Error" });
-    }
-  });
-
- InstituteLoadRouter.get("/:session", async (req, res) => {
-    try {
-     await InstituteLoadController.calculateInstituteLoad(req, res);
-      // res.status(200).json(loads);
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
-
-  
- InstituteLoadRouter.get("/:session/:dept", async (req, res) => {
   try {
-   await InstituteLoadController.getInstituteLoad(req, res);
-    // res.status(200).json(loads);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    await instituteLoadController.AddInstituteLoad(req, res);
+  } catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
   }
 });
 
-   
-  module.exports = InstituteLoadRouter;
+InstituteLoadRouter.get("/:session", async (req, res) => {
+  try {
+    await InstituteLoadController.calculateInstituteLoad(req, res);
+    // res.status(200).json(loads);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+InstituteLoadRouter.get("/:session/:dept", async (req, res) => {
+  try {
+    await InstituteLoadController.getInstituteLoad(req, res);
+    // res.status(200).json(loads);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+module.exports = InstituteLoadRouter;

@@ -2,14 +2,15 @@ const express = require("express");
 const commonLoadRouter = express.Router();
 const CommonLoadController = require("../controllers/commonLoadprofile");
 const commonLoadController = new CommonLoadController();
-const protectRoute =require("../../usermanagement/privateroute")
+const protectRoute = require("../../usermanagement/controllers/privateroute");
 
-
-commonLoadRouter.post("/",protectRoute, async (req, res) => {
+commonLoadRouter.post("/", protectRoute, async (req, res) => {
   try {
     await commonLoadController.createCommonLoad(req, res);
   } catch (e) {
-    res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
   }
 });
 
@@ -36,41 +37,40 @@ commonLoadRouter.get("/:id", async (req, res) => {
 });
 
 commonLoadRouter.get("/code/:code", async (req, res) => {
-    try {
-      const code = req.params.code;
-      const loads = await commonLoadController.getCommonLoadByCode(code);
-      res.status(200).json(loads);
-    } catch (error) {
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  });
+  try {
+    const code = req.params.code;
+    const loads = await commonLoadController.getCommonLoadByCode(code);
+    res.status(200).json(loads);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
-  commonLoadRouter.get("/:code/:faculty", async (req, res) => {
-    try {
-      const code = req.params.code;
-      const faculty=req.params.faculty;
-      const loads = await commonLoadController.getCommonLoadForFaculty(faculty,code);
-      res.status(200).json(loads);
-    } catch (error) {
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  });
+commonLoadRouter.get("/:code/:faculty", async (req, res) => {
+  try {
+    const code = req.params.code;
+    const faculty = req.params.faculty;
+    const loads = await commonLoadController.getCommonLoadForFaculty(
+      faculty,
+      code
+    );
+    res.status(200).json(loads);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
+commonLoadRouter.get("/Session/:code", async (req, res) => {
+  try {
+    const code = req.params.code;
+    const commonLoads = await commonLoadController.getCommonLoadBySession(code);
+    res.status(200).json(commonLoads);
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Internal Server Error" });
+  }
+});
 
-  commonLoadRouter.get("/Session/:code", async (req, res) => {
-    try {
-      const code = req.params.code;
-      const commonLoads = await commonLoadController.getCommonLoadBySession(code);
-      res.status(200).json(commonLoads);
-    } catch (e) {
-      res
-        .status(500)
-        .json({ error: e.message || "Internal Server Error" });
-    }
-  });
-  
-
-commonLoadRouter.put('/:id',protectRoute, async (req, res) => {
+commonLoadRouter.put("/:id", protectRoute, async (req, res) => {
   try {
     const commonLoadID = req.params.id;
     const updatedData = req.body;
@@ -83,7 +83,7 @@ commonLoadRouter.put('/:id',protectRoute, async (req, res) => {
   }
 });
 
-commonLoadRouter.delete("/:id",protectRoute, async (req, res) => {
+commonLoadRouter.delete("/:id", protectRoute, async (req, res) => {
   try {
     const commonLoadID = req.params.id;
     await commonLoadController.deleteCommonLoad(commonLoadID);
@@ -96,23 +96,3 @@ commonLoadRouter.delete("/:id",protectRoute, async (req, res) => {
 });
 
 module.exports = commonLoadRouter;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
