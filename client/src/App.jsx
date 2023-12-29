@@ -32,6 +32,7 @@ import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 import Home from './pages/Home'
+import EventRegistration from './certificate module/eventregistration';
 function App() {
   return (
     <Router>
@@ -78,6 +79,8 @@ function App() {
           <Route path="/tt/masterview" element={<MasterView/>}/>
           <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
           <Route path="/tt/:generatedLink/generatepdf/mergepdf" element={<MergePDFComponent />} />
+
+          <Route path="/cm/addevent" element={<EventRegistration />} />
 
         </Routes>
         {/* <Footer/> */}
