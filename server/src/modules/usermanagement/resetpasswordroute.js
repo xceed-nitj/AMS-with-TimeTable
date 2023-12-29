@@ -7,7 +7,7 @@ dotenv.config();
 
 async function resetPassword(req, res) {
   try {
-    const { email, otp, newPassword } = req.body;
+    const { email, otp, password } = req.body;
 
     // Verify the OTP
     const isOTPValid = await verifyOTP(email, otp);
@@ -20,7 +20,7 @@ async function resetPassword(req, res) {
     }
 
     // Update the password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.findOneAndUpdate(
       { email: email },
       { $set: { password: hashedPassword } },
