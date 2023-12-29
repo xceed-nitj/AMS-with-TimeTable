@@ -1,6 +1,6 @@
 const express = require("express");
 const participantRouter = express.Router();
-const ParticipantController = require("../controllers/participants");
+const ParticipantController = require("../controllers/participant");
 const participantController = new ParticipantController();
 
 // Route to create a new participant
