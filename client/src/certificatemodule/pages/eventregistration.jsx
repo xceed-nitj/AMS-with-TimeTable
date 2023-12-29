@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import getEnvironment from "../getenvironment";
+import getEnvironment from "../../getenvironment";
 import {
   Container,
   FormControl,
@@ -9,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
-import Header from "../components/header";
+import Header from "../../components/header";
 
 const EventRegistration = () => {
   const toast = useToast();
