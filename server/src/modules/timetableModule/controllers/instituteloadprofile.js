@@ -53,12 +53,11 @@ class InstituteLoadController {
           await instituteLoad.deleteMany({ session: currentSession });
       
           for (const code of allcodes) {
+              console.log('Processing code:', code);
             
             const codeData2 = await CommonLoad.find({ code });
-            // console.log('commonload objects', codeData2)
+            console.log('commonload objects', codeData2)
             for(const data of codeData2){
-              console.log('Processing sem:',data.sem );
-
               const subDetails = await Subject.find({ subName: data.subName });
               const facultyDetails = await Faculty.find({ name: data.faculty });
               const semDetails = await MasterSem.find({ sem: data.sem });
@@ -76,7 +75,7 @@ class InstituteLoadController {
                   {
                     $push: {
                       sem: semDetails[0].type,
-                      type: [subDetails[0].type]?[subDetails[0].type]:null,
+                      type: subDetails[0].type,
                       load: data.hrs, // You can modify this based on your actual structure
                     },
                   }
@@ -89,19 +88,17 @@ class InstituteLoadController {
                   name: data.faculty,
                   dept: facultyDetails[0] ? facultyDetails[0].dept : null,
                   designation: facultyDetails[0] ? facultyDetails[0].designation : null,                      
-                  sem: [semDetails[0].type]?[semDetails[0].type]:null,
-                  type: [subDetails[0].type]?[subDetails[0].type]:null,
+                  sem: [semDetails[0].type],
+                  type: [subDetails[0].type],
                   load: data.hrs, // You can modify this based on your actual structure
                 });
-                // console.log('commonlaod',loadInstance)  
+                console.log('commonlaod',loadInstance)  
                 await loadInstance.save();
             }       
             }
             const codeData = await LockSem.find({ code });
             
             for (const data of codeData) {
-              console.log('Processing sem:',data.sem );
-      
               if (data.slotData.length > 0 && data.slotData[0] !== '') {
                 const semDetails = await MasterSem.find({ sem: data.sem });
       
@@ -125,7 +122,7 @@ class InstituteLoadController {
                         {
                           $push: {
                             sem: semDetails[0].type,
-                            type: [subDetails[0].type]?[subDetails[0].type]:null,
+                            type: subDetails[0].type,
                             load: 1, // You can modify this based on your actual structure
                           },
                         }
@@ -139,7 +136,7 @@ class InstituteLoadController {
                         dept: facultyDetails[0] ? facultyDetails[0].dept : null,
                         designation: facultyDetails[0] ? facultyDetails[0].designation : null,                      
                         sem: [semDetails[0].type],
-                        type: [subDetails[0].type]?[subDetails[0].type]:null,
+                        type: [subDetails[0].type],
                         load: 1, // You can modify this based on your actual structure
                       });
       
