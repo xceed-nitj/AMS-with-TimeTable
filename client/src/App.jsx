@@ -32,7 +32,8 @@ import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 import Home from './pages/Home'
-import EventRegistration from './certificate module/eventregistration';
+import EventRegistration from './certificatemodule/eventregistration';
+import CMDashboard from './certificatemodule/cmdashboard';
 function App() {
   return (
     <Router>
@@ -81,6 +82,7 @@ function App() {
           <Route path="/tt/:generatedLink/generatepdf/mergepdf" element={<MergePDFComponent />} />
 
           <Route path="/cm/addevent" element={<EventRegistration />} />
+          <Route path="/cm/dashboard" element={<CMDashboard />} />
 
         </Routes>
         {/* <Footer/> */}

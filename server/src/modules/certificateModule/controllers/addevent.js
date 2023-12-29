@@ -65,6 +65,23 @@ class AddEventController {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
+
+  async getEventByUser(user) {
+    if (!user) {
+      throw new HttpException(400, "Invalid User");
+    }
+    try {
+      console.log(user)
+      const data = await addEvent.find({user:user._id});
+      if (!data) throw new HttpException(400, "Event does not exist");
+      return data;
+    } catch (e) {
+      throw new HttpException(500, e.message || "Internal Server Error");
+    }
+  }
+
+
+
 }
 
 module.exports = AddEventController;
