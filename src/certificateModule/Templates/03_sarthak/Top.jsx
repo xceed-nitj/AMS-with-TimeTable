@@ -1,11 +1,64 @@
-import nitj_logo from '../../../assets/nitj_logo.png'
-import react_logo from '../../../assets/react.svg'
+// import nitj_logo from '../../../assets/nitj_logo.png'
+// import react_logo from '../../../assets/react.svg'
+
+function Logo({ x, y, logoUrl }) {
+  return (
+    <image
+      href={logoUrl}
+      height="80"
+      width="80"
+      x={x}
+      y={y}
+    />
+  );
+}
+
 function Top() {
+  const logoUrls = ['url1.jpg', 'url2.jpg','url3.jpg','url4.jpg','url5.jpg'];
+
+  // Calculate x and y coordinates dynamically for logos
+  const calculateLogoCoordinates = (index, totalLogos) => {
+    // const logoWidth = 80;  // Assuming a fixed width for the logos
+    // const spacing = 20;  // Adjust spacing between logos
+    // const totalWidth = totalLogos * (logoWidth + spacing) - spacing;
+
+    // const startX = (600 - totalWidth) / 2;  // Adjust the starting point on the x-axis
+    // const x = startX + index * (logoWidth + spacing);
+
+    // const y = 90;  // Adjust the y-coordinate based on your design
+    if (totalLogos <= 2) {
+      if (index === 0) {
+        var x = 240;
+        var y = 90;
+      }
+      else if (index === 1) {
+        var x = 800;
+        var y = 90;
+      }
+    }
+    else if(totalLogos >2 && totalLogos <=5){
+      if (index%2==0) {
+        var x = 280 - index*50;
+        var y = 90;
+      }
+      else if (index%2!=0) {
+        var x = 700 + index*50;
+        var y = 90;
+      }
+    }
+    return { x, y };
+  };
+
   return (
     <>
+
       <path fill="url(#a)" d="M0-.21h1122.52v794.106H0Z" />
-      <image href={nitj_logo} height="80" width="80" x="220" y="90"/>
-      <image href={react_logo} height="80" width="80" x="820" y="90"/>
+      {logoUrls.map((logoUrl, index) => {
+        const { x, y } = calculateLogoCoordinates(index, logoUrls.length);
+        return <Logo key={index} x={x} y={y} logoUrl={logoUrl} />;
+      })}
+      {/* <image href={nitj_logo} height="80" width="80" x="220" y="90"/>
+      <image href={react_logo} height="80" width="80" x="820" y="90"/> */}
       <path
         fill="#272727"
         d="m81.64-.21 21.473 20.417 32.8 31.19 8.872 8.437h375.34l-7.93-8.438h558.72v641.665h-159.77l-56.79 49.246H51.604l.001-690.91h50.499l-4.534-4.721H20.416v706.209H0v41.025h529.756l22.822-20.43H897.1l13.814-12.02h95.692l-9.981 12.02h105.465v-30.886h20.416V693.06h-20.416V20.207H482.88L463.69-.211H81.64zm317.712 37.474h72.502l-2.016 2.029h-72.504l2.018-2.03zm22.103 5.873h59.207l-2.03 2.029H419.44l2.016-2.03zM27.29 516.594 44.717 536.6v46.748l-17.43-20.006.002-46.748zm0 64.527 17.428 20.01v91.135L27.289 672.26v-91.14zM7.57 764.307h85.897l-32.399 21.39H7.572l-.002-21.39zm99.65 0h44.95l-27.713 21.39H75.629l31.592-21.39z"
