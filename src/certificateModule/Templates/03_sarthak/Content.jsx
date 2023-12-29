@@ -78,42 +78,7 @@ function Content({ data }) {
                     </tspan>
                     
                 </text> */}
-                <text
-                    x="361.342"
-                    y={609}
-                    fill="#272727"
-                    fontFamily="AbhayaLibre-Regular"
-                    fontSize={28}
-                >
-                    Signature
-                </text>
-                <text
-                    x="361.342"
-                    y={641}
-                    fill="#272727"
-                    fontFamily="AbhayaLibre-Regular"
-                    fontSize={20}
-                >
-                    Name
-                </text>
-                <text
-                    x="761.342"
-                    y="608.859"
-                    fill="#272727"
-                    fontFamily="AbhayaLibre-Regular"
-                    fontSize={28}
-                >
-                    Signature
-                </text>
-                <text
-                    x="761.342"
-                    y={641}
-                    fill="#272727"
-                    fontFamily="AbhayaLibre-Regular"
-                    fontSize={20}
-                >
-                    Name
-                </text>
+                {/* signature and name are here */}
                 <text
                     x="980.401"
                     y="121.142"
