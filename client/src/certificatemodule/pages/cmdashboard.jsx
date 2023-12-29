@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import getEnvironment from "../getenvironment";
+import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/layout";
 import { FormControl, FormLabel, Heading, Input, Select } from '@chakra-ui/react';
-import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import {CustomTh, CustomLink,CustomBlueButton} from '../../styles/customStyles'
 import {
   Table,
   TableContainer,
@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 import { Center, Square, Circle } from '@chakra-ui/react'
-import Header from "../components/header";
+import Header from "../../components/header";
 
 
 function CMDashboard() {
