@@ -18,14 +18,6 @@ function Top() {
 
   // Calculate x and y coordinates dynamically for logos
   const calculateLogoCoordinates = (index, totalLogos) => {
-    // const logoWidth = 80;  // Assuming a fixed width for the logos
-    // const spacing = 20;  // Adjust spacing between logos
-    // const totalWidth = totalLogos * (logoWidth + spacing) - spacing;
-
-    // const startX = (600 - totalWidth) / 2;  // Adjust the starting point on the x-axis
-    // const x = startX + index * (logoWidth + spacing);
-
-    // const y = 90;  // Adjust the y-coordinate based on your design
     if (totalLogos <= 2) {
       if (index === 0) {
         var x = 240;
