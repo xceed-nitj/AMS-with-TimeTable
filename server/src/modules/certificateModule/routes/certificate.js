@@ -1,12 +1,13 @@
 const express = require("express");
 const certificateRouter = express.Router();
-// const CertificateController = require("../controllers/certificateController");
-// const certificateController = new CertificateController();
+const CertificateController = require("../controllers/certificate");
+const certificateController = new CertificateController();
 
 // Route to create a new certificate
 certificateRouter.post("/", async (req, res) => {
   try {
-    await certificateController.createCertificate(req, res);
+    const newcertificate=await certificateController.addcertificate(req, res);
+    return res.status(200).json(newcertificate);
   } catch (e) {
     res
       .status(e?.status || 500)
@@ -17,8 +18,8 @@ certificateRouter.post("/", async (req, res) => {
 // Route to get all certificates
 certificateRouter.get("/", async (req, res) => {
   try {
-    const allCertificates = await certificateController.getAllCertificates();
-    res.status(200).json(allCertificates);
+    const allCertificates = await certificateController.getAllcertificates(req, res);
+    return res.status(200).json(allCertificates);
   } catch (e) {
     res
       .status(e?.status || 500)
@@ -30,8 +31,8 @@ certificateRouter.get("/", async (req, res) => {
 certificateRouter.get("/:certificateId", async (req, res) => {
   try {
     const certificateId = req.params.certificateId;
-    const certificate = await certificateController.getCertificateById(certificateId);
-    res.status(200).json(certificate);
+    const certificate = await certificateController.getcertificateById(certificateId);
+   return res.status(200).json(certificate);
   } catch (e) {
     res
       .status(e?.status || 500)
@@ -44,9 +45,10 @@ certificateRouter.put('/:certificateId', async (req, res) => {
   try {
     const certificateId = req.params.certificateId;
     const updatedCertificate = req.body;
-    await certificateController.updateCertificate(certificateId, updatedCertificate);
-    res.status(200).json({ response: "Certificate updated successfully" });
-  } catch (e) {
+    const updatedone=await certificateController.updatecertificate(certificateId, updatedCertificate);
+    res.status(200).json(updatedone);
+  } 
+  catch (e) {
     res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
@@ -57,9 +59,10 @@ certificateRouter.put('/:certificateId', async (req, res) => {
 certificateRouter.delete("/:certificateId", async (req, res) => {
   try {
     const certificateId = req.params.certificateId;
-    await certificateController.deleteCertificateById(certificateId);
+    await certificateController.deletecertificateById(certificateId);
     res.status(200).json({ response: "Certificate deleted successfully" });
-  } catch (e) {
+  } 
+  catch (e) {
     res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
