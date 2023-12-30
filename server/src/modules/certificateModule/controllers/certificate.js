@@ -22,7 +22,7 @@ class AddcertificateController {
               header: newCertificate.header,
               body: newCertificate.body,
               footer: newCertificate.footer,
-              signature: newCertificate.signature,
+              signatures: newCertificate.signatures,
             },
           }
         );
@@ -35,7 +35,7 @@ class AddcertificateController {
           header: newCertificate.header,
           body: newCertificate.body,
           footer: newCertificate.footer,
-          signature: newCertificate.signature,
+          signatures: newCertificate.signatures,
           eventId: eventId,
         });
   
@@ -72,6 +72,19 @@ class AddcertificateController {
     }
     try {
       const data = await certificate.findById(id);
+      if (!data) throw new HttpException(400, "certificate does not exist");
+      return data;
+    } 
+    catch (e) {
+      throw new HttpException(500, e.message || "Internal Server Error");
+    }
+  }
+  async getcertificateByEventId(id) {
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    try {
+      const data = await certificate.find({eventId:id});
       if (!data) throw new HttpException(400, "certificate does not exist");
       return data;
     } 

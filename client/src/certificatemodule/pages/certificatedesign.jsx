@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Input, Button, VStack, IconButton, HStack, Textarea } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Input, Button, VStack, IconButton, HStack, Textarea, Text, Container } from '@chakra-ui/react';
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
+import Header from "../../components/header";
+
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
@@ -17,6 +19,37 @@ const CertificateForm = () => {
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 1];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}`,
+        {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+
+        });
+        if (response.ok) {
+          const responseData = await response.json();
+          if (responseData && Array.isArray(responseData) && responseData.length > 0) {
+            // Assuming the backend sends the entire form data in an array
+            setFormData(responseData[0]);
+          } else {
+            console.error('Error: Fetched data does not match expected structure.');
+          }
+        } else {
+          console.error('Error fetching form data:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching form data:', error);
+      }
+    };
+    fetchData();
+}, [apiUrl, eventId]);
+
 
   const handleChange = (e, fieldName, index) => {
     const { value } = e.target;
@@ -84,11 +117,15 @@ const CertificateForm = () => {
   };
 
   return (
+    <Container maxW="lg">
+    <Header title="Enter Certificate Details"></Header>
+
     <form onSubmit={handleSubmit}>
       <VStack spacing={4} align="start">
+        <Text>Enter the link for the logos:</Text>
         {/* Logos Fields */}
         {formData.logos.map((logo, index) => (
-          <HStack key={index}>
+                  <HStack key={index}>
             <Input
               name="logos"
               value={logo}
@@ -111,8 +148,10 @@ const CertificateForm = () => {
         ))}
 
         {/* Header Fields */}
+        <Text>Enter the Header data:</Text>
+
         {formData.header.map((header, index) => (
-          <HStack key={index}>
+                  <HStack key={index}>
             <Input
               name="header"
               value={header}
@@ -133,6 +172,8 @@ const CertificateForm = () => {
             )}
           </HStack>
         ))}
+        <Text>Enter the body of the certificate:</Text>
+
         <Textarea
           name="body"
           value={formData.body}
@@ -140,7 +181,10 @@ const CertificateForm = () => {
           placeholder="Body"
         />
         {/* Footer Fields */}
+        <Text>Enter the signature data:</Text>
+
         {formData.footer.map((footer, index) => (
+
           <HStack key={index}>
             <Input
               name="footer"
@@ -163,7 +207,8 @@ const CertificateForm = () => {
           </HStack>
         ))}
 
-        {/* Signatures Fields */}
+<Text>Enter the link for signatures:</Text>
+        
         {formData.signatures.map((signature, index) => (
           <HStack key={index}>
             <Input
@@ -190,8 +235,10 @@ const CertificateForm = () => {
         <Button type="submit" colorScheme="blue">
           Submit
         </Button>
+
       </VStack>
     </form>
+</Container>
   );
 };
 
