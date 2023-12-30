@@ -10,9 +10,9 @@ class AddcertificateController {
     }
   }
 
-  async getAllcertificates() {
+  async getAllcertificates(eventId) {
     try {
-      const certificateList = await certificate.find();
+      const certificateList = await certificate.find({eventId:eventId});
       return certificateList;
     } catch (e) {
       throw new HttpException(500, e);

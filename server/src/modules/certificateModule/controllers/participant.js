@@ -1,10 +1,34 @@
 const HttpException = require("../../../models/http-exception");
 const participant = require("../../../models/certificateModule/participant");
+const csv = require('csv-parser');
+const { Readable } = require('stream');
 
 class AddparticipantController {
-  async addparticipant(data) {
+  async addparticipant(fileBuffer,eventId) {
     try {
-      await participant.insertMany(data);
+      if(!eventId)
+        throw new HttpException(400,'Event Id is missing')
+
+    // Read the CSV file using csv-parser
+    const csvData = [];
+
+    const bufferStream=Readable.from([fileBuffer])
+
+    bufferStream
+      .pipe(csv())
+      .on('data', (row) => {
+        // Process each row of the CSV and add it to the array
+        csvData.push({...row,eventId:eventId});
+      })
+      .on('end', async () => {
+  
+        await participant.insertMany(csvData)
+      })
+      .on('error', (error) => {
+        // Handle errors during the CSV file reading process
+        console.error('Error reading CSV file:', error.message);
+      });
+
     } catch (e) {
       throw new HttpException(500, e);
     }
@@ -12,7 +36,7 @@ class AddparticipantController {
 
   async getAllparticipants(eventId) {
     try {
-      const participantList = await participant.find({ eventId });
+      const participantList = await participant.find({ eventId:eventId });
       return participantList;
     } catch (e) {
       throw new HttpException(500, e);

@@ -2,12 +2,25 @@ const express = require("express");
 const participantRouter = express.Router();
 const ParticipantController = require("../controllers/participant");
 const participantController = new ParticipantController();
+const multer = require('multer');
+
+const storage = multer.memoryStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
+}); // Store files in memory
+
+const upload = multer({ storage: storage });
 
 // Route to create a new participant
-participantRouter.post("/", async (req, res) => {
+participantRouter.post("/",upload.single('csvfile'), async (req, res) => {
   try {
-    const newparticipant=await participantController.addparticipant(req.body);
-    return res.status(200).json(newparticipant);
+    const fileBuffer = req.file.buffer;
+    await participantController.addparticipant(fileBuffer,req.query?.eventId);
+    return res.status(200).json({message: 'Data added succesfully'});
   } 
   catch (e) {
     return res
@@ -19,7 +32,7 @@ participantRouter.post("/", async (req, res) => {
 // Route to get all participants
 participantRouter.get("/", async (req, res) => {
   try {
-    const allParticipants = await participantController.getAllparticipants();
+    const allParticipants = await participantController.getAllparticipants(req.query?.eventId);
     return res.status(200).json(allParticipants);
   } 
   catch (e) {

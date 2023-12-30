@@ -18,10 +18,7 @@ certificateRouter.post("/", async (req, res) => {
 // Route to get all certificates
 certificateRouter.get("/", async (req, res) => {
   try {
-    const allCertificates = await certificateController.getAllcertificates(
-      req,
-      res
-    );
+    const allCertificates = await certificateController.getAllcertificates(req.query?.eventId);
     return res.status(200).json(allCertificates);
   } catch (e) {
     return res
