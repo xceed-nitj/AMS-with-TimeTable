@@ -32,8 +32,8 @@ import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 import Home from './pages/Home'
-import EventRegistration from './certificatemodule/eventregistration';
-import CMDashboard from './certificatemodule/cmdashboard';
+import EventRegistration from './certificatemodule/pages/eventregistration';
+import CMDashboard from './certificatemodule/pages/cmdashboard';
 function App() {
   return (
     <Router>
