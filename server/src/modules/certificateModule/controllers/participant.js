@@ -2,34 +2,22 @@ const HttpException = require("../../../models/http-exception");
 const participant = require("../../../models/certificateModule/participant");
 
 class AddparticipantController {
-  async addparticipant(req, res) {
-    const newparticipant = req.body;
+  async addparticipant(data) {
     try {
-      
-      const createdparticipant = await participant.create(newparticipant);
-      return createdparticipant;
-    } 
-    catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal server error", details: error.message });
+      await participant.insertMany(data);
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 
-  async getAllparticipants(req, res) {
+  async getAllparticipants(eventId) {
     try {
-      const participantList = await participant.find();
+      const participantList = await participant.find({ eventId });
       return participantList;
-    } 
-    catch (e) {
-      console.error(e);
-  
-      // Check if 'e' is an object with 'status' and 'message' properties
-      const errorMessage = (e && e.status) ? e.message : "Internal server error";
-      const statusCode = (e && e.status) ? e.status : 500;
-  
-      res.status(statusCode).json({ error: errorMessage });
+    } catch (e) {
+      throw new HttpException(500, e);
     }
-    }
+  }
 
   async getparticipantById(id) {
     if (!id) {
@@ -39,9 +27,8 @@ class AddparticipantController {
       const data = await participant.findById(id);
       if (!data) throw new HttpException(400, "participant does not exist");
       return data;
-    } 
-    catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 
@@ -50,11 +37,13 @@ class AddparticipantController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const updatedparticipant=await participant.findByIdAndUpdate(id, participantData);
+      const updatedparticipant = await participant.findByIdAndUpdate(
+        id,
+        participantData
+      );
       return updatedparticipant;
-    } 
-    catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 
@@ -64,8 +53,7 @@ class AddparticipantController {
     }
     try {
       await participant.findByIdAndDelete(id);
-    } 
-    catch (e) {
+    } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }

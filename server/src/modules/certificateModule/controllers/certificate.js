@@ -2,69 +2,22 @@ const HttpException = require("../../../models/http-exception");
 const certificate = require("../../../models/certificateModule/certificate");
 
 class AddcertificateController {
-  async addcertificate(req, res) {
-    const newCertificate = req.body;
+  async addcertificate(data) {
     try {
-      const eventId = req.params.id;
-  
-      // Check if a certificate with the given event ID already exists
-      const existingCertificate = await certificate.findOne({
-        eventId: eventId,
-      });
-  
-      if (existingCertificate) {
-        // If exists, update the existing certificate
-        await certificate.updateOne(
-          { eventId: eventId },
-          {
-            $set: {
-              logos: newCertificate.logos,
-              header: newCertificate.header,
-              body: newCertificate.body,
-              footer: newCertificate.footer,
-              signatures: newCertificate.signatures,
-            },
-          }
-        );
-  
-        return res.status(200).json({ message: "Certificate updated successfully" });
-      } else {
-        // If not exists, create a new certificate
-        const createdCertificate = await certificate.create({
-          logos: newCertificate.logos,
-          header: newCertificate.header,
-          body: newCertificate.body,
-          footer: newCertificate.footer,
-          signatures: newCertificate.signatures,
-          eventId: eventId,
-        });
-  
-        return res
-          .status(201)
-          .json({ message: "Certificate created successfully", data: createdCertificate });
-      }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal server error", details: error.message });
+      await certificate.create(data);
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
-  
-  
-  async getAllcertificates(req, res) {
+
+  async getAllcertificates() {
     try {
       const certificateList = await certificate.find();
       return certificateList;
-    } 
-    catch (e) {
-      console.error(e);
-  
-      // Check if 'e' is an object with 'status' and 'message' properties
-      const errorMessage = (e && e.status) ? e.message : "Internal server error";
-      const statusCode = (e && e.status) ? e.status : 500;
-  
-      res.status(statusCode).json({ error: errorMessage });
+    } catch (e) {
+      throw new HttpException(500, e);
     }
-    }
+  }
 
   async getcertificateById(id) {
     if (!id) {
@@ -74,22 +27,8 @@ class AddcertificateController {
       const data = await certificate.findById(id);
       if (!data) throw new HttpException(400, "certificate does not exist");
       return data;
-    } 
-    catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
-    }
-  }
-  async getcertificateByEventId(id) {
-    if (!id) {
-      throw new HttpException(400, "Invalid Id");
-    }
-    try {
-      const data = await certificate.find({eventId:id});
-      if (!data) throw new HttpException(400, "certificate does not exist");
-      return data;
-    } 
-    catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 
@@ -98,11 +37,13 @@ class AddcertificateController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const updatedcertificate=await certificate.findByIdAndUpdate(id, certificateData);
+      const updatedcertificate = await certificate.findByIdAndUpdate(
+        id,
+        certificateData
+      );
       return updatedcertificate;
-    } 
-    catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 
@@ -112,9 +53,8 @@ class AddcertificateController {
     }
     try {
       await certificate.findByIdAndDelete(id);
-    } 
-    catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 }

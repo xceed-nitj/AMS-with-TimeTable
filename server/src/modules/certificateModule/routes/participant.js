@@ -6,11 +6,11 @@ const participantController = new ParticipantController();
 // Route to create a new participant
 participantRouter.post("/", async (req, res) => {
   try {
-    const newparticipant=await participantController.addparticipant(req, res);
+    const newparticipant=await participantController.addparticipant(req.body);
     return res.status(200).json(newparticipant);
   } 
   catch (e) {
-    res
+    return res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
@@ -19,11 +19,11 @@ participantRouter.post("/", async (req, res) => {
 // Route to get all participants
 participantRouter.get("/", async (req, res) => {
   try {
-    const allParticipants = await participantController.getAllparticipants(req, res);
+    const allParticipants = await participantController.getAllparticipants();
     return res.status(200).json(allParticipants);
   } 
   catch (e) {
-    res
+    return res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
@@ -37,7 +37,7 @@ participantRouter.get("/:participantId", async (req, res) => {
     return res.status(200).json(participant);
   }
    catch (e) {
-    res
+    return res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
@@ -52,7 +52,7 @@ participantRouter.put('/:participantId', async (req, res) => {
    return res.status(200).json(updatedone);
   } 
   catch (e) {
-    res
+    return res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
@@ -63,10 +63,10 @@ participantRouter.delete("/:participantId", async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     await participantController.deleteparticipantById(participantId);
-    res.status(200).json({ response: "Participant deleted successfully" });
+    return res.status(200).json({ response: "Participant deleted successfully" });
   } 
   catch (e) {
-    res
+    return res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
