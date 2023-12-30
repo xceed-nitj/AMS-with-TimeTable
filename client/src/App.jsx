@@ -34,6 +34,7 @@ import MergePDFComponent from './filedownload/mergepdfdocuments';
 import Home from './pages/Home'
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
+import CertificateForm from './certificatemodule/pages/certificatedesign';
 function App() {
   return (
     <Router>
@@ -83,6 +84,7 @@ function App() {
 
           <Route path="/cm/addevent" element={<EventRegistration />} />
           <Route path="/cm/dashboard" element={<CMDashboard />} />
+          <Route path="/cm/:eventid" element={<CertificateForm/>}/>
 
         </Routes>
         {/* <Footer/> */}

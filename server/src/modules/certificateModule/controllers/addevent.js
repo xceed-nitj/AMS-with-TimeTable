@@ -72,7 +72,7 @@ class AddEventController {
     }
     try {
       console.log(user)
-      const data = await addEvent.find({user:user._id});
+      const data = await addEvent.find({user:user.id});
       if (!data) throw new HttpException(400, "Event does not exist");
       return data;
     } catch (e) {
