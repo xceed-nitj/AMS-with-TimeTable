@@ -36,6 +36,8 @@ import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
 import CertificateForm from './certificatemodule/pages/certificatedesign';
 import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
+import ServicePage from './pages/Service';
+
 function App() {
   return (
     <Router>
@@ -46,8 +48,11 @@ function App() {
         <Navbar/>
          
       <Routes>
-        <Route path="/" element={<Home/>} />
-        
+        {/* Landing Page */}
+        <Route path="/" element={<Home />} />
+          <Route path='/services/:serviceId' element={<ServicePage/>} />
+        {/* ********* */}
+
         <Route path="/login" element={<Login/>} />
         <Route path="/forgot-password" element={<ForgotPassword/>} />
 
