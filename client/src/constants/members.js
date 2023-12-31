@@ -11,7 +11,7 @@ export const faculty = [
     id: 2,
     name: 'Dr. Banalaxmi Brahma',
     designation: 'Assistant Professor',
-    image: '/home/team/placeholder.jpg',
+    image: '/home/team/Banalaxmi.webp',
     github: 'https://github.com',
     linkedin: 'https://www.linkedin.com/in/dr-banalaxmi-brahma-407b82114/',
   },
@@ -135,6 +135,16 @@ export const sarthaksharma = {
   linkedin: 'https://www.linkedin.com/in/sarthak-sharma-33620219b/',
 };
 
+// kashish mangal	full stack developer	https://drive.google.com/open?id=1wzr_cJi9kqXTKHYxupqkQJjGxC0BLQpf	https://github.com/Kashish-gitt	https://www.linkedin.com/in/kashishmangal/
+
+export const kashish = {
+  name: 'Kashish Mangal',
+  designation: 'Full Stack Developer',
+  image: '/home/team/Kashish.webp',
+  github: 'https://github.com/Kashish-gitt',
+  linkedin: 'https://www.linkedin.com/in/kashishmangal/',
+};
+
 export const coreTeam = [
   dohit,
   aditya,
@@ -148,4 +158,4 @@ export const coreTeam = [
 
 export const timeTableTeam = [madhesh, pihu, akshika, sourabh, dhruv, gautam];
 export const conferenceTeam = [aditya, gautam, avnashkumar];
-export const certificateTeam = [sarthaksharma, dohit];
+export const certificateTeam = [sarthaksharma, dohit, kashish];
