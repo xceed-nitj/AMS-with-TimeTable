@@ -10,8 +10,8 @@ export default function RevenueDistribution() {
           <div className="tw-text-center">
             <SectionHeader title="Revenue Distribution" centered />
             <h3 className="tw-mx-auto tw-text-xl tw-font-medium tw-leading-relaxed tw-text-gray-700 lg:tw-w-2/3 dark:tw-text-gray-300">
-              The revenue generated from the projects is distributed among the
-              students, club and college. We believe in giving back to the
+              The revenue generated from the projects is shared among the
+              students, WDM club and institute. We believe in giving back to the
               community.
             </h3>
           </div>
@@ -23,24 +23,38 @@ export default function RevenueDistribution() {
               <dt className="tw-text-4xl tw-text-cyan-400 tw-font-extrabold">
                 35%
               </dt>
-              <dd className="tw-text-sm tw-font-semibold tw-uppercase tw-tracking-wide tw-text-white">
+              <dd className="tw-text-2xl tw-font-semibold tw-uppercase tw-tracking-wide tw-text-white">
                 Students
               </dd>
+
+              (Students involved in the projects will get 35% of amount generated)
+
             </dl>
+
             <dl className="tw-space-y-1 tw-px-5 tw-py-8">
               <dt className="tw-text-4xl tw-font-extrabold">35%</dt>
-              <dd className="tw-text-sm tw-font-semibold tw-uppercase tw-tracking-wide tw-text-gray-600 dark:tw-text-gray-400">
-                Club
+              <dd className="tw-text-2xl tw-font-semibold tw-uppercase tw-tracking-wide tw-text-gray-600 dark:tw-text-gray-400">
+                WDM Club
               </dd>
+              (This amount will go back to the students in terms of competition prize money)
+
             </dl>
             <dl className="tw-space-y-1 tw-px-5 tw-py-8">
               <dt className="tw-text-4xl tw-font-extrabold">30%</dt>
-              <dd className="tw-text-sm tw-font-semibold tw-uppercase tw-tracking-wide tw-text-gray-600 dark:tw-text-gray-400">
-                College
+              <dd className="tw-text-2xl tw-font-semibold tw-uppercase tw-tracking-wide tw-text-gray-600 dark:tw-text-gray-400">
+                Institute
               </dd>
+              (As we are using institute server for various works, this percentage has been contributed to the institute.)
+
             </dl>
           </div>
+
+          <h3 className="tw-mx-auto tw-text-xl tw-font-medium tw-leading-relaxed tw-text-gray-700 lg:tw-w-2/3 dark:tw-text-gray-300">
+          The revenue generated will be shared with students at the end of the academic year
+            </h3>
+
           {/* END Stats */}
+
         </div>
       </div>
       {/* END Statistics Section: Simple with Title */}
