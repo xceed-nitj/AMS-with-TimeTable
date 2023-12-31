@@ -5,7 +5,7 @@ import {
   PresentationChartLineIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/solid';
-import { conferenceTeam, timeTableTeam } from './members';
+import { certificateTeam, conferenceTeam, timeTableTeam } from './members';
 
 export const services = [
   {
@@ -35,6 +35,7 @@ export const services = [
     description:
       'Our service caters to your unique needs, offering a robust and customizable webpage to bring your short-term courses to a wide audience. With our Certificate Module, our team helps in design and generation of digital verifiable certificates. The participants can earn verifiable certificates, adding a credible dimension to their achievements. The certificate includes a secure verification link, bolstering the integrity of the credential.',
     price: '₹ 2000 onwards',
+    team: certificateTeam,
     features: [
       ' A robust and tailored webpage to showcase your short-term course details, catering to the unique needs of your audience.',
       'Admin panel will be provided to the organisers for dynamic content updation and to add participant details for generating digital certificate',
