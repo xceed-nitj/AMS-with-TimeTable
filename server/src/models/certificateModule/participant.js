@@ -35,6 +35,11 @@ const ParticipantSchema = new mongoose.Schema({
     type: String,
     
   },
+  eventId:{
+    type: String,
+    
+  },
+  
 });
 
 ParticipantSchema.add(commonFields);
