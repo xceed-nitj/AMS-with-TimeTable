@@ -81,7 +81,7 @@ export const faculty = [
     id: 2,
     name: 'Dr. Banalaxmi Brahma',
     designation: 'Assistant Professor',
-    image: '/home/team/placeholder.jpg',
+    image: 'https://v1.nitj.ac.in/images/faculty/23012445306.jpg',
     github: 'https://github.com',
     linkedin: 'https://www.linkedin.com/in/dr-banalaxmi-brahma-407b82114/',
   },

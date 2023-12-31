@@ -3,10 +3,13 @@ import { Input, Button, VStack, IconButton, HStack, Textarea, Text, Container } 
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
 import Header from "../../components/header";
+import { useToast } from "@chakra-ui/react";
+
 
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     logos: [''],
@@ -108,6 +111,13 @@ const CertificateForm = () => {
       if (response.ok) {
         const responseData = await response.json();
         console.log(responseData);
+        toast({
+          title: "Submission successfull",
+          description: responseData.message,
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
       } else {
         console.error('Error submitting form:', response.statusText);
       }
@@ -131,6 +141,7 @@ const CertificateForm = () => {
               value={logo}
               onChange={(e) => handleChange(e, 'logos', index)}
               placeholder="Logo"
+              width="200%"
             />
             {index > 0 && (
               <IconButton
@@ -157,6 +168,7 @@ const CertificateForm = () => {
               value={header}
               onChange={(e) => handleChange(e, 'header', index)}
               placeholder="Header"
+              width="100%"
             />
             {index > 0 && (
               <IconButton

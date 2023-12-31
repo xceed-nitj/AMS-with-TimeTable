@@ -9,7 +9,7 @@ const CoreTeam = () => {
         <div className="tw-font-light tw-text-gray-500 sm:tw-text-lg dark:tw-text-gray-400 tw-mx-auto  lg:tw-w-1/2 tw-text-center tw-mb-4">
           <SectionHeader title="Our Core Team" centered />
           <p className="tw-mb-8">
-            Xceed has an experienced team of developers, designers and mentors
+            XCEED has an experienced team of developers, designers and mentors
             dedicated to create web solutions based on your requirement.
           </p>
         </div>
