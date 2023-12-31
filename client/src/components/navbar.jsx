@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import {
   Box,
@@ -11,13 +11,13 @@ import {
   Image,
   Spacer,
   Button,
-} from "@chakra-ui/react";
-import { Link as RouterLink } from "react-router-dom";
+} from '@chakra-ui/react';
+import { Link as RouterLink } from 'react-router-dom';
 const theme = extendTheme({
   components: {
     Button: {
       baseStyle: {
-        fontWeight: "bold",
+        fontWeight: 'bold',
       },
     },
   },
@@ -52,7 +52,7 @@ const Navbar = () => {
   const getUserDetails = async () => {
     try {
       const response = await fetch(`${apiUrl}/user/getuser/`, {
-        method: "GET",
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -60,13 +60,13 @@ const Navbar = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch user details");
+        throw new Error('Failed to fetch user details');
       }
 
       const userdetail = await response.json();
       return userdetail;
     } catch (error) {
-      console.error("Error fetching user details:", error.message);
+      console.error('Error fetching user details:', error.message);
       throw error;
     }
   };
@@ -74,17 +74,17 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       const response = await fetch(`${apiUrl}/user/getuser/logout`, {
-        method: "POST",
+        method: 'POST',
         credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error("Failed to logout");
+        throw new Error('Failed to logout');
       }
       // console.log("logoout message", response.message)
-      navigate("/");
+      navigate('/');
     } catch (error) {
-      console.error("Error during logout:", error.message);
+      console.error('Error during logout:', error.message);
     }
   };
 
@@ -96,9 +96,12 @@ const Navbar = () => {
     setHovered(false);
   };
 
-  const excludedRoutes = ["/login","/"];
+  const excludedRoutes = ['/login', '/', '/services'];
 
-  const isExcluded = excludedRoutes.includes(location.pathname);
+  // const isExcluded = excludedRoutes.includes(location.pathname);
+  const isExcluded = excludedRoutes.some((route) =>
+    location.pathname.startsWith(route)
+  );
 
   if (isLoading || isExcluded) {
     return null;
@@ -109,8 +112,8 @@ const Navbar = () => {
       <Box bg="black" py={2} px={4}>
         <Flex justify="space-between" align="center">
           <Flex align="center">
-            <RouterLink to='/'>
-              <Image src='/clublogo.png' alt="Logo" h={10} w={40} mr={2} />
+            <RouterLink to="/">
+              <Image src="/clublogo.png" alt="Logo" h={10} w={40} mr={2} />
             </RouterLink>
           </Flex>
           <Spacer />
@@ -126,7 +129,7 @@ const Navbar = () => {
               )}
             </Text>
           ) : (
-            <Link 
+            <Link
               href="/"
               color="white"
               fontWeight="bold"

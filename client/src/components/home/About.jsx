@@ -13,7 +13,7 @@ const About = () => {
               technology and a commitment to excellence. Established with the
               aim of fostering a culture of innovation and skill development in
               coding, Xceed has been at the forefront of transforming ideas into
-              impactful projects that benefit the entire college community.
+              impactful projects that benefit the entire institute community.
             </p>
             <p className="tw-text-justify">
               Xceed envisions a future where technology serves as a catalyst for

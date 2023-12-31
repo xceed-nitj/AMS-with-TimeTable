@@ -4,14 +4,14 @@ export default function RevenueDistribution() {
   return (
     <>
       {/* Statistics Section: Simple with Title */}
-      <div className="tw-bg-white dark:tw-bg-gray-900 dark:tw-text-gray-100 tw-border-t tw-border-gray-500">
+      <div className="tw-bg-white dark:tw-bg-gray-900 dark:tw-text-gray-100">
         <div className="container tw-mx-auto tw-space-y-12 tw-px-4 tw-py-16 lg:tw-px-8 lg:tw-py-32 xl:tw-max-w-7xl">
           {/* Heading */}
           <div className="tw-text-center">
             <SectionHeader title="Revenue Distribution" centered />
             <h3 className="tw-mx-auto tw-text-xl tw-font-medium tw-leading-relaxed tw-text-gray-700 lg:tw-w-2/3 dark:tw-text-gray-300">
               The revenue generated from the projects is distributed among the
-              students, club and college. We believe in giving back to the
+              students, club and institute. We believe in giving back to the
               community.
             </h3>
           </div>
@@ -36,7 +36,7 @@ export default function RevenueDistribution() {
             <dl className="tw-space-y-1 tw-px-5 tw-py-8">
               <dt className="tw-text-4xl tw-font-extrabold">30%</dt>
               <dd className="tw-text-sm tw-font-semibold tw-uppercase tw-tracking-wide tw-text-gray-600 dark:tw-text-gray-400">
-                College
+                Institute
               </dd>
             </dl>
           </div>
