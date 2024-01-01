@@ -39,6 +39,7 @@ import CMDashboard from './certificatemodule/pages/cmdashboard';
 import CertificateForm from './certificatemodule/pages/certificatedesign';
 import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
 import ServicePage from './pages/Service';
+import Participant from './certificatemodule/pages/participantdataupload';
 
 function App() {
   return (
@@ -95,7 +96,7 @@ function App() {
           <Route path="/cm/addevent" element={<EventRegistration />} />
           <Route path="/cm/dashboard" element={<CMDashboard />} />
           <Route path="/cm/:eventid" element={<CertificateForm/>}/>
-          <Route path="/cm/participant" element={<Certificate/>}/>
+          <Route path="/cm/:eventid/addparticipant" element={<Participant/>}/>
 
         </Routes>
         {/* <Footer/> */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import getEnvironment from "../getenvironment";
-import FileDownloadButton from "../filedownload/filedownload";
+import getEnvironment from "../../getenvironment";
+import FileDownloadButton from "../../filedownload/filedownload";
 // import subjectFile from '../assets/subject_template';
 import {
   Container,
@@ -20,7 +20,7 @@ import {
   CustomBlueButton,
   CustomDeleteButton,
   CustomTealButton,
-} from "../styles/customStyles";
+} from "../../styles/customStyles";
 
 import {
   Table,
@@ -32,7 +32,7 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
-import Header from '../components/header';
+import Header from '../../components/header';
 
 
 function Participant() {
@@ -76,12 +76,12 @@ function Participant() {
   const apiUrl = getEnvironment();
 
   useEffect(() => {
-    fetchPaticipantData();
+    fetchParticipantData();
   }, [eventId]); 
 
-  const fetchPaticipantData = () => {
+  const fetchParticipantData = () => {
     if (eventId) {
-      fetch(`${apiUrl}/certificatemodule/participant/${eventId}`, {
+      fetch(`${apiUrl}/certificatemodule/participant/getparticipant/${eventId}`, {
         credentials: "include",
       }) 
         .then((response) => {
@@ -137,7 +137,7 @@ function Participant() {
             setDuplicateEntryMessage(data.message);
             
           } else {
-            fetchData(); 
+            fetchParticipantData(); 
             setDuplicateEntryMessage(''); 
           }
           setIsLoading(false);
@@ -158,7 +158,7 @@ function Participant() {
   };
   
   useEffect(() => {
-    fetchData();
+    fetchParticipantData();
     if (uploadState) {
       setUploadState(false);
     }
@@ -179,7 +179,7 @@ function Participant() {
         const updatedData = [...tableData];
         updatedData[rowIndex] = editedData;
 
-        fetch(`${apiUrl}/certificatemodule/participant/${editRowId}`, {
+        fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${editRowId}`, {
 
           method: "PUT",
           headers: {
@@ -228,7 +228,7 @@ function Participant() {
     const isConfirmed = window.confirm("Are you sure you want to delete this entry?");
     
     if (isConfirmed) {
-      fetch(`${apiUrl}/certificatemodule/participant/${_id}`, {
+      fetch(`${apiUrl}/certificatemodule/participant/deleteparticipant/${_id}`, {
         method: "DELETE",
         credentials: "include",
       })
@@ -279,7 +279,7 @@ function Participant() {
         `Duplicate entry for "${editedSData.name}" is detected. Kindly delete the entry.`
       );
     } else {
-      fetch(`${apiUrl}/timetablemodule/participant/${eventId}`, {
+      fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${eventId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -299,7 +299,7 @@ function Participant() {
         .then((data) => {
 
           // console.log("Data saved successfully:", data);
-          fetchData();
+          fetchParticipantData();
           handleCancelAddSubject();
           addsetDuplicateEntryMessage(""); 
         })
@@ -317,7 +317,7 @@ function Participant() {
           "Are you sure you want to delete all entries with the current code?"
         )
       ) {
-        fetch(`${apiUrl}/certificatemodule/participant/deletebyId/${eventId}`, {
+        fetch(`${apiUrl}/certificatemodule/participant/deleteall/${eventId}`, {
           method: "DELETE",
           credentials: "include",
         })
@@ -331,7 +331,7 @@ function Participant() {
           })
           .then((data) => {
             // console.log("Delete All Success:", data);
-            fetchData(); 
+            fetchParticipantData(); 
           })
           .catch((error) => {
             console.error("Delete All Error:", error);
@@ -342,7 +342,7 @@ function Participant() {
   return (
     <Container maxW='8xl'>
       {/* <Heading as="h1" size="xl" mt="6" mb="6">Add Subject</Heading> */}
-      <Header title='Add Subject' />
+      <Header title='Add Participant' />
       {/* <p fontWeight='Bold'>Batch Upload:</p> */}
       Batch Upload:
       <Box mb="2" mt="2" display="flex">
