@@ -15,7 +15,7 @@ import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
-import Navbar from './components/navbar';
+import Navbar from './components/home/Navbar';
 import PrintSummary from './timetableadmin/printSummary'
 import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
