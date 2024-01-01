@@ -45,11 +45,14 @@ const JoinUs = () => {
               call between 6pm to 11pm on working days.
             </p>
             <p className="tw-text-gray-400 sm:tw-text-lg tw-text-justify">
-              If you want to be part of XCEED Community, mail us your resume
-              (github link is mandatory) at{' '}
-              <span className="tw-text-cyan-600  dark:tw-text-cyan-300">
-                xceed@nitj.ac.in
-              </span>
+              If you want to be part of XCEED Community, fill up this form
+              {'  '}
+              <a
+                href="https://forms.gle/iCEP3gYkDkfsnEWn6"
+                className="tw-text-cyan-600  dark:tw-text-cyan-300"
+              >
+                https://forms.gle/iCEP3gYkDkfsnEWn6
+              </a>
             </p>
           </div>
         </div>

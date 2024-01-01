@@ -1,13 +1,13 @@
-import { Bars3Icon } from "@heroicons/react/24/outline";
-import clsx from "clsx";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Bars3Icon } from '@heroicons/react/24/outline';
+import clsx from 'clsx';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Navbar() {
   const [navbarOpen, setNavbarOpen] = useState(false);
 
   return (
-    <nav className="tw-bg-gray-900">
+    <nav className="tw-bg-gray-900 tw-sticky tw-top-0 tw-border-b tw-border-gray-700">
       <div className="tw-max-w-screen-xl tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-mx-auto tw-p-4">
         <Link
           to="/"
@@ -29,11 +29,10 @@ export default function Navbar() {
         </button>
         <div
           className={clsx(
-            "tw-w-full md:tw-block md:tw-w-auto", 
-            navbarOpen ? "tw-block" : "tw-hidden"
+            'tw-w-full md:tw-block md:tw-w-auto',
+            navbarOpen ? 'tw-block' : 'tw-hidden'
           )}
           id="navbar-default"
-
         >
           <ul className="tw-list-none tw-font-medium tw-flex tw-flex-col tw-items-center tw-p-4 md:tw-p-0 tw-mt-4 tw-border tw-rounded-lg tw-space-y-5 md:tw-space-y-0 md:tw-flex-row md:tw-space-x-8 rtl:tw-space-x-reverse md:tw-mt-0 md:tw-border-0 tw-bg-gray-900 tw-border-gray-700">
             <li>
