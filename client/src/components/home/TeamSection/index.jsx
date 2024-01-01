@@ -13,8 +13,7 @@ const TeamSection = () => {
       />
       <Team
         title="Faculty Coordinators"
-        desp="Faculty Coordinators are the backbone of Xceed. They are the ones
-            who guide us and help us in every possible way."
+        desp="People behind the XCEED!"
         teamData={faculty}
         variant="faculty"
       />
