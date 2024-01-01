@@ -115,7 +115,7 @@ export default function Navbar() {
   }
   
   return (
-    <nav className="tw-bg-gray-900 tw-sticky tw-top-0 tw-border-b tw-border-gray-700">
+    <nav className="tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700">
       <div className="tw-max-w-screen-xl tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-mx-auto tw-p-4">
         <Link
           to="/"
@@ -142,10 +142,10 @@ export default function Navbar() {
           )}
           id="navbar-default"
         >
-          <ul className="tw-list-none tw-font-medium tw-flex tw-flex-col tw-items-center tw-p-4 md:tw-p-0 tw-mt-4 tw-border tw-rounded-lg tw-space-y-5 md:tw-space-y-0 md:tw-flex-row md:tw-space-x-8 rtl:tw-space-x-reverse md:tw-mt-0 md:tw-border-0 tw-bg-gray-900 tw-border-gray-700">
+          <ul className="tw-list-none tw-h-8 tw-font-medium tw-flex tw-flex-col tw-items-center tw-p-4 md:tw-p-0 tw-mt-4 tw-border tw-rounded-lg tw-space-y-5 md:tw-space-y-0 md:tw-flex-row md:tw-space-x-8 rtl:tw-space-x-reverse md:tw-mt-0 md:tw-border-0 tw-bg-gray-900 tw-border-gray-700">
             <li>
               <a
-                href="#home"
+                href="/"
                 className="tw-block tw-py-2 tw-px-3 tw-text-cyan-600 tw-rounded md:tw-bg-transparent md:tw-text-cyan-600 md:tw-p-0 dark:tw-text-cyan-300 md:dark:tw-text-cyan-300"
                 aria-current="page"
               >
@@ -154,7 +154,7 @@ export default function Navbar() {
             </li>
             <li>
               <a
-                href="#services"
+                href="/#services"
                 className="tw-block tw-py-2 tw-px-3 tw-text-white tw-rounded hover:tw-text-cyan-300 md:hover:tw-bg-transparent md:tw-border-0 md:hover:tw-text-cyan-600 md:tw-p-0 dark:tw-text-white md:dark:hover:tw-text-cyan-600 dark:hover:tw-bg-gray-700 md:dark:hover:tw-bg-transparent"
               >
                 Services
@@ -162,7 +162,7 @@ export default function Navbar() {
             </li>
             <li>
               <a
-                href="#about"
+                href="/#about"
                 className="tw-block tw-py-2 tw-px-3 tw-text-white tw-rounded hover:tw-text-cyan-300 md:hover:tw-bg-transparent md:tw-border-0 md:hover:tw-text-cyan-600 md:tw-p-0 dark:tw-text-white md:dark:hover:tw-text-cyan-600 dark:hover:tw-bg-gray-700 md:dark:hover:tw-bg-transparent"
               >
                 About
@@ -170,46 +170,39 @@ export default function Navbar() {
             </li>
             <li>
               <a
-                href="#team"
+                href="/#team"
                 className="tw-block tw-py-2 tw-px-3 tw-text-white tw-rounded hover:tw-text-cyan-300 md:hover:tw-bg-transparent md:tw-border-0 md:hover:tw-text-cyan-600 md:tw-p-0 dark:tw-text-white md:dark:hover:tw-text-cyan-600 dark:hover:tw-bg-gray-700 md:dark:hover:tw-bg-transparent"
               >
                 Team
               </a>
             </li>
             <li>
-              {/* <Link
+            {!isAuthenticated ? (
+              <Link
                 to="/login"
                 className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
               >
                 Login
-              </Link> */}
-              <Box bg="black" py={1} px={2}>
-        <Flex justify="space-between" align="center">
+              </Link>
+            ):null}
+              {/* <Box bg="black" py={1} px={2}> */}
+        {/* <Flex justify="space-between" align="center"> */}
           
-          <Spacer />
+          {/* <Spacer /> */}
           {isAuthenticated ? (
             <Text fontSize="sm" color="white">
               {userDetails && (
                 <>
-                  <span>{userDetails.user.email}</span>
+                  {userDetails.user.email}
                   <Button colorScheme="white" size="sm" onClick={handleLogout}>
                     Logout
                   </Button>
                 </>
               )}
             </Text>
-          ) : (
-    
-            <a
-            href="/login"
-            className="tw-block tw-py-2 tw-px-3 tw-text-white tw-rounded hover:tw-text-cyan-300 md:hover:tw-bg-transparent md:tw-border-0 md:hover:tw-text-cyan-600 md:tw-p-0 dark:tw-text-white md:dark:hover:tw-text-cyan-600 dark:hover:tw-bg-gray-700 md:dark:hover:tw-bg-transparent"
-          >
-
-            Login
-            </a>
-          )}
-        </Flex>
-      </Box>
+          ) : null}
+        {/* </Flex> 
+      </Box> */}
 
             </li>
           </ul>
