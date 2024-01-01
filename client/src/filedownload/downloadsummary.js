@@ -81,7 +81,7 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
           { text: isFirstRow ? sNo : '', rowSpan: isFirstRow ? summaryData.length : 1, alignment: 'center',minHeight: 20,pageBreak: 'auto'  },
           { text: isFirstRow ? faculty : '', rowSpan: isFirstRow ? summaryData.length : 1 ,minHeight: 20,pageBreak: 'auto' },
           { text: isFirstRow ? facultyDetails.designation : '', rowSpan: isFirstRow ? summaryData.length : 1,minHeight: 20,pageBreak: 'auto'  },
-          { text: Array.isArray(summary.rooms) ? summary.rooms.join(', ') : summary.rooms, alignment: 'center', minHeight: 20,pageBreak: 'auto' },
+          { text: Array.isArray(summary.faculties) ? summary.faculties.join(', ') : summary.faculties, alignment: 'center', minHeight: 20,pageBreak: 'auto' },
           { text: summary.subCode || '', alignment: 'center',minHeight: 20,pageBreak: 'auto' },
           { text: summary.subjectFullName || '', alignment: 'left',minHeight: 20,pageBreak: 'auto' },
           { text: summary.subType || '', alignment: 'center',minHeight: 20,pageBreak: 'auto' },
