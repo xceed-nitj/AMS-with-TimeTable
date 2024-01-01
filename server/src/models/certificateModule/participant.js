@@ -19,13 +19,9 @@ const ParticipantSchema = new mongoose.Schema({
   }, 
   types:{
     type: String,
-    
-    enum: participantTypes,
-  },
+   },
   position: {
-    type: Number,
-    
-    enum: organiserTypes,
+    type: String,
   },
   title1:{
     type: String,
