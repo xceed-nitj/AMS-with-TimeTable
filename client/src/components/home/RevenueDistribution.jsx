@@ -11,9 +11,7 @@ export default function RevenueDistribution() {
             <SectionHeader title="Revenue Distribution" centered />
             <h3 className="tw-mx-auto tw-text-xl tw-font-medium tw-leading-relaxed tw-text-gray-700 lg:tw-w-2/3 dark:tw-text-gray-300">
               The revenue generated from the projects is distributed among the
-              students, club and institute. We believe in giving back to the The
-              revenue generated from the projects is shared among the students,
-              WDM club and institute. We believe in giving back to the
+              students, club and institute. We believe in giving back to the
               community.
             </h3>
           </div>

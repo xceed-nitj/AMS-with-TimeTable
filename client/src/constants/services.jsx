@@ -64,7 +64,7 @@ export const services = [
     id: 4,
     icon: <AcademicCapIcon />,
     type: 'institute',
-    title: 'Digitalisation of the Institute Time Table',
+    title: 'Institute Time Table Module',
     description:
       "Timetable Module is aimed at reducing the manual work to a great extent in generating time table online and to digitally view and share the time table to various stakeholders. Streamline your scheduling process with our user-friendly interface, allowing you to create student, teacher, and room timetables in one go. The Timetable Module is designed to be compatible with various devices, promoting accessibility for administrators, teachers, and students alike. Additionally, we've integrated Google location information for classrooms, enhancing convenience and accessibility.",
     team: timeTableTeam,
@@ -75,9 +75,10 @@ export const services = [
     type: 'institute',
     title: "Management of NITJ's Official Website",
     images: [
+      '/services/institute-website/4_73301.webp',
       '/services/institute-website/2_8245.webp',
       '/services/institute-website/3_22930.webp',
-      '/services/institute-website/4_73301.webp',
+      
       '/services/institute-website/5_59377.webp',
       '/services/institute-website/6_36624.webp',
       '/services/institute-website/7_48718.webp',
