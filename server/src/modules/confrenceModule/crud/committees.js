@@ -1,4 +1,4 @@
-const Committee = require("../models/committees");
+const Committee = require("../../../models/conferenceModule//committees");
 const HttpException = require("../../../models/conferenceModule/http-exception");
 
 class CommitteesController {

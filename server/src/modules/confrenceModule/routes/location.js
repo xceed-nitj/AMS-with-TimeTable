@@ -1,6 +1,6 @@
 const express = require("express");
 const { Request, Response } = require("express");
-const Location = require("../models/location");
+const Location = require("../../../models/conferenceModule/location");
 const LocationController = require("../crud/location");
 
 const router = express.Router();
