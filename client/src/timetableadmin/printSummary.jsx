@@ -455,6 +455,7 @@ function generateSummary(timetableData, subjectData, type, headTitle, commonLoad
               // Initialize or update the subject entry in the summaryData
               if (foundSubject) {
                 if (!summaryData[subject]) {
+                  console.log('subcode inside',foundSubject.subCode)
                   summaryData[subject] = {
                     subCode: foundSubject.subCode,
                     count: 1,
@@ -464,7 +465,7 @@ function generateSummary(timetableData, subjectData, type, headTitle, commonLoad
                     subjectFullName: foundSubject.subjectFullName,
                     subSem:foundSubject.sem,
                   };
-                  // console.log('sum',summaryData[subject])
+                  console.log('sum',summaryData[subject])
                 } else {
                   summaryData[subject].count++;
                   if (!summaryData[subject].faculties.includes(faculty)) {
