@@ -115,7 +115,7 @@ export default function Navbar() {
   }
   
   return (
-    <nav className="tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700">
+    <nav className="tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700" style={{ zIndex: 9999 }}>
       <div className="tw-max-w-screen-xl tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-mx-auto tw-p-4">
         <Link
           to="/"
