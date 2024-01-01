@@ -1,11 +1,119 @@
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
-import { useState } from 'react';
+// import { useState } from 'react';
 import { Link } from 'react-router-dom';
+
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import getEnvironment from '../../getenvironment';
+import {
+  Box,
+  Flex,
+  Text,
+  ChakraProvider,
+  extendTheme,
+  Image,
+  Spacer,
+  Button,
+} from '@chakra-ui/react';
+import { Link as RouterLink } from 'react-router-dom';
+
 
 export default function Navbar() {
   const [navbarOpen, setNavbarOpen] = useState(false);
+  const theme = extendTheme({
+    components: {
+      Button: {
+        baseStyle: {
+          fontWeight: 'bold',
+        },
+      },
+    },
+  });
+  
+  const apiUrl = getEnvironment();
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hovered, setHovered] = useState(false);
 
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const userDetails = await getUserDetails();
+        setUserDetails(userDetails);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // Handle error (e.g., display an error message or redirect to an error page)
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
+
+  const getUserDetails = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/user/getuser/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user details');
+      }
+
+      const userdetail = await response.json();
+      return userdetail;
+    } catch (error) {
+      console.error('Error fetching user details:', error.message);
+      throw error;
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/user/getuser/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to logout');
+      }
+      // console.log("logoout message", response.message)
+      navigate('/login');
+    } catch (error) {
+      console.error('Error during logout:', error.message);
+    }
+  };
+
+  const handleHover = () => {
+    setHovered(true);
+  };
+
+  const handleLeave = () => {
+    setHovered(false);
+  };
+
+  const excludedRoutes = ['/login'];
+
+  // const isExcluded = excludedRoutes.includes(location.pathname);
+  const isExcluded = excludedRoutes.some((route) =>
+    location.pathname.startsWith(route)
+  );
+
+  if (isLoading || isExcluded) {
+    return null;
+  }
+  
   return (
     <nav className="tw-bg-gray-900 tw-sticky tw-top-0 tw-border-b tw-border-gray-700">
       <div className="tw-max-w-screen-xl tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-mx-auto tw-p-4">
@@ -69,12 +177,40 @@ export default function Navbar() {
               </a>
             </li>
             <li>
-              <Link
+              {/* <Link
                 to="/login"
                 className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
               >
                 Login
-              </Link>
+              </Link> */}
+              <Box bg="black" py={1} px={2}>
+        <Flex justify="space-between" align="center">
+          
+          <Spacer />
+          {isAuthenticated ? (
+            <Text fontSize="sm" color="white">
+              {userDetails && (
+                <>
+                  <span>{userDetails.user.email}</span>
+                  <Button colorScheme="white" size="sm" onClick={handleLogout}>
+                    Logout
+                  </Button>
+                </>
+              )}
+            </Text>
+          ) : (
+    
+            <a
+            href="/login"
+            className="tw-block tw-py-2 tw-px-3 tw-text-white tw-rounded hover:tw-text-cyan-300 md:hover:tw-bg-transparent md:tw-border-0 md:hover:tw-text-cyan-600 md:tw-p-0 dark:tw-text-white md:dark:hover:tw-text-cyan-600 dark:hover:tw-bg-gray-700 md:dark:hover:tw-bg-transparent"
+          >
+
+            Login
+            </a>
+          )}
+        </Flex>
+      </Box>
+
             </li>
           </ul>
         </div>
