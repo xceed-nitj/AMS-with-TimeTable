@@ -177,12 +177,12 @@ function ViewInstituteLoad() {
     data.forEach((faculty) => {
       const { name, sem, type, load , designation} = faculty;
       // facultyDesignation[name]=designation ||{};
-
+      const trimmedtype=type.trim().lowercase();
       facultyWiseLoad[name] = facultyWiseLoad[name] || {};
       // facultyWiseLoad[designation] = facultyWiseLoad[designation] || {};
   
       sem.forEach((s, index) => {
-        const t = type[index];
+        const t = trimmedtype[index];
         const l = load[index];
   
         console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
@@ -198,7 +198,7 @@ function ViewInstituteLoad() {
   
 
   const Usemesters = [...new Set(Object.keys(availableLoad).flatMap(faculty => Object.keys(availableLoad[faculty])))];
-  const types = ['Theory', 'Laboratory', 'Tutorial'];
+  const types = ['theory', 'laboratory', 'tutorial'];
   
   // Generate a set of unique columns based on available data
   const uniqueColumns = new Set();
@@ -264,8 +264,8 @@ function ViewInstituteLoad() {
     });
 
     const tutorialLabLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
-      const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
-      const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
+      const tutorialLoad = availableLoad[faculty][semester]['tutorial'] || 0;
+      const laboratoryLoad = availableLoad[faculty][semester]['laboratory'] || 0;
       return tutorialLoad + laboratoryLoad;
     }).reduce((sum, value) => sum + value, 0);
 
@@ -377,7 +377,7 @@ function ViewInstituteLoad() {
 
     <th rowSpan="2">Tutorial+Lab Load</th>
     {/* <th rowSpan="2">Project Load</th> */}
-    <th rowSpan="2">Total Faculty Load (without project)</th>
+    <th rowSpan="2">Total Faculty Load</th>
   </tr>
   <tr>
     {[...Usemesters].map((semester) =>
@@ -422,7 +422,7 @@ function ViewInstituteLoad() {
   {
     [ ...Usemesters ].map((semester) =>
       types.reduce((sum, type) => {
-        if (type.toLowerCase() === 'theory') {
+        if (type.trim().toLowerCase() === 'theory') {
           const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
           const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
           return sum + adjustedLoadValue;
@@ -436,8 +436,8 @@ function ViewInstituteLoad() {
       {/* Sum of 'Tutorial', 'Laboratory', and 'Project' for each faculty */}
       <td key={`${faculty}-tutorial-laboratory-project-sum`}>
         {Object.keys(availableLoad[faculty] || {}).map((semester) => {
-          const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
-          const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
+          const tutorialLoad = availableLoad[faculty][semester]['tutorial'] || 0;
+          const laboratoryLoad = availableLoad[faculty][semester]['laboratory'] || 0;
           // const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
 
           return tutorialLoad + laboratoryLoad ;
