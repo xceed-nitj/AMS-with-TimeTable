@@ -76,22 +76,34 @@ function CMDashboard() {
             <Tr>
               <CustomTh>Event Name</CustomTh>
               <CustomTh>Expiry Date</CustomTh>
-              <CustomTh>Department/Club</CustomTh>
-              <CustomTh>Link</CustomTh>
+              {/* <CustomTh>Department/Club</CustomTh> */}
+              <CustomTh>Edit certificate details</CustomTh>
+              <CustomTh>Edit participant details</CustomTh>
+
             </Tr>
           </Thead>
           <Tbody>
-            {table.map((timetable) => (
-              <Tr key={timetable._id}>
-                <Td><Center>{timetable.name}</Center></Td>
-                <Td><Center>{timetable.user}</Center></Td>
-                <Td><Center>{timetable.date}</Center></Td>
-                <Td><Center>
+            {table.map((event) => (
+              <Tr key={event._id}>
+                <Td><Center>{event.name}</Center></Td>
+                <Td><Center>{event.ExpiryDate}</Center></Td>
+                {/* <Td><Center>{event.date}</Center></Td> */}
+                <Td>
+                  <Center>
                 <CustomLink
-                href={`http://${domainName}/cm/${timetable._id}`}
+                href={`http://${domainName}/cm/${event._id}`}
                 target="_blank" // Optional: If you want to open the link in a new tab
               >
-                {timetable.code}
+                {event.name} Certificates
+              </CustomLink></Center>
+                </Td>
+                <Td>
+                  <Center>
+                <CustomLink
+                href={`http://${domainName}/cm/${event._id}/addparticipant`}
+                target="_blank" // Optional: If you want to open the link in a new tab
+              >
+                {event.name} participants
               </CustomLink></Center>
                 </Td>
               </Tr>

@@ -7,21 +7,24 @@ const CertificateSchema = new mongoose.Schema({
     type: Array,
     
   },
-  Header: {
+  header: {
     type: Array,
     
   },
-  Body: {
+  body: {
     type: String,
     
   }, 
-  Footer: {
+  footer: {
     type: Array,
     
   },
-  Signatures: {
+  signatures: {
     type: Array,
     
+  },
+  eventId: {
+    type: String,
   },
 });
 

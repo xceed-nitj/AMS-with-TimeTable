@@ -13,21 +13,21 @@ const addEventSchema = new mongoose.Schema({
     type: String,
     
   },
-  ExpiryDate: {
+  expiryDate: {
     type: Date,
     
   }, 
-  ParticipantType:{
+  participantType:{
     type: String,
     
     enum: participantTypes,
   },
-  OrganiserType: {
+  organiserType: {
     type: String,
     
     enum: organiserTypes,
   },
-  EventType:{
+  eventType:{
     type: String,
     
   }

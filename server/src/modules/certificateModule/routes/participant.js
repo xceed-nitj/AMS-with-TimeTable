@@ -4,10 +4,10 @@ const ParticipantController = require("../controllers/participant");
 const participantController = new ParticipantController();
 
 // Route to create a new participant
-participantRouter.post("/", async (req, res) => {
+participantRouter.post("/addparticipant/:eventId", async (req, res) => {
   try {
     const newparticipant=await participantController.addparticipant(req, res);
-    return res.status(200).json(newparticipant);
+    // return res.status(200).json(newparticipant);
   } 
   catch (e) {
     res
@@ -17,7 +17,7 @@ participantRouter.post("/", async (req, res) => {
 });
 
 // Route to get all participants
-participantRouter.get("/", async (req, res) => {
+participantRouter.get("/getparticipant/:eventId", async (req, res) => {
   try {
     const allParticipants = await participantController.getAllparticipants(req, res);
     return res.status(200).json(allParticipants);
@@ -44,7 +44,7 @@ participantRouter.get("/:participantId", async (req, res) => {
 });
 
 // Route to update a specific participant by ID
-participantRouter.put('/:participantId', async (req, res) => {
+participantRouter.put('/addparticipant/:participantId', async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     const updatedParticipant = req.body;
@@ -59,7 +59,7 @@ participantRouter.put('/:participantId', async (req, res) => {
 });
 
 // Route to delete a specific participant by ID
-participantRouter.delete("/:participantId", async (req, res) => {
+participantRouter.delete("/deleteparticipant/:participantId", async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     await participantController.deleteparticipantById(participantId);

@@ -19,13 +19,9 @@ const ParticipantSchema = new mongoose.Schema({
   }, 
   types:{
     type: String,
-    
-    enum: participantTypes,
-  },
+   },
   position: {
-    type: Number,
-    
-    enum: organiserTypes,
+    type: String,
   },
   title1:{
     type: String,
@@ -35,6 +31,11 @@ const ParticipantSchema = new mongoose.Schema({
     type: String,
     
   },
+  eventId:{
+    type: String,
+    
+  },
+  
 });
 
 ParticipantSchema.add(commonFields);

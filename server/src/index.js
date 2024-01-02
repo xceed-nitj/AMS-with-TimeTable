@@ -65,6 +65,9 @@ app.use(express.static(path.join(__dirname + "/../../client/dist")));
 const certificateModule = require("./modules/certificateModule/routes/index");
 app.use("/certificatemodule", certificateModule);
 
+const conferenceModule = require("./modules/confrenceModule/routes/index");
+app.use("/conferencemodule", conferenceModule);
+
 const timetableModule = require("./modules/timetableModule/routes/index");
 app.use("/timetablemodule", timetableModule);
 

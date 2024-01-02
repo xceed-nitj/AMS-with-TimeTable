@@ -15,7 +15,7 @@ import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
-import Navbar from './components/navbar';
+import Navbar from './components/home/Navbar';
 import PrintSummary from './timetableadmin/printSummary'
 import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
@@ -30,11 +30,17 @@ import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
+import ViewInstituteLoad from './timetableadmin/viewinstituteload';
+
 import MergePDFComponent from './filedownload/mergepdfdocuments';
+
+import Home from './pages/Home'
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
-import Home from './pages/Home';
-
+import CertificateForm from './certificatemodule/pages/certificatedesign';
+import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
+import ServicePage from './pages/Service';
+import Participant from './certificatemodule/pages/participantdataupload';
 
 import HomeConf from './conferencemodule/Tabs/HomeConf';
 import Sidebar from './conferencemodule/components/Sidebar';
@@ -62,8 +68,11 @@ function App() {
         <Navbar />
          
       <Routes>
-        <Route path="/" element={<Home/>} />
-        
+        {/* Landing Page */}
+        <Route path="/" element={<Home />} />
+          <Route path='/services/:serviceId' element={<ServicePage/>} />
+        {/* ********* */}
+
         <Route path="/login" element={<Login/>} />
         <Route path="/forgot-password" element={<ForgotPassword/>} />
 
@@ -97,10 +106,14 @@ function App() {
           <Route path="/tt/admin" element={<AdminPage/>}/>
           <Route path="/tt/masterview" element={<MasterView/>}/>
           <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
+          <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad/>}/>
+         
           <Route path="/tt/:generatedLink/generatepdf/mergepdf" element={<MergePDFComponent />} />
 
           <Route path="/cm/addevent" element={<EventRegistration />} />
           <Route path="/cm/dashboard" element={<CMDashboard />} />
+          <Route path="/cm/:eventid" element={<CertificateForm/>}/>
+          <Route path="/cm/:eventid/addparticipant" element={<Participant/>}/>
 
           {/* Conference Module Admin-Panel */}
           
