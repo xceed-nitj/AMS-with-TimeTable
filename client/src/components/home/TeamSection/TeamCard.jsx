@@ -1,39 +1,45 @@
-const TeamCard = ({ name, designation, image, github, linkedin, twitter }) => {
+import clsx from 'clsx';
+// import useMousePosition from '../../../hooks/useMousePosition';
+import { useMouse } from '@uidotdev/usehooks';
+
+const TeamCard = ({ name, designation, image, github, linkedin, variant }) => {
+  const [mouse, ref] = useMouse();
+  const xIntersecting = mouse.elementX > 0;
+  const yIntersecting = mouse.elementY > 0;
+  const isIntersecting = xIntersecting && yIntersecting;
+
   return (
-    <div className="tw-flex tw-flex-col tw-items-center tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-shadow sm:tw-flex-row md:tw-max-w-xl hover:tw-bg-gray-100 dark:tw-border-gray-700 dark:tw-bg-gray-800 dark:hover:tw-bg-gray-700 tw-gap-3">
+    <div
+      ref={ref}
+      className={clsx(
+        'tw-relative tw-flex tw-flex-col tw-items-center tw-border tw-rounded-lg tw-shadow sm:tw-flex-row md:tw-max-w-xl tw-border-gray-700 tw-bg-gray-800 tw-gap-3 tw-overflow-hidden',
+        variant === 'faculty' && 'tw-border-cyan-400 tw-bg-transparent'
+      )}
+    >
+      {/* Hover element */}
+      <div
+        className={clsx(
+          'tw-h-14 tw-w-14 tw-rounded-full tw-absolute tw-bg-cyan-400 tw-mix-blend-screen tw-blur-xl tw-top-1 tw-right-1 tw-opacity-0 tw-transition-transform tw-pointer-events-none',
+          isIntersecting && 'tw-scale-[2] tw-opacity-100'
+        )}
+        style={{
+          left: `${mouse.elementX}px`,
+          top: `${mouse.elementY}px`,
+        }}
+      ></div>
       <img
-        className="tw-object-cover tw-w-full lg:tw-w-[40%] tw-rounded-t-lg tw-h-40  md:tw-w-48 md:tw-rounded-none md:tw-rounded-s-lg"
+        className="tw-object-cover tw-w-full lg:tw-w-[40%] tw-rounded-t-lg tw-h-full  md:tw-w-[40%] md:tw-rounded-none md:tw-rounded-s-lg"
         src={image}
         alt=""
       />
       <div className="tw-flex tw-flex-col tw-text-center md:tw-text-left tw-mt-2">
-        <h5 className="tw-mb-1 tw-text-xl lg:tw-text-2xl tw-font-medium tw-text-gray-900 dark:tw-text-white">
+        <h5 className="tw-mb-1 tw-text-xl xl:tw-text-2xl tw-font-medium tw-text-gray-900 dark:tw-text-white">
           {name}
         </h5>
         <p className="tw-text-sm tw-text-gray-500 dark:tw-text-gray-400">
           {designation}
         </p>
-        <div className="tw-flex tw-mt-3 tw-mb-5 tw-space-x-5">
-          <a
-            href={twitter}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="tw-inline-block tw-text-gray-400"
-          >
-            <span className="tw-sr-only">Twitter</span>
-            <svg
-              stroke="currentColor"
-              fill="currentColor"
-              strokeWidth={0}
-              viewBox="0 0 512 512"
-              className="tw-size-6 tw-text-gray-400 hover:tw-text-cyan-600 dark:hover:tw-text-cyan-300"
-              height="1em"
-              width="1em"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"></path>
-            </svg>
-          </a>
+        <div className="tw-flex tw-items-center md:tw-justify-start tw-justify-center tw-mt-3 tw-mb-5 tw-space-x-5">
           <a
             href={github}
             target="_blank"
@@ -46,7 +52,7 @@ const TeamCard = ({ name, designation, image, github, linkedin, twitter }) => {
               fill="currentColor"
               strokeWidth={0}
               viewBox="0 0 496 512"
-              className="tw-w-6 tw-h-6 tw-text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-300"
+              className="tw-w-6 tw-h-6 tw-text-gray-400 hover:tw-text-white tw-transition-all"
               height="1em"
               width="1em"
               xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +72,7 @@ const TeamCard = ({ name, designation, image, github, linkedin, twitter }) => {
               fill="currentColor"
               strokeWidth={0}
               viewBox="0 0 448 512"
-              className="tw-w-6 tw-h-6 tw-text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-300"
+              className="tw-w-6 tw-h-6 tw-text-gray-400 hover:tw-text-sky-400 tw-transition-all"
               height="1em"
               width="1em"
               xmlns="http://www.w3.org/2000/svg"

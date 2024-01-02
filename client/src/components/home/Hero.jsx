@@ -26,7 +26,7 @@ const Hero = () => {
         </h3>
         <p className="tw-mb-8 tw-text-lg tw-font-normal tw-text-gray-500 lg:tw-text-xl sm:tw-px-16 xl:tw-px-48 dark:tw-text-gray-400">
           Here at XCEED-NITJ we are not just a developer community; we are a hub of innovation,
-          collaboration, and excellence. From developing official college
+          collaboration, and excellence. From developing official institute
           projects to pioneering initiatives that redefine the digital
           landscape of NITJ, XCEED stands as a testament to the prowess of our NITJ student
           community.
