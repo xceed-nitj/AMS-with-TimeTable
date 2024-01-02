@@ -1,6 +1,6 @@
 const express = require("express");
 const { Router } = express;
-const participant = require("../models/participant");
+const participant = require("../../../models/conferenceModule/participant");
 const ParticipantController = require("../crud/participant");
 
 const participantController = new ParticipantController();

@@ -1,4 +1,4 @@
-const Home = require(".../../../models/conferenceModule/home");
+const Home = require("../../../models/conferenceModule/home");
 const HttpException = require("../../../models/conferenceModule/http-exception");
 
 class HomeController {

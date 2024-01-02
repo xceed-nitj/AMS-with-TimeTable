@@ -1,6 +1,6 @@
 const express = require("express");
 const { Request, Response } = require("express");
-const Image = require("../models/images");
+const Image = require("../../../models/conferenceModule/images");
 const ImagesController = require("../crud/images");
 
 const router = express.Router();

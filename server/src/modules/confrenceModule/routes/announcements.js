@@ -1,5 +1,5 @@
 const express = require("express");
-const Announcement = require("../models/announcements");
+const Announcement = require("../../../models/conferenceModule/announcements");
 
 const AnnouncementController = require("../crud/announcement");
 

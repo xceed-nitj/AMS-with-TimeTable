@@ -1,4 +1,4 @@
-const Awards = require("../models/awards");
+const Awards = require("../../../models/conferenceModule/awards");
 const HttpException = require("../../../models/conferenceModule/http-exception");
 
 class AwardsController {

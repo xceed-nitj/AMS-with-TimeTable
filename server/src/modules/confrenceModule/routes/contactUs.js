@@ -1,6 +1,6 @@
 const express = require("express");
 const { Request, Response } = require("express");
-const ContactUs = require("../models/contactUs");
+const ContactUs = require("../../../models/conferenceModule/contactUs");
 const ContactUsController = require("../crud/contactUs");
 
 const router = express.Router();
