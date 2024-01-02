@@ -134,9 +134,32 @@ console.log(type)
 // Now, mergedSummaryData contains the merged entries with original keys
 // console.log('merged data', mergedSummaryData);
 
-const sortedSummary = Object.values(mergedSummaryData).sort((a, b) =>
-  a.subCode.localeCompare(b.subCode)
-);
+const sortedSummary = Object.values(mergedSummaryData).sort((a, b) => {
+  const subCodeComparison = a.subCode.localeCompare(b.subCode);
+
+  if (subCodeComparison !== 0) {
+    return subCodeComparison;
+  }
+
+  const subtypePriority = (subType) => {
+    switch (subType.toLowerCase()) {
+      case 'theory':
+        return 0;
+      case 'tutorial':
+        return 1;
+      case 'laboratory':
+        return 2;
+      default:
+        return 3; // If there are other subtypes, place them at the end
+    }
+  };
+
+  const aPriority = subtypePriority(a.subType);
+  const bPriority = subtypePriority(b.subType);
+
+  return aPriority - bPriority;
+});
+
 // console.log('sorted data', sortedSummary );
 
 // let sortedSummaryEntries={};
