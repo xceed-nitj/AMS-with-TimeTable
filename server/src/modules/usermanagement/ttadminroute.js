@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const getUserDetails = require('./dto');
-const jwtSecret = "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab"; // Replace with your actual secret
+const jwt = require("jsonwebtoken");
+const getUserDetails = require("./controllers/dto");
+const jwtSecret =
+  "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab"; // Replace with your actual secret
 
 // Middleware to protect the route and verify the token
 async function ttadminRoute(req, res, next) {
@@ -10,7 +11,7 @@ async function ttadminRoute(req, res, next) {
   // console.log(token)
 
   if (!token) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
@@ -25,7 +26,9 @@ async function ttadminRoute(req, res, next) {
     console.log(user);
 
     if (!user.role || !user.role.includes("ITTC")) {
-      return res.status(401).json({ message: 'Only admins are authorized to access' });
+      return res
+        .status(401)
+        .json({ message: "Only admins are authorized to access" });
     }
 
     // Attach the user details to the 'req' object
@@ -37,7 +40,7 @@ async function ttadminRoute(req, res, next) {
     // Allow the request to proceed
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 }
 

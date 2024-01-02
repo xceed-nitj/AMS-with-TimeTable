@@ -17,6 +17,9 @@ const CommonLoad = require("../../../models/commonLoad");
 const MasterSem = require("../../../models/mastersem");
 const Subject = require("../../../models/subject");
 const Faculty = require("../../../models/faculty");
+const { Mutex } = require('async-mutex');
+
+const calculationMutex = new Mutex();
 
 
 class InstituteLoadController {
@@ -44,12 +47,23 @@ class InstituteLoadController {
           res.status(500).json({ error: "Internal server error" });
         }
       }
+      // let isCalculating = false;
     
       async calculateInstituteLoad(req, res) {
+        // const release = await calculationMutex.acquire();
         try {
+          
+      
+          // if (!release()) {
+          //   // If the lock is not acquired, it means another calculation is in progress
+          //   res.status(409).json({ message: "Calculation already in progress" });
+          //   return;
+          // }
+          
           const currentSession = req.params.session; 
           const allcodes = await TimeTableDto.getAllCodesOfSession(currentSession);
           console.log('All Codes:', allcodes);
+          console.log('user name:',req.user);
           await instituteLoad.deleteMany({ session: currentSession });
       
           for (const code of allcodes) {
@@ -76,7 +90,7 @@ class InstituteLoadController {
                   {
                     $push: {
                       sem: semDetails[0].type,
-                      type: [subDetails[0].type]?[subDetails[0].type]:null,
+                      type: subDetails[0].type?subDetails[0].type:null,
                       load: data.hrs, // You can modify this based on your actual structure
                     },
                   }

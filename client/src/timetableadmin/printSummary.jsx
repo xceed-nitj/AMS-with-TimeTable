@@ -528,9 +528,32 @@ function generateSummary(timetableData, subjectData, type, headTitle, commonLoad
 // Now, mergedSummaryData contains the merged entries with original keys
 // console.log('merged data', mergedSummaryData);
 
-const sortedSummary = Object.values(mergedSummaryData).sort((a, b) =>
-  a.subCode.localeCompare(b.subCode)
-);
+const sortedSummary = Object.values(mergedSummaryData).sort((a, b) => {
+  const subCodeComparison = a.subCode.localeCompare(b.subCode);
+
+  if (subCodeComparison !== 0) {
+    return subCodeComparison;
+  }
+
+  const subtypePriority = (subtype) => {
+    switch (subtype.toLowerCase()) {
+      case 'theory':
+        return 0;
+      case 'tutorial':
+        return 1;
+      case 'laboratory':
+        return 2;
+      default:
+        return 3; // If there are other subtypes, place them at the end
+    }
+  };
+
+  const aPriority = subtypePriority(a.subType);
+  const bPriority = subtypePriority(b.subType);
+
+  return aPriority - bPriority;
+});
+
 
 let sortedSummaryEntries = { ...sortedSummary }; // Assuming sortedSummary is an existing object
 
@@ -559,6 +582,7 @@ if (commonLoad) {
   console.log('summary dataaaa',sortedSummaryEntries)
   return sortedSummaryEntries;
 }
+
 
 // Function to fetch and store data for all available semesters sequentially
 const fetchAndStoreTimetableDataForAllSemesters = async () => {
@@ -728,61 +752,6 @@ const fetchAndStoreTimetableDataForAllSemesters = async () => {
   
       };
 
-
-      // const fetchLoadAllocation = async () => {
-      //   const subjectData = await  fetchSubjectData(currentCode);
-      //     setDownloadStatus("fetchingHeadersFooters")
-          
-      //     const allFacultySummaries = [];
-      //     const fetchedttdetails=await fetchTTData(currentCode);
-      
-      
-      //     for (const faculty of availableFaculties) {
-      //       console.log(faculty);        
-      //       const {initialData,updateTime,notes} = await fetchFacultyData( currentCode, faculty);
-      //       const fetchedttdata= initialData;
-      //       const facultyNotes=notes;
-      //       // console.log('dataaaa faculty',fetchedttdata);        
-            
-      //       const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty',faculty); 
-      //       allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
-    
-      //       // console.log(summaryData)
-      //       const lockTime= updateTime;
-      //       setHeaderStatus("fetchingHeadersFooters")
-      //       const postData = {
-      //         session: fetchedttdetails[0].session,
-      //         name: faculty,
-      //         type: 'faculty',
-      //         timeTableData: fetchedttdata,
-      //         summaryData: summaryData,
-      //         updatedTime: lockTime,
-      //         TTData:fetchedttdetails,
-      //         headTitle: faculty,
-      //       };
-      //       // console.log(postData);
-      //       console.log('All Faculty Summaries:', allFacultySummaries);
-      //       // setNoteStatus("fetchingNotes")
-    
-      //       setDownloadStatus("preparingDownload")
-      //       setPrepareStatus("preparingDownload")
-    
-      //       // downloadPDF(fetchedttdata,summaryData,'faculty',fetchedttdetails,lockTime,faculty,facultyNotes);
-      //       setDownloadStatus("downloadStarted")
-      //       setStartStatus("downloadStarted")
-    
-      //       setTimetableData(fetchedttdata);
-      //       setSummaryData(summaryData);
-      //       setType(type);
-      //       setUpdatedTime(lockTime);
-      //       setHeadTitle(faculty);
-      
-      //     }
-      //     setCompleteStatus("downloadCompleted")    
-      //     generateSummaryTablePDF(allFacultySummaries, fetchedttdetails[0].session, fetchedttdetails[0].dept)
-    
-      //   };
-        
 
         const fetchDeptLoadAllocation = async () => {
           const subjectData = await  fetchSubjectData(currentCode);
