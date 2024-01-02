@@ -1,6 +1,6 @@
-const User = require("../../models/usermanagement/user");
+const User = require("../../../models/usermanagement/user");
 
-const OTP = require("../../models/usermanagement/otp");
+const OTP = require("../../../models/usermanagement/otp");
 const otpGenerator = require("otp-generator");
 
 const fs = require("fs");

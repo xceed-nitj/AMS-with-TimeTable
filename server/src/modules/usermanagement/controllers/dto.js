@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-const User = require("../../models/usermanagement/user");
+const User = require("../../../models/usermanagement/user");
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 // Function to get user details based on the user ID
 async function getUserDetails(userId) {
@@ -17,8 +17,8 @@ async function getUserDetails(userId) {
     // You can select the fields you want to retrieve
     const userDetails = {
       email: user.email,
-      role:user.role,
-      id:user.id
+      role: user.role,
+      id: user.id,
       // Add more fields as needed
     };
 
