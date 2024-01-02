@@ -1,34 +1,52 @@
 const HttpException = require("../../../models/http-exception");
 const participant = require("../../../models/certificateModule/participant");
-const csv = require('csv-parser');
-const { Readable } = require('stream');
+const csv = require("csv-parser");
+const { Readable } = require("stream");
 
 class AddparticipantController {
-  async addparticipant(fileBuffer,eventId) {
+  async addBatchparticipant(fileBuffer, eventId) {
     try {
-      if(!eventId)
-        throw new HttpException(400,'Event Id is missing')
+      if (!eventId) throw new HttpException(400, "Event Id is missing");
 
-    // Read the CSV file using csv-parser
-    const csvData = [];
+      // Read the CSV file using csv-parser
+      const csvData = [];
 
-    const bufferStream=Readable.from([fileBuffer])
+      const bufferStream = Readable.from([fileBuffer]);
 
-    bufferStream
-      .pipe(csv())
-      .on('data', (row) => {
-        // Process each row of the CSV and add it to the array
-        csvData.push({...row,eventId:eventId});
-      })
-      .on('end', async () => {
-  
-        await participant.insertMany(csvData)
-      })
-      .on('error', (error) => {
-        // Handle errors during the CSV file reading process
-        console.error('Error reading CSV file:', error.message);
+      bufferStream
+        .pipe(csv())
+        .on("data", (row) => {
+          // Process each row of the CSV and add it to the array
+          csvData.push({ ...row, eventId: eventId });
+        })
+        .on("end", async () => {
+          await participant.insertMany(csvData);
+        })
+        .on("error", (error) => {
+          // Handle errors during the CSV file reading process
+          console.error("Error reading CSV file:", error.message);
+        });
+    } catch (e) {
+      throw new HttpException(500, e);
+    }
+  }
+
+  async addparticipant(newparticipant,eventId) {
+    
+    try {
+      // If not exists, create a new certificate
+      const createdCertificate = await participant.create({
+        name: newparticipant.name,
+        department: newparticipant.department,
+        college: newparticipant.college,
+        types: newparticipant.types,
+        position: newparticipant.position,
+        title1: newparticipant.title1,
+        title2: newparticipant.title2,
+        eventId: eventId,
       });
 
+      return createdCertificate;
     } catch (e) {
       throw new HttpException(500, e);
     }
@@ -36,7 +54,8 @@ class AddparticipantController {
 
   async getAllparticipants(eventId) {
     try {
-      const participantList = await participant.find({ eventId:eventId });
+      if (!eventId) throw new HttpException(400, "Event Id not provided");
+      const participantList = await participant.find({ eventId: eventId });
       return participantList;
     } catch (e) {
       throw new HttpException(500, e);

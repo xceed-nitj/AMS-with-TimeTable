@@ -2,20 +2,57 @@ const HttpException = require("../../../models/http-exception");
 const certificate = require("../../../models/certificateModule/certificate");
 
 class AddcertificateController {
-  async addcertificate(data) {
+  async addcertificate(eventId,newCertificate) {
+    
     try {
-      await certificate.create(data);
+
+      // Check if a certificate with the given event ID already exists
+      const existingCertificate = await certificate.findOne({
+        eventId: eventId,
+      });
+
+      if (existingCertificate) {
+        // If exists, update the existing certificate
+        const updatedCertificate=await certificate.updateOne(
+          { eventId: eventId },
+          {new: true},
+          {
+            $set: {
+              logos: newCertificate.logos,
+              header: newCertificate.header,
+              body: newCertificate.body,
+              footer: newCertificate.footer,
+              signatures: newCertificate.signatures,
+            },
+          }
+        );
+        
+        return updatedCertificate
+       
+      } else {
+        // If not exists, create a new certificate
+        const createdCertificate = await certificate.create({
+          logos: newCertificate.logos,
+          header: newCertificate.header,
+          body: newCertificate.body,
+          footer: newCertificate.footer,
+          signatures: newCertificate.signatures,
+          eventId: eventId,
+        });
+
+        return createdCertificate
+      }
     } catch (e) {
-      throw new HttpException(500, e);
+      throw new HttpException(500,e)
     }
   }
 
-  async getAllcertificates(eventId) {
+  async getAllcertificates() {
     try {
-      const certificateList = await certificate.find({eventId:eventId});
+      const certificateList = await certificate.find();
       return certificateList;
     } catch (e) {
-      throw new HttpException(500, e);
+      throw new HttpException(500,e)
     }
   }
 
@@ -28,7 +65,19 @@ class AddcertificateController {
       if (!data) throw new HttpException(400, "certificate does not exist");
       return data;
     } catch (e) {
-      throw new HttpException(500, e);
+      throw new HttpException(500, e.message || "Internal Server Error");
+    }
+  }
+  async getcertificateByEventId(id) {
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    try {
+      const data = await certificate.find({ eventId: id });
+      if (!data) throw new HttpException(400, "certificate does not exist");
+      return data;
+    } catch (e) {
+      throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 
@@ -43,7 +92,7 @@ class AddcertificateController {
       );
       return updatedcertificate;
     } catch (e) {
-      throw new HttpException(500, e);
+      throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 
@@ -54,7 +103,7 @@ class AddcertificateController {
     try {
       await certificate.findByIdAndDelete(id);
     } catch (e) {
-      throw new HttpException(500, e);
+      throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
 }

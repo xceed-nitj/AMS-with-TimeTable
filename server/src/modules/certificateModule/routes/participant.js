@@ -15,11 +15,11 @@ const storage = multer.memoryStorage({
 
 const upload = multer({ storage: storage });
 
-// Route to create a new participant
+// Route to create a new Batch participant
 participantRouter.post("/",upload.single('csvfile'), async (req, res) => {
   try {
     const fileBuffer = req.file.buffer;
-    await participantController.addparticipant(fileBuffer,req.query?.eventId);
+    await participantController.addBatchparticipant(fileBuffer,req.query?.eventId);
     return res.status(200).json({message: 'Data added succesfully'});
   } 
   catch (e) {
@@ -29,14 +29,27 @@ participantRouter.post("/",upload.single('csvfile'), async (req, res) => {
   }
 });
 
-// Route to get all participants
-participantRouter.get("/", async (req, res) => {
+// Route to create a new participant
+participantRouter.post("/addparticipant/:eventId", async (req, res) => {
   try {
-    const allParticipants = await participantController.getAllparticipants(req.query?.eventId);
+    const newparticipant=await participantController.addparticipant(req.body);
+    return res.status(200).json(newparticipant);
+  } 
+  catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+// Route to get all participants
+participantRouter.get("/getparticipant/:eventId", async (req, res) => {
+  try {
+    const allParticipants = await participantController.getAllparticipants(req.params?.eventId);
     return res.status(200).json(allParticipants);
   } 
   catch (e) {
-    return res
+    res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
@@ -50,14 +63,14 @@ participantRouter.get("/:participantId", async (req, res) => {
     return res.status(200).json(participant);
   }
    catch (e) {
-    return res
+    res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
 });
 
 // Route to update a specific participant by ID
-participantRouter.put('/:participantId', async (req, res) => {
+participantRouter.put('/addparticipant/:participantId', async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     const updatedParticipant = req.body;
@@ -65,21 +78,21 @@ participantRouter.put('/:participantId', async (req, res) => {
    return res.status(200).json(updatedone);
   } 
   catch (e) {
-    return res
+    res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
 });
 
 // Route to delete a specific participant by ID
-participantRouter.delete("/:participantId", async (req, res) => {
+participantRouter.delete("/deleteparticipant/:participantId", async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     await participantController.deleteparticipantById(participantId);
-    return res.status(200).json({ response: "Participant deleted successfully" });
+    res.status(200).json({ response: "Participant deleted successfully" });
   } 
   catch (e) {
-    return res
+    res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
