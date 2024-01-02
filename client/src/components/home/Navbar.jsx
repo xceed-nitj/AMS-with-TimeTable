@@ -115,7 +115,7 @@ export default function Navbar() {
   }
   
   return (
-    <nav className="tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700" style={{ zIndex: 9999 }}>
+    <nav className={`tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700 ${navbarOpen ? 'tw-h-screen' : ''}`} style={{ zIndex: 9999 }}>
       <div className="tw-max-w-screen-xl tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-mx-auto tw-p-4">
         <Link
           to="/"
@@ -142,7 +142,7 @@ export default function Navbar() {
           )}
           id="navbar-default"
         >
-          <ul className="tw-list-none tw-h-8 tw-font-medium tw-flex tw-flex-col tw-items-center tw-p-4 md:tw-p-0 tw-mt-4 tw-border tw-rounded-lg tw-space-y-5 md:tw-space-y-0 md:tw-flex-row md:tw-space-x-8 rtl:tw-space-x-reverse md:tw-mt-0 md:tw-border-0 tw-bg-gray-900 tw-border-gray-700">
+          <ul className="tw-font-medium tw-flex tw-flex-col tw-items-center tw-p-4 md:tw-p-0 tw-mt-4 tw-border tw-rounded-lg tw-space-y-5 md:tw-space-y-0 md:tw-flex-row md:tw-space-x-8 rtl:tw-space-x-reverse md:tw-mt-0 md:tw-border-0 tw-bg-gray-900 tw-border-gray-700">
             <li>
               <a
                 href="/"
