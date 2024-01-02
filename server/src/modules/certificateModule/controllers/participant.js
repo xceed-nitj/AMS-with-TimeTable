@@ -1,11 +1,39 @@
 const HttpException = require("../../../models/http-exception");
 const participant = require("../../../models/certificateModule/participant");
+const csv = require("csv-parser");
+const { Readable } = require("stream");
 
 class AddparticipantController {
-  async addparticipant(req, res) {
-    const newparticipant = req.body;
-  try {
-    const eventId = req.params.eventId;
+  async addBatchparticipant(fileBuffer, eventId) {
+    try {
+      if (!eventId) throw new HttpException(400, "Event Id is missing");
+
+      // Read the CSV file using csv-parser
+      const csvData = [];
+
+      const bufferStream = Readable.from([fileBuffer]);
+
+      bufferStream
+        .pipe(csv())
+        .on("data", (row) => {
+          // Process each row of the CSV and add it to the array
+          csvData.push({ ...row, eventId: eventId });
+        })
+        .on("end", async () => {
+          await participant.insertMany(csvData);
+        })
+        .on("error", (error) => {
+          // Handle errors during the CSV file reading process
+          console.error("Error reading CSV file:", error.message);
+        });
+    } catch (e) {
+      throw new HttpException(500, e);
+    }
+  }
+
+  async addparticipant(newparticipant,eventId) {
+    
+    try {
       // If not exists, create a new certificate
       const createdCertificate = await participant.create({
         name: newparticipant.name,
@@ -13,37 +41,26 @@ class AddparticipantController {
         college: newparticipant.college,
         types: newparticipant.types,
         position: newparticipant.position,
-        title1:newparticipant.title1,
-        title2:newparticipant.title2,           
+        title1: newparticipant.title1,
+        title2: newparticipant.title2,
         eventId: eventId,
       });
 
-      return res.status(201).json({ message: "Participant created successfully", data: createdCertificate });
+      return createdCertificate;
+    } catch (e) {
+      throw new HttpException(500, e);
     }
-   catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error", details: error.message });
   }
-}
 
-
-
-  async getAllparticipants(req, res) {
+  async getAllparticipants(eventId) {
     try {
-      const eventId= req.params.eventId;
-      const participantList = await participant.find({eventId:eventId});
+      if (!eventId) throw new HttpException(400, "Event Id not provided");
+      const participantList = await participant.find({ eventId: eventId });
       return participantList;
-    } 
-    catch (e) {
-      console.error(e);
-  
-      // Check if 'e' is an object with 'status' and 'message' properties
-      const errorMessage = (e && e.status) ? e.message : "Internal server error";
-      const statusCode = (e && e.status) ? e.status : 500;
-  
-      res.status(statusCode).json({ error: errorMessage });
+    } catch (e) {
+      throw new HttpException(500, e);
     }
-    }
+  }
 
   async getparticipantById(id) {
     if (!id) {
@@ -53,9 +70,8 @@ class AddparticipantController {
       const data = await participant.findById(id);
       if (!data) throw new HttpException(400, "participant does not exist");
       return data;
-    } 
-    catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 
@@ -64,11 +80,13 @@ class AddparticipantController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const updatedparticipant=await participant.findByIdAndUpdate(id, participantData);
+      const updatedparticipant = await participant.findByIdAndUpdate(
+        id,
+        participantData
+      );
       return updatedparticipant;
-    } 
-    catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 
@@ -78,8 +96,7 @@ class AddparticipantController {
     }
     try {
       await participant.findByIdAndDelete(id);
-    } 
-    catch (e) {
+    } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }

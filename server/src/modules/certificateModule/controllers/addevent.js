@@ -2,45 +2,33 @@ const HttpException = require("../../../models/http-exception");
 const addEvent = require("../../../models/certificateModule/addevent");
 
 class AddEventController {
-  async addEvent(req, res) {
-    const newEvent = req.body;
+  async addEvent(data) {
     try {
-      console.log('Request Body:', newEvent);  
-      const createdEvent = await addEvent.create(newEvent);
-      res.json(createdEvent);
-      return;
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal server error", details: error.message });
+      await addEvent.create(data);
+    } catch (e) {
+      throw new HttpException(500, e);
     }
   }
 
-  async getAllEvents(req, res) {
+  async getAllEvents() {
     try {
       const eventList = await addEvent.find();
-      console.log("Fetching events");
-      res.json(eventList);
+      return eventList;
     } catch (e) {
-      console.error(e);
-  
-      // Check if 'e' is an object with 'status' and 'message' properties
-      const errorMessage = (e && e.status) ? e.message : "Internal server error";
-      const statusCode = (e && e.status) ? e.status : 500;
-  
-      res.status(statusCode).json({ error: errorMessage });
+      throw new HttpException(500, e);
     }
-    }
+  }
 
   async getEventById(id) {
     if (!id) {
-      throw new HttpException(400, "Invalid Id");
+      throw new HttpException(400, "Id not provided");
     }
     try {
       const data = await addEvent.findById(id);
       if (!data) throw new HttpException(400, "Event does not exist");
       return data;
     } catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+      throw new HttpException(500, e);
     }
   }
 
@@ -51,7 +39,7 @@ class AddEventController {
     try {
       await addEvent.findByIdAndUpdate(id, eventData);
     } catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+      throw new HttpException(500, e);
     }
   }
 
@@ -62,7 +50,7 @@ class AddEventController {
     try {
       await addEvent.findByIdAndDelete(id);
     } catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+      throw new HttpException(500, e);
     }
   }
 
@@ -71,17 +59,13 @@ class AddEventController {
       throw new HttpException(400, "Invalid User");
     }
     try {
-      console.log(user)
-      const data = await addEvent.find({user:user.id});
+      const data = await addEvent.find({ user: user });
       if (!data) throw new HttpException(400, "Event does not exist");
       return data;
     } catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+      throw new HttpException(500, e);
     }
   }
-
-
-
 }
 
 module.exports = AddEventController;
