@@ -177,12 +177,13 @@ function ViewInstituteLoad() {
     data.forEach((faculty) => {
       const { name, sem, type, load , designation} = faculty;
       // facultyDesignation[name]=designation ||{};
-      const trimmedtype=type.trim().lowercase();
+      const trimmedType = (type || '').toString().trim().toLowerCase();
+      // const trimmedType={type};
       facultyWiseLoad[name] = facultyWiseLoad[name] || {};
       // facultyWiseLoad[designation] = facultyWiseLoad[designation] || {};
   
       sem.forEach((s, index) => {
-        const t = trimmedtype[index];
+        const t = trimmedType[index];
         const l = load[index];
   
         console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
@@ -422,7 +423,7 @@ function ViewInstituteLoad() {
   {
     [ ...Usemesters ].map((semester) =>
       types.reduce((sum, type) => {
-        if (type.trim().toLowerCase() === 'theory') {
+        if (type.toLowerCase() === 'theory') {
           const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
           const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
           return sum + adjustedLoadValue;
