@@ -12,7 +12,7 @@ const ttadminRoute =require("../../usermanagement/ttadminroute");
 
 InstituteLoadRouter.post("/", async (req, res) => {
     try {
-      await instituteLoadController.AddInstituteLoad(req, res);
+      await InstituteLoadController.AddInstituteLoad(req, res);
     } catch (e) {
       res
         .status(e?.status || 500)

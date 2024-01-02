@@ -50,15 +50,15 @@ class InstituteLoadController {
       // let isCalculating = false;
     
       async calculateInstituteLoad(req, res) {
-        const release = await calculationMutex.acquire();
+        // const release = await calculationMutex.acquire();
         try {
           
       
-          if (!release()) {
-            // If the lock is not acquired, it means another calculation is in progress
-            res.status(409).json({ message: "Calculation already in progress" });
-            return;
-          }
+          // if (!release()) {
+          //   // If the lock is not acquired, it means another calculation is in progress
+          //   res.status(409).json({ message: "Calculation already in progress" });
+          //   return;
+          // }
           
           const currentSession = req.params.session; 
           const allcodes = await TimeTableDto.getAllCodesOfSession(currentSession);
@@ -170,9 +170,6 @@ class InstituteLoadController {
         } catch (error) {
           console.error(error); 
           res.status(500).json({ error: "Internal server error" });
-        }
-        finally {
-          release(); // Release the lock in all cases (success or error)
         }
       }
       
