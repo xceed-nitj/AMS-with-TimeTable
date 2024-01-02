@@ -124,44 +124,44 @@ const Awards = () => {
 
     return (
         <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
-            <div className='tw-px-4 sm:tw-px-6 lg:tw-px-8'>
-                <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-8 tw-pt-6 tw-pb-8 tw-m-10 " autoComplete="off" onSubmit={handleSubmit}>
-                    <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center">Add a New Award</div>
-                    <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Title-1</label>
+            <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
+                <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " autoComplete="off" onSubmit={handleSubmit}>
+                    <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  ">Add a New Award</div>
+                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Title-1</label>
                     <input type="text" name="title1" required value={title1} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black " />
 
-                    <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Title-2</label>
+                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Title-2</label>
                     <input type="text" name="title2" value={title2} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
-                    <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Description</label>
+                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Description</label>
                     <input type="text" name="description" value={description} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
-                    <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Link</label>
+                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Link</label>
                     <input type="text" name="link" value={link} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
-                    <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
+                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
                     <select name="featured" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                         <option value={true}>Yes</option>
                         <option value={false}>No</option>
                     </select>
 
-                    <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">New</label>
+                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">New</label>
                     <select name="new" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                         <option value={true}>Yes</option>
                         <option value={false}>No</option>
                     </select>
 
-                    <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Hidden</label>
+                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Hidden</label>
                     <select name="hidden" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                         <option value={true}>Yes</option>
                         <option value={false}>No</option>
                     </select>
 
-                    <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Sequence<input
+                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Sequence<input
                         type="number"
                         name="sequence"
                         value={formData.sequence}
@@ -170,17 +170,17 @@ const Awards = () => {
                     /></label>
 
                     <div className="tw-flex tw-justify-evenly">
-                        <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add Award</button>
+                        <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add </button>
                         <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">
-                            Update Award
+                            Update 
                         </button>
                     </div>
                 </form>
 
                 <hr />
 
-                <div className="tw-shadow-md tw-m-10 ali">
-                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center">Added awards</div>
+                    <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
+                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  ">Added awards</div>
                     {loading ? (
                         <LoadingIcon />
                     ) : (
@@ -213,7 +213,7 @@ const Awards = () => {
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan="5" className="tw-p-1 tw-text-center">No data available</td>
+                                        <td colSpan="6" className="tw-p-1 tw-text-center">No data available</td>
                                     </tr>
                                 )}
                             </tbody>

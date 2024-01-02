@@ -115,65 +115,65 @@ const HomeConf = () => {
 
     return (
         <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
-            <div className='tw-px-4 sm:tw-px-6 lg:tw-px-8'>
+            <div className='tw-px-2 sm:tw-px-4 lg:tw-px-8'>
                 <div className="tw-block tw-box-border" >
 
-                    <form autoComplete="off" className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-8 tw-pt-6 tw-pb-8 tw-m-10 " onSubmit={handleSubmit}>
-                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center" >About Conference</div>
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1  tw-font-bold " >Name of Conference</label>
+                    <form autoComplete="off" className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " onSubmit={handleSubmit}>
+                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  " >About Conference</div>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1  tw-font-bold " >Name of Conference</label>
                         <input type="text" required name="confName" value={confName} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Starting Date of Conference</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Starting Date of Conference</label>
                         <input type="date" name="confStartDate" value={confStartDate} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Ending Date of Conference</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Ending Date of Conference</label>
                         <input type="date" name="confEndDate" value={confEndDate} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Description of Conference</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Description of Conference</label>
                         <input type="text" name="aboutConf" value={aboutConf} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">About Institute</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">About Institute</label>
                         <input type="text" name="aboutIns" value={aboutIns} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Youtube Link</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Youtube Link</label>
                         <input type="text" name="youtubeLink" value={youtubeLink} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Instagram Link</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Instagram Link</label>
                         <input type="text" name="instaLink" value={instaLink} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Facebook Link</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Facebook Link</label>
                         <input type="text" name="facebookLink" value={facebookLink} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Twitter Link</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Twitter Link</label>
                         <input type="text" name="twitterLink" value={twitterLink} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Logo</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Logo</label>
                         <input type="text" name="logo" value={logo} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">shortName</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">shortName</label>
                         <input type="text" name="shortName" value={shortName} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <div className="tw-flex tw-justify-evenly">
-                            <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Add</button>
-                            <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Update</button>
+                            <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 px-2  tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Add</button>
+                            <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 px-2 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Update</button>
                         </div>
                     </form>
 
                     <hr />
 
-                    <div className="tw-shadow-md   tw-m-10 ali">
-                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center" >Added Information</div>
+                    <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
+                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  " >Added Information</div>
                         {loading ? (
                             <LoadingIcon />
                         ) : (
@@ -192,8 +192,7 @@ const HomeConf = () => {
                                             <td className="tw-p-1 tw-text-center">{data.confName}</td>
                                             <td className="tw-p-1 tw-text-center">{data.confStartDate}</td>
                                             <td className="tw-p-1 tw-text-center">{data.confEndDate}</td>
-                                            <td className="tw-p-1 tw-text-center  tw-flex tw-justify-evenly">
-                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
+                                          <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
                                                 <button onClick={() => handleDelete(data._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Delete </button>
                                             </td>
                                         </tr>

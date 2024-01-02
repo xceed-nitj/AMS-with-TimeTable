@@ -99,29 +99,29 @@ const Participants = () => {
 
     return (
         <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
-            <div className='tw-px-4 sm:tw-px-6 lg:tw-px-8'>
+            <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
 
                 <div className="tw-block tw-box-border" >
 
-                    <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-8 tw-pt-6 tw-pb-8 tw-m-10 " autoComplete='off' onSubmit={handleSubmit}>
-                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center" >Add a New Participant</div>
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1  tw-font-bold " >Name</label>
+                    <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " autoComplete='off' onSubmit={handleSubmit}>
+                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  " >Add a New Participant</div>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1  tw-font-bold " >Name</label>
                         <input type="text" name="authorName" required value={authorName} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Designation</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Designation</label>
                         <input type="text" name="authorDesignation" required value={authorDesignation} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Institute</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Institute</label>
                         <input type="text" name="authorInstitute" required value={authorInstitute} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Paper Title</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Paper Title</label>
                         <input type="text" name="paperTitle" required value={paperTitle} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Paper Id</label>
+                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Paper Id</label>
                         <input type="text" name="paperId" required value={paperId} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
@@ -136,8 +136,8 @@ const Participants = () => {
 
                     <hr />
 
-                    <div className="tw-shadow-md tw-m-10 tw-ali">
-                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center" >Added Participants</div>
+                    <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
+                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  " >Added Participants</div>
                         {loading ? (
                             <LoadingIcon />
                         ) : (
@@ -157,8 +157,7 @@ const Participants = () => {
                                                 <td className="tw-p-1 tw-text-center">{item.authorDesignation}</td>
                                                 <td className="tw-p-1 tw-text-center">{item.authorInstitute}</td>
 
-                                                <td className="tw-p-1 tw-text-center  tw-flex tw-justify-evenly">
-                                                    <button onClick={() => {
+                                              <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                    <button onClick={() => {
                                                         handleEdit(item.id);
                                                         setEditID(item.id);
                                                     }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}

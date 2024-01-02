@@ -126,9 +126,9 @@ const Contacts = () => {
     return (
         <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
     <div className='tw-px-4 sm:tw-px-6 lg:tw-px-8'>
-        <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-8 tw-pt-6 tw-pb-8 tw-m-10" autoComplete="off" onSubmit={handleSubmit}>
-            <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center">Add New Contact Details</div>
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Title</label>
+        <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10" autoComplete="off" onSubmit={handleSubmit}>
+            <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  ">Add New Contact Details</div>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Title</label>
             <input
                 type="text"
                 name="title"
@@ -138,7 +138,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Name</label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Name</label>
             <input
                 type="text"
                 name="name"
@@ -148,7 +148,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Designation</label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Designation</label>
             <input
                 type="text"
                 name="designation"
@@ -158,7 +158,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Institute</label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Institute</label>
             <input
                 type="text"
                 name="institute"
@@ -168,7 +168,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Profile Link </label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Profile Link </label>
             <input
                 type="text"
                 name="profileLink"
@@ -178,7 +178,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Image Link</label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Image Link</label>
             <input
                 type="text"
                 name="imgLink"
@@ -187,7 +187,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Phone</label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Phone</label>
             <input
                 type="text"
                 name="phone"
@@ -197,7 +197,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Email</label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Email</label>
             <input
                 type="text"
                 name="email"
@@ -207,7 +207,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Fax</label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Fax</label>
             <input
                 type="text"
                 name="fax"
@@ -216,7 +216,7 @@ const Contacts = () => {
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
             />
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
             <select
                 name="feature"
                 className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
@@ -226,7 +226,7 @@ const Contacts = () => {
                 <option value={false}>No</option>
             </select>
 
-            <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Sequence<input
+            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Sequence<input
                 type="number"
                 name="sequence"
                 value={formData.sequence}
@@ -235,15 +235,15 @@ const Contacts = () => {
             /></label>
 
             <div className="tw-flex tw-justify-evenly">
-                <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add Contact</button>
-                <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Update Contact</button>
+                <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add </button>
+                <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Update </button>
             </div>
         </form>
 
         <hr />
 
-        <div className="tw-shadow-md tw-m-10 tw-ali">
-            <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center">Added contacts</div>
+        <div className="tw-shadow-md tw-m-4 md:tw-m-10 tw-overflow-x-auto">
+            <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  ">Added contacts</div>
             {loading ? (
                 <div>
                     <LoadingIcon/>
@@ -273,8 +273,7 @@ const Contacts = () => {
                                 <td className="tw-p-1 tw-text-center">{item.phone}</td>
                                 <td className="tw-p-1 tw-text-center">{item.email}</td>
                                 <td className="tw-p-1 tw-text-center">{item.fax}</td>
-                                <td className="tw-p-1 tw-text-center  tw-flex tw-justify-evenly">
-                                    <button onClick={() => { handleEdit(item._id); setEditID(item._id) }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
+ <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                    <button onClick={() => { handleEdit(item._id); setEditID(item._id) }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
                                     <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
                                 </td>
                             </tr>
