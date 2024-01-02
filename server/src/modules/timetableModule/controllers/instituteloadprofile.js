@@ -90,7 +90,7 @@ class InstituteLoadController {
                   {
                     $push: {
                       sem: semDetails[0].type,
-                      type: [subDetails[0].type]?[subDetails[0].type]:null,
+                      type: subDetails[0].type?subDetails[0].type:null,
                       load: data.hrs, // You can modify this based on your actual structure
                     },
                   }
