@@ -1,13 +1,13 @@
-const User = require("../../models/usermanagement/user");
+const User = require("../../../models/usermanagement/user");
 const bcrypt = require("bcryptjs");
-const OTP = require("../../models/usermanagement/otp");
+const OTP = require("../../../models/usermanagement/otp");
 const dotenv = require("dotenv");
 const path = require("path");
 dotenv.config();
 
 async function resetPassword(req, res) {
   try {
-    const { email, otp, password } = req.body;
+    const { email, otp, newPassword } = req.body;
 
     // Verify the OTP
     const isOTPValid = await verifyOTP(email, otp);
@@ -20,7 +20,7 @@ async function resetPassword(req, res) {
     }
 
     // Update the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     const user = await User.findOneAndUpdate(
       { email: email },
       { $set: { password: hashedPassword } },

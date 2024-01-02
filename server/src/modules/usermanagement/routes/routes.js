@@ -4,9 +4,9 @@ const {
   register,
   login,
   update, // Include the resetPassword function
-} = require("./usercontroller");
-const { forgotPassword } = require("./forgotpasswordroute.js");
-const { resetPassword } = require("./resetpasswordroute.js");
+} = require("../controllers/usercontroller.js");
+const { forgotPassword } = require("../controllers/forgotpasswordroute.js");
+const { resetPassword } = require("../controllers/resetpasswordroute.js");
 
 router.route("/login").post(login);
 router.route("/update").put(update);
