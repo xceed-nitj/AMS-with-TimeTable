@@ -290,8 +290,8 @@ function ViewInstituteLoad() {
 
     
     const tutorialLabLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
-      const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
-      const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
+      const tutorialLoad = availableLoad[faculty][semester]['tutorial'] || 0;
+      const laboratoryLoad = availableLoad[faculty][semester]['laboratory'] || 0;
       return tutorialLoad + laboratoryLoad;
     }).reduce((sum, value) => sum + value, 0);
 
