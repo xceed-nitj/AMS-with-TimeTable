@@ -245,10 +245,12 @@ function ViewInstituteLoad() {
     });
   });
 
-  csvContent += ",Tutorial+Lab Load,Total Faculty Load\n";
+  csvContent += ",Total Theory Load,Tutorial+Lab Load,Total Faculty Load\n";
 
   Object.keys(availableLoad).forEach((faculty) => {
     csvContent += `${faculty},${facultyDesignation[faculty]}`; // Include Designation in the row
+
+    let totalTheoryLoad = 0;
 
     Usemesters.forEach((semester) => {
       types.forEach((type) => {
@@ -256,6 +258,7 @@ function ViewInstituteLoad() {
           const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
           const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
           csvContent += `,${adjustedLoadValue}`;
+          totalTheoryLoad += adjustedLoadValue;
         }
       });
     });
@@ -266,14 +269,9 @@ function ViewInstituteLoad() {
       return tutorialLoad + laboratoryLoad;
     }).reduce((sum, value) => sum + value, 0);
 
-    // const projectLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
-    //   const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
-    //   return projectLoad;
-    // }).reduce((sum, value) => sum + value, 0);
-
     const totalLoad = totalLoads[faculty] || 0;
 
-    csvContent += `,${tutorialLabLoad},${totalLoad}\n`;
+    csvContent += `,${totalTheoryLoad},${tutorialLabLoad},${totalLoad}\n`;
   });
 
   return csvContent;
