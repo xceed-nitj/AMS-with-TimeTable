@@ -170,35 +170,59 @@ function ViewInstituteLoad() {
     return facultyDesignation;
   }
 
-  function calculateFacultyWiseLoad(data) {
-    const facultyWiseLoad = {};
-    // const facultyDesignation={}
+  // function calculateFacultyWiseLoad(data) {
+  //   const facultyWiseLoad = {};
+  //   // const facultyDesignation={}
   
-    data.forEach((faculty) => {
-      const { name, sem, type, load , designation} = faculty;
-      // facultyDesignation[name]=designation ||{};
+  //   data.forEach((faculty) => {
+  //     const { name, sem, type, load , designation} = faculty;
+  //     // facultyDesignation[name]=designation ||{};
 
-      facultyWiseLoad[name] = facultyWiseLoad[name] || {};
-      // facultyWiseLoad[designation] = facultyWiseLoad[designation] || {};
+  //     facultyWiseLoad[name] = facultyWiseLoad[name] || {};
+  //     // facultyWiseLoad[designation] = facultyWiseLoad[designation] || {};
   
-      sem.forEach((s, index) => {
-        const t = type[index];
-        const l = load[index];
+  //     sem.forEach((s, index) => {
+  //       const t = type[index];
+  //       const l = load[index];
   
-        console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
+  //       console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
   
-        facultyWiseLoad[name][s] = facultyWiseLoad[name][s] || {};
-        facultyWiseLoad[name][s][t] = (facultyWiseLoad[name][s][t] || 0) + l;
-      });
+  //       facultyWiseLoad[name][s] = facultyWiseLoad[name][s] || {};
+  //       facultyWiseLoad[name][s][t] = (facultyWiseLoad[name][s][t] || 0) + l;
+  //     });
+  //   });
+  
+  //   // console.log('Faculty Wise Load:', facultyWiseLoad);
+  //   return facultyWiseLoad;
+  // }
+  function calculateFacultyWiseLoad(data) {
+  const facultyWiseLoad = {};
+
+  data.forEach((faculty) => {
+    const { name, sem, type, load, designation } = faculty;
+
+    facultyWiseLoad[name] = facultyWiseLoad[name] || {};
+
+    sem.forEach((s, index) => {
+      // Ensure that type[index] is a string before applying trim()
+      // const t = (typeof type[index] === 'string' ? type[index] : '').trim().toLowerCase();
+      const t = type[index] ? String(type[index]).trim().toLowerCase() : '';
+
+      const l = load[index];
+
+      console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
+
+      facultyWiseLoad[name][s] = facultyWiseLoad[name][s] || {};
+      facultyWiseLoad[name][s][t] = (facultyWiseLoad[name][s][t] || 0) + l;
     });
-  
-    // console.log('Faculty Wise Load:', facultyWiseLoad);
-    return facultyWiseLoad;
-  }
-  
+  });
+
+  return facultyWiseLoad;
+}
+
 
   const Usemesters = [...new Set(Object.keys(availableLoad).flatMap(faculty => Object.keys(availableLoad[faculty])))];
-  const types = ['Theory', 'Laboratory', 'Tutorial'];
+  const types = ['theory', 'laboratory', 'tutorial'];
   
   // Generate a set of unique columns based on available data
   const uniqueColumns = new Set();
@@ -263,6 +287,8 @@ function ViewInstituteLoad() {
       });
     });
 
+
+    
     const tutorialLabLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
       const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
       const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
@@ -377,7 +403,7 @@ function ViewInstituteLoad() {
 
     <th rowSpan="2">Tutorial+Lab Load</th>
     {/* <th rowSpan="2">Project Load</th> */}
-    <th rowSpan="2">Total Faculty Load (without project)</th>
+    <th rowSpan="2">Total Faculty Load </th>
   </tr>
   <tr>
     {[...Usemesters].map((semester) =>
@@ -418,7 +444,7 @@ function ViewInstituteLoad() {
           return null;
         })
       )}
-<td key={`${faculty}-total-theory-load`}>
+{/* <td key={`${faculty}-total-theory-load`}>
   {
     [ ...Usemesters ].map((semester) =>
       types.reduce((sum, type) => {
@@ -431,13 +457,27 @@ function ViewInstituteLoad() {
       }, 0)
     )
   }
+</td> */}
+<td key={`${faculty}-total-theory-load`}>
+  {Usemesters.map((semester) => {
+    const totalTheoryLoad = types.reduce((sum, type) => {
+      if (type.toLowerCase() === 'theory') {
+        const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
+        const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
+        return sum + adjustedLoadValue;
+      }
+      return sum; // Ignore non-'theory' types
+    }, 0);
+
+    return totalTheoryLoad;
+  }).reduce((sum, value) => sum + value, 0)}
 </td>
 
       {/* Sum of 'Tutorial', 'Laboratory', and 'Project' for each faculty */}
       <td key={`${faculty}-tutorial-laboratory-project-sum`}>
         {Object.keys(availableLoad[faculty] || {}).map((semester) => {
-          const tutorialLoad = availableLoad[faculty][semester]['Tutorial'] || 0;
-          const laboratoryLoad = availableLoad[faculty][semester]['Laboratory'] || 0;
+          const tutorialLoad = availableLoad[faculty][semester]['tutorial'] || 0;
+          const laboratoryLoad = availableLoad[faculty][semester]['laboratory'] || 0;
           // const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
 
           return tutorialLoad + laboratoryLoad ;
