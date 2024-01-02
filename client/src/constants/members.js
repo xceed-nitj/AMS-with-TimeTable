@@ -2,7 +2,7 @@ export const faculty = [
   {
     id: 1,
     name: 'Dr. D. Harimurugan',
-    designation: 'Assistant Professor (Grade-I)',
+    designation: 'Department of Electrical Engineering',
     image: '/home/team/Hari.webp',
     github: 'https://github.com/harimurugan1989',
     linkedin: 'https://www.linkedin.com/in/harimurugan-devarajan-31475215/',
@@ -10,7 +10,7 @@ export const faculty = [
   {
     id: 2,
     name: 'Dr. Banalaxmi Brahma',
-    designation: 'Assistant Professor',
+    designation: 'Department of Computer Science and Engineering',
     image: '/home/team/Banalaxmi.webp',
     github: 'https://github.com',
     linkedin: 'https://www.linkedin.com/in/dr-banalaxmi-brahma-407b82114/',

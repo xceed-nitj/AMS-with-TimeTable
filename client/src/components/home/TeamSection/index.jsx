@@ -12,7 +12,7 @@ const TeamSection = () => {
         variant="core"
       />
       <Team
-        title="Faculty Coordinators"
+        title="Faculty Mentors"
         desp="People behind the XCEED!"
         teamData={faculty}
         variant="faculty"
