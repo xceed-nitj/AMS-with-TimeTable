@@ -7,8 +7,10 @@ const TimeTabledto = require("../dto/timetable");
 const TimeTableDto = new TimeTabledto();
 
 const protectRoute =require("../../usermanagement/privateroute");
+const ttadminRoute =require("../../usermanagement/ttadminroute");
 
-InstituteLoadRouter.post("/", async (req, res) => {
+
+InstituteLoadRouter.post("/",ttadminRoute, async (req, res) => {
     try {
       await instituteLoadController.AddInstituteLoad(req, res);
     } catch (e) {
@@ -18,7 +20,7 @@ InstituteLoadRouter.post("/", async (req, res) => {
     }
   });
 
- InstituteLoadRouter.get("/:session", async (req, res) => {
+ InstituteLoadRouter.get("/:session",ttadminRoute, async (req, res) => {
     try {
      await InstituteLoadController.calculateInstituteLoad(req, res);
       // res.status(200).json(loads);
