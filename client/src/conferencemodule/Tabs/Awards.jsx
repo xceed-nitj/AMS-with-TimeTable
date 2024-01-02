@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
+import getEnvironment from "../../getenvironment";
 
 const Awards = () => {
     const params = useParams();
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
     const IdConf = params.confid;
     const initialData = {
@@ -27,7 +28,7 @@ const Awards = () => {
     const [data, setData] = useState([]);
     const [refresh, setRefresh] = useState(0);
 
-    const { confId, title1, title2, description, sequence, featured, hidden, link } = formData;
+    const {  title1, title2, description, link } = formData;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -54,10 +55,9 @@ const Awards = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${import.meta.env.VITE_API_URL}/awards`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/awards`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData([...data, res.data]);
@@ -71,10 +71,9 @@ const Awards = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${import.meta.env.VITE_API_URL}/awards/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.put(`${apiUrl}/conferencemodule/awards/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(initialData);
@@ -84,10 +83,9 @@ const Awards = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${import.meta.env.VITE_API_URL}/awards/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/awards/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -97,10 +95,9 @@ const Awards = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${import.meta.env.VITE_API_URL}/awards/${editIDNotState}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/awards/${editIDNotState}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(res.data);
@@ -110,10 +107,9 @@ const Awards = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${import.meta.env.VITE_API_URL}/awards/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/awards/conference/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
@@ -133,34 +129,34 @@ const Awards = () => {
                     <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center">Add a New Award</div>
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Title-1</label>
                     <input type="text" name="title1" required value={title1} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black " />
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Title-2</label>
                     <input type="text" name="title2" value={title2} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Description</label>
                     <input type="text" name="description" value={description} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Link</label>
                     <input type="text" name="link" value={link} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
-                    <select name="featured" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" onChange={handleChange}>
+                    <select name="featured" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                         <option value={true}>Yes</option>
                         <option value={false}>No</option>
                     </select>
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">New</label>
-                    <select name="new" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" onChange={handleChange}>
+                    <select name="new" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                         <option value={true}>Yes</option>
                         <option value={false}>No</option>
                     </select>
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Hidden</label>
-                    <select name="hidden" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" onChange={handleChange}>
+                    <select name="hidden" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                         <option value={true}>Yes</option>
                         <option value={false}>No</option>
                     </select>
@@ -170,12 +166,12 @@ const Awards = () => {
                         name="sequence"
                         value={formData.sequence}
                         onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline"
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black"
                     /></label>
 
                     <div className="tw-flex tw-justify-evenly">
-                        <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">Add Award</button>
-                        <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">
+                        <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add Award</button>
+                        <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">
                             Update Award
                         </button>
                     </div>
@@ -207,12 +203,12 @@ const Awards = () => {
                                         <td className="tw-p-1 tw-text-center">{item.description}</td>
                                         <td className="tw-p-1 tw-text-center">{item.link}</td>
                                         <td className="tw-p-1 tw-text-center">{item.sequence}</td>
-                                        <td className="tw-p-1 tw-text-center  tw-flex tw-justify-evenly">
+                                        <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">
                                             <button onClick={() => {
                                                 handleEdit(item._id);
                                                 setEditID(item._id);
-                                            }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-mx-2 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"> Edit </button>{" "}
-                                            <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold tw-mx-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"> Delete </button>
+                                            }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-mx-2 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
+                                            <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold tw-mx-2 tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
                                         </td>
                                     </tr>
                                 )) : (

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
-
+import getEnvironment from "../../getenvironment";
 const Sponsors = () => {
     const params = useParams();
     const IdConf = params.confid;
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
     const initialData={
         confId: IdConf,
@@ -53,10 +53,9 @@ const Sponsors = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/sponsor`, formData, {
-            headers: {
-                Authorization: '',
-            },
+        axios.post(`${apiUrl}/conferencemodule/sponsor`, formData, {
+            withCredentials: true
+
         })
             .then((res) => {
                 setData([...data, res.data]);
@@ -70,10 +69,9 @@ const Sponsors = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/sponsor/${editID}`, formData, {
-            headers: {
-                Authorization: '',
-            },
+        axios.put(`${apiUrl}/conferencemodule/sponsor/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then((res) => {
                 setFormData(initialData);
@@ -86,10 +84,9 @@ const Sponsors = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/sponsor/${deleteID}`, {
-            headers: {
-                Authorization: '',
-            },
+        axios.delete(`${apiUrl}/conferencemodule/sponsor/${deleteID}`, {
+            withCredentials: true
+
         })
             .then((res) => {
                 console.log('DELETED RECORD::::', res);
@@ -99,10 +96,9 @@ const Sponsors = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/sponsor/${editIDNotState}`, {
-            headers: {
-                Authorization: '',
-            },
+        axios.get(`${apiUrl}/conferencemodule/sponsor/${editIDNotState}`, {
+            withCredentials: true
+
         })
             .then((res) => {
                 setFormData(res.data);
@@ -112,10 +108,9 @@ const Sponsors = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${apiUrl}/sponsor/conference/${IdConf}`, {
-            headers: {
-                Authorization: '',
-            },
+        axios.get(`${apiUrl}/conferencemodule/sponsor/conference/${IdConf}`, {
+            withCredentials: true
+
         })
             .then((res) => {
                 setData(res.data);
@@ -131,17 +126,17 @@ const Sponsors = () => {
                     <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center">Add a New Sponsor</div>
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Title-1</label>
                     <input type="text" name="name" required value={name} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Title-2</label>
                     <input type="text" name="type"required value={type} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Logo</label>
                     <input type="text" name="logo" value={logo} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
-                    <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" onChange={handleChange}>
+                    <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                         <option value={true}>Yes</option>
                         <option value={false}>No</option>
                     </select>
@@ -150,12 +145,12 @@ const Sponsors = () => {
                         name="sequence"
                         value={formData.sequence}
                         onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline"
+                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black"
                     /></label>
 
                     <div className="tw-flex tw-justify-evenly">
-                        <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">Add Sponsor</button>
-                        <button type="submit" onClick={() => handleUpdate()} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">
+                        <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add Sponsor</button>
+                        <button type="submit" onClick={() => handleUpdate()} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">
                             Update Sponsor
                         </button>
                     </div>
@@ -187,8 +182,8 @@ const Sponsors = () => {
                                             <button onClick={() => {
                                                 handleEdit(item._id)
                                                 setEditID(item._id)
-                                            }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">Edit</button>{" "}
-                                            <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">Delete</button>
+                                            }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black">Edit</button>{" "}
+                                            <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-outline-black">Delete</button>
                                         </td>
                                     </tr>)) : (
                                         <tr>

@@ -3,12 +3,13 @@ import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import { useNavigate } from "react-router-dom";
+import getEnvironment from "../../getenvironment";
 
 const HomeConf = () => {
     const navigate = useNavigate();
 
     const params = useParams();
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
     const IdConf = params.confid;
     const initialData = {
@@ -41,10 +42,9 @@ const HomeConf = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/home`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/home`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
@@ -59,10 +59,9 @@ const HomeConf = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/home/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.put(`${apiUrl}/conferencemodule/home/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(initialData);
@@ -72,10 +71,9 @@ const HomeConf = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/home/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/home/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -86,10 +84,9 @@ const HomeConf = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/home/${editIDNotState}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/home/${editIDNotState}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(res.data);
@@ -105,10 +102,9 @@ const HomeConf = () => {
         }
 
         setLoading(true);
-        axios.get(`${apiUrl}/home/conf/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/home/conf/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);

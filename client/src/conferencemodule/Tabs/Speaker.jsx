@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
+import getEnvironment from "../../getenvironment";
 
 const Speaker = () => {
     const params = useParams();
     const IdConf = params.confid;
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
 
     // Define your initial data here
@@ -59,10 +60,9 @@ const Speaker = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/speakers`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/speakers`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData([...data, res.data]);
@@ -78,10 +78,9 @@ const Speaker = () => {
 
     const handleUpdate = () => {
 
-        axios.put(`${apiUrl}/speakers/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.put(`${apiUrl}/conferencemodule/speakers/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(initialData); // Reset the form data to initialData
@@ -92,10 +91,9 @@ const Speaker = () => {
 
     const handleDelete = (deleteID) => {
 
-        axios.delete(`${apiUrl}/speakers/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/speakers/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -105,10 +103,9 @@ const Speaker = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/speakers/${editIDNotState}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/speakers/${editIDNotState}`, {
+            withCredentials: true
+
         })
 
             .then(res => {
@@ -119,10 +116,9 @@ const Speaker = () => {
 
     useEffect(() => {
         setLoading(true)
-        axios.get(`${apiUrl}/speakers/conference/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/speakers/conference/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
@@ -141,56 +137,56 @@ const Speaker = () => {
                         <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center" >Add a New Speaker</div>
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1  tw-font-bold " >Name of Speaker</label>
                         <input type="text" required name="Name" value={Name}   onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Designation</label>
                         <input type="text" name="Designation"required value={Designation} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Institute</label>
                         <input type="text" name="Institute" required value={Institute} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Profile Link of Speaker</label>
                         <input type="text" name="ProfileLink"required value={ProfileLink} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Image Link of Speaker</label>
                         <input type="text" name="ImgLink" value={ImgLink} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">TalkType</label>
                         <input type="text" name="TalkType"required value={TalkType} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">TalkTitle</label>
                         <input type="text" name="TalkTitle"required value={TalkTitle} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Bio</label>
                         <input type="text" name="Bio" value={Bio} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Abstract</label>
                         <input type="text" name="Abstract" value={Abstract} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Sequence<input
                             type="number"
                             name="sequence"
                             value={formData.sequence}
                             onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline"
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black"
                         /></label>
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
-                        <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" onChange={handleChange}>
+                        <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                             <option value={true}>Yes</option>
                             <option value={false}>No</option>
 
                         </select>
                         <div className="tw-flex tw-justify-evenly">
-                            <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">Add Speaker</button>
-                            <button type="button" onClick={handleUpdate} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">
+                            <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add Speaker</button>
+                            <button type="button" onClick={handleUpdate} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">
                                 Update Speaker
                             </button>
                         </div>
@@ -227,8 +223,8 @@ const Speaker = () => {
                                                 <button onClick={() => {
                                                     handleEdit(item._id)
                                                     setEditID(item._id)
-                                                }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"> Edit </button>{" "}
-                                                <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"> Delete </button>
+                                                }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
+                                                <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
                                             </td>
                                         </tr>)) : (
                                             <tr>                                        <td colSpan="5" className="tw-p-1 tw-text-center">No data available</td>

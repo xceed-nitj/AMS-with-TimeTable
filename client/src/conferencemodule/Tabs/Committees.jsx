@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
+import getEnvironment from "../../getenvironment";
 
 const Committees = () => {
     const params = useParams();
     const IdConf = params.confid;
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
 
     const initialData = {
@@ -52,10 +53,9 @@ const Committees = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/committee`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/committee`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData([...data, res.data]);
@@ -69,10 +69,9 @@ const Committees = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/committee/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.put(`${apiUrl}/conferencemodule/committee/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(initialData);
@@ -82,10 +81,9 @@ const Committees = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/committee/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/committee/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -95,10 +93,9 @@ const Committees = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/committee/${editIDNotState}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/committee/${editIDNotState}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(res.data);
@@ -108,10 +105,9 @@ const Committees = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${apiUrl}/committee/conference/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/committee/conference/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
@@ -181,7 +177,7 @@ const Committees = () => {
 
                 <hr />
 
-                <div className="tw-shadow-md tw-m-10 ali">
+                <div className="tw-shadow-md tw-m-10 tw-overflow-x-auto">
                     <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center" >Added committees</div>
                     {loading ? (
                         <LoadingIcon />
@@ -207,7 +203,7 @@ const Committees = () => {
                                         <td className="tw-p-1 tw-text-center">{item.Designation}</td>
                                         <td className="tw-p-1 tw-text-center">{item.Institute}</td>
                                         <td className="tw-p-1 tw-text-center">{item.sequence}</td>
-                                        <td className="tw-p-1 tw-text-center  tw-flex tw-justify-evenly">
+                                        <td className="tw-p-1 tw-text-center  tw-flex tw-flex-col lg:tw-flex-row  tw-justify-evenly  tw-border-hidden">
                                             <button onClick={() => { handleEdit(item._id); setEditID(item._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
                                             <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Delete </button>
                                         </td>

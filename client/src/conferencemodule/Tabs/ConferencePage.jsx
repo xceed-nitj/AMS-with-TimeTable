@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useNavigate, Link } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
-
+import getEnvironment from "../../getenvironment";
 const ConferencePage = () => {
-    const apiUrl = 'https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
-    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         "email": "",
         "name": ""
@@ -26,10 +25,8 @@ const ConferencePage = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/conf`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/conf`, formData, {
+            withCredentials: true
         })
             .then(res => {
                 setData([...data, res.data]);
@@ -43,11 +40,7 @@ const ConferencePage = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/conf/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
-        })
+        axios.put(`${apiUrl}/conferencemodule/conf/${editID}`, formData, { withCredentials: true})
             .then(res => {
                 setFormData({
                     email: "",
@@ -62,10 +55,9 @@ const ConferencePage = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/conf/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/conf/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -75,10 +67,8 @@ const ConferencePage = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/conf/${editIDNotState}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/conf/${editIDNotState}`, {
+            withCredentials: true
         })
             .then(res => {
                 setFormData(res.data);
@@ -88,16 +78,16 @@ const ConferencePage = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${apiUrl}/conf`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/conf`, {
+            withCredentials: true
         })
             .then(res => {
                 setData(res.data);
             })
             .catch(err => console.log(err))
             .finally(() => setLoading(false));
+
+            
     }, [refresh]);
 
     return (
@@ -111,7 +101,7 @@ const ConferencePage = () => {
                     name="email"
                     value={email}
                     onChange={handleChange}
-                    className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline"
+                    className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black"
                 />
 
                 <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Name of Conference</label>
@@ -121,17 +111,17 @@ const ConferencePage = () => {
                     name="name"
                     value={name}
                     onChange={handleChange}
-                    className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline"
+                    className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black"
                 />
 
                 <div className="tw-flex tw-justify-evenly">
-                    <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">Add Conference</button>
+                    <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add Conference</button>
                     <button
                         type="submit"
                         onClick={() => {
                             handleUpdate();
                         }}
-                        className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"
+                        className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black"
                     >
                         Update Conference
                     </button>
@@ -171,13 +161,13 @@ const ConferencePage = () => {
                                                         handleEdit(item._id);
                                                         setEditID(item._id);
                                                     }}
-                                                    className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"
+                                                    className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"
                                                 >
                                                     Edit
                                                 </button>{" "}
                                                 <button
                                                     onClick={() => handleDelete(item._id)}
-                                                    className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"
+                                                    className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"
                                                 >
                                                     Delete
                                                 </button>

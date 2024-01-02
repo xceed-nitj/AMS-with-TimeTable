@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
+import getEnvironment from "../../getenvironment";
 
 const Location = () => {
     const params = useParams();
     const IdConf = params.confid;
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
     const initialData={
         "confId": IdConf,
@@ -52,10 +53,9 @@ const Location = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/location`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/location`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
@@ -69,10 +69,9 @@ const Location = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/locations/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.put(`${apiUrl}/conferencemodule/locations/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(initialData);
@@ -82,10 +81,9 @@ const Location = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/location/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/location/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -95,10 +93,9 @@ const Location = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/location/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/location/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(res.data);
@@ -108,10 +105,9 @@ const Location = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${apiUrl}/location/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/location/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
@@ -128,36 +124,36 @@ const Location = () => {
                         <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-mx-auto tw-my-auto tw-grid tw-place-content-center" >About Location</div>
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold " >Description</label>
                         <input type="text" name="description" required value={description} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Address</label>
                         <input type="text" name="address" required value={address} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Latitude</label>
                         <input type="text" name="latitude" required value={latitude} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold ">Longitude</label>
                         <input type="text" name="longitude" required value={longitude} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" />
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Sequence</label>
                         <input
                             type="number"
                             name="sequence"
                             value={formData.sequence}
                             onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline"
+                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
                         />
                         <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
-                        <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-none focus:tw-shadow-outline" onChange={handleChange}>
+                        <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
                             <option value={true}>Yes</option>
                             <option value={false}>No</option>
                         </select>
 
                         <div className="tw-flex tw-justify-evenly">
-                            <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">Add</button>
-                            <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline">Update</button>
+                            <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add</button>
+                            <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Update</button>
                         </div>
                     </form>
 
@@ -188,8 +184,8 @@ const Location = () => {
                                             <td className="tw-p-1 tw-text-center">{data.latitude}</td>
                                             <td className="tw-p-1 tw-text-center">{data.longitude}</td>
                                             <td className="tw-p-1 tw-text-center  tw-flex tw-justify-evenly">
-                                                <button onClick={() => { handleEdit(data.id); setEditID(data.id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"> Edit </button>{" "}
-                                                <button onClick={() => handleDelete(data.id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-none focus:tw-shadow-outline"> Delete </button>
+                                                <button onClick={() => { handleEdit(data.id); setEditID(data.id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
+                                                <button onClick={() => handleDelete(data._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
                                             </td>
                                         </tr>
                                     ) : (

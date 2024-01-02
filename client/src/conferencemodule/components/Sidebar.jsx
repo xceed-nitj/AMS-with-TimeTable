@@ -56,7 +56,7 @@ const Sidebar = () => {
               <div className='tw-fixed tw-inset-0 tw-bg-gray-900/80' />
             </Transition.Child>
 
-            <div className='tw-fixed tw-inset-0   tw-flex'>
+            <div className='tw-fixed tw-inset-0 tw-mt-32 md:tw-mt-28 tw-flex'>
               <Transition.Child
                 as={Fragment}
                 enter='transition ease-in-out duration-300 transform'

@@ -2,18 +2,19 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
+import getEnvironment from "../../getenvironment";
 
 const Images = () => {
     const params = useParams();
     const IdConf = params.confid;
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
     const initialData={
         "confId": IdConf,
         "name": "",
         "imgLink": "",
         "feature": true,
-        "sequence": 0,
+        "sequence": 0
     }
 
     const [formData, setFormData] = useState(initialData);
@@ -51,10 +52,9 @@ const Images = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/images`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/images`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData([...data, res.data]);
@@ -67,10 +67,9 @@ const Images = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/images/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.put(`${apiUrl}/conferencemodule/images/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(initialData);
@@ -80,10 +79,9 @@ const Images = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/images/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/images/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -93,10 +91,9 @@ const Images = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/images/${editIDNotState}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/images/${editIDNotState}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(res.data);
@@ -109,10 +106,9 @@ const Images = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${apiUrl}/images/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/images/conference/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
@@ -180,8 +176,8 @@ const Images = () => {
                                         <td className="tw-p-1 tw-text-center">{item.sequence}</td>
 
                                         <td className="tw-p-1 tw-text-center  tw-flex tw-justify-evenly">
-                                            <button onClick={() => { handleEdit(item.id); setEditID(item.id) }} className="tw-bg-yellow-500 tw-hover:bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-mx-2 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
-                                            <button onClick={() => handleDelete(item.id)} className="tw-bg-red-500 tw-hover:bg-red-700 tw-text-white tw-font-bold tw-mx-2 tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Delete </button>
+                                            <button onClick={() => { handleEdit(item._id); setEditID(item._id) }} className="tw-bg-yellow-500 tw-hover:bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-mx-2 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
+                                            <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 tw-hover:bg-red-700 tw-text-white tw-font-bold tw-mx-2 tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Delete </button>
                                         </td>
                                     </tr>
                                 )) : (

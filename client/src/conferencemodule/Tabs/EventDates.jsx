@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
+import getEnvironment from "../../getenvironment";
 
 const EventDates = () => {
     const params = useParams();
     const IdConf = params.confid;
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
 
     const initialData = {
@@ -56,10 +57,9 @@ const EventDates = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/eventDates`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/eventDates`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData([...data, res.data]);
@@ -73,10 +73,9 @@ const EventDates = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/eventDates/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.put(`${apiUrl}/conferencemodule/eventDates/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(initialData);
@@ -86,10 +85,9 @@ const EventDates = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/eventDates/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/eventDates/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -99,10 +97,9 @@ const EventDates = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/eventDates/${editIDNotState}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/eventDates/${editIDNotState}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(res.data);
@@ -112,10 +109,9 @@ const EventDates = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${apiUrl}/eventDates/conference/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/eventDates/conference/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);

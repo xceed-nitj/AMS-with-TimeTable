@@ -1,104 +1,102 @@
-const Awards = require("../../../models/conferenceModule/awards");
+const Award = require("../../../models/conferenceModule/awards"); // Change to the appropriate awards model
 const HttpException = require("../../../models/conferenceModule/http-exception");
 
 class AwardsController {
   // GET /awards/conference/:id
-  async getAwardsByConferenceId(id) {
-    
+  async getAwardsByConferenceId(req, res) {
+    const { id } = req.params;
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      // Find awards with a specific confId using the Mongoose model
-      const awards = await Awards.find({ confId: id });
-     return awards;
+      const awards = await Award.find({ confId: id });
+      res.json(awards);
     } catch (error) {
-      throw new HttpException(500, error.message || "Internal server error");
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 
   // GET /awards
-  async getAllAwards() {
+  async getAllAwards(req, res) {
     try {
-      // Find all awards using the Mongoose model
-      const awards = await Awards.find();
-      console.log(awards);
-      return awards;
-      //res.json(awards);
+      const awards = await Award.find();
+      res.json(awards);
     } catch (error) {
-      throw new HttpException(500, error.message || "Internal server error"); 
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 
   // GET /awards/:id
-  async getAwardById(id) {
-  
+  async getAwardById(req, res) {
+    const { id } = req.params;
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      // Find an award by its _id using the Mongoose model
-      const award = await Awards.findById(id);
+      const award = await Award.findById(id);
       if (award) {
         res.json(award);
       } else {
         res.status(404).json({ error: "Award not found" });
       }
     } catch (error) {
-      throw new HttpException(500, error.message || "Internal server error");
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 
   // POST /awards
-  async createAward(newAward) {
-   
-
-    // if (!isValidAward(newAward)) {
-    //   return res.status(400).json({ error: "Invalid award data" });
-    // }
+  async createAward(req, res) {
+    const newAward = req.body;
+    // if(!isValidAwards(newAward)) {
+    //     return res.status(400).json({ error: 'Invalid award data' });
+    //   }
     try {
-      // Create a new award document using the Mongoose model
-      const createdAward = new Awards(newAward);
-      createdAward.save();
-      return createdAward;
+      const createdAward = await Award.create(newAward);
+      res.json(createdAward);
     } catch (error) {
-      throw new HttpException(500, error.message || "Internal server error");
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 
   // PUT /awards/:id
-  async updateAward(id, updatedAward) {
-   
+  async updateAward(req, res) {
+    const { id } = req.params;
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
-    
+    const updatedAward = req.body;
+    // if(!isValidAwards(updatedAward)) {
+    //     return res.status(400).json({ error: 'Invalid award data' });
+    //   }
     try {
-      // Update an award by its _id using the Mongoose model
-      const award = await Awards.findByIdAndUpdate(id, updatedAward,{new:true});
-      console.log(award);
-      if (!award) {
-        throw new HttpException(404, "award not found");
-      } 
+      const award = await Award.findByIdAndUpdate(id, updatedAward, {
+        new: true,
+      });
+      if (award) {
+        res.json(award);
+      } else {
+        res.status(404).json({ error: "Award not found" });
+      }
     } catch (error) {
-      throw new HttpException(500, error.message || "Internal server error");
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 
   // DELETE /awards/:id
-  async deleteAward(id) {
-   
+  async deleteAward(req, res) {
+    const { id } = req.params;
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      // Delete an award by its _id using the Mongoose model
-      const award = await Awards.findByIdAndDelete(id);
-      if (!award) {
-        throw new HttpException(404, "award not found");
+      const award = await Award.findByIdAndRemove(id);
+      if (award) {
+        res.json(award);
+      } else {
+        res.status(404).json({ error: "Award not found" });
       }
     } catch (error) {
-      throw new HttpException(500, error.message || "Internal server error");
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 }

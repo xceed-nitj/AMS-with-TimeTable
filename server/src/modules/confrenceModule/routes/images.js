@@ -1,63 +1,67 @@
 const express = require("express");
-const { Request, Response } = require("express");
-const Image = require("../../../models/conferenceModule/images");
-const ImagesController = require("../crud/images");
+const ImagesController = require("../crud/images"); // Change to the appropriate images controller
 
-const router = express.Router();
+const imagesRouter = express.Router();
 const imagesController = new ImagesController();
 
-router.get("/:id", async (req, res) => {
+// GET /images/conference/:id
+imagesRouter.get("/conference/:id", async (req, res) => {
   try {
-    const images = await imagesController.getImagesByConfId(req.params.id);
-    res.status(200).json(images);
-  } catch (e) {
-    console.error("Error fetching images:", e);
-    res
-      .status(e?.code || 500)
-      .json({ error: e?.meta?.cause || "Internal server error" });
-  } 
-});
-
-router.post("/", async (req, res) => {
-  try {
-    const image = req.body;
-    await imagesController.addImage(image);
-    res.status(201).json({ response: "Image Added Successfully" });
-  } catch (e) {
-    console.error("Error adding image:", e);
-    res
-      .status(e?.code || 500)
-      .json({ error: e?.meta?.cause || "Internal server error" });
+    await imagesController.getImagesByConferenceId(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.put("/:imgID", async (req, res) => {
+// GET /images
+imagesRouter.get("/", async (req, res) => {
   try {
-    const image = req.body;
-    const id = req.params.imgID;
-    const newImage=await imagesController.updateImage(id, image);
-    if(!newImage){
-      res.status(200).json({ response: "Image not found" });
-    }else
-    res.status(200).json({ response: "Image Updated Successfully" });
-  } catch (e) { 
-    console.error("Error updating image:", e);
-    res
-      .status(e?.code || 500)
-      .json({ error: e?.meta?.cause || "Internal server error" });
+    await imagesController.getAllImages(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.delete("/:imgID", async (req, res) => {
+// GET /images/:id
+imagesRouter.get("/:id", async (req, res) => {
   try {
-    await imagesController.deleteImage(req.params.imgID);
-    res.status(200).json({ response: "Image Deleted Successfully" });
-  } catch (e) {
-    console.error("Error deleting image:", e);
-    res
-      .status(e?.code || 500)
-      .json({ error: e?.meta?.cause || "Internal server error" });
+    await imagesController.getImageById(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-module.exports = router;
+// POST /images
+imagesRouter.post("/", async (req, res) => {
+  try {
+    await imagesController.createImage(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /images/:id
+imagesRouter.put("/:id", async (req, res) => {
+  try {
+    await imagesController.updateImage(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /images/:id
+imagesRouter.delete("/:id", async (req, res) => {
+  try {
+    await imagesController.deleteImage(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+module.exports = imagesRouter;

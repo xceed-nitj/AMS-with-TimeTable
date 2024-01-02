@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
+import getEnvironment from "../../getenvironment";
 
 const NavbarConf = () => {
     const params = useParams();
     const IdConf = params.confid;
-    const apiUrl='https://xceed.onrender.com/confrenceModule';
+  const apiUrl = getEnvironment();
 
     const initialData = {
         "confId": IdConf,
@@ -52,10 +53,9 @@ const NavbarConf = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/navbar`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.post(`${apiUrl}/conferencemodule/navbar`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
@@ -69,10 +69,9 @@ const NavbarConf = () => {
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/navbar/${editID}`, formData, {
-            headers: {
-                Authorization: ''
-            }
+        axios.put(`${apiUrl}/conferencemodule/navbar/${editID}`, formData, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(initialData);
@@ -82,10 +81,9 @@ const NavbarConf = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/navbar/${deleteID}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.delete(`${apiUrl}/conferencemodule/navbar/${deleteID}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
@@ -95,10 +93,9 @@ const NavbarConf = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        axios.get(`${apiUrl}/navbar/${editIDNotState}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/navbar/${editIDNotState}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setFormData(res.data);
@@ -108,10 +105,9 @@ const NavbarConf = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${apiUrl}/navbar/conf/${IdConf}`, {
-            headers: {
-                Authorization: ''
-            }
+        axios.get(`${apiUrl}/conferencemodule/navbar/conf/${IdConf}`, {
+            withCredentials: true
+
         })
             .then(res => {
                 setData(res.data);
