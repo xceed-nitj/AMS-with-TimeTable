@@ -418,18 +418,20 @@ function ViewInstituteLoad() {
           return null;
         })
       )}
- <td key={`${faculty}-total-theory-load`}>
-        {[...Usemesters].map((semester) =>
-          types.map((type) => {
-            if (type.toLowerCase() === 'theory') {
-              const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
-              const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
-              return adjustedLoadValue;
-            }
-            return 0;
-          }).reduce((sum, value) => sum + value, 0)
-        )}
-      </td>
+<td key={`${faculty}-total-theory-load`}>
+  {
+    [ ...Usemesters ].map((semester) =>
+      types.reduce((sum, type) => {
+        if (type.toLowerCase() === 'theory') {
+          const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
+          const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
+          return sum + adjustedLoadValue;
+        }
+        return sum; // Ignore non-'theory' types
+      }, 0)
+    )
+  }
+</td>
 
       {/* Sum of 'Tutorial', 'Laboratory', and 'Project' for each faculty */}
       <td key={`${faculty}-tutorial-laboratory-project-sum`}>
