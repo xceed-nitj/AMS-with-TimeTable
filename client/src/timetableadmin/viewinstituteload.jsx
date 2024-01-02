@@ -373,9 +373,11 @@ function ViewInstituteLoad() {
           <th colSpan={types.length}>{semester}</th>
         </React.Fragment>
       ))}
+  <th rowSpan="2">Theory Load</th>
+
     <th rowSpan="2">Tutorial+Lab Load</th>
     {/* <th rowSpan="2">Project Load</th> */}
-    <th rowSpan="2">Total Faculty Load</th>
+    <th rowSpan="2">Total Faculty Load (without project)</th>
   </tr>
   <tr>
     {[...Usemesters].map((semester) =>
@@ -416,6 +418,19 @@ function ViewInstituteLoad() {
           return null;
         })
       )}
+ <td key={`${faculty}-total-theory-load`}>
+        {[...Usemesters].map((semester) =>
+          types.map((type) => {
+            if (type.toLowerCase() === 'theory') {
+              const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
+              const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
+              return adjustedLoadValue;
+            }
+            return 0;
+          }).reduce((sum, value) => sum + value, 0)
+        )}
+      </td>
+
       {/* Sum of 'Tutorial', 'Laboratory', and 'Project' for each faculty */}
       <td key={`${faculty}-tutorial-laboratory-project-sum`}>
         {Object.keys(availableLoad[faculty] || {}).map((semester) => {
