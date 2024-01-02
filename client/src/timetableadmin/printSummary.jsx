@@ -634,44 +634,46 @@ function generateSummaryForLoad(timetableData, subjectData, type, headTitle, com
     }
   }
 
-  // const mergedSummaryData = {};
+  const mergedSummaryData = {};
 
-  // for (const key in summaryData) {
-  //   const entry = summaryData[key];
-  //   const subCode = entry.subCode;
+  for (const key in summaryData) {
+    const entry = summaryData[key];
+    const subCode = entry.subCode;
   
-  //   let isMerged = false;
+    let isMerged = false;
   
-  //   // Check against all existing entries in mergedSummaryData
-  //   for (const existingKey in mergedSummaryData) {
-  //     const existingEntry = mergedSummaryData[existingKey];
+    // Check against all existing entries in mergedSummaryData
+    for (const existingKey in mergedSummaryData) {
+      const existingEntry = mergedSummaryData[existingKey];
   
-  //     if (
-  //       entry.faculties.every(faculty => existingEntry.faculties.includes(faculty)) &&
-  //       entry.subType === existingEntry.subType &&
-  //       entry.subjectFullName === existingEntry.subjectFullName &&
-  //       entry.rooms.every(room => existingEntry.rooms.includes(room))
-  //     ) {
-  //       // Merge the data
-  //       existingEntry.count += entry.count;
-  //       existingEntry.faculties = [...new Set([...existingEntry.faculties, ...entry.faculties])];
-  //       existingEntry.originalKeys.push(key);
-  //       isMerged = true;
-  //       // Add any other merging logic as needed
-  //       break; // Stop checking further if merged
-  //     }
-  //   }
+      if (
+        entry.faculties.every(faculty => existingEntry.faculties.includes(faculty)) &&
+        entry.subType === existingEntry.subType &&
+        entry.subCode === existingEntry.subCode &&
+        entry.subSem === existingEntry.subSem &&
+        entry.subjectFullName === existingEntry.subjectFullName &&
+        entry.rooms.every(room => existingEntry.rooms.includes(room))
+     ) {
+        // Merge the data
+        existingEntry.count += entry.count;
+        existingEntry.faculties = [...new Set([...existingEntry.faculties, ...entry.faculties])];
+        existingEntry.originalKeys.push(key);
+        isMerged = true;
+        // Add any other merging logic as needed
+        break; // Stop checking further if merged
+      }
+    }
   
-  //   // If not merged, create a new entry
-  //   if (!isMerged) {
-  //     mergedSummaryData[key] = { ...entry, originalKeys: [key] };
-  //   }
-  // }
+    // If not merged, create a new entry
+    if (!isMerged) {
+      mergedSummaryData[key] = { ...entry, originalKeys: [key] };
+    }
+  }
   
 // Now, mergedSummaryData contains the merged entries with original keys
 // console.log('merged data', mergedSummaryData);
 
-const sortedSummary = Object.values(summaryData).sort((a, b) =>
+const sortedSummary = Object.values(mergedSummaryData).sort((a, b) =>
   a.subCode.localeCompare(b.subCode)
 );
 
