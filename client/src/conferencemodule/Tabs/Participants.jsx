@@ -104,7 +104,7 @@ const Participants = () => {
                 <div className="tw-block tw-box-border" >
 
                     <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " autoComplete='off' onSubmit={handleSubmit}>
-                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  " >Add a New Participant</div>
+                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  " >Add a New Participant</div>
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1  tw-font-bold " >Name</label>
                         <input type="text" name="authorName" required value={authorName} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
@@ -137,7 +137,7 @@ const Participants = () => {
                     <hr />
 
                     <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
-                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  " >Added Participants</div>
+                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  " >Added Participants</div>
                         {loading ? (
                             <LoadingIcon />
                         ) : (

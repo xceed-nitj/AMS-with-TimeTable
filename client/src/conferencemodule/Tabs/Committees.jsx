@@ -126,7 +126,7 @@ const Committees = () => {
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Subtype of Committee</label>
-                    <input type="text" name="Subtype" value={Subtype} onChange={handleChange}
+                    <input type="text" name="Subtype" required   value={Subtype} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold " >Name</label>
@@ -146,7 +146,7 @@ const Committees = () => {
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Image Link of Committee</label>
-                    <input type="ImgLink" name="ImgLink" value={ImgLink} onChange={handleChange}
+                    <input type="ImgLink" name="ImgLink" required  value={ImgLink} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Feature</label>

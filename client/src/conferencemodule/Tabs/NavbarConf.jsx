@@ -7,7 +7,7 @@ import getEnvironment from "../../getenvironment";
 const NavbarConf = () => {
     const params = useParams();
     const IdConf = params.confid;
-  const apiUrl = getEnvironment();
+    const apiUrl = getEnvironment();
 
     const initialData = {
         "confId": IdConf,
@@ -121,7 +121,7 @@ const NavbarConf = () => {
             <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
                 <div className="tw-block tw-box-border" >
                     <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " onSubmit={handleSubmit} autoComplete="off">
-                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  " >About Navbar</div>
+                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-seriftw-text-center  " >About Navbar</div>
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold " >Heading</label>
                         <input type="text" name="heading" required value={heading} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight tw-focus:outline-none tw-focus:shadow-outline" />
@@ -158,7 +158,7 @@ const NavbarConf = () => {
                     <hr />
 
                     <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
-                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  " >Added Information</div>
+                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  " >Added Information</div>
                         {loading ? (
                             <div>
                                 <LoadingIcon />
@@ -181,7 +181,7 @@ const NavbarConf = () => {
                                             <td className="tw-p-1 tw-text-center">{data.subHeading}</td>
                                             <td className="tw-p-1 tw-text-center">{data.name}</td>
                                             <td className="tw-p-1 tw-text-center">{data.url}</td>
-                                          <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 tw-hover:bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded tw-focus:outline-none tw-focus:shadow-outline"> Edit </button>{" "}
+                                            <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 tw-hover:bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded tw-focus:outline-none tw-focus:shadow-outline"> Edit </button>{" "}
                                                 <button onClick={() => handleDelete(data._id)} className="tw-bg-red-500 tw-hover:bg-red-700 tw-text-white tw-font-bold tw-px-4 tw-rounded tw-focus:outline-none tw-focus:shadow-outline"> Delete </button>
                                             </td>
                                         </tr>

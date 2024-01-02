@@ -123,9 +123,9 @@ const Images = () => {
         <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
             <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
                 <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10" autoComplete="off" onSubmit={handleSubmit}>
-                    <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  ">Add a New Image</div>
+                    <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  ">Add a New Image</div>
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Description</label>
-                    <input type="text" name="name" value={name} onChange={handleChange}
+                    <input type="text" name="name" required  value={name} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Image Link</label>
@@ -155,7 +155,7 @@ const Images = () => {
                 <hr />
 
                 <div className="tw-shadow-md tw-m-4 md:tw-m-10 tw-overflow-x-auto">
-                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  ">Existing Images</div>
+                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  ">Existing Images</div>
                     {loading ? (
                         <div>
                             <LoadingIcon />

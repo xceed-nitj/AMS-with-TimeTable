@@ -123,7 +123,7 @@ const Sponsors = () => {
         <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
             <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
                 <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10" autoComplete="off" onSubmit={handleSubmit}>
-                    <div className="tw-text-blue-70 tw-text-[28px] tw-font-serif text-center  ">Add a New Sponsor</div>
+                    <div className="tw-text-blue-70 tw-text-[28px] tw-font-serif tw-text-center  ">Add a New Sponsor</div>
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Title-1</label>
                     <input type="text" name="name" required value={name} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
@@ -133,7 +133,7 @@ const Sponsors = () => {
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Logo</label>
-                    <input type="text" name="logo" value={logo} onChange={handleChange}
+                    <input type="text" name="logo" required  value={logo} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" />
                     <label className="tw-block tw-text-gray-700 tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
                     <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
@@ -159,7 +159,7 @@ const Sponsors = () => {
                 <hr />
 
                 <div className="tw-shadow-md m-4 md:tw-m-10 tw-overflow-x-auto">
-                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  ">Added Sponsors</div>
+                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  ">Added Sponsors</div>
                     {!loading ? (
                         <table className="tw-min-w-full tw-border-collapse tw-box-border">
                             <thead>

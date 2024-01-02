@@ -93,7 +93,7 @@ const ConferencePage = () => {
     return (
         <div className="tw-block box-border">
             <form className="tw-bg-blue-100 lg:tw-max-w-4xl lg:tw-mx-auto tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10" autoComplete="off" onSubmit={handleSubmit}>
-                <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  ">Create a new Conference</div>
+                <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  ">Create a new Conference</div>
                 <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Email</label>
                 <input
                     type="text"
@@ -131,7 +131,7 @@ const ConferencePage = () => {
             <hr />
 
             <div>
-                <div className="tw-text-black tw-text-[28px] tw-font-serif text-center  ">Existing Conferences</div>
+                <div className="tw-text-black tw-text-[28px] tw-font-serif tw-text-center  ">Existing Conferences</div>
 
                 {!loading ? (
                     <div className="tw-flex tw-flex-wrap tw-justify-evenly tw-items-center">

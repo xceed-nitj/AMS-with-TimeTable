@@ -124,13 +124,13 @@ const EventDates = () => {
         <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
             <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
                 <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " autoComplete="off" onSubmit={handleSubmit}>
-                    <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  " >Add New EventDate</div>
+                    <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  " >Add New EventDate</div>
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Title</label>
-                    <input type="text" name="title" value={title} onChange={handleChange}
+                    <input type="text" name="title" required   value={title} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700   tw-leading-tight    tw-focus:outline-none tw-focus:shadow-outline" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Date</label>
-                    <input type="datetime-local" name="date" value={date} onChange={handleChange}
+                    <input type="datetime-local"  name="date" value={date} onChange={handleChange}
                         className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700   tw-leading-tight    tw-focus:outline-none tw-focus:shadow-outline" />
 
                     <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Is Date Extended ?</label>
@@ -169,7 +169,7 @@ const EventDates = () => {
                 <hr />
 
                 <div className="tw-shadow-md tw-m-4  md:tw-m-10 tw-overflow-x-auto">
-                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  " >Event Dates</div>
+                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  " >Event Dates</div>
 
                     {loading ? (
                         <LoadingIcon />
