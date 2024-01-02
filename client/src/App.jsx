@@ -31,9 +31,27 @@ import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import MergePDFComponent from './filedownload/mergepdfdocuments';
-import Home from './pages/Home'
-import EventRegistration from './certificatemodule/eventregistration';
-import CMDashboard from './certificatemodule/cmdashboard';
+import EventRegistration from './certificatemodule/pages/eventregistration';
+import CMDashboard from './certificatemodule/pages/cmdashboard';
+import Home from './pages/Home';
+
+
+import HomeConf from './conferencemodule/Tabs/HomeConf';
+import Sidebar from './conferencemodule/components/Sidebar';
+import Speaker from './conferencemodule/Tabs/Speaker';
+import Committees from './conferencemodule/Tabs/Committees';
+import Sponsors from './conferencemodule/Tabs/Sponsors';
+import Awards from './conferencemodule/Tabs/Awards';
+import Announcement from './conferencemodule/Tabs/Annoumcement';
+import Contacts from './conferencemodule/Tabs/Contacts';
+import Images from './conferencemodule/Tabs/Images';
+import EventDates from './conferencemodule/Tabs/EventDates';
+import Participants from './conferencemodule/Tabs/Participants';
+import NavbarConf from './conferencemodule/Tabs/NavbarConf';
+import Location from './conferencemodule/Tabs/Location';
+import ConferencePage from './conferencemodule/Tabs/ConferencePage';
+
+
 function App() {
   return (
     <Router>
@@ -41,7 +59,7 @@ function App() {
       {/* <div className="app"> */}
    
         {/* <h1>XCEED-Timetable Module</h1>  */}
-        <Navbar/>
+        <Navbar />
          
       <Routes>
         <Route path="/" element={<Home/>} />
@@ -83,6 +101,30 @@ function App() {
 
           <Route path="/cm/addevent" element={<EventRegistration />} />
           <Route path="/cm/dashboard" element={<CMDashboard />} />
+
+          {/* Conference Module Admin-Panel */}
+          
+          <Route path="/cmadp" element={<ConferencePage />} />
+         <Route path="/cmadp/:confid" element={<Sidebar  />}>
+          <Route index element={<HomeConf />} />
+          <Route path="home" element={<HomeConf />} />
+          <Route path="speakers" element={<Speaker />} />
+          <Route path="committee" element={<Committees />} />
+          <Route path="sponsorship" element={<Sponsors />} />
+          <Route path="awards" element={<Awards />} />
+          <Route path="announcement" element={<Announcement />} />
+          <Route path="contact" element={<Contacts />} />
+          <Route path="images" element={<Images />} />
+          <Route path="eventdates" element={<EventDates />} />
+          <Route path="locations" element={<Location />} />
+          <Route path="participants" element={<Participants />} />
+          <Route path="navbar" element={<NavbarConf />} />
+          </Route>
+
+
+
+
+        
 
         </Routes>
         {/* <Footer/> */}
