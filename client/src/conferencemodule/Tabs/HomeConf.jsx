@@ -33,7 +33,7 @@ const HomeConf = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    const { confId, confName, confStartDate, confEndDate, aboutConf, aboutIns, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName } = formData;
+    const { confName, confStartDate, confEndDate, aboutConf, aboutIns, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName } = formData;
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -97,8 +97,8 @@ const HomeConf = () => {
     useEffect(() => {
         var currentURL = window.location.href;
         const IdConf = params.confid;
-        if (!currentURL.includes("/cmadp/" + IdConf + "/home")) {
-            navigate("/cmadp/" + IdConf + "/home")
+        if (!currentURL.includes("/cm/adminpanel/" + IdConf + "/home")) {
+            navigate("/cm/adminpanel/" + IdConf + "/home")
         }
 
         setLoading(true);

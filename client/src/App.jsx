@@ -117,8 +117,8 @@ function App() {
 
           {/* Conference Module Admin-Panel */}
           
-          <Route path="/cmadp" element={<ConferencePage />} />
-         <Route path="/cmadp/:confid" element={<Sidebar  />}>
+          <Route path="/cm/adminpanel" element={<ConferencePage />} />
+         <Route path="/cm/adminpanel/:confid" element={<Sidebar  />}>
           <Route index element={<HomeConf />} />
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />

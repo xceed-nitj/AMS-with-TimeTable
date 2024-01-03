@@ -137,7 +137,7 @@ const ConferencePage = () => {
                     <div className="tw-flex tw-flex-wrap tw-justify-evenly tw-items-center">
                         {data.length > 0 ? (
                             data.map((item, index) => (
-                                <Link key={item._id} to={`/cmadp/${item._id}`}>
+                                <Link key={item._id} to={`/cm/adminpanel/${item._id}`}>
                                     <div className="tw-w-[350px] tw-h-[200px] tw-flex tw-flex-col tw-justify-evenly tw-bg-blue-100  tw-rounded-lg tw-box-border tw-m-5 hover:tw-bg-blue-300 hover:tw-shadow-xl ">
                                         <table className="tw-min-w-full tw-mx-5 tw-bg-transparent tw-border-collapse tw-box-border">
                                             <tbody >
@@ -153,7 +153,7 @@ const ConferencePage = () => {
                                                 </tr>
                                             </tbody>
                                         </table>
-                                        <Link to="/cmadp">
+                                        <Link to="/cm/adminpanel">
                                             <div className="tw-p-1 tw-text-center tw-flex tw-justify-evenly">
                                                 <button
                                                     type="button"
