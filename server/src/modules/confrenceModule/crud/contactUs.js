@@ -2,69 +2,107 @@ const ContactUs = require("../../../models/conferenceModule/contactUs");
 const HttpException = require("../../../models/conferenceModule/http-exception");
 
 class ContactUsController {
-  async getAllContacts(confId) {
+  // GET /contact-us/conference/:id
+  async getContactUsByConferenceId(req, res) {
+    const { id } = req.params;
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
     try {
-      // Find all contact documents that match the confId using the Mongoose model
-      const contacts = await ContactUs.find({ confId });
-      return contacts;
-    } catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+      const contactUss = await ContactUs.find({ confId: id });
+      res.json(contactUss);
+    } catch (error) {
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 
-  async addContact(data) {
-    // if(!isValidContact(conf)) {
-    //     return res.status(400).json({ error: 'Invalid Contact data' });
+  // GET /contact-us
+  async getAllContactUs(req, res) {
+    try {
+      const contactUss = await ContactUs.find();
+      res.json(contactUss);
+    } catch (error) {
+      throw new HttpException(500, error?.message || "Internal server error");
+    }
+  }
+
+  // GET /contact-us/:id
+  async getContactUsById(req, res) {
+    const { id } = req.params;
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    try {
+      const contactUs = await ContactUs.findById(id);
+      if (contactUs) {
+        res.json(contactUs);
+      } else {
+        res.status(404).json({ error: "ContactUs message not found" });
+      }
+    } catch (error) {
+      throw new HttpException(500, error?.message || "Internal server error");
+    }
+  }
+
+  // POST /contact-us
+  async createContactUs(req, res) {
+    const newContactUs = req.body;
+    // if(!isValidContactUs(newContactUs)) {
+    //     return res.status(400).json({ error: 'Invalid contact us data' });
     //   }
     try {
-      console.log('data',data);
-      // Create a new ContactUs document using the Mongoose model
-     const createdContact=new ContactUs(data);
-     createdContact.save(); 
-      console.log(createdContact);
-      return createdContact;
-    } catch (e) {
-      throw new HttpException(500, e.message || "Internal Server error");
+      const createdContactUs = await ContactUs.create(newContactUs);
+      res.json(createdContactUs);
+    } catch (error) {
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 
-  async updateContact(id, data) {
+  // PUT /contact-us/:id
+  async updateContactUs(req, res) {
+    const { id } = req.params;
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    const updatedContactUs = req.body;
+    // if(!isValidContactUs(updatedContactUs)) {
+    //     return res.status(400).json({ error: 'Invalid contact us data' });
+    //   }
     try {
-      if (!id) {
-        throw new HttpException(400, "Contact ID is required");
-      }
-     
-      // Update a ContactUs document by its _id using the Mongoose model
-      const updatedContact = await ContactUs.findByIdAndUpdate(id, data, {
+      const contactUs = await ContactUs.findByIdAndUpdate(id, updatedContactUs, {
         new: true,
       });
-      if (!updatedContact) {
-        throw new HttpException(404, "Contact not found");
+      if (contactUs) {
+        res.json(contactUs);
+      } else {
+        res.status(404).json({ error: "ContactUs message not found" });
       }
-      return updatedContact;
-    } catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error"); 
+    } catch (error) {
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 
-  async deleteContact(id) {
+  // DELETE /contact-us/:id
+  async deleteContactUs(req, res) {
+    const { id } = req.params;
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
     try {
-      if (!id) {
-        throw new HttpException(400, "Contact ID is required");
+      const contactUs = await ContactUs.findByIdAndRemove(id);
+      if (contactUs) {
+        res.json(contactUs);
+      } else {
+        res.status(404).json({ error: "ContactUs message not found" });
       }
-      // Delete a ContactUs document by its _id using the Mongoose model
-      const deletedContact = await ContactUs.findByIdAndDelete(id);
-      if (!deletedContact) {
-        throw new HttpException(404, "Contact not found");
-      }
-      return deletedContact;
-    } catch (e) {
-      throw new HttpException(500, e.message || "Internal Server Error");
+    } catch (error) {
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 }
 
 module.exports = ContactUsController;
+
 function isValidContact(contact) {
   return (
     contact &&

@@ -1,91 +1,66 @@
 const express = require("express");
-const AwardsController = require("../crud/awards");
+const AwardsController = require("../crud/awards"); // Change to the appropriate awards controller
 
 const awardsRouter = express.Router();
 const awardsController = new AwardsController();
 
-// GET /awards/:id
-awardsRouter.get("/:id", async (req, res) => {
+// GET /awards/conference/:id
+awardsRouter.get("/conference/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log(id);
-    const awards = await awardsController.getAwardsByConferenceId(id);
-    res.status(200).json(awards);
+    await awardsController.getAwardsByConferenceId(req, res);
   } catch (error) {
-    console.error("Error fetching awards:", error);
-    res
-      .status(error?.code || 500)
-      .json({ error: error?.meta?.cause || "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /awards
 awardsRouter.get("/", async (req, res) => {
   try {
-    const allAwards = await awardsController.getAllAwards();
-    res.status(200).json(allAwards);
+    await awardsController.getAllAwards(req, res);
   } catch (error) {
-    console.error("Error fetching all awards:", error);
-    res
-      .status(error?.code || 500)
-      .json({ error: error?.meta?.cause || "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // GET /awards/:id
 awardsRouter.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const award = await awardsController.getAwardById(id);
-    res.status(200).json(award);
+    await awardsController.getAwardById(req, res);
   } catch (error) {
-    console.error("Error fetching award:", error);
-    res
-      .status(error?.code || 500)
-      .json({ error: error?.meta?.cause || "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // POST /awards
 awardsRouter.post("/", async (req, res) => {
   try {
-    const newAward = req.body;
-    const award = await awardsController.createAward(newAward);
-    res.status(201).json('new award created sucessfully');
+    await awardsController.createAward(req, res);
   } catch (error) {
-    console.error("Error creating award:", error);
-    res
-      .status(error?.code || 500)
-      .json({ error: error?.meta?.cause || "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // PUT /awards/:id
 awardsRouter.put("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const updatedAward = req.body;
-    const award = await awardsController.updateAward(id, updatedAward);
-    res.status(200).json('award updated sucessfully');
+    await awardsController.updateAward(req, res);
   } catch (error) {
-    console.error("Error updating award:", error);
-    res
-      .status(error?.code || 500)
-      .json({ error: error?.meta?.cause || "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // DELETE /awards/:id
 awardsRouter.delete("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    await awardsController.deleteAward(id);
-    res.status(200).json({ message: "Award deleted successfully" });
+    await awardsController.deleteAward(req, res);
   } catch (error) {
-    console.error("Error deleting award:", error);
-    res
-      .status(error?.code || 500)
-      .json({ error: error?.meta?.cause || "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

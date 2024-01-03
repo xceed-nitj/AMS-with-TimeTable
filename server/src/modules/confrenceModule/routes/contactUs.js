@@ -1,75 +1,67 @@
 const express = require("express");
-const { Request, Response } = require("express");
-const ContactUs = require("../../../models/conferenceModule/contactUs");
-const ContactUsController = require("../crud/contactUs");
+const ContactUsController = require("../crud/contactUs"); // Change to the appropriate contactUs controller
 
-const router = express.Router();
+const contactUsRouter = express.Router();
 const contactUsController = new ContactUsController();
 
-router.get("/:confId", async (req, res) => {
+// GET /contact-us/conference/:id
+contactUsRouter.get("/conference/:id", async (req, res) => {
   try {
-    const { confId } = req.params;
-    if (!confId) {
-      res.status(400).json({ message: "Conference ID is required" });
-      return;
-    }
-    const contacts = await contactUsController.getAllContacts(confId);
-    if (!contacts) {
-      res.status(404).json({ message: "No contacts found" });
-      return;
-    }
-    res.status(200).json(contacts);
-  } catch (e) {
-    res
-      .status(500)
-      .json({ message: e?.meta?.cause || "Internal Server Error" });
+    await contactUsController.getContactUsByConferenceId(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.post("/", async (req, res) => {
+// GET /contact-us
+contactUsRouter.get("/", async (req, res) => {
   try {
-    const newContact = req.body;
-    console.log(newContact);
-    if (!newContact.confId) {
-      res.status(400).json({ message: "Conference ID is required" });
-      return;
-    }
-    const contact = await contactUsController.addContact(newContact);
-    res.status(201).json({ message: "Contact added successfully" });
-  } catch (e) {
-    res
-      .status(500)
-      .json({ message: e?.meta?.cause || "Internal Server error" });
+    await contactUsController.getAllContactUs(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.put("/:id", async (req, res) => {
+// GET /contact-us/:id
+contactUsRouter.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const updatedContact = req.body;
-    if (!updatedContact.confId) {
-      res.status(400).json({ message: "Conference ID is required" });
-      return;
-    }
-    const contact = await contactUsController.updateContact(id, updatedContact);
-    res.status(200).json({ response: "contact updated successfully" });
-  } catch (e) {
-    res
-      .status(e.status || 500)
-      .json({ message: e?.meta?.cause || "Internal Server Error" });
+    await contactUsController.getContactUsById(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.delete("/:id", async (req, res) => {
+// POST /contact-us
+contactUsRouter.post("/", async (req, res) => {
   try {
-    const { id } = req.params;
-    await contactUsController.deleteContact(id);
-    res.status(200).json({ message: "Contact deleted successfully" });
-  } catch (e) {
-    res
-      .status(500)
-      .json({ message: e?.meta?.cause || "Internal Server Error" });
+    await contactUsController.createContactUs(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-module.exports = router;
+// PUT /contact-us/:id
+contactUsRouter.put("/:id", async (req, res) => {
+  try {
+    await contactUsController.updateContactUs(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /contact-us/:id
+contactUsRouter.delete("/:id", async (req, res) => {
+  try {
+    await contactUsController.deleteContactUs(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+module.exports = contactUsRouter;
