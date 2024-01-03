@@ -96,7 +96,7 @@ const ConferencePage = () => {
                 <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  ">Create a new Conference</div>
                 <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Email</label>
                 <input
-                    type="text"
+                    type="email"
                     required
                     name="email"
                     value={email}
@@ -117,7 +117,7 @@ const ConferencePage = () => {
                 <div className="tw-flex tw-justify-evenly">
                     <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add Conference</button>
                     <button
-                        type="submit"
+                        type="button"
                         onClick={() => {
                             handleUpdate();
                         }}

@@ -11,7 +11,7 @@ const Participants = () => {
   const apiUrl = getEnvironment();
 
     const initialData = {
-        "ConfId": IdConf,
+        "confId": IdConf,
         "authorName": "",
         "authorDesignation": "",
         "authorInstitute": "",
@@ -26,7 +26,7 @@ const Participants = () => {
     const [data, setData] = useState([]);
     const [refresh, setRefresh] = useState(0);
 
-    const { ConfId, authorName, authorDesignation, authorInstitute, paperTitle, paperId } = formData;
+    const {  authorName, authorDesignation, authorInstitute, paperTitle, paperId } = formData;
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -44,7 +44,10 @@ const Participants = () => {
                 setFormData(initialData);
                 setRefresh(refresh + 1);
             })
-            .catch(err => console.log(err));
+            .catch(err =>{
+                console.log(err);
+                console.log(formData)
+            } );
 
     };
 
@@ -127,7 +130,7 @@ const Participants = () => {
 
                         <div className="tw-flex tw-justify-evenly">
                             <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add </button>
-                            <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">
+                            <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">
                                 Update 
                             </button>
                         </div>
@@ -158,10 +161,10 @@ const Participants = () => {
                                                 <td className="tw-p-1 tw-text-center">{item.authorInstitute}</td>
 
                                               <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                    <button onClick={() => {
-                                                        handleEdit(item.id);
-                                                        setEditID(item.id);
+                                                        handleEdit(item._id);
+                                                        setEditID(item._id);
                                                     }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
-                                                    <button onClick={() => handleDelete(item.id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
+                                                    <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
                                                 </td>
                                             </tr>)) : (
                                                 <tr>

@@ -29,6 +29,6 @@ const participantSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const Participant = mongoose.model("Participant", participantSchema);
+const ParticipantCF = mongoose.model("ParticipantCF", participantSchema);
 
-module.exports = Participant;
+module.exports = ParticipantCF;

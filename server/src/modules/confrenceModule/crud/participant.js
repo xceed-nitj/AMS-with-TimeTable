@@ -1,4 +1,4 @@
-const Participant = require("../../../models/conferenceModule/participant");
+const Participant = require("../../../models/conferenceModule/participants");
 const HttpException = require("../../../models/conferenceModule/http-exception");
 
 class ParticipantController {
@@ -21,9 +21,9 @@ class ParticipantController {
 
     try {
       // Find a Participant document by _id using the Mongoose model
-      const Participant = await Participant.findById(id);
-      if (!Participant) throw new HttpException(400, "data does not exists");
-      return Participant;
+      const participant = await Participant.findById(id);
+      if (!participant) throw new HttpException(400, "data does not exists");
+      return participant;
     } catch (e) {
       throw new HttpException(500, e?.message || "Internal Server Error");
     }
@@ -47,18 +47,26 @@ class ParticipantController {
     }
   }
 
-  async updateParticipant(participant, id) {
+  async updateParticipant(req, res) {
+    const { id } = req.params;
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
-    if (!isValidParticipant(participant)) {
-      return res.status(400).json({ error: "Invalid participant data" });
-    }
+    const updatedParticipant = req.body;
+    // if(!isValidSpeakers(updatedSpeaker)) {
+    //     return res.status(400).json({ error: 'Invalid speaker data' });
+    //   }
     try {
-      // Update a Participant document by _id using the Mongoose model
-      return await Participant.findByIdAndUpdate(id, participant);
-    } catch (e) {
-      throw new HttpException(500, e?.message || "Internal Server Error");
+      const participant = await Participant.findByIdAndUpdate(id, updatedParticipant, {
+        new: true,
+      });
+      if (participant) {
+        res.json(participant);
+      } else {
+        res.status(404).json({ error: "participant not found" });
+      }
+    } catch (error) {
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 

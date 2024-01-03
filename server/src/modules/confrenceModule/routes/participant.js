@@ -1,6 +1,5 @@
 const express = require("express");
 const { Router } = express;
-const participant = require("../../../models/conferenceModule/participant");
 const ParticipantController = require("../crud/participant");
 
 const participantController = new ParticipantController();
@@ -57,19 +56,13 @@ router.post("/", async (req, res) => {
   }
 });
 
+
 router.put("/:id", async (req, res) => {
   try {
-    const participantData = req.body;
-    await participantController.updateParticipant(
-      participantData,
-      req.params.id
-    );
-    res.status(200).json({ success: "Participant Updated Successfully" });
-  } catch (e) {
-    console.error("Error participant items:", e);
-    res
-      .status(e?.code || 500)
-      .json({ error: e?.message || "Internal server error" });
+    await participantController.updateParticipant(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
