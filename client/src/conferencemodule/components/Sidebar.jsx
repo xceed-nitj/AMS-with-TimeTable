@@ -175,7 +175,7 @@ const Sidebar = () => {
       </div>
 
       <div className='tw-float-right '>
-        <button type="button" onClick={() => navigate("/cm/adminpanel")} className="tw-text-white tw-bg-gradient-to-r tw-from-blue-500 tw-via-blue-600 tw-to-blue-700 tw-hover:bg-gradient-to-br tw-focus:ring-4 tw-focus:outline-none tw-focus:ring-blue-300 tw-dark:focus:ring-blue-800 tw-shadow-lg tw-shadow-blue-500/50 tw-dark:shadow-lg tw-dark:shadow-blue-800/80 tw-font-medium tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center  tw-m-5 mr-5 md:tw-mr-20 ">All Conferences</button>
+        <button type="button" onClick={() => navigate("/cf/adminpanel")} className="tw-text-white tw-bg-gradient-to-r tw-from-blue-500 tw-via-blue-600 tw-to-blue-700 tw-hover:bg-gradient-to-br tw-focus:ring-4 tw-focus:outline-none tw-focus:ring-blue-300 tw-dark:focus:ring-blue-800 tw-shadow-lg tw-shadow-blue-500/50 tw-dark:shadow-lg tw-dark:shadow-blue-800/80 tw-font-medium tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center  tw-m-5 mr-5 md:tw-mr-20 ">All Conferences</button>
       </div>
 
       <Outlet />

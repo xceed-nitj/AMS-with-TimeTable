@@ -97,8 +97,8 @@ const HomeConf = () => {
     useEffect(() => {
         var currentURL = window.location.href;
         const IdConf = params.confid;
-        if (!currentURL.includes("/cm/adminpanel/" + IdConf + "/home")) {
-            navigate("/cm/adminpanel/" + IdConf + "/home")
+        if (!currentURL.includes("/cf/adminpanel/" + IdConf + "/home")) {
+            navigate("/cf/adminpanel/" + IdConf + "/home")
         }
 
         setLoading(true);
