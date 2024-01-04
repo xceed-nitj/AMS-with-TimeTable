@@ -32,7 +32,7 @@ participantRouter.post("/batchupload/:eventId",upload.single('csvfile'), async (
 // Route to create a new participant
 participantRouter.post("/addparticipant/:eventId", async (req, res) => {
   try {
-    const newparticipant=await participantController.addparticipant(req.body);
+    const newparticipant=await participantController.addparticipant(req.body,req.params.eventId);
     return res.status(200).json(newparticipant);
   } 
   catch (e) {

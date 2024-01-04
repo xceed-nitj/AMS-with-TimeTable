@@ -92,7 +92,7 @@ function CMDashboard() {
                   <Center>
                 <CustomLink
                 href={`http://${domainName}/cm/${event._id}`}
-                target="_blank" // Optional: If you want to open the link in a new tab
+                 // Optional: If you want to open the link in a new tab
               >
                 {event.name} Certificates
               </CustomLink></Center>
@@ -101,7 +101,7 @@ function CMDashboard() {
                   <Center>
                 <CustomLink
                 href={`http://${domainName}/cm/${event._id}/addparticipant`}
-                target="_blank" // Optional: If you want to open the link in a new tab
+                // target="_blank" // Optional: If you want to open the link in a new tab
               >
                 {event.name} participants
               </CustomLink></Center>
