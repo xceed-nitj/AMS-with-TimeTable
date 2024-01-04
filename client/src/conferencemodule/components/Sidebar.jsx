@@ -5,7 +5,6 @@ import { Dialog, Transition } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link, Outlet } from 'react-router-dom';
 import { useNavigate, useLocation } from "react-router-dom";
-
 const navigation = [
   { name: 'Home', href: 'home' },
   { name: 'Speakers', href: 'speakers' },
@@ -93,8 +92,8 @@ const Sidebar = () => {
                       <div className='tw-flex tw-h-16 tw-shrink-0 tw-items-center'>
                         <img
                           className='tw-h-8 tw-w-auto'
-                          src='https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600'
-                          alt='Your Company'
+                          src='/confSidebarLogo.png'
+                          alt='XCEED '
                         />
                       </div>
                     </Link>
@@ -133,8 +132,8 @@ const Sidebar = () => {
             <div className='tw-flex tw-h-16 tw-shrink-0 tw-items-center'>
               <img
                 className='tw-h-8 tw-w-auto'
-                src='https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600'
-                alt='Your Company'
+                src='/confSidebarLogo.png'
+                alt='Xceed'
               />
             </div>
             <nav className='tw-flex tw-flex-1 tw-flex-col'>

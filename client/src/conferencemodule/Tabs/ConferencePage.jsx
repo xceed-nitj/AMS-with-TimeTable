@@ -96,7 +96,7 @@ const ConferencePage = () => {
                 <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  ">Create a new Conference</div>
                 <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Email</label>
                 <input
-                    type="text"
+                    type="email"
                     required
                     name="email"
                     value={email}
@@ -114,16 +114,16 @@ const ConferencePage = () => {
                     className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black"
                 />
 
-                <div className="tw-flex tw-justify-evenly">
-                    <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add Conference</button>
+                <div className="tw-flex tw-justify-evenly tw-mt-5">
+                    <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add </button>
                     <button
-                        type="submit"
+                        type="button"
                         onClick={() => {
                             handleUpdate();
                         }}
                         className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black"
                     >
-                        Update Conference
+                        Update 
                     </button>
                 </div>
             </form>
@@ -138,8 +138,8 @@ const ConferencePage = () => {
                         {data.length > 0 ? (
                             data.map((item, index) => (
                                 <Link key={item._id} to={`/cf/adminpanel/${item._id}`}>
-                                    <div className="tw-w-[350px] tw-h-[200px] tw-flex tw-flex-col tw-justify-evenly tw-bg-blue-100  tw-rounded-lg tw-box-border tw-m-5 hover:tw-bg-blue-300 hover:tw-shadow-xl ">
-                                        <table className="tw-min-w-full tw-mx-5 tw-bg-transparent tw-border-collapse tw-box-border">
+                                    <div className="tw-w-[280px] md:tw-w-[320px] tw-h-[200px] tw-flex tw-flex-col tw-justify-evenly tw-bg-blue-100  tw-rounded-lg tw-box-border tw-m-5 hover:tw-bg-blue-300 hover:tw-shadow-xl ">
+                                        <table className="tw-min-w-full mx-2 md:tw-mx-5 tw-bg-transparent tw-border-collapse tw-box-border">
                                             <tbody >
                                                 <tr>
                                                     <td className="tw-p-1 tw-font-bold tw-border-hidden tw-text-center">Email</td>

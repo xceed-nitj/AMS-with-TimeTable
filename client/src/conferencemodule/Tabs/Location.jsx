@@ -25,9 +25,9 @@ const Location = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
+
     const { description, address, latitude, longitude } = formData;
 
-    const { name, imgLink } = formData;
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "sequence") {
@@ -53,23 +53,27 @@ const Location = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post(`${apiUrl}/conferencemodule/location`, formData, {
-            withCredentials: true
-
-        })
-            .then(res => {
-                setData(res.data);
-                setFormData(initialData);
-                setRefresh(refresh + 1);
-            })
-            .catch(err => {
-                console.log(err);
-                console.log(formData);
-            });
+        if(data && Object.keys(data).length !== 0){
+         window.alert('You can Add only one Location for one conference');
+         setFormData(initialData)
+        }
+        else{
+            axios.post(`${apiUrl}/conferencemodule/location`, formData, { withCredentials: true })
+                .then(res => {
+                    setData(res.data);
+                    setFormData(initialData);
+                    setRefresh(refresh + 1);
+                })
+                .catch(err => {
+                    console.log(err);
+                    console.log(formData);
+                });
+        }
+        
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/conferencemodule/locations/${editID}`, formData, {
+        axios.put(`${apiUrl}/conferencemodule/location/${editID}`, formData, {
             withCredentials: true
 
         })
@@ -151,9 +155,10 @@ const Location = () => {
                             <option value={false}>No</option>
                         </select>
 
-                        <div className="tw-flex tw-justify-evenly">
+                       <div className="tw-flex tw-justify-evenly">
                             <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add</button>
-                            <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Update</button>
+                      
+                            <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Update</button>
                         </div>
                     </form>
 
@@ -183,13 +188,13 @@ const Location = () => {
                                             <td className="tw-p-1 tw-text-center">{data.address}</td>
                                             <td className="tw-p-1 tw-text-center">{data.latitude}</td>
                                             <td className="tw-p-1 tw-text-center">{data.longitude}</td>
-                                            <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data.id); setEditID(data.id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
+                                            <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
                                                 <button onClick={() => handleDelete(data._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
                                             </td>
                                         </tr>
                                     ) : (
                                         <tr>
-                                            <td colSpan="4" className="tw-p-1 tw-text-center">No conference data available</td>
+                                            <td colSpan="5" className="tw-p-1 tw-text-center">No Location data available</td>
                                         </tr>
                                     )}
                                 </tbody>
