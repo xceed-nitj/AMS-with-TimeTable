@@ -171,7 +171,7 @@ const HomeConf = () => {
 
                         <div className="tw-flex tw-justify-evenly">
                             <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 px-2  tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Add</button>
-                            <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 px-2 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Update</button>
+                            <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 tw-px-2 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Update</button>
                         </div>
                     </form>
 
