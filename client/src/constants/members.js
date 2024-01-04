@@ -87,6 +87,16 @@ export const ravinder = {
   linkedin: 'https://www.linkedin.com/in/ravinder-chadha/',
 };
 
+export const prince = {
+  id: 8,
+  name: 'Prince Verma',
+  designation: 'Institute Website Lead',
+  image: '/home/team/Prince.webp',
+  linkedin:
+    'https://www.linkedin.com/in/princeverma360?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app',
+  github: 'https://github.com/princeverma-ai',
+};
+
 export const madhesh = {
   name: 'Madhesh Goyal',
   designation: 'Front End Developer',
@@ -135,8 +145,6 @@ export const sarthaksharma = {
   linkedin: 'https://www.linkedin.com/in/sarthak-sharma-33620219b/',
 };
 
-// kashish mangal	full stack developer	https://drive.google.com/open?id=1wzr_cJi9kqXTKHYxupqkQJjGxC0BLQpf	https://github.com/Kashish-gitt	https://www.linkedin.com/in/kashishmangal/
-
 export const kashish = {
   name: 'Kashish Mangal',
   designation: 'Full Stack Developer',
@@ -154,6 +162,7 @@ export const coreTeam = [
   bhavya,
   lavish,
   ravinder,
+  prince,
 ];
 
 export const timeTableTeam = [madhesh, pihu, akshika, sourabh, dhruv, gautam];
