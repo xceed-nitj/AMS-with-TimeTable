@@ -7,8 +7,8 @@ const fs = require("fs");
 const ejs = require("ejs");
 const mailSender = require("./mailsender");
 const path = require("path");
-const ejsTemplatePath = path.join(__dirname, "otpBody.ejs");
-
+const ejsTemplatePath = path.join(__dirname, "otpbody.ejs");
+console.log(ejsTemplatePath);
 async function forgotPassword(req, res) {
   try {
     const { email } = req.body;
