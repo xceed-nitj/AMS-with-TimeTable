@@ -16,10 +16,10 @@ const storage = multer.memoryStorage({
 const upload = multer({ storage: storage });
 
 // Route to create a new Batch participant
-participantRouter.post("/",upload.single('csvfile'), async (req, res) => {
+participantRouter.post("/batchupload/:eventId",upload.single('csvfile'), async (req, res) => {
   try {
     const fileBuffer = req.file.buffer;
-    await participantController.addBatchparticipant(fileBuffer,req.query?.eventId);
+    await participantController.addBatchparticipant(fileBuffer,req.params?.eventId);
     return res.status(200).json({message: 'Data added succesfully'});
   } 
   catch (e) {

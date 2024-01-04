@@ -59,6 +59,7 @@ class AddEventController {
       throw new HttpException(400, "Invalid User");
     }
     try {
+      console.log(user)
       const data = await addEvent.find({ user: user });
       if (!data) throw new HttpException(400, "Event does not exist");
       return data;

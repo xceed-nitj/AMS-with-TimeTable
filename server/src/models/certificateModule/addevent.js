@@ -20,12 +20,9 @@ const addEventSchema = new mongoose.Schema({
   participantType:{
     type: String,
     
-    enum: participantTypes,
   },
   organiserType: {
     type: String,
-    
-    enum: organiserTypes,
   },
   eventType:{
     type: String,

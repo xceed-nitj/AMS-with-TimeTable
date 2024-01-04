@@ -116,10 +116,10 @@ function Participant() {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-      formData.append('code', currentCode); 
+      formData.append('eventcode', eventId); 
       setIsLoading(true);
   
-      fetch(`${apiUrl}/upload/certificate/participant/${eventId}`, {
+      fetch(`${apiUrl}/certificatemodule/participant/batchupload/${eventId}`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -311,7 +311,7 @@ function Participant() {
 
 
   const handleDeleteAll = () => {
-    if (currentCode) {
+    if (eventId) {
       if (
         window.confirm(
           "Are you sure you want to delete all entries with the current code?"

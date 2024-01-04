@@ -28,18 +28,18 @@ addEventRouter.get("/", async (req, res) => {
   }
 });
 
-// Route to get a specific event by ID
-addEventRouter.get("/:eventId", async (req, res) => {
-  try {
-    const eventId = req.params?.eventId;
-    const event = await addEventController.getEventById(eventId);
-    return res.status(200).json(event);
-  } catch (e) {
-    return res
-      .status(e?.status || 500)
-      .json({ error: e?.message || "Internal Server Error" });
-  }
-});
+// // Route to get a specific event by ID
+// addEventRouter.get("/:eventId", async (req, res) => {
+//   try {
+//     const eventId = req.params?.eventId;
+//     const event = await addEventController.getEventById(eventId);
+//     return res.status(200).json(event);
+//   } catch (e) {
+//     return res
+//       .status(e?.status || 500)
+//       .json({ error: e?.message || "Internal Server Error" });
+//   }
+// });
 
 
 // Route to update a specific event by ID
