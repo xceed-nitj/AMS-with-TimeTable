@@ -14,10 +14,7 @@ router.get("/:confId", async (req, res) => {
       return;
     }
     const locations = await locationController.getLocation(confId);
-    if (!locations) {
-      res.status(404).json({ message: "No locations found" });
-      return;
-    }
+    
     res.status(200).json(locations);
   } catch (e) {
     console.error("Error fetching locations:", e);

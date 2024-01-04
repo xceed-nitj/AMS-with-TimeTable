@@ -74,23 +74,20 @@ class EventDateController {
       throw new HttpException(400, "Invalid Id");
     }
     const updatedEventDate = req.body;
-    if (!isValidEventDates(updatedEventDate)) {
-      return res.status(400).json({ error: "Invalid Event date" });
-    }
+    // if(!isValidSpeakers(updatedSpeaker)) {
+    //     return res.status(400).json({ error: 'Invalid speaker data' });
+    //   }
     try {
-      // Update an EventDate document by its _id using the Mongoose model
-      const eventDate = await EventDate.findByIdAndUpdate(
-        id,
-        updatedEventDate,
-        { new: true }
-      );
+      const eventDate = await EventDate.findByIdAndUpdate(id, updatedEventDate, {
+        new: true,
+      });
       if (eventDate) {
         res.json(eventDate);
       } else {
         res.status(404).json({ error: "EventDate not found" });
       }
     } catch (error) {
-      throw new HttpException(500, error.message || "Internal server error");
+      throw new HttpException(500, error?.message || "Internal server error");
     }
   }
 

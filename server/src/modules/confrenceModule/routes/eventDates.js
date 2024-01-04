@@ -57,17 +57,13 @@ eventDateRouter.post("/", async (req, res) => {
   }
 });
 
-// PUT /eventDates/:id
+
 eventDateRouter.put("/:id", async (req, res) => {
   try {
-    const id = req.params.id;
-    const updatedEventDate = req.body;
-    await eventDateController.updateEventDate(id, updatedEventDate);
-    res.status(200).json({ response: "Event Date updated successfully" });
-  } catch (e) {
-    res
-      .status(e?.status || 500)
-      .json({ error: e?.message || "Internal Server Error" });
+    await eventDateController.updateEventDate(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

@@ -23,7 +23,7 @@ class HomeController {
       // Find a Home document that matches the confId using the Mongoose model
       const home = await Home.findOne({ confId: id });
 
-      if (!home) throw new HttpException(400, "data does not exists");
+      if (!home) return null;
       return home;
     } catch (e) {
       throw new HttpException(500, e?.message || "Internal Server Error");

@@ -9,7 +9,7 @@ const HomeConf = () => {
     const navigate = useNavigate();
 
     const params = useParams();
-  const apiUrl = getEnvironment();
+    const apiUrl = getEnvironment();
 
     const IdConf = params.confid;
     const initialData = {
@@ -41,11 +41,13 @@ const HomeConf = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (data) {
+            window.alert('You cannot Add multiple values of this for one conference');
+         setFormData(initialData)
 
-        axios.post(`${apiUrl}/conferencemodule/home`, formData, {
-            withCredentials: true
-
-        })
+        }
+        else {
+            axios.post(`${apiUrl}/conferencemodule/home`, formData, { withCredentials: true })
             .then(res => {
                 setData(res.data);
                 console.log(res.data);
@@ -56,6 +58,9 @@ const HomeConf = () => {
                 console.log(err);
                 console.log(formData);
             });
+
+        }
+
     };
 
     const handleUpdate = () => {
@@ -125,48 +130,48 @@ const HomeConf = () => {
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Starting Date of Conference</label>
-                        <input type="date" name="confStartDate" required   value={confStartDate} onChange={handleChange}
+                        <input type="date" name="confStartDate" required value={confStartDate} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Ending Date of Conference</label>
-                        <input type="date" name="confEndDate" required  value={confEndDate} onChange={handleChange}
+                        <input type="date" name="confEndDate" required value={confEndDate} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Description of Conference</label>
-                        <input type="text" name="aboutConf" required  value={aboutConf} onChange={handleChange}
+                        <input type="text" name="aboutConf" required value={aboutConf} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">About Institute</label>
-                        <input type="text" name="aboutIns" required  value={aboutIns} onChange={handleChange}
+                        <input type="text" name="aboutIns" value={aboutIns} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Youtube Link</label>
-                        <input type="text" name="youtubeLink" required  value={youtubeLink} onChange={handleChange}
+                        <input type="text" name="youtubeLink" value={youtubeLink} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Instagram Link</label>
-                        <input type="text" name="instaLink" required  value={instaLink} onChange={handleChange}
+                        <input type="text" name="instaLink" value={instaLink} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Facebook Link</label>
-                        <input type="text" name="facebookLink" required  value={facebookLink} onChange={handleChange}
+                        <input type="text" name="facebookLink" value={facebookLink} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Twitter Link</label>
-                        <input type="text" name="twitterLink" required  alue={twitterLink} onChange={handleChange}
+                        <input type="text" name="twitterLink" value={twitterLink} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Logo</label>
-                        <input type="text" name="logo" required   value={logo} onChange={handleChange}
+                        <input type="text" name="logo" value={logo} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">shortName</label>
-                        <input type="text" name="shortName" required  value={shortName} onChange={handleChange}
+                        <input type="text" name="shortName" value={shortName} onChange={handleChange}
                             className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
                         <div className="tw-flex tw-justify-evenly">
                             <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 px-2  tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Add</button>
-                            <button type="submit" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 px-2 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Update</button>
+                            <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 tw-px-2 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Update</button>
                         </div>
                     </form>
 
@@ -192,7 +197,7 @@ const HomeConf = () => {
                                             <td className="tw-p-1 tw-text-center">{data.confName}</td>
                                             <td className="tw-p-1 tw-text-center">{data.confStartDate}</td>
                                             <td className="tw-p-1 tw-text-center">{data.confEndDate}</td>
-                                          <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
+                                            <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
                                                 <button onClick={() => handleDelete(data._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Delete </button>
                                             </td>
                                         </tr>

@@ -9,7 +9,7 @@ class LocationController {
     try {
       // Find a Location document that matches the confId using the Mongoose model
       const location = await Location.findOne({ confId: confId });
-      if (!location) throw new HttpException(404, "data does not exists");
+      if (!location) return null;
       return location;
     } catch (e) {
       throw new HttpException(500, e?.message || "Internal Server Error");
