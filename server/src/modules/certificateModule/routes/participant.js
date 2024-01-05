@@ -56,7 +56,7 @@ participantRouter.get("/getparticipant/:eventId", async (req, res) => {
 });
 
 // Route to get a specific participant by ID
-participantRouter.get("/:participantId", async (req, res) => {
+participantRouter.get("/getoneparticipant/:participantId", async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     const participant = await participantController.getparticipantById(participantId);

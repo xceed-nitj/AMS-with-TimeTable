@@ -15,7 +15,6 @@ class AddcertificateController {
         // If exists, update the existing certificate
         const updatedCertificate=await certificate.updateOne(
           { eventId: eventId },
-          {new: true},
           {
             $set: {
               logos: newCertificate.logos,

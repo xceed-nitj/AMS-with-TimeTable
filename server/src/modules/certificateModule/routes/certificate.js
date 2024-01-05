@@ -6,7 +6,7 @@ const certificateController = new CertificateController();
 // Route to create a new certificate
 certificateRouter.post("/content/:id", async (req, res) => {
   try {
-    const newcertificate=await certificateController.addcertificate(req.body);
+    const newcertificate=await certificateController.addcertificate(req.params.id, req.body);
     return res.status(200).json(newcertificate);
   } catch (e) {
     return res

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import getEnvironment from "../../getenvironment";
 import FileDownloadButton from "../../filedownload/filedownload";
+import { Link as ChakraLink } from '@chakra-ui/react';
 // import subjectFile from '../assets/subject_template';
 import {
   Container,
@@ -39,6 +40,7 @@ function Participant() {
   const currentURL = window.location.pathname;
   const parts = currentURL.split("/");
   const eventId = parts[parts.length - 2];
+  const frontendHost=parts[parts.length-4]
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadState, setUploadState] = useState(false);
@@ -665,6 +667,7 @@ function Participant() {
                         <Input
                           type="text"
                           value={row._id}
+                          isDisabled
                           // onChange={(e) =>
                           //   setEditedData({
                           //     ...editedData,
@@ -673,7 +676,9 @@ function Participant() {
                           // }
                           />
                           ) : (
-                            row._id
+                            <ChakraLink href={`${frontendHost}/cm/c/${eventId}/${row._id}`} isExternal>
+    View certificate
+  </ChakraLink>
                       )}
                     </Center>
                   </Td>

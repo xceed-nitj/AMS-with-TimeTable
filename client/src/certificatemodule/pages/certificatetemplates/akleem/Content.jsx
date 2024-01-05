@@ -9,7 +9,7 @@ function Content() {
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 2];
   const participantId = parts[parts.length - 1];
-
+console.log(participantId)
     async function fetchData() {
         try {
           console.log('executing function');
@@ -20,48 +20,38 @@ function Content() {
                 "Content-Type": "application/json",
               },
               credentials: "include",
-            })
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error(`Error fetching data_one: ${response.status} ${response.statusText}`);
-                }
-                return response.json(); // Await the response.json() to get the actual data
-              })
-              .catch(error => {
-                console.error('Error fetching data_one:', error.message);
-                throw error;
-              }),
-      
-            fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${participantId}`, {
+            }), 
+
+            fetch(`${apiUrl}/certificatemodule/participant/getoneparticipant/${participantId}`, {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
               },
               credentials: "include",
             })
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error(`Error fetching data_two: ${response.status} ${response.statusText}`);
-                }
-                return response.json(); // Await the response.json() to get the actual data
-              })
-              .catch(error => {
-                console.error('Error fetching data_two:', error.message);
-                throw error;
-              }),
+              ,
           ]);
       
-          const data_one = await response_one; // Await the data_one promise
-          const data_two = await response_two; // Await the data_two promise
+        //   console.log('Data from response_one:', response_one.json());
+        //   console.log('Data from response_two:', response_two.json());
 
-          console.log('Data from response_one:', data_one);
+          const data_one = await response_one.json(); // Await the data_one promise
+          const data_two = await response_two.json(); // Await the data_two promise
+
+          console.log('Data from response dataaaaaaaaa:', data_one);
           console.log('Data from response_two:', data_two);
+         
+          let content_body = data_one[0].body;
+        
+            // Replace all placeholders with actual values from data_two
+    Object.keys(data_two).forEach(variable => {
+        const placeholder = new RegExp(`{{${variable}}}`, 'g');
+        content_body = content_body.replace(placeholder, data_two[variable]);
+        console.log('vriable data', data_two[variable])
+      });
       
-          const content_body = data_one.body;
-          const name = data_two.name;
-          const designation = data_two.designation;
-      
-          const result = `${content_body} ${name} ${designation}`;
+          // Now content_body has all the placeholders replaced with actual values from data_two
+          const result = `${content_body}`;
           setContentBody(result);
         } catch (error) {
           console.error('Error fetching data:', error);
