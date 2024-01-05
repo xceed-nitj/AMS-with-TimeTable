@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview", 
+    "preview": "vite preview",
     "serve": "vite preview"
   },
   "dependencies": {
@@ -19,9 +19,9 @@
     "@heroicons/react": "^2.1.1",
     "@react-pdf/renderer": "^3.1.14",
     "@rive-app/react-canvas": "^4.5.4",
-    "axios": "^1.6.3",
     "@tailwindcss/typography": "^0.5.10",
     "@uidotdev/usehooks": "^2.4.1",
+    "axios": "^1.6.3",
     "clsx": "^2.0.0",
     "framer-motion": "^10.16.16",
     "html2canvas": "^1.4.1",
@@ -31,6 +31,7 @@
     "papaparse": "^5.4.1",
     "pdf-lib": "^1.17.1",
     "pdfmake": "^0.2.8",
+    "qrcode": "^1.5.3",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
