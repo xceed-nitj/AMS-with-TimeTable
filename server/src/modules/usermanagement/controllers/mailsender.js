@@ -10,7 +10,7 @@ const mailSender = async (email, title, body) => {
       },
     });
     let info = await transport.sendMail({
-      from: "sdaman830@gmail.com",
+      from: { name: "XCEED NITJ", address: process.env.MAIL_USER },
       to: `${email}`,
       subject: `${title}`,
       html: `${body}`,
