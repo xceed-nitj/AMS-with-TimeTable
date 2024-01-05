@@ -37,7 +37,7 @@ const ParticipantSchema = new mongoose.Schema({
   },
   eventId:{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'addEvent',
+    ref: 'addevent',
     required: true
     
   },
