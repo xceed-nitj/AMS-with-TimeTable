@@ -103,14 +103,16 @@ export default function Navbar() {
     setHovered(false);
   };
 
-  const excludedRoutes = ['/login','/services'];
+  const excludedRoutes = ['/login','/services','/cm/c'];
 
   // const isExcluded = excludedRoutes.includes(location.pathname);
   const isExcluded = excludedRoutes.some((route) =>
     location.pathname.startsWith(route)
   );
 
+
   if (isLoading || isExcluded) {
+    // console.log('Navbar excluded.');
     return null;
   }
   
