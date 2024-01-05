@@ -66,7 +66,6 @@ console.log(participantId)
    
     return (
         <>
-
             <text
                 x="561.26"
                 y="120.473"
@@ -117,38 +116,27 @@ console.log(participantId)
                 </p>
             </foreignObject>
 
-            <foreignObject
-                x="0"
-                y="603.689"
-                width="100%"
-                height="2000">
-                <div className="justify-center flex flex-wrap gap-20 w-full px-20">
-                    <div className="w-[9rem] flex flex-col text-center">
-                        <hr className="w-full h-[1.2px] bg-black mb-1" />
-                        <p className=" font-serif opacity-80 font-normal">
-                            Dr. Prem Singh
-                        </p>
-                    </div>
-                    <div className="w-[9rem] flex flex-col text-center">
-                        <hr className="w-full h-[1.2px] bg-black mb-1" />
-                        <p className=" font-serif opacity-80 font-normal">
-                            Dr. Prem Singh
-                        </p>
-                    </div>
-                    <div className="w-[9rem] flex flex-col text-center">
-                        <hr className="w-full h-[1.2px] bg-black mb-1" />
-                        <p className=" font-serif opacity-80 font-normal">
-                            Dr. Prem Singh
-                        </p>
-                    </div>
-                    <div className="w-[9rem] flex flex-col text-center">
-                        <hr className="w-full h-[1.2px] bg-black mb-1" />
-                        <p className=" font-serif opacity-80 font-normal">
-                            Dr. Prem Singh
-                        </p>
-                    </div>
-                </div>
-            </foreignObject>
+            <foreignObject x="0" y="603.689" width="100%" height="2000">
+    <div className="justify-center flex flex-wrap gap-20 w-full px-20">
+        <div className="w-[9rem] flex flex-col text-center">
+            <line x1="0" y1="0" x2="100%" y2="0" stroke="#000" strokeWidth="1.2" />
+            <p className="font-serif opacity-80 font-normal">Dr. Prem Singh</p>
+        </div>
+        <div className="w-[9rem] flex flex-col text-center">
+            <line x1="0" y1="0" x2="100%" y2="0" stroke="#000" strokeWidth="1.2" />
+            <p className="font-serif opacity-80 font-normal">Dr. Prem Singh</p>
+        </div>
+        <div className="w-[9rem] flex flex-col text-center">
+            <line x1="0" y1="0" x2="100%" y2="0" stroke="#000" strokeWidth="1.2" />
+            <p className="font-serif opacity-80 font-normal">Dr. Prem Singh</p>
+        </div>
+        <div className="w-[9rem] flex flex-col text-center">
+            <line x1="0" y1="0" x2="100%" y2="0" stroke="#000" strokeWidth="1.2" />
+            <p className="font-serif opacity-80 font-normal">Dr. Prem Singh</p>
+        </div>
+    </div>
+    <a href="xceed.nit.ac.in">link herer</a>
+</foreignObject>
 
         </>
     )
