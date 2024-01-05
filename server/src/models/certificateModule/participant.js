@@ -9,6 +9,10 @@ const ParticipantSchema = new mongoose.Schema({
     type: String,
     
   },
+  email: {
+    type: String,
+    
+  },
   department: {
     type: String,
     
