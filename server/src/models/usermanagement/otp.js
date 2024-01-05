@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const mailSender = require("../../modules/usermanagement/controllers/mailsender");
+const mailSender = require("../../modules/mailsender");
 require("../commonFields");
 
 const Schema = mongoose.Schema;
