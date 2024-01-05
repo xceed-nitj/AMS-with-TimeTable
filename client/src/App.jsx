@@ -13,7 +13,7 @@ import ForgotPassword from './dashboard/ForgotPassword';
 
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
-import LockedView from './timetableviewer/viewer';
+// import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
 import Navbar from './components/home/Navbar';
 import PrintSummary from './timetableadmin/printSummary'
@@ -56,6 +56,7 @@ import Participants from './conferencemodule/Tabs/Participants';
 import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
+import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 
 
 function App() {
@@ -101,7 +102,7 @@ function App() {
           <Route path="/tt/:generatedLink/addlunchload" element={<LunchLoad/>} />
 
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
-          <Route path="/tt/viewtimetable" element={<LockedView/>} />
+          {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
           <Route path="/tt/masterview" element={<MasterView/>}/>
@@ -114,6 +115,8 @@ function App() {
           <Route path="/cm/dashboard" element={<CMDashboard />} />
           <Route path="/cm/:eventid" element={<CertificateForm/>}/>
           <Route path="/cm/:eventid/addparticipant" element={<Participant/>}/>
+          <Route path="/cm/c/:eventid/:participantid" element={<Template01/>}/>
+
 
           {/* Conference Module Admin-Panel */}
           

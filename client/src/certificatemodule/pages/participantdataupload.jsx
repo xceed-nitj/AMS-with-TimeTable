@@ -496,6 +496,8 @@ function Participant() {
 
             </Box>
 
+
+
             <Box  display='flex' justifyContent='space-between'>
               <CustomBlueButton width='36' onClick={handleCancelAddSubject}>
                 Cancel
@@ -536,7 +538,7 @@ function Participant() {
                 <Th><Center>Position</Center></Th>
                 <Th><Center>Title-1</Center></Th>
                 <Th><Center>Title-2</Center></Th>
-                {/* <Th><Center>Credits</Center></Th> */}
+                <Th><Center>Creficate Link</Center></Th>
                 <Th><Center>Actions</Center></Th>
               </Tr>
             </Thead>
@@ -657,24 +659,24 @@ function Participant() {
                             )}
                     </Center>
                   </Td> 
-                  {/* <Td>
+                  <Td>
                     <Center>
                       {editRowId === row._id ? (
                         <Input
                           type="text"
-                          value={editedData.credits}
-                          onChange={(e) =>
-                            setEditedData({
-                              ...editedData,
-                              credits: e.target.value,
-                            })
-                          }
+                          value={row._id}
+                          // onChange={(e) =>
+                          //   setEditedData({
+                          //     ...editedData,
+                          //     credits: e.target.value,
+                          //   })
+                          // }
                           />
                           ) : (
-                            row.credits
+                            row._id
                       )}
                     </Center>
-                  </Td> */}
+                  </Td>
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
