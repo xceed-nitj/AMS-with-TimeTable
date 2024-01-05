@@ -32,9 +32,11 @@ const ParticipantSchema = new mongoose.Schema({
     
   },
   eventId:{
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'addEvent',
+    required: true
     
-  }
+  },
 });
 
 ParticipantSchema.add(commonFields);
