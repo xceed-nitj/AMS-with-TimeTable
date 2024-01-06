@@ -9,7 +9,8 @@ const getRoomByDepartment =require("./masterroomprofile");
 const masterroomprofile = require("./masterroomprofile");
 const AddAllotment = require("../../../models/allotment")
 const MasterRoomProfile = new masterroomprofile();
-
+const TimeTabledto = require("../dto/timetable");
+const TimeTableDto = new TimeTabledto();
 
 class TableController {
     async createTable(req,res) 
@@ -197,11 +198,22 @@ class TableController {
   async getCodeOfDept(dept, session) {
     try {
       const code= await TimeTable.findOne({dept, session});
+      console.log(code);
       return code;
     } catch (error) {
       throw error; 
     }
   }
+  async getAllCodes(session) {
+    try {
+      const codes = await TimeTable.find({ session});
+      // console.log(codes);
+      return codes;
+    } catch (error) {
+      throw error;
+    }
+  }
+
 
 
 

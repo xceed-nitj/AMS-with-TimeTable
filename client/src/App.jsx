@@ -5,6 +5,7 @@ import MasterFaculty from './timetableadmin/masterfaculty';
 import AddFaculty from './timetableadmin/addfaculty';
 import MasterRoom from './timetableadmin/masterroom';
 import MasterSem from './timetableadmin/mastersem';
+import View from './timetableadmin/masterview';
 import AddSem from './timetableadmin/addsemester';
 import AddRoom from './timetableadmin/addroom';
 import LockedSummary from './timetableadmin/lockedsummary';
@@ -72,6 +73,7 @@ function App() {
           <Route path="/tt/:generatedLink/addsem" element={<AddSem />} />
           <Route path="/tt/masterroom" element={<MasterRoom />} />
           <Route path="/tt/mastersem" element={<MasterSem />} />
+          <Route path="/tt/view" element={<View />} />
           <Route path="/tt/masterdelete" element={<MasterDelete />} />
           <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
           <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
