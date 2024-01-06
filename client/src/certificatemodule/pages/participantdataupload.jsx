@@ -61,6 +61,8 @@ function Participant() {
     position: "",
     title1: "",
     title2: "",
+    certiType:"",
+    mailId:"",
     eventId: eventId,
   });
 
@@ -72,6 +74,8 @@ function Participant() {
     position: "",
     title1: "",
     title2: "",
+    certiType:"",
+    mailId:"",
     eventId: eventId,
   });
 
@@ -215,6 +219,8 @@ function Participant() {
               position: "",
               title1: "",
               title2: "",
+              certiType:"",
+              mailId:"",          
               eventId: eventId,
           });
           })
@@ -265,6 +271,8 @@ function Participant() {
         position: "",
         title1: "",
         title2: "",
+        certiType:"",
+        mailId:"",    
         eventId: eventId,
     
     });
@@ -498,6 +506,38 @@ function Participant() {
 
             </Box>
 
+            <Box>
+              <FormLabel>Email: </FormLabel>
+              <Input
+                border="1px"
+                mb="4"
+                borderColor="gray.300"
+                // type="number" // Assuming it's a number
+                placeholder="Mail"
+                value={editedSData.mailId}
+                onChange={(e) =>
+                  setEditedSData({ ...editedSData, mailId: e.target.value })
+                }
+              />
+
+            </Box>
+
+            <Box>
+              <FormLabel>certificate Type: </FormLabel>
+              <Input
+                border="1px"
+                mb="4"
+                borderColor="gray.300"
+                // type="number" // Assuming it's a number
+                placeholder="certiType"
+                value={editedSData.certiType}
+                onChange={(e) =>
+                  setEditedSData({ ...editedSData, certiType: e.target.value })
+                }
+              />
+
+            </Box>
+
 
 
             <Box  display='flex' justifyContent='space-between'>
@@ -540,6 +580,8 @@ function Participant() {
                 <Th><Center>Position</Center></Th>
                 <Th><Center>Title-1</Center></Th>
                 <Th><Center>Title-2</Center></Th>
+                <Th><Center>Email</Center></Th>
+                <Th><Center>Certificate type</Center></Th>
                 <Th><Center>Creficate Link</Center></Th>
                 <Th><Center>Actions</Center></Th>
               </Tr>
@@ -658,6 +700,36 @@ function Participant() {
                           />
                           ) : (
                             row.title2
+                            )}
+                    </Center>
+                  </Td> 
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.mailId}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, mailId: e.target.value })
+                          }
+                          />
+                          ) : (
+                            row.mailId
+                            )}
+                    </Center>
+                  </Td> 
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.certiType}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, certiType: e.target.value })
+                          }
+                          />
+                          ) : (
+                            row.certiType
                             )}
                     </Center>
                   </Td> 

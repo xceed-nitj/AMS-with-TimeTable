@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, VStack, IconButton, HStack, Textarea, Text, Container } from '@chakra-ui/react';
+import { Input, Button, VStack, IconButton, HStack, Textarea, Text, Container,Select } from '@chakra-ui/react';
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
 import Header from "../../components/header";
@@ -10,13 +10,14 @@ import { useToast } from "@chakra-ui/react";
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
   const toast = useToast();
-
+  const [type,setType]=useState('')
   const [formData, setFormData] = useState({
     logos: [''],
     header: [''],
     body: '',
     footer: [''],
     signatures: [''],
+    certiType:'',
   });
 
   const currentURL = window.location.pathname;
@@ -26,22 +27,20 @@ const CertificateForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}`,
-        {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-
+        const response = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${formData.certiType}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
         });
+
         if (response.ok) {
           const responseData = await response.json();
           if (responseData && Array.isArray(responseData) && responseData.length > 0) {
-            // Assuming the backend sends the entire form data in an array
             setFormData(responseData[0]);
           } else {
-            console.error('Error: Fetched data does not match expected structure.');
+            console.error('Error: Fetched data does not match the expected structure.');
           }
         } else {
           console.error('Error fetching form data:', response.statusText);
@@ -50,14 +49,17 @@ const CertificateForm = () => {
         console.error('Error fetching form data:', error);
       }
     };
-    fetchData();
-}, [apiUrl, eventId]);
+
+    if (formData.certiType) {
+      fetchData();
+    }
+  }, [apiUrl, eventId, formData.certiType]);
 
 
   const handleChange = (e, fieldName, index) => {
     const { value } = e.target;
 
-    if (fieldName === 'logos' || fieldName === 'header' || fieldName === 'footer' || fieldName === 'signatures') {
+    if (  fieldName === 'logos'  || fieldName === 'header' || fieldName === 'footer' || fieldName === 'signatures') {
       setFormData((prevData) => {
         const updatedField = [...prevData[fieldName]];
 
@@ -70,7 +72,7 @@ const CertificateForm = () => {
           [fieldName]: updatedField,
         };
       });
-    } else if (fieldName === 'body') {
+    } else if (fieldName === 'body' || fieldName === 'certiType') {
       setFormData((prevData) => ({
         ...prevData,
         [fieldName]: value,
@@ -132,8 +134,24 @@ const CertificateForm = () => {
 
     <form onSubmit={handleSubmit}>
       <VStack spacing={4} align="start">
+      <Text>Select Certificate Type:</Text>
+          <Select
+            name="certiType"
+            value={formData.certiType}
+            onChange={(e) => handleChange(e, 'certiType', null)}
+            placeholder="Select Certificate Type"
+          >
+            <option value="winner">Winner</option>
+            <option value="participant">Participant</option>
+            <option value="speaker">Speaker</option>
+            <option value="organizer">Organizer</option>
+          </Select>
+
+       
+       
         <Text>Enter the link for the logos:</Text>
         {/* Logos Fields */}
+       
         {formData.logos.map((logo, index) => (
                   <HStack key={index}>
             <Input
