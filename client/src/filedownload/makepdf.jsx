@@ -1,6 +1,6 @@
 import React from 'react';
-import * as pdfMake from '/admin/pdfmake/build/pdfmake';
-import * as pdfFonts from '/admin/pdfmake/build/vfs_fonts';
+import * as pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
