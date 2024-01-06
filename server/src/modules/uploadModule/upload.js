@@ -10,6 +10,7 @@ const modelPaths = {
   subject: "../../models/subject",
   masterroom: "../../models/masterroom",
   mastersem: "../../models/mastersem",
+  attendance:"../../models/attendance"
 };
 
 // Set up Multer for file uploads
