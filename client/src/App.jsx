@@ -25,6 +25,7 @@ import AdminPage from './timetableadmin/admin';
 import ViewAllotmentPage from './timetableadmin/viewroomallotment';
 import CommonLoad from './timetableadmin/addcommonload';
 import MasterView from './timetableadmin/mastersearch';
+import View from './timetableadmin/masterview';
 import AllocatedRolesPage from './dashboard/allotedroles';
 import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
@@ -106,6 +107,7 @@ function App() {
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
           <Route path="/tt/masterview" element={<MasterView/>}/>
+          <Route path="/tt/view" element={<View />} />
           <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
           <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad/>}/>
          
