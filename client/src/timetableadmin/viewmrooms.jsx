@@ -18,6 +18,7 @@ import {
 import { FaMapMarkerAlt } from 'react-icons/fa';
 
 import Header from '../components/header';
+import { Helmet } from 'react-helmet-async';
 
 function MasterRoomTable() {
   const [masterRoomData, setMasterRoomData] = useState([]);
@@ -101,7 +102,14 @@ function MasterRoomTable() {
   };
 
   return (
+    <>
+
+    <Helmet>
+      <title>Classroom location | XCEED NITJ</title>
+      <meta name='description' content="NITJ's official classroom locater" />
+    </Helmet>
     <Container maxW="5xl">
+
       <Box>
         <Header title="Class Room Information"></Header>
         Enter the room detail below
@@ -205,10 +213,10 @@ function MasterRoomTable() {
       </Box>
       <Text color="blue">CREDITS: Geo Location contributed by Nandhini, IPE (Batch of 2021-2025)</Text>
 
+      <Footer/>
     </Container>
-   
+   </>
   );
-  <Footer/>
 }
 
 export default MasterRoomTable;
