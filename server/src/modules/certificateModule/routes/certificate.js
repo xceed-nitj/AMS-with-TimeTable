@@ -27,10 +27,11 @@ certificateRouter.get("/", async (req, res) => {
   }
 });
 
-certificateRouter.get("/getcertificatedetails/:id", async (req, res) => {
+certificateRouter.get("/getcertificatedetails/:id/:type", async (req, res) => {
   try {
     const id=req.params?.id;
-    const allCertificates = await certificateController.getcertificateByEventId(id);
+    const type=req.params?.type;
+    const allCertificates = await certificateController.getcertificateByEventId(id,type);
     return res.status(200).json(allCertificates);
   } catch (e) {
     return res

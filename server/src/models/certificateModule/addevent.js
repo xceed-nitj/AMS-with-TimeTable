@@ -13,7 +13,7 @@ const addEventSchema = new mongoose.Schema({
     type: String,
     
   },
-  expiryDate: {
+  ExpiryDate: {
     type: Date,
     
   }, 
