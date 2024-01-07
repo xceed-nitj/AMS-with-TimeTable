@@ -32,6 +32,7 @@ import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import ViewInstituteLoad from './timetableadmin/viewinstituteload';
+import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 
@@ -101,6 +102,7 @@ function App() {
           <Route path="/tt/:generatedLink/roomallotment" element={<ViewAllotmentPage/>} />
           <Route path="/tt/:generatedLink/addcommonload" element={<CommonLoad/>} />
           <Route path="/tt/:generatedLink/addlunchload" element={<LunchLoad/>} />
+          <Route path="/tt/:generatedLink/editmasterfaculty" element={<EditMasterFaculty/>} />
 
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
           

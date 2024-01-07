@@ -22,10 +22,14 @@ const facultySchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true,
+    
   }, 
   extension: {
     type: String,
+  },
+  order: {
+    type: Number ,
+    
   },
   type: {
     type: String,
