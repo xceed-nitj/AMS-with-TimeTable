@@ -7,7 +7,7 @@ const ServiceFeatures = ({ features }) => {
   }
 
   return (
-    <section id="services" className="tw-bg-white dark:tw-bg-gray-900">
+    <section className="tw-bg-white dark:tw-bg-gray-900">
       <div className="tw-py-8 tw-px-4 tw-mx-auto tw-max-w-screen-xl sm:tw-py-16 lg:tw-px-6">
         <div className="tw-text-gray-500 sm:tw-text-lg dark:tw-text-gray-400">
           <SectionHeader centered title="Features on Offer" />

@@ -204,6 +204,16 @@ class TableController {
   }
 
 
+  async getAllCodes(session) {
+    try {
+      const codes = await TimeTable.find({ session});
+      // console.log(codes);
+      return codes;
+    } catch (error) {
+      throw error;
+    }
+  }
+
 
 }
 module.exports = TableController;

@@ -102,6 +102,19 @@ TableRouter.post("/",protectRoute, async (req, res) => {
         .json({ error: e?.message || "Internal Server Error" });
     }
   });
+  
+  TableRouter.get("/getallcodes/:session", async (req, res) => {
+    try {
+      const session=req.params.session;
+      const code = await tableController.getAllCodes(session);
+      res.status(200).json(code);
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
 
 
   TableRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {

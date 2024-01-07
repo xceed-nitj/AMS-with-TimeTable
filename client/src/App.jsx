@@ -25,6 +25,7 @@ import AdminPage from './timetableadmin/admin';
 import ViewAllotmentPage from './timetableadmin/viewroomallotment';
 import CommonLoad from './timetableadmin/addcommonload';
 import MasterView from './timetableadmin/mastersearch';
+import View from './timetableadmin/masterview';
 import AllocatedRolesPage from './dashboard/allotedroles';
 import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
@@ -39,7 +40,7 @@ import Home from './pages/Home'
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
 import CertificateForm from './certificatemodule/pages/certificatedesign';
-import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
+// import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
 import ServicePage from './pages/Service';
 import Participant from './certificatemodule/pages/participantdataupload';
 
@@ -104,10 +105,21 @@ function App() {
           <Route path="/tt/:generatedLink/editmasterfaculty" element={<EditMasterFaculty/>} />
 
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
+          
+          {/* Same link */}
+          <Route path="classrooms" element={<ViewMRooms/>} />
+          {/* Same link */}
+
           {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
-          <Route path="/tt/masterview" element={<MasterView/>}/>
+          <Route path="/tt/masterview" element={<MasterView />} />
+
+          {/* Same link */}
+          <Route path="timetable" element={<MasterView/>}/>
+          {/* Same link */}
+
+          <Route path="/tt/admin/view" element={<View />} />
           <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
           <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad/>}/>
          
@@ -123,7 +135,7 @@ function App() {
           {/* Conference Module Admin-Panel */}
           
           <Route path="/cf/adminpanel" element={<ConferencePage />} />
-         <Route path="/cf/adminpanel/:confid" element={<Sidebar  />}>
+          <Route path="/cf/adminpanel/:confid" element={<Sidebar  />}>
           <Route index element={<HomeConf />} />
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
@@ -138,12 +150,6 @@ function App() {
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
           </Route>
-
-
-
-
-        
-
         </Routes>
         {/* <Footer/> */}
       {/* </div> */}

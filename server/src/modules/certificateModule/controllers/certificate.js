@@ -18,6 +18,7 @@ class AddcertificateController {
           {
             $set: {
               logos: newCertificate.logos,
+              certiType: newCertificate.certiType,
               header: newCertificate.header,
               body: newCertificate.body,
               footer: newCertificate.footer,
@@ -36,6 +37,7 @@ class AddcertificateController {
           body: newCertificate.body,
           footer: newCertificate.footer,
           signatures: newCertificate.signatures,
+          certiType: newCertificate.certiType,
           eventId: eventId,
         });
 
@@ -67,12 +69,12 @@ class AddcertificateController {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
-  async getcertificateByEventId(id) {
+  async getcertificateByEventId(id,type) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const data = await certificate.find({ eventId: id });
+      const data = await certificate.find({ eventId: id, certiType: type });
       if (!data) throw new HttpException(400, "certificate does not exist");
       return data;
     } catch (e) {

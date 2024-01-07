@@ -10,11 +10,46 @@ function Content() {
   const eventId = parts[parts.length - 2];
   const participantId = parts[parts.length - 1];
 console.log(participantId)
-    async function fetchData() {
+const [certiType, setCertiType]=useState('');
+ 
+
+useEffect(() => {
+  const fetchCertiType = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/certificatemodule/participant/getoneparticipant/${participantId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Assuming the certiType is a property of the data object
+        // setFormData((prevData) => ({ ...prevData, certiType: data.certiType }));
+        setCertiType(data.certiType);
+        console.log('certiype', data.certiType)
+      } else {
+        console.error('Error fetching certiType data:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching certiType data:', error);
+    }
+  };
+
+  fetchCertiType();
+}, []);
+
+
+
+
+
+async function fetchData() {
         try {
           console.log('executing function');
           const [response_one, response_two] = await Promise.all([
-            fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}`, {
+            fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${certiType}`, {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",

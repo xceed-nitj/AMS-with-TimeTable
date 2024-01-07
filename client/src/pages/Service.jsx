@@ -1,5 +1,4 @@
 import { useParams } from 'react-router-dom';
-import Navbar from '../components/home/Navbar';
 import ServiceHero from '../components/home/Services/ServiceHero';
 import ServiceFeatures from '../components/home/Services/Features';
 import Team from '../components/home/TeamSection/Team';
@@ -20,7 +19,6 @@ const ServicePage = () => {
 
   return (
     <main className="tw-font-jakarta tw-dark tw-bg-gray-900 tw-min-h-screen tw-text-white">
-      <Navbar />
       <ServiceHero {...service} />
       <ServiceFeatures features={service?.features} />
       <Team

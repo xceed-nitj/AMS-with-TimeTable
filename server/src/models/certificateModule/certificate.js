@@ -23,6 +23,11 @@ const CertificateSchema = new mongoose.Schema({
     type: Array,
     
   },
+  certiType: {
+    type: String,
+    
+  },
+  
   eventId: {
     type: String,
   },

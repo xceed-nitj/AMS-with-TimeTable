@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
-import { useNavigate, useLocation, Form } from "react-router-dom";
+import { useNavigate, useLocation, Form, Link } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import ViewTimetable from "./viewtt";
 import TimetableSummary from "./ttsummary";
@@ -27,6 +27,7 @@ import {
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 import Header from "../components/header";
+import { Helmet } from "react-helmet-async";
 
 // import PDFViewTimetable from '../filedownload/chakrapdf'
 
@@ -470,27 +471,36 @@ useEffect(()=>
 
   }, [currentCode]);
 
-  const handleRoomClick = () => {
-    const pathArray = window.location.pathname
-      .split("/")
-      .filter((part) => part !== "");
-    const pathExceptLastPart = `/${pathArray.slice(0, -1).join("/")}`;
-    const pdfUrl = `${pathExceptLastPart}/viewmrooms`;
-    window.location.href = pdfUrl;
-  };
+  // const handleRoomClick = () => {
+  //   const pathArray = window.location.pathname
+  //     .split("/")
+  //     .filter((part) => part !== "");
+  //   const pathExceptLastPart = `/${pathArray.slice(0, -1).join("/")}`;
+  //   const pdfUrl = `${pathExceptLastPart}/viewmrooms`;
+  //   window.location.href = pdfUrl;
+  // };
 
 
 
   return (
+    <>
+    <Helmet>
+      <title>Time Table | XCEED NITJ</title>
+      <meta name='description' content="NITJ's official time table search engine for all semesters and courses" />
+    </Helmet>
     <Container maxW="7xl">
       <Header title="View TimeTable "></Header>
       <HStack>
     {/* Empty spacer to push the button to the right */}
     <Box flex="1" />
     
-    <Button colorScheme="green" onClick={handleRoomClick} style={{ marginLeft: 'auto' }}>
-      Geo Locate Classrooms
-    </Button>
+    <Link
+    to='/classrooms'
+    >
+      <Button colorScheme="green" style={{ marginLeft: 'auto' }}>
+        Geo Locate Classrooms
+      </Button>
+    </Link>
   </HStack>
       <FormLabel fontWeight="bold">Select Session:
           </FormLabel>
@@ -732,6 +742,8 @@ useEffect(()=>
       )}
 
     </Container>
+    </>
+
   );
 }
 
