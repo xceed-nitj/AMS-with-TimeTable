@@ -6,7 +6,7 @@ import EditCertificate from './EditCertificate';
 import { useState } from 'react';
 import CertificateTemplate from './CertificateTemplates';
 // import mySvg from "../assets/temp1.svg"
-import Template01 from './Templates/03_sarthak';
+import Template03 from './Templates/03_sarthak';
 
 const maxWordsPerRow = 10;
 // console.log(mySvg)
@@ -58,7 +58,7 @@ function Certificate() {
       </div>
       <div className="tw-flex md:tw-flex-row tw-flex-col">
         <div className="md:tw-basis-[70%] tw-w-[100vw]">
-          <Template01 />
+          <Template03 />
         </div>
         <div className="">
           <EditCertificate
