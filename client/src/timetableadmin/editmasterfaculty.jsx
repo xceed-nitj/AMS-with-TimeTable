@@ -21,6 +21,7 @@ function Subject() {
     email: '',
     extension: '',
     type: '',
+    order: '',
   });
   const apiUrl = getEnvironment();
 
@@ -29,38 +30,38 @@ function Subject() {
   const parts = currentURL.split("/");
   const currentCode = parts[parts.length - 2];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const timetableResponse = await fetch(`${apiUrl}/timetablemodule/timetable`, { credentials: 'include' });
-        if (!timetableResponse.ok) {
-          throw new Error(`Error: ${timetableResponse.status} - ${timetableResponse.statusText}`);
-        }
-        const timetableData = await timetableResponse.json();
-  
-        const filteredData = timetableData.filter((row) => row.code === currentCode);
-        setTimeTableData(filteredData);
-  
-        if (filteredData.length > 0) {
-          setDepartment(filteredData[0].dept);
-        }
-  
-        const facultyResponse = await fetch(`${apiUrl}/timetablemodule/faculty`, { credentials: 'include' });
-        if (!facultyResponse.ok) {
-          throw new Error(`Error: ${facultyResponse.status} - ${facultyResponse.statusText}`);
-        }
-        const facultyData = await facultyResponse.json();
-  
-        const facultyWithSameDept = facultyData.filter((faculty) => faculty.dept === department);
-        setTableData(facultyWithSameDept.reverse());
-      } catch (error) {
-        console.error('Error:', error);
+  const fetchData = async () => {
+    try {
+      const timetableResponse = await fetch(`${apiUrl}/timetablemodule/timetable`, { credentials: 'include' });
+      if (!timetableResponse.ok) {
+        throw new Error(`Error: ${timetableResponse.status} - ${timetableResponse.statusText}`);
       }
-    };
-  
-    fetchData();  // Call the fetchData function
-  
-  }, [currentCode, department]);  // Add currentCode and department as dependencies
+      const timetableData = await timetableResponse.json();
+
+      const filteredData = timetableData.filter((row) => row.code === currentCode);
+      setTimeTableData(filteredData);
+
+      if (filteredData.length > 0) {
+        setDepartment(filteredData[0].dept);
+      }
+
+      const facultyResponse = await fetch(`${apiUrl}/timetablemodule/faculty`, { credentials: 'include' });
+      if (!facultyResponse.ok) {
+        throw new Error(`Error: ${facultyResponse.status} - ${facultyResponse.statusText}`);
+      }
+      const facultyData = await facultyResponse.json();
+
+      const facultyWithSameDept = facultyData.filter((faculty) => faculty.dept === department);
+      setTableData(facultyWithSameDept.reverse());
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchData();
+  }, [currentCode, department]);
   
 
   const handleEditClick = (_id) => {
@@ -106,6 +107,7 @@ function Subject() {
               email: '',
               extension: '',
               type: '',
+              order: '',
             });
           })
           .catch((error) => {
@@ -153,6 +155,7 @@ function Subject() {
       email: '',
       extension: '',
       type: '',
+      order: '',
     });
     setIsAddFacultyFormVisible(true);
   };
@@ -195,48 +198,48 @@ function Subject() {
 
 <div style={{ margin: '20px', padding: '20px', borderRadius: '8px' }}>
   {isAddFacultyFormVisible ? (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: '10px', height: '10px', marginRight: '5px', backgroundColor: '#fff' }}></div>
-        <label htmlFor="facultyID" style={{ color: '#333', fontWeight: 'bold' }}>Faculty ID : </label>
-        <input
-          type="text"
-          id="facultyID"
-          value={editedData.facultyID}
-          onChange={(e) => setEditedData({ ...editedData, facultyID: e.target.value })}
-        />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: '10px', height: '10px', marginRight: '5px', backgroundColor: '#fff' }}></div>
-        <label htmlFor="name" style={{ color: '#333', fontWeight: 'bold' }}>Name : </label>
-        <input
-          type="text"
-          id="name"
-          value={editedData.name}
-          onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
-        />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: '10px', height: '10px', marginRight: '5px', backgroundColor: '#fff' }}></div>
-        <label htmlFor="designation" style={{ color: '#333', fontWeight: 'bold' }}>Designation : </label>
-        <input
-          type="text"
-          id="designation"
-          value={editedData.designation}
-          onChange={(e) => setEditedData({ ...editedData, designation: e.target.value })}
-        />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: '10px', height: '10px', marginRight: '5px', backgroundColor: '#fff' }}></div>
-        <label htmlFor="dept" style={{ color: '#333', fontWeight: 'bold' }}>Dept : </label>
-        <input
-          type="text"
-          id="dept"
-          value={editedData.dept}
-          onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })}
-          disabled
-        />
-      </div>
+   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+   <div style={{ display: 'flex', alignItems: 'center' }}>
+     <span style={{ color: 'red', marginRight: '5px' }}>*</span>
+     <label htmlFor="facultyID" style={{ color: '#333', fontWeight: 'bold' }}>Faculty ID : </label>
+     <input
+       type="text"
+       id="facultyID"
+       value={editedData.facultyID}
+       onChange={(e) => setEditedData({ ...editedData, facultyID: e.target.value })}
+     />
+   </div>
+   <div style={{ display: 'flex', alignItems: 'center' }}>
+     <span style={{ color: 'red', marginRight: '5px' }}>*</span>
+     <label htmlFor="name" style={{ color: '#333', fontWeight: 'bold' }}>Name : </label>
+     <input
+       type="text"
+       id="name"
+       value={editedData.name}
+       onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
+     />
+   </div>
+   <div style={{ display: 'flex', alignItems: 'center' }}>
+    <span style={{ color: 'red', marginRight: '5px' }}>*</span>
+    <label htmlFor="designation" style={{ color: '#333', fontWeight: 'bold' }}>Designation : </label>
+    <input
+      type="text"
+      id="designation"
+      value={editedData.designation}
+      onChange={(e) => setEditedData({ ...editedData, designation: e.target.value })}
+    />
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center' }}>
+    <span style={{ color: 'red', marginRight: '5px' }}>*</span>
+    <label htmlFor="dept" style={{ color: '#333', fontWeight: 'bold' }}>Dept : </label>
+    <input
+      type="text"
+      id="dept"
+      value={editedData.dept}
+      onChange={(e) => setEditedData({ ...editedData, dept: e.target.value })}
+      disabled
+    />
+  </div>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ width: '10px', height: '10px', marginRight: '5px', backgroundColor: '#fff' }}></div>
         <label htmlFor="type" style={{ color: '#333', fontWeight: 'bold' }}>Type : </label>
@@ -267,6 +270,17 @@ function Subject() {
           onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })}
         />
       </div>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ width: '10px', height: '10px', marginRight: '5px', backgroundColor: '#fff' }}></div>
+        <label htmlFor="extension" style={{ color: '#333', fontWeight: 'bold' }}>Order : </label>
+        <input
+          type="text"
+          id="extension"
+          value={editedData.order}
+          placeholder="Enter number"
+          onChange={(e) => setEditedData({ ...editedData, order: e.target.value })}
+        />
+      </div>
       <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
         <CustomBlueButton onClick={handleSaveNewFaculty}>Save New Faculty</CustomBlueButton>
         <CustomBlueButton onClick={handleCancelAddFaculty}>Cancel</CustomBlueButton>
@@ -290,6 +304,7 @@ function Subject() {
             <th>Type</th>
             <th>Email</th>
             <th>Extension</th>
+            <th>Order</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -303,6 +318,7 @@ function Subject() {
               <td>{editRowId === row._id ? <input type="text" value={editedData.type} onChange={(e) => setEditedData({ ...editedData, type: e.target.value })} /> : row.type}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.email} onChange={(e) => setEditedData({ ...editedData, email: e.target.value })} /> : row.email}</td>
               <td>{editRowId === row._id ? <input type="text" value={editedData.extension} onChange={(e) => setEditedData({ ...editedData, extension: e.target.value })} /> : row.extension}</td>
+              <td>{editRowId === row._id ? <input type="text" value={editedData.order} onChange={(e) => setEditedData({ ...editedData, order: e.target.value })} /> : row.order}</td>
               <td>
                 {editRowId === row._id ? (
                   <CustomBlueButton onClick={handleSaveEdit}>Save</CustomBlueButton>
@@ -320,5 +336,4 @@ function Subject() {
     </Box>
   );
 }
-
 export default Subject;
