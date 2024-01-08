@@ -336,5 +336,4 @@ function Subject() {
     </Box>
   );
 }
-
 export default Subject;

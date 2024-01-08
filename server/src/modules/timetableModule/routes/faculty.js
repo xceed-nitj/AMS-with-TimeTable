@@ -5,7 +5,6 @@ const facultyController = new FacultyController();
 
 const protectRoute =require("../../usermanagement/privateroute")
 
-
 facultyRouter.post("/",protectRoute, async (req, res) => {
     try {
       await facultyController.createFaculty(req, res);
