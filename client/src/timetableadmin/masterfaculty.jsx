@@ -339,7 +339,6 @@ function Subject() {
         maxWidth='100%'
         size='md'
         mt='1'
-        ml='1'
         >
           <Thead>
             <Tr>
