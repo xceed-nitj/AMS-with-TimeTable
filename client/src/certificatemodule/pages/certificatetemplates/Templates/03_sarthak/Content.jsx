@@ -1,31 +1,19 @@
 
-function Content({ data }) {
-    const name = "Sarthak"
+function Content({ header, body, name }) {
+    console.log(name);
     return (
         <>
 
             <g textAnchor="middle">
-                <text x="561" y="115" font-family="Nunito-Bold" font-size="16">
-                    डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
-                </text>
-                <text x="561" y="129" font-family="Nunito-Bold" font-size="10">
-                    जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत-144008
-                </text>
-                <text x="561" y="155" font-family="Nunito-Bold" font-size="14">
-                    Dr. B R Ambedkar National Institute of Technology Jalandhar
-                </text>
-                <text x="561" y="168" font-family="Nunito-Bold" font-size="10">
-                    G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India- 144008
-                </text>
 
                 <text
                     x="561.26"
                     y={245}
                     fill="#272727"
                     fontFamily="Butler-Bold"
-                    fontSize={47}
+                    fontSize={40}
                 >
-                    CERTIFICATE
+                    {header[0]}
                 </text>
                 <text
                     x="561.26"
@@ -34,7 +22,7 @@ function Content({ data }) {
                     fontFamily="AbhayaLibre-Regular"
                     fontSize={18}
                 >
-                    OF ACHIEVEMENT
+                    {header[1]}
                 </text>
                 <text
                     x="561.26"
@@ -52,7 +40,7 @@ function Content({ data }) {
                     fontFamily="Allura-Regular"
                     fontSize={70}
                 >
-                    Sarthak Sharma
+                    {name}
                 </text>
                 {/* <text
                     x="561.26"
@@ -100,24 +88,25 @@ function Content({ data }) {
             </g>
 
             <foreignObject
-                x="850"
+                x="300"
+                y="440"
                 className="-translate-x-1/2"
-                y="460"
                 fontSize="15.816"
                 textAnchor="middle"
                 fontFamily="AbhayaLibre-Regular"
                 width="600px"
-                height="100px"
+                height="150px"
+                
             // x="561.26"
             //     y={455}
             //     fill="#272727"
             //     fontFamily="AbhayaLibre-Regular"
             //     fontSize="18.64"
             >
-                <p className="w-full">
-                of team __________ from the department ________________________ has won the ________________________
-                in PixelPerfect Event, an internal design held from 13 June,2023 to 1st July,2023 organized by Website Development & management Club.
-                {/* This is a paragraph. Anything after height 100px while go disapper. */}
+
+                <p >
+                    {body}
+                    {/* Anything after height 150px while go disapper. */}
 
                 </p>
             </foreignObject>
