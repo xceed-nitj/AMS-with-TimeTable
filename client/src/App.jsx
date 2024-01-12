@@ -58,7 +58,8 @@ import Participants from './conferencemodule/Tabs/Participants';
 import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
-import Template03 from './certificatemodule/pages/certificatetemplates/Templates/03_sarthak';
+import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
+import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
 
 
 function App() {
@@ -129,7 +130,8 @@ function App() {
           <Route path="/cm/dashboard" element={<CMDashboard />} />
           <Route path="/cm/:eventid" element={<CertificateForm/>}/>
           <Route path="/cm/:eventid/addparticipant" element={<Participant/>}/>
-          <Route path="/cm/c/:eventid/:participantid" element={<Template03/>}/>
+          <Route path="/cm/c/:eventid/:participantid" element={<Template01/>}/>
+          <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
 
 
           {/* Conference Module Admin-Panel */}

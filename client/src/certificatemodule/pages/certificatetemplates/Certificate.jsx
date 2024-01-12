@@ -6,7 +6,7 @@ import EditCertificate from './EditCertificate';
 import { useState } from 'react';
 import CertificateTemplate from './CertificateTemplates';
 // import mySvg from "../assets/temp1.svg"
-import Template03 from './Templates/03_sarthak';
+import Template03 from './03_sarthak';
 
 const maxWordsPerRow = 10;
 // console.log(mySvg)
