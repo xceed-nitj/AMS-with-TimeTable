@@ -1,54 +1,50 @@
-// import nitj_logo from '../../../assets/nitj_logo.png'
-// import react_logo from '../../../assets/react.svg'
 
-function Logo({ x, y, logoUrl }) {
-  return (
-    <image
-      href={logoUrl}
-      height="80"
-      width="80"
-      x={x}
-      y={y}
-    />
-  );
-}
-
-function Top() {
-  const logoUrls = ['url1.jpg', 'url2.jpg','url3.jpg','url4.jpg','url5.jpg'];
-
-  // Calculate x and y coordinates dynamically for logos
-  const calculateLogoCoordinates = (index, totalLogos) => {
-    if (totalLogos <= 2) {
-      if (index === 0) {
-        var x = 240;
-        var y = 90;
-      }
-      else if (index === 1) {
-        var x = 800;
-        var y = 90;
-      }
-    }
-    else if(totalLogos >2 && totalLogos <=5){
-      if (index%2==0) {
-        var x = 280 - index*50;
-        var y = 90;
-      }
-      else if (index%2!=0) {
-        var x = 700 + index*50;
-        var y = 90;
-      }
-    }
-    return { x, y };
-  };
-
+function Top({ logos }) {
+  var num_logos= logos.length;
+  var num_left=0;
+  if(num_logos%2==0){
+    num_left=num_logos/2-1;
+  }
+  else{
+    num_left=Math.floor(num_logos/2);
+  }
   return (
     <>
+      <foreignObject x={120} y={100} width={850} height={300}>
+        <div className="tw-flex tw-items-center  tw-justify-center">
+          
+          {logos.map((item, key) => (
+            <div
+              key={key}
+              className="tw-flex tw-items-center tw-justify-center tw-gap-1"
+            >
+              <span className="tw-w-20">
+                <img src={item.url} alt="" />
+              </span>
+              <span className=" tw-text-center tw-m-[2px]">
+                {key === num_left && (
+                  <>
+                    <p className="tw-font-nunito-bold tw-text-[12px]">
+                      डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
+                    </p>
+                    <p className="tw-font-nunito-bold tw-text-[8px]">
+                      जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत-144008
+                    </p>
+                    <p className="tw-font-nunito-bold tw-text-[12px]">
+                      Dr. B R Ambedkar National Institute of Technology Jalandhar
+                    </p>
+                    <p className="tw-font-nunito-bold tw-text-[8px]">
+                      G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India- 144008
+                    </p>
+                  </>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
 
-      <path fill="url(#a)" d="M0-.21h1122.52v794.106H0Z" />
-      {logoUrls.map((logoUrl, index) => {
-        const { x, y } = calculateLogoCoordinates(index, logoUrls.length);
-        return <Logo key={index} x={x} y={y} logoUrl={logoUrl} />;
-      })}
+      </foreignObject>
+
       {/* <image href={nitj_logo} height="80" width="80" x="220" y="90"/>
       <image href={react_logo} height="80" width="80" x="820" y="90"/> */}
       <path
