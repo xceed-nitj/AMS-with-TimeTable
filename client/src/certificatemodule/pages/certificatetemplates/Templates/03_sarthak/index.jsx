@@ -69,7 +69,7 @@ const data = {
             url: 'https://placehold.co/400x200',
         },
     ],
-    certiType: '',
+    certiType: ['1st','Prize'],
 };
 
 
@@ -79,7 +79,7 @@ function Template03() {
         <>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1122.52 793.7" id="svg">
                 <Top logos={data.logos} />
-                <Content header={data.header} body={data.body} name={data.participant}/>
+                <Content header={data.header} body={data.body} name={data.participant} certiType={data.certiType}/>
                 <Bottom signature={data.signature} />
             </svg>
 
