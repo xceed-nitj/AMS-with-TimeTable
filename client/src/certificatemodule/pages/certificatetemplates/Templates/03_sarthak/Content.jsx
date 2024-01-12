@@ -1,5 +1,5 @@
 
-function Content({ header, body, name }) {
+function Content({ header, body, name , certiType}) {
     console.log(name);
     return (
         <>
@@ -74,7 +74,7 @@ function Content({ header, body, name }) {
                     fontFamily="Arvo-Bold"
                     fontSize={16}
                 >
-                    BEST
+                    {certiType[0]}
                 </text>
                 <text
                     x="981.55"
@@ -83,7 +83,7 @@ function Content({ header, body, name }) {
                     fontFamily="Arvo-Bold"
                     fontSize={16}
                 >
-                    AWARD
+                    {certiType[1]}
                 </text>
             </g>
 
