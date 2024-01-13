@@ -17,7 +17,15 @@ const ParticipantSchema = new mongoose.Schema({
     type: String,
     
   }, 
-  types:{
+  mailId:{
+    type: String,
+    
+  },
+  certiType:{
+    type: String,
+    
+  },
+  teamName:{
     type: String,
    },
   position: {
@@ -31,17 +39,8 @@ const ParticipantSchema = new mongoose.Schema({
     type: String,
     
   },
-  mailId:{
-    type: String,
-    
-  },
-  certiType:{
-    type: String,
-    
-  },
   eventId:{
     type: String,
-    
   }
 });
 
