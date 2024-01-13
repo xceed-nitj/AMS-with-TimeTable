@@ -58,15 +58,21 @@ const CertificateForm = () => {
 
   const handleChange = (e, fieldName, index) => {
     const { value } = e.target;
-
-    if (  fieldName === 'logos'  || fieldName === 'header' || fieldName === 'footer' || fieldName === 'signatures') {
+  
+    if (fieldName === 'logos' || fieldName === 'header' || fieldName === 'footer' || fieldName === 'signatures') {
       setFormData((prevData) => {
         const updatedField = [...prevData[fieldName]];
-
+  
         if (index !== null) {
-          updatedField[index] = value;
+          // For signatures, update the specific property of the signature object
+          if (fieldName === 'signatures') {
+            const signatureField = e.target.name.split('.')[1]; // Extract the property name (name, position, url)
+            updatedField[index] = { ...updatedField[index], [signatureField]: value };
+          } else {
+            updatedField[index] = value;
+          }
         }
-
+  
         return {
           ...prevData,
           [fieldName]: updatedField,
@@ -79,12 +85,23 @@ const CertificateForm = () => {
       }));
     }
   };
+  
 
   const addField = (fieldName) => {
+    if (fieldName === 'signatures') {
+      setFormData((prevData) => ({
+        ...prevData,
+        [fieldName]: [
+          ...prevData[fieldName],
+          { name: '', position: '', url: '' },
+        ],
+      }));
+    } else {
     setFormData((prevData) => ({
       ...prevData,
       [fieldName]: [...prevData[fieldName], ''],
     }));
+  }
   };
 
   const handleDelete = (fieldName, index) => {
@@ -97,6 +114,7 @@ const CertificateForm = () => {
     }));
   };
 
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -177,7 +195,7 @@ const CertificateForm = () => {
         ))}
 
         {/* Header Fields */}
-        <Text>Enter the Header data:</Text>
+        <Text>Enter Department or Culb data:</Text>
 
         {formData.header.map((header, index) => (
                   <HStack key={index}>
@@ -202,6 +220,7 @@ const CertificateForm = () => {
             )}
           </HStack>
         ))}
+        
         <Text>Enter the body of the certificate:</Text>
 
         <Textarea
@@ -211,56 +230,71 @@ const CertificateForm = () => {
           placeholder="Body"
         />
         {/* Footer Fields */}
-        <Text>Enter the signature data:</Text>
-
-        {formData.footer.map((footer, index) => (
-
-          <HStack key={index}>
-            <Input
-              name="footer"
-              value={footer}
-              onChange={(e) => handleChange(e, 'footer', index)}
-              placeholder="Footer"
-            />
-            {index > 0 && (
-              <IconButton
-                icon={<CloseIcon />}
-                onClick={() => handleDelete('footer', index)}
-              />
-            )}
-            {index === formData.footer.length - 1 && (
-              <IconButton
-                icon={<AddIcon />}
-                onClick={() => addField('footer')}
-              />
-            )}
-          </HStack>
-        ))}
-
+      
 <Text>Enter the link for signatures:</Text>
-        
-        {formData.signatures.map((signature, index) => (
-          <HStack key={index}>
-            <Input
-              name="signatures"
-              value={signature}
-              onChange={(e) => handleChange(e, 'signatures', index)}
-              placeholder="Signature"
-            />
-            {index > 0 && (
-              <IconButton
-                icon={<CloseIcon />}
-                onClick={() => handleDelete('signatures', index)}
-              />
-            )}
-            {index === formData.signatures.length - 1 && (
-              <IconButton
-                icon={<AddIcon />}
-                onClick={() => addField('signatures')}
-              />
-            )}
-          </HStack>
-        ))}
+
+{formData.signatures.map((signature, index) => (
+  <VStack key={index}>
+    <Input
+      name={`signatures[${index}].name`}
+      value={signature.name}
+      onChange={(e) => handleChange(e, 'signatures', index)}
+      placeholder="Name"
+    />
+    <Input
+      name={`signatures[${index}].position`}
+      value={signature.position}
+      onChange={(e) => handleChange(e, 'signatures', index)}
+      placeholder="Position"
+    />
+    <Input
+      name={`signatures[${index}].url`}
+      value={signature.url}
+      onChange={(e) => handleChange(e, 'signatures', index)}
+      placeholder="URL"
+    />
+    {index > 0 && (
+      <IconButton
+        icon={<CloseIcon />}
+        onClick={() => handleDelete('signatures', index)}
+      />
+    )}
+    {index === formData.signatures.length - 1 && (
+      <IconButton
+        icon={<AddIcon />}
+        onClick={() => addField('signatures')}
+      />
+    )}
+  </VStack>
+))}
+
+<Text>Any additoinal data:</Text>
+
+{formData.footer.map((footer, index) => (
+
+  <HStack key={index}>
+    <Input
+      name="footer"
+      value={footer}
+      onChange={(e) => handleChange(e, 'footer', index)}
+      placeholder="Footer"
+    />
+    {index > 0 && (
+      <IconButton
+        icon={<CloseIcon />}
+        onClick={() => handleDelete('footer', index)}
+      />
+    )}
+    {index === formData.footer.length - 1 && (
+      <IconButton
+        icon={<AddIcon />}
+        onClick={() => addField('footer')}
+      />
+    )}
+  </HStack>
+))}
+
+
 
         <Button type="submit" colorScheme="blue">
           Submit

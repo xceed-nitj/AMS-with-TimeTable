@@ -1,41 +1,42 @@
 import React, { useState, useEffect } from "react";
+import ReactHtmlParser from 'react-html-parser';
 import getEnvironment from "../../../../getenvironment";
 
 const apiUrl = getEnvironment();
 
-const signature = [
-  {
-    name: 'Kiana Kutch ',
-    position: 'sequi',
-    url: 'https://placehold.co/400x200',
-  },
-  {
-    name: 'Kiana Kutch',
-    position: 'sequi',
-    url: 'https://placehold.co/400x200',
-  },
+// const signature = [
+//   {
+//     name: 'Kiana Kutch ',
+//     position: 'sequi',
+//     url: 'https://placehold.co/400x200',
+//   },
+//   {
+//     name: 'Kiana Kutch',
+//     position: 'sequi',
+//     url: 'https://placehold.co/400x200',
+//   },
 
-  {
-    name: 'Carleton Wehner',
-    position: 'nisi',
-    url: 'https://placehold.co/400x200',
-  },
-  {
-    name: 'Lora Runolfsson',
-    position: 'ut',
-    url: 'https://placehold.co/400x200',
-  },
-  {
-    name: 'Orville Bosco',
-    position: 'quia',
-    url: 'https://placehold.co/400x200',
-  },
-  {
-    name: 'Prof. Easton Breitenberg',
-    position: 'voluptatem',
-    url: 'https://placehold.co/400x200',
-  },
-]
+//   {
+//     name: 'Carleton Wehner',
+//     position: 'nisi',
+//     url: 'https://placehold.co/400x200',
+//   },
+//   {
+//     name: 'Lora Runolfsson',
+//     position: 'ut',
+//     url: 'https://placehold.co/400x200',
+//   },
+//   {
+//     name: 'Orville Bosco',
+//     position: 'quia',
+//     url: 'https://placehold.co/400x200',
+//   },
+//   {
+//     name: 'Prof. Easton Breitenberg',
+//     position: 'voluptatem',
+//     url: 'https://placehold.co/400x200',
+//   },
+// ]
 function Content() {
   const [contentBody, setContentBody] = useState("");
   const currentURL = window.location.pathname;
@@ -44,7 +45,9 @@ function Content() {
   const participantId = parts[parts.length - 1];
   console.log(participantId)
   const [certiType, setCertiType] = useState('');
-
+  const [logos, setLogos] = useState([]);
+  const [participantDetail,setParticipantDetail]=useState({});
+  const [signature, setSignatures] = useState([]);
 
   useEffect(() => {
     const fetchCertiType = async () => {
@@ -61,6 +64,7 @@ function Content() {
           const data = await response.json();
           // Assuming the certiType is a property of the data object
           // setFormData((prevData) => ({ ...prevData, certiType: data.certiType }));
+          setParticipantDetail(data);
           setCertiType(data.certiType);
           console.log('certiype', data.certiType)
         } else {
@@ -78,50 +82,49 @@ function Content() {
 
 
 
-  async function fetchData() {
+  const fetchData= async()=> {
     try {
       console.log('executing function');
-      const [response_one, response_two] = await Promise.all([
-        fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${certiType}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        }),
-
-        fetch(`${apiUrl}/certificatemodule/participant/getoneparticipant/${participantId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        })
-        ,
-      ]);
-
-      //   console.log('Data from response_one:', response_one.json());
-      //   console.log('Data from response_two:', response_two.json());
-
-      const data_one = await response_one.json(); // Await the data_one promise
-      const data_two = await response_two.json(); // Await the data_two promise
+  
+      const response_one = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${certiType}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if (!response_one.ok) {
+        const errorResponseOne = await response_one.text();
+        console.error('Error fetching data from response_one:', errorResponseOne);
+        return;
+      }
+  
+      // Await the data_one promise
+      const data_one = await response_one.json();
+       // Await the data_one promise
+      const data_two = participantDetail; // Await the data_two promise
 
       console.log('Data from response dataaaaaaaaa:', data_one);
       console.log('Data from response_two:', data_two);
 
       let content_body = data_one[0].body;
-
+      setLogos(data_one[0].logos);
+      setSignatures(data_one[0].signatures);
+      
       // Replace all placeholders with actual values from data_two
       Object.keys(data_two).forEach(variable => {
         const placeholder = new RegExp(`{{${variable}}}`, 'g');
-        content_body = content_body.replace(placeholder, data_two[variable]);
-        console.log('vriable data', data_two[variable])
+        content_body = content_body.replace(placeholder, `<strong>${data_two[variable]}</strong>`);
+        console.log('variable data', data_two[variable]);
       });
-
+      
       // Now content_body has all the placeholders replaced with actual values from data_two
       const result = `${content_body}`;
       setContentBody(result);
-    } catch (error) {
+      
+      // Now content_body has all the placeholders replaced with actual values from data_two
+     } catch (error) {
       console.error('Error fetching data:', error);
     }
   }
@@ -129,33 +132,10 @@ function Content() {
   // Call the fetch function when the component mounts
   useEffect(() => {
     fetchData();
-  }, []); // Empty dependency array to execute the effect only once
-
-  const logos = [
-    {
-      name: 'Kiana Kutch',
-      position: 'sequi',
-      url: 'https://placehold.co/200x200',
-    },
-    {
-      name: 'Carleton Wehner',
-      position: 'nisi',
-      url: 'https://placehold.co/200x200',
-    },
-    {
-      name: 'Lora Runolfsson',
-      position: 'ut',
-      url: 'https://placehold.co/200x200',
-    },
-
-    {
-      name: 'Orville Bosco',
-      position: 'quia',
-      url: 'https://placehold.co/200x200',
-    }
-  ]
+  }, [participantId, certiType]); // Empty dependency array to execute the effect only once
 
   var num_logos = logos.length;
+  console.log('logos lenth', num_logos)
   var num_left = 0;
   if (num_logos % 2 == 0) {
     num_left = num_logos / 2 - 1;
@@ -176,7 +156,7 @@ function Content() {
               className="tw-flex tw-items-center tw-justify-center "
             >
               <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                <img src={item.url} alt="" />
+                <img src={item} alt="" />
               </div>
               <div className="tw-text-center">
                 {key === num_left && (
@@ -217,13 +197,8 @@ function Content() {
       <foreignObject x="10%" y="350.473" width="85%" height="160">
 
         <p className="font-serif text-xl opacity-80">
-          This is to certify that <strong>Akleem Khan </strong>
-          has been awarded this certificate in recognition of their outstanding contributions and dedication to the success of the
 
-          <strong> Pixel Perfect </strong>
-          held on <strong> 12-02-2023.</strong>
-
-          {contentBody}
+        <div>{ReactHtmlParser(contentBody)}</div>;
 
         </p>
       </foreignObject>
