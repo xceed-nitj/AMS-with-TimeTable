@@ -19,10 +19,23 @@ const CertificateSchema = new mongoose.Schema({
     type: Array,
     
   },
-  signatures: {
-    type: Array,
-    
-  },
+  signatures: [
+    {
+      name: {
+        type: String,
+        // required: true,
+      },
+      position: {
+        type: String,
+        // required: true,
+      },
+      url: {
+        type: String,
+        // required: true,
+      },
+    },
+    // You can add more fields if needed
+  ],
   certiType: {
     type: String,
     
