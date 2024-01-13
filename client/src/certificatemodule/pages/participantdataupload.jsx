@@ -112,56 +112,82 @@ function Participant() {
     }
   };
 
+
+
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
   };
 
-
   const handleUpload = () => {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-      formData.append('eventcode', eventId); 
-      setIsLoading(true);
+      formData.append('eventId', eventId); 
   
-      fetch(`${apiUrl}/certificatemodule/participant/batchupload/${eventId}`, {
+      fetch(`${apiUrl}/upload/participant`, {
         method: 'POST',
         body: formData,
-        credentials: 'include',
+        credentials: 'include'
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          setUploadState(true);
-          setUploadMessage('File uploaded successfully');
-          return response.json();
+        .then((response) => response.json())
+        .then(() => {
+          fetchParticipantDataparticipantData()
+          setSelectedFile(null);
         })
-        .then((data) => {
-          if (data.message) {
-            setDuplicateEntryMessage(data.message);
-            
-          } else {
-            fetchParticipantData(); 
-            setDuplicateEntryMessage(''); 
-          }
-          setIsLoading(false);
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          setIsLoading(false);
-        })
-        .finally(() => {
-          setIsLoading(false);
-          setTimeout(() => {
-            setUploadMessage('');
-          }, 3000);
-        });
+        .catch((error) => console.error('Error:', error));
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
+  
+
+
+  // const handleUpload = () => {
+  //   if (selectedFile) {
+  //     const formData = new FormData();
+  //     formData.append('csvFile', selectedFile);
+  //     formData.append('eventcode', eventId); 
+  //     setIsLoading(true);
+  
+  //     fetch(`${apiUrl}/certificatemodule/participant/batchupload/${eventId}`, {
+  //       method: 'POST',
+  //       body: formData,
+  //       credentials: 'include',
+  //     })
+  //       .then((response) => {
+  //         if (!response.ok) {
+  //           throw new Error(`Error: ${response.status} - ${response.statusText}`);
+  //         }
+  //         setUploadState(true);
+  //         setUploadMessage('File uploaded successfully');
+  //         return response.json();
+  //       })
+  //       .then((data) => {
+  //         if (data.message) {
+  //           setDuplicateEntryMessage(data.message);
+            
+  //         } else {
+  //           fetchParticipantData(); 
+  //           setDuplicateEntryMessage(''); 
+  //         }
+  //         setIsLoading(false);
+  //       })
+  //       .catch((error) => {
+  //         console.error('Error:', error);
+  //         setIsLoading(false);
+  //       })
+  //       .finally(() => {
+  //         setIsLoading(false);
+  //         setTimeout(() => {
+  //           setUploadMessage('');
+  //         }, 3000);
+  //       });
+  //   } else {
+  //     alert('Please select a CSV file before uploading.');
+  //   }
+  // };
   
   useEffect(() => {
     fetchParticipantData();
@@ -386,8 +412,8 @@ function Participant() {
 
         <Box mr="-1.5">
           <FileDownloadButton
-            fileUrl="/subject_template.xlsx"
-            fileName="subject_template.xlsx"
+            fileUrl="/participant_template.xlsx"
+            fileName="participant_template.xlsx"
           />
         </Box>
       </Box>
