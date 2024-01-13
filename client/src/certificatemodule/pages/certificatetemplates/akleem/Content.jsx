@@ -48,6 +48,8 @@ function Content() {
   const [logos, setLogos] = useState([]);
   const [participantDetail,setParticipantDetail]=useState({});
   const [signature, setSignatures] = useState([]);
+  const [header, setHeader] = useState([]);
+  const [footer, setFooter] = useState([]);
 
   useEffect(() => {
     const fetchCertiType = async () => {
@@ -111,7 +113,9 @@ function Content() {
       let content_body = data_one[0].body;
       setLogos(data_one[0].logos);
       setSignatures(data_one[0].signatures);
-      
+      setHeader(data_one[0].header)
+      setFooter(data_one[0].footer)
+
       // Replace all placeholders with actual values from data_two
       Object.keys(data_two).forEach(variable => {
         const placeholder = new RegExp(`{{${variable}}}`, 'g');
@@ -181,7 +185,10 @@ function Content() {
         </div>
       </foreignObject>
 
+      <foreignObject x="10%" y="200.473" width="85%" height="160">
 
+{header}
+      </foreignObject>
       <text
         x="561.26"
         y="300.473"
