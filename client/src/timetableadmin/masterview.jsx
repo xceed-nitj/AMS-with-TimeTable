@@ -18,6 +18,8 @@ import {
 function TimetableMasterView() {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState('');
+  const [lockedTimes, setLockedTimes] = useState({});
+  const [savedTimes, setSavedTimes] = useState({});
   const [data, setData] = useState([]);
   const apiUrl = getEnvironment();
 
@@ -41,6 +43,36 @@ function TimetableMasterView() {
       });
   };
 
+  const fetchLockedTime = async (currentCode) => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`,
+        { credentials: "include" }
+      );
+      const lockedTimeData = await response.json();
+      setLockedTimes(prevLockedTimes => ({
+        ...prevLockedTimes,
+        [currentCode]: lockedTimeData.updatedTime.lockTimeIST,
+      }));
+    } catch (error) {
+      console.error("Error fetching locked time data:", error);
+    }
+  };
+  const fetchSavedTime = async (currentCode) => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`,
+        { credentials: "include" }
+      );
+      const savedTimeData = await response.json();
+      setSavedTimes(prevSavedTimes => ({
+        ...prevSavedTimes,
+        [currentCode]: savedTimeData.updatedTime.saveTimeIST,
+      }));
+    } catch (error) {
+      console.error("Error fetching saved time data:", error);
+    }
+  };
   const fetchData = () => {
     // Check if a session is selected
     if (selectedSession) {
@@ -52,22 +84,24 @@ function TimetableMasterView() {
           return response.json();
         })
         .then(jsonData => {
-          console.log(jsonData)
           const uniqueDepartments = new Set();
-          const uniqueData = jsonData.filter(item => {
-            const uniqueDepartments = new Set();
-            const uniqueData = jsonData.map(item => {
-              if (!uniqueDepartments.has(item.dept)) {
-                uniqueDepartments.add(item.dept);
-                return {
-                  ...item,
-                  lastUpdated: new Date(item.updated_at).toLocaleString(),
-                  lastSaved: new Date(item.created_at).toLocaleString(),
-                };
-              }
-              return null;
-            }).filter(Boolean);
-            setData(uniqueData);
+          const uniqueData = jsonData.map(item => {
+            if (!uniqueDepartments.has(item.dept)) {
+              uniqueDepartments.add(item.dept);
+              return {
+                ...item,
+              };
+            }
+            return null;
+          }).filter(Boolean);
+          setData(uniqueData);
+
+          // Call the function to fetch locked time for each item
+          jsonData.forEach(item => {
+            fetchLockedTime(item.code);
+          });
+          jsonData.forEach(item => {
+            fetchSavedTime(item.code);
           });
         })
         .catch(error => {
@@ -75,7 +109,6 @@ function TimetableMasterView() {
         });
     }
   };
-
 
   useEffect(() => {
     fetchData();
@@ -109,8 +142,8 @@ function TimetableMasterView() {
               <Tr>
                 <Th>Department</Th>
                 <Th>Code</Th>
-                <Th>Last Updated</Th>
-                <Th>Last Saved</Th>
+                <Th>Last Saved Time</Th>
+                <Th>Last Locked Time</Th>
                 <Th>Download PDF</Th>
               </Tr>
             </Thead>
@@ -119,17 +152,17 @@ function TimetableMasterView() {
                 <Tr key={item._id}>
                   <Td>{item.dept}</Td>
                   <Td>{item.code}</Td>
-                  <Td>{item.lastUpdated}</Td>
-                  <Td>{item.lastSaved}</Td>
+                  <Td>{savedTimes[item.code] !== null ? savedTimes[item.code] : 'Table not saved yet'}</Td>
+                  <Td>{lockedTimes[item.code] !== null ? lockedTimes[item.code] : 'Table not locked yet'}</Td>
                   <Td>
-                    <Link
-                      href={`${apiUrl}/tt/${item.code}/generatepdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      color="teal.500"
-                    >
-                      Download PDF
-                    </Link>
+                  <Link
+          href={`${window.location.origin}/tt/${item.code}/generatepdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          color="teal.500"
+        >
+          Download PDF
+        </Link>
                   </Td>
                 </Tr>
               ))}
