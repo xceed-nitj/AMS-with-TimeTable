@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, VStack, IconButton, HStack, Textarea, Text, Container,Select } from '@chakra-ui/react';
+import { Input, Button, VStack, IconButton, HStack, Textarea,Flex,Box, Text, Container,Select } from '@chakra-ui/react';
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
 import Header from "../../components/header";
 import { useToast } from "@chakra-ui/react";
+import CertificateContent from './certificatetemplates/template01';
+
 
 
 
@@ -147,6 +149,7 @@ const CertificateForm = () => {
   };
 
   return (
+    <Flex>
     <Container maxW="lg">
     <Header title="Enter Certificate Details"></Header>
 
@@ -303,6 +306,20 @@ const CertificateForm = () => {
       </VStack>
     </form>
 </Container>
+<Box flex="1" p="4">
+<CertificateContent
+          eventId={eventId}
+          contentBody={formData.body}
+          certiType={formData.certiType}
+          logos={formData.logos}
+          participantDetail={{}}
+          signature={formData.signatures}
+          header={formData.header}
+          footer={formData.footer}
+        />
+              </Box>
+</Flex>
+
   );
 };
 

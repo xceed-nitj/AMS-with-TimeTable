@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useRef } from 'react';
+import downloadCertificatePdf from './certipdfdownload';
+import QRCode from 'qrcode';
+import CertificateContent from './certificatetemplates/template01';
+import React, { useState} from "react";
 import ReactHtmlParser from 'react-html-parser';
-import getEnvironment from "../../../../getenvironment";
+import getEnvironment from "../../getenvironment";
 
 const apiUrl = getEnvironment();
 
-function Content() {
+function ViewCertificate() {
   const [contentBody, setContentBody] = useState("");
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -105,97 +109,52 @@ function Content() {
     fetchData();
   }, [participantId, certiType]); // Empty dependency array to execute the effect only once
 
-  var num_logos = logos.length;
-  console.log('logos lenth', num_logos)
-  var num_left = 0;
-  if (num_logos % 2 == 0) {
-    num_left = num_logos / 2 - 1;
-  }
-  else {
-    num_left = Math.floor(num_logos / 2);
-  }
+  const svgRef = useRef();
+
+  useEffect(() => {
+
+    const url = window.location.href; // Replace with your URL
+    const svg = svgRef.current;
+
+    QRCode.toDataURL(url, (err, dataUrl) => {
+      if (err) throw err;
+
+      const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      image.setAttribute('x', '100');
+      image.setAttribute('y', '470');
+      image.setAttribute('width', '100');
+      image.setAttribute('height', '100');
+      image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+
+      svg.appendChild(image);
+    });
+  }, []);
 
   return (
     <>
-      <foreignObject width={"90%"} height={"200"} y={"80"} x={"5%"}>
+      <CertificateContent
+          eventId={eventId}
+          contentBody={contentBody}
+          certiType={certiType}
+          logos={logos}
+          participantDetail={participantDetail}
+          signature={signature}
+          header={header}
+          footer={footer}
+        />
 
-        <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
-
-          {logos.map((item, key) => (
-            <div
-              key={key}
-              className="tw-flex tw-items-center tw-justify-center "
-            >
-              <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                <img src={item} alt="" />
-              </div>
-              <div className="tw-text-center">
-                {key === num_left && (
-                  <>
-                    <p className="tw-font-nunito-bold tw-text-lg">
-                      डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
-                    </p>
-                    <p className="tw-font-nunito-bold tw-text-[10px]">
-                      जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत-144008
-                    </p>
-                    <p className="tw-font-nunito-bold tw-text-lg">
-                      Dr. B R Ambedkar National Institute of Technology Jalandhar
-                    </p>
-                    <p className="tw-font-nunito-bold tw-text-[10px]">
-                      G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India- 144008
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </foreignObject>
-
-      <foreignObject x="10%" y="200.473" width="85%" height="160">
-
-{header}
-      </foreignObject>
-      <text
-        x="561.26"
-        y="300.473"
-        fill="#424847"
-        fontFamily="AbhayaLibre-Regular"
-        fontSize="40.707"
-        textAnchor="middle"
-        fontWeight="550"
+      <button
+        onClick={downloadCertificatePdf}
+        style={{
+          backgroundColor: 'blue',
+          color: 'white',
+          zIndex: '9999',
+        }}
       >
-        CERTIFICATE OF APPRECIATION
-      </text>
-
-      <foreignObject x="10%" y="350.473" width="85%" height="160">
-
-        <p className="font-serif text-xl opacity-80">
-
-        <div>{ReactHtmlParser(contentBody)}</div>;
-
-        </p>
-      </foreignObject>
-
-      <foreignObject x={212.5} y={490} width={700} height={400}>
-        <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-center tw-gap-6">
-          {signature.map((item, key) => (
-            <div
-              key={key}
-              className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2"
-            >
-              <div className="tw-w-[100px]" ><img src={item.url} alt="" /></div>
-              <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-              <p className="tw-text-black tw-text-[15px] tw-font-semibold">{item.name}</p>
-              <p className="tw-text-[13px] -tw-mt-3
-              tw-text-gray-900">{item.position}</p>
-            </div>
-          ))}
-        </div>
-      </foreignObject>
-
+        Download PDF
+      </button>
     </>
-  )
+  );
 }
 
-export default Content
+export default ViewCertificate;
