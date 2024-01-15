@@ -1,18 +1,28 @@
 const Participant = require("../../../models/certificateModule/participant");
+const addEvent = require("../../../models/certificateModule/addevent");
 const mailSender = require("../../mailsender");
 const ejs = require("ejs");
+
 
 const sendEmailsToParticipants = async (eventId) => {
   try {
     // Fetch all participants from the database
     const allParticipants = await Participant.find();
+    if (!allParticipants) {
+      raise("No participants found");
+    }
+
+    // Fetch the event from the database based on the provided eventId and get event.name, if it exists
+    const event = await addEvent.findById(eventId);
+    if (!event) {
+      raise("Event not found");
+    }
+    const eventName = event.name;
 
     // Assuming you have an emails.ejs template in your views folder
     const path = require("path");
     const emailTemplatePath = path.join(__dirname, "email.ejs");
-    const emailTemplate = await ejs.renderFile(`${emailTemplatePath}`, {
-      eventName: "Your Event Name",
-    });
+
     console.log("hi3");
     console.log(allParticipants);
     // Loop through all participants and send emails for matching eventId
@@ -23,20 +33,15 @@ const sendEmailsToParticipants = async (eventId) => {
 
         const templateData = {
           participant: participant,
-          eventName: "Your Event Name",
+          eventName: eventName,
         };
 
-        // Assuming you have an email.ejs template in the same directory as emails.js
-        const emailTemplatePath = path.join(__dirname, "email.ejs");
 
         // Render the template with data
-        let emailBody = await ejs.renderFile(emailTemplatePath, templateData);
-        const emailTitle = "Your Email Subject";
+        let emailBody = await ejs.renderFile(emailTemplatePath, ...templateData);
+        const emailTitle = `${eventName}: Your certificate is here!`;
         console.log(participant.mailId);
         console.log(emailTitle);
-
-        // Manually add the URL to the email body
-        emailBody += `\nEvent URL: ${url}`;
 
         await mailSender(participant.mailId, emailTitle, emailBody);
       }
