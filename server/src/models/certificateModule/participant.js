@@ -35,6 +35,9 @@ const ParticipantSchema = new mongoose.Schema({
   eventId: {
     type: String,
   },
+  isCertificateSent: {
+    type: Boolean,
+  },
 });
 
 ParticipantSchema.add(commonFields);

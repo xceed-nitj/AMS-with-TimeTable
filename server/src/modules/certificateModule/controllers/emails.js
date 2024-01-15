@@ -17,7 +17,7 @@ const sendEmailsToParticipants = async (eventId) => {
     console.log(allParticipants);
     // Loop through all participants and send emails for matching eventId
     for (const participant of allParticipants) {
-      if (participant.eventId.toString() === eventId.toString()) {
+      if (participant.eventId.toString() === eventId.toString() && !participant.isCertificateSent) {
         const url = `cm/c/${eventId}/${participant._id}`;
         console.log("hi4");
 
