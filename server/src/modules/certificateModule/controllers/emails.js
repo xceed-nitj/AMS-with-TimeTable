@@ -2,7 +2,7 @@ const Participant = require("../../../models/certificateModule/participant");
 const addEvent = require("../../../models/certificateModule/addevent");
 const mailSender = require("../../mailsender");
 const ejs = require("ejs");
-
+const { baseURL } = require("../../commons");
 
 const sendEmailsToParticipants = async (eventId) => {
   try {
@@ -26,8 +26,11 @@ const sendEmailsToParticipants = async (eventId) => {
     console.log(allParticipants);
     // Loop through all participants and send emails for matching eventId
     for (const participant of allParticipants) {
-      if (participant.eventId.toString() === eventId.toString() && !participant.isCertificateSent) {
-        const url = `cm/c/${eventId}/${participant._id}`;
+      if (
+        participant.eventId.toString() === eventId.toString() &&
+        !participant.isCertificateSent
+      ) {
+        const url = `${baseURL}/cm/c/${eventId}/${participant._id}`;
         console.log("hi4");
 
         const templateData = {
@@ -36,10 +39,9 @@ const sendEmailsToParticipants = async (eventId) => {
           certificateURL: url,
         };
 
-
         // Render the template with data
-        let emailBody = await ejs.renderFile(emailTemplatePath, ...templateData);
-        const emailTitle = `${eventName}: Your certificate is here!`;
+        let emailBody = await ejs.renderFile(emailTemplatePath, templateData);
+        const emailTitle = `${event.name}: Your certificate is here!`;
         console.log(participant.mailId);
         console.log(emailTitle);
 
