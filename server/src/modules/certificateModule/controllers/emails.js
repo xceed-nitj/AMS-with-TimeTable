@@ -8,21 +8,19 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
     // Fetch all participants from the database
     const allParticipants = await Participant.find();
     if (!allParticipants) {
-      raise("No participants found");
+      throw new Error("No participants found");
     }
 
     // Fetch the event from the database based on the provided eventId and get event.name, if it exists
     const event = await addEvent.findById(eventId);
     if (!event) {
-      raise("Event not found");
+      throw new Error("Event not found");
     }
 
     // Assuming you have an emails.ejs template in your views folder
     const path = require("path");
     const emailTemplatePath = path.join(__dirname, "email.ejs");
 
-    console.log("hi3");
-    console.log(allParticipants);
     // Loop through all participants and send emails for matching eventId
     for (const participant of allParticipants) {
       if (
@@ -30,7 +28,6 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
         !participant.isCertificateSent
       ) {
         const url = `${baseURL}/cm/c/${eventId}/${participant._id}`;
-        console.log("hi4");
 
         const templateData = {
           participantName: participant.name,
@@ -41,10 +38,13 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
         // Render the template with data
         let emailBody = await ejs.renderFile(emailTemplatePath, templateData);
         const emailTitle = `${event.name}: Your certificate is here!`;
-        console.log(participant.mailId);
-        console.log(emailTitle);
 
+        // Send email
         await mailSender(participant.mailId, emailTitle, emailBody);
+
+        // Update isCertificateSent property and save the participant in the database
+        participant.isCertificateSent = true;
+        await participant.save();
       }
     }
 
