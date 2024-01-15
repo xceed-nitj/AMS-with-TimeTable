@@ -32,13 +32,13 @@ const sendEmailsToParticipants = async (eventId) => {
         // Render the template with data
         let emailBody = await ejs.renderFile(emailTemplatePath, templateData);
         const emailTitle = "Your Email Subject";
-        console.log(participant.email);
+        console.log(participant.mailId);
         console.log(emailTitle);
 
         // Manually add the URL to the email body
         emailBody += `\nEvent URL: ${url}`;
 
-        await mailSender(participant.email, emailTitle, emailBody);
+        await mailSender(participant.mailId, emailTitle, emailBody);
       }
     }
 
