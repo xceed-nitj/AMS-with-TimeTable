@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { commonFields, updateTimestamps } = require('../commonFields');
+const { commonFields, updateTimestamps } = require("../commonFields");
 const participantTypes = ["participation", "prize"];
 const organiserTypes = ["department", "club", "center"];
 
@@ -7,23 +7,18 @@ const organiserTypes = ["department", "club", "center"];
 const ParticipantSchema = new mongoose.Schema({
   name: {
     type: String,
-
   },
   department: {
     type: String,
-
   },
   college: {
     type: String,
-
   },
   mailId: {
     type: String,
-
   },
   certiType: {
     type: String,
-
   },
   teamName: {
     type: String,
@@ -33,21 +28,19 @@ const ParticipantSchema = new mongoose.Schema({
   },
   title1: {
     type: String,
-
   },
   title2: {
     type: String,
-
   },
   eventId: {
     type: String,
-  }
+  },
 });
 
 ParticipantSchema.add(commonFields);
 
 // Apply the pre-save middleware
-ParticipantSchema.pre('save', updateTimestamps);
+ParticipantSchema.pre("save", updateTimestamps);
 
 // Create the Mongoose model
 const Participant = mongoose.model("Participant", ParticipantSchema);
