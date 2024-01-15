@@ -20,7 +20,7 @@ function Template01() {
 
       const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
       image.setAttribute('x', '100');
-      image.setAttribute('y', '470');
+      image.setAttribute('y', '500');
       image.setAttribute('width', '100');
       image.setAttribute('height', '100');
       image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);

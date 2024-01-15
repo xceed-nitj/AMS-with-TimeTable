@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import ReactHtmlParser from 'react-html-parser';
+
 import getEnvironment from "../../../../getenvironment";
 import ProxifiedImage from "../../../components/ProxifiedImage";
 
@@ -7,7 +9,7 @@ const apiUrl = getEnvironment();
 
 function Content() {
   const [contentBody, setContentBody] = useState("");
-  const currentURL = window.location.pathname;
+  const currentURL = window.location.href;
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 2];
   const participantId = parts[parts.length - 1];
@@ -17,6 +19,7 @@ function Content() {
   const [signature, setSignatures] = useState([]);
   const [header, setHeader] = useState([]);
   // const [footer, setFooter] = useState([]);
+
 
   useEffect(() => {
     const fetchCertiType = async () => {
@@ -107,47 +110,55 @@ function Content() {
 
   return (
     <>
-      <foreignObject width={"90%"} height={"200"} y={"80"} x={"5%"}>
 
-        <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
-          {logos.map((item, key) => (
-            <div
-              key={key}
-              className="tw-flex tw-items-center tw-justify-center "
-            >
-              <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                <ProxifiedImage src={item} alt="" />
-              </div>
-              <div className="tw-text-center">
-                {key === num_left && (
-                  <>
-                    <p className="tw-font-nunito-bold tw-text-lg">
-                      डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
-                    </p>
-                    <p className="tw-font-nunito-bold tw-text-[10px]">
-                      जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत-144008
-                    </p>
-                    <p className="tw-font-nunito-bold tw-text-lg">
-                      Dr. B R Ambedkar National Institute of Technology Jalandhar
-                    </p>
-                    <p className="tw-font-nunito-bold tw-text-[10px]">
-                      G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India- 144008
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
+      <foreignObject width={"90%"} height={"400"} y={"80"} x={"5%"}>
+        <div>
+          <div className="tw-flex tw-items-center tw-justify-center tw-w-full ">
+
+            {logos.map((item, key) => (
+              <div
+                key={key}
+                className="tw-flex tw-items-center tw-justify-center "
+              >
+                <div className="tw-w-20 tw-shrink-0 tw-mx-6">
+                  <img src={item.url} alt="" />
+                </div>
+                <div className="tw-text-center">
+                  {key === num_left && (
+                    <>
+                      <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
+                        डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
+                      </p>
+                      <p className="tw-font-nunito-bold tw-text-[12px]">
+                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144011
+                      </p>
+                      <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
+                        Dr. B R Ambedkar National Institute of Technology Jalandhar
+                      </p>
+                      <p className="tw-font-nunito-bold tw-text-[12px] ">
+                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144011
+                      </p>
+                    </>
+                  )}
+                </div>
+          </div>
+          </div>
+          <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
+            {headers.map((item, ind) => (<h1 className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase" key={ind}>{item}</h1>
+            ))}
+          </div>
         </div>
       </foreignObject>
+
 
       <foreignObject x="10%" y="200.473" width="85%" height="160">
 
         {header}
       </foreignObject>
+
       <text
         x="561.26"
-        y="300.473"
+        y="340.473"
         fill="#424847"
         fontFamily="AbhayaLibre-Regular"
         fontSize="40.707"
@@ -157,7 +168,8 @@ function Content() {
         CERTIFICATE OF APPRECIATION
       </text>
 
-      <foreignObject x="10%" y="350.473" width="85%" height="160">
+
+      <foreignObject x="12.5%" y="370.473" width="75%" height="160">
 
         <p className="font-serif text-xl opacity-80">
 
@@ -166,8 +178,8 @@ function Content() {
         </p>
       </foreignObject>
 
-      <foreignObject x={212.5} y={490} width={700} height={400}>
-        <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-center tw-gap-6">
+      <foreignObject x={"20%"} y={515} width={"60%"} height={400}>
+        <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
           {signature.map((item, key) => (
             <div
               key={key}
@@ -184,7 +196,14 @@ function Content() {
           ))}
         </div>
       </foreignObject>
+
+      <foreignObject x={"25%"} y={"90%"} width={"50%"} height={"100"}>
+        <div className="tw-text-sm tw-text-center tw-text-gray-700 tw-underline">
+          <a href={currentURL}>{currentURL}</a>
+        </div>
+      </foreignObject>
     </>
+
   )
 }
 
