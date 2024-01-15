@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Add your custom styles here */
+    body {
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+    }
+
+    .certificate {
+      border: 2px solid #000;
+      padding: 20px;
+      margin: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .participant-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .event-name {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .date {
+      font-size: 14px;
+      margin-top: 20px;
+    }
+  </style>
+  <title>Certificate</title>
+</head>
+
+<body>
+
+  <div class="certificate">
+    <div class="title">Certificate of Participation</div>
+    <div class="event-name">for successfully participating in the event</div>
+    <div class="date">Date: <%= new Date().toDateString() %></div>
+
+  </div>
+
+</body>
+
+</html>
