@@ -66,6 +66,13 @@ app.use((req, res, next) => {
   next()
 })
 
+// Middleware to set base URL
+app.use((req, res, next) => {
+  const baseURL = `${req.protocol}://${req.get('host')}`;
+  req.baseURL = baseURL;
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

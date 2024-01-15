@@ -2,9 +2,8 @@ const Participant = require("../../../models/certificateModule/participant");
 const addEvent = require("../../../models/certificateModule/addevent");
 const mailSender = require("../../mailsender");
 const ejs = require("ejs");
-const { baseURL } = require("../../commons");
 
-const sendEmail = async (participantId) => {
+const sendEmail = async (participantId, baseURL) => {
   try {
     // Fetch the participant from the database based on the provided participantId
     const participant = await Participant.findById(participantId);

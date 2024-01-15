@@ -14,7 +14,7 @@ router.post("/send-emails", async (req, res) => {
   }
 
   try {
-    await sendEmailsToParticipants(eventId);
+    await sendEmailsToParticipants(eventId, req.baseURL);
     res
       .status(200)
       .json({ success: true, message: "Emails sent successfully" });
@@ -31,11 +31,11 @@ router.post("/send-email", async (req, res) => {
     if (!participantId) {
       return res
         .status(400)
-        .json({ error: "Participant ID is required in the request body." });
+        .json({ error: "Participant ID is required in the request params." });
     }
 
     // Call the sendEmailToParticipant function with the participantId
-    await sendEmail(participantId);
+    await sendEmail(participantId, req.baseURL);
 
     // Respond with a success message
     res.status(200).json({ message: "Email sent successfully!" });
