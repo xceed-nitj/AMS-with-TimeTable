@@ -1,11 +1,13 @@
 const Participant = require("../../../models/certificateModule/participant");
+const addEvent = require("../../../models/certificateModule/addevent");
 const mailSender = require("../../mailsender");
 const ejs = require("ejs");
 
-const sendEmail = async (participantId) => {
+const sendEmail = async (participantId, baseURL) => {
   try {
     // Fetch the participant from the database based on the provided participantId
     const participant = await Participant.findById(participantId);
+    const event = await addEvent.findById(participant.eventId);
 
     if (!participant) {
       console.log(`Participant with _id ${participantId} not found.`);
@@ -14,21 +16,17 @@ const sendEmail = async (participantId) => {
 
     const path = require("path");
     const emailTemplatePath = path.join(__dirname, "email.ejs");
-    const emailTemplate = await ejs.renderFile(emailTemplatePath, {
-      eventName: "Your Event Name",
-    });
 
-    const url = `cm/c/${participant.eventId}/${participant._id}`;
+    const url = `${baseURL}/cm/c/${participant.eventId}/${participant._id}`;
 
     const templateData = {
-      participant: participant,
-      eventName: "Your Event Name",
+      participantName: participant.name,
+      eventName: event.name,
+      certificateURL: url,
     };
 
     let emailBody = await ejs.renderFile(emailTemplatePath, templateData);
-    const emailTitle = "Your Email Subject";
-
-    emailBody += `\nEvent URL: ${url}`;
+    const emailTitle = `${event.name}: Your certificate is here!`;
 
     await mailSender(participant.mailId, emailTitle, emailBody);
 

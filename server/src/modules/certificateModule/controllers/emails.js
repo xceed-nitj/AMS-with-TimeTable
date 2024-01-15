@@ -1,44 +1,50 @@
 const Participant = require("../../../models/certificateModule/participant");
+const addEvent = require("../../../models/certificateModule/addevent");
 const mailSender = require("../../mailsender");
 const ejs = require("ejs");
 
-const sendEmailsToParticipants = async (eventId) => {
+const sendEmailsToParticipants = async (eventId, baseURL) => {
   try {
     // Fetch all participants from the database
     const allParticipants = await Participant.find();
+    if (!allParticipants) {
+      throw new Error("No participants found");
+    }
+
+    // Fetch the event from the database based on the provided eventId and get event.name, if it exists
+    const event = await addEvent.findById(eventId);
+    if (!event) {
+      throw new Error("Event not found");
+    }
 
     // Assuming you have an emails.ejs template in your views folder
     const path = require("path");
     const emailTemplatePath = path.join(__dirname, "email.ejs");
-    const emailTemplate = await ejs.renderFile(`${emailTemplatePath}`, {
-      eventName: "Your Event Name",
-    });
-    console.log("hi3");
-    console.log(allParticipants);
+
     // Loop through all participants and send emails for matching eventId
     for (const participant of allParticipants) {
-      if (participant.eventId.toString() === eventId.toString()) {
-        const url = `cm/c/${eventId}/${participant._id}`;
-        console.log("hi4");
+      if (
+        participant.eventId.toString() === eventId.toString() &&
+        !participant.isCertificateSent
+      ) {
+        const url = `${baseURL}/cm/c/${eventId}/${participant._id}`;
 
         const templateData = {
-          participant: participant,
-          eventName: "Your Event Name",
+          participantName: participant.name,
+          eventName: event.name,
+          certificateURL: url,
         };
-
-        // Assuming you have an email.ejs template in the same directory as emails.js
-        const emailTemplatePath = path.join(__dirname, "email.ejs");
 
         // Render the template with data
         let emailBody = await ejs.renderFile(emailTemplatePath, templateData);
-        const emailTitle = "Your Email Subject";
-        console.log(participant.mailId);
-        console.log(emailTitle);
+        const emailTitle = `${event.name}: Your certificate is here!`;
 
-        // Manually add the URL to the email body
-        emailBody += `\nEvent URL: ${url}`;
-
+        // Send email
         await mailSender(participant.mailId, emailTitle, emailBody);
+
+        // Update isCertificateSent property and save the participant in the database
+        participant.isCertificateSent = true;
+        await participant.save();
       }
     }
 
