@@ -10,6 +10,8 @@ const modelPaths = {
   subject: "../../models/subject",
   masterroom: "../../models/masterroom",
   mastersem: "../../models/mastersem",
+  participant: "../../models/certificateModule/participant",
+  
 };
 
 // Set up Multer for file uploads
@@ -48,11 +50,16 @@ router.post('/:objectType', upload.single('csvFile'), async (req, res) => {
     const mongooseSchema = require(modelPaths[objectType]);
 
     for (const row of sheet) {
-      const currentCode = req.body.code;
+      const currentCode = req.body?.code;
+      if(currentCode){
       row.code=currentCode;
-
+      }
+      const eventId=req.body?.eventId;
+      if(eventId)
+      {
+      row.eventId=eventId;
+      }
       const duplicates = await findDuplicatesByType(objectType, currentCode);
-
       if (duplicates.length > 0) {
         if (!duplicateSet.has(objectType)) {
           duplicateSet.set(objectType, new Set());

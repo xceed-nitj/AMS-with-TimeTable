@@ -6,7 +6,7 @@ const certificateController = new CertificateController();
 // Route to create a new certificate
 certificateRouter.post("/content/:id", async (req, res) => {
   try {
-    const newcertificate=await certificateController.addcertificate(req.body);
+    const newcertificate=await certificateController.addcertificate(req.params.id, req.body);
     return res.status(200).json(newcertificate);
   } catch (e) {
     return res
@@ -27,10 +27,11 @@ certificateRouter.get("/", async (req, res) => {
   }
 });
 
-certificateRouter.get("/getcertificatedetails/:id", async (req, res) => {
+certificateRouter.get("/getcertificatedetails/:id/:type", async (req, res) => {
   try {
     const id=req.params?.id;
-    const allCertificates = await certificateController.getcertificateByEventId(id);
+    const type=req.params?.type;
+    const allCertificates = await certificateController.getcertificateByEventId(id,type);
     return res.status(200).json(allCertificates);
   } catch (e) {
     return res

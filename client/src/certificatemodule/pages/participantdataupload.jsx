@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import getEnvironment from "../../getenvironment";
 import FileDownloadButton from "../../filedownload/filedownload";
+import { Link as ChakraLink } from '@chakra-ui/react';
 // import subjectFile from '../assets/subject_template';
 import {
   Container,
@@ -39,6 +40,7 @@ function Participant() {
   const currentURL = window.location.pathname;
   const parts = currentURL.split("/");
   const eventId = parts[parts.length - 2];
+  const frontendHost=parts[parts.length-4]
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadState, setUploadState] = useState(false);
@@ -59,6 +61,8 @@ function Participant() {
     position: "",
     title1: "",
     title2: "",
+    certiType:"",
+    mailId:"",
     eventId: eventId,
   });
 
@@ -70,6 +74,8 @@ function Participant() {
     position: "",
     title1: "",
     title2: "",
+    certiType:"",
+    mailId:"",
     eventId: eventId,
   });
 
@@ -106,56 +112,82 @@ function Participant() {
     }
   };
 
+
+
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
   };
 
-
   const handleUpload = () => {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-      formData.append('eventcode', eventId); 
-      setIsLoading(true);
+      formData.append('eventId', eventId); 
   
-      fetch(`${apiUrl}/certificatemodule/participant/batchupload/${eventId}`, {
+      fetch(`${apiUrl}/upload/participant`, {
         method: 'POST',
         body: formData,
-        credentials: 'include',
+        credentials: 'include'
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-          }
-          setUploadState(true);
-          setUploadMessage('File uploaded successfully');
-          return response.json();
+        .then((response) => response.json())
+        .then(() => {
+          fetchParticipantDataparticipantData()
+          setSelectedFile(null);
         })
-        .then((data) => {
-          if (data.message) {
-            setDuplicateEntryMessage(data.message);
-            
-          } else {
-            fetchParticipantData(); 
-            setDuplicateEntryMessage(''); 
-          }
-          setIsLoading(false);
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          setIsLoading(false);
-        })
-        .finally(() => {
-          setIsLoading(false);
-          setTimeout(() => {
-            setUploadMessage('');
-          }, 3000);
-        });
+        .catch((error) => console.error('Error:', error));
     } else {
       alert('Please select a CSV file before uploading.');
     }
   };
+  
+
+
+  // const handleUpload = () => {
+  //   if (selectedFile) {
+  //     const formData = new FormData();
+  //     formData.append('csvFile', selectedFile);
+  //     formData.append('eventcode', eventId); 
+  //     setIsLoading(true);
+  
+  //     fetch(`${apiUrl}/certificatemodule/participant/batchupload/${eventId}`, {
+  //       method: 'POST',
+  //       body: formData,
+  //       credentials: 'include',
+  //     })
+  //       .then((response) => {
+  //         if (!response.ok) {
+  //           throw new Error(`Error: ${response.status} - ${response.statusText}`);
+  //         }
+  //         setUploadState(true);
+  //         setUploadMessage('File uploaded successfully');
+  //         return response.json();
+  //       })
+  //       .then((data) => {
+  //         if (data.message) {
+  //           setDuplicateEntryMessage(data.message);
+            
+  //         } else {
+  //           fetchParticipantData(); 
+  //           setDuplicateEntryMessage(''); 
+  //         }
+  //         setIsLoading(false);
+  //       })
+  //       .catch((error) => {
+  //         console.error('Error:', error);
+  //         setIsLoading(false);
+  //       })
+  //       .finally(() => {
+  //         setIsLoading(false);
+  //         setTimeout(() => {
+  //           setUploadMessage('');
+  //         }, 3000);
+  //       });
+  //   } else {
+  //     alert('Please select a CSV file before uploading.');
+  //   }
+  // };
   
   useEffect(() => {
     fetchParticipantData();
@@ -213,6 +245,8 @@ function Participant() {
               position: "",
               title1: "",
               title2: "",
+              certiType:"",
+              mailId:"",          
               eventId: eventId,
           });
           })
@@ -263,6 +297,8 @@ function Participant() {
         position: "",
         title1: "",
         title2: "",
+        certiType:"",
+        mailId:"",    
         eventId: eventId,
     
     });
@@ -376,8 +412,8 @@ function Participant() {
 
         <Box mr="-1.5">
           <FileDownloadButton
-            fileUrl="/subject_template.xlsx"
-            fileName="subject_template.xlsx"
+            fileUrl="/participant_template.xlsx"
+            fileName="participant_template.xlsx"
           />
         </Box>
       </Box>
@@ -496,6 +532,38 @@ function Participant() {
 
             </Box>
 
+            <Box>
+              <FormLabel>Email: </FormLabel>
+              <Input
+                border="1px"
+                mb="4"
+                borderColor="gray.300"
+                // type="number" // Assuming it's a number
+                placeholder="Mail"
+                value={editedSData.mailId}
+                onChange={(e) =>
+                  setEditedSData({ ...editedSData, mailId: e.target.value })
+                }
+              />
+
+            </Box>
+
+            <Box>
+              <FormLabel>certificate Type: </FormLabel>
+              <Input
+                border="1px"
+                mb="4"
+                borderColor="gray.300"
+                // type="number" // Assuming it's a number
+                placeholder="certiType"
+                value={editedSData.certiType}
+                onChange={(e) =>
+                  setEditedSData({ ...editedSData, certiType: e.target.value })
+                }
+              />
+
+            </Box>
+
 
 
             <Box  display='flex' justifyContent='space-between'>
@@ -538,6 +606,8 @@ function Participant() {
                 <Th><Center>Position</Center></Th>
                 <Th><Center>Title-1</Center></Th>
                 <Th><Center>Title-2</Center></Th>
+                <Th><Center>Email</Center></Th>
+                <Th><Center>Certificate type</Center></Th>
                 <Th><Center>Creficate Link</Center></Th>
                 <Th><Center>Actions</Center></Th>
               </Tr>
@@ -664,7 +734,38 @@ function Participant() {
                       {editRowId === row._id ? (
                         <Input
                           type="text"
+                          value={editedData.mailId}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, mailId: e.target.value })
+                          }
+                          />
+                          ) : (
+                            row.mailId
+                            )}
+                    </Center>
+                  </Td> 
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.certiType}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, certiType: e.target.value })
+                          }
+                          />
+                          ) : (
+                            row.certiType
+                            )}
+                    </Center>
+                  </Td> 
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
                           value={row._id}
+                          isDisabled
                           // onChange={(e) =>
                           //   setEditedData({
                           //     ...editedData,
@@ -673,7 +774,9 @@ function Participant() {
                           // }
                           />
                           ) : (
-                            row._id
+                            <ChakraLink href={`${frontendHost}/cm/c/${eventId}/${row._id}`} isExternal>
+    View certificate
+  </ChakraLink>
                       )}
                     </Center>
                   </Td>
