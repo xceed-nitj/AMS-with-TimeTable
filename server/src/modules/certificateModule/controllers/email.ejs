@@ -9,15 +9,18 @@
     /* Add your custom styles here */
     body {
       font-family: 'Arial', sans-serif;
-      text-align: center;
     }
 
     .certificate {
-      border: 2px solid #000;
-      padding: 20px;
       margin: 20px;
       max-width: 600px;
       margin: 0 auto;
+    }
+
+    .greeting {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 20px;
     }
 
     .title {
@@ -26,20 +29,19 @@
       margin-bottom: 20px;
     }
 
-    .participant-name {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
     .event-name {
       font-size: 16px;
       margin-bottom: 10px;
     }
 
-    .date {
-      font-size: 14px;
-      margin-top: 20px;
+    .certificate-url {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .signature {
+      font-size: 16px;
+      margin-top: 30px;
     }
   </style>
   <title>Certificate</title>
@@ -48,10 +50,15 @@
 <body>
 
   <div class="certificate">
-    <div class="title">Certificate of Participation</div>
-    <div class="event-name">for successfully participating in the event</div>
-    <div class="date">Date: <%= new Date().toDateString() %></div>
-
+    <div class="greeting">Dear <%= participantName %>,</div>
+    <div class="event-name">Please find the below link for the certificate of the event: <%= eventName %>
+    </div>
+    <div class="certificate-url">Certificate URL: <%= certificateURL %>
+    </div>
+    <div class="signature">
+      Thanks and Regards,<br>
+      Team XCEED-NITJ
+    </div>
   </div>
 
 </body>

@@ -17,7 +17,6 @@ const sendEmailsToParticipants = async (eventId) => {
     if (!event) {
       raise("Event not found");
     }
-    const eventName = event.name;
 
     // Assuming you have an emails.ejs template in your views folder
     const path = require("path");
@@ -32,8 +31,9 @@ const sendEmailsToParticipants = async (eventId) => {
         console.log("hi4");
 
         const templateData = {
-          participant: participant,
-          eventName: eventName,
+          participantName: participant.name,
+          eventName: event.name,
+          certificateURL: url,
         };
 
 
