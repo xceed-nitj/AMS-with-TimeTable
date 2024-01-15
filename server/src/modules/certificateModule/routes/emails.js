@@ -4,7 +4,7 @@ const { sendEmailsToParticipants } = require("../controllers/emails");
 const { sendEmail } = require("../controllers/participantemail");
 
 router.post("/send-emails", async (req, res) => {
-  const { eventId } = req.body;
+  const { eventId } = req.query;
 
   if (!eventId) {
     return res.status(400).json({
@@ -26,7 +26,7 @@ router.post("/send-emails", async (req, res) => {
 
 router.post("/send-email", async (req, res) => {
   try {
-    const { participantId } = req.body;
+    const { participantId } = req.query;
 
     if (!participantId) {
       return res
