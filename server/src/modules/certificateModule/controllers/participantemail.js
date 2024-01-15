@@ -21,7 +21,7 @@ const sendEmail = async (participantId) => {
     const url = `${baseURL}/cm/c/${participant.eventId}/${participant._id}`;
 
     const templateData = {
-      participant: participant.name,
+      participantName: participant.name,
       eventName: event.name,
       certificateURL: url,
     };
