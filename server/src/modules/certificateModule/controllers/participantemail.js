@@ -30,9 +30,9 @@ const sendEmail = async (participantId) => {
 
     emailBody += `\nEvent URL: ${url}`;
 
-    await mailSender(participant.email, emailTitle, emailBody);
+    await mailSender(participant.mailId, emailTitle, emailBody);
 
-    console.log(`Email sent to ${participant.name} (${participant.email})`);
+    console.log(`Email sent to ${participant.name} (${participant.mailId})`);
   } catch (error) {
     console.error("Error sending email:", error);
   }

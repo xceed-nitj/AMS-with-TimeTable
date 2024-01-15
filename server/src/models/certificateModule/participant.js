@@ -7,40 +7,41 @@ const organiserTypes = ["department", "club", "center"];
 const ParticipantSchema = new mongoose.Schema({
   name: {
     type: String,
-    
-  },
-  email: {
-    type: String,
-    
+
   },
   department: {
     type: String,
-    
+
   },
   college: {
     type: String,
-    
-  }, 
-  types:{
+
+  },
+  mailId: {
     type: String,
-   },
+
+  },
+  certiType: {
+    type: String,
+
+  },
+  teamName: {
+    type: String,
+  },
   position: {
     type: String,
   },
-  title1:{
+  title1: {
     type: String,
-    
+
   },
-  title2:{
+  title2: {
     type: String,
-    
+
   },
-  eventId:{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'addevent',
-    required: true
-    
-  },
+  eventId: {
+    type: String,
+  }
 });
 
 ParticipantSchema.add(commonFields);
