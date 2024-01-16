@@ -2,9 +2,10 @@ const express = require("express");
 const certificateRouter = express.Router();
 const CertificateController = require("../controllers/certificate");
 const certificateController = new CertificateController();
+const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 
 // Route to create a new certificate
-certificateRouter.post("/content/:id", async (req, res) => {
+certificateRouter.post("/content/:id",ecmadminRoute, async (req, res) => {
   try {
     const newcertificate=await certificateController.addcertificate(req.params.id, req.body);
     return res.status(200).json(newcertificate);
@@ -55,7 +56,7 @@ certificateRouter.get("/:certificateId", async (req, res) => {
 });
 
 // Route to update a specific certificate by ID
-certificateRouter.put('/:certificateId', async (req, res) => {
+certificateRouter.put('/:certificateId',ecmadminRoute, async (req, res) => {
   try {
     const certificateId = req.params.certificateId;
     const updatedCertificate = req.body;
@@ -70,7 +71,7 @@ certificateRouter.put('/:certificateId', async (req, res) => {
 });
 
 // Route to delete a specific certificate by ID
-certificateRouter.delete("/:certificateId", async (req, res) => {
+certificateRouter.delete("/:certificateId",ecmadminRoute, async (req, res) => {
   try {
     const certificateId = req.params?.certificateId;
     await certificateController.deletecertificateById(certificateId);

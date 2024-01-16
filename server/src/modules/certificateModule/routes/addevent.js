@@ -3,9 +3,10 @@ const addEventRouter = express.Router();
 const AddEventController = require("../controllers/addevent");
 const addEventController = new AddEventController();
 const protectRoute = require("../../usermanagement/privateroute");
+const superadminRoute = require("../../usermanagement/superadminroute");
 
 // Route to create a new event
-addEventRouter.post("/", async (req, res) => {
+addEventRouter.post("/",superadminRoute, async (req, res) => {
   try {
     await addEventController.addEvent(req.body);
     return res.status(201).json({ response: "Event created sucesfully" });
@@ -43,7 +44,7 @@ addEventRouter.get("/", async (req, res) => {
 
 
 // Route to update a specific event by ID
-addEventRouter.put("/:eventId", async (req, res) => {
+addEventRouter.put("/:eventId",superadminRoute, async (req, res) => {
   try {
     const eventId = req.params?.eventId;
     const updatedEvent = req.body;
@@ -57,7 +58,7 @@ addEventRouter.put("/:eventId", async (req, res) => {
 });
 
 // Route to delete a specific event by ID
-addEventRouter.delete("/:eventId", async (req, res) => {
+addEventRouter.delete("/:eventId",superadminRoute, async (req, res) => {
   try {
     const eventId = req.params?.eventId;
     await addEventController.deleteEventById(eventId);
