@@ -116,7 +116,7 @@ function Content() {
             {logos.map((item, key) => (
               <div key={key} className="tw-flex tw-items-center tw-justify-center ">
                 <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                  <img src={item.url} alt="" />
+                  <img src={item} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
@@ -138,19 +138,15 @@ function Content() {
                 </div>
               </div>
             ))}
-            <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
-              {header.map((item, ind) => (
-                <h1 className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase" key={ind}>{item}</h1>
-              ))}
-            </div>
           </div>
         </foreignObject>
     
         <foreignObject x="10%" y="200.473" width="85%" height="160">
-          {/* Assuming header is a string, otherwise, adjust accordingly */}
-          {header.map((item, ind) => (
-            <div key={ind}>{item}</div>
-          ))}
+        <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
+              {header.map((item, ind) => (
+                <h1 className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase" key={ind}>{item}</h1>
+              ))}
+            </div>
         </foreignObject>
     
         <text
@@ -186,9 +182,9 @@ function Content() {
           </div>
         </foreignObject>
     
-        <foreignObject x={"25%"} y={"90%"} width={"50%"} height={"100"}>
-          <div className="tw-text-sm tw-text-center tw-text-gray-700 tw-underline">
-            <a href={currentURL}>{currentURL}</a>
+        <foreignObject x={"20%"} y={"90%"} width={"60%"} height={"100"}>
+          <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
+          verify at <a href={currentURL}>{currentURL}</a>
           </div>
         </foreignObject>
       </>
