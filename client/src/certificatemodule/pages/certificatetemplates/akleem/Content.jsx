@@ -116,7 +116,7 @@ function Content() {
             {logos.map((item, key) => (
               <div key={key} className="tw-flex tw-items-center tw-justify-center ">
                 <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                  <img src={item} alt="" />
+                <ProxifiedImage src={item} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
