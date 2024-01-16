@@ -10,9 +10,9 @@ const otpGenerator = require("otp-generator");
 const dotenv = require("dotenv"); // Corrected import
 const fs = require("fs");
 const ejs = require("ejs");
-const mailSender = require("./mailsender");
+// const mailSender = require("./mailsender");
 const path = require("path");
-const ejsTemplatePath = path.join(__dirname, "otpBody.ejs");
+// const ejsTemplatePath = path.join(__dirname, "otpBody.ejs");
 dotenv.config();
 
 exports.register = async (req, res, next) => {

@@ -5,16 +5,16 @@ class AddcertificateController {
   async addcertificate(eventId,newCertificate) {
     
     try {
-
+      console.log(newCertificate)
       // Check if a certificate with the given event ID already exists
       const existingCertificate = await certificate.findOne({
-        eventId: eventId,
+        eventId: eventId, certiType:newCertificate.certiType
       });
 
       if (existingCertificate) {
         // If exists, update the existing certificate
         const updatedCertificate=await certificate.updateOne(
-          { eventId: eventId },
+          { eventId: eventId, certiType:newCertificate.certiType },
           {
             $set: {
               logos: newCertificate.logos,

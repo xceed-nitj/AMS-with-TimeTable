@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const path = require("path");
+const axios = require("axios")
 
 // Load environment variables from .env file
 dotenv.config({ path: "../.env" });
@@ -42,7 +43,11 @@ mongoose.connection.on("connected", () => {
 // CORS configuration
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://nitjtt.netlify.app"], // Change this to your allowed origins or '*' to allow all origins
+    origin: [
+      "http://localhost:5173",
+      "https://nitjtt.netlify.app",
+      "http://localhost:8010",
+    ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
     allowedHeaders: "Content-Type",
@@ -55,11 +60,40 @@ app.use(
 //     res.send('Hello World!');
 // })
 
+// Logger
+app.use((req, res, next) => {
+  console.log(req.method, req.path)
+  next()
+})
+
+// Middleware to set base URL
+app.use((req, res, next) => {
+  const baseURL = `${req.protocol}://${req.get('host')}`;
+  req.baseURL = baseURL;
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(checkDatabaseConnection);
 app.use(express.static(path.join(__dirname + "/../../client/dist")));
+
+app.get('/proxy-image', async (req, res) => {
+  try {
+    const imageUrl = req.query.url
+
+    // Make a request to the image URL
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' })
+
+    // Set appropriate headers for the image
+    res.set('Content-Type', response.headers['content-type'])
+    res.send(response.data)
+  } catch (error) {
+    console.error('Error proxying image:', error.message)
+    res.status(500).send('Internal Server Error')
+  }
+})
 
 // Routes
 const certificateModule = require("./modules/certificateModule/routes/index");

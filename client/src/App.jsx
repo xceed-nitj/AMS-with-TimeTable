@@ -59,6 +59,7 @@ import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
+// import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
 
 
