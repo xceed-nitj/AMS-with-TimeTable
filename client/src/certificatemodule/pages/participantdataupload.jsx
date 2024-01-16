@@ -258,6 +258,60 @@ function Participant() {
     }
   };
 
+  const handleBatchMail = () => { 
+    // Make the fetch request
+    fetch( `${apiUrl}/certificatemodule/emails/send-emails/${eventId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // 'Frontend-Host': window.location.origin,
+      },
+      // body: JSON.stringify(requestData),
+      credentials: 'include',
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Handle the response from the backend, if needed
+        console.log('Mail sent successfully:', data);
+      })
+      .catch((error) => {
+        console.error('Error sending mail:', error);
+      });
+  };
+
+
+
+  const handleMailClick = (Id) => { 
+    // Make the fetch request
+    fetch( `${apiUrl}/certificatemodule/emails/send-email/${Id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // 'Frontend-Host': window.location.origin,
+      },
+      // body: JSON.stringify(requestData),
+      credentials: 'include',
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Handle the response from the backend, if needed
+        console.log('Mail sent successfully:', data);
+      })
+      .catch((error) => {
+        console.error('Error sending mail:', error);
+      });
+  };
+
   const handleDelete = (_id) => {
     const isConfirmed = window.confirm("Are you sure you want to delete this entry?");
     
@@ -576,16 +630,16 @@ function Participant() {
             </Box>
           </FormControl>
         ) : (
-          <CustomTealButton  w='150px' mb='5' mt='3' onClick={handleAddSubject}>
-            Add Participant
+          <CustomTealButton  w='200px' mb='5' mt='3' onClick={handleAddSubject}>
+            Add New Participant
           </CustomTealButton>
 
         )}
       </Box>
       {addduplicateEntryMessage && <p>{addduplicateEntryMessage}</p>}
-      <CustomDeleteButton ml='0' width='150px' onClick={handleDeleteAll}>
-        Delete All
-      </CustomDeleteButton>
+      <CustomBlueButton ml='0' width='350px' onClick={handleBatchMail}>
+        send Email to all Participants
+      </CustomBlueButton>
 
       <TableContainer mt='2'>
         <Text as='b'>Table of Paticipant Data</Text>
@@ -796,6 +850,14 @@ function Participant() {
                           <CustomDeleteButton onClick={() => handleDelete(row._id)}>
                             Delete
                           </CustomDeleteButton>
+                        
+                    <Center>
+                      {/* ... (existing Edit and Delete buttons) */}
+                      <CustomBlueButton onClick={() => handleMailClick(row._id)}>
+                        Mail
+                      </CustomBlueButton>
+                    </Center>
+                
                         </>
                       )}
                     </Center>

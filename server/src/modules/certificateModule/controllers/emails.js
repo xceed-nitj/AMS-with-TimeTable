@@ -6,7 +6,7 @@ const ejs = require("ejs");
 const sendEmailsToParticipants = async (eventId, baseURL) => {
   try {
     // Fetch all participants from the database
-    const allParticipants = await Participant.find();
+    const allParticipants = await Participant.find({eventId});
     if (!allParticipants) {
       throw new Error("No participants found");
     }
