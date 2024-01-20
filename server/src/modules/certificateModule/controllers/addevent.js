@@ -10,6 +10,16 @@ class AddEventController {
     }
   }
 
+  async lockEvent(id) {
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    try {
+      await addEvent.findByIdAndUpdate(id, {lock:true});
+    } catch (e) {
+      throw new HttpException(500, e);
+    }
+  }
   async getAllEvents() {
     try {
       const eventList = await addEvent.find();

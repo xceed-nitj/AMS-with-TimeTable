@@ -132,7 +132,7 @@ const CertificateForm = () => {
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log(responseData);
+        // console.log(responseData);
         toast({
           title: "Submission successfull",
           description: responseData.message,

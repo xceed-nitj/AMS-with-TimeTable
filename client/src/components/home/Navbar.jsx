@@ -124,7 +124,20 @@ export default function Navbar() {
                 Home
               </a>
             </li>
+           
 
+
+            {isAuthenticated ? (
+            <li>
+              <a
+                href="/userroles"
+                className="tw-block tw-py-2 tw-px-3 tw-text-cyan-300 tw-rounded md:tw-bg-transparent md:tw-text-cyan-300 md:tw-p-0 hover:tw-text-cyan-500"
+                aria-current="page"
+              >
+                Dashboard
+              </a>
+            </li>
+              ) : null}
             <li>
               <a
                 href="/#services"

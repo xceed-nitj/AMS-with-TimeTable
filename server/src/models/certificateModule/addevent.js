@@ -26,7 +26,10 @@ const addEventSchema = new mongoose.Schema({
   },
   eventType:{
     type: String,
-    
+  },
+  lock:{
+    type: Boolean,
+    default:false,
   }
 });
 

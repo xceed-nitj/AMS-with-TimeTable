@@ -36,7 +36,7 @@ const EventRegistration = () => {
         const response = await fetch(`${apiUrl}/user/getuser/all`, { credentials: 'include' });
         const data = await response.json();
         setUsers(data.user);
-        console.log(data)
+        // console.log(data)
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -46,7 +46,7 @@ const EventRegistration = () => {
         const response = await fetch(`${apiUrl}/certificatemodule/addevent/`, { credentials: 'include' });
         const data = await response.json();
         setEvents(data);
-        console.log(data)
+        // console.log(data)
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -128,7 +128,7 @@ console.log(formData)
         </FormControl>
 
         <FormControl mb="4">
-          <FormLabel>Expiry Date</FormLabel>
+          <FormLabel>Event Date</FormLabel>
           <Input
             type="date"
             name="ExpiryDate"
