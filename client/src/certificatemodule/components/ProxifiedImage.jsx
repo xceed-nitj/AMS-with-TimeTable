@@ -24,7 +24,7 @@ const ProxifiedImage = ({ src, ...rest }) => {
           return output;
         });
     }
-    console.log('src', src);
+    // console.log('src', src);
     downloadImageLocal(src).then((res) => {
       setImgSrc(res);
     });

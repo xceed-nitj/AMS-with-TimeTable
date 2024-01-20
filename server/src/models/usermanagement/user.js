@@ -12,7 +12,6 @@ const UserSchema = new Mongoose.Schema({
   },
   role: {
     type: [String],
-    default: ["DTTI"],
     required: true,
   },
 });
