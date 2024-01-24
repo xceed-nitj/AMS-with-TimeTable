@@ -58,16 +58,7 @@ const data = {
             position: 'ut',
             url: 'https://placehold.co/400x200',
         },
-        {
-            name: 'Orville Bosco',
-            position: 'quia',
-            url: 'https://placehold.co/400x200',
-        },
-        {
-            name: 'Prof. Easton Breitenberg',
-            position: 'voluptatem',
-            url: 'https://placehold.co/400x200',
-        },
+        
     ],
     certiType: ['1st','Prize'],
 };
