@@ -17,11 +17,9 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
       throw new Error("Event not found");
     }
 
-    // Assuming you have an emails.ejs template in your views folder
     const path = require("path");
     const emailTemplatePath = path.join(__dirname, "email.ejs");
 
-    // Loop through all participants and send emails for matching eventId
     for (const participant of allParticipants) {
       if (
         participant.eventId.toString() === eventId.toString() &&
