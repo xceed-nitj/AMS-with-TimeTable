@@ -296,7 +296,7 @@ function AddRoomComponent() {
         </Box>
       <TableContainer>
         <Box>
-          <Text as="b">Room Data</Text>
+          <Text as="b">Room Data(Total Entries: {rooms.length}):</Text>
           <Table variant="striped" size="md" mt="1">
             <Thead>
               <Tr>

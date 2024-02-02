@@ -192,6 +192,7 @@ function CreateTimetable() {
 
 
       <TableContainer>
+        <p>Total Entries: {table.length}</p>
         <Table
         variant='striped'
         size="md" 
