@@ -6,13 +6,15 @@ const ejs = require("ejs");
 const sendEmailsToParticipants = async (eventId, baseURL) => {
   try {
     // Fetch all participants from the database
-    const allParticipants = await Participant.find({eventId});
+    console.log(eventId);
+    const allParticipants = await Participant.find({ eventId });
+    console.log(allParticipants);
     if (!allParticipants) {
       throw new Error("No participants found");
     }
 
     // Fetch the event from the database based on the provided eventId and get event.name, if it exists
-    const event = await addEvent.findById(eventId);
+    const event = await addEvent.find({ eventId });
     if (!event) {
       throw new Error("Event not found");
     }
@@ -23,6 +25,7 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
 
     // Loop through all participants and send emails for matching eventId
     for (const participant of allParticipants) {
+      console.log("1234");
       if (
         participant.eventId.toString() === eventId.toString() &&
         !participant.isCertificateSent
@@ -40,6 +43,9 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
         const emailTitle = `${event.name}: Your certificate is here!`;
 
         // Send email
+        console.log("123");
+        console.log(participant.mailId);
+
         await mailSender(participant.mailId, emailTitle, emailBody);
 
         // Update isCertificateSent property and save the participant in the database
@@ -47,7 +53,7 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
         await participant.save();
       }
     }
-
+    console.log("hi");
     console.log("Emails sent successfully!");
   } catch (error) {
     console.error("Error sending emails:", error);
