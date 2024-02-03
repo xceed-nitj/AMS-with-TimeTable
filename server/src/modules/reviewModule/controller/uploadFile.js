@@ -1,15 +1,26 @@
-const multer = require('multer');
-const path = require("path");
+const Paper = require("../../../models/reviewModule/paper.js");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '/uploads')); 
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
+const uploadPaper = (req, res) => {
+  const fileName = req.fileName;
 
-const upload = multer({ storage: storage });
+  if (!fileName) {
+    return res.status(400).send("File name is missing in the request.");
+  }
 
-module.exports = upload.single('pdfFile');
+  const newPaper = new Paper({
+    paperId: fileName,
+  });
+
+  newPaper
+    .save()
+    .then((savedPaper) => {
+      //console.log("Paper saved successfully:", savedPaper);
+      res.status(200).send("Paper uploaded and saved successfully!");
+    })
+    .catch((error) => {
+     // console.error("Error saving paper:", error);
+      res.status(500).send("Internal Server Error");
+    });
+};
+
+module.exports = uploadPaper;
