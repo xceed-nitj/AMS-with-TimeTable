@@ -398,7 +398,7 @@ function CommonLoadComponent() {
       </chakra.form>
       <div>
         <TableContainer>
-          <Text as="b">CommonLoad Data</Text>
+          <Text as="b">CommonLoad Data(Total Entries: {commonLoadData.length}):</Text>
           <Table variant={"striped"} mt="1">
             <Thead>
               <Tr>

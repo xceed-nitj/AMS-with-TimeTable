@@ -125,8 +125,10 @@ function MasterRoomTable() {
           <p>Loading...</p>
         ) : (
           <Stack direction={['column', 'row']} spacing="4">
+            
             <Box overflowX="auto">
-<Table variant="striped" colorScheme="gray" borderWidth="2px">
+            <p>Total Entries: {masterRoomData.length}</p>
+<Table Table variant="striped" colorScheme="gray" borderWidth="2px">
             <Thead>
               <Tr>
                 <Th

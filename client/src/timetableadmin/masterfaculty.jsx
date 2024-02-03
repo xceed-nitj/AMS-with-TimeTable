@@ -332,7 +332,7 @@ function Subject() {
         )}
       </Box>
 
-      <Text mb='1' ml='1' as='b'>Table of Faculty Data :</Text>
+      <Text mb='1' ml='1' as='b'>Table of Faculty Data (Total Entries: {tableData.length}):</Text>
       <TableContainer>
         <Table
         variant='striped'

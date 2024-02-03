@@ -70,7 +70,7 @@ const ViewAllotmentPage = () => {
     Kindly keep 10:30 and 11:30 slots on Wednesday, Thursday, and Friday reserved for open electives. All open elective courses (6th & 8th) will commence in these slots only.
   </Text> {/* Centralised Room Table */}
       <Table variant="striped" colorScheme="gray" style={{ marginBottom: '20px' }}>
-      <caption > <Text fontWeight="bold" fontSize="lg">Centralised Room Allotment</Text></caption>
+      <caption > <Text fontWeight="bold" fontSize="lg">Centralised Room Allotment  (Total Entries: {formData.centralisedAllotments.length})</Text></caption>
         <Thead>
           <Tr>
             <Th bg="teal.300"
@@ -120,7 +120,7 @@ const ViewAllotmentPage = () => {
       {/* Open Elective Allotment Table */}
       <Table variant="striped" colorScheme="gray" style={{ marginBottom: '20px' }}>
 
-      <caption > <Text fontWeight="bold" fontSize="lg">Open Elective Room Allotment</Text></caption>
+      <caption > <Text fontWeight="bold" fontSize="lg">Open Elective Room Allotment  (Total Entries: {formData.openElectiveAllotments.length})</Text></caption>
              <Thead>
           <Tr>
             <Th bg="teal.300"

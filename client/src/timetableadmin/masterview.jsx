@@ -135,7 +135,7 @@ function TimetableMasterView() {
             </option>
           ))}
         </Select>
-
+        <p>Total Entries: {data.length}</p>
         {selectedSession && (
           <Table variant="striped" colorScheme="teal" size="md">
             <Thead>
