@@ -554,7 +554,10 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/lockedsummary`);
   };
-
+  const handleEditFaculty = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/editmasterfaculty`);
+  };
   const saveSlotData = async (day, slot, slotData) => {
     // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
@@ -722,6 +725,9 @@ const Timetable = () => {
           </Button>
           <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
             Master View of Time Table (any sem/dept)
+          </Button>
+          <Button m="1 auto" colorScheme="blue" onClick={handleEditFaculty}>
+            Edit Faculty Details
           </Button>
 </Box>
       <Box display="flex" justifyContent="space-between">
