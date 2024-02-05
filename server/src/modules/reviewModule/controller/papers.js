@@ -38,8 +38,8 @@ const updatePaper = async (req, res) => {
   // const updateObject = { $set: { [updatedField]: updatedFieldValue } };
 
 try {
-  const updatePaper = await Paper.findOneAndUpdate(customParam, updateFields, { new: true });
-  res.status(200).send("user updated");
+  const updatedPaper = await Paper.findOneAndUpdate(customParam, updateFields, { new: true });
+  res.status(200).send("user updated", updatedPaper);
 } catch (error) {
   res.status(500).send("Internal server error", error);
 }

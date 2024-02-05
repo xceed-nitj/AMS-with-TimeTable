@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const User = require("./user.js");
 
 const eventSchema = new mongoose.Schema({
-    eventID: {
+    /*eventID: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
-    },
+    },*/
     type: {
         type: String,
         required: true,

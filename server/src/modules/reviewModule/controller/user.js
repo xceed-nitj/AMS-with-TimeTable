@@ -25,7 +25,7 @@ const addUser = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const Users = User.find({}).exec();
+    const Users = await User.find({}).exec();
     res.status(200).send(Users);
   } catch (error) {
     res.status(500).send("Internal server error", error);
