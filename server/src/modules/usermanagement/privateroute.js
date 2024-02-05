@@ -24,7 +24,7 @@ async function protectRoute(req, res, next) {
     // Use await to handle the asynchronous nature of getUserDetails
     const user = await getUserDetails(userId);
 
-    if (!user.role || !user.role.includes("DTTC")) {
+    if (!user.role || !user.role.includes("DTTI")) {
       return res
         .status(401)
         .json({ message: "Only DDTC or ITTC are authorized to access" });
