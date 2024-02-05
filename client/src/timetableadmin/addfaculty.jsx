@@ -293,7 +293,7 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
       </chakra.form>
       <div>
         <TableContainer>
-          <Text as="b">Faculty Data</Text>
+          <Text as="b">Faculty Data(Total Entries: {facultyData.length}):</Text>
           <Table variant={"striped"} mt="1">
             <Thead>
               <Tr>

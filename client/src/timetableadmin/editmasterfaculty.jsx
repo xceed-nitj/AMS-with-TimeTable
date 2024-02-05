@@ -295,7 +295,7 @@ function Subject() {
 
       <TableContainer>
         <Box>
-          <Text as='b'>Table of Faculty Data :</Text>
+          <Text as='b'>Table of Faculty Data (Total Entries: {tableData.length}) :</Text>
           <Table
             variant='striped'
             maxWidth='100%'

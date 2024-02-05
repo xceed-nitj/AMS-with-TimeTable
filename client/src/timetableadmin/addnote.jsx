@@ -314,6 +314,7 @@ function Note() {
       <Heading as="h2" size="lg" mt="8" mb="4">
         Notes
       </Heading>
+      <p>Total Entries: {notes.length}</p>
       <table>
         <thead>
           <tr>

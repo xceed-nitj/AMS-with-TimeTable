@@ -282,7 +282,7 @@ function MasterSemester() {
       </Box>
 
 <TableContainer>
-        <Text as='b' >Master Semesters Data</Text>
+        <Text as='b' >Master Semesters Data (Total Entries: {masterSems.length}):</Text>
         <Table 
         mt='2'
         variant='striped'

@@ -188,7 +188,7 @@ function AddSemComponent() {
         </Box>
         <TableContainer>
           <Box>
-            <Text as='b'>Sem Data</Text>
+            <Text as='b'>Sem Data(Total Entries: {sems.length}):</Text>
             <Table
             variant='striped'
             maxWidth='100%'
