@@ -278,7 +278,7 @@ function MasterRoom() {
       </Box>
 
       <TableContainer>
-        <Text as='b'>Master Rooms Data</Text>
+        <Text as='b'>Master Rooms Data(Total Entries: {masterRooms.length}):</Text>
         <Table
         mt='2'
         variant='striped'

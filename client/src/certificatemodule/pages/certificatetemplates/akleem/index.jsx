@@ -18,7 +18,10 @@ function Template01() {
     QRCode.toDataURL(url, (err, dataUrl) => {
       if (err) throw err;
 
-      const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      const image = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'image'
+      );
       image.setAttribute('x', '100');
       image.setAttribute('y', '500');
       image.setAttribute('width', '100');
