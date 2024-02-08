@@ -111,6 +111,9 @@ app.use("/upload", uploadModule);
 const attendanceModule = require("./modules/attendanceModule/routes/index");
 app.use("/attendancemodule", attendanceModule);
 
+const reviewModule = require("./modules/reviewModule/routes/index")
+app.use("/review",reviewModule);
+
 const usermanagementModule = require("./modules/usermanagement/routes/routes");
 
 app.use("/auth", usermanagementModule);

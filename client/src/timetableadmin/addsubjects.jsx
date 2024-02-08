@@ -596,7 +596,7 @@ function Subject() {
       </CustomDeleteButton>
 
       <TableContainer mt='2'>
-        <Text as='b'>Table of Subject Data</Text>
+        <Text as='b'>Subject Data(Total Entries: {tableData.length}):</Text>
         {/* Display the fetched data */}
         {isLoading ? ( // Check if data is loading
           <Text>Loading data...</Text>

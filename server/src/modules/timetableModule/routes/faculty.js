@@ -7,7 +7,7 @@ const ttadminRoute=require("../../usermanagement/ttadminroute")
 const protectRoute =require("../../usermanagement/privateroute")
 
 
-facultyRouter.post("/",ttadminRoute,protectRoute, async (req, res) => {
+facultyRouter.post("/",protectRoute, async (req, res) => {
     try {
       await facultyController.createFaculty(req, res);
     } catch (e) {
