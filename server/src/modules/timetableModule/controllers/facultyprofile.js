@@ -27,16 +27,18 @@ class FacultyController {
       }
       
       async getFaculty(req, res) {
-       try {
+        try {
           const facultyList = await Faculty.find();
-          res.json(facultyList)
+          const sortedFaculty = facultyList.sort((a, b) => (a.order ?? -Infinity) - (b.order ?? -Infinity));
+          res.json(sortedFaculty);
           return;
         } catch (error) {
-          console.error(error); 
+          console.error(error);
           res.status(500).json({ error: "Internal server error" });
         }
       }
-
+      
+      
       async getFacultyById(id) {
         if (!id) {
           throw new HttpException(400, "Invalid Id");
