@@ -61,7 +61,7 @@ import ConferencePage from './conferencemodule/Tabs/ConferencePage';
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
-import Template05 from './certificatemodule/pages/certificatetemplates/ankit';
+import Template05 from './certificatemodule/pages/certificatetemplates/ankit01';
 
 
 function App() {
