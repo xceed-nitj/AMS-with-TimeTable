@@ -4,6 +4,7 @@ import ReactHtmlParser from 'react-html-parser';
 
 import getEnvironment from "../../../../getenvironment";
 import ProxifiedImage from "../../../components/ProxifiedImage";
+import SelectCertficate from '../../SelectCertficate';
 
 const apiUrl = getEnvironment();
 
@@ -15,9 +16,11 @@ function Content() {
   const participantId = parts[parts.length - 1];
   const [certiType, setCertiType] = useState('');
   const [logos, setLogos] = useState([]);
-  const [participantDetail,setParticipantDetail]=useState({});
+  const [participantDetail, setParticipantDetail] = useState({});
   const [signature, setSignatures] = useState([]);
   const [header, setHeader] = useState([]);
+  const [templateId, setTemplateId] = useState("0")
+
   // const [footer, setFooter] = useState([]);
 
 
@@ -25,12 +28,12 @@ function Content() {
     const fetchCertiType = async () => {
       try {
         const response = await fetch(`${apiUrl}/certificatemodule/participant/getoneparticipant/${participantId}`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          });
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -53,15 +56,15 @@ function Content() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-      console.log('executing function');
-  
+        console.log('executing function');
+
         const response_one = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${certiType}`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          });
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
 
         if (!response_one.ok) {
           const errorResponseOne = await response_one.text();
@@ -78,13 +81,16 @@ function Content() {
         setLogos(data_one[0].logos);
         setSignatures(data_one[0].signatures);
         setHeader(data_one[0].header)
-      // setFooter(data_one[0].footer)
+        setTemplateId(data_one[0]?.templateId)
+        // setFooter(data_one[0].footer)
+        console.log(data_one);
+        console.log(data_two)
 
         // Replace all placeholders with actual values from data_two
         Object.keys(data_two).forEach(variable => {
           const placeholder = new RegExp(`{{${variable}}}`, 'g');
           content_body = content_body.replace(placeholder, `<strong>${data_two[variable]}</strong>`);
-        console.log('variable data', data_two[variable]);
+          console.log('variable data', data_two[variable]);
         });
 
         // Now content_body has all the placeholders replaced with actual values from data_two
@@ -99,97 +105,10 @@ function Content() {
     fetchData();
   }, [participantId, certiType, participantDetail, eventId]); // Empty dependency array to execute the effect only once
 
-  var num_logos = logos.length;
-  var num_left = 0;
-  if (num_logos % 2 == 0) {
-    num_left = num_logos / 2 - 1;
-  }
-  else {
-    num_left = Math.floor(num_logos / 2);
-  }
+  return (
+    <SelectCertficate eventId={eventId} contentBody={contentBody} certiType={certiType} logos={logos} participantDetail={participantDetail} signature={signature} header={header} certiDesign={templateId} />
+  );
 
-  
-    return (
-      <>
-        <foreignObject width={"90%"} height={"400"} y={"80"} x={"5%"}>
-          <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
-            {logos.map((item, key) => (
-              <div key={key} className="tw-flex tw-items-center tw-justify-center ">
-                <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                <ProxifiedImage src={item} alt="" />
-                </div>
-                <div className="tw-text-center">
-                  {key === num_left && (
-                    <>
-                      <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
-                        डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-[12px]">
-                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144011
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
-                        Dr. B R Ambedkar National Institute of Technology Jalandhar
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-[12px] ">
-                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144011
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </foreignObject>
-    
-        <foreignObject x="10%" y="200.473" width="85%" height="160">
-        <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
-              {header.map((item, ind) => (
-                <h1 className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase" key={ind}>{item}</h1>
-              ))}
-            </div>
-        </foreignObject>
-    
-        <text
-          x="561.26"
-          y="340.473"
-          fill="#424847"
-          fontFamily="AbhayaLibre-Regular"
-          fontSize="40.707"
-          textAnchor="middle"
-          fontWeight="550"
-        >
-          CERTIFICATE OF APPRECIATION
-        </text>
-    
-        <foreignObject x="12.5%" y="370.473" width="75%" height="160">
-          <p className="font-serif text-xl opacity-80">
-            <div>{ReactHtmlParser(contentBody)}</div>
-          </p>
-        </foreignObject>
-    
-        <foreignObject x={"20%"} y={515} width={"60%"} height={400}>
-          <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
-            {signature.map((item, key) => (
-              <div key={key} className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
-                <div className="tw-w-[100px]">
-                  <ProxifiedImage src={item.url} alt="" />
-                </div>
-                <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                <p className="tw-text-black tw-text-[15px] tw-font-semibold">{item.name}</p>
-                <p className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">{item.position}</p>
-              </div>
-            ))}
-          </div>
-        </foreignObject>
-    
-        <foreignObject x={"20%"} y={"90%"} width={"60%"} height={"100"}>
-          <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-          verify at <a href={currentURL}>{currentURL}</a>
-          </div>
-        </foreignObject>
-      </>
-    );
-    
 }
 
 export default Content

@@ -40,7 +40,7 @@ function Participant() {
   const currentURL = window.location.pathname;
   const parts = currentURL.split("/");
   const eventId = parts[parts.length - 2];
-  const frontendHost=parts[parts.length-4]
+  const frontendHost = parts[parts.length - 4]
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadState, setUploadState] = useState(false);
@@ -61,12 +61,12 @@ function Participant() {
     position: "",
     title1: "",
     title2: "",
-    certiType:"",
-    mailId:"",
+    certiType: "",
+    mailId: "",
     eventId: eventId,
   });
 
-   const [editedSData, setEditedSData] = useState({
+  const [editedSData, setEditedSData] = useState({
     name: "",
     department: "",
     college: "",
@@ -74,8 +74,8 @@ function Participant() {
     position: "",
     title1: "",
     title2: "",
-    certiType:"",
-    mailId:"",
+    certiType: "",
+    mailId: "",
     eventId: eventId,
   });
 
@@ -83,13 +83,13 @@ function Participant() {
 
   useEffect(() => {
     fetchParticipantData();
-  }, [eventId]); 
+  }, [eventId]);
 
   const fetchParticipantData = () => {
     if (eventId) {
       fetch(`${apiUrl}/certificatemodule/participant/getparticipant/${eventId}`, {
         credentials: "include",
-      }) 
+      })
         .then((response) => {
           if (!response.ok) {
             throw new Error(
@@ -100,7 +100,7 @@ function Participant() {
           return response.json();
         })
         .then((data) => {
-        //   const filteredData = data.filter((item) => item.code === currentCode);
+          //   const filteredData = data.filter((item) => item.code === currentCode);
           setTableData(data);
         })
         .catch((error) => {
@@ -124,8 +124,8 @@ function Participant() {
     if (selectedFile) {
       const formData = new FormData();
       formData.append('csvFile', selectedFile);
-      formData.append('eventId', eventId); 
-  
+      formData.append('eventId', eventId);
+
       fetch(`${apiUrl}/upload/participant`, {
         method: 'POST',
         body: formData,
@@ -141,7 +141,7 @@ function Participant() {
       alert('Please select a CSV file before uploading.');
     }
   };
-  
+
 
 
   // const handleUpload = () => {
@@ -150,7 +150,7 @@ function Participant() {
   //     formData.append('csvFile', selectedFile);
   //     formData.append('eventcode', eventId); 
   //     setIsLoading(true);
-  
+
   //     fetch(`${apiUrl}/certificatemodule/participant/batchupload/${eventId}`, {
   //       method: 'POST',
   //       body: formData,
@@ -167,7 +167,7 @@ function Participant() {
   //       .then((data) => {
   //         if (data.message) {
   //           setDuplicateEntryMessage(data.message);
-            
+
   //         } else {
   //           fetchParticipantData(); 
   //           setDuplicateEntryMessage(''); 
@@ -188,7 +188,7 @@ function Participant() {
   //     alert('Please select a CSV file before uploading.');
   //   }
   // };
-  
+
   useEffect(() => {
     fetchParticipantData();
     if (uploadState) {
@@ -236,7 +236,7 @@ function Participant() {
             setTableData(updatedData);
             setEditRowId(null);
             setEditedData({
-              _id: null, 
+              _id: null,
 
               name: "",
               department: "",
@@ -245,10 +245,10 @@ function Participant() {
               position: "",
               title1: "",
               title2: "",
-              certiType:"",
-              mailId:"",          
+              certiType: "",
+              mailId: "",
               eventId: eventId,
-          });
+            });
           })
           .catch((error) => {
             console.error("Update Error:", error);
@@ -258,9 +258,9 @@ function Participant() {
     }
   };
 
-  const handleBatchMail = () => { 
+  const handleBatchMail = () => {
     // Make the fetch request
-    fetch( `${apiUrl}/certificatemodule/emails/send-emails/${eventId}`, {
+    fetch(`${apiUrl}/certificatemodule/emails/send-emails/${eventId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -286,9 +286,9 @@ function Participant() {
 
 
 
-  const handleMailClick = (Id) => { 
+  const handleMailClick = (Id) => {
     // Make the fetch request
-    fetch( `${apiUrl}/certificatemodule/emails/send-email/${Id}`, {
+    fetch(`${apiUrl}/certificatemodule/emails/send-email/${Id}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -314,7 +314,7 @@ function Participant() {
 
   const handleDelete = (_id) => {
     const isConfirmed = window.confirm("Are you sure you want to delete this entry?");
-    
+
     if (isConfirmed) {
       fetch(`${apiUrl}/certificatemodule/participant/deleteparticipant/${_id}`, {
         method: "DELETE",
@@ -336,7 +336,7 @@ function Participant() {
         });
     }
   };
-  
+
   const handleCancelAddSubject = () => {
     setIsAddSubjectFormVisible(false);
   };
@@ -344,17 +344,17 @@ function Participant() {
   const handleAddSubject = () => {
     setEditedSData({
 
-        name: "",
-        department: "",
-        college: "",
-        types: "",
-        position: "",
-        title1: "",
-        title2: "",
-        certiType:"",
-        mailId:"",    
-        eventId: eventId,
-    
+      name: "",
+      department: "",
+      college: "",
+      types: "",
+      position: "",
+      title1: "",
+      title2: "",
+      certiType: "",
+      mailId: "",
+      eventId: eventId,
+
     });
     setIsAddSubjectFormVisible(true);
   };
@@ -391,7 +391,7 @@ function Participant() {
           // console.log("Data saved successfully:", data);
           fetchParticipantData();
           handleCancelAddSubject();
-          addsetDuplicateEntryMessage(""); 
+          addsetDuplicateEntryMessage("");
         })
         .catch((error) => {
           console.error("Error:", error);
@@ -421,7 +421,7 @@ function Participant() {
           })
           .then((data) => {
             // console.log("Delete All Success:", data);
-            fetchParticipantData(); 
+            fetchParticipantData();
           })
           .catch((error) => {
             console.error("Delete All Error:", error);
@@ -459,7 +459,7 @@ function Participant() {
           Batch Upload
         </CustomTealButton>
       </Box>
-      
+
       <Box>{uploadMessage && <p>{uploadMessage}</p>}</Box>
       <Box display="flex" justifyContent="space-between">
         {duplicateEntryMessage && <p>{duplicateEntryMessage}</p>}
@@ -620,7 +620,7 @@ function Participant() {
 
 
 
-            <Box  display='flex' justifyContent='space-between'>
+            <Box display='flex' justifyContent='space-between'>
               <CustomBlueButton width='36' onClick={handleCancelAddSubject}>
                 Cancel
               </CustomBlueButton>
@@ -630,7 +630,7 @@ function Participant() {
             </Box>
           </FormControl>
         ) : (
-          <CustomTealButton  w='200px' mb='5' mt='3' onClick={handleAddSubject}>
+          <CustomTealButton w='200px' mb='5' mt='3' onClick={handleAddSubject}>
             Add New Participant
           </CustomTealButton>
 
@@ -646,14 +646,14 @@ function Participant() {
         {/* Display the fetched data */}
         {isLoading ? ( // Check if data is loading
           <Text>Loading data...</Text>
-          ) : (
-            <Table
+        ) : (
+          <Table
             mt='5'
             variant='striped'
-            >
+          >
             <Thead>
               <Tr>
-              <Th>Name</Th>
+                <Th>Name</Th>
                 <Th><Center>Department</Center></Th>
                 <Th><Center>College</Center></Th>
                 <Th><Center>Type</Center></Th>
@@ -673,51 +673,51 @@ function Participant() {
                     <Center>
                       {editRowId === row._id ? (
                         <Input
-                        type="text"
-                        value={editedData.name}
-                        onChange={(e) =>
-                          setEditedData({
-                            ...editedData,
-                            name: e.target.value,
+                          type="text"
+                          value={editedData.name}
+                          onChange={(e) =>
+                            setEditedData({
+                              ...editedData,
+                              name: e.target.value,
                             })
                           }
-                          />
+                        />
                       ) : (
                         row.name
-                        )}
+                      )}
                     </Center>
                   </Td>
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
                         <Input
-                        type="text"
-                        value={editedData.department}
-                        onChange={(e) =>
-                          setEditedData({ ...editedData, department: e.target.value })
+                          type="text"
+                          value={editedData.department}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, department: e.target.value })
                           }
                         />
                       ) : (
                         row.department
-                        )}
+                      )}
                     </Center>
                   </Td>
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
                         <Input
-                        type="text"
-                        value={editedData.college}
-                        onChange={(e) =>
+                          type="text"
+                          value={editedData.college}
+                          onChange={(e) =>
                             setEditedData({
                               ...editedData,
                               college: e.target.value,
                             })
                           }
-                          />
-                          ) : (
-                            row.college
-                          )}
+                        />
+                      ) : (
+                        row.college
+                      )}
                     </Center>
                   </Td>
                   <Td>
@@ -732,25 +732,25 @@ function Participant() {
                               types: e.target.value,
                             })
                           }
-                          />
+                        />
                       ) : (
                         row.types
-                        )}
+                      )}
                     </Center>
                   </Td>
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
                         <Input
-                        type="text"
-                        value={editedData.position}
-                        onChange={(e) =>
-                          setEditedData({ ...editedData, position: e.target.value })
-                        }
+                          type="text"
+                          value={editedData.position}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, position: e.target.value })
+                          }
                         />
-                        ) : (
-                          row.position
-                          )}
+                      ) : (
+                        row.position
+                      )}
                     </Center>
                   </Td>
                   <Td>
@@ -762,13 +762,13 @@ function Participant() {
                           onChange={(e) =>
                             setEditedData({ ...editedData, title1: e.target.value })
                           }
-                          />
-                          ) : (
-                            row.title1
-                            )}
+                        />
+                      ) : (
+                        row.title1
+                      )}
                     </Center>
                   </Td>
-                   <Td>
+                  <Td>
                     <Center>
                       {editRowId === row._id ? (
                         <Input
@@ -777,12 +777,12 @@ function Participant() {
                           onChange={(e) =>
                             setEditedData({ ...editedData, title2: e.target.value })
                           }
-                          />
-                          ) : (
-                            row.title2
-                            )}
+                        />
+                      ) : (
+                        row.title2
+                      )}
                     </Center>
-                  </Td> 
+                  </Td>
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
@@ -792,12 +792,12 @@ function Participant() {
                           onChange={(e) =>
                             setEditedData({ ...editedData, mailId: e.target.value })
                           }
-                          />
-                          ) : (
-                            row.mailId
-                            )}
+                        />
+                      ) : (
+                        row.mailId
+                      )}
                     </Center>
-                  </Td> 
+                  </Td>
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
@@ -807,12 +807,12 @@ function Participant() {
                           onChange={(e) =>
                             setEditedData({ ...editedData, certiType: e.target.value })
                           }
-                          />
-                          ) : (
-                            row.certiType
-                            )}
+                        />
+                      ) : (
+                        row.certiType
+                      )}
                     </Center>
-                  </Td> 
+                  </Td>
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
@@ -820,17 +820,17 @@ function Participant() {
                           type="text"
                           value={row._id}
                           isDisabled
-                          // onChange={(e) =>
-                          //   setEditedData({
-                          //     ...editedData,
-                          //     credits: e.target.value,
-                          //   })
-                          // }
-                          />
-                          ) : (
-                            <ChakraLink href={`${frontendHost}/cm/c/${eventId}/${row._id}`} isExternal>
-    View certificate
-  </ChakraLink>
+                        // onChange={(e) =>
+                        //   setEditedData({
+                        //     ...editedData,
+                        //     credits: e.target.value,
+                        //   })
+                        // }
+                        />
+                      ) : (
+                        <ChakraLink href={`${frontendHost}/cm/c/${eventId}/${row._id}`} isExternal>
+                          View certificate
+                        </ChakraLink>
                       )}
                     </Center>
                   </Td>
@@ -850,14 +850,14 @@ function Participant() {
                           <CustomDeleteButton onClick={() => handleDelete(row._id)}>
                             Delete
                           </CustomDeleteButton>
-                        
-                    <Center>
-                      {/* ... (existing Edit and Delete buttons) */}
-                      <CustomBlueButton onClick={() => handleMailClick(row._id)}>
-                        Mail
-                      </CustomBlueButton>
-                    </Center>
-                
+
+                          <Center>
+                            {/* ... (existing Edit and Delete buttons) */}
+                            <CustomBlueButton onClick={() => handleMailClick(row._id)}>
+                              Mail
+                            </CustomBlueButton>
+                          </Center>
+
                         </>
                       )}
                     </Center>
