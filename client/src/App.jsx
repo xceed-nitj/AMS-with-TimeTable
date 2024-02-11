@@ -61,6 +61,7 @@ import ConferencePage from './conferencemodule/Tabs/ConferencePage';
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
+import Template05 from './certificatemodule/pages/certificatetemplates/ankit';
 
 
 function App() {
@@ -133,6 +134,7 @@ function App() {
           <Route path="/cm/:eventid/addparticipant" element={<Participant/>}/>
           <Route path="/cm/c/:eventid/:participantid" element={<Template01/>}/>
           <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
+          <Route path="/cm/c/:eventid/:participantid/a" element={<Template05/>}/>
 
 
           {/* Conference Module Admin-Panel */}
