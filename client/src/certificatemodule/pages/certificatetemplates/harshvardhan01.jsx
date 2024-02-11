@@ -1,6 +1,15 @@
 import ProxifiedImage from '../../components/ProxifiedImage';
+import ReactHtmlParser from 'react-html-parser';
 
-export default function Template03() {
+
+export default function Template04({ eventId,
+  contentBody,
+  certiType,
+  logos,
+  participantDetail,
+  signature,
+  header,
+  footer, }) {
   var num_logos = logos.length;
   var num_left = 0;
   if (num_logos % 2 === 0) {
@@ -10,13 +19,7 @@ export default function Template03() {
   }
   return (
     <div>
-      <svg
-        width={400}
-        height={280}
-        viewBox="0 0 400 280"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1122.52 793.7" id="svg" className="svg-img">
         <g clipPath="url(#clip0_435_2)">
           <rect width={400} height={280} fill="white" />
           <path d="M128.802 278L0.0742188 134V278H128.802Z" fill="#EDEDED" />
