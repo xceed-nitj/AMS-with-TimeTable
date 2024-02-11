@@ -59,7 +59,7 @@ addEventRouter.put("/:eventId",ecmadminRoute, async (req, res) => {
 });
 
 
-addEventRouter.get("/getevents", protectRoute, async (req, res) => {
+addEventRouter.get("/getevents", ecmadminRoute, async (req, res) => {
   try {
     const user = req?.user?.id;
     const allEvents = await addEventController.getEventByUser(user);
