@@ -50,6 +50,7 @@ function Subject() {
         throw new Error(`Error: ${facultyResponse.status} - ${facultyResponse.statusText}`);
       }
       const facultyData = await facultyResponse.json();
+      
       setTableData(facultyData.reverse());
     } catch (error) {
       console.error('Error:', error);
