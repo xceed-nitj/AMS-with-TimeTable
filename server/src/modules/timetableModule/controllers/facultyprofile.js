@@ -57,7 +57,7 @@ class FacultyController {
           throw new HttpException(400, "Invalid Department");
         }
         try {
-          const data = await Faculty.find({ dept: department });
+          const data = await Faculty.find({ dept: department }).sort({ order: 1 });
           if (!data) throw new HttpException(400, "No faculty members found in this department");
           return data;
         } catch (e) {
