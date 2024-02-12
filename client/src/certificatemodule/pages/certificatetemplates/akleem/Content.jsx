@@ -81,10 +81,9 @@ function Content() {
         setLogos(data_one[0].logos);
         setSignatures(data_one[0].signatures);
         setHeader(data_one[0].header)
-        setTemplateId(data_one[0]?.templateId)
+        setTemplateId(data_one[0]?.templateId || "0")
         // setFooter(data_one[0].footer)
-        console.log(data_one);
-        console.log(data_two)
+
 
         // Replace all placeholders with actual values from data_two
         Object.keys(data_two).forEach(variable => {
