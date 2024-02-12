@@ -90,15 +90,14 @@ function Template01() {
 
   return (
     <>
-      <div id="id-card">
+      <Content className="id-card-class" />
+      <div className='tw-hidden'>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 1122.52 793.7"
-          className="id-card-class"
           ref={svgRef}
         >
           <Top />
-          <Content />
           <Bottom />
         </svg>
       </div>

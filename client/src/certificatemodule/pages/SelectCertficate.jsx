@@ -6,7 +6,8 @@ import Template04 from './certificatetemplates/harshvardhan01'
 
 function SelectCertficate(
     {
-        certiDesign,
+
+        certiDesign = "0",
         eventId,
         contentBody,
         certiType,
@@ -17,16 +18,15 @@ function SelectCertficate(
         footer,
     }
 ) {
-    const certiDesignTemp = {
-        component: <CertificateContent eventId={eventId} contentBody={contentBody} certiType={certiType} logos={logos} participantDetail={participantDetail} signature={signature} header={header} footer={footer} />,
-
-        component2: <Template04 eventId={eventId} contentBody={contentBody} certiType={certiType} logos={logos} participantDetail={participantDetail} signature={signature} header={header} footer={footer} />,
-        component3: <Template03 />
-    }
+    const certiDesignTemp = [
+        <CertificateContent eventId={eventId} contentBody={contentBody} certiType={certiType} logos={logos} participantDetail={participantDetail} signature={signature} header={header} footer={footer} key={"0"} />,
+        <Template04 eventId={eventId} contentBody={contentBody} certiType={certiType} logos={logos} participantDetail={participantDetail} signature={signature} header={header} footer={footer} key={"1"} />,
+        <Template03 eventId={eventId} contentBody={contentBody} certiType={certiType} logos={logos} participantDetail={participantDetail} signature={signature} header={header} footer={footer} key={"2"} />
+    ]
 
     return (
         <div>
-            {certiDesignTemp.component2}
+            {certiDesignTemp[certiDesign]}
         </div>
     )
 }
