@@ -55,7 +55,6 @@ function Subject() {
       console.error('Error:', error);
     }
   };
-
   fetchData();
 
   useEffect(() => {

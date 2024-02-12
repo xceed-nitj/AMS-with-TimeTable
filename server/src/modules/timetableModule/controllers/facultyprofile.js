@@ -64,7 +64,6 @@ class FacultyController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
-      
     
       async updateID(id, announcement) {
         if (!id) {
