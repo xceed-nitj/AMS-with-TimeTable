@@ -59,8 +59,8 @@ function Template01() {
     input.style.width = 'auto';
   };
   const handleDownloadPDF = () => {
-    const input = document.getElementById('id-card');
-    // const inputElement = document.getElementsByClassName('id-card-class');
+    // const input = document.getElementById('id-card');
+    const input = document.getElementsByClassName('id-card-class');
     input.style.width = '1754px';
     input.style.height = '1240px';
     html2canvas(input, {
@@ -90,7 +90,7 @@ function Template01() {
 
   return (
     <>
-      <Content className="id-card-class" />
+      <Content className="id-card-class"  />
       <div className='tw-hidden'>
         <svg
           xmlns="http://www.w3.org/2000/svg"

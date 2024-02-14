@@ -5,6 +5,8 @@ import CertificateContent from './certificatetemplates/template01';
 import React, { useState } from "react";
 import ReactHtmlParser from 'react-html-parser';
 import getEnvironment from "../../getenvironment";
+import SelectCertficate from './SelectCertficate';
+
 
 const apiUrl = getEnvironment();
 
@@ -16,6 +18,8 @@ function ViewCertificate() {
   const participantId = parts[parts.length - 1];
   console.log(participantId)
   const [certiType, setCertiType] = useState('');
+  const [templateId, setTemplateId] = useState("0");
+
   const [logos, setLogos] = useState([]);
   const [participantDetail, setParticipantDetail] = useState({});
   const [signature, setSignatures] = useState([]);
@@ -39,6 +43,7 @@ function ViewCertificate() {
           // setFormData((prevData) => ({ ...prevData, certiType: data.certiType }));
           setParticipantDetail(data);
           setCertiType(data.certiType);
+
           console.log('certiype', data.certiType)
         } else {
           console.error('Error fetching certiType data:', response.statusText);
@@ -86,6 +91,7 @@ function ViewCertificate() {
       setSignatures(data_one[0].signatures);
       setHeader(data_one[0].header)
       setFooter(data_one[0].footer)
+      setTemplateId(data_one[0].templateId);
 
       // Replace all placeholders with actual values from data_two
       Object.keys(data_two).forEach(variable => {
@@ -132,8 +138,9 @@ function ViewCertificate() {
 
   return (
     <>
-      <CertificateContent
+     <SelectCertficate
         eventId={eventId}
+        templateId={templateId}
         contentBody={contentBody}
         certiType={certiType}
         logos={logos}

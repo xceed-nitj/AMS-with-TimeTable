@@ -39,7 +39,7 @@ const CertificateSchema = new mongoose.Schema({
   eventId: {
     type: String,
   },
-  tenplateId: {
+  templateId: {
     type: String,
     default: "0",
   },

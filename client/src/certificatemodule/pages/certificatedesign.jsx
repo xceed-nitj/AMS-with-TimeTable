@@ -21,10 +21,10 @@ const CertificateForm = () => {
     footer: [''],
     signatures: [''],
     certiType: '',
-    certiDesign: '0', /// Template Design Number
+    templateId: '', /// Template Design Number
   });
 
-  console.log(formData.certiDesign)
+  console.log(formData.templateId)
 
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -43,6 +43,7 @@ const CertificateForm = () => {
 
         if (response.ok) {
           const responseData = await response.json();
+          console.log('response:',responseData)
           if (responseData && Array.isArray(responseData) && responseData.length > 0) {
             setFormData(responseData[0]);
           } else {
@@ -65,7 +66,7 @@ const CertificateForm = () => {
   const handleChange = (e, fieldName, index) => {
     const { value } = e.target;
 
-    if (fieldName === 'certiDesign') {
+    if (fieldName === 'templateId') {
       setFormData((prevData) => ({
         ...prevData,
         [fieldName]: value,
@@ -180,9 +181,9 @@ const CertificateForm = () => {
 
             <Text>Select Certificate Template Design:</Text>
             <Select
-              name="certiDesign"
-              value={formData.certiDesign}
-              onChange={(e) => handleChange(e, 'certiDesign', null)}
+              name="templateId"
+              value={formData.templateId}
+              onChange={(e) => handleChange(e, 'templateId', null)}
               placeholder="Select Certificate Template Design"
             >
               <option value="0">Template 1</option>
@@ -330,7 +331,7 @@ const CertificateForm = () => {
       <Box flex="1" p="4">
         <SelectCertficate
           eventId={eventId}
-          certiDesign={formData.certiDesign}
+          templateId={formData.templateId}
           contentBody={formData.body}
           certiType={formData.certiType}
           logos={formData.logos}
