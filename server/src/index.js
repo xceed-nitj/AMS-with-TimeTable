@@ -5,7 +5,8 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const path = require("path");
-const axios = require("axios")
+const axios = require("axios");
+const v1router = require("./routes");
 
 // Load environment variables from .env file
 dotenv.config({ path: "../.env" });
@@ -95,32 +96,8 @@ app.get('/proxy-image', async (req, res) => {
   }
 })
 
-// Routes
-const certificateModule = require("./modules/certificateModule/routes/index");
-app.use("/certificatemodule", certificateModule);
-
-const conferenceModule = require("./modules/confrenceModule/routes/index");
-app.use("/conferencemodule", conferenceModule);
-
-const timetableModule = require("./modules/timetableModule/routes/index");
-app.use("/timetablemodule", timetableModule);
-
-const uploadModule = require("./modules/uploadModule/upload");
-app.use("/upload", uploadModule);
-
-const attendanceModule = require("./modules/attendanceModule/routes/index");
-app.use("/attendancemodule", attendanceModule);
-
-const reviewModule = require("./modules/reviewModule/routes/index")
-app.use("/review",reviewModule);
-
-const usermanagementModule = require("./modules/usermanagement/routes/routes");
-
-app.use("/auth", usermanagementModule);
-
-const newusermanagementModule = require("./modules/usermanagement/routes/index");
-
-app.use("/user", newusermanagementModule);
+app.use(v1router); // TODO: Remove this line after frontend is updated to use /api/v1 prefix
+app.use("/api/v1", v1router);
 
 app.get("/*", (req, res) => {
   res.sendFile(path.join(__dirname + "/../../client/dist/index.html"));
