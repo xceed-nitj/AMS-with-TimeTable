@@ -7,7 +7,7 @@ import Template04 from './certificatetemplates/harshvardhan01'
 function SelectCertficate(
     {
 
-        certiDesign = "0",
+        templateId,
         eventId,
         contentBody,
         certiType,
@@ -26,7 +26,7 @@ function SelectCertficate(
 
     return (
         <div>
-            {certiDesignTemp[certiDesign]}
+            {certiDesignTemp[templateId]}
         </div>
     )
 }

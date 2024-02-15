@@ -4,6 +4,9 @@ import { useEffect, useRef } from 'react';
 import ReactHtmlParser from 'react-html-parser';
 // import getEnvironment from "../../../../getenvironment";
 import ProxifiedImage from "../../components/ProxifiedImage";
+import QRCode from 'qrcode';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 
 // const apiUrl = getEnvironment();
@@ -26,6 +29,29 @@ const CertificateContent = ({
     num_left = Math.floor(num_logos / 2);
   }
   const svgRef = useRef();
+
+  useEffect(() => {
+    const url = window.location.href; // Replace with your URL
+    const svg = svgRef.current;
+
+    QRCode.toDataURL(url, (err, dataUrl) => {
+      if (err) throw err;
+
+      const image = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'image'
+      );
+      image.setAttribute('x', '100');
+      image.setAttribute('y', '500');
+      image.setAttribute('width', '100');
+      image.setAttribute('height', '100');
+      image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+
+      svg.appendChild(image);
+    });
+  }, []);
+
+
 
   return (
 
@@ -176,7 +202,7 @@ const CertificateContent = ({
 
         <foreignObject x={"20%"} y={"90%"} width={"60%"} height={"100"}>
           <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-            verifiable link
+         {window.location.href}
           </div>
         </foreignObject>
       </>
