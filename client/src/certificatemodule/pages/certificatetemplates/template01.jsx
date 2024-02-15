@@ -143,13 +143,13 @@ const CertificateContent = ({
                         डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
                       </p>
                       <p className="tw-font-nunito-bold tw-text-[12px]">
-                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144011
+                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144008
                       </p>
                       <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
                         Dr. B R Ambedkar National Institute of Technology Jalandhar
                       </p>
                       <p className="tw-font-nunito-bold tw-text-[12px] ">
-                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144011
+                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144008
                       </p>
                     </>
                   )}
