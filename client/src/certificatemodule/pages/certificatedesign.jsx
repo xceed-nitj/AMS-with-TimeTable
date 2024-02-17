@@ -21,7 +21,10 @@ const CertificateForm = () => {
     footer: [''],
     signatures: [''],
     certiType: '',
+    templateId: '', /// Template Design Number
   });
+
+  console.log(formData.templateId)
 
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -40,6 +43,7 @@ const CertificateForm = () => {
 
         if (response.ok) {
           const responseData = await response.json();
+          console.log('response:',responseData)
           if (responseData && Array.isArray(responseData) && responseData.length > 0) {
             setFormData(responseData[0]);
           } else {
@@ -62,6 +66,12 @@ const CertificateForm = () => {
   const handleChange = (e, fieldName, index) => {
     const { value } = e.target;
 
+    if (fieldName === 'templateId') {
+      setFormData((prevData) => ({
+        ...prevData,
+        [fieldName]: value,
+      }));
+    }
     if (fieldName === 'logos' || fieldName === 'header' || fieldName === 'footer' || fieldName === 'signatures') {
       setFormData((prevData) => {
         const updatedField = [...prevData[fieldName]];
@@ -169,6 +179,17 @@ const CertificateForm = () => {
               <option value="organizer">Organizer</option>
             </Select>
 
+            <Text>Select Certificate Template Design:</Text>
+            <Select
+              name="templateId"
+              value={formData.templateId}
+              onChange={(e) => handleChange(e, 'templateId', null)}
+              placeholder="Select Certificate Template Design"
+            >
+              <option value="0">Template 1</option>
+              <option value="1">Template 2</option>
+              <option value="2">Template 3</option>
+            </Select>
 
 
             <Text>Enter the link for the logos:</Text>
@@ -310,6 +331,7 @@ const CertificateForm = () => {
       <Box flex="1" p="4">
         <SelectCertficate
           eventId={eventId}
+          templateId={formData.templateId}
           contentBody={formData.body}
           certiType={formData.certiType}
           logos={formData.logos}
