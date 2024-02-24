@@ -46,6 +46,7 @@ class AddparticipantController {
         mailId: newparticipant.mailId,
         certiType: newparticipant.certiType,
         eventId: eventId,
+        isCertificateSent: false,
       });
 
       return createdCertificate;

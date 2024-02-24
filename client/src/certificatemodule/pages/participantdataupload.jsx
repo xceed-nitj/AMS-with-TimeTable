@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import getEnvironment from "../../getenvironment";
 import FileDownloadButton from "../../filedownload/filedownload";
 import { Link as ChakraLink } from '@chakra-ui/react';
+import { useToast } from "@chakra-ui/react";
+
 // import subjectFile from '../assets/subject_template';
 import {
   Container,
@@ -64,6 +66,7 @@ function Participant() {
     certiType: "",
     mailId: "",
     eventId: eventId,
+    isCertificateSent:false,
   });
 
   const [editedSData, setEditedSData] = useState({
@@ -77,6 +80,7 @@ function Participant() {
     certiType: "",
     mailId: "",
     eventId: eventId,
+    isCertificateSent:false,
   });
 
   const apiUrl = getEnvironment();
@@ -248,7 +252,69 @@ function Participant() {
               certiType: "",
               mailId: "",
               eventId: eventId,
+              isCertificateSent:false,
             });
+          })
+          .catch((error) => {
+            console.error("Update Error:", error);
+
+          });
+      }
+    }
+  };
+
+  const handleMailstatus = (RowId) => {
+    let data={};
+    if (RowId) {
+      console.log(RowId)
+      const rowIndex = tableData.findIndex((row) => row._id === RowId);
+      console.log(rowIndex)
+
+      if (rowIndex !== -1) {
+       
+        data.isCertificateSent=true;
+        console.log('dat to b sent', editedData)
+        fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${RowId}`, {
+
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify(data),
+          credentials: "include",
+
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(
+                `Error: ${response.status} - ${response.statusText}`
+              );
+            }
+            return response.json();
+          })
+          .then((data) => {
+
+            console.log("Update Success:", data);
+            fetchParticipantData();
+
+            // setTableData(updatedData);
+            // setEditRowId(null);
+            // setEditedData({
+            //   _id: null,
+
+            //   name: "",
+            //   department: "",
+            //   college: "",
+            //   types: "",
+            //   position: "",
+            //   title1: "",
+            //   title2: "",
+            //   certiType: "",
+            //   mailId: "",
+            //   eventId: eventId,
+            //   isCertificateSent:false,
+            // });
           })
           .catch((error) => {
             console.error("Update Error:", error);
@@ -283,6 +349,7 @@ function Participant() {
         console.error('Error sending mail:', error);
       });
   };
+  const toast = useToast();
 
 
 
@@ -306,6 +373,15 @@ function Participant() {
       .then((data) => {
         // Handle the response from the backend, if needed
         console.log('Mail sent successfully:', data);
+        toast({
+          title: 'Mail sent',
+          description: 'Email has been sent successfully.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+          // position:'middle',
+        });
+        handleMailstatus(Id);
       })
       .catch((error) => {
         console.error('Error sending mail:', error);
@@ -354,6 +430,8 @@ function Participant() {
       certiType: "",
       mailId: "",
       eventId: eventId,
+      isCertificateSent:false,
+
 
     });
     setIsAddSubjectFormVisible(true);
@@ -388,7 +466,15 @@ function Participant() {
         })
         .then((data) => {
 
-          // console.log("Data saved successfully:", data);
+          console.log("Data saved successfully:", data);
+          toast({
+            title: 'Data Saved ',
+            description: 'Updated successfully.',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+            // position:'middle',
+          });
           fetchParticipantData();
           handleCancelAddSubject();
           addsetDuplicateEntryMessage("");
@@ -663,6 +749,7 @@ function Participant() {
                 <Th><Center>Email</Center></Th>
                 <Th><Center>Certificate type</Center></Th>
                 <Th><Center>Creficate Link</Center></Th>
+                <Th><Center>Mail status</Center></Th>
                 <Th><Center>Actions</Center></Th>
               </Tr>
             </Thead>
@@ -830,12 +917,11 @@ function Participant() {
                   </Td>
                   <Td>
                     <Center>
-                        <Input
-                          type="text"
-                          value={editedData.isCertificateSent}
-                          isDisabled
-                        />
-                    </Center>
+                    <Center>
+  {row.isCertificateSent ? "Sent" : "Not sent"}
+</Center>
+
+                       </Center>
                   </Td>
 
                   <Td>
