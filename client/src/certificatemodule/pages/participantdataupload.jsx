@@ -360,15 +360,15 @@ function Participant() {
   };
 
   const handleSaveNewSubject = () => {
-    const isDuplicateEntry = tableData.some(
-      (row) => row.name === editedSData.name
-    );
+    // const isDuplicateEntry = tableData.some(
+    //   (row) => row.name === editedSData.name
+    // );
 
-    if (isDuplicateEntry) {
-      addsetDuplicateEntryMessage(
-        `Duplicate entry for "${editedSData.name}" is detected. Kindly delete the entry.`
-      );
-    } else {
+    // if (isDuplicateEntry) {
+    //   addsetDuplicateEntryMessage(
+    //     `Duplicate entry for "${editedSData.name}" is detected. Kindly delete the entry.`
+    //   );
+    // } else {
       fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${eventId}`, {
         method: "POST",
         headers: {
@@ -396,7 +396,7 @@ function Participant() {
         .catch((error) => {
           console.error("Error:", error);
         });
-    }
+    // }
   };
 
 
@@ -820,12 +820,6 @@ function Participant() {
                           type="text"
                           value={row._id}
                           isDisabled
-                        // onChange={(e) =>
-                        //   setEditedData({
-                        //     ...editedData,
-                        //     credits: e.target.value,
-                        //   })
-                        // }
                         />
                       ) : (
                         <ChakraLink href={`${frontendHost}/cm/c/${eventId}/${row._id}`} isExternal>
@@ -834,6 +828,16 @@ function Participant() {
                       )}
                     </Center>
                   </Td>
+                  <Td>
+                    <Center>
+                        <Input
+                          type="text"
+                          value={editedData.isCertificateSent}
+                          isDisabled
+                        />
+                    </Center>
+                  </Td>
+
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
