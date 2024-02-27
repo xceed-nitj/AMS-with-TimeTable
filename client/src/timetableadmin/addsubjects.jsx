@@ -182,6 +182,8 @@ function Subject() {
         })
         .then((data) => {
           if (data.message) {
+            if(data.message.includes('type')) setUploadMessage(data.message);
+            else
             setDuplicateEntryMessage(data.message);
             
           } else {
@@ -198,7 +200,7 @@ function Subject() {
           setIsLoading(false);
           setTimeout(() => {
             setUploadMessage('');
-          }, 3000);
+          }, 4000);
         });
     } else {
       alert('Please select a CSV file before uploading.');
