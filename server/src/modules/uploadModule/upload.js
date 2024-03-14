@@ -26,7 +26,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Functions for different objectTypes to find duplicates
 async function findDuplicatesByType(objectType, code) {
   if (objectType === 'subject') {
     return await findDuplicateSubjects(code);
@@ -62,7 +61,7 @@ router.post('/:objectType', upload.single('csvFile'), async (req, res) => {
       if (objectType === 'subject') {
         const validTypes = ["theory", "tutorial", "lab", "project"];
         if (!validTypes.includes(row.type.toLowerCase())) {
-          return res.status(200).json({ message: `Invalid 'type' value '${row.type}' in row,it can be "tutorial","laboratory","project","theory"` });
+          return res.status(200).json({ message: `Invalid 'type' value '${row.type}' in row,it can be "tutorial","laboratory","project","theory".` });
         }
       }
 
