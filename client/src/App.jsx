@@ -44,6 +44,8 @@ import CertificateForm from './certificatemodule/pages/certificatedesign';
 import ServicePage from './pages/Service';
 import Participant from './certificatemodule/pages/participantdataupload';
 
+
+import EODashboard from './conferencemodule/layout/eodashboard';
 import HomeConf from './conferencemodule/Tabs/HomeConf';
 import Sidebar from './conferencemodule/components/Sidebar';
 import Speaker from './conferencemodule/Tabs/Speaker';
@@ -136,7 +138,7 @@ function App() {
 
 
           {/* Conference Module Admin-Panel */}
-          
+          <Route path="/cf/dashboard" element={<EODashboard/>} />
           <Route path="/cf/adminpanel" element={<ConferencePage />} />
           <Route path="/cf/adminpanel/:confid" element={<Sidebar  />}>
           <Route index element={<HomeConf />} />
