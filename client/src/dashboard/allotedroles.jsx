@@ -73,6 +73,8 @@ const AllocatedRolesPage = () => {
                         {role === "DTTI" ? (<Text>Department Time Table Coordinator</Text>):null}
                         {role === "CM" ? (<Text>Event Certificate Manager</Text>):null}
                         {role === "admin" ? (<Text>XCEED Super User</Text>):null}
+                        {role === "CO" ? (<Text>Event Organiser</Text>):null}
+                        {role === "PRM" ? (<Text>Paper Review Management</Text>):null}
 
                         </Td>
                         <Td>
