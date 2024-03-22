@@ -44,6 +44,8 @@ import CertificateForm from './certificatemodule/pages/certificatedesign';
 import ServicePage from './pages/Service';
 import Participant from './certificatemodule/pages/participantdataupload';
 
+
+import EODashboard from './conferencemodule/layout/eodashboard';
 import HomeConf from './conferencemodule/Tabs/HomeConf';
 import Sidebar from './conferencemodule/components/Sidebar';
 import Speaker from './conferencemodule/Tabs/Speaker';
@@ -58,7 +60,6 @@ import Participants from './conferencemodule/Tabs/Participants';
 import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
-import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
@@ -137,7 +138,7 @@ function App() {
 
 
           {/* Conference Module Admin-Panel */}
-          
+          <Route path="/cf/dashboard" element={<EODashboard/>} />
           <Route path="/cf" element={<ConferencePage />} />
           <Route path="/cf/:confid" element={<Sidebar  />}>
           <Route index element={<HomeConf />} />
@@ -153,9 +154,6 @@ function App() {
           <Route path="locations" element={<Location />} />
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
-          <Route path="template" element={<CommonTemplate />} />
-
-
           </Route>
         </Routes>
         {/* <Footer/> */}
