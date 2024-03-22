@@ -75,7 +75,7 @@ function EODashboard() {
               <Td><Center>{event.name}</Center></Td>
               <Td>
                 <CustomLink
-                  href={`http://${domainName}/eo/${event._id}`}
+                  href={`http://${domainName}/cf/${event._id}`}
                   // Optional: If you want to open the link in a new tab
                 ></CustomLink>
               </Td>

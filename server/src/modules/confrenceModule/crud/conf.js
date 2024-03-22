@@ -39,6 +39,15 @@ class ConfController {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
+  async getConf() {
+    try {
+      // Find all Conf documents using the Mongoose model
+      const confs = await Conf.find();
+      return confs;
+    } catch (e) {
+      throw aHttpExcepction(500, e.message || "Internal Server Error");
+    }
+  }
 
   async getConfByUser(email) {
     try {
