@@ -23,6 +23,6 @@ const imageSchema = new mongoose.Schema({
 );
 
 // Create the Mongoose model
-const Image = mongoose.model("Image", imageSchema);
+const Image = mongoose.model("cf-image", imageSchema);
 
 module.exports = Image;

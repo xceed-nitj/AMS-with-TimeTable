@@ -49,6 +49,6 @@ const contactUsSchema = new mongoose.Schema({
 );
 
 // Create the Mongoose model
-const ContactUs = mongoose.model("ContactUs", contactUsSchema);
+const ContactUs = mongoose.model("cf-contactUs", contactUsSchema);
 
 module.exports = ContactUs;

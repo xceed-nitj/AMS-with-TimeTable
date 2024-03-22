@@ -25,6 +25,6 @@ const navbarSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const Navbar = mongoose.model("Navbar", navbarSchema);
+const Navbar = mongoose.model("cf-navbar", navbarSchema);
 
 module.exports = Navbar;

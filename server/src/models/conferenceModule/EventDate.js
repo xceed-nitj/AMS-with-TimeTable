@@ -37,6 +37,6 @@ const eventDateSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const EventDate = mongoose.model("EventDate", eventDateSchema);
+const EventDate = mongoose.model("cf-eventDate", eventDateSchema);
 
 module.exports = EventDate;
