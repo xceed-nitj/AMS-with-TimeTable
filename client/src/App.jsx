@@ -59,6 +59,7 @@ import EventDates from './conferencemodule/Tabs/EventDates';
 import Participants from './conferencemodule/Tabs/Participants';
 import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
+import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
@@ -154,6 +155,8 @@ function App() {
           <Route path="locations" element={<Location />} />
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
+          <Route path="template" element={<CommonTemplate/>} />
+
           </Route>
         </Routes>
         {/* <Footer/> */}
