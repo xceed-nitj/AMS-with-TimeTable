@@ -3,7 +3,21 @@ import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
-
+import { Container } from "@chakra-ui/layout";
+import {
+    FormControl, FormErrorMessage, FormLabel, Center, Heading,
+    Input, Button, Select
+} from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import {
+    Table,
+    TableContainer,
+    Tbody,
+    Td,
+    Th,
+    Thead,
+    Tr,
+} from "@chakra-ui/table";
 const Committees = () => {
     const params = useParams();
     const IdConf = params.confid;
@@ -19,7 +33,7 @@ const Committees = () => {
         "Institute": "",
         "ProfileLink": "",
         "ImgLink": "",
-        "sequence": 0,
+        "sequence": "",
         "feature": true
     };
     const [formData, setFormData] = useState(initialData);
@@ -51,7 +65,7 @@ const Committees = () => {
     };
 
     const handleSubmit = (e) => {
-        e.preventDefault();
+        // e.preventDefault();
 
         axios.post(`${apiUrl}/conferencemodule/committee`, formData, {
             withCredentials: true
@@ -76,6 +90,7 @@ const Committees = () => {
             .then(res => {
                 setFormData(initialData);
                 setRefresh(refresh + 1);
+                setEditID(null)
             })
             .catch(err => console.log(err));
     };
@@ -117,107 +132,187 @@ const Committees = () => {
     }, [refresh]);
 
     return (
-        <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
-            <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
-                <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " autoComplete="off" onSubmit={handleSubmit}>
-                    <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif text-center  " >Add a New Committee</div>
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Type of Committee</label>
-                    <input type="text" name="Type" required value={Type} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
+        <main className='tw-py-10  lg:tw-pl-72 tw-min-h-screen'>
+            
+            <Container maxW='5xl'>
+                <Heading as="h1" size="xl" mt="6" mb="6">
+                    Create a New Committee
+                </Heading>
 
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Subtype of Committee</label>
-                    <input type="text" name="Subtype" required   value={Subtype} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold " >Name</label>
-                    <input type="text" name="Name" required value={Name} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Type of the Committee :</FormLabel>
+                    <Input
+                        type="text"
+                        name="Type"
+                        value={Type}
+                        onChange={handleChange}
+                        placeholder="Type"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired>
 
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Designation</label>
-                    <input type="text" name="Designation" required value={Designation} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
+                    <FormLabel>Subtype of Committee:</FormLabel>
+                    <Input
 
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Institute</label>
-                    <input type="text" name="Institute" required value={Institute} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
+                        type="text"
+                        name="Subtype"
+                        value={Subtype}
+                        onChange={handleChange}
+                        placeholder="Subtype"
+                        mb='2.5'
+                    />
 
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Profile Link of Committee</label>
-                    <input type="text" name="ProfileLink" required value={ProfileLink} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Name of the Committee :</FormLabel>
+                    <Input
+                        type="text"
+                        name="Name"
+                        value={Name}
+                        onChange={handleChange}
+                        placeholder="Name"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Designation of the Committee :</FormLabel>
+                    <Input
+                        type="text"
+                        name="Designation"
+                        value={Designation}
+                        onChange={handleChange}
+                        placeholder="Designation"
+                        mb='2.5'
+                    />
+                </FormControl>
 
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Image Link of Committee</label>
-                    <input type="ImgLink" name="ImgLink" required  value={ImgLink} onChange={handleChange}
-                        className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" />
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Image Link of the Committee :</FormLabel>
+                    <Input
+                        type="text"
+                        name="ImgLink"
+                        value={ImgLink}
+                        onChange={handleChange}
+                        placeholder="ImageLink"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Institute:</FormLabel>
+                    <Input
+                        type="text"
+                        name="Institute"
+                        value={Institute}
+                        onChange={handleChange}
+                        placeholder="Institute"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Profile Link :</FormLabel>
+                    <Input
+                        type="text"
+                        name="ProfileLink"
+                        value={ProfileLink}
+                        onChange={handleChange}
+                        placeholder="ProfileLink"
+                        mb='2.5'
+                    />
+                </FormControl>
+                
+                
+                <FormControl isRequired={true}  >
 
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
-                    <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline" onChange={handleChange}>
+                    <FormLabel >Sequence :</FormLabel>
+                    <Input
+
+                        type="number"
+                        name="sequence"
+                        value={sequence}
+                        onChange={handleChange}
+                        placeholder="sequence"
+                        mb='2.5'
+                   />
+                   </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Feature:</FormLabel>
+                    <Select
+                        name="feature"
+                        value={formData.feature}
+                        onChange={handleChange}
+                    >
                         <option value={true}>Yes</option>
                         <option value={false}>No</option>
-                    </select>
+                    </Select>
+                </FormControl>
 
-                    <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Sequence
-                        <input
-                            type="number"
-                            name="sequence"
-                            value={sequence}
-                            onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-:outline-none focus:tw-:shadow-outline"
-                        />
-                    </label>
+                <Center>
+              
+                    <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
+                        {editID ? 'Update' : 'Add'}
+                    </Button>
 
-                    <div className="tw-flex tw-justify-evenly ">
-                        <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Add </button>
+            </Center>
+                <Heading as="h1" size="xl" mt="6" mb="6">
+                    Existing Committees </Heading>
+                {!loading ? (
 
-                        <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">
-                            Update 
-                        </button>
-                    </div>
+                    <TableContainer>
+                        <Table
+                            variant='striped'
+                            size="md"
+                            mt="1"
+                        >
+                            <Thead>
+                                <Tr>
+                                <CustomTh> Type</CustomTh>
+                                <CustomTh> Subtype</CustomTh>
 
-                </form>
+                                    <CustomTh> Name</CustomTh>
+                                    <CustomTh>Designation</CustomTh>
+                                    <CustomTh>Institute</CustomTh>
+                                    <CustomTh>Sequence</CustomTh>
 
-                <hr />
+                                    <CustomTh>Action</CustomTh>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {data.length > 0 ? (data.map((item) => (
+                                    <Tr key={item._id}>                                        <Td><Center>{item.Type}</Center></Td>
+                                    <Td><Center>{item.Subtype}</Center></Td>
 
-                    <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
-                    <div className="tw-text-black-700 tw-text-[28px] tw-font-serif text-center  " >Added committees</div>
-                    {loading ? (
-                        <LoadingIcon />
-                    ) : (
-                        <table className="tw-min-w-full tw-border-collapse tw-box-border " >
-                            <thead>
-                                <tr className="tw-border-[2px] tw-bg-blue-100  tw-border-blue-500">
-                                    <th className="tw-p-1 tw-text-center">Type of Committee</th>
-                                    <th className="tw-p-1 tw-text-center">SubType of Committee</th>
-                                    <th className="tw-p-1 tw-text-center">Name</th>
-                                    <th className="tw-p-1 tw-text-center">Designation</th>
-                                    <th className="tw-p-1 tw-text-center">Institute</th>
-                                    <th className="tw-p-1 tw-text-center">Sequence</th>
-                                    <th className="tw-p-1 tw-text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.length > 0 ? data.map((item, index) => (
-                                    <tr key={index} className="tw-border-[1px] tw-font-serif tw-border-blue-500">
-                                        <td className="tw-p-1 tw-text-center">{item.Type}</td>
-                                        <td className="tw-p-1 tw-text-center">{item.Subtype}</td>
-                                        <td className="tw-p-1 tw-text-center">{item.Name}</td>
-                                        <td className="tw-p-1 tw-text-center">{item.Designation}</td>
-                                        <td className="tw-p-1 tw-text-center">{item.Institute}</td>
-                                        <td className="tw-p-1 tw-text-center">{item.sequence}</td>
-                                        <td className="tw-p-1 tw-text-center  tw-flex tw-flex-col lg:tw-flex-row  tw-justify-evenly  tw-border-hidden">
-                                            <button onClick={() => { handleEdit(item._id); setEditID(item._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
-                                            <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Delete </button>
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan="7" className="tw-p-1 tw-text-center">No data available</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
-            </div>
+
+
+                                        <Td><Center>{item.Name}</Center></Td>
+                                        <Td><Center>{item.Designation}</Center></Td>
+                                        <Td><Center>{item.Institute}</Center></Td>
+                                        <Td><Center>{item.sequence}</Center></Td>
+
+                                        <Td><Center>
+                                            <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
+                                            <Button colorScheme="teal" onClick={() => {
+                                                handleEdit(item._id);
+                                                setEditID(item._id);
+                                            }}>Edit </Button>
+                                        </Center></Td>
+
+                                    </Tr>))) :
+                                    (
+                                        <Tr>
+                                            <Td colSpan="7" className="tw-p-1 tw-text-center">
+                                                <Center>No data available</Center></Td>
+                                        </Tr>
+                                    )
+                                }
+                            </Tbody>
+                        </Table>
+                    </TableContainer>
+                )
+
+                    : <LoadingIcon />
+                } </Container>
         </main>
     );
 };

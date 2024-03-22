@@ -18,6 +18,8 @@ const navigation = [
   { name: 'Locations', href: 'locations' },
   { name: 'Participants', href: 'participants' },
   { name: 'Navbar', href: 'navbar' },
+  { name: 'Common Template', href: 'template' },
+
 ];
 
 const Sidebar = () => {
