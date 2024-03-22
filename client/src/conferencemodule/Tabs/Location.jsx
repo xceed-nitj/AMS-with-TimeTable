@@ -3,7 +3,21 @@ import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
-
+import { Container } from "@chakra-ui/layout";
+import {
+    FormControl, FormErrorMessage, FormLabel, Center, Heading,
+    Input, Button, Select
+} from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import {
+    Table,
+    TableContainer,
+    Tbody,
+    Td,
+    Th,
+    Thead,
+    Tr,
+} from "@chakra-ui/table";
 const Location = () => {
     const params = useParams();
     const IdConf = params.confid;
@@ -16,7 +30,7 @@ const Location = () => {
         "latitude": "",
         "longitude": "",
         "feature": true,
-        "sequence": 0
+        "sequence": ""
     }
     const [formData, setFormData] = useState(initialData);
 
@@ -26,7 +40,7 @@ const Location = () => {
     const [loading, setLoading] = useState(false);
 
 
-    const { description, address, latitude, longitude } = formData;
+    const { description, address, latitude, longitude,sequence } = formData;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -51,7 +65,7 @@ const Location = () => {
     };
 
     const handleSubmit = (e) => {
-        e.preventDefault();
+        // e.preventDefault();
 
         if(data && Object.keys(data).length !== 0){
          window.alert('You can Add only one Location for one conference');
@@ -80,6 +94,7 @@ const Location = () => {
             .then(res => {
                 setFormData(initialData);
                 setRefresh(refresh + 1);
+                setEditID(null)
             })
             .catch(err => console.log(err));
     };
@@ -121,88 +136,142 @@ const Location = () => {
     }, [refresh]);
 
     return (
-        <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
-            <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
-                <div className="tw-block tw-box-border" >
-                    <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " autoComplete="off" onSubmit={handleSubmit}>
-                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-seriftw-text-center  " >About Location</div>
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold " >Description</label>
-                        <input type="text" name="description" required value={description} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
+        <main className='tw-py-10 lg:tw-pl-72 tw-min-h-screen'>
+            
+            <Container maxW='5xl' >
+                <Center><Heading as="h1" size="xl" mt="6" mb="6">
+                Location
+                 </Heading></Center>
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Address</label>
-                        <input type="text" name="address" required value={address} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Latitude</label>
-                        <input type="text" name="latitude" required value={latitude} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Longitude</label>
-                        <input type="text" name="longitude" required value={longitude} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black" />
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Sequence</label>
-                        <input
-                            type="number"
-                            name="sequence"
-                            value={formData.sequence}
-                            onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-                        />
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
-                        <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black" onChange={handleChange}>
-                            <option value={true}>Yes</option>
-                            <option value={false}>No</option>
-                        </select>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Description:</FormLabel>
+                    <Input
+                        type="text"
+                        name="description"
+                        value={description}
+                        onChange={handleChange}
+                        placeholder="Description"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Address:</FormLabel>
+                    <Input
+                        type="text"
+                        name="address"
+                        value={address}
+                        onChange={handleChange}
+                        placeholder="Address"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Latitude:</FormLabel>
+                    <Input
+                        type="text"
+                        name="latitude"
+                        value={latitude}
+                        onChange={handleChange}
+                        placeholder="Latitude"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Longitude :</FormLabel>
+                    <Input
+                        type="text"
+                        name="longitude"
+                        value={longitude}
+                        onChange={handleChange}
+                        placeholder="Longitude"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Sequence :</FormLabel>
+                    <Input
+                        type="number"
+                        name="sequence"
+                        value={sequence}
+                        onChange={handleChange}
+                        placeholder="sequence"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Feature:</FormLabel>
+                    <Select
+                        name="feature"
+                        value={formData.feature}
+                        onChange={handleChange}
+                    >
+                        <option value={true}>Yes</option>
+                        <option value={false}>No</option>
+                    </Select>
+                </FormControl>
 
-                       <div className="tw-flex tw-justify-evenly">
-                            <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add</button>
-                      
-                            <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Update</button>
-                        </div>
-                    </form>
 
-                    <hr />
+              
 
-                    <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
-                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  " >Added Information</div>
-                        {loading ? (
-                            <div>
-                                <LoadingIcon />
-                            </div>
-                        ) : (
-                            <table className="tw-min-w-full tw-border-collapse tw-box-border " >
-                                <thead>
-                                    <tr className="tw-border-[2px] tw-bg-blue-100  tw-border-blue-500">
-                                        <th className="tw-p-1 tw-text-center">Description</th>
-                                        <th className="tw-p-1 tw-text-center">Address</th>
-                                        <th className="tw-p-1 tw-text-center">Latitude</th>
-                                        <th className="tw-p-1 tw-text-center">Longitude</th>
-                                        <th className="tw-p-1 tw-text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data && Object.keys(data).length !== 0 ? (
-                                        <tr className="tw-border-[1px] tw-font-serif tw-border-blue-500">
-                                            <td className="tw-p-1 tw-text-center">{data.description}</td>
-                                            <td className="tw-p-1 tw-text-center">{data.address}</td>
-                                            <td className="tw-p-1 tw-text-center">{data.latitude}</td>
-                                            <td className="tw-p-1 tw-text-center">{data.longitude}</td>
-                                            <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
-                                                <button onClick={() => handleDelete(data._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="5" className="tw-p-1 tw-text-center">No Location data available</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                </div>
-            </div>
+                <Center>
+              
+                    <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
+                        {editID ? 'Update' : 'Add'}
+                    </Button>
+
+            </Center>
+                <Heading as="h1" size="xl" mt="6" mb="6">
+                    Added Location </Heading>
+                {!loading ? (
+
+                    <TableContainer>
+                        <Table
+                            variant='striped'
+                            size="md"
+                            mt="1"
+                        >
+                            <Thead>
+                                <Tr>
+                                    <CustomTh>Description</CustomTh>
+                                    <CustomTh>Address</CustomTh>
+                                    <CustomTh>Latitude  </CustomTh>
+                                    <CustomTh>Longitude</CustomTh>
+                                    <CustomTh>Sequence</CustomTh>
+                                    <CustomTh>Action</CustomTh>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {data ? (
+                                    <Tr key={data._id}>
+                                        <Td><Center>{data.description}</Center></Td>
+                                        <Td><Center>{data.address}</Center></Td>
+                                        <Td><Center>{data.latitude}</Center></Td>
+                                        <Td><Center>{data.longitude}</Center></Td>
+                                        <Td><Center>{data.sequence}</Center></Td>
+                                        <Td><Center>
+                                            <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
+                                            <Button colorScheme="teal" onClick={() => {
+                                                handleEdit(data._id);
+                                                setEditID(data._id);
+                                            }}>Edit </Button>
+                                        </Center></Td>
+
+                                    </Tr>) : (
+                                    <Tr>
+                                        <Td colSpan="6" className="tw-p-1 tw-text-center">
+                                            <Center>No data available</Center></Td>
+                                    </Tr>
+                                )}
+                            </Tbody>
+                        </Table>
+                    </TableContainer>
+                )
+
+                    : <LoadingIcon />
+                }
+            </Container >
         </main>
     );
 };

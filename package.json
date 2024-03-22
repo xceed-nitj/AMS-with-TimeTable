@@ -4,5 +4,8 @@
   "main": "index.js",
   "repository": "https://github.com/xceed-nitj/AMS-with-TimeTable.git",
   "author": "Harshvardhan-91 <agarwalharshvardhan081@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.8"
+  }
 }

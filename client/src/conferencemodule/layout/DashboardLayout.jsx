@@ -34,8 +34,8 @@ export default function DashboardLayout() {
 
 
       < Routes >
-        <Route path="/cf/adminpael" element={<ConferencePage />} />
-        <Route path="/cf/adminpael/" element={<Sidebar />}>
+        <Route path="/cf" element={<ConferencePage />} />
+        <Route path="/cf/" element={<Sidebar />}>
           <Route index element={<Home />} />
           <Route path="home" element={<Home />} />
           <Route path="speakers" element={<Speaker />} />
