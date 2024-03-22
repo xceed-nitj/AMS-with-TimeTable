@@ -10,6 +10,16 @@ class AddEventController {
     }
   }
 
+  async lockEvent(id) {
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    try {
+      await addEvent.findByIdAndUpdate(id, {lock:true});
+    } catch (e) {
+      throw new HttpException(500, e);
+    }
+  }
   async getAllEvents() {
     try {
       const eventList = await addEvent.find();
@@ -59,6 +69,7 @@ class AddEventController {
       throw new HttpException(400, "Invalid User");
     }
     try {
+      console.log(user)
       const data = await addEvent.find({ user: user });
       if (!data) throw new HttpException(400, "Event does not exist");
       return data;

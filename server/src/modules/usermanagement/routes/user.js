@@ -57,4 +57,14 @@ userRouter.post("/logout", verifyToken, async (req, res) => {
   }
 });
 
+userRouter.get("/all",verifyToken, async (req, res) => {
+  try {
+    await UserController.getAllUserDetails(req, res);
+  } catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
 module.exports = userRouter;

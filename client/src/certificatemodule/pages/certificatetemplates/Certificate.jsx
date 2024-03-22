@@ -6,14 +6,17 @@ import EditCertificate from './EditCertificate';
 import { useState } from 'react';
 import CertificateTemplate from './CertificateTemplates';
 // import mySvg from "../assets/temp1.svg"
-import Template01 from './Templates/03_sarthak';
+import Template03 from './03_sarthak';
 
 const maxWordsPerRow = 10;
 // console.log(mySvg)
 function Certificate() {
   // const params = useParams();
   // const IdConf = params.confid;
-  const Name = 'John';
+  // const data = {
+  //   name: 'Sarthak',
+  // };
+
   const [certificateData, setCertificateData] = useState({
     Description:
       'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy lorem20nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Utwisi enim ad minim veniam, quis nos trud exerci tation ullamcorpersuscipit lobortis nisl ut aliquip ex ea commodo consequat',
@@ -26,16 +29,16 @@ function Certificate() {
     BottomText2: 'SIGNATURE',
   });
 
-  let {
-    Description,
-    Date,
-    Signature,
-    Certificate,
-    SubText,
-    PresentedTo,
-    BottomText1,
-    BottomText2,
-  } = certificateData;
+  // let {
+  //   Description,
+  //   Date,
+  //   Signature,
+  //   Certificate,
+  //   SubText,
+  //   PresentedTo,
+  //   BottomText1,
+  //   BottomText2,
+  // } = certificateData;
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -58,7 +61,7 @@ function Certificate() {
       </div>
       <div className="tw-flex md:tw-flex-row tw-flex-col">
         <div className="md:tw-basis-[70%] tw-w-[100vw]">
-          <Template01 />
+          <Template03 />
         </div>
         <div className="">
           <EditCertificate

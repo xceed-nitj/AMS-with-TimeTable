@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, VStack, IconButton, HStack, Textarea, Text, Container } from '@chakra-ui/react';
+import { Input, Button, VStack, IconButton, HStack, Textarea, Flex, Box, Text, Container, Select } from '@chakra-ui/react';
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
 import Header from "../../components/header";
 import { useToast } from "@chakra-ui/react";
+import CertificateContent from './certificatetemplates/template01';
+import SelectCertficate from './SelectCertficate';
+
 
 
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
   const toast = useToast();
-
+  const [type, setType] = useState('')
   const [formData, setFormData] = useState({
     logos: [''],
     header: [''],
     body: '',
     footer: [''],
     signatures: [''],
+    certiType: '',
+    templateId: '', /// Template Design Number
   });
+
+  console.log(formData.templateId)
 
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -26,22 +33,21 @@ const CertificateForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}`,
-        {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-
+        const response = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${formData.certiType}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
         });
+
         if (response.ok) {
           const responseData = await response.json();
+          console.log('response:',responseData)
           if (responseData && Array.isArray(responseData) && responseData.length > 0) {
-            // Assuming the backend sends the entire form data in an array
             setFormData(responseData[0]);
           } else {
-            console.error('Error: Fetched data does not match expected structure.');
+            console.error('Error: Fetched data does not match the expected structure.');
           }
         } else {
           console.error('Error fetching form data:', response.statusText);
@@ -50,19 +56,34 @@ const CertificateForm = () => {
         console.error('Error fetching form data:', error);
       }
     };
-    fetchData();
-}, [apiUrl, eventId]);
+
+    if (formData.certiType) {
+      fetchData();
+    }
+  }, [apiUrl, eventId, formData.certiType]);
 
 
   const handleChange = (e, fieldName, index) => {
     const { value } = e.target;
 
+    if (fieldName === 'templateId') {
+      setFormData((prevData) => ({
+        ...prevData,
+        [fieldName]: value,
+      }));
+    }
     if (fieldName === 'logos' || fieldName === 'header' || fieldName === 'footer' || fieldName === 'signatures') {
       setFormData((prevData) => {
         const updatedField = [...prevData[fieldName]];
 
         if (index !== null) {
-          updatedField[index] = value;
+          // For signatures, update the specific property of the signature object
+          if (fieldName === 'signatures') {
+            const signatureField = e.target.name.split('.')[1]; // Extract the property name (name, position, url)
+            updatedField[index] = { ...updatedField[index], [signatureField]: value };
+          } else {
+            updatedField[index] = value;
+          }
         }
 
         return {
@@ -70,7 +91,7 @@ const CertificateForm = () => {
           [fieldName]: updatedField,
         };
       });
-    } else if (fieldName === 'body') {
+    } else if (fieldName === 'body' || fieldName === 'certiType') {
       setFormData((prevData) => ({
         ...prevData,
         [fieldName]: value,
@@ -78,11 +99,22 @@ const CertificateForm = () => {
     }
   };
 
+
   const addField = (fieldName) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [fieldName]: [...prevData[fieldName], ''],
-    }));
+    if (fieldName === 'signatures') {
+      setFormData((prevData) => ({
+        ...prevData,
+        [fieldName]: [
+          ...prevData[fieldName],
+          { name: '', position: '', url: '' },
+        ],
+      }));
+    } else {
+      setFormData((prevData) => ({
+        ...prevData,
+        [fieldName]: [...prevData[fieldName], ''],
+      }));
+    }
   };
 
   const handleDelete = (fieldName, index) => {
@@ -94,6 +126,7 @@ const CertificateForm = () => {
       [fieldName]: updatedField,
     }));
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -110,7 +143,7 @@ const CertificateForm = () => {
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log(responseData);
+        // console.log(responseData);
         toast({
           title: "Submission successfull",
           description: responseData.message,
@@ -127,130 +160,189 @@ const CertificateForm = () => {
   };
 
   return (
-    <Container maxW="lg">
-    <Header title="Enter Certificate Details"></Header>
+    <Flex>
+      <Container maxW="lg">
+        <Header title="Enter Certificate Details"></Header>
 
-    <form onSubmit={handleSubmit}>
-      <VStack spacing={4} align="start">
-        <Text>Enter the link for the logos:</Text>
-        {/* Logos Fields */}
-        {formData.logos.map((logo, index) => (
-                  <HStack key={index}>
-            <Input
-              name="logos"
-              value={logo}
-              onChange={(e) => handleChange(e, 'logos', index)}
-              placeholder="Logo"
-              width="200%"
+        <form onSubmit={handleSubmit}>
+          <VStack spacing={4} align="start">
+            <Text>Select Certificate Type:</Text>
+            <Select
+              name="certiType"
+              value={formData.certiType}
+              onChange={(e) => handleChange(e, 'certiType', null)}
+              placeholder="Select Certificate Type"
+            >
+              <option value="winner">Winner</option>
+              <option value="participant">Participant</option>
+              <option value="speaker">Speaker</option>
+              <option value="organizer">Organizer</option>
+            </Select>
+
+            <Text>Select Certificate Template Design:</Text>
+            <Select
+              name="templateId"
+              value={formData.templateId}
+              onChange={(e) => handleChange(e, 'templateId', null)}
+              placeholder="Select Certificate Template Design"
+            >
+              <option value="0">Template 1</option>
+              <option value="1">Template 2</option>
+              <option value="2">Template 3</option>
+            </Select>
+
+
+            <Text>Enter the link for the logos:</Text>
+            {/* Logos Fields */}
+
+            {formData.logos.map((logo, index) => (
+              <HStack key={index}>
+                <Input
+                  name="logos"
+                  value={logo}
+                  onChange={(e) => handleChange(e, 'logos', index)}
+                  placeholder="Logo"
+                  width="200%"
+                />
+                {index > 0 && (
+                  <IconButton
+                    icon={<CloseIcon />}
+                    onClick={() => handleDelete('logos', index)}
+                  />
+                )}
+                {index === formData.logos.length - 1 && (
+                  <IconButton
+                    icon={<AddIcon />}
+                    onClick={() => addField('logos')}
+                  />
+                )}
+              </HStack>
+            ))}
+
+            {/* Header Fields */}
+            <Text>Enter Department or Culb data:</Text>
+
+            {formData.header.map((header, index) => (
+              <HStack key={index}>
+                <Input
+                  name="header"
+                  value={header}
+                  onChange={(e) => handleChange(e, 'header', index)}
+                  placeholder="Header"
+                  width="100%"
+                />
+                {index > 0 && (
+                  <IconButton
+                    icon={<CloseIcon />}
+                    onClick={() => handleDelete('header', index)}
+                  />
+                )}
+                {index === formData.header.length - 1 && (
+                  <IconButton
+                    icon={<AddIcon />}
+                    onClick={() => addField('header')}
+                  />
+                )}
+              </HStack>
+            ))}
+
+            <Text>Enter the body of the certificate:</Text>
+
+            <Textarea
+              name="body"
+              value={formData.body}
+              onChange={(e) => handleChange(e, 'body', null)}
+              placeholder="Body"
             />
-            {index > 0 && (
-              <IconButton
-                icon={<CloseIcon />}
-                onClick={() => handleDelete('logos', index)}
-              />
-            )}
-            {index === formData.logos.length - 1 && (
-              <IconButton
-                icon={<AddIcon />}
-                onClick={() => addField('logos')}
-              />
-            )}
-          </HStack>
-        ))}
+            {/* Footer Fields */}
 
-        {/* Header Fields */}
-        <Text>Enter the Header data:</Text>
+            <Text>Enter the link for signatures:</Text>
 
-        {formData.header.map((header, index) => (
-                  <HStack key={index}>
-            <Input
-              name="header"
-              value={header}
-              onChange={(e) => handleChange(e, 'header', index)}
-              placeholder="Header"
-              width="100%"
-            />
-            {index > 0 && (
-              <IconButton
-                icon={<CloseIcon />}
-                onClick={() => handleDelete('header', index)}
-              />
-            )}
-            {index === formData.header.length - 1 && (
-              <IconButton
-                icon={<AddIcon />}
-                onClick={() => addField('header')}
-              />
-            )}
-          </HStack>
-        ))}
-        <Text>Enter the body of the certificate:</Text>
+            {formData.signatures.map((signature, index) => (
+              <VStack key={index}>
+                <Input
+                  name={`signatures[${index}].name`}
+                  value={signature.name}
+                  onChange={(e) => handleChange(e, 'signatures', index)}
+                  placeholder="Name"
+                />
+                <Input
+                  name={`signatures[${index}].position`}
+                  value={signature.position}
+                  onChange={(e) => handleChange(e, 'signatures', index)}
+                  placeholder="Position"
+                />
+                <Input
+                  name={`signatures[${index}].url`}
+                  value={signature.url}
+                  onChange={(e) => handleChange(e, 'signatures', index)}
+                  placeholder="URL"
+                />
+                {index > 0 && (
+                  <IconButton
+                    icon={<CloseIcon />}
+                    onClick={() => handleDelete('signatures', index)}
+                  />
+                )}
+                {index === formData.signatures.length - 1 && (
+                  <IconButton
+                    icon={<AddIcon />}
+                    onClick={() => addField('signatures')}
+                  />
+                )}
+              </VStack>
+            ))}
 
-        <Textarea
-          name="body"
-          value={formData.body}
-          onChange={(e) => handleChange(e, 'body', null)}
-          placeholder="Body"
+            <Text>Any additoinal data:</Text>
+
+            {formData.footer.map((footer, index) => (
+
+              <HStack key={index}>
+                <Input
+                  name="footer"
+                  value={footer}
+                  onChange={(e) => handleChange(e, 'footer', index)}
+                  placeholder="Footer"
+                />
+                {index > 0 && (
+                  <IconButton
+                    icon={<CloseIcon />}
+                    onClick={() => handleDelete('footer', index)}
+                  />
+                )}
+                {index === formData.footer.length - 1 && (
+                  <IconButton
+                    icon={<AddIcon />}
+                    onClick={() => addField('footer')}
+                  />
+                )}
+              </HStack>
+            ))}
+
+
+
+            <Button type="submit" colorScheme="blue">
+              Submit
+            </Button>
+
+          </VStack>
+        </form>
+      </Container>
+      <Box flex="1" p="4">
+        <SelectCertficate
+          eventId={eventId}
+          templateId={formData.templateId}
+          contentBody={formData.body}
+          certiType={formData.certiType}
+          logos={formData.logos}
+          participantDetail={{}}
+          signature={formData.signatures}
+          header={formData.header}
+          footer={formData.footer}
         />
-        {/* Footer Fields */}
-        <Text>Enter the signature data:</Text>
+      </Box>
+    </Flex>
 
-        {formData.footer.map((footer, index) => (
-
-          <HStack key={index}>
-            <Input
-              name="footer"
-              value={footer}
-              onChange={(e) => handleChange(e, 'footer', index)}
-              placeholder="Footer"
-            />
-            {index > 0 && (
-              <IconButton
-                icon={<CloseIcon />}
-                onClick={() => handleDelete('footer', index)}
-              />
-            )}
-            {index === formData.footer.length - 1 && (
-              <IconButton
-                icon={<AddIcon />}
-                onClick={() => addField('footer')}
-              />
-            )}
-          </HStack>
-        ))}
-
-<Text>Enter the link for signatures:</Text>
-        
-        {formData.signatures.map((signature, index) => (
-          <HStack key={index}>
-            <Input
-              name="signatures"
-              value={signature}
-              onChange={(e) => handleChange(e, 'signatures', index)}
-              placeholder="Signature"
-            />
-            {index > 0 && (
-              <IconButton
-                icon={<CloseIcon />}
-                onClick={() => handleDelete('signatures', index)}
-              />
-            )}
-            {index === formData.signatures.length - 1 && (
-              <IconButton
-                icon={<AddIcon />}
-                onClick={() => addField('signatures')}
-              />
-            )}
-          </HStack>
-        ))}
-
-        <Button type="submit" colorScheme="blue">
-          Submit
-        </Button>
-
-      </VStack>
-    </form>
-</Container>
   );
 };
 

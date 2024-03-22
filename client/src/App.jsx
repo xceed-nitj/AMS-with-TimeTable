@@ -13,7 +13,7 @@ import ForgotPassword from './dashboard/ForgotPassword';
 
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
-import LockedView from './timetableviewer/viewer';
+// import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
 import Navbar from './components/home/Navbar';
 import PrintSummary from './timetableadmin/printSummary'
@@ -25,12 +25,14 @@ import AdminPage from './timetableadmin/admin';
 import ViewAllotmentPage from './timetableadmin/viewroomallotment';
 import CommonLoad from './timetableadmin/addcommonload';
 import MasterView from './timetableadmin/mastersearch';
+import View from './timetableadmin/masterview';
 import AllocatedRolesPage from './dashboard/allotedroles';
 import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import ViewInstituteLoad from './timetableadmin/viewinstituteload';
+import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 
@@ -38,7 +40,7 @@ import Home from './pages/Home'
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
 import CertificateForm from './certificatemodule/pages/certificatedesign';
-import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
+// import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
 import ServicePage from './pages/Service';
 import Participant from './certificatemodule/pages/participantdataupload';
 
@@ -57,6 +59,10 @@ import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
+import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
+// import ViewCertificate from './certificatemodule/pages/participantCerti';
+import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
+
 
 function App() {
   return (
@@ -99,12 +105,24 @@ function App() {
           <Route path="/tt/:generatedLink/roomallotment" element={<ViewAllotmentPage/>} />
           <Route path="/tt/:generatedLink/addcommonload" element={<CommonLoad/>} />
           <Route path="/tt/:generatedLink/addlunchload" element={<LunchLoad/>} />
+          <Route path="/tt/:generatedLink/editmasterfaculty" element={<EditMasterFaculty/>} />
 
           <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
-          <Route path="/tt/viewtimetable" element={<LockedView/>} />
+          
+          {/* Same link */}
+          <Route path="classrooms" element={<ViewMRooms/>} />
+          {/* Same link */}
+
+          {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
-          <Route path="/tt/masterview" element={<MasterView/>}/>
+          <Route path="/tt/masterview" element={<MasterView />} />
+
+          {/* Same link */}
+          <Route path="timetable" element={<MasterView/>}/>
+          {/* Same link */}
+
+          <Route path="/tt/admin/view" element={<View />} />
           <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
           <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad/>}/>
          
@@ -114,11 +132,14 @@ function App() {
           <Route path="/cm/dashboard" element={<CMDashboard />} />
           <Route path="/cm/:eventid" element={<CertificateForm/>}/>
           <Route path="/cm/:eventid/addparticipant" element={<Participant/>}/>
+          <Route path="/cm/c/:eventid/:participantid" element={<Template01/>}/>
+          <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
+
 
           {/* Conference Module Admin-Panel */}
           
-          <Route path="/cf/adminpanel" element={<ConferencePage />} />
-         <Route path="/cf/adminpanel/:confid" element={<Sidebar  />}>
+          <Route path="/cf" element={<ConferencePage />} />
+          <Route path="/cf/:confid" element={<Sidebar  />}>
           <Route index element={<HomeConf />} />
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
@@ -136,12 +157,6 @@ function App() {
 
 
           </Route>
-
-
-
-
-        
-
         </Routes>
         {/* <Footer/> */}
       {/* </div> */}

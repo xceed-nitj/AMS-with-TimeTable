@@ -10,13 +10,13 @@ const otpGenerator = require("otp-generator");
 const dotenv = require("dotenv"); // Corrected import
 const fs = require("fs");
 const ejs = require("ejs");
-const mailSender = require("./mailsender");
+// const mailSender = require("./mailsender");
 const path = require("path");
-const ejsTemplatePath = path.join(__dirname, "otpBody.ejs");
+// const ejsTemplatePath = path.join(__dirname, "otpBody.ejs");
 dotenv.config();
 
 exports.register = async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password,roles } = req.body;
   console.log(req);
 
   if (!password || password.length < 6) {
@@ -36,6 +36,7 @@ exports.register = async (req, res, next) => {
         const user = await User.create({
           email,
           password: hash,
+          role:roles,
         });
 
         // Generate a JWT token

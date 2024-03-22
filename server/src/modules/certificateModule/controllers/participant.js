@@ -43,7 +43,10 @@ class AddparticipantController {
         position: newparticipant.position,
         title1: newparticipant.title1,
         title2: newparticipant.title2,
+        mailId: newparticipant.mailId,
+        certiType: newparticipant.certiType,
         eventId: eventId,
+        isCertificateSent: false,
       });
 
       return createdCertificate;

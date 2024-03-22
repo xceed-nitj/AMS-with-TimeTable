@@ -21,6 +21,10 @@ const subjectSchema = new mongoose.Schema({
     type:String,
     required:true,
   },
+  studentCount:{
+    type:Number,
+    required:true,
+  },
   sem: {
     type: String,
     required: true,
@@ -40,7 +44,7 @@ const subjectSchema = new mongoose.Schema({
   code:{
     type: String,
     required: false,
-  }
+  },
 });
 
 

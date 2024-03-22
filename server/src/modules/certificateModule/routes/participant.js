@@ -3,6 +3,9 @@ const participantRouter = express.Router();
 const ParticipantController = require("../controllers/participant");
 const participantController = new ParticipantController();
 const multer = require('multer');
+const ecmadminRoute = require("../../usermanagement/ecmadminroute");
+const LockStatus = require("../helper/lockstatus");
+
 
 const storage = multer.memoryStorage({
   destination: (req, file, cb) => {
@@ -16,10 +19,10 @@ const storage = multer.memoryStorage({
 const upload = multer({ storage: storage });
 
 // Route to create a new Batch participant
-participantRouter.post("/",upload.single('csvfile'), async (req, res) => {
+participantRouter.post("/batchupload/:eventId",ecmadminRoute,LockStatus,upload.single('csvfile'), async (req, res) => {
   try {
     const fileBuffer = req.file.buffer;
-    await participantController.addBatchparticipant(fileBuffer,req.query?.eventId);
+    await participantController.addBatchparticipant(fileBuffer,req.params?.eventId);
     return res.status(200).json({message: 'Data added succesfully'});
   } 
   catch (e) {
@@ -30,9 +33,9 @@ participantRouter.post("/",upload.single('csvfile'), async (req, res) => {
 });
 
 // Route to create a new participant
-participantRouter.post("/addparticipant/:eventId", async (req, res) => {
+participantRouter.post("/addparticipant/:eventId",ecmadminRoute,LockStatus, async (req, res) => {
   try {
-    const newparticipant=await participantController.addparticipant(req.body);
+    const newparticipant=await participantController.addparticipant(req.body,req.params.eventId);
     return res.status(200).json(newparticipant);
   } 
   catch (e) {
@@ -56,7 +59,7 @@ participantRouter.get("/getparticipant/:eventId", async (req, res) => {
 });
 
 // Route to get a specific participant by ID
-participantRouter.get("/:participantId", async (req, res) => {
+participantRouter.get("/getoneparticipant/:participantId", async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     const participant = await participantController.getparticipantById(participantId);
@@ -70,7 +73,7 @@ participantRouter.get("/:participantId", async (req, res) => {
 });
 
 // Route to update a specific participant by ID
-participantRouter.put('/addparticipant/:participantId', async (req, res) => {
+participantRouter.put('/addparticipant/:participantId',ecmadminRoute,LockStatus, async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     const updatedParticipant = req.body;
@@ -85,7 +88,7 @@ participantRouter.put('/addparticipant/:participantId', async (req, res) => {
 });
 
 // Route to delete a specific participant by ID
-participantRouter.delete("/deleteparticipant/:participantId", async (req, res) => {
+participantRouter.delete("/deleteparticipant/:participantId",ecmadminRoute,LockStatus, async (req, res) => {
   try {
     const participantId = req.params?.participantId;
     await participantController.deleteparticipantById(participantId);
@@ -97,6 +100,4 @@ participantRouter.delete("/deleteparticipant/:participantId", async (req, res) =
       .json({ error: e?.message || "Internal Server Error" });
   }
 });
-
-
 module.exports = participantRouter;

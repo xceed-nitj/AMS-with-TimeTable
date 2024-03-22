@@ -5,24 +5,25 @@ class AddcertificateController {
   async addcertificate(eventId,newCertificate) {
     
     try {
-
+      console.log(newCertificate)
       // Check if a certificate with the given event ID already exists
       const existingCertificate = await certificate.findOne({
-        eventId: eventId,
+        eventId: eventId, certiType:newCertificate.certiType
       });
 
       if (existingCertificate) {
         // If exists, update the existing certificate
         const updatedCertificate=await certificate.updateOne(
-          { eventId: eventId },
-          {new: true},
+          { eventId: eventId, certiType:newCertificate.certiType },
           {
             $set: {
               logos: newCertificate.logos,
+              certiType: newCertificate.certiType,
               header: newCertificate.header,
               body: newCertificate.body,
               footer: newCertificate.footer,
               signatures: newCertificate.signatures,
+              templateId: newCertificate.templateId,
             },
           }
         );
@@ -37,6 +38,8 @@ class AddcertificateController {
           body: newCertificate.body,
           footer: newCertificate.footer,
           signatures: newCertificate.signatures,
+          certiType: newCertificate.certiType,
+          templateId: newCertificate.templateId,
           eventId: eventId,
         });
 
@@ -68,12 +71,12 @@ class AddcertificateController {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
   }
-  async getcertificateByEventId(id) {
+  async getcertificateByEventId(id,type) {
     if (!id) {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      const data = await certificate.find({ eventId: id });
+      const data = await certificate.find({ eventId: id, certiType: type });
       if (!data) throw new HttpException(400, "certificate does not exist");
       return data;
     } catch (e) {

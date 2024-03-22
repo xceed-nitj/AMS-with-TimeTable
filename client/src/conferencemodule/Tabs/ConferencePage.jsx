@@ -165,7 +165,7 @@ const ConferencePage = () => {
                                     <Td><Center>{item.name}</Center></Td>
                                     <Td><Center>{item.email}</Center></Td>
                                     <Td><Center>
-                                        <Link key={item._id} to={`/cf/adminpanel/${item._id}`}>
+                                        <Link key={item._id} to={`/cf/${item._id}`}>
                                             <CustomLink >
                                                 Click Here
                                             </CustomLink>

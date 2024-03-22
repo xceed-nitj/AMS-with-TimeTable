@@ -6,14 +6,22 @@ import {
   FormLabel,
   Input,
   Select,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
 } from '@chakra-ui/react';
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
 import Header from "../../components/header";
 
+
 const EventRegistration = () => {
   const toast = useToast();
   const apiUrl = getEnvironment();
+  const [events, setEvents]=useState([]);
 
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
@@ -28,13 +36,25 @@ const EventRegistration = () => {
         const response = await fetch(`${apiUrl}/user/getuser/all`, { credentials: 'include' });
         const data = await response.json();
         setUsers(data.user);
-        console.log(data)
+        // console.log(data)
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    const fetchAllEvents = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/certificatemodule/addevent/`, { credentials: 'include' });
+        const data = await response.json();
+        setEvents(data);
+        // console.log(data)
       } catch (error) {
         console.error('Error fetching users:', error);
       }
     };
 
     fetchUsers();
+    fetchAllEvents();
+
   }, []);
 
   const handleChange = (e) => {
@@ -59,10 +79,18 @@ const EventRegistration = () => {
         credentials: 'include', 
         body: JSON.stringify(formData),
       });
-
+console.log(formData)
       if (response.ok) {
         const responseData = await response.json();
         console.log(responseData);
+        toast({
+          title: "Event Added",
+          description: "Event assigned to the selected user",
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
+     
       } else {
         console.error('Error submitting form:', response.statusText);
       }
@@ -100,7 +128,7 @@ const EventRegistration = () => {
         </FormControl>
 
         <FormControl mb="4">
-          <FormLabel>Expiry Date</FormLabel>
+          <FormLabel>Event Date</FormLabel>
           <Input
             type="date"
             name="ExpiryDate"
@@ -111,6 +139,26 @@ const EventRegistration = () => {
 
         <Button type="submit">Submit</Button>
       </form>
+
+      <Table variant="simple">
+        <Thead>
+          <Tr>
+            <Th>Event Name</Th>
+            <Th>User</Th>
+            <Th>Expiry Date</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {events.map((event) => (
+            <Tr key={event._id}>
+              <Td>{event.name}</Td>
+              <Td>{event.user}</Td>
+              <Td>{event.ExpiryDate}</Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
+
     </Container>
   );
 };

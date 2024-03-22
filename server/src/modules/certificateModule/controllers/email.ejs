@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Add your custom styles here */
+    body {
+      font-family: 'Arial', sans-serif;
+    }
+
+    .certificate {
+      margin: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .greeting {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .event-name {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .certificate-url {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .signature {
+      font-size: 16px;
+      /* margin-top: 30px; */
+    }
+  </style>
+  <title>Certificate</title>
+</head>
+
+<body>
+
+  <div class="certificate">
+    <div class="greeting">Dear <%= participantName %>,</div>
+    <div class="event-name">Please find below the link for the certificate of the event: <%= eventName %>
+    </div>
+    <div class="certificate-url">Certificate URL: <%= certificateURL %>
+    </div>
+    <div class="signature">
+      Thanks and Regards,<br>
+      Team XCEED-NITJ
+    </div>
+  </div>
+
+</body>
+
+</html>

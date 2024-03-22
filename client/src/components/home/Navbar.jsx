@@ -1,46 +1,45 @@
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
-// import { useState } from 'react';
 import { Link } from 'react-router-dom';
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
-import {
-  Box,
-  Flex,
-  Text,
-  ChakraProvider,
-  extendTheme,
-  Image,
-  Spacer,
-  Button,
-} from '@chakra-ui/react';
-import { Link as RouterLink } from 'react-router-dom';
-
+import { Text, Button, Flex } from '@chakra-ui/react';
 
 export default function Navbar() {
   const [navbarOpen, setNavbarOpen] = useState(false);
-  const theme = extendTheme({
-    components: {
-      Button: {
-        baseStyle: {
-          fontWeight: 'bold',
-        },
-      },
-    },
-  });
-  
+
   const apiUrl = getEnvironment();
-  
+
   const location = useLocation();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
+    const getUserDetails = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/user/getuser/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user details');
+        }
+
+        const userdetail = await response.json();
+        return userdetail;
+      } catch (error) {
+        console.error('Error fetching user details:', error.message);
+        throw error;
+      }
+    };
+
     const fetchUserDetails = async () => {
       try {
         const userDetails = await getUserDetails();
@@ -54,29 +53,7 @@ export default function Navbar() {
     };
 
     fetchUserDetails();
-  }, []);
-
-  const getUserDetails = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/user/getuser/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user details');
-      }
-
-      const userdetail = await response.json();
-      return userdetail;
-    } catch (error) {
-      console.error('Error fetching user details:', error.message);
-      throw error;
-    }
-  };
+  }, [apiUrl]);
 
   const handleLogout = async () => {
     try {
@@ -88,24 +65,14 @@ export default function Navbar() {
       if (!response.ok) {
         throw new Error('Failed to logout');
       }
-      // console.log("logoout message", response.message)
       navigate('/login');
     } catch (error) {
       console.error('Error during logout:', error.message);
     }
   };
 
-  const handleHover = () => {
-    setHovered(true);
-  };
+  const excludedRoutes = ['/login', '/cm/c'];
 
-  const handleLeave = () => {
-    setHovered(false);
-  };
-
-  const excludedRoutes = ['/login','/services'];
-
-  // const isExcluded = excludedRoutes.includes(location.pathname);
   const isExcluded = excludedRoutes.some((route) =>
     location.pathname.startsWith(route)
   );
@@ -113,9 +80,14 @@ export default function Navbar() {
   if (isLoading || isExcluded) {
     return null;
   }
-  
+
   return (
-    <nav className={`tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700 ${navbarOpen ? 'tw-h-screen' : ''}`} style={{ zIndex: 9999 }}>
+    <nav
+      className={`tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700 ${
+        navbarOpen ? 'tw-h-screen' : ''
+      }`}
+      style={{ zIndex: 9999 }}
+    >
       <div className="tw-max-w-screen-xl tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-mx-auto tw-p-4">
         <Link
           to="/"
@@ -142,16 +114,30 @@ export default function Navbar() {
           )}
           id="navbar-default"
         >
-          <ul className="tw-font-medium tw-flex tw-flex-col tw-items-center tw-p-4 md:tw-p-0 tw-mt-4 tw-border tw-rounded-lg tw-space-y-5 md:tw-space-y-0 md:tw-flex-row md:tw-space-x-8 rtl:tw-space-x-reverse md:tw-mt-0 md:tw-border-0 tw-bg-gray-900 tw-border-gray-700">
+          <ul className="tw-font-medium tw-flex tw-flex-col tw-items-center tw-p-4 md:tw-p-0 tw-mt-4 tw-border tw-rounded-lg tw-space-y-5 md:tw-space-y-0 md:tw-flex-row md:tw-space-x-8 rtl:tw-space-x-reverse md:tw-mt-0 md:tw-border-0 tw-bg-gray-900 tw-border-gray-700 tw-list-none">
             <li>
               <a
                 href="/"
-                className="tw-block tw-py-2 tw-px-3 tw-text-cyan-600 tw-rounded md:tw-bg-transparent md:tw-text-cyan-600 md:tw-p-0 dark:tw-text-cyan-300 md:dark:tw-text-cyan-300"
+                className="tw-block tw-py-2 tw-px-3 tw-text-cyan-300 tw-rounded md:tw-bg-transparent md:tw-text-cyan-300 md:tw-p-0 hover:tw-text-cyan-500"
                 aria-current="page"
               >
                 Home
               </a>
             </li>
+           
+
+
+            {isAuthenticated ? (
+            <li>
+              <a
+                href="/userroles"
+                className="tw-block tw-py-2 tw-px-3 tw-text-cyan-300 tw-rounded md:tw-bg-transparent md:tw-text-cyan-300 md:tw-p-0 hover:tw-text-cyan-500"
+                aria-current="page"
+              >
+                Dashboard
+              </a>
+            </li>
+              ) : null}
             <li>
               <a
                 href="/#services"
@@ -177,33 +163,34 @@ export default function Navbar() {
               </a>
             </li>
             <li>
-            {!isAuthenticated ? (
-              <Link
-                to="/login"
-                className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
-              >
-                Login
-              </Link>
-            ):null}
-              {/* <Box bg="black" py={1} px={2}> */}
-        {/* <Flex justify="space-between" align="center"> */}
-          
-          {/* <Spacer /> */}
-          {isAuthenticated ? (
-            <Text fontSize="sm" color="white">
-              {userDetails && (
+              {!isAuthenticated ? (
+                <Link
+                  to="/login"
+                  className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+                >
+                  Login
+                </Link>
+              ) : null}
+              {isAuthenticated && (
                 <>
-                  {userDetails.user.email}
-                  <Button colorScheme="white" size="sm" onClick={handleLogout}>
-                    Logout
-                  </Button>
+                  {userDetails && (
+                    <Flex align={'center'} gap={2}>
+                      <Text fontSize="sm" color="orange">
+                        {userDetails.user.email}
+                      </Text>
+
+                      <Button
+                        colorScheme="white"
+                        variant={'outline'}
+                        size="sm"
+                        onClick={handleLogout}
+                      >
+                        Logout
+                      </Button>
+                    </Flex>
+                  )}
                 </>
               )}
-            </Text>
-          ) : null}
-        {/* </Flex> 
-      </Box> */}
-
             </li>
           </ul>
         </div>

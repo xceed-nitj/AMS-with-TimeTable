@@ -1,5 +1,6 @@
 const express = require('express');
 const ConfController = require('../crud/conf');
+const protectRoute =require("../../usermanagement/privateroute")
 
 const router = express.Router();
 const confController = new ConfController();
@@ -10,10 +11,21 @@ const confController = new ConfController();
 // / PUT endpoint--> update data
 // /:id delete--> delete data
 // /:id GET endpoint--> get data by id
-
 router.get('/', async (req, res) => {
     try {
+        // const user=req.user;
         const resp = await confController.getConf();
+        res.status(200).json(resp);
+    } catch (e) {
+        console.error("Error retrieving conf items:", e);
+        res.status(e?.errorCode || 500).json({ error: e?.message || "Internal server error" });
+    }
+});
+
+router.get('/getconf', protectRoute, async (req, res) => {
+    try {
+        const user=req.user;
+        const resp = await confController.getConfByUser(user.email);
         res.status(200).json(resp);
     } catch (e) {
         console.error("Error retrieving conf items:", e);

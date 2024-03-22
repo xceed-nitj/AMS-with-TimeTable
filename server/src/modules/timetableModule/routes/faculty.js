@@ -7,7 +7,7 @@ const ttadminRoute=require("../../usermanagement/ttadminroute")
 const protectRoute =require("../../usermanagement/privateroute")
 
 
-facultyRouter.post("/",ttadminRoute,protectRoute, async (req, res) => {
+facultyRouter.post("/",protectRoute, async (req, res) => {
     try {
       await facultyController.createFaculty(req, res);
     } catch (e) {
@@ -60,7 +60,7 @@ facultyRouter.post("/",ttadminRoute,protectRoute, async (req, res) => {
     }
   });
   
-    facultyRouter.put('/:id',ttadminRoute, async (req, res) => {
+    facultyRouter.put('/:id',protectRoute, async (req, res) => {
       try {
         const facultyId = req.params.id;
         const updatedId = req.body;
@@ -75,7 +75,7 @@ facultyRouter.post("/",ttadminRoute,protectRoute, async (req, res) => {
       }
     });
 
-    facultyRouter.delete("/:id",ttadminRoute, async (req, res) => {
+    facultyRouter.delete("/:id",protectRoute, async (req, res) => {
       try {
         const facultyId = req.params.id;
         await facultyController.deleteId(facultyId);

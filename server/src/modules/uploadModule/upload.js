@@ -10,6 +10,8 @@ const modelPaths = {
   subject: "../../models/subject",
   masterroom: "../../models/masterroom",
   mastersem: "../../models/mastersem",
+  participant: "../../models/certificateModule/participant",
+  
 };
 
 // Set up Multer for file uploads
@@ -24,7 +26,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Functions for different objectTypes to find duplicates
 async function findDuplicatesByType(objectType, code) {
   if (objectType === 'subject') {
     return await findDuplicateSubjects(code);
@@ -48,11 +49,23 @@ router.post('/:objectType', upload.single('csvFile'), async (req, res) => {
     const mongooseSchema = require(modelPaths[objectType]);
 
     for (const row of sheet) {
-      const currentCode = req.body.code;
+      const currentCode = req.body?.code;
+      if(currentCode){
       row.code=currentCode;
+      }
+      const eventId=req.body?.eventId;
+      if(eventId)
+      {
+      row.eventId=eventId;
+      }
+      if (objectType === 'subject') {
+        const validTypes = ["theory", "tutorial", "lab", "project"];
+        if (!validTypes.includes(row.type.toLowerCase())) {
+          return res.status(200).json({ message: `Invalid 'type' value '${row.type}' in row,it can be "tutorial","laboratory","project","theory".` });
+        }
+      }
 
       const duplicates = await findDuplicatesByType(objectType, currentCode);
-
       if (duplicates.length > 0) {
         if (!duplicateSet.has(objectType)) {
           duplicateSet.set(objectType, new Set());
