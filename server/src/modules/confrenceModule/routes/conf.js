@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
 router.get('/getconf', protectRoute, async (req, res) => {
     try {
         const user=req.user;
+        console.log(user);
         const resp = await confController.getConfByUser(user.email);
         res.status(200).json(resp);
     } catch (e) {

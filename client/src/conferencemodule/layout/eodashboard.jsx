@@ -77,7 +77,7 @@ function EODashboard() {
                 <CustomLink
                   href={`http://${domainName}/cf/${event._id}`}
                   // Optional: If you want to open the link in a new tab
-                ></CustomLink>
+                >Adminpanel</CustomLink>
               </Td>
             </Tr>
           ))}
