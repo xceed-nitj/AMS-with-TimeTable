@@ -35,6 +35,6 @@ const locationSchema = new mongoose.Schema({
 );
 
 // Create the Mongoose model
-const Location = mongoose.model("Location", locationSchema);
+const Location = mongoose.model("cf-location", locationSchema);
 
 module.exports = Location;

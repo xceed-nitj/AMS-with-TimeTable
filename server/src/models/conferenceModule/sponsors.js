@@ -29,6 +29,6 @@ const sponsorsSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const Sponsors = mongoose.model("Sponsors", sponsorsSchema);
+const Sponsors = mongoose.model("cf-sponsor", sponsorsSchema);
 
 module.exports = Sponsors;

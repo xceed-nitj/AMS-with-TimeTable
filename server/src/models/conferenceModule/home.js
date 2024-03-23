@@ -32,6 +32,6 @@ const homeSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const Home = mongoose.model("Home", homeSchema);
+const Home = mongoose.model("cf-home", homeSchema);
 
 module.exports = Home;
