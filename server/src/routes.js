@@ -18,7 +18,7 @@ const attendanceModule = require("./modules/attendanceModule/routes/index");
 v1router.use("/attendancemodule", attendanceModule);
 
 const reviewModule = require("./modules/reviewModule/routes/index");
-v1router.use("/review", reviewModule);
+v1router.use("/reviewmodule", reviewModule);
 
 const usermanagementModule = require("./modules/usermanagement/routes/routes");
 v1router.use("/auth", usermanagementModule);

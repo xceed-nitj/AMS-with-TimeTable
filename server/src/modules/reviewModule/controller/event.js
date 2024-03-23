@@ -2,6 +2,7 @@ const Event = require("../../../models/reviewModule/event.js");
 const express = require("express");
 const bodyParser = require("body-parser");
 
+
 const app = express();
 app.use(
   bodyParser.urlencoded({
@@ -11,23 +12,16 @@ app.use(
 app.use(bodyParser.json());
 
 const addEvent = async (req, res) => {
-  const { type, startDate, endDate, editor, paperSubmissionDate, reviewTime } =
+  const { name, startDate, endDate, editor, paperSubmissionDate, reviewTime,instructions } =
     req.body;
 
   try {
     const newEvent = new Event({
-      type: type,
-      dates: {
-        fromDate: startDate,
-        toDate: endDate,
-      },
+      name:name,
       editor: editor,
-      paperSubmissionDate: paperSubmissionDate,
-      reviewTime: reviewTime,
-    });
-
+      });
     await newEvent.save();
-    res.status(200).send("New event is created");
+    res.status(200).send(newEvent);
   } catch (error) {
     res.status(500).send(error);
   }
@@ -35,14 +29,26 @@ const addEvent = async (req, res) => {
 const getEvents = async (req, res) => {
   try {
     const events = await Event.find({}).populate('editor').exec();
-
-    res.status(200).send(events);
+    console.log(events)
+    res.status(200).json(events);
   } catch (error) {
     res.status(500).send(error);
   }
 };
 
-const getEvent = async (req, res) => {
+const getEventsByUser = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const events = await Event.find({ 'editor': { $in: [userId] } }).exec();
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+
+
+const getEventById = async (req, res) => {
   const id = req.params.id;
 
   if (!id) {
@@ -105,4 +111,4 @@ const addEditor = async (req, res) => {
   }
 };
 
-module.exports = { getEvents, addEvent, getEvent, deleteEvent, updateEvent, addEditor};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, addEditor};
