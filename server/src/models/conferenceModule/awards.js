@@ -41,6 +41,6 @@ const awardsSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const Awards = mongoose.model("Awards", awardsSchema);
+const Awards = mongoose.model("cf-awards", awardsSchema);
 
 module.exports = Awards;

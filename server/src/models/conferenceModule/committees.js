@@ -45,6 +45,6 @@ const committeeSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const Committee = mongoose.model("Committee", committeeSchema);
+const Committee = mongoose.model("cf-committee", committeeSchema);
 
 module.exports = Committee;

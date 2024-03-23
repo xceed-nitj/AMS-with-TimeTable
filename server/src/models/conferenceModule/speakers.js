@@ -53,6 +53,6 @@ const speakersSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const Speakers = mongoose.model("Speakers", speakersSchema);
+const Speakers = mongoose.model("cf-speaker", speakersSchema);
 
 module.exports = Speakers;
