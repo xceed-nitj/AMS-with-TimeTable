@@ -2000,6 +2000,11 @@ attr-accept@^1.0.3:
   dependencies:
     core-js "^2.5.0"
 
+autobind-decorator@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/autobind-decorator/-/autobind-decorator-2.4.0.tgz#ea9e1c98708cf3b5b356f7cf9f10f265ff18239c"
+  integrity sha512-OGYhWUO72V6DafbF8PM8rm3EPbfuyMZcJhtm5/n26IDwO18pohE4eNazLoCGhPiXOCD0gEGmrbU3849QvM8bbw==
+
 autoprefixer@^10.4.16:
   version "10.4.16"
   resolved "https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.4.16.tgz"
@@ -3750,6 +3755,20 @@ jiti@^1.19.1:
   version "1.21.0"
   resolved "https://registry.npmjs.org/jiti/-/jiti-1.21.0.tgz"
   integrity sha512-gFqAIbuKyyso/3G2qhiO2OM6shY6EPP/R0+mkDbyspxKazh8BXDC5FiFsUjlczgdNz/vfra0da2y+aHrusLG/Q==
+
+jodit-react@^4.0.15:
+  version "4.0.15"
+  resolved "https://registry.yarnpkg.com/jodit-react/-/jodit-react-4.0.15.tgz#183161d36177e0173b0e77f22c4491fd963b04f4"
+  integrity sha512-wcqz71yI8K2/ZIK9rMfUTRpRHZqe2Far+sd+waswADJkslxfnBhFZg/vz+9WIqT3lq42KbdZsqogMPU1JW9SrQ==
+  dependencies:
+    jodit "^4.0.18"
+
+jodit@^4.0.18:
+  version "4.0.18"
+  resolved "https://registry.yarnpkg.com/jodit/-/jodit-4.0.18.tgz#353e5a9de012b26891ca39789c83f3f8ec481220"
+  integrity sha512-S2Eorn+7ZhIFEaPMDwoBpLhTwli/NP9FwSWY7AbsBvAy3nnltwczxRkcfXGCYyrdlqua1Mml3MPTuQtOT8SGBg==
+  dependencies:
+    autobind-decorator "^2.4.0"
 
 "js-tokens@^3.0.0 || ^4.0.0", js-tokens@^4.0.0:
   version "4.0.0"

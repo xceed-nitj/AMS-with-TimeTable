@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -9,19 +9,13 @@ import {
     Input, Button, Select
 } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
-import {
-    Table,
-    TableContainer,
-    Tbody,
-    Td,
-    Th,
-    Thead,
-    Tr,
-} from "@chakra-ui/table";
+import {Table,TableContainer,Tbody,Td,Th,Thead,Tr,} from "@chakra-ui/table";
+import JoditEditor from 'jodit-react';
+
 const Announcement = () => {
     const params = useParams();
     const apiUrl = getEnvironment();
-
+    const ref = useRef(null);
     const IdConf = params.confid;
     const initialData = {
         "confId": IdConf,
@@ -42,7 +36,12 @@ const Announcement = () => {
 
     const { title, metaDescription, description, link, sequence } = formData;
 
-
+    const handleEditorChange = (value) => {
+        setFormData({
+            ...formData,
+            description: value,
+        });
+    };
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "sequence") {
@@ -185,13 +184,21 @@ const Announcement = () => {
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >Description :</FormLabel>
-                    <Input
+                    {/* <Input
                         type="text"
                         name="description"
                         value={description}
                         onChange={handleChange}
                         placeholder="Description"
                         mb='2.5'
+                    /> */}
+
+                    <JoditEditor
+                        ref={ref}
+                        value={description}
+                        name="description"
+                        onChange={handleEditorChange}
+                        classname='tw-mb-5'
                     />
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
@@ -272,7 +279,6 @@ const Announcement = () => {
                                 <Tr>
                                     <CustomTh> Title</CustomTh>
                                     <CustomTh>Meta Description</CustomTh>
-                                    <CustomTh>Description</CustomTh>
                                     <CustomTh>Link</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
 
@@ -285,7 +291,6 @@ const Announcement = () => {
                                     <Tr key={item._id}>
                                         <Td><Center>{item.title}</Center></Td>
                                         <Td><Center>{item.metaDescription}</Center></Td>
-                                        <Td><Center>{item.description}</Center></Td>
                                         <Td><Center>{item.link}</Center></Td>
 
                                         <Td><Center>{item.sequence}</Center></Td>
@@ -301,7 +306,7 @@ const Announcement = () => {
                                     </Tr>))) :
                                     (
                                         <Tr>
-                                            <Td colSpan="6" className="tw-p-1 tw-text-center">
+                                            <Td colSpan="5" className="tw-p-1 tw-text-center">
                                                 <Center>No data available</Center></Td>
                                         </Tr>
                                     )
