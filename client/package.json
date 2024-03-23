@@ -26,6 +26,7 @@
     "framer-motion": "^10.16.16",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.1",
+    "jodit-react": "^4.0.15",
     "jspdf": "^2.5.1",
     "node": "^21.1.0",
     "papaparse": "^5.4.1",
