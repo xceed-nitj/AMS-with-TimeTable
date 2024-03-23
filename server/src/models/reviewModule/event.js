@@ -6,31 +6,28 @@ const eventSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true,
     },*/
-    type: {
+    name: {
         type: String,
         required: true,
     },
     dates:{
         fromDate:{
             type: Date,
-            required: true,
         },
         toDate:{
             type: Date,
-            required: true,
         },
     },
     editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     paperSubmissionDate:{
         type: Date,
-        required: true,
     },
     reviewTime:{
         type: String, 
-        required: true,
-    }
+    },
+    instructions:{type:String},
 });
 
-const Event = mongoose.model("Event", eventSchema);
+const Event = mongoose.model("PRS-Event", eventSchema);
 
 module.exports = Event;

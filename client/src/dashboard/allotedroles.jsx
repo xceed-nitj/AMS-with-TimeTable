@@ -105,8 +105,8 @@ const AllocatedRolesPage = () => {
                             </ChakraLink>
                           ) : null}
 
-{role === "PRS" ? (
-                            <ChakraLink href="/prs/dashboard" color="teal.500">
+{role === "PRM" ? (
+                            <ChakraLink href="/prm/dashboard" color="teal.500">
                               Review Manager
                             </ChakraLink>
                           ) : null}
