@@ -65,6 +65,8 @@ import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
 
+import PRMEventRegistration from './reviewmodule/pages/eventregistration';
+import PRMDashboard from './reviewmodule/pages/prmdashboard';
 
 function App() {
   return (
@@ -137,6 +139,10 @@ function App() {
           <Route path="/cm/c/:eventid/:participantid" element={<Template01/>}/>
           <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
 
+{/* Review management routes*/}
+<Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
+<Route path="/prm/dashboard" element={<PRMDashboard/>} />
+
 
           {/* Conference Module Admin-Panel */}
           <Route path="/cf/dashboard" element={<EODashboard/>} />
@@ -156,6 +162,8 @@ function App() {
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
           <Route path="template" element={<CommonTemplate/>} />
+
+
 
           </Route>
         </Routes>
