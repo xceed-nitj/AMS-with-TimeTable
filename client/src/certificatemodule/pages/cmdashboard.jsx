@@ -29,39 +29,7 @@ function CMDashboard() {
   const [sessions, setSessions] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [isEventLocked, setEventLocked] = useState(false);
-  const [certificates, setCertificates] = useState([]);
-  const [certificateCount,setCertificateCount]=useState(0)
 
-  // Function to fetch certificates for a specific event
-  const fetchCertificates = async (eventId) => {
-    try {
-      const url = `${apiUrl}/certificatemodule/addevent/getcertificates/${eventId}`;
-      console.log("Fetching certificates with URL:", url);
-  
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
-  
-      if (response.ok) {
-        const data = await response.json();
-        setCertificates(data);
-      } else {
-        console.error(`Failed to fetch certificates for event ${eventId}`);
-      }
-    } catch (error) {
-      console.error("Error fetching certificates:", error);
-    }
-  };
-    // Update the useEffect to fetch certificates when the component mounts
-  useEffect(() => {
-    console.log("Fetching events with apiUrl:", apiUrl);
-    fetchEvents();
-  }, [apiUrl, isEventLocked]);
-  
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const fetchEvents = async () => {
@@ -75,12 +43,11 @@ function CMDashboard() {
       });
   
       // console.log("Response status:", response.status);
-      
+  
       if (response.ok) {
         const data = await response.json();
         // console.log(data)
-        setTable(data.data);
-        setCertificateCount(data.totalCount)
+        setTable(data);
       } else {
         console.error("Failed to fetch timetables");
       }
@@ -138,9 +105,6 @@ function CMDashboard() {
   return (
     <Container maxW='5xl'>
         <Header title="List of Events"></Header>
-        <p>
-          Count of Certificates Generated: {certificateCount}
-        </p>
       <TableContainer>
         <Table
         variant='striped'
@@ -191,12 +155,7 @@ function CMDashboard() {
                 // target="_blank" // Optional: If you want to open the link in a new tab
               >
                 {event.name} participants
-              </CustomLink>
-              <Button onClick={() => fetchCertificates(event._id)}>
-              Fetch Certificates
-            </Button>
-
-              </Center>):
+              </CustomLink></Center>):
                 (  <Center>
                   Participants Locked
                 </Center>)}

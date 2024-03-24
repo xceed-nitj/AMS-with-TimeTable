@@ -87,5 +87,4 @@ certificateRouter.delete("/:certificateId",ecmadminRoute,LockStatus, async (req,
 });
 
 
-
 module.exports = certificateRouter;
