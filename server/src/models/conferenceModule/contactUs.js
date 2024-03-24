@@ -9,41 +9,32 @@ const contactUsSchema = new mongoose.Schema({
   },
   title: {
     type: String,
-    required: true,
   },
   name: {
     type: String,
-    required: true,
   },
   designation: {
     type: String,
-    required: true,
   },
   imgLink: String,
   institute: {
     type: String,
-    required: true,
   },
   profileLink: {
     type: String,
-    required: true,
   },
   phone: {
     type: String,
-    required: true,
   },
   email: {
     type: String,
-    required: true,
   },
   fax: String,
   feature: {
     type: Boolean,
-    required: true,
   },
   sequence: {
     type: Number,
-    required: true,
   }}, { timestamps: true }
   
 );

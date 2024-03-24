@@ -14,11 +14,9 @@ const imageSchema = new mongoose.Schema({
   },
   feature: {
     type: Boolean,
-    required: true,
   },
   sequence: {
     type: Number,
-    required: true,
   }}, { timestamps: true }
 );
 

@@ -9,27 +9,21 @@ const locationSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
   },
   address: {
     type: String,
-    required: true,
   },
   latitude: {
     type: String,
-    required: true,
   },
   longitude: {
     type: String,
-    required: true,
   },
   feature: {
     type: Boolean,
-    required: true,
   },
   sequence: {
     type: Number,
-    required: true,
   }}, { timestamps: true }
 
 );

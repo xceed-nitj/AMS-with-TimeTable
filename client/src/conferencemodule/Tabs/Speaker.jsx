@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useRef } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -8,6 +8,8 @@ import {
     FormControl, FormErrorMessage, FormLabel, Center, Heading,
     Input, Button, Select
 } from '@chakra-ui/react';
+import JoditEditor from 'jodit-react';
+
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
 import {
     Table,
@@ -22,6 +24,7 @@ const Speaker = () => {
     const params = useParams();
     const IdConf = params.confid;
     const apiUrl = getEnvironment();
+    const ref = useRef(null);
 
 
     // Define your initial data here
@@ -70,6 +73,13 @@ const Speaker = () => {
             });
         }
 
+    };
+
+    const handleEditorChange = (value, fieldName) => {
+        setFormData({
+            ...formData,
+            [fieldName]: value,
+        });
     };
     const handleSubmit = (e) => {
         // e.preventDefault();
@@ -234,24 +244,24 @@ const Speaker = () => {
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >Bio of the Speaker :</FormLabel>
-                    <Input
-                        type="text"
-                        name="Bio"
+                    
+                    <JoditEditor
+                        ref={ref}
                         value={Bio}
-                        onChange={handleChange}
-                        placeholder="Bio"
-                        mb='2.5'
+                        name="Bio"
+                        onChange={(value) => handleEditorChange(value, "Bio")}
+                        classname='tw-mb-5'
                     />
                 </FormControl>
                 <FormControl isRequired={true}  >
                     <FormLabel >Abstract :</FormLabel>
-                    <Input
-                        type="text"
-                        name="Abstract"
+                    
+                    <JoditEditor
+                        ref={ref}
                         value={Abstract}
-                        onChange={handleChange}
-                        placeholder="Abstract"
-                        mb='2.5'
+                        name="Abstract"
+                        onChange={(value) => handleEditorChange(value, "Abstract")}
+                        classname='tw-mb-5'
                     />
                 </FormControl>
                 <FormControl isRequired={true}  >

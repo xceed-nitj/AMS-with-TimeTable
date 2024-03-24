@@ -8,23 +8,18 @@ const sponsorsSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: true,
   },
   type: {
     type: String,
-    required: true,
   },
   logo: {
     type: String,
-    required: true,
   },
   sequence: {
     type: Number,
-    required: true,
   },
   featured: {
     type: Boolean,
-    required: true,
   },
 });
 
