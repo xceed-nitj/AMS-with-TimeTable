@@ -2,17 +2,19 @@ const HttpException = require("../../../models/http-exception");
 const certificate = require("../../../models/certificateModule/certificate");
 
 class AddcertificateController {
+
+
+
   async addcertificate(eventId,newCertificate) {
     
     try {
       console.log(newCertificate)
-      // Check if a certificate with the given event ID already exists
       const existingCertificate = await certificate.findOne({
         eventId: eventId, certiType:newCertificate.certiType
       });
 
       if (existingCertificate) {
-        // If exists, update the existing certificate
+        
         const updatedCertificate=await certificate.updateOne(
           { eventId: eventId, certiType:newCertificate.certiType },
           {
@@ -42,6 +44,7 @@ class AddcertificateController {
           templateId: newCertificate.templateId,
           eventId: eventId,
         });
+        
 
         return createdCertificate
       }
@@ -54,6 +57,7 @@ class AddcertificateController {
     try {
       const certificateList = await certificate.find();
       return certificateList;
+
     } catch (e) {
       throw new HttpException(500,e)
     }
