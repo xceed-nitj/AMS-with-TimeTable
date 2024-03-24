@@ -1,6 +1,5 @@
 const HttpException = require("../../../models/http-exception");
 const addEvent = require("../../../models/certificateModule/addevent");
-const certificate=require('../../../models/certificateModule/certificate')
 
 class AddEventController {
   async addEvent(data) {
@@ -70,36 +69,10 @@ class AddEventController {
       throw new HttpException(400, "Invalid User");
     }
     try {
-      // console.log(user)
-      const data = await addEvent.find({user: user})
-
-      const eventIds=[]
-
-      data.forEach((event)=>{
-        eventIds.push(event._id.toString())
-      })
-
-      const count=await certificate.aggregate([
-        {
-          $match:{
-            eventId: {$in: eventIds}
-          }
-        },
-        {
-          $group:{
-            _id: 0,
-            total: {$sum: 1}
-          }
-        }
-      ])
-
-      const totalCount=count[0].total
-
-      
+      console.log(user)
+      const data = await addEvent.find({ user: user });
       if (!data) throw new HttpException(400, "Event does not exist");
-      // return data
-      return {data: data,totalCount: totalCount};
-
+      return data;
     } catch (e) {
       throw new HttpException(500, e);
     }

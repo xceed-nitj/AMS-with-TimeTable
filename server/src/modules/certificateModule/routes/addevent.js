@@ -5,7 +5,7 @@ const addEventController = new AddEventController();
 const protectRoute = require("../../usermanagement/privateroute");
 const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
-const certificateController=require("../controllers/certificate");
+
 // Route to create a new event
 addEventRouter.post("/",ecmadminRoute, async (req, res) => {
   try {
@@ -82,7 +82,6 @@ addEventRouter.post("/lock/:id", ecmadminRoute, async (req, res) => {
       .json({ error: e?.message || "Internal Server Error" });
   }
 });
-
 
 
 module.exports = addEventRouter;
