@@ -8,35 +8,27 @@ const awardsSchema = new mongoose.Schema({
   },
   title1: {
     type: String,
-    required: true,
   },
   title2: {
     type: String,
-    required: true,
   },
   description: {
     type: String,
-    required: true,
   },
   sequence: {
     type: Number,
-    required: true,
   },
   featured: {
     type: Boolean,
-    required: true,
   },
   new: {
     type: Boolean,
-    required: true,
   },
   hidden: {
     type: Boolean,
-    required: true,
   },
   link: {
     type: String,
-    required: true,
   },
 });
 

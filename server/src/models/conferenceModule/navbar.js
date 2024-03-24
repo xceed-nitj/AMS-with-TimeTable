@@ -8,19 +8,15 @@ const navbarSchema = new mongoose.Schema({
   },
   heading: {
     type: String,
-    required: true,
   },
   subHeading: {
     type: String,
-    required: true,
   },
   url: {
     type: String,
-    required: true,
   },
   name: {
     type: String,
-    required: true,
   },
 });
 

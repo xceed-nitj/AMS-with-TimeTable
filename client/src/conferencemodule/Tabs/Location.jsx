@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useRef } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -18,10 +18,13 @@ import {
     Thead,
     Tr,
 } from "@chakra-ui/table";
+import JoditEditor from 'jodit-react';
+
 const Location = () => {
     const params = useParams();
     const IdConf = params.confid;
     const apiUrl = getEnvironment();
+    const ref = useRef(null);
 
     const initialData = {
         "confId": IdConf,
@@ -63,7 +66,12 @@ const Location = () => {
             });
         }
     };
-
+    const handleEditorChange = (value) => {
+        setFormData({
+            ...formData,
+            description: value,
+        });
+    };
     const handleSubmit = (e) => {
         // e.preventDefault();
 
@@ -147,13 +155,12 @@ const Location = () => {
 
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >Description:</FormLabel>
-                    <Input
-                        type="text"
-                        name="description"
+                    <JoditEditor
+                        ref={ref}
                         value={description}
-                        onChange={handleChange}
-                        placeholder="Description"
-                        mb='2.5'
+                        name="description"
+                        onChange={handleEditorChange}
+                        classname='tw-mb-5'
                     />
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >

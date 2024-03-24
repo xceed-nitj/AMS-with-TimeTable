@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useRef} from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -8,6 +8,8 @@ import {
     FormControl, FormErrorMessage, FormLabel, Center, Heading,
     Input, Button, Select
 } from '@chakra-ui/react';
+import JoditEditor from 'jodit-react';
+
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
 import {
     Table,
@@ -21,6 +23,7 @@ import {
 const Awards = () => {
     const params = useParams();
   const apiUrl = getEnvironment();
+  const ref = useRef(null);
 
     const IdConf = params.confid;
     const initialData = {
@@ -65,7 +68,12 @@ const Awards = () => {
             });
         }
     };
-
+    const handleEditorChange = (value) => {
+        setFormData({
+            ...formData,
+            description: value,
+        });
+    };
     const handleSubmit = (e) => {
         // e.preventDefault();
 
@@ -173,13 +181,12 @@ const Awards = () => {
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >Description :</FormLabel>
-                    <Input
-                        type="text"
-                        name="description"
+                    <JoditEditor
+                        ref={ref}
                         value={description}
-                        onChange={handleChange}
-                        placeholder="Description"
-                        mb='2.5'
+                        name="description"
+                        onChange={handleEditorChange}
+                        classname='tw-mb-5'
                     />
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >

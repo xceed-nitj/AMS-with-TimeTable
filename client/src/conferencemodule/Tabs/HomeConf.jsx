@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -17,8 +17,11 @@ import {
     Thead,
     Tr,
 } from "@chakra-ui/table";
+import JoditEditor from 'jodit-react';
+
 const HomeConf = () => {
     const navigate = useNavigate();
+    const ref = useRef(null);
 
     const params = useParams();
     const apiUrl = getEnvironment();
@@ -73,7 +76,12 @@ const HomeConf = () => {
         }
 
     };
-
+    const handleEditorChange = (value, fieldName) => {
+        setFormData({
+            ...formData,
+            [fieldName]: value,
+        });
+    };
     const handleUpdate = () => {
         axios.put(`${apiUrl}/conferencemodule/home/${editID}`, formData, {
             withCredentials: true
@@ -175,24 +183,28 @@ const HomeConf = () => {
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >About the Conference :</FormLabel>
-                    <Input
+                    {/* <Input
                         type="text"
                         name="aboutConf"
                         value={aboutConf}
                         onChange={handleChange}
                         placeholder="About Conference"
                         mb='2.5'
+                    /> */}
+                    <JoditEditor
+                        ref={ref}
+                        value={aboutConf}
+                        onChange={(value) => handleEditorChange(value, "aboutConf")}
+                        classname='tw-mb-5'
                     />
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >About the Institute :</FormLabel>
-                    <Input
-                        type="text"
-                        name="aboutIns"
+                    <JoditEditor
+                        ref={ref}
                         value={aboutIns}
-                        onChange={handleChange}
-                        placeholder="About Institiute"
-                        mb='2.5'
+                        onChange={(value) => handleEditorChange(value, "aboutIns")}
+                        classname='tw-mb-5'
                     />
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
@@ -263,12 +275,12 @@ const HomeConf = () => {
                     />
                 </FormControl>
                 <Center>
-              
+
                     <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
                         {editID ? 'Update' : 'Add'}
                     </Button>
 
-            </Center>
+                </Center>
                 <Heading as="h1" size="xl" mt="6" mb="6">
                     Added Information </Heading>
                 {!loading ? (

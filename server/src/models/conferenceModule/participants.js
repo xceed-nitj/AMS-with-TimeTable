@@ -8,23 +8,18 @@ const participantSchema = new mongoose.Schema({
   },
   authorName: {
     type: String,
-    required: true,
   },
   authorDesignation: {
     type: String,
-    required: true,
   },
   authorInstitute: {
     type: String,
-    required: true,
   },
   paperTitle: {
     type: String,
-    required: true,
   },
   paperId: {
     type: String,
-    required: true,
   },
 });
 

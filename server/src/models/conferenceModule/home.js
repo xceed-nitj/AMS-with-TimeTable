@@ -12,15 +12,12 @@ const homeSchema = new mongoose.Schema({
   },
   confStartDate: {
     type: Date,
-    required: true,
   },
   confEndDate: {
     type: Date,
-    required: true,
   },
   aboutConf: {
     type: String,
-    required: true,
   },
   aboutIns: String,
   youtubeLink: String,

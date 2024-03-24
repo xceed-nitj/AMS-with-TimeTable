@@ -16,23 +16,18 @@ const eventDateSchema = new mongoose.Schema({
   },
   sequence: {
     type: Number,
-    required: true,
   },
   extended: {
     type: Boolean,
-    required: true,
   },
   newDate: {
     type: Date,
-    required: true,
   },
   completed: {
     type: Boolean,
-    required: true,
   },
   featured: {
     type: Boolean,
-    required: true,
   },
 });
 
