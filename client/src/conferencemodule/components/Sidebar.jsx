@@ -9,7 +9,7 @@ const navigation = [
   { name: 'Home', href: 'home' },
   { name: 'Speakers', href: 'speakers' },
   { name: 'Committees', href: 'committee' },
-  { name: 'Sponsorship', href: 'sponsorship' },
+  { name: 'Sponsors', href: 'sponsors' },
   { name: 'Awards', href: 'awards' },
   { name: 'Announcements', href: 'announcement' },
   { name: 'Contacts', href: 'contact' },

@@ -152,7 +152,7 @@ function App() {
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
           <Route path="committee" element={<Committees />} />
-          <Route path="sponsorship" element={<Sponsors />} />
+          <Route path="sponsors" element={<Sponsors />} />
           <Route path="awards" element={<Awards />} />
           <Route path="announcement" element={<Announcement />} />
           <Route path="contact" element={<Contacts />} />
