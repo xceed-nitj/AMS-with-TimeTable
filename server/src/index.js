@@ -45,7 +45,7 @@ mongoose.connection.on("connected", () => {
 app.use(
   cors({
     origin: [
-      "http://localhost:5173",  "http://localhost:5174",
+      "http://localhost:5173",  "http://localhost:5174","https://chemcon2024.com/",
       "https://nitjtt.netlify.app",
       "http://localhost:8010",
     ], // Change this to your allowed origins or '*' to allow all origins

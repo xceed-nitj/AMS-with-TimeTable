@@ -10,7 +10,7 @@ const sponsorsRatesSchema = new mongoose.Schema({
     type: String,
   },
   price: {
-    type: Numbers,
+    type: Number,
   },
   description:{
     type: String,
@@ -25,6 +25,6 @@ const sponsorsRatesSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const SponsorshipRates = mongoose.model("cf-sponsorshipRates", sponsorsRatesSchema);
+const SponsorshipRates = mongoose.model("cf-sponsorshipRate", sponsorsRatesSchema);
 
 module.exports = SponsorshipRates;

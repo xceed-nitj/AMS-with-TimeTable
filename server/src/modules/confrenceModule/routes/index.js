@@ -17,5 +17,11 @@ router.use("/location", require("./location"));
 // Add more routes as needed
 router.use("/sponsor", require("./sponsor"));
 router.use("/participant", require("./participant"));
+router.use("/event", require("./events"));
+router.use("/souvenir", require("./souvenir"));
+router.use("/sponsorship-rates", require("./sponsorshipRates"));
+router.use("/accomodation", require("./accomodation"));
+
+
 
 module.exports = router;
