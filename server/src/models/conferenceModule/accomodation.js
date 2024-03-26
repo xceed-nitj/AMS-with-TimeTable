@@ -1,30 +1,26 @@
 const mongoose = require("mongoose");
 
 // Define your Mongoose schema based on the interface
-const souvenirSchema = new mongoose.Schema({
+const accomodationSchema = new mongoose.Schema({
   confId: {
     type: String,
     required: true,
   },
-  location: {
+  title: {
     type: String,
   },
-  price: {
-    type: Number,
-  },
-  description:{
+  description: {
     type: String,
-
   },
   sequence: {
     type: Number,
   },
   featured: {
     type: Boolean,
-  },
+  }
 });
 
 // Create the Mongoose model
-const Souvenir = mongoose.model("cf-souvenir", souvenirSchema);
+const Accomodation = mongoose.model("cf-accomodation", accomodationSchema);
 
-module.exports = Souvenir;
+module.exports = Accomodation;
