@@ -16,7 +16,7 @@ import ViewMRooms from './timetableadmin/viewmrooms';
 // import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
 import Navbar from './components/home/Navbar';
-import PrintSummary from './timetableadmin/printSummary'
+import PrintSummary from './timetableadmin/printSummary';
 import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
 import AllotmentForm from './timetableadmin/allotment';
@@ -36,7 +36,7 @@ import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 
-import Home from './pages/Home'
+import Home from './pages/Home';
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
 import CertificateForm from './certificatemodule/pages/certificatedesign';
@@ -62,83 +62,113 @@ import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
 
+import ReviewLogin from './reviewmodule/pages/ReviewLogin';
+import CreateUser from './reviewmodule/pages/createuser';
 
 function App() {
   return (
     <Router>
-
       {/* <div className="app"> */}
-   
-        {/* <h1>XCEED-Timetable Module</h1>  */}
-        <Navbar />
-         
+
+      {/* <h1>XCEED-Timetable Module</h1>  */}
+      <Navbar />
+
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<Home />} />
-          <Route path='/services/:serviceId' element={<ServicePage/>} />
+        <Route path="/services/:serviceId" element={<ServicePage />} />
         {/* ********* */}
 
-        <Route path="/login" element={<Login/>} />
-        <Route path="/forgot-password" element={<ForgotPassword/>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        <Route path="/register" element={<RegistrationForm/>} />
-          <Route path="/tt/:generatedLink" element={<Timetable />} />
-          <Route path="/tt/dashboard" element={<CreateTimetable />} />
-          <Route path="/userroles" element={<AllocatedRolesPage />} />
+        <Route path="/register" element={<RegistrationForm />} />
+        <Route path="/tt/:generatedLink" element={<Timetable />} />
+        <Route path="/tt/dashboard" element={<CreateTimetable />} />
+        <Route path="/userroles" element={<AllocatedRolesPage />} />
 
-          <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
-          <Route path="/tt/:generatedLink/addroom" element={<AddRoom />} />
-          <Route path="/tt/:generatedLink/firstyearload" element={<FirstYearLoad />} />
-          <Route path="/tt/:generatedLink/firstyearfaculty" element={<FirstYearFaculty />} />
+        <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
+        <Route path="/tt/:generatedLink/addroom" element={<AddRoom />} />
+        <Route
+          path="/tt/:generatedLink/firstyearload"
+          element={<FirstYearLoad />}
+        />
+        <Route
+          path="/tt/:generatedLink/firstyearfaculty"
+          element={<FirstYearFaculty />}
+        />
 
-          <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
-          <Route path="/tt/:generatedLink/addsem" element={<AddSem />} />
-          <Route path="/tt/masterroom" element={<MasterRoom />} />
-          <Route path="/tt/mastersem" element={<MasterSem />} />
-          <Route path="/tt/masterdelete" element={<MasterDelete />} />
-          <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
-          <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
-          <Route path="/tt/:generatedLink/generatepdf" element={<PrintSummary />} />
-          <Route path="/tt/:generatedLink/loaddistribution" element={<LoadDistribution />} />
-          <Route path="/tt/:generatedLink/addnote" element={<Note/>} />
-          <Route path="/tt/:generatedLink/roomallotment" element={<ViewAllotmentPage/>} />
-          <Route path="/tt/:generatedLink/addcommonload" element={<CommonLoad/>} />
-          <Route path="/tt/:generatedLink/addlunchload" element={<LunchLoad/>} />
-          <Route path="/tt/:generatedLink/editmasterfaculty" element={<EditMasterFaculty/>} />
+        <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
+        <Route path="/tt/:generatedLink/addsem" element={<AddSem />} />
+        <Route path="/tt/masterroom" element={<MasterRoom />} />
+        <Route path="/tt/mastersem" element={<MasterSem />} />
+        <Route path="/tt/masterdelete" element={<MasterDelete />} />
+        <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
+        <Route
+          path="/tt/:generatedLink/lockedsummary"
+          element={<LockedSummary />}
+        />
+        <Route
+          path="/tt/:generatedLink/generatepdf"
+          element={<PrintSummary />}
+        />
+        <Route
+          path="/tt/:generatedLink/loaddistribution"
+          element={<LoadDistribution />}
+        />
+        <Route path="/tt/:generatedLink/addnote" element={<Note />} />
+        <Route
+          path="/tt/:generatedLink/roomallotment"
+          element={<ViewAllotmentPage />}
+        />
+        <Route
+          path="/tt/:generatedLink/addcommonload"
+          element={<CommonLoad />}
+        />
+        <Route path="/tt/:generatedLink/addlunchload" element={<LunchLoad />} />
+        <Route
+          path="/tt/:generatedLink/editmasterfaculty"
+          element={<EditMasterFaculty />}
+        />
 
-          <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
-          
-          {/* Same link */}
-          <Route path="classrooms" element={<ViewMRooms/>} />
-          {/* Same link */}
+        <Route path="/tt/viewmrooms" element={<ViewMRooms />} />
 
-          {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
-          <Route path="/tt/allotment" element={<AllotmentForm/>}/>
-          <Route path="/tt/admin" element={<AdminPage/>}/>
-          <Route path="/tt/masterview" element={<MasterView />} />
+        {/* Same link */}
+        <Route path="classrooms" element={<ViewMRooms />} />
+        {/* Same link */}
 
-          {/* Same link */}
-          <Route path="timetable" element={<MasterView/>}/>
-          {/* Same link */}
+        {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
+        <Route path="/tt/allotment" element={<AllotmentForm />} />
+        <Route path="/tt/admin" element={<AdminPage />} />
+        <Route path="/tt/masterview" element={<MasterView />} />
 
-          <Route path="/tt/admin/view" element={<View />} />
-          <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
-          <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad/>}/>
-         
-          <Route path="/tt/:generatedLink/generatepdf/mergepdf" element={<MergePDFComponent />} />
+        {/* Same link */}
+        <Route path="timetable" element={<MasterView />} />
+        {/* Same link */}
 
-          <Route path="/cm/addevent" element={<EventRegistration />} />
-          <Route path="/cm/dashboard" element={<CMDashboard />} />
-          <Route path="/cm/:eventid" element={<CertificateForm/>}/>
-          <Route path="/cm/:eventid/addparticipant" element={<Participant/>}/>
-          <Route path="/cm/c/:eventid/:participantid" element={<Template01/>}/>
-          <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
+        <Route path="/tt/admin/view" element={<View />} />
+        <Route path="/tt/admin/instituteload" element={<InstituteLoad />} />
+        <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} />
 
+        <Route
+          path="/tt/:generatedLink/generatepdf/mergepdf"
+          element={<MergePDFComponent />}
+        />
 
-          {/* Conference Module Admin-Panel */}
-          
-          <Route path="/cf/adminpanel" element={<ConferencePage />} />
-          <Route path="/cf/adminpanel/:confid" element={<Sidebar  />}>
+        <Route path="/cm/addevent" element={<EventRegistration />} />
+        <Route path="/cm/dashboard" element={<CMDashboard />} />
+        <Route path="/cm/:eventid" element={<CertificateForm />} />
+        <Route path="/cm/:eventid/addparticipant" element={<Participant />} />
+        <Route path="/cm/c/:eventid/:participantid" element={<Template01 />} />
+        <Route
+          path="/cm/c/:eventid/:participantid/sarthak"
+          element={<Template03 />}
+        />
+
+        {/* Conference Module Admin-Panel */}
+
+        <Route path="/cf/adminpanel" element={<ConferencePage />} />
+        <Route path="/cf/adminpanel/:confid" element={<Sidebar />}>
           <Route index element={<HomeConf />} />
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
@@ -152,13 +182,17 @@ function App() {
           <Route path="locations" element={<Location />} />
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
-          </Route>
-        </Routes>
-        {/* <Footer/> */}
+        </Route>
+
+
+        {/* Review Module */}
+        <Route path="/review/signin" element={<ReviewLogin/>} />
+        <Route path="/review/createuser" element={<CreateUser/>} />
+      </Routes>
+      {/* <Footer/> */}
       {/* </div> */}
     </Router>
-
- );
+  );
 }
 
 export default App;
