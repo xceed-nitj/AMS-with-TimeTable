@@ -67,6 +67,10 @@ import Template03 from './certificatemodule/pages/certificatetemplates/03_sartha
 
 import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
+import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
+import Accomodation from './conferencemodule/Tabs/Accomodation';
+import Event from './conferencemodule/Tabs/Events';
+import Souvenir from './conferencemodule/Tabs/Souvenir';
 
 function App() {
   return (
@@ -167,6 +171,11 @@ function App() {
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
           <Route path="template" element={<CommonTemplate/>} />
+          <Route path="sponsorship-rates" element={<SponsorshipRate />} />
+          <Route path="accomodation" element={<Accomodation />} />
+          <Route path="events" element={<Event />} />
+          <Route path="souvenir" element={<Souvenir />} />
+
 
 
 

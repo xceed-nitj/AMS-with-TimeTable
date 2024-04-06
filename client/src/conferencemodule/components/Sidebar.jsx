@@ -15,9 +15,13 @@ const navigation = [
   { name: 'Contacts', href: 'contact' },
   { name: 'Images', href: 'images' },
   { name: 'Event Dates', href: 'eventdates' },
+  { name: 'Events', href: 'events' },
   { name: 'Locations', href: 'locations' },
   { name: 'Participants', href: 'participants' },
   { name: 'Navbar', href: 'navbar' },
+  { name: 'Sponsorship Rates', href: 'sponsorship-rates' },
+  { name: 'Souvenir', href: 'souvenir' },
+  { name: 'Accomodation', href: 'accomodation' },
   { name: 'Common Template', href: 'template' },
 
 ];
