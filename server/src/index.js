@@ -45,9 +45,11 @@ mongoose.connection.on("connected", () => {
 app.use(
   cors({
     origin: [
-      "http://localhost:5173",  "http://localhost:5174","https://chemcon2024.com/",
+      "http://localhost:5173",  
       "https://nitjtt.netlify.app",
       "http://localhost:8010",
+      //for chemcon
+      "http://localhost:5174","https://chemcon2024.com","https://pro1-chemcon.vercel.app"
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
