@@ -189,7 +189,6 @@ const CertificateForm = () => {
               <option value="0">Template 1</option>
               <option value="1">Template 2</option>
               <option value="2">Template 3</option>
-              <option value="3">Template 4</option>
             </Select>
 
 
