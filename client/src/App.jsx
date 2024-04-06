@@ -90,32 +90,38 @@ function App() {
         <Route path="/login" element={<Login/>} />
         <Route path="/forgot-password" element={<ForgotPassword/>} />
 
-        <Route path="/register" element={<RegistrationForm/>} />
-          <Route path="/tt/:generatedLink" element={<Timetable />} />
-          <Route path="/tt/dashboard" element={<CreateTimetable />} />
+          <Route path="/register" element={<RegistrationForm/>} />
           <Route path="/userroles" element={<AllocatedRolesPage />} />
 
-          <Route path="/tt/:generatedLink/addfaculty" element={<AddFaculty />} />
-          <Route path="/tt/:generatedLink/addroom" element={<AddRoom />} />
-          <Route path="/tt/:generatedLink/firstyearload" element={<FirstYearLoad />} />
-          <Route path="/tt/:generatedLink/firstyearfaculty" element={<FirstYearFaculty />} />
 
-          <Route path="/tt/masterfaculty" element={<MasterFaculty />} />
-          <Route path="/tt/:generatedLink/addsem" element={<AddSem />} />
-          <Route path="/tt/masterroom" element={<MasterRoom />} />
-          <Route path="/tt/mastersem" element={<MasterSem />} />
-          <Route path="/tt/masterdelete" element={<MasterDelete />} />
-          <Route path="/tt/:generatedLink/addsubjects" element={<Subjects />} />
-          <Route path="/tt/:generatedLink/lockedsummary" element={<LockedSummary />} />
-          <Route path="/tt/:generatedLink/generatepdf" element={<PrintSummary />} />
-          <Route path="/tt/:generatedLink/loaddistribution" element={<LoadDistribution />} />
-          <Route path="/tt/:generatedLink/addnote" element={<Note/>} />
-          <Route path="/tt/:generatedLink/roomallotment" element={<ViewAllotmentPage/>} />
-          <Route path="/tt/:generatedLink/addcommonload" element={<CommonLoad/>} />
-          <Route path="/tt/:generatedLink/addlunchload" element={<LunchLoad/>} />
-          <Route path="/tt/:generatedLink/editmasterfaculty" element={<EditMasterFaculty/>} />
+        <Route path="/tt">
+              <Route path="dashboard" element={<CreateTimetable />} />
+              <Route path="masterview" element={<MasterView />} />
+              <Route path="masterfaculty" element={<MasterFaculty />} />
+              <Route path="masterroom" element={<MasterRoom />} />
+              <Route path="mastersem" element={<MasterSem />} />
+              <Route path="masterdelete" element={<MasterDelete />} />
+              <Route path="viewmrooms" element={<ViewMRooms/>} />
+        </Route>
+          
+        <Route path="/tt/:generatedLink">
+             <Route index element={<Timetable />}></Route>  
 
-          <Route path="/tt/viewmrooms" element={<ViewMRooms/>} />
+              <Route path="addfaculty" element={<AddFaculty />} />
+              <Route path="addroom" element={<AddRoom />} />
+              <Route path="addcommonload" element={<CommonLoad/>} />
+              <Route path="addlunchload" element={<LunchLoad/>} />
+              <Route path="addsubjects" element={<Subjects />} />
+              <Route path="addsem" element={<AddSem />} />
+              <Route path="addnote" element={<Note/>} />
+              <Route path="firstyearload" element={<FirstYearLoad />} />
+              <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
+              <Route path="lockedsummary" element={<LockedSummary />} />
+              <Route path="generatepdf" element={<PrintSummary />} />
+              <Route path="loaddistribution" element={<LoadDistribution />} />
+              <Route path="roomallotment" element={<ViewAllotmentPage/>} />
+              <Route path="editmasterfaculty" element={<EditMasterFaculty/>} />
+        </Route>
           
           {/* Same link */}
           <Route path="classrooms" element={<ViewMRooms/>} />
@@ -124,7 +130,6 @@ function App() {
           {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
-          <Route path="/tt/masterview" element={<MasterView />} />
 
           {/* Same link */}
           <Route path="timetable" element={<MasterView/>}/>
@@ -143,9 +148,9 @@ function App() {
           <Route path="/cm/c/:eventid/:participantid" element={<Template01/>}/>
           <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
 
-{/* Review management routes*/}
-<Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
-<Route path="/prm/dashboard" element={<PRMDashboard/>} />
+    {/* Review management routes*/}
+    <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
+    <Route path="/prm/dashboard" element={<PRMDashboard/>} />
 
 
           {/* Conference Module Admin-Panel */}
