@@ -53,6 +53,7 @@ const CertificateContent = ({
 
 
 
+
   return (
 
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1122.52 793.7" id="svg" className="svg-img" ref={svgRef}>
@@ -202,7 +203,7 @@ const CertificateContent = ({
 
         <foreignObject x={"20%"} y={"90%"} width={"60%"} height={"100"}>
           <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-         {window.location.href}
+            {window.location.href}
           </div>
         </foreignObject>
       </>
