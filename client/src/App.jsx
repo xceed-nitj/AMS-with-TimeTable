@@ -67,6 +67,9 @@ import Template03 from './certificatemodule/pages/certificatetemplates/03_sartha
 
 import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
+import ReviewLogin from './reviewmodule/pages/ReviewLogin';
+import CreateUser from './reviewmodule/pages/CreateUser';
+
 import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
 import Accomodation from './conferencemodule/Tabs/Accomodation';
 import Event from './conferencemodule/Tabs/Events';
@@ -151,6 +154,8 @@ function App() {
           <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
 
     {/* Review management routes*/}
+    <Route path="/prm/login" element={<ReviewLogin/>} />
+    <Route path="/prm/signup" element={<CreateUser/>} />
     <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
 
