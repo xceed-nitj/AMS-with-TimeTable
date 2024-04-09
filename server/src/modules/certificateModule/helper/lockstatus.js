@@ -12,7 +12,7 @@ async function LockStatus(req, res, next) {
     const id = req.params.id;
 
 
-  const event= await addEvent.find(id)
+  const event= await addEvent.findById(id)
   let lock;
   if(!event)
   {

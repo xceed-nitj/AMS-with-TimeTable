@@ -10,9 +10,10 @@ const userSchema = new mongoose.Schema({
         Period:{type: Number, required: true},
     },
     profession: {type: String, required: true},
-    email: [{type: String, required: true}]
+    email: [{type: String, required: true}],
+    area:[{type: String, required: true}],
 });
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model("PRS-User", userSchema);
 
 module.exports = User;

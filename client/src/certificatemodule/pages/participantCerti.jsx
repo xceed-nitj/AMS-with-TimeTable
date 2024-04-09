@@ -2,9 +2,11 @@ import { useEffect, useRef } from 'react';
 import downloadCertificatePdf from './certipdfdownload';
 import QRCode from 'qrcode';
 import CertificateContent from './certificatetemplates/template01';
-import React, { useState} from "react";
+import React, { useState } from "react";
 import ReactHtmlParser from 'react-html-parser';
 import getEnvironment from "../../getenvironment";
+import SelectCertficate from './SelectCertficate';
+
 
 const apiUrl = getEnvironment();
 
@@ -16,8 +18,10 @@ function ViewCertificate() {
   const participantId = parts[parts.length - 1];
   console.log(participantId)
   const [certiType, setCertiType] = useState('');
+  const [templateId, setTemplateId] = useState("0");
+
   const [logos, setLogos] = useState([]);
-  const [participantDetail,setParticipantDetail]=useState({});
+  const [participantDetail, setParticipantDetail] = useState({});
   const [signature, setSignatures] = useState([]);
   const [header, setHeader] = useState([]);
   const [footer, setFooter] = useState([]);
@@ -39,6 +43,7 @@ function ViewCertificate() {
           // setFormData((prevData) => ({ ...prevData, certiType: data.certiType }));
           setParticipantDetail(data);
           setCertiType(data.certiType);
+
           console.log('certiype', data.certiType)
         } else {
           console.error('Error fetching certiType data:', response.statusText);
@@ -55,10 +60,10 @@ function ViewCertificate() {
 
 
 
-  const fetchData= async()=> {
+  const fetchData = async () => {
     try {
       console.log('executing function');
-  
+
       const response_one = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${certiType}`, {
         method: "GET",
         headers: {
@@ -66,16 +71,16 @@ function ViewCertificate() {
         },
         credentials: "include",
       });
-  
+
       if (!response_one.ok) {
         const errorResponseOne = await response_one.text();
         console.error('Error fetching data from response_one:', errorResponseOne);
         return;
       }
-  
+
       // Await the data_one promise
       const data_one = await response_one.json();
-       // Await the data_one promise
+      // Await the data_one promise
       const data_two = participantDetail; // Await the data_two promise
 
       console.log('Data from response dataaaaaaaaa:', data_one);
@@ -86,6 +91,7 @@ function ViewCertificate() {
       setSignatures(data_one[0].signatures);
       setHeader(data_one[0].header)
       setFooter(data_one[0].footer)
+      setTemplateId(data_one[0].templateId);
 
       // Replace all placeholders with actual values from data_two
       Object.keys(data_two).forEach(variable => {
@@ -93,13 +99,13 @@ function ViewCertificate() {
         content_body = content_body.replace(placeholder, `<strong>${data_two[variable]}</strong>`);
         console.log('variable data', data_two[variable]);
       });
-      
+
       // Now content_body has all the placeholders replaced with actual values from data_two
       const result = `${content_body}`;
       setContentBody(result);
-      
+
       // Now content_body has all the placeholders replaced with actual values from data_two
-     } catch (error) {
+    } catch (error) {
       console.error('Error fetching data:', error);
     }
   }
@@ -132,16 +138,17 @@ function ViewCertificate() {
 
   return (
     <>
-      <CertificateContent
-          eventId={eventId}
-          contentBody={contentBody}
-          certiType={certiType}
-          logos={logos}
-          participantDetail={participantDetail}
-          signature={signature}
-          header={header}
-          footer={footer}
-        />
+      <SelectCertficate
+        eventId={eventId}
+        templateId={templateId}
+        contentBody={contentBody}
+        certiType={certiType}
+        logos={logos}
+        participantDetail={participantDetail}
+        signature={signature}
+        header={header}
+        footer={footer}
+      />
 
       <button
         onClick={downloadCertificatePdf}

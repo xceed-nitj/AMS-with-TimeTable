@@ -4,7 +4,7 @@ const Event = require('./event.js');
  
 const paperSchema = new mongoose.Schema({
     paperId: { type: String,  required:true},
-    eventId: { type: mongoose.Schema.Types.ObjectId,  ref:'Event'},
+    eventId: { type: mongoose.Schema.Types.ObjectId, ref:'Event' },
     authors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     abstract: {type:String},
     uploadLink: {type:String},
@@ -26,6 +26,6 @@ const paperSchema = new mongoose.Schema({
     finalDecision: {type:String}
 });
 
-const Paper = mongoose.model("Paper", paperSchema);
+const Paper = mongoose.model("PRS-Paper", paperSchema);
 
 module.exports = Paper;

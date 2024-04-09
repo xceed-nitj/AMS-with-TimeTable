@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import { useNavigate } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
+import { Container } from "@chakra-ui/layout";
+
+import { FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button } from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import {
+    Table,
+    TableContainer,
+    Tbody,
+    Td,
+    Th,
+    Thead,
+    Tr,
+} from "@chakra-ui/table";
+import JoditEditor from 'jodit-react';
 
 const HomeConf = () => {
     const navigate = useNavigate();
+    const ref = useRef(null);
 
     const params = useParams();
     const apiUrl = getEnvironment();
@@ -40,29 +55,33 @@ const HomeConf = () => {
     };
 
     const handleSubmit = (e) => {
-        e.preventDefault();
         if (data) {
             window.alert('You cannot Add multiple values of this for one conference');
-         setFormData(initialData)
+            setFormData(initialData)
 
         }
         else {
             axios.post(`${apiUrl}/conferencemodule/home`, formData, { withCredentials: true })
-            .then(res => {
-                setData(res.data);
-                console.log(res.data);
-                setFormData(initialData);
-                setRefresh(refresh + 1);
-            })
-            .catch(err => {
-                console.log(err);
-                console.log(formData);
-            });
+                .then(res => {
+                    setData(res.data);
+                    console.log(res.data);
+                    setFormData(initialData);
+                    setRefresh(refresh + 1);
+                })
+                .catch(err => {
+                    console.log(err);
+                    console.log(formData);
+                });
 
         }
 
     };
-
+    const handleEditorChange = (value, fieldName) => {
+        setFormData({
+            ...formData,
+            [fieldName]: value,
+        });
+    };
     const handleUpdate = () => {
         axios.put(`${apiUrl}/conferencemodule/home/${editID}`, formData, {
             withCredentials: true
@@ -71,6 +90,7 @@ const HomeConf = () => {
             .then(res => {
                 setFormData(initialData);
                 setRefresh(refresh + 1);
+                setEditID(null)
             })
             .catch(err => console.log(err));
     };
@@ -102,8 +122,8 @@ const HomeConf = () => {
     useEffect(() => {
         var currentURL = window.location.href;
         const IdConf = params.confid;
-        if (!currentURL.includes("/cf/adminpanel/" + IdConf + "/home")) {
-            navigate("/cf/adminpanel/" + IdConf + "/home")
+        if (!currentURL.includes("/cf/" + IdConf + "/home")) {
+            navigate("/cf/" + IdConf + "/home")
         }
 
         setLoading(true);
@@ -119,99 +139,195 @@ const HomeConf = () => {
     }, [refresh]);
 
     return (
-        <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
-            <div className='tw-px-2 sm:tw-px-4 lg:tw-px-8'>
-                <div className="tw-block tw-box-border" >
+        <main className='tw-py-10  lg:tw-pl-72 tw-min-h-screen'>
 
-                    <form autoComplete="off" className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " onSubmit={handleSubmit}>
-                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  " >About Conference</div>
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1  tw-font-bold " >Name of Conference</label>
-                        <input type="text" required name="confName" value={confName} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
+            <Container maxW='5xl' >
+                <Center><Heading as="h1" size="xl" mt="6" mb="6">
+                    About Conference
+                </Heading></Center>
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Starting Date of Conference</label>
-                        <input type="date" name="confStartDate" required value={confStartDate} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Ending Date of Conference</label>
-                        <input type="date" name="confEndDate" required value={confEndDate} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Description of Conference</label>
-                        <input type="text" name="aboutConf" required value={aboutConf} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Name of the Conference :</FormLabel>
+                    <Input
+                        type="text"
+                        name="confName"
+                        value={confName}
+                        onChange={handleChange}
+                        placeholder="Name"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Starting Date of the Conference :</FormLabel>
+                    <Input
+                        type="date"
+                        name="confStartDate"
+                        value={confStartDate}
+                        onChange={handleChange}
+                        placeholder="Starting Date of the Conference"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Ending Date of the Conference :</FormLabel>
+                    <Input
+                        type="date"
+                        name="confEndDate"
+                        value={confEndDate}
+                        onChange={handleChange}
+                        placeholder="Ending Date of the Conference "
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >About the Conference :</FormLabel>
+                    {/* <Input
+                        type="text"
+                        name="aboutConf"
+                        value={aboutConf}
+                        onChange={handleChange}
+                        placeholder="About Conference"
+                        mb='2.5'
+                    /> */}
+                    <JoditEditor
+                        ref={ref}
+                        value={aboutConf}
+                        onChange={(value) => handleEditorChange(value, "aboutConf")}
+                        classname='tw-mb-5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >About the Institute :</FormLabel>
+                    <JoditEditor
+                        ref={ref}
+                        value={aboutIns}
+                        onChange={(value) => handleEditorChange(value, "aboutIns")}
+                        classname='tw-mb-5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >You Tube Link :</FormLabel>
+                    <Input
+                        type="text"
+                        name="youtubeLink"
+                        value={youtubeLink}
+                        onChange={handleChange}
+                        placeholder="YouTube Link"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Instagram Link :</FormLabel>
+                    <Input
+                        type="text"
+                        name="instaLink"
+                        value={instaLink}
+                        onChange={handleChange}
+                        placeholder="Instagram Link"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >FaceBook Link:</FormLabel>
+                    <Input
+                        type="text"
+                        name="facebookLink"
+                        value={facebookLink}
+                        onChange={handleChange}
+                        placeholder="FaceBook Link"
+                        mb='2.5'
+                    />
+                </FormControl>
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">About Institute</label>
-                        <input type="text" name="aboutIns" value={aboutIns} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Twitter Link:</FormLabel>
+                    <Input
+                        type="text"
+                        name="twitterLink"
+                        value={twitterLink}
+                        onChange={handleChange}
+                        placeholder="Twitter Link"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Logo:</FormLabel>
+                    <Input
+                        type="text"
+                        name="logo"
+                        value={logo}
+                        onChange={handleChange}
+                        placeholder="Logo"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Short Name of Conference :</FormLabel>
+                    <Input
+                        type="text"
+                        name="shortName"
+                        value={shortName}
+                        onChange={handleChange}
+                        placeholder="Short Name"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <Center>
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Youtube Link</label>
-                        <input type="text" name="youtubeLink" value={youtubeLink} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
+                    <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
+                        {editID ? 'Update' : 'Add'}
+                    </Button>
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Instagram Link</label>
-                        <input type="text" name="instaLink" value={instaLink} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
+                </Center>
+                <Heading as="h1" size="xl" mt="6" mb="6">
+                    Added Information </Heading>
+                {!loading ? (
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Facebook Link</label>
-                        <input type="text" name="facebookLink" value={facebookLink} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
+                    <TableContainer>
+                        <Table
+                            variant='striped'
+                            size="md"
+                            mt="1"
+                        >
+                            <Thead>
+                                <Tr>
+                                    <CustomTh>Conference Name</CustomTh>
+                                    <CustomTh>Starting Date</CustomTh>
+                                    <CustomTh>Ending Date </CustomTh>
+                                    <CustomTh>Action</CustomTh>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {data ? (
+                                    <Tr key={data._id}>
+                                        <Td><Center>{data.confName}</Center></Td>
+                                        <Td><Center>{data.confStartDate}</Center></Td>
+                                        <Td><Center>{data.confEndDate}</Center></Td>
+                                        <Td><Center>
+                                            <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
+                                            <Button colorScheme="teal" onClick={() => {
+                                                handleEdit(data._id);
+                                                setEditID(data._id);
+                                            }}>Edit </Button>
+                                        </Center></Td>
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Twitter Link</label>
-                        <input type="text" name="twitterLink" value={twitterLink} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
+                                    </Tr>) : (
+                                    <Tr>
+                                        <Td colSpan="5" className="tw-p-1 tw-text-center">
+                                            <Center>No data available</Center></Td>
+                                    </Tr>
+                                )}
+                            </Tbody>
+                        </Table>
+                    </TableContainer>
+                )
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Logo</label>
-                        <input type="text" name="logo" value={logo} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
+                    : <LoadingIcon />
+                }
+            </Container >
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">shortName</label>
-                        <input type="text" name="shortName" value={shortName} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500   tw-leading-tight    focus:tw-:outline-none focus:tw-:shadow-outline" />
-
-                        <div className="tw-flex tw-justify-evenly">
-                            <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 px-2  tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Add</button>
-                            <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-semibold tw-py-2 tw-px-2 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline">Update</button>
-                        </div>
-                    </form>
-
-                    <hr />
-
-                    <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
-                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  " >Added Information</div>
-                        {loading ? (
-                            <LoadingIcon />
-                        ) : (
-                            <table className="tw-min-w-full tw-border-collapse tw-box-border " >
-                                <thead>
-                                    <tr className="tw-border-[2px] tw-bg-blue-100  tw-border-blue-500">
-                                        <th className="tw-p-1 tw-text-center">Name of Conference</th>
-                                        <th className="tw-p-1 tw-text-center">Start Date</th>
-                                        <th className="tw-p-1 tw-text-center">End Date</th>
-                                        <th className="tw-p-1 tw-text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data ? (
-                                        <tr className="tw-border-[1px] tw-font-serif tw-border-blue-500">
-                                            <td className="tw-p-1 tw-text-center">{data.confName}</td>
-                                            <td className="tw-p-1 tw-text-center">{data.confStartDate}</td>
-                                            <td className="tw-p-1 tw-text-center">{data.confEndDate}</td>
-                                            <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Edit </button>{" "}
-                                                <button onClick={() => handleDelete(data._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-:outline-none focus:tw-:shadow-outline"> Delete </button>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="5" className="tw-p-1 tw-text-center">No data available</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                </div>
-            </div>
         </main>
     );
 };

@@ -14,7 +14,7 @@ export default function downloadCertificatePDF() {
   // Use html2pdf to create a PDF with selectable text and hyperlinks
   html2pdf(graph, {
     margin: 20,
-    filename: 'filename.pdf',
+    filename: 'certificate.pdf',
     image: { type: 'png', quality: 0.98 },
     html2canvas: { scale: 2 },
     jsPDF: { unit: 'pt', format: 'letter', orientation: 'landscape', text: 'text' },

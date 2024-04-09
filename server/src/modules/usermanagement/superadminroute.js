@@ -34,7 +34,7 @@ async function superadminRoute(req, res, next) {
     // Attach the user details to the 'req' object
     req.user = {
       id: userId,
-      // other user details...
+      email:user.email,
     };
 
     // Allow the request to proceed
