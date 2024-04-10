@@ -16,7 +16,7 @@ import ViewMRooms from './timetableadmin/viewmrooms';
 // import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
 import Navbar from './components/home/Navbar';
-import PrintSummary from './timetableadmin/printSummary'
+import PrintSummary from './timetableadmin/printSummary';
 import LoadDistribution from './timetableadmin/loaddistribution';
 import RegistrationForm from './dashboard/register';
 import AllotmentForm from './timetableadmin/allotment';
@@ -36,7 +36,7 @@ import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 
-import Home from './pages/Home'
+import Home from './pages/Home';
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
 import CertificateForm from './certificatemodule/pages/certificatedesign';
@@ -67,6 +67,9 @@ import Template03 from './certificatemodule/pages/certificatetemplates/03_sartha
 
 import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
+import ReviewLogin from './reviewmodule/pages/ReviewLogin';
+import CreateUser from './reviewmodule/pages/CreateUser';
+
 import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
 import Accomodation from './conferencemodule/Tabs/Accomodation';
 import Event from './conferencemodule/Tabs/Events';
@@ -75,20 +78,19 @@ import Souvenir from './conferencemodule/Tabs/Souvenir';
 function App() {
   return (
     <Router>
-
       {/* <div className="app"> */}
-   
-        {/* <h1>XCEED-Timetable Module</h1>  */}
-        <Navbar />
-         
+
+      {/* <h1>XCEED-Timetable Module</h1>  */}
+      <Navbar />
+
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<Home />} />
-          <Route path='/services/:serviceId' element={<ServicePage/>} />
+        <Route path="/services/:serviceId" element={<ServicePage />} />
         {/* ********* */}
 
-        <Route path="/login" element={<Login/>} />
-        <Route path="/forgot-password" element={<ForgotPassword/>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
           <Route path="/register" element={<RegistrationForm/>} />
           <Route path="/userroles" element={<AllocatedRolesPage />} />
@@ -131,15 +133,18 @@ function App() {
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
           <Route path="/tt/admin" element={<AdminPage/>}/>
 
-          {/* Same link */}
-          <Route path="timetable" element={<MasterView/>}/>
-          {/* Same link */}
+        {/* Same link */}
+        <Route path="timetable" element={<MasterView />} />
+        {/* Same link */}
 
-          <Route path="/tt/admin/view" element={<View />} />
-          <Route path="/tt/admin/instituteload" element={<InstituteLoad/>}/>
-          <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad/>}/>
-         
-          <Route path="/tt/:generatedLink/generatepdf/mergepdf" element={<MergePDFComponent />} />
+        <Route path="/tt/admin/view" element={<View />} />
+        <Route path="/tt/admin/instituteload" element={<InstituteLoad />} />
+        <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} />
+
+        <Route
+          path="/tt/:generatedLink/generatepdf/mergepdf"
+          element={<MergePDFComponent />}
+        />
 
           <Route path="/cm/addevent" element={<EventRegistration />} />
           <Route path="/cm/dashboard" element={<CMDashboard />} />
@@ -149,6 +154,8 @@ function App() {
           <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
 
     {/* Review management routes*/}
+    <Route path="/prm/login" element={<ReviewLogin/>} />
+    <Route path="/prm/signup" element={<CreateUser/>} />
     <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
 
@@ -184,8 +191,7 @@ function App() {
         {/* <Footer/> */}
       {/* </div> */}
     </Router>
-
- );
+  );
 }
 
 export default App;
