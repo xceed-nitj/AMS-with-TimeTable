@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const User = require("../../../models/reviewModule/user.js");
 
 const addUser = async (req, res) => {
-  const { name, Dept, Designation, College, Period, profession, email } =
+  const { name, Dept, Designation, College, Period, profession, email, role, password, area } =
     req.body;
 
   const newUser = new User({
@@ -15,6 +15,9 @@ const addUser = async (req, res) => {
     },
     profession: profession,
     email: email,
+    role:role,
+    password: password,
+    area: area,
   });
 
   newUser
@@ -26,6 +29,7 @@ const addUser = async (req, res) => {
 const getUsers = async (req, res) => {
   try {
     const Users = await User.find({}).exec();
+    //console.log("Users", Users);
     res.status(200).send(Users);
   } catch (error) {
     res.status(500).send("Internal server error", error);
@@ -68,10 +72,10 @@ const updateUser = async (req, res) => {
         const updatedUser = await User.findByIdAndUpdate(userId, updateFields, { new: true });
 
         if (updatedUser) {
-            console.log(`Updated user with id ${userId}`);
+            //console.log(`Updated user with id ${userId}`);
             return res.status(200).json({ message: `Updated user with id ${userId}`, user: updatedUser, type: 'success' });
         } else {
-            console.log(`User with id ${userId} not found`);
+           // console.log(`User with id ${userId} not found`);
             return res.status(404).json({ message: `User with id ${userId} not found`, type: 'error' });
         }
     } catch (err) {

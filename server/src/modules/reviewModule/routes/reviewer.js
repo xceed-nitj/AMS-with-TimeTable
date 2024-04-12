@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.post('/addReviewer', addReviewer);
 router.patch('/updateReview', updateReviewer);
-router.patch('/deleteReviewer', deleteReviewer);
+router.delete('/deleteReviewer', deleteReviewer);
 
 module.exports = router;
