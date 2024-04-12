@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Button, VStack, Input, Heading } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Button, VStack, Input, Heading, Table, Thead, Tbody, Tr, Th, Td } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 
@@ -8,8 +8,54 @@ const AdminPage = () => {
     session: '',
   });
 
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [editingSessionValue, setEditingSessionValue] = useState('');
+  const [sessions, setSessions] = useState([]);
   const apiUrl = getEnvironment();
 
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/allotment/session`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: 'include'
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Sessions fetched successfully:", data); 
+        setSessions(data);
+      } else {
+        console.error("Failed to fetch sessions");
+      }
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+    }
+  };
+
+  const handleDelete = async (session) => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${session}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      setSessions(prevSessions => prevSessions.filter(item => item !== session));
+    } catch (error) {
+      console.error('Error deleting allotment:', error.message);
+    }
+  };
+    
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -36,6 +82,7 @@ const AdminPage = () => {
       }
 
       // console.log('Allotment created successfully');
+      await fetchSessions();
       setFormData({
         session: '',
       });
@@ -44,6 +91,35 @@ const AdminPage = () => {
     }
   };
 
+  const handleEdit = (session) => {
+    setEditingSessionId(session);
+    setEditingSessionValue(session);
+  };
+  
+  const handleChange1 = (e) => {
+    setEditingSessionValue(e.target.value);
+  };
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${editingSessionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ session: editingSessionValue }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      setSessions(prevSessions => prevSessions.map(item => item === editingSessionId ? editingSessionValue : item));
+      setEditingSessionId(null);
+      setEditingSessionValue('');
+    } catch (error) {
+      console.error('Error editing allotment:', error.message);
+    }
+  };
   return (
     <VStack spacing={4} align="stretch">
     <Heading>Admin page</Heading>
@@ -80,6 +156,43 @@ const AdminPage = () => {
         <Button colorScheme="teal">Institute Faculty load </Button>
       </Link>
 
+      <Table variant="striped">
+  <Thead>
+    <Tr>
+      <Th>Session</Th>
+      <Th>Edit</Th>
+      <Th>Delete</Th>
+    </Tr>
+  </Thead>
+  <Tbody>
+  {sessions.map((session, index) => (  
+  <Tr key={index}>
+    <Td>
+      {editingSessionId === session ? (
+        <Input
+          type='text'
+          value={editingSessionValue}
+          onChange={handleChange1}
+        />
+      ) : (
+        session
+      )}
+    </Td>
+    <Td>
+      {editingSessionId === session ? (
+        <Button onClick={handleSave}>Save</Button>
+      ) : (
+        <Button onClick={() => handleEdit(session)}>Edit</Button>
+      )}
+    </Td>
+    <Td>
+      <Button onClick={() => handleDelete(session)}>Delete</Button>
+    </Td>
+  </Tr>
+))}
+
+</Tbody>
+</Table>
     </VStack>
   );
 };
