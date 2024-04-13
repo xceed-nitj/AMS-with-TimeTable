@@ -43,6 +43,11 @@ const AdminPage = () => {
 
   const handleDelete = async (session) => {
     try {
+      const confirmed = window.confirm(`Are you sure you want to delete session "${session}"?`);
+      if (!confirmed) {
+        return; 
+      }
+  
       const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${session}`, {
         method: 'DELETE',
         credentials: 'include',
@@ -55,6 +60,7 @@ const AdminPage = () => {
       console.error('Error deleting allotment:', error.message);
     }
   };
+  
     
   const handleChange = (e) => {
     const { name, value } = e.target;
