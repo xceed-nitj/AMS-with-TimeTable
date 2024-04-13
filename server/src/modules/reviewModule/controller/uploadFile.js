@@ -1,4 +1,6 @@
 const Paper = require("../../../models/reviewModule/paper.js");
+const User = require("../../../models/reviewModule/user.js"); // Importing the User model
+const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
 
 const uploadPaper = (req, res) => {
   const fileName = req.fileName;
@@ -18,12 +20,32 @@ const uploadPaper = (req, res) => {
 
   newPaper
     .save()
-    .then((savedPaper) => {
-      //console.log("Paper saved successfully:", savedPaper);
+    .then(async (savedPaper) => {
+      // Fetch email addresses of authors from User model based on their IDs
+      const authorIds = savedPaper.authors[0];
+      const authors = await User.find({ _id: { $in: authorIds } }, 'email');
+      const authorEmails = authors.map(author => author.email);
+
+      // Send email notification to author(s)
+      const to = "sumitteerthani2002@gmail.com"; //Author is not linked with paper as of now so add your gmail to get email for testing purpose
+      const subject = "New Paper Uploaded";
+      const message = `A new paper titled "${title}" has been uploaded.`;
+      const attachments=[
+        {
+          //filename:"title.pdf",
+          //path:""
+        }
+       ];
+       
+      
+      await sendMail(to, subject, message);
+      
+
+      console.log("Paper saved successfully:", savedPaper);
       res.status(200).send("Paper uploaded and saved successfully!");
     })
     .catch((error) => {
-     // console.error("Error saving paper:", error);
+      console.error("Error saving paper:", error);
       res.status(500).send(error);
     });
 };
