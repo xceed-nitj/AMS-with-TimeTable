@@ -3,6 +3,8 @@ const User = require("../../../models/reviewModule/user.js");
 const mailSender = require("../../mailsender.js");
 const express = require("express");
 const bodyParser = require("body-parser");
+const { sendMail } = require("../../mailerModule/mailer.js"); 
+const path = require("path");
 
 const app = express();
 app.use(
@@ -31,7 +33,7 @@ const addReviewer = async (req, res) => {
       return;
     }
 
-    if (user.role !== "editor") {
+    if (user.role !== "Editor") {
       res.status(401).send("Only editor is allowed to add reviewer");
     }
 
@@ -40,6 +42,14 @@ const addReviewer = async (req, res) => {
     });
 
     const newPaper = await paper.save();
+ // Send email notification to the reviewer
+ const reviewerEmail = user.email[0]; // Assuming the reviewer's email is stored in the User document for now it is not added but will add soon. Now it is sending mail to editor email only from the default email in env file
+ const subject = "You have been assigned as a reviewer";
+ const message = `You have been assigned as a reviewer for the paper titled "${paper.title}". Please login to the system to review the paper.`;
+ 
+ await sendMail(reviewerEmail, subject, message);
+
+
     res
       .status(200)
       .json({ message: "Reviewer added successfully", paper: newPaper });
