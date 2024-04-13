@@ -2,6 +2,8 @@ const Paper = require("../../../models/reviewModule/paper.js");
 
 const uploadPaper = (req, res) => {
   const fileName = req.fileName;
+  const title = req.title;
+  const abstract = req.abstract;
 
   if (!fileName) {
     return res.status(400).send("File name is missing in the request.");
@@ -9,6 +11,9 @@ const uploadPaper = (req, res) => {
 
   const newPaper = new Paper({
     paperId: fileName,
+    title: title,
+    abstract: abstract,
+    uploadLink: fileName,
   });
 
   newPaper
@@ -19,7 +24,7 @@ const uploadPaper = (req, res) => {
     })
     .catch((error) => {
      // console.error("Error saving paper:", error);
-      res.status(500).send("Internal Server Error");
+      res.status(500).send(error);
     });
 };
 

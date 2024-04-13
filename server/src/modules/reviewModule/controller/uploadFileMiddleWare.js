@@ -21,6 +21,8 @@ const fileUploadMiddleware = (req, res, next) => {
       return res.status(400).send('Error uploading file.');
     }
     req.fileName = req.file.filename;
+    req.title = req.body.title;
+    req.abstract = req.body.abstract;
     next();
   });
 };

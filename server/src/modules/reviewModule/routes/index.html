@@ -6,8 +6,10 @@
   <title>File Upload</title>
 </head>
 <body>
-  <form action="/review/paper" method="post" enctype="multipart/form-data">
+  <form action="/reviewmodule/paper" method="post" enctype="multipart/form-data">
     <input type="file" name="pdfFile" />
+    <input type="text" name="title" placeholder="title" />
+    <input type="text" name="abstract" placeholder="abstract" />
     <button type="submit">Upload</button>
   </form>
 </body>
