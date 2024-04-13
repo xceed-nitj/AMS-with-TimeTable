@@ -10,6 +10,7 @@ import AddRoom from './timetableadmin/addroom';
 import LockedSummary from './timetableadmin/lockedsummary';
 import Login from './dashboard/login';
 import ForgotPassword from './dashboard/ForgotPassword';
+import SuperAdminPage from './dashboard/superadmin';
 
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
@@ -94,7 +95,7 @@ function App() {
 
           <Route path="/register" element={<RegistrationForm/>} />
           <Route path="/userroles" element={<AllocatedRolesPage />} />
-
+          <Route path="/superadmin" element={<SuperAdminPage/>}/>
 
         <Route path="/tt">
               <Route path="dashboard" element={<CreateTimetable />} />
@@ -162,9 +163,9 @@ function App() {
 
           {/* Conference Module Admin-Panel */}
           <Route path="/cf/dashboard" element={<EODashboard/>} />
-          <Route path="/cf" element={<ConferencePage />} />
+          <Route path="/cf/addconf" element={<ConferencePage />} />
           <Route path="/cf/:confid" element={<Sidebar  />}>
-          <Route index element={<HomeConf />} />
+          {/* <Route index element={<HomeConf />} /> */}
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
           <Route path="committee" element={<Committees />} />

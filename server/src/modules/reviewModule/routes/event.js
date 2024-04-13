@@ -3,6 +3,8 @@ const {getEvents, getEventById, addEvent, updateEvent, deleteEvent, addEditor, g
 const protectRoute =require("../../usermanagement/privateroute")
 const superAdminRoute=require("../../usermanagement/superadminroute")
 
+
+
 const router = express.Router();
 
 router.get('/getAllEvents', getEvents);
