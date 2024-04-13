@@ -1,6 +1,8 @@
 const Event = require("../../../models/reviewModule/event.js");
 const express = require("express");
 const bodyParser = require("body-parser");
+const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
+
 
 
 const app = express();
@@ -22,6 +24,7 @@ const addEvent = async (req, res) => {
       });
     await newEvent.save();
     res.status(200).send(newEvent);
+    await sendMail("harimur@gmail.com", "Welcome to Review Management", `You have been added as editor for the conference${name}`);
   } catch (error) {
     res.status(500).send(error);
   }

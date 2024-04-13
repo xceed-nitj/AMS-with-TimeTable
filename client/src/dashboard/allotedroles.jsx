@@ -94,7 +94,7 @@ const AllocatedRolesPage = () => {
                             </ChakraLink>
                           ) : null}
                            {role === "admin" ? (
-                            <ChakraLink href="/admin/dashboard" color="teal.500">
+                            <ChakraLink href="/superadmin" color="teal.500">
                               XCEED admin Dashboard
                             </ChakraLink>
                           ) : null}
