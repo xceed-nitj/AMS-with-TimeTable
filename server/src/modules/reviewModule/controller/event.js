@@ -24,7 +24,15 @@ const addEvent = async (req, res) => {
       });
     await newEvent.save();
     res.status(200).send(newEvent);
-    await sendMail("harimur@gmail.com", "Welcome to Review Management", `You have been added as editor for the conference${name}`);
+    const event= await Event.findById(newEvent._id).populate('editor').exec();
+    if (!event.editor || event.editor.length === 0) {
+      console.log("No editors found for the event");
+      return;
+    }
+    console.log(event.editor)
+    const editorEmails = event.editor.map(editor => editor.email);
+    console.log("Editor Emails:", editorEmails);
+    await sendMail(editorEmails, "Welcome to Review Management", `You have been added as editor for the conference "${name}"`);
   } catch (error) {
     res.status(500).send(error);
   }
