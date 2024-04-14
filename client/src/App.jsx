@@ -70,6 +70,10 @@ import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
+import MultiStepForm from './reviewmodule/pages/papersubmission';
+// import ConferenceDetails from './reviewmodule/pages/EditorConferencePage';
+import EventForm from './reviewmodule/pages/editorevent';
+import PaperDetails from './reviewmodule/components/PaperDetails';
 
 import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
 import Accomodation from './conferencemodule/Tabs/Accomodation';
@@ -159,6 +163,10 @@ function App() {
     <Route path="/prm/signup" element={<CreateUser/>} />
     <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
+    {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
+    <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
+    <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
+    
 
 
           {/* Conference Module Admin-Panel */}

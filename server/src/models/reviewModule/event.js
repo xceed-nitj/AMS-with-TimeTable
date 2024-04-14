@@ -10,14 +10,12 @@ const eventSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    dates:{
-        fromDate:{
+        startDate:{
             type: Date,
         },
-        toDate:{
+        endDate:{
             type: Date,
         },
-    },
     editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
     paperSubmissionDate:{
         type: Date,
