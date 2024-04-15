@@ -73,6 +73,7 @@ import CreateUser from './reviewmodule/pages/CreateUser';
 import MultiStepForm from './reviewmodule/pages/papersubmission';
 // import ConferenceDetails from './reviewmodule/pages/EditorConferencePage';
 import EventForm from './reviewmodule/pages/editorevent';
+import MultiEditorEvent from "./reviewmodule/pages/addeditor";
 import PaperDetails from './reviewmodule/components/PaperDetails';
 
 import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
@@ -165,6 +166,7 @@ function App() {
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
     {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
+    <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Import Link
 import getEnvironment from "../../getenvironment";
 import {
   Container,
@@ -135,6 +135,11 @@ function EventForm() {
   return (
     <Container>
       <Box maxW="md" mx="auto" mt={10}>
+      <Link to={`/prm/${eventId}/editor/addEditor`}>   {/* Add This Link Button to where ever you want to add Editor Option */}
+      <Button colorScheme="teal" mr={4}>
+             Click Here to Add New Editor
+            </Button>
+          </Link>
         <form onSubmit={handleSubmit}>
           <FormControl id="name" mb={4}>
             <FormLabel>Name</FormLabel>
@@ -189,7 +194,7 @@ function EventForm() {
               value={formData.instructions}
               onChange={handleChange}
             />
-          </FormControl>
+          </FormControl>  
           <Button type="submit" colorScheme="teal">
             Save
           </Button>
