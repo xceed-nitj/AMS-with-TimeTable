@@ -3,8 +3,11 @@ import { Button } from "@chakra-ui/react";
 
 const FileDownloadButton = ({ fileUrl, fileName }) => {
   const handleDownload = () => {
+    console.log("hi")
     const link = document.createElement('a');
+    console.log(link)
     link.href = fileUrl;
+    console.log(link.href)
     link.download = fileName;
     link.click();
   };
