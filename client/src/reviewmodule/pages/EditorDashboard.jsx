@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from 'react';
+import getEnvironment from '../../getenvironment';
 import {
   Menu,
   MenuButton,
   MenuList,
-  MenuItem,
   Button,
-  Toast,
 } from '@chakra-ui/react';
 
 const EditorDashboard = () => {
+  const apiUrl = getEnvironment();
+
   const [papers, setPapers] = useState([]);
   const [reviewers, setReviewers] = useState([]);
   useEffect(() => {
     const fetchPapers = async () => {
       try {
         const response = await fetch(
-          'http://localhost:8010/reviewmodule/paper/'
+          `${apiUrl}/reviewmodule/paper`
         );
         const data = await response.json();
         setPapers(data);
@@ -25,7 +26,7 @@ const EditorDashboard = () => {
     };
     const fetchReviewers = async () => {
       try {
-        const data = await fetch('http://localhost:8010/reviewmodule/reviewer');
+        const data = await fetch(`${apiUrl}/reviewmodule/reviewer`);
         const reviewersData = await data.json();
         setReviewers(reviewersData);
       } catch (error) {
@@ -39,7 +40,7 @@ const EditorDashboard = () => {
   const addReviewer = async (paperId, userId) => {
     try {
       const response = await fetch(
-        `http://localhost:8010/reviewmodule/reviewer/addReviewer?paperId=${paperId}&userId=${userId}`,
+        `${apiUrl}/reviewmodule/reviewer/addReviewer?paperId=${paperId}&userId=${userId}`,
         {
           method: 'POST',
         }
