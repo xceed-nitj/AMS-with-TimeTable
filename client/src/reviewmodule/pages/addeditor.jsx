@@ -3,6 +3,8 @@ import { Container, Box, Input, Button } from "@chakra-ui/react";
 import axios from "axios";
 import getEnvironment from "../../getenvironment";
 import { useToast } from "@chakra-ui/react";
+import Header from "../../components/header";
+
 
 function MultiEditorEvent() {
   const apiUrl = getEnvironment();
@@ -23,21 +25,24 @@ function MultiEditorEvent() {
 
     try {
       // Fetching event ID using event name
-      const eventResponse = await axios.get(
-        `${apiUrl}/reviewmodule/event/name/${eventName}`
-      );
-      const eventId = eventResponse.data.eventId;
+      // const eventResponse = await axios.get(
+      //   `${apiUrl}/reviewmodule/event/name/${eventName}`
+      // );
+      // const eventId = eventResponse.data.eventId;
+      const currentURL = window.location.pathname;
+      const parts = currentURL.split("/");
+      const eventId = parts[parts.length - 3];
 
-      // Fetching editor ID using editor email
-      const editorResponse = await axios.get(
-        `${apiUrl}/reviewmodule/event/getEditorId/${editorEmail}`
-      );
-      const editorId = editorResponse.data.editorId;
+      // // Fetching editor ID using editor email
+      // const editorResponse = await axios.get(
+      //   `${apiUrl}/reviewmodule/event/getEditorId/${editorEmail}`
+      // );
+      // const editorId = editorResponse.data.editorId;
 
       // Adding editor to the event
       const addEditorResponse = await axios.post(
         `${apiUrl}/reviewmodule/event/addEditor/${eventId}`,
-        { editor: editorId }
+        { email: editorEmail}
       );
 
       if (addEditorResponse.status === 200) {
@@ -73,15 +78,17 @@ function MultiEditorEvent() {
 
   return (
     <Container>
+        <Header title="Add Additional Editor to the event"></Header>
+
       <Box maxW="md" mx="auto" mt={10}>
         <form onSubmit={handleSubmit}>
-          <Input
+          {/* <Input
             mb={4}
             type="text"
             placeholder="Enter event name"
             value={eventName}
             onChange={handleEventNameChange}
-          />
+          /> */}
           <Input
             mb={4}
             type="email"

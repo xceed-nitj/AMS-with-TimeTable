@@ -108,15 +108,27 @@ const updateEvent = async (req, res) => {
 };
 
 const addEditor = async (req, res) => {
-  const id = req.params.id;
+  const email = req.body.email;
+  const id=req.params.id;
+  const userId = await User.find({email:email})
+  if(!userId || userId.length===0)
+  {
+    const newUser = new User({
+      name: email,
+      email: email,
+      role:"Editor",
+      password: "1234"
+    });
+  
+    newUser.save()
+    }
   if (!id) res.send("id not found");
-  const newEditor = req.body.editor;
-
+  // const newEditor = req.body.editor;
   try {
     const event = await Event.findById(id);
-    event.editor.push(newEditor);
+    const updatedId = await User.findOne({email:email})
+    event.editor.push(updatedId._id);
     await event.save();
-
     res.status(200).send("Editor is added successfully");
   } catch (error) {
     res.status(500).send(error);
@@ -145,10 +157,9 @@ const getEventIdByName = async (req, res) => {
 
 const getEditorIdByEmail = async (req, res) => {
   const editorEmail = req.params.email;
-
   try {
     // Find the user by email and role "Editor"
-    const user = await User.findOne({ email: editorEmail, role: "Editor" });
+    const user = await User.find({ email: editorEmail });
 
     if (!user) {
       // If no user with the email and role "Editor" is found, return error
@@ -164,4 +175,4 @@ const getEditorIdByEmail = async (req, res) => {
 };
 
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, addEditor,getEditorIdByEmail,getEventIdByName};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, addEditor, getEventIdByName};

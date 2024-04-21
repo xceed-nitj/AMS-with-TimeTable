@@ -11,6 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { FormControl, FormLabel } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/react";
+import Header from "../../components/header";
 
 function EventForm() {
   const [formData, setFormData] = useState({
@@ -134,6 +135,11 @@ function EventForm() {
 
   return (
     <Container>
+       <Link to={`/prm/${eventId}/editor/addEditor`}>   {/* Add This Link Button to where ever you want to add Editor Option */}
+      <Button colorScheme="teal" mr={4}>
+             Click Here to Addiitional Editors
+            </Button>
+          </Link>
       <Box maxW="md" mx="auto" mt={10}>
         <form onSubmit={handleSubmit}>
           <FormControl id="name" mb={4}>
