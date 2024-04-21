@@ -71,6 +71,8 @@ import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
 import MultiStepForm from './reviewmodule/pages/papersubmission';
+import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
+
 // import ConferenceDetails from './reviewmodule/pages/EditorConferencePage';
 import EventForm from './reviewmodule/pages/editorevent';
 import MultiEditorEvent from "./reviewmodule/pages/addeditor";
@@ -168,6 +170,7 @@ function App() {
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
+    <Route path="/prm/editor/dashboard" element={<PrmEditorDashboard/>} /> 
     
 
 
