@@ -9,14 +9,14 @@ const userSchema = new mongoose.Schema({
     },
     password: { type: String, required: true },
     experience: {
-        Dept:{type: String, required: true},
-        Designation:{type: String, required: true},
-        College:{type: String, required: true},
-        Period:{type: Number, required: true},
+        Dept:{type: String},
+        Designation:{type: String},
+        College:{type: String},
+        Period:{type: Number},
     },
-    profession: {type: String, required: true},
+    profession: {type: String},
     email: [{type: String, required: true}],
-    area:[{type: String, required: true}],
+    area:[{type: String}],
 });
 
 const User = mongoose.model("PRS-User", userSchema);
