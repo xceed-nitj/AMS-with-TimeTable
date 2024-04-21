@@ -44,6 +44,7 @@
     "react-router-dom": "^6.17.0",
     "react-to-print": "^2.14.15",
     "react-xlsx": "^0.4.10",
+    "recoil": "^0.7.7",
     "vfs": "^0.2.2",
     "xlsx": "^0.18.5",
     "xlsx-populate": "^1.21.0"

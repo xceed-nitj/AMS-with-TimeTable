@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
 import { Text, Button, Flex } from '@chakra-ui/react';
+import NavBar from '../../reviewmodule/components/NavBar';
 
 export default function Navbar() {
   const [navbarOpen, setNavbarOpen] = useState(false);
@@ -13,6 +14,9 @@ export default function Navbar() {
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isPRMPath = location.pathname.startsWith('/prm');
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +85,8 @@ export default function Navbar() {
     return null;
   }
 
+  if (isPRMPath) return <NavBar />;
+
   return (
     <nav
       className={`tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700 ${
@@ -124,20 +130,18 @@ export default function Navbar() {
                 Home
               </a>
             </li>
-           
-
 
             {isAuthenticated ? (
-            <li>
-              <a
-                href="/userroles"
-                className="tw-block tw-py-2 tw-px-3 tw-text-cyan-300 tw-rounded md:tw-bg-transparent md:tw-text-cyan-300 md:tw-p-0 hover:tw-text-cyan-500"
-                aria-current="page"
-              >
-                Dashboard
-              </a>
-            </li>
-              ) : null}
+              <li>
+                <a
+                  href="/userroles"
+                  className="tw-block tw-py-2 tw-px-3 tw-text-cyan-300 tw-rounded md:tw-bg-transparent md:tw-text-cyan-300 md:tw-p-0 hover:tw-text-cyan-500"
+                  aria-current="page"
+                >
+                  Dashboard
+                </a>
+              </li>
+            ) : null}
             <li>
               <a
                 href="/#services"
