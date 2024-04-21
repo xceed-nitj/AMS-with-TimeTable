@@ -74,6 +74,7 @@ import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
 import Accomodation from './conferencemodule/Tabs/Accomodation';
 import Event from './conferencemodule/Tabs/Events';
 import Souvenir from './conferencemodule/Tabs/Souvenir';
+import EditorDashboard from './reviewmodule/pages/EditorDashboard';
 
 function App() {
   return (
@@ -158,6 +159,7 @@ function App() {
     <Route path="/prm/signup" element={<CreateUser/>} />
     <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
+    <Route path="/prm/editor/dashboard" element={<EditorDashboard/>} />
 
 
           {/* Conference Module Admin-Panel */}
