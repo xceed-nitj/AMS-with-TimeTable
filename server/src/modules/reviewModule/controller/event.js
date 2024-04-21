@@ -1,4 +1,5 @@
 const Event = require("../../../models/reviewModule/event.js");
+const User = require("../../../models/reviewModule/user.js")
 const express = require("express");
 const bodyParser = require("body-parser");
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
@@ -122,4 +123,45 @@ const addEditor = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, addEditor};
+
+const getEventIdByName = async (req, res) => {
+  const eventName = req.params.name;
+
+  try {
+    // Find the event by name and retrieve its ID
+    const event = await Event.findOne({ name: eventName });
+    if (!event) {
+      // If event with given name not found, return error
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    // Return the ID of the event
+    res.status(200).json({ eventId: event._id });
+  } catch (error) {
+    // If an error occurs, return server error
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getEditorIdByEmail = async (req, res) => {
+  const editorEmail = req.params.email;
+
+  try {
+    // Find the user by email and role "Editor"
+    const user = await User.findOne({ email: editorEmail, role: "Editor" });
+
+    if (!user) {
+      // If no user with the email and role "Editor" is found, return error
+      return res.status(404).json({ error: "Editor not found" });
+    }
+
+    // Return the ID of the editor
+    return res.status(200).json({ editorId: user._id });
+  } catch (error) {
+    // If an error occurs, return server error
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, addEditor,getEditorIdByEmail,getEventIdByName};
