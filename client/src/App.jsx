@@ -82,7 +82,7 @@ function App() {
       {/* <div className="app"> */}
 
       {/* <h1>XCEED-Timetable Module</h1>  */}
-      {<Navbar />}
+      <Navbar />
 
       <Routes>
         {/* Landing Page */}

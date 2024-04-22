@@ -30,6 +30,10 @@ import Submission from '../components/Submission';
 
 function MultiStepForm() {
   const [next, setNext] = useState(true);
+  const { activeStep, setActiveStep } = useSteps({
+    index: 0
+  });
+
   console.log(next);
   const steps = [
     {
@@ -59,14 +63,10 @@ function MultiStepForm() {
     {
       title: 'Submission',
 
-      component: <Submission setNext={setNext} />,
+      component: <Submission setNext={setNext} setActiveStep={setActiveStep} />,
     },
   ];
 
-  const { activeStep, setActiveStep } = useSteps({
-    index: 0,
-    count: steps.length,
-  });
   console.log(activeStep);
   function handlePrevious() {
     if (activeStep == 0) return;
@@ -107,7 +107,7 @@ function MultiStepForm() {
         ))}
       </Stepper>
       {steps[activeStep].component}
-      <div className='tw-flex tw-justify-between'>
+      <div className="tw-flex tw-justify-between">
         <Button onClick={handlePrevious}>Back</Button>
         <Button onClick={handleNext} isDisabled={next}>
           Next
