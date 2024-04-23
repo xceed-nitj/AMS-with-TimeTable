@@ -1,5 +1,6 @@
 const Event = require("../../../models/reviewModule/event.js");
 const User = require("../../../models/reviewModule/user.js")
+const XUser= require("../../../models/usermanagement/user.js")
 const express = require("express");
 const bodyParser = require("body-parser");
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
@@ -19,12 +20,36 @@ const addEvent = async (req, res) => {
     req.body;
 
   try {
+    let newUser;
+    const xceedUser= await XUser.findById(editor)
+    if (!xceedUser) {
+      throw new Error('User not found');
+  }
+    if (!xceedUser.role.includes('PRM')) {
+      xceedUser.role.push('PRM');
+      await xceedUser.save(); // Save the updated user
+  }
+    const eventUser=await User.findOne({email: xceedUser.email})
+    if(!eventUser || eventUser.length===0)
+    {
+      newUser = new User({
+        name: xceedUser.email,
+        email: xceedUser.email,
+        role:"Editor",
+        password: "1234"
+      });
+    newUser.save()
+
+    }
+    else{
+      newUser=eventUser;
+    }
     const newEvent = new Event({
       name:name,
-      editor: editor,
+      editor: newUser.id,
       });
     await newEvent.save();
-    res.status(200).send(newEvent);
+
     const event= await Event.findById(newEvent._id).populate('editor').exec();
     if (!event.editor || event.editor.length === 0) {
       console.log("No editors found for the event");
@@ -34,8 +59,11 @@ const addEvent = async (req, res) => {
     const editorEmails = event.editor.map(editor => editor.email);
     console.log("Editor Emails:", editorEmails);
     await sendMail(editorEmails, "Welcome to Review Management", `You have been added as editor for the conference "${name}"`);
+    res.status(200).send(newEvent);
+
   } catch (error) {
     res.status(500).send(error);
+    console.log(error)
   }
 };
 const getEvents = async (req, res) => {
@@ -49,9 +77,11 @@ const getEvents = async (req, res) => {
 };
 
 const getEventsByUser = async (req, res) => {
-  const userId = req.user.id;
+  const Xuser= await XUser.findById(req.user.id)
+  const userId= await User.findOne({email:Xuser.email});
+
   try {
-    const events = await Event.find({ 'editor': { $in: [userId] } }).exec();
+    const events = await Event.find({ 'editor': { $in: [userId.id] } }).exec();
     res.status(200).json(events);
   } catch (error) {
     res.status(500).send(error);

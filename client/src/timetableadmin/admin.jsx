@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Button, VStack, Input, Heading, Table, Thead, Tbody, Tr, Th, Td } from '@chakra-ui/react';
+import { Button, VStack, Input, Heading, Table, Thead, Tbody, Tr, Th, Td, Container } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import Header from '../components/header';
+import {
+  CustomTh,
+  CustomLink,
+  CustomBlueButton,
+  CustomDeleteButton,
+  CustomTealButton,
+} from "../styles/customStyles";
+
+
 
 const AdminPage = () => {
   const [formData, setFormData] = useState({
@@ -128,8 +138,33 @@ const AdminPage = () => {
   };
   return (
     <VStack spacing={4} align="stretch">
-    <Heading>Admin page</Heading>
+<Container maxW="5xl">
 
+    <Header title="Timetable Admin page"></Header>
+    <div>
+      <Link to="/tt/mastersem" style={{ backgroundColor: 'blue', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Master Sem</button>
+      </Link>
+      <Link to="/tt/masterfaculty" style={{ backgroundColor: 'green', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Master Faculty</button>
+      </Link>
+      <Link to="/tt/masterroom" style={{ backgroundColor: 'orange', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Master Room</button>
+      </Link>
+      <Link to="/tt/masterdelete" style={{ backgroundColor: 'red', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Admin Delete Page</button>
+      </Link>
+      <Link to="/tt/allotment" style={{ backgroundColor: 'purple', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Room Allotment</button>
+      </Link>
+      <Link to="/tt/admin/viewinstituteload" style={{ backgroundColor: 'gray', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Institute Load</button>
+      </Link>
+    </div>
+    
+    <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
+      <Heading>Create New Session</Heading>
+    </div>
       <form onSubmit={handleSubmit}>
         <Input
           type="text"
@@ -139,28 +174,10 @@ const AdminPage = () => {
           placeholder="Enter New Session"
         />
         <Button type="submit" colorScheme="teal">
-          Create Allotment
+          Create Session
         </Button>
       </form>
 
-      <Link to="/tt/mastersem">
-        <Button colorScheme="teal">Go to Master Sem</Button>
-      </Link>
-      <Link to="/tt/masterfaculty">
-        <Button colorScheme="teal">Go to Master Faculty</Button>
-      </Link>
-      <Link to="/tt/masterroom">
-        <Button colorScheme="teal">Go to Master Room</Button>
-      </Link>
-      <Link to="/tt/masterdelete">
-        <Button colorScheme="teal">Go to admin delete page</Button>
-      </Link>
-      <Link to="/tt/allotment">
-        <Button colorScheme="teal">Go Room Allotment</Button>
-      </Link>
-      <Link to="/tt/admin/instituteload">
-        <Button colorScheme="teal">Institute Faculty load </Button>
-      </Link>
 
       <Table variant="striped">
   <Thead>
@@ -188,17 +205,18 @@ const AdminPage = () => {
       {editingSessionId === session ? (
         <Button onClick={handleSave}>Save</Button>
       ) : (
-        <Button onClick={() => handleEdit(session)}>Edit</Button>
+        <CustomTealButton onClick={() => handleEdit(session)}>Edit</CustomTealButton>
       )}
     </Td>
     <Td>
-      <Button onClick={() => handleDelete(session)}>Delete</Button>
+      <CustomDeleteButton onClick={() => handleDelete(session)}>Delete</CustomDeleteButton>
     </Td>
   </Tr>
 ))}
 
 </Tbody>
 </Table>
+</Container>
     </VStack>
   );
 };
