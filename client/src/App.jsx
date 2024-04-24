@@ -70,7 +70,7 @@ import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
-import MultiStepForm from './reviewmodule/pages/papersubmission';
+
 import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
 
 // import ConferenceDetails from './reviewmodule/pages/EditorConferencePage';
@@ -82,6 +82,7 @@ import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
 import Accomodation from './conferencemodule/Tabs/Accomodation';
 import Event from './conferencemodule/Tabs/Events';
 import Souvenir from './conferencemodule/Tabs/Souvenir';
+import MultiStepForm from './reviewmodule/pages/MultiStepForm';
 
 function App() {
   return (
@@ -171,6 +172,7 @@ function App() {
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/editor/dashboard" element={<PrmEditorDashboard/>} /> 
+    <Route path="/prm/editor" element={<MultiStepForm />} />
     
 
 
