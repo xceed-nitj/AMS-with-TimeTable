@@ -34,7 +34,7 @@ import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import ViewInstituteLoad from './timetableadmin/viewinstituteload';
 import EditMasterFaculty from './timetableadmin/editmasterfaculty';
-
+import ImportForm from './timetableadmin/importCentralRoom'
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 
 import Home from './pages/Home';
@@ -140,6 +140,8 @@ function App() {
 
           {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
+          <Route path="/tt/allotment/import" element={<ImportForm/>}/>
+
           <Route path="/tt/admin" element={<AdminPage/>}/>
 
         {/* Same link */}
