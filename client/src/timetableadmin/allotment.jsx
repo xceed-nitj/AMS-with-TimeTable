@@ -11,8 +11,8 @@ import {
   Checkbox,
   Box,
   Text,
-  Link,
 } from '@chakra-ui/react';
+import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
 
 
