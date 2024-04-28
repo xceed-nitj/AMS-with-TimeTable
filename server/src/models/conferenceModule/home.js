@@ -16,10 +16,17 @@ const homeSchema = new mongoose.Schema({
   confEndDate: {
     type: Date,
   },
-  aboutConf: {
-    type: String,
-  },
-  aboutIns: String,
+  
+  about: [
+    {
+      title: {
+        type: String,
+      },
+      description: {
+        type: String,
+      },
+    },
+  ],
   youtubeLink: String,
   instaLink: String,
   facebookLink: String,

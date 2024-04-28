@@ -120,6 +120,7 @@ const Location = () => {
     };
 
     const handleEdit = (editIDNotState) => {
+        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/location/${IdConf}`, {
             withCredentials: true
 

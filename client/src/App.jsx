@@ -170,7 +170,7 @@ function App() {
           <Route path="locations" element={<Location />} />
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
-          <Route path="template" element={<CommonTemplate/>} />
+          {/* <Route path="template" element={<CommonTemplate/>} /> */}
           <Route path="sponsorship-rates" element={<SponsorshipRate />} />
           <Route path="accomodation" element={<Accomodation />} />
           <Route path="events" element={<Event />} />

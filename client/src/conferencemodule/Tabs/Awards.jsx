@@ -69,6 +69,7 @@ const Awards = () => {
         }
     };
     const handleEditorChange = (value) => {
+        window.scrollTo(0, 0);
         setFormData({
             ...formData,
             description: value,

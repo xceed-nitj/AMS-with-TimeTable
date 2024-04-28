@@ -108,6 +108,7 @@ const Images = () => {
     };
 
     const handleEdit = (editIDNotState) => {
+        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/images/${editIDNotState}`, {
             withCredentials: true
 

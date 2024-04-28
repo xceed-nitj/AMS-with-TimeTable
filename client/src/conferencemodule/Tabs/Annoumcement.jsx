@@ -123,6 +123,7 @@ const Announcement = () => {
     };
 
     const handleEdit = (editIDNotState) => {
+        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/announcements/${editIDNotState}`, {
             withCredentials: true
 
