@@ -182,7 +182,7 @@ function App() {
           <Route path="/cf/dashboard" element={<EODashboard/>} />
           <Route path="/cf/addconf" element={<ConferencePage />} />
           <Route path="/cf/:confid" element={<Sidebar  />}>
-          {/* <Route index element={<HomeConf />} /> */}
+          <Route index element={<HomeConf />} />
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
           <Route path="committee" element={<Committees />} />
