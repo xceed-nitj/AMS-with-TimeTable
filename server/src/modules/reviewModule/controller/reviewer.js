@@ -14,6 +14,15 @@ app.use(
 );
 app.use(bodyParser.json());
 
+const getAllReviewers = async (req, res) => {
+  try {
+    const user = await User.find({ role: "Reviewer" }).exec();
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+}
+
 const addReviewer = async (req, res) => {
   let { paperId, userId } = req.query;
   console.log(paperId, userId);
@@ -28,14 +37,14 @@ const addReviewer = async (req, res) => {
 
     const user = await User.findById(userId);
 
-    if (!user) {
-      res.status(401).send("User not found");
-      return;
-    }
+    // if (!SignedInUser) {
+    //   res.status(401).send("User not found");
+    //   return;
+    // }
 
-    if (user.role !== "Editor") {
-      res.status(401).send("Only editor is allowed to add reviewer");
-    }
+    // if (SignedInUser.role !== "Editor") {
+    //   res.status(401).send("Only editor is allowed to add reviewer");
+    // }
 
     paper.reviewers.push({
       userId: userId,
@@ -156,4 +165,4 @@ const deleteReviewer = async (req, res) => {
   }
 };
 
-module.exports = { addReviewer, updateReviewer, deleteReviewer };
+module.exports = { getAllReviewers, addReviewer, updateReviewer, deleteReviewer };

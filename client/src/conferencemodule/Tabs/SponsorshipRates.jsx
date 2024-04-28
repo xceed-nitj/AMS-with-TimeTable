@@ -112,6 +112,7 @@ const SponsorshipRate = () => {
     };
 
     const handleEdit = (editIDNotState) => {
+        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/sponsorship-rates/${editIDNotState}`, {
             withCredentials: true
 

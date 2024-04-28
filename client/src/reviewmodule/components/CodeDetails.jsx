@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRecoilState } from "recoil";
-import { paperState } from "./../state/atoms/paperState";
+import { paperState } from "../state/atoms/paperState";
 
 function CodeDetails({setNext}) {
   const [paper, setPaper] = useRecoilState(paperState);
@@ -33,20 +33,15 @@ function CodeDetails({setNext}) {
   }
   return (
     <div>
-      <div className="font-bold text-xl">CodeDetails</div>
-      <div className="flex flex-col gap-5 p-20 py-10 container mx-auto">
-        {[...Array(5)].map((_, index) => (
-          <div key={index} className="flex gap-5">
-            <label>{`Upload File ${index + 1}: `}</label>
-            <input
-              type="file" name="file"
-              onChange={(e) => handleChange(index, e)}
-              // value={selectedFiles[index] || ""}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
+  <div className="tw-font-bold tw-text-xl tw-pt-10">CodeDetails</div>
+  <div className="tw-flex  tw-gap-5 tw-p-20 tw-container tw-mx-auto tw-py-10">
+    <label>{`Upload Files: `}</label>
+    <input type="file" name="file" multiple onChange={handleChange} />
+  </div>
+  {/* <div>
+    {paper && paper.paperUploads && paper.paperUploads.length>0 && paper.paperUploads.map((index, file) => <p key={index}>hi</p>)}
+  </div> */}
+</div>
   );
 }
 

@@ -16,7 +16,7 @@ const eventSchema = new mongoose.Schema({
         endDate:{
             type: Date,
         },
-    editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
+    editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PRS-User' }],
     paperSubmissionDate:{
         type: Date,
     },

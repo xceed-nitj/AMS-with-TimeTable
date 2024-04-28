@@ -1,23 +1,25 @@
-import React, { useEffect } from "react";
-import { useRecoilState } from "recoil";
-import { paperState } from "./../state/atoms/paperState";
+import React, { useEffect } from 'react';
+import { useRecoilState } from 'recoil';
+import { paperState } from '../state/atoms/paperState';
 
 export default function Terms({ setNext }) {
   const [paper, setPaper] = useRecoilState(paperState);
   console.log(paper);
 
-  useEffect(()=>{
+  useEffect(() => {
     setNext(!paper.terms);
-  },[paper.terms]);
+  }, [paper.terms]);
 
   function handleChange(e) {
     setPaper({ ...paper, terms: !paper.terms });
   }
   return (
     <>
-      <div className="font-bold text-xl">Terms and Conditions</div>
-      <div className="flex flex-col gap-5 px-5 py-10">
-        {/* <p className="text-xl pt-10 font-bold">Terms and Conditions:</p> */}
+      <div className="tw-font-bold tw-text-xl tw-pt-10">
+        Terms and Conditions
+      </div>
+      <div className="tw-flex tw-flex-col tw-gap-5 tw-px-5 tw-py-5">
+        {/* <p className="tw-text-xl tw-pt-10 tw-font-bold">Terms and Conditions:</p> */}
         <ol>
           <li>
             Accuracy of Materials: The materials appearing on the website could
@@ -46,10 +48,10 @@ export default function Terms({ setNext }) {
             conditions, please contact us at [contact@email.com].
           </li>
         </ol>
-        <div className="flex gap-2 ">
+        <div className="tw-flex tw-gap-2">
           <input
             type="checkbox"
-            className="w-5"
+            className="tw-w-5"
             checked={paper.terms}
             onChange={handleChange}
           />

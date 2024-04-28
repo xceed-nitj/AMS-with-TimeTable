@@ -5,7 +5,7 @@ import LoadingIcon from "../components/LoadingIcon";
 import { useNavigate } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/layout";
-import formatDate from "../utils/formatDate";
+
 import { FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
 import {
@@ -32,7 +32,8 @@ const HomeConf = () => {
         "confName": "",
         "confStartDate": "",
         "confEndDate": "",
-        "about": [{ title: "", description: "" }],
+        "aboutConf": "",
+        "aboutIns": "",
         "youtubeLink": "",
         "instaLink": "",
         "facebookLink": "",
@@ -47,25 +48,10 @@ const HomeConf = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    const { confName, confStartDate, confEndDate, aboutConf, about, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName } = formData;
+    const { confName, confStartDate, confEndDate, aboutConf, aboutIns, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName } = formData;
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-    const handleArrayChange = (e, index) => {
-        const { name, value } = e.target;
-        const newAboutIns = [...about];
-        newAboutIns[index][name] = value;
-        setFormData({ ...formData, about: newAboutIns });
-    };
-
-    const handleDescriptionChange = (value, index) => {
-        const newAboutIns = [...about];
-        newAboutIns[index].description = value;
-        setFormData({ ...formData, about: newAboutIns });
-    };
-
-    const addNewAbout = () => {
-        setFormData({ ...formData, about: [...about, { title: "", description: "" }] });
     };
 
     const handleSubmit = (e) => {
@@ -123,7 +109,6 @@ const HomeConf = () => {
     };
 
     const handleEdit = (editIDNotState) => {
-        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/home/${editIDNotState}`, {
             withCredentials: true
 
@@ -161,6 +146,8 @@ const HomeConf = () => {
                     About Conference
                 </Heading></Center>
 
+
+
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >Name of the Conference :</FormLabel>
                     <Input
@@ -194,33 +181,32 @@ const HomeConf = () => {
                         mb='2.5'
                     />
                 </FormControl>
-                <FormLabel isRequired={true} >About:</FormLabel>
-
-                {about.map((about, index) => (
-                    <div  key={index}>
-                        <FormControl  mb='3'    >
-                            <p >Title:</p>
-                            <Input
-                                type="text"
-                                name="title"
-                                value={about.title}
-                                onChange={(e) => handleArrayChange(e, index)}
-                                placeholder="Title"
-                            />
-                        </FormControl>
-                        <FormControl  mb='3' >
-                            <p >Description:</p>
-                            <JoditEditor
-                                ref={ref}
-                                value={about.description}
-                                onChange={(value) => handleDescriptionChange(value, index)}
-                                classname='tw-mb-5'
-                            />
-                        </FormControl>
-                    </div>
-                ))}
-                <Button colorScheme="blue" onClick={addNewAbout} mb="4">Add New About</Button>
-
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >About the Conference :</FormLabel>
+                    {/* <Input
+                        type="text"
+                        name="aboutConf"
+                        value={aboutConf}
+                        onChange={handleChange}
+                        placeholder="About Conference"
+                        mb='2.5'
+                    /> */}
+                    <JoditEditor
+                        ref={ref}
+                        value={aboutConf}
+                        onChange={(value) => handleEditorChange(value, "aboutConf")}
+                        classname='tw-mb-5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >About the Institute :</FormLabel>
+                    <JoditEditor
+                        ref={ref}
+                        value={aboutIns}
+                        onChange={(value) => handleEditorChange(value, "aboutIns")}
+                        classname='tw-mb-5'
+                    />
+                </FormControl>
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >You Tube Link :</FormLabel>
                     <Input
@@ -288,16 +274,17 @@ const HomeConf = () => {
                         mb='2.5'
                     />
                 </FormControl>
-
                 <Center>
+
                     <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
                         {editID ? 'Update' : 'Add'}
                     </Button>
+
                 </Center>
                 <Heading as="h1" size="xl" mt="6" mb="6">
-                    Added Information
-                </Heading>
+                    Added Information </Heading>
                 {!loading ? (
+
                     <TableContainer>
                         <Table
                             variant='striped'
@@ -316,8 +303,8 @@ const HomeConf = () => {
                                 {data ? (
                                     <Tr key={data._id}>
                                         <Td><Center>{data.confName}</Center></Td>
-                                        <Td><Center>{formatDate(data.confStartDate)}</Center></Td>
-                                        <Td><Center>{formatDate(data.confEndDate)}</Center></Td>
+                                        <Td><Center>{data.confStartDate}</Center></Td>
+                                        <Td><Center>{data.confEndDate}</Center></Td>
                                         <Td><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
@@ -325,6 +312,7 @@ const HomeConf = () => {
                                                 setEditID(data._id);
                                             }}>Edit </Button>
                                         </Center></Td>
+
                                     </Tr>) : (
                                     <Tr>
                                         <Td colSpan="5" className="tw-p-1 tw-text-center">
@@ -335,9 +323,11 @@ const HomeConf = () => {
                         </Table>
                     </TableContainer>
                 )
+
                     : <LoadingIcon />
                 }
-            </Container>
+            </Container >
+
         </main>
     );
 };

@@ -34,7 +34,7 @@ import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import ViewInstituteLoad from './timetableadmin/viewinstituteload';
 import EditMasterFaculty from './timetableadmin/editmasterfaculty';
-
+import ImportForm from './timetableadmin/importCentralRoom'
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 
 import Home from './pages/Home';
@@ -71,7 +71,9 @@ import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
-import MultiStepForm from './reviewmodule/pages/papersubmission';
+
+import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
+
 // import ConferenceDetails from './reviewmodule/pages/EditorConferencePage';
 import EventForm from './reviewmodule/pages/editorevent';
 import MultiEditorEvent from "./reviewmodule/pages/addeditor";
@@ -83,6 +85,7 @@ import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
 import Accomodation from './conferencemodule/Tabs/Accomodation';
 import Event from './conferencemodule/Tabs/Events';
 import Souvenir from './conferencemodule/Tabs/Souvenir';
+import MultiStepForm from './reviewmodule/pages/MultiStepForm';
 
 function App() {
   return (
@@ -138,9 +141,11 @@ function App() {
         <Route path="classrooms" element={<ViewMRooms />} />
         {/* Same link */}
 
-        {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
-        <Route path="/tt/allotment" element={<AllotmentForm />} />
-        <Route path="/tt/admin" element={<AdminPage />} />
+          {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
+          <Route path="/tt/allotment" element={<AllotmentForm/>}/>
+          <Route path="/tt/allotment/import" element={<ImportForm/>}/>
+
+          <Route path="/tt/admin" element={<AdminPage/>}/>
 
         {/* Same link */}
         <Route path="timetable" element={<MasterView />} />
@@ -162,23 +167,22 @@ function App() {
         <Route path="/cm/c/:eventid/:participantid" element={<Template01 />} />
         <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03 />} />
 
-        {/* Review management routes*/}
-        <Route path="/prm/login" element={<ReviewLogin />} />
-        <Route path="/prm/signup" element={<CreateUser />} />
-        <Route path="/prm/assigneditor" element={<PRMEventRegistration />} />
-        <Route path="/prm/dashboard" element={<PRMDashboard />} />
-        {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
-        <Route path="/prm/:eventId/editor/confdetails" element={<EventForm />} />
-        <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent />} />
-        <Route path="/prm/:eventId/paper" element={<PaperDetails />} />
-        <Route path="/prm/ReviewerAcceptance" element={<ReviewerAcceptance />} />
+    {/* Review management routes*/}
+    <Route path="/prm/login" element={<ReviewLogin/>} />
+    <Route path="/prm/signup" element={<CreateUser/>} />
+    <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
+    <Route path="/prm/dashboard" element={<PRMDashboard/>} />
+    {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
+    <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
+    <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
+    <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
+    
 
 
-
-        {/* Conference Module Admin-Panel */}
-        <Route path="/cf/dashboard" element={<EODashboard />} />
-        <Route path="/cf/addconf" element={<ConferencePage />} />
-        <Route path="/cf/:confid" element={<Sidebar />}>
+          {/* Conference Module Admin-Panel */}
+          <Route path="/cf/dashboard" element={<EODashboard/>} />
+          <Route path="/cf/addconf" element={<ConferencePage />} />
+          <Route path="/cf/:confid" element={<Sidebar  />}>
           {/* <Route index element={<HomeConf />} /> */}
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
@@ -192,7 +196,7 @@ function App() {
           <Route path="locations" element={<Location />} />
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
-          <Route path="template" element={<CommonTemplate />} />
+          <Route path="template" element={<CommonTemplate/>} />
           <Route path="sponsorship-rates" element={<SponsorshipRate />} />
           <Route path="accomodation" element={<Accomodation />} />
           <Route path="events" element={<Event />} />

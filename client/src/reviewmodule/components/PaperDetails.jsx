@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { useRecoilState } from "recoil";
-import { paperState } from "./../state/atoms/paperState";
+import React, { useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
+import { paperState } from '../state/atoms/paperState';
 
-function PaperDetails({setNext}) {
+function PaperDetails({ setNext }) {
   const [paper, setPaper] = useRecoilState(paperState);
   console.log(paper);
-  
+
   useEffect(() => {
     // Check if both title and abstract fields have values
     setNext(!(paper.paperDetails.title && paper.paperDetails.abstract));
@@ -20,31 +20,31 @@ function PaperDetails({setNext}) {
 
   return (
     <>
-      <div className="font-bold text-xl">PaperDetails</div>
-      <form className="flex flex-col gap-2 p-20 mx-auto w-[600px] py-10">
-        <div className="flex justify-between">
+      <div className="tw-font-bold tw-text-xl tw-pt-10">PaperDetails</div>
+      <form className="tw-flex tw-flex-col tw-gap-2 tw-p-20 tw-mx-auto tw-w-[600px] tw-py-10">
+        <div className="tw-flex tw-justify-between">
           <label>Title:</label>
-          <p>{(paper.paperDetails.title || "").length}/300</p>
+          <p>{(paper.paperDetails.title || '').length}/300</p>
         </div>
         <div>
           <input
             id="title"
-            value={paper.paperDetails.title || ""}
+            value={paper.paperDetails.title || ''}
             maxLength={300}
             onChange={handleChange}
-            className="w-full p-1"
+            className="tw-w-full tw-p-1 tw-bg-slate-100 tw-rounded-md"
           />
         </div>
-        <div className="flex justify-between pt-5">
+        <div className="tw-flex tw-justify-between tw-pt-5 ">
           <label>Abstract:</label>
-          <p>{(paper.paperDetails.abstract || "").length}/1500</p>
+          <p>{(paper.paperDetails.abstract || '').length}/1500</p>
         </div>
         <textarea
           id="abstract"
-          value={paper.paperDetails.abstract || ""}
+          value={paper.paperDetails.abstract || ''}
           maxLength={1500}
           onChange={handleChange}
-          className="p-1"
+          className="tw-p-1 tw-bg-slate-100 tw-rounded-md"
         />
       </form>
     </>
