@@ -47,7 +47,7 @@ const PRMEventRegistration = () => {
         method: 'GET',
          credentials: 'include' });
         const data = await response.json();
-        // setEvents(data);
+        setEvents(data);
         console.log(data)
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -101,8 +101,8 @@ console.log(formData)
   };
 
   return (
-    <Container maxW="lg">
-        <Header title="Add Event for Certificate Module"></Header>
+    <Container maxW="4xl">
+        <Header title="Assign Editors to the Conference"></Header>
       <form onSubmit={handleSubmit}>
         <FormControl mb="4">
           <FormLabel>Event Name</FormLabel>
@@ -142,7 +142,7 @@ console.log(formData)
           {events.map((event) => (
             <Tr key={event._id}>
               <Td>{event.name}</Td>
-              <Td>{event.editor}</Td>
+              <Td>{event.editor[0]?.email}</Td>
             </Tr>
           ))}
         </Tbody>

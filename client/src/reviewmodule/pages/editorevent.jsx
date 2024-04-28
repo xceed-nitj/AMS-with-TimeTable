@@ -1,82 +1,216 @@
 import React, { useState, useEffect } from "react";
-import { Container, Box, Input, Button, VStack, Textarea } from "@chakra-ui/react";
+import { useNavigate, Link } from "react-router-dom"; // Import Link
+import getEnvironment from "../../getenvironment";
+import {
+  Container,
+  Box,
+  Input,
+  Button,
+  VStack,
+  Textarea,
+} from "@chakra-ui/react";
+import { FormControl, FormLabel } from "@chakra-ui/react";
+import { useToast } from "@chakra-ui/react";
+import Header from "../../components/header";
 
-const EventForm = () => {
-  const [name, setName] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [paperSubmissionDate, setPaperSubmissionDate] = useState("");
-  const [reviewTime, setReviewTime] = useState("");
-  const [instructions, setInstructions] = useState("");
+function EventForm() {
+  const [formData, setFormData] = useState({
+    name: "",
+    startDate: "",
+    endDate: "",
+    paperSubmissionDate: "",
+    reviewTime: "",
+    instructions: "",
+  });
+
+  const toast = useToast();
+  const apiUrl = getEnvironment();
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    let month = "" + (d.getMonth() + 1);
+    let day = "" + d.getDate();
+
+    if (month.length < 2) month = "0" + month;
+    if (day.length < 2) day = "0" + day;
+
+    return [year, month, day].join("-");
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let formattedValue = value;
+    
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: formattedValue,
+    }));
+  };
+  
+  const navigate = useNavigate();
+  const currentURL = window.location.pathname;
+  const parts = currentURL.split("/");
+  const eventId = parts[parts.length - 3];
+
+  useEffect(() => {
+    const fetchEventById = async () => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/api/v1/reviewmodule/event/${eventId}`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
+        if(response.ok)
+        {
+        const data = await response.json();
+        console.log(data)
+        setFormData({
+          ...data,
+          // Extracting date part only
+          startDate: data.startDate ? data.startDate.split("T")[0] : "",
+          endDate: data.endDate ? data.endDate.split("T")[0] : "",
+          paperSubmissionDate: data.paperSubmissionDate
+            ? data.paperSubmissionDate.split("T")[0]
+            : "",
+        });
+      }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    fetchEventById();
+  }, [apiUrl, eventId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("/api/events", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          dates: { fromDate, toDate },
-          paperSubmissionDate,
-          reviewTime,
-          instructions,
-        }),
-      });
+      const response = await fetch(
+        `${apiUrl}/api/v1/reviewmodule/event/${eventId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        }
+      );
       const data = await response.json();
+      if (response.ok) {
+        toast({
+          title: "Conference data updated",
+          status: "success",
+          duration: 6000,
+          isClosable: true,
+          position: "bottom",
+        });
+      } else {
+        // Handle non-OK response
+        toast({
+          title: "Error updating conference data",
+          description: "Please try again later",
+          status: "error",
+          duration: 6000,
+          isClosable: true,
+          position: "bottom",
+        });
+      }
       console.log(data);
     } catch (error) {
       console.error("Error:", error);
+      // Handle fetch error
+      toast({
+        title: "Error updating conference data",
+        description: "Please try again later",
+        status: "error",
+        duration: 6000,
+        isClosable: true,
+        position: "bottom",
+      });
     }
   };
 
   return (
     <Container>
-      <Box p={4}>
+      <Header title="Add conference details"></Header>
+      <Box maxW="md" mx="auto" mt={10}>
+     
         <form onSubmit={handleSubmit}>
-          <VStack spacing={4}>
+          <FormControl id="name" mb={4}>
+            <FormLabel>Name</FormLabel>
             <Input
-              placeholder="Event Name"
-              value={name}
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               isDisabled
-              onChange={(e) => setName(e.target.value)}
             />
+          </FormControl>
+          <FormControl id="startDate" mb={4}>
+            <FormLabel>Start Date of the conference</FormLabel>
             <Input
               type="date"
-              placeholder="From Date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
+              name="startDate"
+              value={formData.startDate}
+              onChange={handleChange}
             />
+          </FormControl>
+          <FormControl id="endDate" mb={4}>
+            <FormLabel>End Date of the conference</FormLabel>
             <Input
               type="date"
-              placeholder="To Date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
+              name="endDate"
+              value={formData.endDate}
+              onChange={handleChange}
             />
+          </FormControl>
+          <FormControl id="paperSubmissionDate" mb={4}>
+            <FormLabel>Paper Submission Deadline</FormLabel>
             <Input
               type="date"
-              placeholder="Paper Submission Date"
-              value={paperSubmissionDate}
-              onChange={(e) => setPaperSubmissionDate(e.target.value)}
+              name="paperSubmissionDate"
+              value={formData.paperSubmissionDate}
+              onChange={handleChange}
             />
+          </FormControl>
+          <FormControl id="reviewTime" mb={4}>
+            <FormLabel>Review Time</FormLabel>
             <Input
-              placeholder="Review Time"
-              value={reviewTime}
-              onChange={(e) => setReviewTime(e.target.value)}
+              type="text"
+              name="reviewTime"
+              value={formData.reviewTime}
+              onChange={handleChange}
             />
+          </FormControl>
+          <FormControl id="instructions" mb={4}>
+            <FormLabel>Instructions</FormLabel>
             <Textarea
-              placeholder="Instructions"
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
+              name="instructions"
+              value={formData.instructions}
+              onChange={handleChange}
             />
-            <Button type="submit">Submit</Button>
-          </VStack>
+          </FormControl>  
+          <FormControl id="name" mb={4}>
+            <FormLabel>List of Editors</FormLabel>
+            <Input
+              type="text"
+              name="name"
+              value={formData.editor}
+              onChange={handleChange}
+              isDisabled
+            />
+          </FormControl>
+
+          <Button type="submit" colorScheme="teal">
+            Save
+          </Button>
         </form>
       </Box>
     </Container>
   );
-};
+}
 
 export default EventForm;

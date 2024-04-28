@@ -2,15 +2,21 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    experience: {
-        Dept:{type: String, required: true},
-        Designation:{type: String, required: true},
-        College:{type: String, required: true},
-        Period:{type: Number, required: true},
+    role:{
+        type:String,
+        enum: ['Author','Editor','Reviewer'],
+        required: true,
     },
-    profession: {type: String, required: true},
+    password: { type: String, required: true },
+    experience: {
+        Dept:{type: String},
+        Designation:{type: String},
+        College:{type: String},
+        Period:{type: Number},
+    },
+    profession: {type: String},
     email: [{type: String, required: true}],
-    area:[{type: String, required: true}],
+    area:[{type: String}],
 });
 
 const User = mongoose.model("PRS-User", userSchema);

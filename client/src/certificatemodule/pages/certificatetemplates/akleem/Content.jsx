@@ -105,7 +105,15 @@ function Content() {
   }, [participantId, certiType, participantDetail, eventId]); // Empty dependency array to execute the effect only once
 
   return (
-    <SelectCertficate eventId={eventId} contentBody={contentBody} certiType={certiType} logos={logos} participantDetail={participantDetail} signature={signature} header={header} templateId={templateId} />
+    <SelectCertficate
+      eventId={eventId}
+      contentBody={contentBody}
+      certiType={certiType}
+      logos={logos}
+      participantDetail={participantDetail}
+      signature={signature}
+      header={header}
+      templateId={templateId} />
   );
 
 }

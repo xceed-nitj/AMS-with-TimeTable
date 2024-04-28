@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import getEnvironment from '../getenvironment';
+import Header from '../components/header';
+import {CustomTh, CustomLink,CustomBlueButton, CustomTealButton, CustomDeleteButton} from '../styles/customStyles';
 import {
   Container,
   FormLabel,
@@ -8,8 +10,9 @@ import {
   Button,
   Checkbox,
   Box,
-  Text
+  Text,
 } from '@chakra-ui/react';
+import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
 
 
@@ -251,7 +254,11 @@ const AllotmentForm = () => {
     <Box>
 
     <form onSubmit={handleSubmit}>
-      <Heading>Allotment</Heading>
+      <Header title="Allotment"></Header>
+      <Link to="/tt/allotment/import">
+          <CustomTealButton>Import allotment from previous session</CustomTealButton>
+                </Link>
+
       <FormLabel>Session:</FormLabel>
       <Select
   name="session"
@@ -341,30 +348,30 @@ const AllotmentForm = () => {
         Afternoon Slot
       </Checkbox>
       <div>
-      <Button
+      <CustomTealButton
         type="Button"
         onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}
       >
         Add Room
-      </Button>
-      <Button
+      </CustomTealButton>
+      <CustomDeleteButton
         type="Button"
         onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
       >
         Remove Room
-      </Button>
+      </CustomDeleteButton>
       </div>       
                   </div>
                 ))}
                
               </td>
               <td>
-              <Button
+              <CustomDeleteButton
                 type="button"
                 onClick={() => handleRemoveAllotment(deptIndex, 'centralisedAllotments')}
               >
                 Remove Allotment
-              </Button>
+              </CustomDeleteButton>
             </td>
             </tr>
           ))}
@@ -425,29 +432,29 @@ const AllotmentForm = () => {
         ))}
       </Select>
       {/* Other controls (e.g., checkboxes) here */}
-      <Button
+      <CustomTealButton
         type="Button"
         onClick={() => handleAddRoomOpenElective(deptIndex)}
       >
         Add Room
-      </Button>
-      <Button
+      </CustomTealButton>
+      <CustomDeleteButton
         type="Button"
         onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
       >
         Remove Room
-      </Button>
+      </CustomDeleteButton>
     </div>
 
 ))}
 </td>
 <td>
-  <Button
+  <CustomDeleteButton
     type="button"
     onClick={() => handleRemoveAllotment(deptIndex, 'openElectiveAllotments')}
   >
     Remove Allotment
-  </Button>
+  </CustomDeleteButton>
   </td>
             </tr>
           ))}

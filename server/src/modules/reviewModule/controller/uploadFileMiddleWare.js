@@ -20,7 +20,12 @@ const fileUploadMiddleware = (req, res, next) => {
     if (err) {
       return res.status(400).send('Error uploading file.');
     }
+    if (!req.file) {
+      return res.status(400).send('No file uploaded.');
+    }
     req.fileName = req.file.filename;
+    req.title = req.body.title;
+    req.abstract = req.body.abstract;
     next();
   });
 };

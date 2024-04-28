@@ -75,9 +75,9 @@ function PRMDashboard() {
               <Td><Center>{event.name}</Center></Td>
               <Td>
                 <CustomLink
-                  href={`http://${domainName}/prm/${event._id}`}
+                  href={`http://${domainName}/prm/${event._id}/editor`}
                   // Optional: If you want to open the link in a new tab
-                >Adminpanel</CustomLink>
+                >Editor Dashboard</CustomLink>
               </Td>
             </Tr>
           ))}

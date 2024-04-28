@@ -138,7 +138,7 @@ function ViewCertificate() {
 
   return (
     <>
-     <SelectCertficate
+      <SelectCertficate
         eventId={eventId}
         templateId={templateId}
         contentBody={contentBody}
