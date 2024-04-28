@@ -182,7 +182,7 @@ function App() {
           <Route path="/cf/dashboard" element={<EODashboard/>} />
           <Route path="/cf/addconf" element={<ConferencePage />} />
           <Route path="/cf/:confid" element={<Sidebar  />}>
-          {/* <Route index element={<HomeConf />} /> */}
+          <Route index element={<HomeConf />} />
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
           <Route path="committee" element={<Committees />} />
@@ -195,7 +195,7 @@ function App() {
           <Route path="locations" element={<Location />} />
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
-          <Route path="template" element={<CommonTemplate/>} />
+          {/* <Route path="template" element={<CommonTemplate/>} /> */}
           <Route path="sponsorship-rates" element={<SponsorshipRate />} />
           <Route path="accomodation" element={<Accomodation />} />
           <Route path="events" element={<Event />} />
