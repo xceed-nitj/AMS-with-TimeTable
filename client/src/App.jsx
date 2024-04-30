@@ -178,6 +178,7 @@ function App() {
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/editor/dashboard" element={<PrmEditorDashboard/>} /> 
     <Route path="/prm/editor" element={<MultiStepForm />} />
+    <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     
 
 

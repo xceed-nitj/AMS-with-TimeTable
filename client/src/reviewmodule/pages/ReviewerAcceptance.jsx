@@ -1,87 +1,86 @@
 import React, { useState } from 'react';
-import axios from 'axios'; // Import Axios for making HTTP requests
+import axios from 'axios';
+import getEnvironment from '../../getenvironment';
 
-const ReviewerAcceptance = () => {
+const apiUrl = getEnvironment();
+
+const UpdatePaperStatus = () => {
   const [paperId, setPaperId] = useState('');
-  const [accepted, setAccepted] = useState('');
+  const [status, setStatus] = useState('');
+  const [message, setMessage] = useState('');
 
   const handlePaperIdChange = (event) => {
     setPaperId(event.target.value);
   };
 
-  const handleAcceptedChange = (value) => {
-    setAccepted(value);
+  const handleStatusChange = (event) => {
+    setStatus(event.target.value);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     try {
-      // Make an HTTP POST request to your backend API
-      const response = await axios.post('http://localhost:8010/api/v1/reviewmodule/updateReviewerAcceptanceStatus', {
-        paperId,
-        status: accepted === 'yes' ? true : false,
+      const response = await axios.post(`${apiUrl}/reviewmodule/reviewerAcceptance/updateReviewerAcceptanceStatus`, {
+        paperId: paperId,
+        status: status
       });
-
-      console.log(response.data); // Log the response from the backend
+      console.log(response.data);
+      setMessage('Paper status updated successfully.');
+      // Clear form fields after successful submission
+      setPaperId('');
+      setStatus('');
     } catch (error) {
-      console.error('Error updating reviewer acceptance status:', error);
+      console.error('Error updating paper status:', error);
+      console.log(error);
+      setMessage('Error updating paper status. Please try again.');
     }
   };
 
   return (
-    <div className="tw-flex tw-items-center tw-justify-center tw-h-screen">
-      <div className="tw-bg-white tw-shadow-md tw-rounded tw-px-8 tw-pt-6 tw-pb-8 tw-mb-4">
-        <h2 className="tw-text-2xl tw-mb-4 tw-text-center">Accept Paper</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="tw-mb-4">
-            <label htmlFor="paperId" className="tw-block tw-text-gray-700 tw-text-sm tw-font-bold tw-mb-2">
-              Paper ID:
-            </label>
-            <input
-              type="text"
-              id="paperId"
-              value={paperId}
-              onChange={handlePaperIdChange}
-              className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-2 tw-px-3 tw-text-gray-700 tw-leading-tight tw-focus:tw-outline-none tw-focus:tw-shadow-outline"
-              required
-            />
-          </div>
-          <div className="tw-mb-6">
-            <label className="tw-block tw-text-gray-700 tw-text-sm tw-font-bold tw-mb-2">Accepted:</label>
-            <div className="tw-flex tw-items-center">
-              <button
-                type="button"
-                className={`tw-bg-green-500 tw-hover:bg-green-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded tw-focus:tw-outline-none tw-focus:tw-shadow-outline ${
-                  accepted === 'yes' ? 'tw-bg-green-700' : ''
-                }`}
-                onClick={() => handleAcceptedChange('yes')}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                className={`tw-bg-red-500 tw-hover:bg-red-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded tw-ml-4 tw-focus:tw-outline-none tw-focus:tw-shadow-outline ${
-                  accepted === 'no' ? 'tw-bg-red-700' : ''
-                }`}
-                onClick={() => handleAcceptedChange('no')}
-              >
-                No
-              </button>
+    <div className="container mt-5">
+      <div className="row justify-content-center">
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-body">
+              <h2 className="card-title text-center mb-4">Update Paper Status</h2>
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label htmlFor="paperId">Paper ID:</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="paperId"
+                    value={paperId}
+                    onChange={handlePaperIdChange}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="status">Status:</label>
+                  <select
+                    className="form-control"
+                    id="status"
+                    value={status}
+                    onChange={handleStatusChange}
+                    required
+                  >
+                    <option value="">Select Status</option>
+                    <option value="Accepted">Accepted</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Under Review">Under Review</option>
+                  </select>
+                </div>
+                <div className="text-center">
+                  <button type="submit" className="btn btn-primary">Update Status</button>
+                </div>
+              </form>
+              {message && <p className="text-center mt-3">{message}</p>}
             </div>
           </div>
-          <div className="tw-flex tw-items-center tw-justify-center">
-            <button
-              type="submit"
-              className="tw-bg-blue-500 tw-hover:bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded tw-focus:tw-outline-none tw-focus:tw-shadow-outline"
-            >
-              Accept Paper
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
 };
 
-export default ReviewerAcceptance;
+export default UpdatePaperStatus;
