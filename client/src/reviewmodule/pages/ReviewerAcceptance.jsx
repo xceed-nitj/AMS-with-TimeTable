@@ -20,7 +20,7 @@ const UpdatePaperStatus = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.post(`${apiUrl}/reviewmodule/reviewerAcceptance/updateReviewerAcceptanceStatus`, {
+      const response = await axios.post(`${apiUrl}/reviewmodule/reviewerAcceptance/updateStatus`, {
         paperId: paperId,
         status: status
       });
