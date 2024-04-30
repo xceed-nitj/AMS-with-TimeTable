@@ -27,7 +27,7 @@ const uploadPaper = (req, res) => {
       const authorEmails = authors.map(author => author.email);
 
       // Send email notification to author(s)
-      const to = "sumitteerthani2002@gmail.com"; //Author is not linked with paper as of now so add your gmail to get email for testing purpose
+      const to = "virgarg772003@gmail.com"; //Author is not linked with paper as of now so add your gmail to get email for testing purpose
       const subject = "New Paper Uploaded";
       const message = `A new paper titled "${title}" has been uploaded.`;
       const attachments=[

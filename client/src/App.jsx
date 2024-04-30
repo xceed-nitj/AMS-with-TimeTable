@@ -66,6 +66,7 @@ import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
 
+// Review Module Imports
 import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
@@ -77,6 +78,8 @@ import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
 import EventForm from './reviewmodule/pages/editorevent';
 import MultiEditorEvent from "./reviewmodule/pages/addeditor";
 import PaperDetails from './reviewmodule/components/PaperDetails';
+
+import ReviewerAcceptance from './reviewmodule/pages/ReviewerAcceptance';
 
 import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
 import Accomodation from './conferencemodule/Tabs/Accomodation';
@@ -101,42 +104,42 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          <Route path="/register" element={<RegistrationForm/>} />
-          <Route path="/userroles" element={<AllocatedRolesPage />} />
-          <Route path="/superadmin" element={<SuperAdminPage/>}/>
+        <Route path="/register" element={<RegistrationForm />} />
+        <Route path="/userroles" element={<AllocatedRolesPage />} />
+        <Route path="/superadmin" element={<SuperAdminPage />} />
 
         <Route path="/tt">
-              <Route path="dashboard" element={<CreateTimetable />} />
-              <Route path="masterview" element={<MasterView />} />
-              <Route path="masterfaculty" element={<MasterFaculty />} />
-              <Route path="masterroom" element={<MasterRoom />} />
-              <Route path="mastersem" element={<MasterSem />} />
-              <Route path="masterdelete" element={<MasterDelete />} />
-              <Route path="viewmrooms" element={<ViewMRooms/>} />
+          <Route path="dashboard" element={<CreateTimetable />} />
+          <Route path="masterview" element={<MasterView />} />
+          <Route path="masterfaculty" element={<MasterFaculty />} />
+          <Route path="masterroom" element={<MasterRoom />} />
+          <Route path="mastersem" element={<MasterSem />} />
+          <Route path="masterdelete" element={<MasterDelete />} />
+          <Route path="viewmrooms" element={<ViewMRooms />} />
         </Route>
-          
-        <Route path="/tt/:generatedLink">
-             <Route index element={<Timetable />}></Route>  
 
-              <Route path="addfaculty" element={<AddFaculty />} />
-              <Route path="addroom" element={<AddRoom />} />
-              <Route path="addcommonload" element={<CommonLoad/>} />
-              <Route path="addlunchload" element={<LunchLoad/>} />
-              <Route path="addsubjects" element={<Subjects />} />
-              <Route path="addsem" element={<AddSem />} />
-              <Route path="addnote" element={<Note/>} />
-              <Route path="firstyearload" element={<FirstYearLoad />} />
-              <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
-              <Route path="lockedsummary" element={<LockedSummary />} />
-              <Route path="generatepdf" element={<PrintSummary />} />
-              <Route path="loaddistribution" element={<LoadDistribution />} />
-              <Route path="roomallotment" element={<ViewAllotmentPage/>} />
-              <Route path="editmasterfaculty" element={<EditMasterFaculty/>} />
+        <Route path="/tt/:generatedLink">
+          <Route index element={<Timetable />}></Route>
+
+          <Route path="addfaculty" element={<AddFaculty />} />
+          <Route path="addroom" element={<AddRoom />} />
+          <Route path="addcommonload" element={<CommonLoad />} />
+          <Route path="addlunchload" element={<LunchLoad />} />
+          <Route path="addsubjects" element={<Subjects />} />
+          <Route path="addsem" element={<AddSem />} />
+          <Route path="addnote" element={<Note />} />
+          <Route path="firstyearload" element={<FirstYearLoad />} />
+          <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
+          <Route path="lockedsummary" element={<LockedSummary />} />
+          <Route path="generatepdf" element={<PrintSummary />} />
+          <Route path="loaddistribution" element={<LoadDistribution />} />
+          <Route path="roomallotment" element={<ViewAllotmentPage />} />
+          <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
         </Route>
-          
-          {/* Same link */}
-          <Route path="classrooms" element={<ViewMRooms/>} />
-          {/* Same link */}
+
+        {/* Same link */}
+        <Route path="classrooms" element={<ViewMRooms />} />
+        {/* Same link */}
 
           {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
           <Route path="/tt/allotment" element={<AllotmentForm/>}/>
@@ -157,12 +160,12 @@ function App() {
           element={<MergePDFComponent />}
         />
 
-          <Route path="/cm/addevent" element={<EventRegistration />} />
-          <Route path="/cm/dashboard" element={<CMDashboard />} />
-          <Route path="/cm/:eventid" element={<CertificateForm/>}/>
-          <Route path="/cm/:eventid/addparticipant" element={<Participant/>}/>
-          <Route path="/cm/c/:eventid/:participantid" element={<Template01/>}/>
-          <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03/>}/>
+        <Route path="/cm/addevent" element={<EventRegistration />} />
+        <Route path="/cm/dashboard" element={<CMDashboard />} />
+        <Route path="/cm/:eventid" element={<CertificateForm />} />
+        <Route path="/cm/:eventid/addparticipant" element={<Participant />} />
+        <Route path="/cm/c/:eventid/:participantid" element={<Template01 />} />
+        <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03 />} />
 
     {/* Review management routes*/}
     <Route path="/prm/login" element={<ReviewLogin/>} />
@@ -175,6 +178,7 @@ function App() {
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/editor/dashboard" element={<PrmEditorDashboard/>} /> 
     <Route path="/prm/editor" element={<MultiStepForm />} />
+    <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     
 
 
@@ -204,9 +208,9 @@ function App() {
 
 
 
-          </Route>
-        </Routes>
-        {/* <Footer/> */}
+        </Route>
+      </Routes>
+      {/* <Footer/> */}
       {/* </div> */}
     </Router>
   );
