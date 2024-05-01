@@ -22,8 +22,9 @@ const Contacts = () => {
     const params = useParams();
   const apiUrl = getEnvironment();
 
-    const IdConf = params.confid;
-    const initialData={
+const IdConf = params.confid;
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [deleteItemId, setDeleteItemId] = useState(null);    const initialData={
         "confId": IdConf,
         "title": "",
         "name": "",
@@ -103,13 +104,21 @@ const Contacts = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/conferencemodule/contactUs/${deleteID}`, {
+        setDeleteItemId(deleteID);
+        setShowDeleteConfirmation(true);
+    };
+
+    const confirmDelete = () => {
+        axios.delete(`${apiUrl}/conferencemodule/contactUs/${deleteItemId}`, {
             withCredentials: true
 
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
-                setRefresh(refresh + 1);
+                               setShowDeleteConfirmation(false);  
+                 setRefresh(refresh + 1);
+          
+                setFormData(initialData);
             })
             .catch(err => console.log(err));
     };
@@ -341,7 +350,31 @@ const Contacts = () => {
 
                     : <LoadingIcon />
                 } </Container>
-</main>
+ 
+            {showDeleteConfirmation && (
+                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
+                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
+                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
+                            Are you sure you want to delete?
+                        </p>
+                        <div className="tw-flex tw-justify-center">
+                            <Button
+                                colorScheme="red"
+                                onClick={confirmDelete}
+                                mr={4}
+                            >
+                                Yes, Delete
+                            </Button>
+                            <Button
+                                colorScheme="blue"
+                                onClick={() => setShowDeleteConfirmation(false)}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}</main>
 
     );
 };
