@@ -42,9 +42,9 @@ const addReviewer = async (req, res) => {
     //   return;
     // }
 
-    if (user.role !== "Editor") {
-      res.status(401).send("Only editor is allowed to add reviewer");
-    }
+    // if (SignedInUser.role !== "Editor") {
+    //   res.status(401).send("Only editor is allowed to add reviewer");
+    // }
 
     paper.reviewers.push({
       userId: userId,
