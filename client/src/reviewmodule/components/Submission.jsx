@@ -3,7 +3,7 @@ import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
 import { Button } from '@chakra-ui/react';
 
-function Submission({ setNext, setActiveStep }) {
+function Submission({ setNext, setActiveStep , handlePrevious, handleSubmit}) {
   const [paper, setPaper] = useRecoilState(paperState);
   console.log(paper);
   return (
@@ -90,9 +90,14 @@ function Submission({ setNext, setActiveStep }) {
       <hr className="tw-p-10" />
       <div className="tw-pt-20 tw-flex tw-flex-col">
         <h1 className="tw-font-semibold tw-text-xl">PaperUploads</h1>
-        <Button className="tw-max-w-20 tw-self-end" onClick={() => {
+        <Button
+          className="tw-max-w-20 tw-self-end"
+          onClick={() => {
             setActiveStep(3);
-          }}>Edit</Button>
+          }}
+        >
+          Edit
+        </Button>
         <div
           className="tw-flex tw-flex-col tw-gap-5 tw-p-20 
         tw-py-10 tw-container tw-mx-auto"
@@ -103,6 +108,10 @@ function Submission({ setNext, setActiveStep }) {
           </div>
         ))} */}
         </div>
+      </div>
+      <div className="tw-flex tw-justify-between">
+        <Button onClick={handlePrevious}>Back</Button>
+        <Button onClick={handleSubmit}>Next</Button>
       </div>
     </div>
   );

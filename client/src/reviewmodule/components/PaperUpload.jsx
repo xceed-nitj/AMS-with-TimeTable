@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
+import { Button } from '@chakra-ui/react';
 
-function PaperUpload({ setNext }) {
+function PaperUpload({ setNext,handleNext, handlePrevious }) {
   const [paper, setPaper] = useRecoilState(paperState);
   console.log(paper);
 
@@ -29,16 +30,19 @@ function PaperUpload({ setNext }) {
   }
   return (
     <div>
-  <div className="tw-font-bold tw-text-xl tw-pt-10">PaperUpload</div>
-  <div className="tw-flex  tw-gap-5 tw-p-20 tw-container tw-mx-auto tw-py-10">
-    <label>{`Upload Files: `}</label>
-    <input type="file" name="file" multiple onChange={handleChange} />
-  </div>
-  {/* <div>
+      <div className="tw-font-bold tw-text-xl tw-pt-10">PaperUpload</div>
+      <div className="tw-flex  tw-gap-5 tw-p-20 tw-container tw-mx-auto tw-py-10">
+        <label>{`Upload Files: `}</label>
+        <input type="file" name="file" multiple onChange={handleChange} />
+      </div>
+      <div className="tw-flex tw-justify-between">
+        <Button onClick={handlePrevious}>Back</Button>
+        <Button onClick={()=>handleNext(paper.paperUploads)}>Next</Button>
+      </div>
+      {/* <div>
     {paper && paper.paperUploads && paper.paperUploads.length>0 && paper.paperUploads.map((index, file) => <p key={index}>hi</p>)}
   </div> */}
-</div>
-
+    </div>
   );
 }
 
