@@ -22,8 +22,9 @@ import JoditEditor from 'jodit-react';
 
 const Location = () => {
     const params = useParams();
-    const IdConf = params.confid;
-    const apiUrl = getEnvironment();
+const IdConf = params.confid;
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [deleteItemId, setDeleteItemId] = useState(null);    const apiUrl = getEnvironment();
     const ref = useRef(null);
 
     const initialData = {
@@ -108,18 +109,27 @@ const Location = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/conferencemodule/location/${deleteID}`, {
+        setDeleteItemId(deleteID);
+        setShowDeleteConfirmation(true);
+    };
+
+    const confirmDelete = () => {
+        axios.delete(`${apiUrl}/conferencemodule/location/${deleteItemId}`, {
             withCredentials: true
 
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
-                setRefresh(refresh + 1);
+                               setShowDeleteConfirmation(false);  
+                 setRefresh(refresh + 1);
+          
+                setFormData(initialData);
             })
             .catch(err => console.log(err));
     };
 
     const handleEdit = (editIDNotState) => {
+        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/location/${IdConf}`, {
             withCredentials: true
 
@@ -278,8 +288,56 @@ const Location = () => {
 
                     : <LoadingIcon />
                 }
-            </Container >
-        </main>
+            </Container>
+ 
+            {showDeleteConfirmation && (
+                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
+                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
+                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
+                            Are you sure you want to delete?
+                        </p>
+                        <div className="tw-flex tw-justify-center">
+                            <Button
+                                colorScheme="red"
+                                onClick={confirmDelete}
+                                mr={4}
+                            >
+                                Yes, Delete
+                            </Button>
+                            <Button
+                                colorScheme="blue"
+                                onClick={() => setShowDeleteConfirmation(false)}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )} 
+            {showDeleteConfirmation && (
+                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
+                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
+                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
+                            Are you sure you want to delete?
+                        </p>
+                        <div className="tw-flex tw-justify-center">
+                            <Button
+                                colorScheme="red"
+                                onClick={confirmDelete}
+                                mr={4}
+                            >
+                                Yes, Delete
+                            </Button>
+                            <Button
+                                colorScheme="blue"
+                                onClick={() => setShowDeleteConfirmation(false)}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}        </main>
     );
 };
 

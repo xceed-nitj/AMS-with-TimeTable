@@ -142,7 +142,7 @@ console.log(formData)
           {events.map((event) => (
             <Tr key={event._id}>
               <Td>{event.name}</Td>
-              <Td>{event.editor[0].email}</Td>
+              <Td>{event.editor[0]?.email}</Td>
             </Tr>
           ))}
         </Tbody>

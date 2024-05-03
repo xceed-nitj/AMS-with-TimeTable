@@ -113,6 +113,7 @@ const Sponsors = () => {
     };
 
     const handleEdit = (editIDNotState) => {
+        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/sponsor/${editIDNotState}`, {
             withCredentials: true
 
