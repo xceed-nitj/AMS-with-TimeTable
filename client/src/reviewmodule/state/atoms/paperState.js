@@ -1,14 +1,12 @@
-import { atom } from "recoil";
+import { atom } from 'recoil';
 export const paperState = atom({
-  key: "paperState", // unique ID (with respect to other atoms/selectors)
+  key: 'paperState', // unique ID (with respect to other atoms/selectors)
   default: {
     authors: [],
-    paperDetails: {
-      title: "",
-      abstract: "",
-    },
-    codeUploads:[],
-    paperUploads:[],
-    terms:false,
+    title: '',
+    abstract: '',
+    codeUploads: [],
+    paperUploads: [],
+    terms: false,
   }, // default value (aka initial value)
 });

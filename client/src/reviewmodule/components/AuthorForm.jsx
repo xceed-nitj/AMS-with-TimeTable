@@ -174,18 +174,21 @@ export default function AuthorForm() {
   }
   function handleSubmit(e) {
     e.preventDefault();
-    console.log(paper);
-    if (paper.authors) {
-      setPaper((prevPaper) => ({
-        ...prevPaper,
-        authors: [...prevPaper.authors, author],
-      }));
-    } else {
-      setPaper((prevPaper) => ({
-        ...prevPaper,
-        authors: [author],
-      }));
-    }
+
+    
+    // console.log(paper);
+
+    // if (paper.authors) {
+    //   setPaper((prevPaper) => ({
+    //     ...prevPaper,
+    //     authors: [...prevPaper.authors, author],
+    //   }));
+    // } else {
+    //   setPaper((prevPaper) => ({
+    //     ...prevPaper,
+    //     authors: [author],
+    //   }));
+    // }
     onClose();
   }
   return (
