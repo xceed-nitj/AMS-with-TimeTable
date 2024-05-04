@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import StarryBackgroundAnimation from './StarryBackgroundAnimation.jsx';
 const Hero = () => {
   return (
+    <>
+    <StarryBackgroundAnimation/>
     <section id="home" className="tw-bg-white dark:tw-bg-gray-900">
       <div className="tw-py-8 tw-px-4 tw-mx-auto tw-max-w-screen-xl tw-text-center lg:tw-py-14 lg:tw-px-12">
         <Link
@@ -59,6 +62,7 @@ const Hero = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
 
