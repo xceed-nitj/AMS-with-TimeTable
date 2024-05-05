@@ -71,6 +71,7 @@ import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
+import AddReviewer from './reviewmodule/pages/AddReviewer';
 
 import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
 
@@ -180,6 +181,7 @@ function App() {
 
     <Route path="/prm/:eventId/:paperId/edit" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
+    <Route path="/prm/:eventId/addreviewer" element={<AddReviewer/>}/>
 
     
 
