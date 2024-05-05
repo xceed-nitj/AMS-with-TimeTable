@@ -165,6 +165,83 @@ const addEditor = async (req, res) => {
   }
 };
 
+const addReviewer = async (req, res) => {
+  try {
+    const eventId = req.params.id; // Extract eventId from URL
+    const { email } = req.body; // Get email from request body
+
+    // Check if the user with the given email exists
+    let reviewer = await User.findOne({ email });
+
+    // If the user doesn't exist, create a new user with the role 'Reviewer'
+    if (!reviewer) {
+      reviewer = new User({
+        name: email,
+        email: email,
+        role: 'Reviewer', // Assuming 'Reviewer' is a valid role in your User schema
+        password: '1234' // You might want to improve this for security
+      });
+      await reviewer.save();
+    }
+
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+
+    // If the event doesn't exist, return an error
+    if (!event) {
+      return res.status(404).send('Event not found');
+    }
+
+    // Add the reviewer to the event
+    event.reviewer.push(reviewer._id);
+    await event.save();
+
+    await sendMail(
+      email,
+      'You have been added as a reviewer',
+      `You have been added as a reviewer for the event.`
+    );
+
+    // Send a success response
+    res.status(200).send('Reviewer added to the event successfully');
+  } catch (error) {
+    console.error('Error adding reviewer:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
+// Backend controller function
+
+
+
+const getAllReviewersInEvent = async (req, res) => {
+  try {
+    const eventId = req.params.id; // Extract eventId from URL
+
+    // Find the event by ID
+    const event = await Event.findById(eventId).populate('reviewer').exec();
+
+    // If the event doesn't exist, return an error
+    if (!event) {
+      return res.status(404).send('Event not found');
+    }
+
+    // Extract reviewer details (name and email) from the event
+    const reviewers = event.reviewer.map(reviewer => ({
+      name: reviewer.name,
+      email: reviewer.email
+    }));
+
+    // Send the list of reviewers in the event
+    res.status(200).json(reviewers);
+  } catch (error) {
+    console.error('Error fetching reviewers:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
+
+
 
 const getEventIdByName = async (req, res) => {
   const eventName = req.params.name;
@@ -205,4 +282,4 @@ const getEditorIdByEmail = async (req, res) => {
 };
 
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, addEditor, getEventIdByName};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName};
