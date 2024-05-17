@@ -18,6 +18,9 @@ const allotmentSchema = new mongoose.Schema({
     type: Schema.Types.Mixed,
     // default: null 
   },
+  message:{
+    type: String,
+  },
 
 });
 
