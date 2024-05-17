@@ -157,8 +157,11 @@ const AdminPage = () => {
       <Link to="/tt/allotment" style={{ backgroundColor: 'purple', margin: '10px', padding: '10px', display: 'inline-block' }}>
         <button>Room Allotment</button>
       </Link>
+      <Link to="/tt/admin/adminview" style={{ backgroundColor: 'gray', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Edit any time table</button>
+      </Link>
       <Link to="/tt/admin/viewinstituteload" style={{ backgroundColor: 'gray', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>Institute Load</button>
+        <button>Departwise load distribution</button>
       </Link>
     </div>
     

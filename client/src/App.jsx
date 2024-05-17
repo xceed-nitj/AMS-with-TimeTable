@@ -36,6 +36,7 @@ import ViewInstituteLoad from './timetableadmin/viewinstituteload';
 import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 import ImportForm from './timetableadmin/importCentralRoom'
 import MergePDFComponent from './filedownload/mergepdfdocuments';
+import TimetableMasterView from './timetableadmin/masterview';
 
 import Home from './pages/Home';
 import EventRegistration from './certificatemodule/pages/eventregistration';
@@ -117,7 +118,9 @@ function App() {
           <Route path="mastersem" element={<MasterSem />} />
           <Route path="masterdelete" element={<MasterDelete />} />
           <Route path="viewmrooms" element={<ViewMRooms />} />
+          
         </Route>
+
 
         <Route path="/tt/:generatedLink">
           <Route index element={<Timetable />}></Route>
@@ -147,7 +150,8 @@ function App() {
           <Route path="/tt/allotment/import" element={<ImportForm/>}/>
 
           <Route path="/tt/admin" element={<AdminPage/>}/>
-
+          <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
+        
         {/* Same link */}
         <Route path="timetable" element={<MasterView />} />
         {/* Same link */}
