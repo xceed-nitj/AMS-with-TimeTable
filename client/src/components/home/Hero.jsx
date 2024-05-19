@@ -5,10 +5,10 @@ const Hero = () => {
   return (
     <>
     <StarryBackgroundAnimation/>
-    <section id="home" className="tw-bg-white dark:tw-bg-gray-900">
+    <section id="home" >
       <div className="tw-py-8 tw-px-4 tw-mx-auto tw-max-w-screen-xl tw-text-center lg:tw-py-14 lg:tw-px-12">
         <Link
-          to="/login"
+          to="/timetable"
           className="tw-inline-flex tw-justify-between tw-items-center tw-py-1 tw-px-1 tw-pr-4 tw-mb-7 tw-text-sm tw-text-gray-700 tw-bg-gray-100 tw-rounded-full dark:tw-bg-gray-800 dark:tw-text-white hover:tw-bg-gray-200 dark:hover:tw-bg-gray-700"
           role="alert"
         >
@@ -27,7 +27,7 @@ const Hero = () => {
         <h3 className="tw-mb-5 tw-text-4xl tw-font-extrabold tw-tracking-tight tw-leading-none text-cyan-600 md:tw-text-3xl lg:tw-text-4xl dark:tw-text-cyan-300">
           eXplore, Code, Enrich, Evolve &amp; Develop
         </h3>
-        <p className="tw-mb-8 tw-text-lg tw-font-normal tw-text-gray-500 lg:tw-text-xl sm:tw-px-16 xl:tw-px-48 dark:tw-text-gray-400">
+        <p className="tw-mb-8 tw-text-lg tw-font-normal tw-text-white lg:tw-text-xl sm:tw-px-16 xl:tw-px-48 dark:tw-text-white">
           Here at XCEED-NITJ we are not just a developer community; we are a hub of innovation,
           collaboration, and excellence. From developing official institute
           projects to pioneering initiatives that redefine the digital
