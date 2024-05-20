@@ -1,7 +1,7 @@
 // src/App.js
 
 import React, { useState } from 'react';
-import SideBar from '../components/sidebar';
+import SideBarFinal from '../components/sidebar';
 import { Box } from '@chakra-ui/react';
 // import Home from './Home';
 // import Profile from './Profile';
@@ -57,7 +57,7 @@ function HomePage() {
 
   return (
     <Box display="flex">
-      <SideBar tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <SideBarFinal tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
       <Box ml="250px" p={4} flex="1">
         {content}
       </Box>
