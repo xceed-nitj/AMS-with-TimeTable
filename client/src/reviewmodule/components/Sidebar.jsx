@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Box, VStack, Text, useColorModeValue, Collapse, IconButton } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
 
-const Sidebar = ({ tabs, activeTab, setActiveTab }) => {
+const SideBar = ({ tabs, activeTab, setActiveTab }) => {
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const bg = useColorModeValue('gray.100', 'gray.900');
   const activeBg = useColorModeValue('blue.500', 'blue.300');
@@ -77,4 +77,4 @@ const Sidebar = ({ tabs, activeTab, setActiveTab }) => {
   );
 };
 
-export default Sidebar;
+export default SideBar;
