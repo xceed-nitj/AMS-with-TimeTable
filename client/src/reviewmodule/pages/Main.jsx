@@ -1,7 +1,7 @@
 // src/App.js
 
 import React, { useState } from 'react';
-import SideBarFinal from '../components/sidebar';
+import SideBarFinal from '../components/PRMSidebar';
 import { Box } from '@chakra-ui/react';
 // import Home from './Home';
 // import Profile from './Profile';
