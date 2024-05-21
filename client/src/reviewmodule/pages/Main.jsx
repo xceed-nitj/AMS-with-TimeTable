@@ -1,6 +1,4 @@
-// src/App.js
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SideBarFinal from '../components/PRMSidebar';
 import { Box } from '@chakra-ui/react';
 // import Home from './Home';
@@ -13,51 +11,63 @@ import EventForm from './editorevent';
 import AddReviewer from './AddReviewer';
 import PrmEditorDashboard from './PrmEditorDashboard';
 import PRMDashboard from './prmdashboard';
+import getEnvironment from "../../getenvironment";
+
 
 function HomePage() {
-  const tabs = [
+  const apiUrl = getEnvironment();
+  const [events, setEvents]=useState([]);
+  const [tabs, setTabs] = useState([
     { label: 'Home' },
-    
     {
       label: 'Author',
       submenu: ['Submitted Papers', 'New Submission']
     },
     {
-        label: 'Reviewer',
-        submenu: ['Pending asssignment', 'Completed']
-      },
+      label: 'Reviewer',
+      submenu: ['Pending assignment', 'Completed']
+    },
     {
-        label: 'Editor',
-        submenu: ['Event Dashboard']
-      }
-  ];
+      label: 'Editor',
+      submenu: []
+    }
+  ]);
+
   const [activeTab, setActiveTab] = useState('Home');
 
-  let content;
-  switch (activeTab) {
-    case 'Home':
-    //   content = <Home />;
-      break;
-    case 'Author':
-    //   content = <About />;
-      break;
-    case 'New Submission':
-      content = <MultiStepForm />;
-      break;
-    case 'Papers Submitted':
-    //   content = <Author2 />;
-      break;
-      case 'Event Dashboard':
-        content = <PRMDashboard/>;
-        break;
-        
-    // default:
-    //   content = <Home />;
-  }
+  useEffect(() => {
+    // Simulate fetching submenu items from an API
+    const fetchEditorSubmenu = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/reviewmodule/event/geteventsbyuser`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });  
+        const data = await response.json();
+        console.log(data);
+        setEvents(data);
+        const editorSubmenu = data.map(item => item.name);
+        setTabs((prevTabs) => {
+          const updatedTabs = prevTabs.map((tab) =>
+            tab.label === 'Editor' ? { ...tab, submenu: editorSubmenu } : tab
+          );
+          console.log(updatedTabs); // Add this line to see the updated tabs
+          return updatedTabs;
+        });
+      } catch (error) {
+        console.error('Error fetching editor submenu:', error);
+      }
+    };
+
+    fetchEditorSubmenu();
+  }, []);
 
   return (
     <Box display="flex">
-      <SideBarFinal tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <SideBarFinal/>
       <Box ml="250px" p={4} flex="1">
         {content}
       </Box>

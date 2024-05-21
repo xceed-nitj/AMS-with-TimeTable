@@ -6,6 +6,7 @@ import {
   MenuList,
   Button,
 } from '@chakra-ui/react';
+import SideBarFinal from '../components/PRMSidebar'; // Import the SideBarFinal component
 
 const PrmEditorDashboard = () => {
   const apiUrl = getEnvironment();
@@ -54,39 +55,45 @@ const PrmEditorDashboard = () => {
 
   return (
     <div>
-      <h1 className="tw-text-2xl tw-text-blue-900">Editor Dashboard</h1>
-      <div className="tw-mx-16">
-        <h2 className="tw-text-lg tw-font-semibold tw-italic tw-mb-6">
-          Papers
-        </h2>
-        {papers.map((paper) => (
-          <div key={paper._id}>
-            <p>
-              <span className="tw-font-semibold tw-text-lg">Paper:</span>{' '}
-              {paper.title}
-            </p>
-            <p>
-              <span className="tw-font-semibold tw-text-lg">Abstract:</span>{' '}
-              {paper.abstract}
-            </p>
-            <Menu>
-              <MenuButton as={Button}>Add Reviewer</MenuButton>
-              <MenuList>
-                <div className="tw-flex tw-flex-col">
-                  {reviewers?.map((reviewer, index) => (
-                    <button
-                      className="tw-bg-blue-500 tw-text-white tw-p-2 tw-rounded tw-mt-2"
-                      onClick={() => addReviewer(paper._id, reviewer._id)}
-                      key={`${reviewer._id}-${index}`}
-                    >
-                      {reviewer.email[0]}
-                    </button>
-                  ))}
-                </div>
-              </MenuList>
-            </Menu>
-          </div>
-        ))}
+      {/* Sidebar component */}
+      <SideBarFinal />
+
+      {/* Main content */}
+      <div className="tw-ml-64"> {/* Adjust the margin to accommodate the sidebar */}
+        <h1 className="tw-text-2xl tw-text-blue-900">Editor Dashboard</h1>
+        <div className="tw-mx-16">
+          <h2 className="tw-text-lg tw-font-semibold tw-italic tw-mb-6">
+            Papers
+          </h2>
+          {papers.map((paper) => (
+            <div key={paper._id}>
+              <p>
+                <span className="tw-font-semibold tw-text-lg">Paper:</span>{' '}
+                {paper.title}
+              </p>
+              <p>
+                <span className="tw-font-semibold tw-text-lg">Abstract:</span>{' '}
+                {paper.abstract}
+              </p>
+              <Menu>
+                <MenuButton as={Button}>Add Reviewer</MenuButton>
+                <MenuList>
+                  <div className="tw-flex tw-flex-col">
+                    {reviewers?.map((reviewer, index) => (
+                      <button
+                        className="tw-bg-blue-500 tw-text-white tw-p-2 tw-rounded tw-mt-2"
+                        onClick={() => addReviewer(paper._id, reviewer._id)}
+                        key={`${reviewer._id}-${index}`}
+                      >
+                        {reviewer.email[0]}
+                      </button>
+                    ))}
+                  </div>
+                </MenuList>
+              </Menu>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -183,7 +183,7 @@ function App() {
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
-    <Route path="/prm/editor/dashboard" element={<PrmEditorDashboard/>} /> 
+    <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
 
     <Route path="/prm/:eventId/:paperId/edit" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
