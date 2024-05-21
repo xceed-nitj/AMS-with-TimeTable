@@ -49,7 +49,9 @@ app.use(
       "https://nitjtt.netlify.app",
       "http://localhost:8010",
       //for chemcon
-      "http://localhost:5174","https://chemcon2024.com","https://pro1-chemcon.vercel.app"
+      "http://localhost:5174","https://chemcon2024.com","https://pro1-chemcon.vercel.app",
+  //for eaic2025
+  "https://eaicnitj.com",
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
