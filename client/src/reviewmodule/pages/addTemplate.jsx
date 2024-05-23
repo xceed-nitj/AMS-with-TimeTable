@@ -35,7 +35,10 @@ function AddTemplate() {
     const fetchTemplates = async () => {
       try {
         const response = await axios.get(`${apiUrl}/reviewmodule/event/getEvents/${eventId}`);
-        setTemplates(response.data.templates||{});
+       if (response.data.templates)
+        {
+        setTemplates(response.data.templates);
+        }
         console.log(response.data.templates)
       } catch (error) {
         console.error('Error fetching templates:', error);
@@ -104,11 +107,12 @@ function AddTemplate() {
       <Header title="Add Template Details"></Header>
       <Box maxW="xl" mx="auto" mt={10}>
         <Tabs>
-          <TabList>
-            {Object.keys(templates).map((key) => (
-              <Tab key={key}>{key}</Tab>
-            ))}
-          </TabList>
+        <TabList>
+  {Object.keys(templates).map((key) => (
+    <Tab key={key}>{key}</Tab>
+  ))}
+</TabList>
+
           <TabPanels>
             {Object.keys(templates).map((key) => (
               <TabPanel key={key}>
