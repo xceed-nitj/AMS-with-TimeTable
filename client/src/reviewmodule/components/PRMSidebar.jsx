@@ -124,7 +124,7 @@ const SideBarFinal = () => {
                   }
                 }}
               >
-                <Text>{tab.label}</Text>
+                <Text>{tab.label}
                 {tab.submenu && (
                   <IconButton
                     icon={openSubmenu === tab.label ? <ChevronDownIcon /> : <ChevronRightIcon />}
@@ -137,6 +137,7 @@ const SideBarFinal = () => {
                     aria-label="Toggle Submenu"
                   />
                 )}
+                </Text>
               </Box>
               {tab.submenu && (
                 <Collapse in={openSubmenu === tab.label} animateOpacity>

@@ -20,7 +20,7 @@ function EventForm() {
     endDate: "",
     paperSubmissionDate: "",
     reviewTime: "",
-    instructions: "",
+    // instructions: "",
   });
 
   const toast = useToast();
@@ -184,15 +184,7 @@ function EventForm() {
               value={formData.reviewTime}
               onChange={handleChange}
             />
-          </FormControl>
-          <FormControl id="instructions" mb={4}>
-            <FormLabel>Instructions</FormLabel>
-            <Textarea
-              name="instructions"
-              value={formData.instructions}
-              onChange={handleChange}
-            />
-          </FormControl>  
+          </FormControl>          
           <FormControl id="name" mb={4}>
             <FormLabel>List of Editors</FormLabel>
             <Input

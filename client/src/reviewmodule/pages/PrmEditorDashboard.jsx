@@ -49,6 +49,7 @@ const PrmEditorDashboard = () => {
  
       <HStack spacing={7} align="center">
         <Button width="230px" height="50px" colorScheme="teal" onClick={() => navigate(`${location.pathname}/confdetails`)}>Conference Details</Button>
+        <Button width="230px" height="50px" colorScheme="orange" onClick={() => navigate(`${location.pathname}/addtrack`)}>Add Tracks</Button>
         <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/papers`)}>Paper Details</Button>
         <Button width="230px" height="50px" colorScheme="blue" onClick={() => navigate(`${location.pathname}/addreviewer`)}>Invite Reviewer</Button>
         <Button width="230px" height="50px" colorScheme="green" onClick={() => navigate(`${location.pathname}/templates`)}>Communication Templates</Button>
