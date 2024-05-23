@@ -35,8 +35,8 @@ function AddTemplate() {
     const fetchTemplates = async () => {
       try {
         const response = await axios.get(`${apiUrl}/reviewmodule/event/getEvents/${eventId}`);
-        setTemplates(response.data.templates[0] || {});
-        console.log(response.data.templates[0])
+        setTemplates(response.data.templates||{});
+        console.log(response.data.templates)
       } catch (error) {
         console.error('Error fetching templates:', error);
         setTemplates({
