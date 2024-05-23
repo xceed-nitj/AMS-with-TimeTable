@@ -1,30 +1,34 @@
 const mongoose = require("mongoose");
 const User = require("./user.js");
 
+const reviewerSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'PRS-User' },
+    status: { type: String, enum: ['Invited', 'Accepted', 'Pending', 'Not Accepted'], default: 'Pending' }
+});
+
 const eventSchema = new mongoose.Schema({
-    /*eventID: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-    },*/
     name: {
         type: String,
         required: true,
     },
-        startDate:{
-            type: Date,
-        },
-        endDate:{
-            type: Date,
-        },
-    editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PRS-User' }],
-    reviewer:[{type:mongoose.Schema.Types.ObjectId,ref: 'PRS-User'}],
-    paperSubmissionDate:{
+    startDate: {
         type: Date,
     },
-    reviewTime:{
-        type: String, 
+    endDate: {
+        type: Date,
     },
-    instructions:{type:String},
+    tracks:[{type: String}],
+    editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PRS-User' }],
+    reviewer: [reviewerSchema],
+    paperSubmissionDate: {
+        type: Date,
+    },
+    reviewTime: {
+        type: String,
+    },
+    instructions: {
+        type: String
+    }
 });
 
 const Event = mongoose.model("PRS-Event", eventSchema);

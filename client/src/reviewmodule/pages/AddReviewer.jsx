@@ -19,6 +19,8 @@ function AddReviewer() {
       try {
         const response = await axios.get(`${apiUrl}/reviewmodule/event/getReviewerInEvent/${eventId}`);
         setReviewers(response.data);
+      console.log(response.data)
+
       } catch (error) {
         console.error('Error fetching reviewers:', error);
       }
@@ -39,11 +41,12 @@ function AddReviewer() {
       console.log(eventId);
       const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/event/addReviewer/${eventId}`, { email: reviewerEmail });
 
-      if (addReviewerResponse.status === 200) {
+      if (addReviewerResponse ===200) {
         const response = await axios.get(`${apiUrl}/reviewmodule/event/getReviewerInEvent/${eventId}`);
       setReviewers(response.data);
+      console.log(response.data)
         toast({
-          title: 'Reviewer added successfully',
+          title: 'Reviewer Invited successfully',
           status: 'success',
           duration: 6000,
           isClosable: true,
@@ -63,8 +66,8 @@ function AddReviewer() {
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: 'Error adding Reviewer ',
-        description: 'Please try again later',
+        title: error.response.data,
+        description: 'Check again',
         status: 'error',
         duration: 6000,
         isClosable: true,
@@ -76,9 +79,9 @@ function AddReviewer() {
   
   return (
     <Container>
-      <Header title="Add Reviewer to the event" />
+      <Header title="Add Reviewer" />
 
-      <Box maxW="md" mx="auto" mt={10}>
+      <Box maxW="xl" mx="auto" mt={10}>
         <form onSubmit={handleSubmit}>
           <Input
             mb={4}
@@ -98,6 +101,7 @@ function AddReviewer() {
             <Tr>
               <Th>Name</Th>
               <Th>Email</Th>
+              <Th>Status</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -105,6 +109,7 @@ function AddReviewer() {
               <Tr key={index}>
                 <Td>{reviewer.name}</Td>
                 <Td>{reviewer.email}</Td>
+                <Td>{reviewer.status}</Td>
                 
               </Tr>
             ))}

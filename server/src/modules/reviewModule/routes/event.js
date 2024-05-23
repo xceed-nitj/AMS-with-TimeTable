@@ -9,6 +9,8 @@ const router = express.Router();
 
 router.get('/getAllEvents', getEvents);
 router.get('/getReviewerInEvent/:id',getAllReviewersInEvent);
+router.get('/getEvents/:id',getEventById);
+
 router.get('/geteventsbyuser',protectRoute, getEventsByUser);
 router.get('/:id', getEventById);
 router.get('/name/:name',getEventIdByName);
@@ -17,7 +19,7 @@ router.post('/addevent', superAdminRoute, addEvent);
 router.post('/addEditor/:id', addEditor);
 router.post('/addReviewer/:id', addReviewer);
 
-router.patch('/:id',protectRoute,updateEvent);
+router.patch('/:id',updateEvent);
 router.delete('/:id',superAdminRoute, deleteEvent);
 
 module.exports = router;

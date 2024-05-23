@@ -90,6 +90,7 @@ import Event from './conferencemodule/Tabs/Events';
 import Souvenir from './conferencemodule/Tabs/Souvenir';
 import MultiStepForm from './reviewmodule/pages/MultiStepForm';
 import HomePage from './reviewmodule/pages/Main';
+import AddTrack from './reviewmodule/pages/addTracks';
 
 function App() {
   return (
@@ -183,6 +184,8 @@ function App() {
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
+    <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
+
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
 
