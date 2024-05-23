@@ -6,6 +6,16 @@ const reviewerSchema = new mongoose.Schema({
     status: { type: String, enum: ['Invited', 'Accepted', 'Pending', 'Not Accepted'], default: 'Pending' }
 });
 
+const templateSchema = new mongoose.Schema({
+    paperSubmission: { type: String, default: "No data"},
+    reviewerInvitation: { type: String, dafault: "No data"},
+    paperAssignment:{type: String, dafault: "No data"},
+    reviewSubmission: {type:String, dafault: "No data"},
+    paperRevision: {type: String,dafault: "No data"},
+    PaperDecision: {type: String, dafault: "No data"},
+});
+
+
 const eventSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -28,7 +38,8 @@ const eventSchema = new mongoose.Schema({
     },
     instructions: {
         type: String
-    }
+    },
+    templates:[templateSchema],
 });
 
 const Event = mongoose.model("PRS-Event", eventSchema);

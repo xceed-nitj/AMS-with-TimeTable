@@ -5,6 +5,7 @@ import getEnvironment from '../../getenvironment';
 import { useToast } from '@chakra-ui/react';
 import Header from '../../components/header';
 import { useParams } from 'react-router-dom';
+// import { addReviewer } from '../../../../server/src/modules/reviewModule/controller/event';
 
 function AddReviewer() {
   const apiUrl = getEnvironment();
@@ -40,8 +41,8 @@ function AddReviewer() {
       // Adding reviewer to the event
       console.log(eventId);
       const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/event/addReviewer/${eventId}`, { email: reviewerEmail });
-
-      if (addReviewerResponse ===200) {
+// console.log(addReviewerResponse)
+      if (addReviewerResponse) {
         const response = await axios.get(`${apiUrl}/reviewmodule/event/getReviewerInEvent/${eventId}`);
       setReviewers(response.data);
       console.log(response.data)
