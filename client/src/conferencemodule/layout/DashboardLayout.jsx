@@ -17,6 +17,7 @@ import SponsorshipRate from '../Tabs/SponsorshipRates';
 import Accomodation from '../Tabs/Accomodation';
 import Event from '../Tabs/Events';
 import Souvenir from '../Tabs/Souvenir';
+import CommonTemplate from '../Tabs/CommonTemplate'
 export default function DashboardLayout() {
   return (
     <>
@@ -57,6 +58,8 @@ export default function DashboardLayout() {
           <Route path="accomodation" element={<Accomodation />} />
           <Route path="events" element={<Event />} />
           <Route path="souvenir" element={<Souvenir />} />
+          <Route path="commontemplate" element={<CommonTemplate />} />
+
         </Route>
       </Routes >
     </>

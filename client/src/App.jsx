@@ -63,6 +63,8 @@ import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
+
+
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
@@ -221,6 +223,7 @@ function App() {
           <Route path="accomodation" element={<Accomodation />} />
           <Route path="events" element={<Event />} />
           <Route path="souvenir" element={<Souvenir />} />
+          <Route path="commontemplate" element={<CommonTemplate />} />
 
 
 
