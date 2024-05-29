@@ -143,6 +143,22 @@ const RegistrationForm = () => {
           >
             XCEED admin
           </Checkbox>
+          <Checkbox
+            name="EO"
+            value="EO"
+            isChecked={formData.roles.includes('EO')}
+            onChange={handleInputChange}
+          >
+            Event Organiser
+          </Checkbox>
+          <Checkbox
+            name="PRM"
+            value="PRM"
+            isChecked={formData.roles.includes('PRM')}
+            onChange={handleInputChange}
+          >
+            Paper Review Manager
+          </Checkbox>
 
         </VStack>
         <Button colorScheme="teal" onClick={handleSubmit}>

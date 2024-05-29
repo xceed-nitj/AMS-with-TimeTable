@@ -12,47 +12,37 @@ const speakersSchema = new mongoose.Schema({
   },
   Designation: {
     type: String,
-    required: true,
   },
   Institute: {
     type: String,
-    required: true,
   },
   ProfileLink: {
     type: String,
-    required: true,
   },
   ImgLink: {
     type: String,
-    required: true,
   },
   TalkType: {
     type: String,
-    required: true,
   },
   TalkTitle: {
     type: String,
-    required: true,
   },
   Abstract: {
     type: String,
-    required: true,
   },
   Bio: {
     type: String,
-    required: true,
   },
   sequence: {
     type: Number,
-    required: true,
   },
   feature: {
     type: Boolean,
-    required: true,
   },
 });
 
 // Create the Mongoose model
-const Speakers = mongoose.model("Speakers", speakersSchema);
+const Speakers = mongoose.model("cf-speaker", speakersSchema);
 
 module.exports = Speakers;

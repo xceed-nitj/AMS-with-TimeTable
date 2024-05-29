@@ -15,8 +15,8 @@ router.get("/reuploadpaper", (req, res) => {
 
 router.get("/", findAllPapers);
 router.get("/:id", findPaper); // To find paper using paperId (not _id)
-router.post("/", fileUploadMiddleware, uploadPaper);
-router.post("/reuploadPaper/:id", reupload);
-router.patch("/:id", updatePaper); // To update paper using paperId (not _id)
+router.post("/", fileUploadMiddleware, uploadPaper); // upload paper
+router.post("/reuploadPaper/:id", fileUploadMiddleware, reupload);
+router.patch("/:id", updatePaper); // By _id
 
 module.exports = router;

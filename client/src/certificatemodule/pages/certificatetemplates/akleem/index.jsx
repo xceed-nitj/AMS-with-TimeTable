@@ -3,7 +3,7 @@ import Bottom from './Bottom';
 import Content from './Content';
 import Top from './Top';
 import html2canvas from 'html2canvas';
-// import downloadCertificatePdf from '../../certipdfdownload';
+import downloadCertificatePdf from '../../certipdfdownload';
 import QRCode from 'qrcode';
 import { Button } from '@chakra-ui/react';
 import jsPDF from 'jspdf';
@@ -33,8 +33,9 @@ function Template01() {
   }, []);
 
   const handleDownloadImage = () => {
-    const input = document.getElementById('id-card');
-    // const inputElement = document.getElementsByClassName('id-card-class');
+    // const input = document.getElementById('id-card');
+    const input = document.getElementById('id-card-class');
+    console.log(input)
     input.style.width = '1754px';
     input.style.height = '1240px';
     html2canvas(input, {
@@ -59,8 +60,8 @@ function Template01() {
     input.style.width = 'auto';
   };
   const handleDownloadPDF = () => {
-    const input = document.getElementById('id-card');
-    // const inputElement = document.getElementsByClassName('id-card-class');
+    // const input = document.getElementById('id-card');
+    const input = document.getElementsByClassName('id-card-class');
     input.style.width = '1754px';
     input.style.height = '1240px';
     html2canvas(input, {
@@ -90,22 +91,23 @@ function Template01() {
 
   return (
     <>
-      <div id="id-card">
+      <div id="id-card-class" >
+        <Content />
+      </div>
+      <div className='tw-hidden'>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 1122.52 793.7"
-          className="id-card-class"
           ref={svgRef}
         >
           <Top />
-          <Content />
           <Bottom />
         </svg>
       </div>
       <Button onClick={handleDownloadImage} variant="solid" colorScheme="teal">
         Download Image
       </Button>
-      <Button onClick={handleDownloadPDF} variant="outline" colorScheme="teal">
+      <Button onClick={downloadCertificatePdf} variant="outline" colorScheme="teal">
         Download PDF
       </Button>
     </>

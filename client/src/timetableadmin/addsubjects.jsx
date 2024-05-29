@@ -47,6 +47,7 @@ function Subject() {
   const [editRowId, setEditRowId] = useState(null);
   const [semesterData, setSemesterData] = useState([]);
   const [semesters, setSemesters] = useState([]);
+  const [isStudentCountValid, setIsStudentCountValid] = useState(true);
   const [duplicateEntryMessage, setDuplicateEntryMessage] = useState("");
   const [addduplicateEntryMessage, addsetDuplicateEntryMessage] = useState("");
   const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false);
@@ -56,24 +57,27 @@ function Subject() {
     type: "",
     subCode: "",
     subName: "",
+    studentCount: "",
     sem: "",
     degree: "",
     dept: "",
     credits: "",
     code: currentCode,
   });
-
-   const [editedSData, setEditedSData] = useState({
+  
+  const [editedSData, setEditedSData] = useState({
     subjectFullName: "",
     type: "",
     subCode: "",
     subName: "",
+    studentCount: "",
     sem: "",
     degree: "",
     dept: "",
     credits: "",
     code: currentCode,
   });
+  
 
   const apiUrl = getEnvironment();
 
@@ -182,6 +186,8 @@ function Subject() {
         })
         .then((data) => {
           if (data.message) {
+            if(data.message.includes('type')) setUploadMessage(data.message);
+            else
             setDuplicateEntryMessage(data.message);
             
           } else {
@@ -198,7 +204,7 @@ function Subject() {
           setIsLoading(false);
           setTimeout(() => {
             setUploadMessage('');
-          }, 3000);
+          }, 4000);
         });
     } else {
       alert('Please select a CSV file before uploading.');
@@ -258,6 +264,7 @@ function Subject() {
               type: "",
               subCode: "",
               subName: "",
+              studentCount: "",
               sem: "",
               degree: "",
               dept: "",
@@ -309,6 +316,7 @@ function Subject() {
       type: "",
       subCode: "",
       subName: "",
+      studentCount: "",
       sem: "",
       degree: "",
       dept: "",
@@ -508,6 +516,31 @@ function Subject() {
 
             </Box>
 
+            <Box>
+              <FormLabel>Student Count:</FormLabel>
+              <Input
+                border="1px"
+                mb="4"
+                borderColor={isStudentCountValid ? "gray.300" : "red.500"}
+                type="text"
+                pattern="[0-9]*"
+                placeholder="Students Count"
+                value={editedSData.studentCount}
+                onChange={(e) => {
+                  const input = e.target.value;
+                  if (/^\d*$/.test(input)) {  // Check if input is a valid number
+                    setIsStudentCountValid(true);
+                    setEditedSData({ ...editedSData, studentCount: input });
+                  } else {
+                    setIsStudentCountValid(false);
+                  }
+                }}
+              />
+              {!isStudentCountValid && (
+                <Text color="red.500">Please enter a valid student count (numbers only).</Text>
+              )}
+            </Box>
+
             <Box mb="4">
               <FormLabel>Semester:</FormLabel>
               <Select
@@ -557,6 +590,7 @@ function Subject() {
                 }
               />
             </Box>
+
 
             <Box>
               <FormLabel>Credits: </FormLabel>
@@ -611,6 +645,7 @@ function Subject() {
                 <Th><Center>Type</Center></Th>
                 <Th><Center>Subject Code</Center></Th>
                 <Th><Center>Subject Abbreviation</Center></Th>
+                <Th><Center>Student Count</Center></Th>
                 <Th><Center>Semester</Center></Th>
                 <Th><Center>Degree</Center></Th>
                 <Th><Center>Department</Center></Th>
@@ -694,6 +729,21 @@ function Subject() {
                     <Center>
                       {editRowId === row._id ? (
                         <Input
+                          type="number"
+                          value={editedData.studentCount}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, studentCount: e.target.value })
+                          }
+                          />
+                          ) : (
+                            row.studentCount
+                            )}
+                    </Center>
+                  </Td> 
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
                         type="text"
                         value={editedData.sem}
                         onChange={(e) =>
@@ -735,6 +785,7 @@ function Subject() {
                             )}
                     </Center>
                   </Td> 
+                 
                   {/* <Td>
                     <Center>
                       {editRowId === row._id ? (

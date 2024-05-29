@@ -14,15 +14,13 @@ const imageSchema = new mongoose.Schema({
   },
   feature: {
     type: Boolean,
-    required: true,
   },
   sequence: {
     type: Number,
-    required: true,
   }}, { timestamps: true }
 );
 
 // Create the Mongoose model
-const Image = mongoose.model("Image", imageSchema);
+const Image = mongoose.model("cf-image", imageSchema);
 
 module.exports = Image;

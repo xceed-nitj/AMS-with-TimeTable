@@ -3,13 +3,28 @@ import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
-
+import { Container } from "@chakra-ui/layout";
+import {
+    FormControl, FormErrorMessage, FormLabel, Center, Heading,
+    Input, Button, Select
+} from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import {
+    Table,
+    TableContainer,
+    Tbody,
+    Td,
+    Th,
+    Thead,
+    Tr,
+} from "@chakra-ui/table";
 const Contacts = () => {
     const params = useParams();
   const apiUrl = getEnvironment();
 
-    const IdConf = params.confid;
-    const initialData={
+const IdConf = params.confid;
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [deleteItemId, setDeleteItemId] = useState(null);    const initialData={
         "confId": IdConf,
         "title": "",
         "name": "",
@@ -21,7 +36,7 @@ const Contacts = () => {
         "email": "",
         "fax": "",
         "feature": true,
-        "sequence": 0
+        "sequence": ""
 
     }
     const [formData, setFormData] = useState(initialData);
@@ -31,7 +46,7 @@ const Contacts = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    const { title, name, designation, imgLink, institute, profileLink, phone, email, fax } = formData;
+    const { title, name, designation, imgLink, institute, profileLink, phone, email, fax,sequence } = formData;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -58,7 +73,7 @@ const Contacts = () => {
     };
 
     const handleSubmit = (e) => {
-        e.preventDefault();
+        // e.preventDefault();
 
         axios.post(`${apiUrl}/conferencemodule/contactUs`, formData, {
             withCredentials: true
@@ -83,23 +98,33 @@ const Contacts = () => {
             .then(res => {
                 setFormData(initialData);
                 setRefresh(refresh + 1);
+                setEditID(null)
             })
             .catch(err => console.log(err));
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/conferencemodule/contactUs/${deleteID}`, {
+        setDeleteItemId(deleteID);
+        setShowDeleteConfirmation(true);
+    };
+
+    const confirmDelete = () => {
+        axios.delete(`${apiUrl}/conferencemodule/contactUs/${deleteItemId}`, {
             withCredentials: true
 
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
-                setRefresh(refresh + 1);
+                               setShowDeleteConfirmation(false);  
+                 setRefresh(refresh + 1);
+          
+                setFormData(initialData);
             })
             .catch(err => console.log(err));
     };
 
     const handleEdit = (editIDNotState) => {
+        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/contactUs/${editIDNotState}`, {
             withCredentials: true
 
@@ -124,170 +149,232 @@ const Contacts = () => {
     }, [refresh]);
 
     return (
-        <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
-    <div className='tw-px-4 sm:tw-px-6 lg:tw-px-8'>
-        <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10" autoComplete="off" onSubmit={handleSubmit}>
-            <div className="tw-text-blue-700 tw-text-[28px] tw-font-serif tw-text-center  ">Add New Contact Details</div>
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Title</label>
-            <input
-                type="text"
-                name="title"
-                required
-                value={title}
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+        <main className='tw-py-10  lg:tw-pl-72 tw-min-h-screen'>
+    
+    <Container maxW='5xl'>
+                <Heading as="h1" size="xl" mt="6" mb="6">
+                    Create New Contact Details
+                </Heading>
+       
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Name</label>
-            <input
-                type="text"
-                name="name"
-                required
-                value={name}
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Title :</FormLabel>
+                    <Input
+                        type="text"
+                        name="title"
+                        value={title}
+                        onChange={handleChange}
+                        placeholder="title"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Name :</FormLabel>
+                    <Input
+                        type="text"
+                        name="name"
+                        value={name}
+                        onChange={handleChange}
+                        placeholder="name"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired>
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Designation</label>
-            <input
-                type="text"
-                name="designation"
-                required
-                value={designation}
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+                    <FormLabel>Designation:</FormLabel>
+                    <Input
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Institute</label>
-            <input
-                type="text"
-                name="institute"
-                required
-                value={institute}
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+                        type="text"
+                        name="designation"
+                        value={designation}
+                        onChange={handleChange}
+                        placeholder="Designation"
+                        mb='2.5'
+                    />
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Profile Link </label>
-            <input
-                type="text"
-                name="profileLink"
-                required
-                value={profileLink}
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Institute:</FormLabel>
+                    <Input
+                        type="text"
+                        name="institute"
+                        value={institute}
+                        onChange={handleChange}
+                        placeholder="Institute"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Profile Link:</FormLabel>
+                    <Input
+                        type="text"
+                        name="profileLink"
+                        value={profileLink}
+                        onChange={handleChange}
+                        placeholder="Profile Link"
+                        mb='2.5'
+                    />
+                </FormControl>
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Image Link</label>
-            <input
-                type="text"
-                name="imgLink"
-                value={imgLink} required  
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Image Link :</FormLabel>
+                    <Input
+                        type="text"
+                        name="imgLink"
+                        value={imgLink}
+                        onChange={handleChange}
+                        placeholder="ImageLink"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Phone:</FormLabel>
+                    <Input
+                        type="text"
+                        name="phone"
+                        value={phone}
+                        onChange={handleChange}
+                        placeholder="Phone No."
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >E-mail:</FormLabel>
+                    <Input
+                        type="text"
+                        name="email"
+                        value={email}
+                        onChange={handleChange}
+                        placeholder="E-mail"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Fax :</FormLabel>
+                    <Input
+                        type="text"
+                        name="fax"
+                        value={fax}
+                        onChange={handleChange}
+                        placeholder="Fax"
+                        mb='2.5'
+                    />
+                </FormControl>
+                
+                <FormControl isRequired={true}  >
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Phone</label>
-            <input
-                type="text"
-                name="phone"
-                required
-                value={phone}
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+                    <FormLabel >Sequence :</FormLabel>
+                    <Input
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Email</label>
-            <input
-                type="text"
-                name="email"
-                required
-                value={email}
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+                        type="number"
+                        name="sequence"
+                        value={sequence}
+                        onChange={handleChange}
+                        placeholder="sequence"
+                        mb='2.5'
+                   />
+                   </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Feature:</FormLabel>
+                    <Select
+                        name="feature"
+                        value={formData.feature}
+                        onChange={handleChange}
+                    >
+                        <option value={true}>Yes</option>
+                        <option value={false}>No</option>
+                    </Select>
+                </FormControl>
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Fax</label>
-            <input
-                type="text"
-                name="fax"
-                value={fax} required  
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-            />
+                <Center>
+              
+                    <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
+                        {editID ? 'Update' : 'Add'}
+                    </Button>
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
-            <select
-                name="feature"
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight focus:tw-outline-black"
-                onChange={handleChange}
-            >
-                <option value={true}>Yes</option>
-                <option value={false}>No</option>
-            </select>
+            </Center>
+                <Heading as="h1" size="xl" mt="6" mb="6">
+                    Existing Contacts </Heading>
+                {!loading ? (
 
-            <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Sequence<input
-                type="number"
-                name="sequence"
-                value={formData.sequence}
-                onChange={handleChange}
-                className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight focus:tw-outline-black"
-            /></label>
+                    <TableContainer>
+                        <Table
+                            variant='striped'
+                            size="md"
+                            mt="1"
+                        >
+                            <Thead>
+                                <Tr>
+                                <CustomTh> Title</CustomTh>
+                                <CustomTh> Name</CustomTh>
+                                    <CustomTh>Designation</CustomTh>
+                                    <CustomTh>Institute</CustomTh>
+                                    <CustomTh>Phone</CustomTh>
 
-            <div className="tw-flex tw-justify-evenly">
-                <button type="submit" className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Add </button>
-                <button type="button" onClick={handleUpdate} className="tw-bg-blue-500 hover:tw-bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black">Update </button>
-            </div>
-        </form>
+                                    <CustomTh>Sequence</CustomTh>
 
-        <hr />
+                                    <CustomTh>Action</CustomTh>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {data.length > 0 ? (data.map((item) => (
+                                    <Tr key={item._id}>
+                                        
+                                        <Td><Center>{item.title}</Center></Td>
+                                        <Td><Center>{item.name}</Center></Td>
+                                        <Td><Center>{item.designation}</Center></Td>
+                                        <Td><Center>{item.institute}</Center></Td>
+                                        <Td><Center>{item.phone}</Center></Td>
+                                        <Td><Center>{item.sequence}</Center></Td>
 
-        <div className="tw-shadow-md tw-m-4 md:tw-m-10 tw-overflow-x-auto">
-            <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  ">Added contacts</div>
-            {loading ? (
-                <div>
-                    <LoadingIcon/>
+                                        <Td><Center>
+                                            <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
+                                            <Button colorScheme="teal" onClick={() => {
+                                                handleEdit(item._id);
+                                                setEditID(item._id);
+                                            }}>Edit </Button>
+                                        </Center></Td>
 
+                                    </Tr>))) :
+                                    (
+                                        <Tr>
+                                            <Td colSpan="7" className="tw-p-1 tw-text-center">
+                                                <Center>No data available</Center></Td>
+                                        </Tr>
+                                    )
+                                }
+                            </Tbody>
+                        </Table>
+                    </TableContainer>
+                )
+
+                    : <LoadingIcon />
+                } </Container>
+ 
+            {showDeleteConfirmation && (
+                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
+                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
+                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
+                            Are you sure you want to delete?
+                        </p>
+                        <div className="tw-flex tw-justify-center">
+                            <Button
+                                colorScheme="red"
+                                onClick={confirmDelete}
+                                mr={4}
+                            >
+                                Yes, Delete
+                            </Button>
+                            <Button
+                                colorScheme="blue"
+                                onClick={() => setShowDeleteConfirmation(false)}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
                 </div>
-            ) : (
-                <table className="tw-min-w-full tw-border-collapse tw-box-border">
-                    <thead>
-                        <tr className="tw-border-[2px] tw-bg-blue-100  tw-border-blue-500">
-                            <th className="tw-p-1 tw-text-center">Title</th>
-                            <th className="tw-p-1 tw-text-center">Name</th>
-                            <th className="tw-p-1 tw-text-center">Designation</th>
-                            <th className="tw-p-1 tw-text-center">Institute</th>
-                            <th className="tw-p-1 tw-text-center">Phone</th>
-                            <th className="tw-p-1 tw-text-center">Email</th>
-                            <th className="tw-p-1 tw-text-center">Fax</th>
-                            <th className="tw-p-1 tw-text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.length > 0 ? data.map((item, index) => (
-                            <tr key={index} className="tw-border-[1px] tw-font-serif tw-border-blue-500">
-                                <td className="tw-p-1 tw-text-center">{item.title}</td>
-                                <td className="tw-p-1 tw-text-center">{item.name}</td>
-                                <td className="tw-p-1 tw-text-center">{item.designation}</td>
-                                <td className="tw-p-1 tw-text-center">{item.institute}</td>
-                                <td className="tw-p-1 tw-text-center">{item.phone}</td>
-                                <td className="tw-p-1 tw-text-center">{item.email}</td>
-                                <td className="tw-p-1 tw-text-center">{item.fax}</td>
- <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                    <button onClick={() => { handleEdit(item._id); setEditID(item._id) }} className="tw-bg-yellow-500 hover:tw-bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded focus:tw-outline-black"> Edit </button>{" "}
-                                    <button onClick={() => handleDelete(item._id)} className="tw-bg-red-500 hover:tw-bg-red-700 tw-text-white tw-font-bold  tw-px-4 tw-rounded focus:tw-outline-black"> Delete </button>
-                                </td>
-                            </tr>
-                        )) : (
-                            <tr>
-                                <td colSpan="8" className="tw-p-1 tw-text-center">No data available</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            )}
-        </div>
-    </div>
-</main>
+            )}</main>
 
     );
 };

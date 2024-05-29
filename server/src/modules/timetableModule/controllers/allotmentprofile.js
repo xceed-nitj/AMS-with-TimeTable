@@ -121,6 +121,44 @@ class AllotmentController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
+
+      async updateSession(sessionId, newSession){
+        if (!sessionId || !newSession) {
+          throw new HttpException(400, "Invalid session ID or new session value");
+        }
+        try {
+          const updatedAllotment = await AddAllotment.findOneAndUpdate(
+            { session: sessionId },
+            { session: newSession },
+            { new: true }
+          );
+          if (!updatedAllotment) {
+            throw new HttpException(400, "Session not found");
+          }
+          return updatedAllotment;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      };
+
+      
+      async deleteBySession(session) {
+        try {
+          if (!session) {
+            throw new HttpException(400, "Invalid session");
+          }
+      
+          const deletedDocument = await AddAllotment.findOneAndDelete({ session });
+      
+         if (!deletedDocument) {
+            throw new HttpException(404, "Document not found");
+          }
+
+          return deletedDocument;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      }
     }
 
 module.exports = AllotmentController;

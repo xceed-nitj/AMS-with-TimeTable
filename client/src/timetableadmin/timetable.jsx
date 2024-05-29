@@ -548,7 +548,7 @@ const Timetable = () => {
   };
   const handleMasterView = () => {
     // Navigate to the "Add Room" page
-    navigate('/tt/masterview');
+    navigate('/timetable');
   };
   const handleViewSummary = () => {
     // Navigate to the "Add Room" page

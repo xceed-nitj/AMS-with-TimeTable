@@ -27,16 +27,17 @@ class FacultyController {
       }
       
       async getFaculty(req, res) {
-       try {
+        try {
           const facultyList = await Faculty.find();
-          res.json(facultyList)
+          res.json(facultyList);
           return;
         } catch (error) {
-          console.error(error); 
+          console.error(error);
           res.status(500).json({ error: "Internal server error" });
         }
       }
-
+      
+      
       async getFacultyById(id) {
         if (!id) {
           throw new HttpException(400, "Invalid Id");
@@ -55,14 +56,13 @@ class FacultyController {
           throw new HttpException(400, "Invalid Department");
         }
         try {
-          const data = await Faculty.find({ dept: department });
+          const data = await Faculty.find({ dept: department }).sort({ order:1});
           if (!data) throw new HttpException(400, "No faculty members found in this department");
           return data;
         } catch (e) {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
-      
     
       async updateID(id, announcement) {
         if (!id) {
