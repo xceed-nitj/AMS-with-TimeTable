@@ -323,10 +323,10 @@ const HomeConf = () => {
                             <Tbody>
                                 {data ? (
                                     <Tr key={data._id}>
-                                        <Td><Center>{data.confName}</Center></Td>
-                                        <Td><Center>{formatDate(data.confStartDate)}</Center></Td>
-                                        <Td><Center>{formatDate(data.confEndDate)}</Center></Td>
-                                        <Td><Center>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.confName}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{formatDate(data.confStartDate)}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{formatDate(data.confEndDate)}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(data._id);

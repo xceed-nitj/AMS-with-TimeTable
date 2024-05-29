@@ -262,12 +262,12 @@ const IdConf = params.confid;
                             <Tbody>
                                 {data ? (
                                     <Tr key={data._id}>
-                                        <Td><Center>{data.description}</Center></Td>
-                                        <Td><Center>{data.address}</Center></Td>
-                                        <Td><Center>{data.latitude}</Center></Td>
-                                        <Td><Center>{data.longitude}</Center></Td>
-                                        <Td><Center>{data.sequence}</Center></Td>
-                                        <Td><Center>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.description}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.address}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.latitude}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.longitude}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.sequence}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(data._id);

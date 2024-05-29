@@ -300,12 +300,12 @@ const IdConf = params.confid;
                 </FormControl>
 
                 <Center>
-              
+
                     <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
+                        
                         {editID ? 'Update' : 'Add'}
                     </Button>
-
-            </Center>
+                   </Center>
                 <Heading as="h1" size="xl" mt="6" mb="6">
                     Existing Speakers </Heading>
                 {!loading ? (
@@ -329,24 +329,24 @@ const IdConf = params.confid;
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
                                     <Tr key={item._id}>
-                                        <Td><Center>{item.Name}</Center></Td>
-                                        <Td><Center>{item.Designation}</Center></Td>
-                                        <Td><Center>{item.Institute}</Center></Td>
-                                        <Td><Center>{item.sequence}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Name}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Designation}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Institute}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
 
-                                        <Td><Center>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);
                                                 setEditID(item._id);
-                                            }}>Edit </Button>
-                                        </Center></Td>
+                                            }}>Edit </Button></Center>
+                                        </Td>
 
                                     </Tr>))) :
                                     (
                                         <Tr>
                                             <Td colSpan="5" className="tw-p-1 tw-text-center">
-                                                <Center>No data available</Center></Td>
+                                              <Center> No data available</Center> </Td>
                                         </Tr>
                                     )
                                 }
