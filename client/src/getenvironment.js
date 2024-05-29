@@ -4,7 +4,6 @@ function getEnvironment() {
   const development = 'http://localhost:8010';
   const production = 'https://nitjtt.onrender.com';
   const nitjServer = 'https://xceed.nitj.ac.in';
-
   if (currentURL.includes('localhost')) {
     return development;
   } else if (currentURL.includes('nitjtt')) {
@@ -12,6 +11,7 @@ function getEnvironment() {
   } else {
     // Default to a specific environment or handle other cases
     return nitjServer;
+
   }
 }
 

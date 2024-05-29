@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
+import { Button } from '@chakra-ui/react';
 
-export default function Terms({ setNext }) {
+export default function Terms({ setNext, handlePrevious, handleNext }) {
   const [paper, setPaper] = useRecoilState(paperState);
   console.log(paper);
 
@@ -56,6 +57,10 @@ export default function Terms({ setNext }) {
             onChange={handleChange}
           />
           <p>I have read and agree to the terms and conditions stated above</p>
+        </div>
+        <div className="tw-flex tw-justify-between">
+          <Button onClick={handlePrevious}>Back</Button>
+          <Button onClick={paper.terms ? () => handleNext() : ''}>Next</Button>
         </div>
       </div>
     </>

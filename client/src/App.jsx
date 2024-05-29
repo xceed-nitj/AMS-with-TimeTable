@@ -36,6 +36,7 @@ import ViewInstituteLoad from './timetableadmin/viewinstituteload';
 import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 import ImportForm from './timetableadmin/importCentralRoom'
 import MergePDFComponent from './filedownload/mergepdfdocuments';
+import TimetableMasterView from './timetableadmin/masterview';
 
 import Home from './pages/Home';
 import EventRegistration from './certificatemodule/pages/eventregistration';
@@ -62,6 +63,8 @@ import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
+
+
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
@@ -71,6 +74,8 @@ import PRMEventRegistration from './reviewmodule/pages/eventregistration';
 import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
+import AddReviewer from './reviewmodule/pages/AddReviewer';
+// import HomePage from './reviewmodule/pages/Main';
 
 import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
 
@@ -86,6 +91,10 @@ import Accomodation from './conferencemodule/Tabs/Accomodation';
 import Event from './conferencemodule/Tabs/Events';
 import Souvenir from './conferencemodule/Tabs/Souvenir';
 import MultiStepForm from './reviewmodule/pages/MultiStepForm';
+import HomePage from './reviewmodule/pages/Main';
+import AddTrack from './reviewmodule/pages/addTracks';
+import AddTemplate from './reviewmodule/pages/addTemplate';
+
 
 function App() {
   return (
@@ -116,7 +125,9 @@ function App() {
           <Route path="mastersem" element={<MasterSem />} />
           <Route path="masterdelete" element={<MasterDelete />} />
           <Route path="viewmrooms" element={<ViewMRooms />} />
+          
         </Route>
+
 
         <Route path="/tt/:generatedLink">
           <Route index element={<Timetable />}></Route>
@@ -146,7 +157,8 @@ function App() {
           <Route path="/tt/allotment/import" element={<ImportForm/>}/>
 
           <Route path="/tt/admin" element={<AdminPage/>}/>
-
+          <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
+        
         {/* Same link */}
         <Route path="timetable" element={<MasterView />} />
         {/* Same link */}
@@ -175,10 +187,17 @@ function App() {
     {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
+    <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
+    <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
+    <Route path="/prm/:eventId/editor/addtemplate" element={<AddTemplate/>}/>
+
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
-    <Route path="/prm/editor/dashboard" element={<PrmEditorDashboard/>} /> 
-    <Route path="/prm/editor" element={<MultiStepForm />} />
+    <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
+
+    <Route path="/prm/:eventId/:paperId/edit" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
+    <Route path="/prm/home" element={<HomePage/>}/>
+
     
 
 
@@ -204,6 +223,7 @@ function App() {
           <Route path="accomodation" element={<Accomodation />} />
           <Route path="events" element={<Event />} />
           <Route path="souvenir" element={<Souvenir />} />
+          <Route path="commontemplate" element={<CommonTemplate />} />
 
 
 

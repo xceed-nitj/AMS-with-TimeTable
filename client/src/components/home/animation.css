@@ -5,15 +5,20 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    z-index: -100;
 }
 
 .star {
     position: absolute;
     background: rgb(8, 149, 178);
-    width: 30px;
-    height: 30px;
+    /* background: rgb(164, 63, 149); */
+
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     animation: twinkling 3s infinite;
+    z-index: -10;
+
 }
 
 @keyframes twinkling {

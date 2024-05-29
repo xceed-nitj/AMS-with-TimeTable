@@ -1,33 +1,16 @@
 import { Button, Flex } from '@chakra-ui/react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 function NavBar() {
-  return (
-    // <header className="bg-slate-200 shadow-md">
-    //   <div className="flex justify-between p-3 items-center mx-auto max-w-6xl">
-    //     <Link to="/">
-    //       <h1 className="text-sm font-bold sm:text-xl flex flex-wrap">
-    //         <span className="font-semibold text-[#10152b]">NITJ</span>
-    //         <span className="text-[#10152b]font-semibold">Conference</span>
-    //       </h1>
-    //     </Link>
+  const [navbarOpen, setNavbarOpen] = useState(false);
 
-    //     <ul className=" items-center gap-4 hidden sm:flex">
-    //       <Link to="/">
-    //         <li className="text-[#10152b]hover:underline">Home</li>
-    //       </Link>
-    //       <Link to="/author">
-    //         <li className="text-[#10152b]hover:underline">Author</li>
-    //       </Link>
-    //       <Link to="/editor">
-    //         <li className="text-[#10152b]hover:underline">Editor</li>
-    //       </Link>
-    //     </ul>
-    //   </div>
-    // </header>
+  return (
     <nav
-      className={`tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700`}
+      className={`tw-bg-gray-900 tw-sticky tw-h-15 tw-top-0  tw-border-gray-700 ${
+        navbarOpen ? 'tw-h-screen' : ''
+      }`}
       style={{ zIndex: 9999 }}
     >
       <div className="tw-max-w-screen-xl tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-mx-auto tw-p-4">
@@ -39,6 +22,7 @@ function NavBar() {
           {/* <span class="tw-self-center tw-text-2xl tw-font-semibold tw-whitespace-nowrap dark:tw-text-white">Xceed</span> */}
         </Link>
         <button
+          onClick={() => setNavbarOpen(!navbarOpen)}
           data-collapse-toggle="navbar-default"
           type="button"
           className="tw-inline-flex tw-items-center tw-p-2 tw-w-10 tw-h-10 tw-justify-center tw-text-sm tw-text-gray-500 tw-rounded-lg md:tw-hidden hover:tw-bg-gray-100 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-gray-200 dark:tw-text-gray-400 dark:hover:tw-bg-gray-700 dark:focus:tw-ring-gray-600"
@@ -49,13 +33,14 @@ function NavBar() {
           <Bars3Icon className="tw-w-6 tw-h-6" />
         </button>
         <div
-          className={clsx('tw-w-full md:tw-block md:tw-w-auto')}
+          className={clsx('tw-w-full md:tw-block md:tw-w-auto',
+          navbarOpen ? 'tw-block' : 'tw-hidden')}
           id="navbar-default"
         >
           <ul className="tw-font-medium tw-flex tw-flex-col tw-items-center tw-p-4 md:tw-p-0 tw-mt-4 tw-border tw-rounded-lg tw-space-y-5 md:tw-space-y-0 md:tw-flex-row md:tw-space-x-8 rtl:tw-space-x-reverse md:tw-mt-0 md:tw-border-0 tw-bg-gray-900 tw-border-gray-700 tw-list-none">
             <li>
               <a
-                href="/"
+                href="/prm/home"
                 className="tw-block tw-py-2 tw-px-3 tw-text-cyan-300 tw-rounded md:tw-bg-transparent md:tw-text-cyan-300 md:tw-p-0 hover:tw-text-cyan-500"
                 aria-current="page"
               >
@@ -74,7 +59,7 @@ function NavBar() {
                 </a>
               </li>
             ) : null} */}
-            <li>
+            {/* <li>
               <a
                 href="/prm/editor"
                 className="tw-block tw-py-2 tw-px-3 tw-text-white tw-rounded hover:tw-text-cyan-300 md:hover:tw-bg-transparent md:tw-border-0 md:hover:tw-text-cyan-600 md:tw-p-0 dark:tw-text-white md:dark:hover:tw-text-cyan-600 dark:hover:tw-bg-gray-700 md:dark:hover:tw-bg-transparent"
@@ -89,7 +74,7 @@ function NavBar() {
               >
                 Author
               </a>
-            </li>
+            </li> */}
             <li>
               <Link
                 to="/prm/login"

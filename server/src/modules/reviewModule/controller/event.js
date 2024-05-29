@@ -165,6 +165,101 @@ const addEditor = async (req, res) => {
   }
 };
 
+const addReviewer = async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const { email } = req.body;
+
+    if (!email) {
+      console.error('Email is required');
+      return res.status(400).send('Email is required');
+    }
+
+    let reviewer = await User.findOne({ email });
+
+    if (!reviewer) {
+      const temporaryPassword = generateRandomPassword();
+      reviewer = new User({
+        name: email,
+        email: email,
+        role: 'Reviewer',
+        password: temporaryPassword
+      });
+      await reviewer.save();
+
+      await sendMail(
+        email,
+        'Welcome as a Reviewer',
+        `You have been added as a reviewer. Please set your password using this temporary password: ${temporaryPassword}`
+      );
+    }
+
+    const event = await Event.findById(eventId);
+
+    if (!event) {
+      console.error('Event not found:', eventId);
+      return res.status(404).send('Event not found');
+    }
+
+    // Check if reviewer is already assigned
+    const isAlreadyReviewer = event.reviewer.some(r => r.user.equals(reviewer._id));
+    if (isAlreadyReviewer) {
+      return res.status(400).send('Reviewer already added to the event');
+    }
+
+    // Add reviewer to the event
+    event.reviewer.push({ user: reviewer._id, status: 'Invited' });
+    await event.save();
+
+    await sendMail(
+      email,
+      'You have been added as a reviewer',
+      'You have been added as a reviewer for the event.'
+    );
+
+    res.status(200).send('Reviewer added to the event successfully');
+  } catch (error) {
+    console.error('Error adding reviewer:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
+const generateRandomPassword = () => {
+  return Math.random().toString(36).slice(-8);
+};
+
+
+// Backend controller function
+
+
+
+const getAllReviewersInEvent = async (req, res) => {
+  try {
+    const eventId = req.params.id; // Extract eventId from URL
+
+    // Find the event by ID and populate the user details in the reviewer subdocuments
+    const event = await Event.findById(eventId).populate('reviewer.user').exec();
+
+    // If the event doesn't exist, return an error
+    if (!event) {
+      return res.status(404).send('Event not found');
+    }
+
+    // Extract reviewer details (name, email, and status) from the event
+    const reviewers = event.reviewer.map(reviewer => ({
+      name: reviewer.user.name,  // Assuming the User schema has a name field
+      email: reviewer.user.email,  // Assuming the User schema has an email field
+      status: reviewer.status
+    }));
+
+    // Send the list of reviewers in the event
+    res.status(200).json(reviewers);
+  } catch (error) {
+    console.error('Error fetching reviewers:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
 
 const getEventIdByName = async (req, res) => {
   const eventName = req.params.name;
@@ -205,4 +300,4 @@ const getEditorIdByEmail = async (req, res) => {
 };
 
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, addEditor, getEventIdByName};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName};

@@ -14,6 +14,8 @@ router.use("/conf", require("./conf")); // Include conf routes
 router.use("/committee", require("./committee")); // Include committee routes
 router.use("/awards", require("./awards")); // Include awards routes
 router.use("/location", require("./location"));
+router.use("/commontemplate", require("./commontemplate"));
+
 // Add more routes as needed
 router.use("/sponsor", require("./sponsor"));
 router.use("/participant", require("./participant"));

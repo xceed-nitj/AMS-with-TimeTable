@@ -19,6 +19,7 @@ const ViewAllotmentPage = () => {
     session: '',
     centralisedAllotments: [],
     openElectiveAllotments: [],
+    message:'',
   });
 
   const apiUrl = getEnvironment();
@@ -51,6 +52,7 @@ const ViewAllotmentPage = () => {
           session: allotmentData.session,
           centralisedAllotments: allotmentData.centralisedAllotments,
           openElectiveAllotments: allotmentData.openElectiveAllotments,
+          message:allotmentData.message
         });
       } else {
         console.error('Failed to fetch existing data');
@@ -66,8 +68,9 @@ const ViewAllotmentPage = () => {
       <div>
       <Header title="Alloted Rooms "></Header>
       </div>
+      <Text fontWeight="bold" fontSize="lg">Message from ITTC: </Text>
       <Text color="red">
-    Kindly keep 10:30 and 11:30 slots on Wednesday, Thursday, and Friday reserved for open electives. All open elective courses (6th & 8th) will commence in these slots only.
+    {formData.message}
   </Text> {/* Centralised Room Table */}
       <Table variant="striped" colorScheme="gray" style={{ marginBottom: '20px' }}>
       <caption > <Text fontWeight="bold" fontSize="lg">Centralised Room Allotment  (Total Entries: {formData.centralisedAllotments.length})</Text></caption>

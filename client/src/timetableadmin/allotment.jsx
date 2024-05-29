@@ -7,6 +7,7 @@ import {
   FormLabel,
   Heading,
   Select,
+  Input,
   Button,
   Checkbox,
   Box,
@@ -25,6 +26,7 @@ const AllotmentForm = () => {
       openElectiveAllotments: [
         { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
       ],
+      messaage:'',
     });
 
   const [departments, setDepartments] = useState([]);
@@ -126,6 +128,7 @@ const AllotmentForm = () => {
             session: allotmentData.session,
             centralisedAllotments: allotmentData.centralisedAllotments ||[],
             openElectiveAllotments: allotmentData.openElectiveAllotments || [],
+            message:allotmentData.message||"No message",  
           });
         } else {
           console.error('Failed to fetch existing data');
@@ -286,8 +289,20 @@ const AllotmentForm = () => {
     Session is required.
   </Text>
 )}
+ <Heading>Message to timetable coordinators</Heading>
+ {!formData.session && (
+  <Text color="green.500" fontSize="sm">
+    Send a note to coordinators. This will be displayed in centrally alloted room page.
+  </Text>
+)}
 
-
+{/* Add the new input field here */}
+<Input
+  mt={4} // Add some top margin for spacing
+  placeholder="Enter your message"
+  value={formData.message}
+  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+/>
       <Heading>Centralised Room Allotment</Heading>
       <table>
         <thead>
