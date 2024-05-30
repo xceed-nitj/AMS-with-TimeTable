@@ -169,7 +169,7 @@ const IdConf = params.confid;
                         ref={ref}
                         value={description}
                         name="description"
-                        onChange={handleEditorChange}
+                        onBlur={handleEditorChange}
                         classname='tw-mb-5'
                     />
                 </FormControl>
@@ -251,23 +251,25 @@ const IdConf = params.confid;
                         >
                             <Thead>
                                 <Tr>
-                                    <CustomTh>Description</CustomTh>
+                                    <CustomTh >Description</CustomTh>
                                     <CustomTh>Address</CustomTh>
                                     <CustomTh>Latitude  </CustomTh>
                                     <CustomTh>Longitude</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh>Feature</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data ? (
                                     <Tr key={data._id}>
-                                        <Td><Center>{data.description}</Center></Td>
-                                        <Td><Center>{data.address}</Center></Td>
-                                        <Td><Center>{data.latitude}</Center></Td>
-                                        <Td><Center>{data.longitude}</Center></Td>
-                                        <Td><Center>{data.sequence}</Center></Td>
-                                        <Td><Center>
+                                        <Td  sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.description}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.address}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.latitude}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.longitude}</Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.sequence}</Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.feature ?"Yes":"No"}</Td>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(data._id);

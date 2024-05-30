@@ -273,24 +273,26 @@ const IdConf = params.confid;
                                     <CustomTh>Extended</CustomTh>
                                     <CustomTh>Completed</CustomTh>
                                     <CustomTh>New Date</CustomTh>
+                                    <CustomTh>Featured</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
 
 
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
                                     <Tr key={item._id}>
-                                        <Td><Center>{item.title}</Center></Td>
-                                        <Td><Center>{item.date}</Center></Td>
-                                        <Td><Center>{item.extended ? 'Yes' : 'No'}</Center></Td>
-                                        <Td><Center>{item.completed ? 'Yes' : 'No'}</Center></Td>
-                                        <Td><Center>{item.newDate}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.title}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.date}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.extended ? 'Yes' : 'No'}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.completed ? 'Yes' : 'No'}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.newDate}</Td>
 
-                                        <Td><Center>{item.sequence}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.featured?"Yes":"No"}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
 
-                                        <Td><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);

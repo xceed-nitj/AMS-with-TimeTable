@@ -246,18 +246,20 @@ const IdConf = params.confid;
                                     <CustomTh>Price</CustomTh>
                                     <CustomTh>Description</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh>Featured</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
                                     <Tr key={item._id}>
-                                        <Td><Center>{item.category}</Center></Td>
-                                        <Td><Center>{item.price}</Center></Td>
-                                        <Td><Center>{item.description}</Center></Td>
-                                        <Td><Center>{item.sequence}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.category}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.price}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.description}</Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.featured ?"Yes":"No"}</Td>
 
-                                        <Td><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);
