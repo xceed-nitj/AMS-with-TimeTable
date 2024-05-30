@@ -38,12 +38,12 @@ const Announcement = () => {
 
     const { title, metaDescription, description, link, sequence } = formData;
 
-    const handleEditorChange = (value) => {
+    const handleEditorBlur = (value) => {
         setFormData({
             ...formData,
-            description: value,
+            description: value
         });
-    };
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -185,8 +185,9 @@ const Announcement = () => {
                         ref={ref}
                         value={description}
                         name="description"
-                        onChange={handleEditorChange}
+                        onBlur={handleEditorBlur}
                         classname='tw-mb-5'
+                        // config= {{ autofocus : true , cursorAfterAutofocus: 'end', }}
                     />
                 </FormControl>
                 <FormControl isRequired={true} mb='3'>
@@ -262,7 +263,11 @@ const Announcement = () => {
                                     <CustomTh>Meta Description</CustomTh>
                                     <CustomTh>Link</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh>Featured</CustomTh>
+                                    <CustomTh>Hidden</CustomTh>
+                                    <CustomTh>New</CustomTh>
+
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
@@ -277,10 +282,19 @@ const Announcement = () => {
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
                                             {item.link}
                                         </Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
                                             {item.sequence}
                                         </Td>
-                                        <Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.feature?"Yes":"No"}
+                                        </Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.hidden?"Yes":"No"}
+                                        </Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.new?"Yes":"No"}
+                                        </Td>
+                                        <Td position={'sticky'} right={'0'}>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete</Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);
@@ -290,7 +304,7 @@ const Announcement = () => {
                                     </Tr>
                                 ))) : (
                                     <Tr>
-                                        <Td colSpan="5" className="tw-p-1 tw-text-center">
+                                        <Td colSpan="8" className="tw-p-1 tw-text-center">
                                             <Center>No data available</Center>
                                         </Td>
                                     </Tr>

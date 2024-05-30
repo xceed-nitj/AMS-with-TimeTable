@@ -223,7 +223,7 @@ function App() {
           <Route path="accomodation" element={<Accomodation />} />
           <Route path="events" element={<Event />} />
           <Route path="souvenir" element={<Souvenir />} />
-          {/* <Route path="commontemplate" element={<CommonTemplate />} /> */}
+          <Route path="commontemplate" element={<CommonTemplate />} />
 
 
 

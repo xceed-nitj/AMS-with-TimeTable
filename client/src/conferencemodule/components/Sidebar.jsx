@@ -22,7 +22,7 @@ const navigation = [
   { name: 'Sponsorship Rates', href: 'sponsorship-rates' },
   { name: 'Souvenir', href: 'souvenir' },
   { name: 'Accomodation', href: 'accomodation' },
-  // { name: 'Common Template', href: 'commontemplate' },
+  { name: 'Common Template', href: 'commontemplate' },
 
 ];
 

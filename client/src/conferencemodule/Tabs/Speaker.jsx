@@ -259,7 +259,7 @@ const IdConf = params.confid;
                         ref={ref}
                         value={Bio}
                         name="Bio"
-                        onChange={(value) => handleEditorChange(value, "Bio")}
+                        onBlur={(value) => handleEditorChange(value, "Bio")}
                         classname='tw-mb-5'
                     />
                 </FormControl>
@@ -270,7 +270,7 @@ const IdConf = params.confid;
                         ref={ref}
                         value={Abstract}
                         name="Abstract"
-                        onChange={(value) => handleEditorChange(value, "Abstract")}
+                        onBlur={(value) => handleEditorChange(value, "Abstract")}
                         classname='tw-mb-5'
                     />
                 </FormControl>
@@ -322,8 +322,10 @@ const IdConf = params.confid;
                                     <CustomTh>Designation</CustomTh>
                                     <CustomTh>Institute</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
+                                    <CustomTh>Feature</CustomTh>
 
-                                    <CustomTh>Action</CustomTh>
+
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
@@ -332,9 +334,10 @@ const IdConf = params.confid;
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Name}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Designation}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Institute}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.feature ?"Yes":"No"}</Td>
 
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);

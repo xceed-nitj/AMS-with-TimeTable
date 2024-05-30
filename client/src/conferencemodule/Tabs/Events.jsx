@@ -175,7 +175,7 @@ const IdConf = params.confid;
                         ref={ref}
                         value={description}
                         name="description"
-                        onChange={(value) => handleEditorChange(value, "description")}
+                        onBlur={(value) => handleEditorChange(value, "description")}
                         classname='tw-mb-5'
                     />
                 </FormControl>
@@ -228,7 +228,7 @@ const IdConf = params.confid;
                                     <CustomTh>Description</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
                                     <CustomTh>Feature</CustomTh>
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
@@ -239,7 +239,7 @@ const IdConf = params.confid;
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.feature? "Yes":"No"}</Td>
 
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);

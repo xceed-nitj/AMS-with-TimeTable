@@ -194,7 +194,7 @@ const Awards = () => {
                         ref={ref}
                         value={description}
                         name="description"
-                        onChange={handleEditorChange}
+                        onBlur={handleEditorChange}
                         classname='tw-mb-5'
                     />
                 </FormControl>
@@ -281,9 +281,13 @@ const Awards = () => {
                                     <CustomTh>Description</CustomTh>
                                     <CustomTh>Link</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
+                                    <CustomTh>Featured</CustomTh>
+                                    <CustomTh>New</CustomTh>
+                                    <CustomTh>Hidden</CustomTh>
 
 
-                                    <CustomTh>Action</CustomTh>
+
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
@@ -295,8 +299,11 @@ const Awards = () => {
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.link}</Td>
 
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.sequence}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.featured?"Yes":"No"}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.new ?"Yes":"No"}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.hidden?"Yes":"No"}</Center></Td>
 
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);

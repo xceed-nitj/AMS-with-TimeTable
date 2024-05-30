@@ -221,7 +221,7 @@ const HomeConf = () => {
                             <JoditEditor
                                 ref={ref}
                                 value={about.description}
-                                onChange={(value) => handleDescriptionChange(value, index)}
+                                onBlur={(value) => handleDescriptionChange(value, index)}
                                 classname='tw-mb-5'
                             />
                         </FormControl>
@@ -317,7 +317,7 @@ const HomeConf = () => {
                                     <CustomTh>Conference Name</CustomTh>
                                     <CustomTh>Starting Date</CustomTh>
                                     <CustomTh>Ending Date </CustomTh>
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
@@ -326,7 +326,7 @@ const HomeConf = () => {
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.confName}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{formatDate(data.confStartDate)}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{formatDate(data.confEndDate)}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(data._id);

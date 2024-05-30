@@ -32,7 +32,7 @@ const CommonTemplate = () => {
         confId: IdConf,
         pageTitle: "",
         description: "",
-        featured: true,
+        feature: true,
     };
     const [formData, setFormData] = useState(initialData);
 
@@ -169,15 +169,15 @@ const CommonTemplate = () => {
                         ref={ref}
                         value={description}
                         name="description"
-                        onChange={handleEditorChange}
+                        onBlur={handleEditorChange}
                         classname='tw-mb-5'
                     />
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >Featured:</FormLabel>
                     <Select
-                        name="featured"
-                        value={formData.featured}
+                        name="feature"
+                        value={formData.feature}
                         onChange={handleChange}
                     >
                         <option value={true}>Yes</option>
@@ -209,7 +209,7 @@ const CommonTemplate = () => {
                                     <CustomTh>Feature</CustomTh>
 
 
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
@@ -217,10 +217,10 @@ const CommonTemplate = () => {
                                     <Tr key={item._id}>
                                         <Td><Center>{item.pageTitle}</Center></Td>
                                         <Td><Center>{item.description}</Center></Td>
-                                        <Td><Center>{item.feature}</Center></Td>
+                                        <Td><Center>{item.feature ? "Yes":"No"}</Center></Td>
 
 
-                                        <Td><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);
