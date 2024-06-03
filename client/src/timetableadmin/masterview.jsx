@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
+import Header from '../components/header';
+
 import {
   Box,
   Container,
@@ -122,7 +124,8 @@ function TimetableMasterView() {
   return (
     <Container maxW="container.lg" py={10}>
       <Box>
-        <Text fontSize="3xl" fontWeight="bold" mb={4}>Timetable Master View</Text>
+        {/* <Header title="Timetable Admin Master View"> */}
+        <Header title="Timetable Admin Master View"></Header>
 
         <Text fontSize="xl" mb={2}>Select Session</Text>
         <Select onChange={handleSessionChange} value={selectedSession} mb={4}>
@@ -144,6 +147,7 @@ function TimetableMasterView() {
                 <Th>Code</Th>
                 <Th>Last Saved Time</Th>
                 <Th>Last Locked Time</Th>
+                <Th>View Timetable</Th>
                 <Th>Download PDF</Th>
               </Tr>
             </Thead>
@@ -154,6 +158,16 @@ function TimetableMasterView() {
                   <Td>{item.code}</Td>
                   <Td>{savedTimes[item.code] !== null ? savedTimes[item.code] : 'Table not saved yet'}</Td>
                   <Td>{lockedTimes[item.code] !== null ? lockedTimes[item.code] : 'Table not locked yet'}</Td>
+                  <Td>
+                  <Link
+          href={`${window.location.origin}/tt/${item.code}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          color="teal.500"
+        >
+          Go to timetable
+        </Link>
+                  </Td>
                   <Td>
                   <Link
           href={`${window.location.origin}/tt/${item.code}/generatepdf`}

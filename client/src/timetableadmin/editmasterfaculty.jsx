@@ -45,19 +45,17 @@ function Subject() {
         setDepartment(filteredData[0].dept);
       }
 
-      const facultyResponse = await fetch(`${apiUrl}/timetablemodule/faculty`, { credentials: 'include' });
+      const facultyResponse = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${department}`, { credentials: 'include' });
       if (!facultyResponse.ok) {
         throw new Error(`Error: ${facultyResponse.status} - ${facultyResponse.statusText}`);
       }
       const facultyData = await facultyResponse.json();
-
-      const facultyWithSameDept = facultyData.filter((faculty) => faculty.dept === department);
-      setTableData(facultyWithSameDept.reverse());
+      
+      setTableData(facultyData.reverse());
     } catch (error) {
       console.error('Error:', error);
     }
   };
-
   fetchData();
 
   useEffect(() => {

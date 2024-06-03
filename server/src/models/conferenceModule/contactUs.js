@@ -9,46 +9,37 @@ const contactUsSchema = new mongoose.Schema({
   },
   title: {
     type: String,
-    required: true,
   },
   name: {
     type: String,
-    required: true,
   },
   designation: {
     type: String,
-    required: true,
   },
   imgLink: String,
   institute: {
     type: String,
-    required: true,
   },
   profileLink: {
     type: String,
-    required: true,
   },
   phone: {
     type: String,
-    required: true,
   },
   email: {
     type: String,
-    required: true,
   },
   fax: String,
   feature: {
     type: Boolean,
-    required: true,
   },
   sequence: {
     type: Number,
-    required: true,
   }}, { timestamps: true }
   
 );
 
 // Create the Mongoose model
-const ContactUs = mongoose.model("ContactUs", contactUsSchema);
+const ContactUs = mongoose.model("cf-contactUs", contactUsSchema);
 
 module.exports = ContactUs;

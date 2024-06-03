@@ -8,23 +8,19 @@ const navbarSchema = new mongoose.Schema({
   },
   heading: {
     type: String,
-    required: true,
   },
   subHeading: {
     type: String,
-    required: true,
   },
   url: {
     type: String,
-    required: true,
   },
   name: {
     type: String,
-    required: true,
   },
 });
 
 // Create the Mongoose model
-const Navbar = mongoose.model("Navbar", navbarSchema);
+const Navbar = mongoose.model("cf-navbar", navbarSchema);
 
 module.exports = Navbar;

@@ -8,6 +8,6 @@ const conferenceSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-const Conference = mongoose.model("Conference", conferenceSchema);
+const Conference = mongoose.model("cf-conference", conferenceSchema);
 
 module.exports = Conference;

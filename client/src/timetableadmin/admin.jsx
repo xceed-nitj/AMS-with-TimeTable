@@ -1,15 +1,77 @@
-import React, { useState } from 'react';
-import { Button, VStack, Input, Heading } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Button, VStack, Input, Heading, Table, Thead, Tbody, Tr, Th, Td, Container } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import Header from '../components/header';
+import {
+  CustomTh,
+  CustomLink,
+  CustomBlueButton,
+  CustomDeleteButton,
+  CustomTealButton,
+} from "../styles/customStyles";
+
+
 
 const AdminPage = () => {
   const [formData, setFormData] = useState({
     session: '',
   });
 
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [editingSessionValue, setEditingSessionValue] = useState('');
+  const [sessions, setSessions] = useState([]);
   const apiUrl = getEnvironment();
 
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/allotment/session`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: 'include'
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Sessions fetched successfully:", data); 
+        setSessions(data);
+      } else {
+        console.error("Failed to fetch sessions");
+      }
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+    }
+  };
+
+  const handleDelete = async (session) => {
+    try {
+      const confirmed = window.confirm(`Are you sure you want to delete session "${session}"?`);
+      if (!confirmed) {
+        return; 
+      }
+  
+      const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${session}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      setSessions(prevSessions => prevSessions.filter(item => item !== session));
+    } catch (error) {
+      console.error('Error deleting allotment:', error.message);
+    }
+  };
+  
+    
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -36,6 +98,7 @@ const AdminPage = () => {
       }
 
       // console.log('Allotment created successfully');
+      await fetchSessions();
       setFormData({
         session: '',
       });
@@ -44,10 +107,67 @@ const AdminPage = () => {
     }
   };
 
+  const handleEdit = (session) => {
+    setEditingSessionId(session);
+    setEditingSessionValue(session);
+  };
+  
+  const handleChange1 = (e) => {
+    setEditingSessionValue(e.target.value);
+  };
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${editingSessionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ session: editingSessionValue }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      setSessions(prevSessions => prevSessions.map(item => item === editingSessionId ? editingSessionValue : item));
+      setEditingSessionId(null);
+      setEditingSessionValue('');
+    } catch (error) {
+      console.error('Error editing allotment:', error.message);
+    }
+  };
   return (
     <VStack spacing={4} align="stretch">
-    <Heading>Admin page</Heading>
+<Container maxW="5xl">
 
+    <Header title="Timetable Admin page"></Header>
+    <div>
+      <Link to="/tt/mastersem" style={{ backgroundColor: 'blue', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Master Sem</button>
+      </Link>
+      <Link to="/tt/masterfaculty" style={{ backgroundColor: 'green', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Master Faculty</button>
+      </Link>
+      <Link to="/tt/masterroom" style={{ backgroundColor: 'orange', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Master Room</button>
+      </Link>
+      <Link to="/tt/masterdelete" style={{ backgroundColor: 'red', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Admin Delete Page</button>
+      </Link>
+      <Link to="/tt/allotment" style={{ backgroundColor: 'purple', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Room Allotment</button>
+      </Link>
+      <Link to="/tt/admin/adminview" style={{ backgroundColor: 'gray', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Edit any time table</button>
+      </Link>
+      <Link to="/tt/admin/viewinstituteload" style={{ backgroundColor: 'gray', margin: '10px', padding: '10px', display: 'inline-block' }}>
+        <button>Departwise load distribution</button>
+      </Link>
+    </div>
+    
+    <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
+      <Heading>Create New Session</Heading>
+    </div>
       <form onSubmit={handleSubmit}>
         <Input
           type="text"
@@ -57,29 +177,49 @@ const AdminPage = () => {
           placeholder="Enter New Session"
         />
         <Button type="submit" colorScheme="teal">
-          Create Allotment
+          Create Session
         </Button>
       </form>
 
-      <Link to="/tt/mastersem">
-        <Button colorScheme="teal">Go to Master Sem</Button>
-      </Link>
-      <Link to="/tt/masterfaculty">
-        <Button colorScheme="teal">Go to Master Faculty</Button>
-      </Link>
-      <Link to="/tt/masterroom">
-        <Button colorScheme="teal">Go to Master Room</Button>
-      </Link>
-      <Link to="/tt/masterdelete">
-        <Button colorScheme="teal">Go to admin delete page</Button>
-      </Link>
-      <Link to="/tt/allotment">
-        <Button colorScheme="teal">Go Room Allotment</Button>
-      </Link>
-      <Link to="/tt/admin/instituteload">
-        <Button colorScheme="teal">Institute Faculty load </Button>
-      </Link>
 
+      <Table variant="striped">
+  <Thead>
+    <Tr>
+      <Th>Session</Th>
+      <Th>Edit</Th>
+      <Th>Delete</Th>
+    </Tr>
+  </Thead>
+  <Tbody>
+  {sessions.map((session, index) => (  
+  <Tr key={index}>
+    <Td>
+      {editingSessionId === session ? (
+        <Input
+          type='text'
+          value={editingSessionValue}
+          onChange={handleChange1}
+        />
+      ) : (
+        session
+      )}
+    </Td>
+    <Td>
+      {editingSessionId === session ? (
+        <Button onClick={handleSave}>Save</Button>
+      ) : (
+        <CustomTealButton onClick={() => handleEdit(session)}>Edit</CustomTealButton>
+      )}
+    </Td>
+    <Td>
+      <CustomDeleteButton onClick={() => handleDelete(session)}>Delete</CustomDeleteButton>
+    </Td>
+  </Tr>
+))}
+
+</Tbody>
+</Table>
+</Container>
     </VStack>
   );
 };

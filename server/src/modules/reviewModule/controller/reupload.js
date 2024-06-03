@@ -1,6 +1,7 @@
 const fs = require("fs").promises;
 const path = require("path");
 const multer = require("multer");
+const Paper = require("../../../models/reviewModule/paper");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -24,7 +25,7 @@ const fileUploadMiddleware = (req, res, next) => {
 };
 
 const reupload = async (req, res) => {
-  const id = req.params.id; // this is not _id, this is paperId (filename)
+  {/*const id = req.params.id; // this is not _id, this is paperId (filename)
   try {
     const filePath = path.join(__dirname, "/uploads", id);
     await fs.unlink(filePath);
@@ -44,7 +45,24 @@ const reupload = async (req, res) => {
     } else {
       res.status(500).send("Internal Server Error");
     }
+  }*/}
+
+  const fileName = req.fileName;
+  const paperId = req.params.id;
+
+  if (!fileName) {
+    return res.status(400).send("File name is missing in the request.");
   }
+
+  const paper = await Paper.findById(paperId);
+  if (!paper) {
+    return res.status(404).send("Paper not found");
+  }
+  paper.updateOne({ paperId: fileName }).exec();
+  paper.uploadLink.push(fileName);
+  paper.version += 1;
+  const newPaper = await paper.save();
+  res.status(200).send(newPaper);
 };
 
 module.exports = reupload;

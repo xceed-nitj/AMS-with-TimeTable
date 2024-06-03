@@ -3,11 +3,26 @@ import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
-
+import { Container } from "@chakra-ui/layout";
+import {
+    FormControl, FormErrorMessage, FormLabel, Center, Heading,
+    Input, Button, Select
+} from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import {
+    Table,
+    TableContainer,
+    Tbody,
+    Td,
+    Th,
+    Thead,
+    Tr,
+} from "@chakra-ui/table";
 const NavbarConf = () => {
     const params = useParams();
-    const IdConf = params.confid;
-    const apiUrl = getEnvironment();
+const IdConf = params.confid;
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [deleteItemId, setDeleteItemId] = useState(null);    const apiUrl = getEnvironment();
 
     const initialData = {
         "confId": IdConf,
@@ -15,8 +30,6 @@ const NavbarConf = () => {
         "subHeading": "",
         "url": "",
         "name": "",
-        "feature": true,
-        "sequence": 0,
     }
 
     const [formData, setFormData] = useState(initialData);
@@ -26,7 +39,7 @@ const NavbarConf = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    const { heading, subHeading, url, name } = formData;
+    const { heading, subHeading, url, name ,sequence} = formData;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -51,7 +64,7 @@ const NavbarConf = () => {
     };
 
     const handleSubmit = (e) => {
-        e.preventDefault();
+        // e.preventDefault();
         if(data && Object.keys(data).length !== 0){
             window.alert('You can Add only one Navbar for one conference');
             setFormData(initialData)
@@ -81,23 +94,33 @@ const NavbarConf = () => {
             .then(res => {
                 setFormData(initialData);
                 setRefresh(refresh + 1);
+                setEditID(null)
             })
             .catch(err => console.log(err));
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/conferencemodule/navbar/${deleteID}`, {
+        setDeleteItemId(deleteID);
+        setShowDeleteConfirmation(true);
+    };
+
+    const confirmDelete = () => {
+        axios.delete(`${apiUrl}/conferencemodule/navbar/${deleteItemId}`, {
             withCredentials: true
 
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
-                setRefresh(refresh + 1);
+                               setShowDeleteConfirmation(false);  
+                 setRefresh(refresh + 1);
+          
+                setFormData(initialData);
             })
             .catch(err => console.log(err));
     };
 
     const handleEdit = (editIDNotState) => {
+        window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/navbar/${editIDNotState}`, {
             withCredentials: true
 
@@ -122,86 +145,142 @@ const NavbarConf = () => {
     }, [refresh]);
 
     return (
-        <main className='tw-py-10 tw-bg-gray-100 lg:tw-pl-72 tw-min-h-screen'>
-            <div className='tw-px-2 md:tw-px-4 lg:tw-px-8'>
-                <div className="tw-block tw-box-border" >
-                    <form className="tw-bg-blue-100 tw-shadow-md tw-rounded tw-px-4 md:tw-px-8 tw-pt-6 tw-pb-8 tw-m-4 tw-mt-10 md:tw-m-10 " onSubmit={handleSubmit} autoComplete="off">
-                        <div className="tw-text-blue-700 tw-text-[28px] tw-font-seriftw-text-center  " >About Navbar</div>
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold " >Heading</label>
-                        <input type="text" name="heading" required value={heading} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight " />
+        <main className='tw-py-10  lg:tw-pl-72 tw-min-h-screen'>
+           
+            <Container maxW='5xl' >
+                <Center><Heading as="h1" size="xl" mt="6" mb="6">
+                Navbar
+                 </Heading></Center>
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Subheading</label>
-                        <input type="text" name="subHeading" required value={subHeading} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight " />
 
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Name</label>
-                        <input type="text" name="name" required value={name} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight " />
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">URL</label>
-                        <input type="text" name="url" required value={url} onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-500 tw-leading-tight " />
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold ">Sequence</label>
-                        <input
-                            type="number"
-                            name="sequence"
-                            value={formData.sequence}
-                            onChange={handleChange}
-                            className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight "
-                        />
-                        <label className="tw-block tw-text-gray-700 tw-text-md md:tw-text-lg tw-ml-1 tw-font-bold">Feature</label>
-                        <select name="feature" className="tw-shadow tw-appearance-none tw-border tw-rounded tw-w-full tw-py-1 tw-mb-2 tw-px-3 tw-text-blue-700 tw-leading-tight " onChange={handleChange}>
-                            <option value={true}>Yes</option>
-                            <option value={false}>No</option>
-                        </select>
-                        <div className="tw-flex tw-justify-evenly">
-                            <button type="submit" className="tw-bg-blue-500 tw-hover:bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded focus:tw-outline-black ">Add</button>
-                            <button type="button" onClick={() => { handleUpdate() }} className="tw-bg-blue-500 tw-hover:bg-blue-700 tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded ">Update</button>
+
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Heading:</FormLabel>
+                    <Input
+                        type="text"
+                        name="heading"
+                        value={heading}
+                        onChange={handleChange}
+                        placeholder="Heading"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Sub Heading:</FormLabel>
+                    <Input
+                        type="text"
+                        name="subHeading"
+                        value={subHeading}
+                        onChange={handleChange}
+                        placeholder="Sub Heading"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Name:</FormLabel>
+                    <Input
+                        type="text"
+                        name="name"
+                        value={name}
+                        onChange={handleChange}
+                        placeholder="Name"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Url :</FormLabel>
+                    <Input
+                        type="text"
+                        name="url"
+                        value={url}
+                        onChange={handleChange}
+                        placeholder="Url"
+                        mb='2.5'
+                    />
+                </FormControl>
+
+              
+
+                <Center>
+              
+                    <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
+                        {editID ? 'Update' : 'Add'}
+                    </Button>
+
+            </Center>
+                <Heading as="h1" size="xl" mt="6" mb="6">
+                    Added Information </Heading>
+                {!loading ? (
+
+                    <TableContainer>
+                        <Table
+                            variant='striped'
+                            size="md"
+                            mt="1"
+                        >
+                            <Thead>
+                                <Tr>
+                                    <CustomTh>Heading</CustomTh>
+                                    <CustomTh>Sub Heading</CustomTh>
+                                    <CustomTh>Name  </CustomTh>
+                                    <CustomTh>Url</CustomTh>
+                                    <CustomTh>Action</CustomTh>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {data ? (
+                                    <Tr key={data._id}>
+                                        <Td><Center>{data.heading}</Center></Td>
+                                        <Td><Center>{data.subHeading}</Center></Td>
+                                        <Td><Center>{data.name}</Center></Td>
+                                        <Td><Center>{data.url}</Center></Td>
+                                        <Td><Center>
+                                            <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
+                                            <Button colorScheme="teal" onClick={() => {
+                                                handleEdit(data._id);
+                                                setEditID(data._id);
+                                            }}>Edit </Button>
+                                        </Center></Td>
+
+                                    </Tr>) : (
+                                    <Tr>
+                                        <Td colSpan="6" className="tw-p-1 tw-text-center">
+                                            <Center>No data available</Center></Td>
+                                    </Tr>
+                                )}
+                            </Tbody>
+                        </Table>
+                    </TableContainer>
+                )
+
+                    : <LoadingIcon />
+                }
+            </Container>
+ 
+            {showDeleteConfirmation && (
+                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
+                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
+                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
+                            Are you sure you want to delete?
+                        </p>
+                        <div className="tw-flex tw-justify-center">
+                            <Button
+                                colorScheme="red"
+                                onClick={confirmDelete}
+                                mr={4}
+                            >
+                                Yes, Delete
+                            </Button>
+                            <Button
+                                colorScheme="blue"
+                                onClick={() => setShowDeleteConfirmation(false)}
+                            >
+                                Cancel
+                            </Button>
                         </div>
-                    </form>
-
-                    <hr />
-
-                    <div className="tw-shadow-md  tw-m-4 md:tw-m-10 tw-overflow-x-auto">
-                        <div className="tw-text-black-700 tw-text-[28px] tw-font-serif tw-text-center  " >Added Information</div>
-                        {loading ? (
-                            <div>
-                                <LoadingIcon />
-                            </div>
-                        ) : (
-                            <table className="tw-min-w-full tw-border-collapse tw-box-border " >
-                                <thead>
-                                    <tr className="tw-border-[2px] tw-bg-blue-100  tw-border-blue-500">
-                                        <th className="tw-p-1 tw-text-center">Heading</th>
-                                        <th className="tw-p-1 tw-text-center">Subheading</th>
-                                        <th className="tw-p-1 tw-text-center">Name</th>
-                                        <th className="tw-p-1 tw-text-center">URL</th>
-                                        <th className="tw-p-1 tw-text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data && Object.keys(data).length !== 0 ? (
-                                        <tr className="tw-border-[1px] tw-font-serif tw-border-blue-500">
-                                            <td className="tw-p-1 tw-text-center">{data.heading}</td>
-                                            <td className="tw-p-1 tw-text-center">{data.subHeading}</td>
-                                            <td className="tw-p-1 tw-text-center">{data.name}</td>
-                                            <td className="tw-p-1 tw-text-center">{data.url}</td>
-                                            <td className="tw-p-1 tw-text-center tw-border-hidden tw-flex tw-justify-evenly">                                                <button onClick={() => { handleEdit(data._id); setEditID(data._id); }} className="tw-bg-yellow-500 tw-hover:bg-yellow-700 tw-text-white tw-font-bold tw-px-4 tw-rounded "> Edit </button>{" "}
-                                                <button onClick={() => handleDelete(data._id)} className="tw-bg-red-500 tw-hover:bg-red-700 tw-text-white tw-font-bold tw-px-4 tw-rounded "> Delete </button>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="5" className="tw-p-1 tw-text-center">No data available</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        )}
                     </div>
                 </div>
-            </div>
-        </main>
+            )}        </main>
     );
 };
 

@@ -13,6 +13,11 @@ import EventDates from '../Tabs/EventDates';
 import Navbar from '../Tabs/Navbar';
 import Participants from '../Tabs/Participants';
 import Location from '../Tabs/Location';
+import SponsorshipRate from '../Tabs/SponsorshipRates';
+import Accomodation from '../Tabs/Accomodation';
+import Event from '../Tabs/Events';
+import Souvenir from '../Tabs/Souvenir';
+import CommonTemplate from '../Tabs/CommonTemplate'
 export default function DashboardLayout() {
   return (
     <>
@@ -34,8 +39,8 @@ export default function DashboardLayout() {
 
 
       < Routes >
-        <Route path="/cf/adminpael" element={<ConferencePage />} />
-        <Route path="/cf/adminpael/" element={<Sidebar />}>
+        <Route path="/cf" element={<ConferencePage />} />
+        <Route path="/cf/" element={<Sidebar />}>
           <Route index element={<Home />} />
           <Route path="home" element={<Home />} />
           <Route path="speakers" element={<Speaker />} />
@@ -49,6 +54,12 @@ export default function DashboardLayout() {
           <Route path="locations" element={<Location />} />
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<Navbar />} />
+          <Route path="sponsorship-rates" element={<SponsorshipRate />} />
+          <Route path="accomodation" element={<Accomodation />} />
+          <Route path="events" element={<Event />} />
+          <Route path="souvenir" element={<Souvenir />} />
+          <Route path="commontemplate" element={<CommonTemplate />} />
+
         </Route>
       </Routes >
     </>

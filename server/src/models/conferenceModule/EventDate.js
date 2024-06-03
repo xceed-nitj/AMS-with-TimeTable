@@ -16,27 +16,22 @@ const eventDateSchema = new mongoose.Schema({
   },
   sequence: {
     type: Number,
-    required: true,
   },
   extended: {
     type: Boolean,
-    required: true,
   },
   newDate: {
     type: Date,
-    required: true,
   },
   completed: {
     type: Boolean,
-    required: true,
   },
   featured: {
     type: Boolean,
-    required: true,
   },
 });
 
 // Create the Mongoose model
-const EventDate = mongoose.model("EventDate", eventDateSchema);
+const EventDate = mongoose.model("cf-eventDate", eventDateSchema);
 
 module.exports = EventDate;

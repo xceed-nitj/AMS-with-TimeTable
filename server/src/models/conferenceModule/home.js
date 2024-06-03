@@ -12,17 +12,21 @@ const homeSchema = new mongoose.Schema({
   },
   confStartDate: {
     type: Date,
-    required: true,
   },
   confEndDate: {
     type: Date,
-    required: true,
   },
-  aboutConf: {
-    type: String,
-    required: true,
-  },
-  aboutIns: String,
+  
+  about: [
+    {
+      title: {
+        type: String,
+      },
+      description: {
+        type: String,
+      },
+    },
+  ],
   youtubeLink: String,
   instaLink: String,
   facebookLink: String,
@@ -32,6 +36,6 @@ const homeSchema = new mongoose.Schema({
 });
 
 // Create the Mongoose model
-const Home = mongoose.model("Home", homeSchema);
+const Home = mongoose.model("cf-home", homeSchema);
 
 module.exports = Home;

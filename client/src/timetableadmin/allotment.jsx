@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import getEnvironment from '../getenvironment';
+import Header from '../components/header';
+import {CustomTh, CustomLink,CustomBlueButton, CustomTealButton, CustomDeleteButton} from '../styles/customStyles';
 import {
   Container,
   FormLabel,
   Heading,
   Select,
+  Input,
   Button,
   Checkbox,
   Box,
-  Text
+  Text,
 } from '@chakra-ui/react';
+import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
 
 
@@ -22,6 +26,7 @@ const AllotmentForm = () => {
       openElectiveAllotments: [
         { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
       ],
+      messaage:'',
     });
 
   const [departments, setDepartments] = useState([]);
@@ -123,6 +128,7 @@ const AllotmentForm = () => {
             session: allotmentData.session,
             centralisedAllotments: allotmentData.centralisedAllotments ||[],
             openElectiveAllotments: allotmentData.openElectiveAllotments || [],
+            message:allotmentData.message||"No message",  
           });
         } else {
           console.error('Failed to fetch existing data');
@@ -251,7 +257,11 @@ const AllotmentForm = () => {
     <Box>
 
     <form onSubmit={handleSubmit}>
-      <Heading>Allotment</Heading>
+      <Header title="Allotment"></Header>
+      <Link to="/tt/allotment/import">
+          <CustomTealButton>Import allotment from previous session</CustomTealButton>
+                </Link>
+
       <FormLabel>Session:</FormLabel>
       <Select
   name="session"
@@ -279,8 +289,20 @@ const AllotmentForm = () => {
     Session is required.
   </Text>
 )}
+ <Heading>Message to timetable coordinators</Heading>
+ {!formData.session && (
+  <Text color="green.500" fontSize="sm">
+    Send a note to coordinators. This will be displayed in centrally alloted room page.
+  </Text>
+)}
 
-
+{/* Add the new input field here */}
+<Input
+  mt={4} // Add some top margin for spacing
+  placeholder="Enter your message"
+  value={formData.message}
+  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+/>
       <Heading>Centralised Room Allotment</Heading>
       <table>
         <thead>
@@ -341,30 +363,30 @@ const AllotmentForm = () => {
         Afternoon Slot
       </Checkbox>
       <div>
-      <Button
+      <CustomTealButton
         type="Button"
         onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}
       >
         Add Room
-      </Button>
-      <Button
+      </CustomTealButton>
+      <CustomDeleteButton
         type="Button"
         onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
       >
         Remove Room
-      </Button>
+      </CustomDeleteButton>
       </div>       
                   </div>
                 ))}
                
               </td>
               <td>
-              <Button
+              <CustomDeleteButton
                 type="button"
                 onClick={() => handleRemoveAllotment(deptIndex, 'centralisedAllotments')}
               >
                 Remove Allotment
-              </Button>
+              </CustomDeleteButton>
             </td>
             </tr>
           ))}
@@ -425,29 +447,29 @@ const AllotmentForm = () => {
         ))}
       </Select>
       {/* Other controls (e.g., checkboxes) here */}
-      <Button
+      <CustomTealButton
         type="Button"
         onClick={() => handleAddRoomOpenElective(deptIndex)}
       >
         Add Room
-      </Button>
-      <Button
+      </CustomTealButton>
+      <CustomDeleteButton
         type="Button"
         onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
       >
         Remove Room
-      </Button>
+      </CustomDeleteButton>
     </div>
 
 ))}
 </td>
 <td>
-  <Button
+  <CustomDeleteButton
     type="button"
     onClick={() => handleRemoveAllotment(deptIndex, 'openElectiveAllotments')}
   >
     Remove Allotment
-  </Button>
+  </CustomDeleteButton>
   </td>
             </tr>
           ))}
