@@ -285,22 +285,22 @@ const IdConf = params.confid;
                                     <CustomTh>Institute</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
 
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
-                                    <Tr key={item._id}>                                        <Td><Center>{item.Type}</Center></Td>
-                                    <Td><Center>{item.Subtype}</Center></Td>
+                                    <Tr key={item._id}>                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Type}</Td>
+                                    <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Subtype}</Td>
 
 
 
-                                        <Td><Center>{item.Name}</Center></Td>
-                                        <Td><Center>{item.Designation}</Center></Td>
-                                        <Td><Center>{item.Institute}</Center></Td>
-                                        <Td><Center>{item.sequence}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Name}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Designation}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Institute}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
 
-                                        <Td><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);

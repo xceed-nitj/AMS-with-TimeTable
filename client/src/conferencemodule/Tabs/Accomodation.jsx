@@ -67,6 +67,7 @@ const IdConf = params.confid;
             [fieldName]: value,
         });
     };
+    
     const handleSubmit = (e) => {
         // e.preventDefault();
 
@@ -175,7 +176,7 @@ const IdConf = params.confid;
                         ref={ref}
                         value={description}
                         name="description"
-                        onChange={(value) => handleEditorChange(value, "description")}
+                        onBlur={(value) => handleEditorChange(value, "description")}
                         classname='tw-mb-5'
                     />
                 </FormControl>
@@ -227,23 +228,23 @@ const IdConf = params.confid;
                                     <CustomTh>Description</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
 
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
                                     <Tr key={item._id}>
-                                        <Td><Center>{item.title}</Center></Td>
-                                        <Td><Center>{item.description}</Center></Td>
-                                        <Td><Center>{item.sequence}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.title}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.description}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
 
-                                        <Td><Center>
+                                        <Td position={'sticky'} right={'0'} sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);
                                                 setEditID(item._id);
                                             }}>Edit </Button>
-                                        </Center></Td>
+                                        </Td>
 
                                     </Tr>))) :
                                     (

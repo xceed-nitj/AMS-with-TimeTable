@@ -5,20 +5,21 @@ import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/layout";
 import {
-    FormControl, FormErrorMessage, FormLabel, Center, Heading,
+    FormControl, FormLabel, Center, Heading,
     Input, Button, Select
 } from '@chakra-ui/react';
-import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
-import {Table,TableContainer,Tbody,Td,Th,Thead,Tr,} from "@chakra-ui/table";
+import { CustomTh } from '../utils/customStyles';
+import { Table, TableContainer, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/table";
 import JoditEditor from 'jodit-react';
 
 const Announcement = () => {
     const params = useParams();
     const apiUrl = getEnvironment();
     const ref = useRef(null);
-const IdConf = params.confid;
+    const IdConf = params.confid;
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-    const [deleteItemId, setDeleteItemId] = useState(null);    const initialData = {
+    const [deleteItemId, setDeleteItemId] = useState(null);
+    const initialData = {
         "confId": IdConf,
         "title": "",
         "metaDescription": "",
@@ -37,12 +38,13 @@ const IdConf = params.confid;
 
     const { title, metaDescription, description, link, sequence } = formData;
 
-    const handleEditorChange = (value) => {
+    const handleEditorBlur = (value) => {
         setFormData({
             ...formData,
-            description: value,
+            description: value
         });
-    };
+    }
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "sequence") {
@@ -78,15 +80,11 @@ const IdConf = params.confid;
     };
 
     const handleSubmit = (e) => {
-        // e.preventDefault();
-
         axios.post(`${apiUrl}/conferencemodule/announcements`, formData, {
             withCredentials: true
-
         })
             .then(res => {
                 setData([...data, res.data]);
-
                 setFormData(initialData);
                 setRefresh(refresh + 1);
             })
@@ -99,7 +97,6 @@ const IdConf = params.confid;
     const handleUpdate = () => {
         axios.put(`${apiUrl}/conferencemodule/announcements/${editID}`, formData, {
             withCredentials: true
-
         })
             .then(res => {
                 setFormData(initialData);
@@ -115,27 +112,24 @@ const IdConf = params.confid;
     };
 
     const confirmDelete = () => {
-        setLoading(true)
+        setLoading(true);
         axios.delete(`${apiUrl}/conferencemodule/announcements/${deleteItemId}`, {
             withCredentials: true
-
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
-                               setShowDeleteConfirmation(false);  
-                 setRefresh(refresh + 1);
-          
+                setShowDeleteConfirmation(false);
+                setRefresh(refresh + 1);
                 setFormData(initialData);
             })
             .catch(err => console.log(err))
-            .finally(() => setLoading(false))
+            .finally(() => setLoading(false));
     };
 
     const handleEdit = (editIDNotState) => {
         window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/announcements/${editIDNotState}`, {
             withCredentials: true
-
         })
             .then(res => {
                 setFormData(res.data);
@@ -147,28 +141,24 @@ const IdConf = params.confid;
         setLoading(true);
         axios.get(`${apiUrl}/conferencemodule/announcements/conf/${IdConf}`, {
             withCredentials: true
-
         })
             .then(res => {
                 setData(res.data);
                 console.log(res.data);
-
             })
             .catch(err => console.log(err))
             .finally(() => setLoading(false));
     }, [refresh]);
 
     return (
-        <main className='tw-py-10  lg:tw-pl-72 tw-min-h-screen'>
-
+        <main className='tw-py-10 lg:tw-pl-72 tw-min-h-screen'>
             <Container maxW='5xl'>
                 <Heading as="h1" size="xl" mt="6" mb="6">
                     Create a New Announcement
                 </Heading>
 
-
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Title:</FormLabel>
+                <FormControl isRequired={true} mb='3'>
+                    <FormLabel>Title:</FormLabel>
                     <Input
                         type="text"
                         name="title"
@@ -179,10 +169,8 @@ const IdConf = params.confid;
                     />
                 </FormControl>
                 <FormControl isRequired>
-
                     <FormLabel>Meta Description:</FormLabel>
                     <Input
-
                         type="text"
                         name="metaDescription"
                         value={metaDescription}
@@ -190,29 +178,20 @@ const IdConf = params.confid;
                         placeholder="Meta Description"
                         mb='2.5'
                     />
-
                 </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Description :</FormLabel>
-                    {/* <Input
-                        type="text"
-                        name="description"
-                        value={description}
-                        onChange={handleChange}
-                        placeholder="Description"
-                        mb='2.5'
-                    /> */}
-
+                <FormControl isRequired={true} mb='3'>
+                    <FormLabel>Description:</FormLabel>
                     <JoditEditor
                         ref={ref}
                         value={description}
                         name="description"
-                        onChange={handleEditorChange}
+                        onBlur={handleEditorBlur}
                         classname='tw-mb-5'
+                        // config= {{ autofocus : true , cursorAfterAutofocus: 'end', }}
                     />
                 </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel > Link  :</FormLabel>
+                <FormControl isRequired={true} mb='3'>
+                    <FormLabel>Link:</FormLabel>
                     <Input
                         type="text"
                         name="link"
@@ -222,12 +201,9 @@ const IdConf = params.confid;
                         mb='2.5'
                     />
                 </FormControl>
-
-                <FormControl isRequired={true}  >
-
-                    <FormLabel >Sequence :</FormLabel>
+                <FormControl isRequired={true}>
+                    <FormLabel>Sequence:</FormLabel>
                     <Input
-
                         type="number"
                         name="sequence"
                         value={sequence}
@@ -236,10 +212,10 @@ const IdConf = params.confid;
                         mb='2.5'
                     />
                 </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Featured:</FormLabel>
+                <FormControl isRequired={true} mb='3'>
+                    <FormLabel>Featured:</FormLabel>
                     <Select
-                        name="featured"
+                        name="feature"
                         value={formData.feature}
                         onChange={handleChange}
                     >
@@ -247,8 +223,8 @@ const IdConf = params.confid;
                         <option value={false}>No</option>
                     </Select>
                 </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Hidden:</FormLabel>
+                <FormControl isRequired={true} mb='3'>
+                    <FormLabel>Hidden:</FormLabel>
                     <Select
                         name="hidden"
                         value={formData.hidden}
@@ -258,8 +234,8 @@ const IdConf = params.confid;
                         <option value={false}>No</option>
                     </Select>
                 </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >New:</FormLabel>
+                <FormControl isRequired={true} mb='3'>
+                    <FormLabel>New:</FormLabel>
                     <Select
                         name="new"
                         value={formData.new}
@@ -276,59 +252,69 @@ const IdConf = params.confid;
                     </Button>
                 </Center>
                 <Heading as="h1" size="xl" mt="6" mb="6">
-                    Added Announcements </Heading>
+                    Added Announcements
+                </Heading>
                 {!loading ? (
-
                     <TableContainer>
-                        <Table
-                            variant='striped'
-                            size="md"
-                            mt="1"
-                        >
+                        <Table variant='striped' size="md" mt="1">
                             <Thead>
                                 <Tr>
-                                    <CustomTh> Title</CustomTh>
+                                    <CustomTh >Title</CustomTh>
                                     <CustomTh>Meta Description</CustomTh>
                                     <CustomTh>Link</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
+                                    <CustomTh>Featured</CustomTh>
+                                    <CustomTh>Hidden</CustomTh>
+                                    <CustomTh>New</CustomTh>
 
-
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
                                     <Tr key={item._id}>
-                                        <Td><Center>{item.title}</Center></Td>
-                                        <Td><Center>{item.metaDescription}</Center></Td>
-                                        <Td><Center>{item.link}</Center></Td>
-
-                                        <Td><Center>{item.sequence}</Center></Td>
-
-                                        <Td><Center>
-                                            <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.title}
+                                        </Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.metaDescription}
+                                        </Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.link}
+                                        </Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.sequence}
+                                        </Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.feature?"Yes":"No"}
+                                        </Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.hidden?"Yes":"No"}
+                                        </Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                            {item.new?"Yes":"No"}
+                                        </Td>
+                                        <Td position={'sticky'} right={'0'}>
+                                            <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete</Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);
                                                 setEditID(item._id);
-                                            }}>Edit </Button>
-                                        </Center></Td>
-
-                                    </Tr>))) :
-                                    (
-                                        <Tr>
-                                            <Td colSpan="5" className="tw-p-1 tw-text-center">
-                                                <Center>No data available</Center></Td>
-                                        </Tr>
-                                    )
-                                }
+                                            }}>Edit</Button>
+                                        </Td>
+                                    </Tr>
+                                ))) : (
+                                    <Tr>
+                                        <Td colSpan="8" className="tw-p-1 tw-text-center">
+                                            <Center>No data available</Center>
+                                        </Td>
+                                    </Tr>
+                                )}
                             </Tbody>
                         </Table>
                     </TableContainer>
-                )
+                ) : <LoadingIcon />}
+            </Container>
 
-                    : <LoadingIcon />
-                } </Container>
- 
             {showDeleteConfirmation && (
                 <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
                     <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
@@ -352,7 +338,8 @@ const IdConf = params.confid;
                         </div>
                     </div>
                 </div>
-            )}        </main>
+            )}
+        </main>
     );
 };
 

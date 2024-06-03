@@ -224,17 +224,17 @@ const IdConf = params.confid;
                                     <CustomTh>Sub Heading</CustomTh>
                                     <CustomTh>Name  </CustomTh>
                                     <CustomTh>Url</CustomTh>
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data ? (
                                     <Tr key={data._id}>
-                                        <Td><Center>{data.heading}</Center></Td>
-                                        <Td><Center>{data.subHeading}</Center></Td>
-                                        <Td><Center>{data.name}</Center></Td>
-                                        <Td><Center>{data.url}</Center></Td>
-                                        <Td><Center>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.heading}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.subHeading}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.name}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.url}</Td>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(data._id);

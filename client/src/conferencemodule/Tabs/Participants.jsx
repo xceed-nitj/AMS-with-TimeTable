@@ -219,19 +219,19 @@ const IdConf = params.confid;
                                     <CustomTh>Paper Title</CustomTh>
 
 
-                                    <CustomTh>Action</CustomTh>
+                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
                                     <Tr key={item._id}>
-                                        <Td><Center>{item.authorName}</Center></Td>
-                                        <Td><Center>{item.authorDesignation}</Center></Td>
-                                        <Td><Center>{item.authorInstitute}</Center></Td>
-                                        <Td><Center>{item.paperId}</Center></Td>
-                                        <Td><Center>{item.paperTitle}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}> {item.authorName}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.authorDesignation}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.authorInstitute}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.paperId}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.paperTitle}</Td>
 
-                                        <Td><Center>
+                                        <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
                                             <Button colorScheme="teal" onClick={() => {
                                                 handleEdit(item._id);
