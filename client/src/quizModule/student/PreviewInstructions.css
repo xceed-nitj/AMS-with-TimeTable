@@ -1,0 +1,374 @@
+@import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Merriweather&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oleo+Script+Swash+Caps&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
+
+body{
+    background-color: white;
+}
+.btn button {
+    color: rgb(11, 172 ,170);
+    font-size: 1rem;
+    font-weight: bolder;
+    text-decoration: none;
+    text-transform: uppercase;
+    border: 2px solid rgb(11, 172 ,170);
+    margin-top: 9px;
+    position: relative;
+    padding: 10px 1.4rem;
+    z-index: 1;
+    transition: all 0.5s ease;
+    background: white;
+  }
+#start_2{
+    display: none;
+}
+#end_2{
+    display: none;
+}
+ #bnd{
+ display:none;
+ }
+ .btn-back{
+      background-color: #248162;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin-bottom: 40px;
+    cursor: pointer;
+    -webkit-transition-duration: 0.4s;
+    transition-duration: 0.4s;
+    border-radius: 8px;
+ }
+ .btn-back:hover{
+    box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+}
+.fresh{
+    width: 95%;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+    margin-top: 20px;
+}
+ img{
+    width: 250px;
+    height: auto;
+}
+#correction{
+    margin-top: 10px;
+} 
+#left{
+    transform: translateX(-100%);
+    transition: all 3s ease;
+}
+
+#right{
+    transform: translateX(100%);
+    transition: all 3s ease;
+}
+#left.active{
+    transform: translateX(0%);
+}
+#right.active{
+    transform: translateX(0%);
+}
+
+.contest{
+    font-size: 2rem;
+    font-weight: bold;
+    /* font-family: 'Lobster', cursive; */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.contest p{
+    font-size: 1.2rem;
+}
+.info{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+}
+#name{
+    transform: translateY(-100%);
+    color: rgb(11, 172 ,170);
+    transition: all 3s ease;
+    /* font-family: 'Alfa Slab One', cursive; */
+    font-family: 'Oleo Script Swash Caps', cursive;
+}
+#name.active{
+    transform: translateY(0%);
+}
+.info i{
+margin-top: 3px;
+}
+#information{
+    transform: translateY(100%);
+    transition: all 3s ease;
+    color:  #1ec7c5;
+}
+#information.active{
+    transform: translateY(0%);
+}
+.sd{
+    display: flex;
+    font-size: 1.2rem;
+    align-items: center;
+}
+#start_date{
+    margin-left: 10px;
+}
+.ed{
+    display: flex;
+    font-size: 1.2rem;
+    align-items: center;
+}
+#end_date{
+    margin-left: 10px;
+}
+.red-text {
+    color: red;
+    /* padding: 10px; */
+  }
+  #the_timer {
+    font-size: 24px;
+    font-weight: bold;
+    color: red;
+  }
+
+
+
+.instructions_student{
+    width: 80%;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: left;
+    margin: 10vh;
+    padding: 10px;
+/* margin-top: 3% auTto; */
+    border-radius: 0.5rem;
+    box-shadow: 0 6px 12px 0 rgb(0 0 0 / 20%), 0 8px 20px 0 rgb(0 0 0 / 19%);
+    text-align: left;
+    background-color: white;
+    /* background-image:url(/Logo\ Watermark\ 50-09.png); */
+    /* background-color:white; */
+    /* background-size:300px;
+    background-position-x: center;
+    background-position-y: center;
+    background-repeat: no-repeat; */
+    /* margin: 3%; */
+}
+/* * {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  } */
+.instructions1 p {
+  width: 100%;
+  font-size: 1.1rem;
+  font-family: 'Merriweather', serif;
+  margin: 7px auto;
+}
+#logo2{
+    width: auto;
+    height: 250px;
+}
+.box{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.instructions_student h2{
+    font-size: 1.6rem;
+    margin: 10px auto;
+    font-weight: bold;
+    color: #e60000;
+}
+.instructions1 p{
+    width: 100%;
+   font-size: 1.1rem;
+   font-family: 'Merriweather', serif;
+   margin: 7px auto;
+}
+.bxs-right-arrow{
+    color: #1ec7c5;
+}
+.lines_s{
+    width: 80%;
+    font-weight: bold;
+    text-align: left;
+    align-content: left;
+    margin-bottom: 20px;
+
+    
+}
+
+.bxs-right-arrow {
+    color: #1ec7c5;
+}
+
+.btn{
+    margin: 40px;
+}
+#start_timer{
+    color:  rgb(11, 172 ,170);
+    font-size: 1rem;
+    font-weight: bolder;
+    text-decoration: none;
+    text-transform: uppercase;
+    border: 2px solid rgb(11, 172 ,170);
+    margin-top: 9px;
+    position: relative;
+    padding: 10px 1.4rem
+    ;
+    z-index: 1;
+    transition: all 0.5s ease;
+    background: white;
+}
+ button{
+    color:  rgb(11, 172 ,170);
+    font-size: 1rem;
+    font-weight: bolder;
+    text-decoration: none;
+    text-transform: uppercase;
+    border: 2px solid rgb(11, 172 ,170);
+    position: relative;
+    padding: 10px 1.4rem;
+    margin-top: 20 px;
+    z-index: 1;
+    transition: all 0.5s ease;
+     background: white;
+}
+ button:hover{
+    /* color: white; */
+    cursor: pointer;
+    /* background: rgb(11, 172 ,170); */
+}
+ button::before{
+    transition: all 0.5s ease;
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    right: 50%;
+    bottom: -1px;
+    opacity: 0;
+    content: '';
+    background-color: rgb(11, 172 ,170);
+}
+ /* button:hover::before{
+transition: all 0.5s ease;
+left: -1px;
+right: -1px;
+opacity: 1;
+z-index: -1;
+} */
+
+#start_timer{
+    display: none;
+}
+@media(max-width:1200px){
+    /* img{
+        width: 200px;
+        height: 200px;
+    }  */
+    .contest{
+        font-size: 1.5rem;
+    }
+    .contest p{
+        font-size: 1rem;
+    }
+    .sd{
+        font-size: 1rem;
+    }
+    .ed{
+        font-size: 1rem;
+    }
+}
+@media(max-width:900px){
+    /* img{
+        width: 100px;
+        height: 100px;
+    } */
+    #logo2{
+       
+        height: 100px;
+    } 
+    .contest{
+        font-size: 1.1rem;
+    }
+    .contest p{
+        font-size: 0.8rem;
+    }
+    .sd{
+        font-size: 0.8rem;
+    }
+    .ed{
+        font-size: 0.8rem;
+    }
+    .instructions1{
+        width: 80%;
+    }
+}
+@media(max-width:600px){
+    img{
+      display: none;
+    } 
+    #logo2{
+        display: inline;
+        height: 100px;
+    }
+    .fresh{
+
+        justify-content: center;
+    }
+    .contest{
+        font-size: 1.4rem;
+    }
+    .contest p{
+        font-size: 1rem;
+    }
+    .sd{
+        font-size: 1rem;
+    }
+    .ed{
+        font-size: 1rem;
+    }
+    /* .instructions1 h2{
+        text-align: center;
+    } */
+    #name{
+        text-align: center;
+    }
+    /* .info p{
+        text-align: center;
+    } */
+ 
+}
+.bxs-right-arrow::before {
+    content: "\eb83";
+  }
+.bxs-right-arrow {
+    color: #1ec7c5;
+  }
+  .bx {
+    font-family: boxicons !important;
+    font-weight: 400;
+    font-style: normal;
+    font-variant: normal;
+    line-height: 1;
+    text-rendering: auto;
+    display: inline-block;
+    text-transform: none;
+    -webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+}
