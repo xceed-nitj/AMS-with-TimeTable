@@ -1,0 +1,496 @@
+
+.selected-option {
+    background-color: teal;
+    color:#fff;
+    width: 400px;
+    height: 40px;
+    border-radius: 5px;
+    text-align: left;
+    padding: 10px;
+    /* background-color: #f0f0f0; */
+    transition: all 0.2s ease;
+    /* Add any other styles you want for the selected option here */
+  }
+
+
+.t_auto {
+    text-align: right;
+}
+
+.helpbtn {
+    border: 2px solid black;
+    border-radius: 10px;
+    width: 100px;
+    margin-left: 5%;
+    padding: 3px 4px;
+    text-align: center;
+    font-family: 'Ubuntu', sans-serif;
+    font-weight: bold;
+    /* background-color: teal; */
+}
+
+.helpbtn a {
+    text-decoration: none;
+}
+
+.helpbtn:hover {
+
+    background-color: teal
+}
+
+.helpbtn:hover a {
+    color: white;
+}
+
+.time {
+    /* display: flex; */
+    justify-content: space-between;
+}
+
+.time h2 {
+    float: left;
+    padding: 0.5rem;
+    font-size: 24px;
+}
+
+/* .colorbar {
+    background: hsla(181, 100%, 20%, 1);
+    background: linear-gradient(90deg, hsla(181, 100%, 20%, 1) 0%, hsla(184, 88%, 20%, 1) 11.11111111111111%, hsla(187, 78%, 20%, 1) 22.22222222222222%, hsla(193, 61%, 20%, 1) 33.33333333333333%, hsla(201, 47%, 20%, 1) 61%, hsla(242, 25%, 20%, 1) 91%, hsla(217, 35%, 20%, 1) 96%, hsla(287, 39%, 20%, 1) 99%, hsla(266, 33%, 20%, 1) 100%, hsla(300, 51%, 20%, 1) 100%);
+    background: -moz-linear-gradient(90deg, hsla(181, 100%, 20%, 1) 0%, hsla(184, 88%, 20%, 1) 11.11111111111111%, hsla(187, 78%, 20%, 1) 22.22222222222222%, hsla(193, 61%, 20%, 1) 33.33333333333333%, hsla(201, 47%, 20%, 1) 61%, hsla(242, 25%, 20%, 1) 91%, hsla(217, 35%, 20%, 1) 96%, hsla(287, 39%, 20%, 1) 99%, hsla(266, 33%, 20%, 1) 100%, hsla(300, 51%, 20%, 1) 100%);
+    background: -webkit-linear-gradient(90deg, hsla(181, 100%, 20%, 1) 0%, hsla(184, 88%, 20%, 1) 11.11111111111111%, hsla(187, 78%, 20%, 1) 22.22222222222222%, hsla(193, 61%, 20%, 1) 33.33333333333333%, hsla(201, 47%, 20%, 1) 61%, hsla(242, 25%, 20%, 1) 91%, hsla(217, 35%, 20%, 1) 96%, hsla(287, 39%, 20%, 1) 99%, hsla(266, 33%, 20%, 1) 100%, hsla(300, 51%, 20%, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr="#006466", endColorstr="#065a60", GradientType=1);
+} */
+@media screen and (max-width: 1200px) {
+.t_auto{
+    text-align: center;
+}
+}
+
+
+.quizzing-container {
+    margin: 0px;
+    background-color: white;
+    /* background-color: #daf5ff; */
+    border-radius: 0.5rem;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+#quizType{
+    color:rgb(0, 179, 45);
+    align-items: center;
+}
+
+.quizzing-header {
+    padding: 1rem;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.quizzing-logo img {
+    height: 80px;
+    width: 100px;
+    margin: auto;
+    margin-bottom: -15px;
+
+}
+
+.quizzing-wrapper {
+    text-align: center;
+}
+
+.quizzing-wrapper .designh1 {
+    color: #fff;
+    font-size: 45px;
+    font-family: "ubuntu";
+    text-transform: uppercase;
+    font-weight: 700;
+    font-family: "Josefin Sans", sans-serif;
+    background: linear-gradient(to right, #084d4d 10%, #7fd7e2 50%, #126460 60%);
+    background-size: auto auto;
+    background-clip: border-box;
+    background-size: 200% auto;
+    color: #fff;
+    background-clip: text;
+    /* text-fill-color: transparent; */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textclip 1.5s linear infinite;
+    display: inline-block;
+}
+
+@keyframes textclip {
+    to {
+        background-position: 200% center;
+    }
+}
+
+
+h1 {
+    font-size: 45px;
+    padding: 1rem;
+    text-align: center;
+    font-family: 'Noto Sans TC', sans-serif;
+    margin: 0;
+}
+
+
+h2 {
+    font-size: 26px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-transform: uppercase;
+    padding: 0.5rem;
+    text-align: center;
+    margin: 0;
+    color: rgb(10, 10, 10);
+    width: 50%;
+}
+
+h5 {
+    font-size: 26px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-transform: uppercase;
+    padding: 0.5rem;
+    text-align: center;
+    margin: 0;
+    color: rgb(10, 10, 10);
+}
+
+.dont {
+    width: 44%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+h4 {
+    /* font-size: 25px; */
+    width: 100%;
+    padding: 0.5rem;
+    text-align: center;
+    margin: 0;
+    color: rgb(10, 10, 10);
+    /* margin-left: 67px; */
+}
+
+.whichtypeof {
+    color: rgb(1, 122, 124);
+    display: none;
+    text-transform: none;
+}
+
+.whichtypeof1 {
+    display: none;
+    text-transform: none;
+    /* text-align: left; */
+    /* margin-left: 50px; */
+}
+.que_img{
+    width: 400px;
+    margin: auto;
+}
+.quizzing-options-box{
+    position: center;
+    /* top: 50%;
+    right: 5%; */ 
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-bottom: 50px;
+}
+.quizzing-option{
+    width: 400px;
+    height: 40px;
+    border-radius: 5px;
+    text-align: left;
+    padding: 10px;
+    background-color: #f0f0f0;
+    transition: all 0.2s ease;
+}
+.quizzing-option:hover{
+    transform: scale(1.02);
+}
+#inlines {
+    padding: 5rem;
+    display: inline;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+ul li {
+    font-size: 1.4rem;
+    margin: 1rem 0;
+}
+
+ul p {
+    /* margin-top: -5%;
+    margin-left: 7%; */
+    font-size:1.1rem;
+    background: #f0f0f0;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.5s ease;
+    cursor: pointer;
+}
+
+ul p:hover {
+    transform: scale(1.1, 1.1);
+}
+
+ul li label {
+    cursor: pointer;
+}
+
+#quizzing-submit {
+    border: 0.3rem solid rgb(27, 124, 124);
+    color: #fff;
+    display: block;
+    width: 100%;
+    cursor: pointer;
+    font-size: 2rem;
+    font-family: inherit;
+    padding: 0.3em;
+    background-color: rgb(27, 124, 124);
+    width: 32%;
+    margin-right: 16px;
+    float: right;
+    cursor: pointer;
+    font-size: 1.5rem;
+    border-radius: 0.5rem;
+    font-family: inherit;
+    background-color: rgb(27, 124, 124);
+    transition: all 0.5s ease;
+}
+
+#quizzing-submit:hover {
+    /* transition: all 0.3s ease-in-out;
+    background-color: #fff;
+    color: rgb(27, 124, 124);
+    border: 0.3rem solid rgb(27, 124, 124);
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px; */
+    transform: scale(1.1, 1.1);
+}
+
+#progressBar {
+    /* height: 24px; */
+    width: 100%;
+    margin: 1rem auto;
+    height: 17px;
+    width: 91%;
+    background: #f0f0f0;
+    
+}
+
+#progressBarFull {
+    padding: 0px;
+    margin: 0px;
+    height: 15px;
+    background-color: rgb(255, 145, 0);
+    width: 20%;
+}
+
+#totalQuestions {
+    display: none;
+}
+
+#singleCorrect {
+    display: inline;
+}
+
+#numerical {
+    display: none;
+}
+
+#multiCorrect {
+    display: inline;
+}
+
+#numericalAns {
+    /* margin: 2rem; */
+    /* margin-left: 23%; */
+    margin-left: -23%;
+    width: 80%;
+    outline: none;
+    border: none;
+    background-color: #f0f0f0;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    display: none;
+}
+
+input[type="text"] {
+    font-size: 1.3em;
+    overflow: hidden;
+}
+
+#help {
+    font-size: 23px;
+    font-weight: bold;
+    padding: 1%;
+    width: 96%;
+    margin: auto;
+    color: black;
+    background: #f0f0f0;
+    border-radius: 0.5rem;
+}
+
+#list {
+    margin-left: 55px;
+    width: 33%;
+}
+
+#listmul {
+    margin-left: 55px;
+    width: 33%;
+}
+
+.optionbox {
+    /* border: 1px solid black; */
+    /* padding: 0.3rem; */
+    /* padding-inline-end: 5%; */
+    font-size: 25px;
+    /* background-color: rgb(234, 193, 241); */
+}
+
+.answer {
+    display: none;
+}
+
+.answermul {
+    display: none;
+}
+
+.quizzing-box {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quizzing-hide {
+    display: initial;
+}
+
+.choose {
+    border: 1px solid rgba(21, 75, 75, 0.25);
+    background-color: #fff;
+    margin-left: 33%;
+    width: 30%;
+    margin-bottom: 0.8rem;
+    cursor: pointer;
+}
+
+.choose:disabled {
+    background-color: #12b4b4;
+}
+
+#timeLeft{
+    color:red;
+}
+#timeUsed{
+    color:#0f1389;
+}
+
+.choose:hover {
+    transition: all 0.2s ease-in;
+    border: 1px solid #0F8989;
+    border-radius: 5px;
+    box-shadow: #18c0b8d3 0px 30px 60px -12px inset, rgba(0, 0, 0, 0.3) 0px 18px 36px -18px inset;
+}
+
+/* MEDIA QUERY/ */
+
+@media screen and (max-width: 1200px) {
+    .time h2 {
+        /* float: center; */
+    }
+
+    .quizzing-header {
+        display:block;
+    }
+
+    h2{
+        width: 100%;
+    }
+
+    h4{
+        font-size:20px;
+        margin-left: 0px;
+    }
+
+    #progressBar{
+        width:93%;
+    }
+
+    #quizzing-submit{
+        width: 80%;
+        float: none;
+        margin-left: 10%;
+    }
+    .dont{
+        width: 100%;
+    }
+    #numericalAns{
+        margin-left: 10%;
+    }
+    .quizzing-options-box{
+        position: initial;
+        align-items: center;
+        margin: 20px auto;
+    }
+    .quizzing-option{
+        width: 700px;
+    }
+}
+
+@media screen and (max-width: 800px) {
+    #list{
+        width: 80%;
+    }
+    #listmul{
+        width: 80%;
+    }
+    #progressBar{
+        width:91%;
+    }
+    .quizzing-option{
+        width: 500px;
+    }
+    #quizzing-submit{
+        width: 600px;
+        margin: auto;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    #progressBar{
+        width:90%;
+    }
+    .quizzing-option{
+        width: 250px;
+    }
+    #quizzing-submit{
+        width: 350px;
+        margin: auto;
+    }
+}
+@media screen and (max-width: 400px){
+    .quizzing-option{
+        width: 250px;
+    }
+    #quizzing-submit{
+        width: 300px;
+        margin: auto;
+    }
+}

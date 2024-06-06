@@ -1,0 +1,77 @@
+.instructions-content h2 {
+    font-size: 1.6rem;
+    margin: 10px auto;
+    font-weight: bold;
+    color: #e60000;
+}
+#logo {
+    margin-top: 50px;
+}
+
+
+.lines {
+    font-weight: bold;
+}
+
+.fresh {
+    width: 95%;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+    margin-top: 20px;
+}
+.instructions-content p {
+    width: 100%;
+    font-size: 1.1rem;
+    font-family: 'Merriweather', serif;
+    margin: 7px auto;
+}
+.instructions-content {
+    width: 70%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 3% auto;
+    
+    padding: 50px;
+    border-radius: 0.5rem;
+    box-shadow: 0 6px 12px 0 rgb(0 0 0 / 20%), 0 8px 20px 0 rgb(0 0 0 / 19%);
+    /* background-image: url(/Logo\ Watermark\ 50-09.png); */
+    /* background-color: white; */
+    /* margin: 3%; */
+}
+
+
+
+#start_2{
+    display: none;
+}
+#end_2{
+    display: none;
+}
+ #bnd{
+ display:none;
+ }
+ .btn-back{
+      background-color: #248162;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    -webkit-transition-duration: 0.4s;
+    transition-duration: 0.4s;
+    border-radius: 8px;
+    margin-top: 20px;
+
+ }
+ .btn-back:hover{
+    box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+}

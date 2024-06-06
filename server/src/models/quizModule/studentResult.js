@@ -29,5 +29,5 @@ const studentResultSchema = new Schema({
 });
 
 // Export the model
-const StudentResult = mongoose.model('StudentResult', studentResultSchema);
+const StudentResult = mongoose.model('qz-studentres', studentResultSchema);
 module.exports = StudentResult;
