@@ -6,6 +6,7 @@ const uploadPaper = (req, res) => {
   const fileName = req.fileName;
   const title = req.title;
   const abstract = req.abstract;
+  const eventId=req.params.eventId;
 
   if (!fileName) {
     return res.status(400).send("File name is missing in the request.");
@@ -16,6 +17,7 @@ const uploadPaper = (req, res) => {
     title: title,
     abstract: abstract,
     uploadLink: fileName,
+    eventId:eventId,
   });
 
   newPaper
