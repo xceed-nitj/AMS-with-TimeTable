@@ -20,6 +20,10 @@ v1router.use("/attendancemodule", attendanceModule);
 const reviewModule = require("./modules/reviewModule/routes/index");
 v1router.use("/reviewmodule", reviewModule);
 
+const nirfModule = require("./modules/Nirf/routes/index");
+v1router.use("/nirf", nirfModule);
+
+
 const usermanagementModule = require("./modules/usermanagement/routes/routes");
 v1router.use("/auth", usermanagementModule);
 
