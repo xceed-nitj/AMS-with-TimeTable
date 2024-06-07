@@ -80,6 +80,7 @@ import AddReviewer from './reviewmodule/pages/AddReviewer';
 import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
 
 // import ConferenceDetails from './reviewmodule/pages/EditorConferencePage';
+import AllPaper from './reviewmodule/pages/allpapers'
 import EventForm from './reviewmodule/pages/editorevent';
 import MultiEditorEvent from "./reviewmodule/pages/addeditor";
 import PaperDetails from './reviewmodule/components/PaperDetails';
@@ -190,6 +191,7 @@ function App() {
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/addtemplate" element={<AddTemplate/>}/>
+    <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
