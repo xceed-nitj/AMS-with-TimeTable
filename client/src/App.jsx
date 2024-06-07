@@ -95,6 +95,7 @@ import MultiStepForm from './reviewmodule/pages/MultiStepForm';
 import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
+import NirfRanking from './nirf/rankings';
 
 
 function App() {
@@ -108,6 +109,8 @@ function App() {
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<Home />} />
+        <Route path="/nirf" element={<NirfRanking />} />
+
         <Route path="/services/:serviceId" element={<ServicePage />} />
         {/* ********* */}
 

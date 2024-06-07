@@ -39,6 +39,6 @@ const studentAnswerSchema = new Schema({
   timestamps: true,
 });
 
-const StudentAnswer = mongoose.model('StudentAnswer', studentAnswerSchema);
+const StudentAnswer = mongoose.model('qz-studentans', studentAnswerSchema);
 
 module.exports = StudentAnswer;

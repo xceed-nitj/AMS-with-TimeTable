@@ -11,6 +11,9 @@ v1router.use("/conferencemodule", conferenceModule);
 const timetableModule = require("./modules/timetableModule/routes/index");
 v1router.use("/timetablemodule", timetableModule);
 
+const quizModule = require("./modules/quizModule/faculty/routes/index");
+v1router.use("/quizmodule", quizModule);
+
 const uploadModule = require("./modules/uploadModule/upload");
 v1router.use("/upload", uploadModule);
 
@@ -19,6 +22,10 @@ v1router.use("/attendancemodule", attendanceModule);
 
 const reviewModule = require("./modules/reviewModule/routes/index");
 v1router.use("/reviewmodule", reviewModule);
+
+const nirfModule = require("./modules/Nirf/routes/index");
+v1router.use("/nirf", nirfModule);
+
 
 const usermanagementModule = require("./modules/usermanagement/routes/routes");
 v1router.use("/auth", usermanagementModule);
