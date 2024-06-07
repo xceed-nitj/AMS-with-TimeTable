@@ -27,6 +27,8 @@ function NirfRanking() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
   const [sortColumn, setSortColumn] = useState('rank');
+  const [selectedYears, setSelectedYears] = useState([]);
+  const [years, setYears] = useState([]);
   const apiUrl = getEnvironment();
 
   useEffect(() => {
@@ -47,6 +49,8 @@ function NirfRanking() {
       .then((data) => {
         // Sort the data based on 'dept' in alphabetical order
         // const sortedData = data.sort((a, b) => a.dept.localeCompare(b.dept));
+        const uniqueYears = [...new Set(data.map((room) => room.Year))];
+        setYears(uniqueYears); // Update years before rendering
         setMasterRoomData(data);
         setLoading(false);
       })
@@ -55,6 +59,17 @@ function NirfRanking() {
         setLoading(false);
       });
   }, []);
+
+
+  const handleYearChange = (year) => {
+    setSelectedYears((prevSelectedYears) => {
+      if (prevSelectedYears.includes(year)) {
+        return prevSelectedYears.filter((y) => y !== year);
+      } else {
+        return [...prevSelectedYears, year];
+      }
+    });
+  };
 
   function sanitizeString(str) {
     if (typeof str !== 'string' || !str) {
@@ -70,7 +85,13 @@ function NirfRanking() {
 
     const filteredRooms = masterRoomData.filter((room) => {
       const sanitizedRoom = sanitizeString(room.Institute);
-      return sanitizedRoom.includes(sanitizedSearchTerm);
+      const roomYear = room.Year;
+
+
+         return (
+      sanitizedRoom.includes(sanitizedSearchTerm) &&
+      (selectedYears.length === 0 || selectedYears.includes(roomYear))
+    );      
     });
 
     const sortedRooms = filteredRooms.sort((a, b) => {
@@ -88,7 +109,7 @@ function NirfRanking() {
       });
         
     setFilteredRooms(sortedRooms);
-  }, [searchTerm, masterRoomData, sortColumn, sortOrder]);
+  }, [searchTerm, masterRoomData, sortColumn, sortOrder, selectedYears]);
 
 //   const handleSort = (column) => {
 //     // Toggle between 'asc' and 'desc' when clicking on the column header
@@ -114,12 +135,34 @@ function NirfRanking() {
       <title>NIRF | XCEED NITJ</title>
       <meta name='description' content="NITJ's official classroom locater" />
     </Helmet>
+
+
+
     <Container maxW="5xl">
 
       <Box>
         <Header title="NIRF Ranking Search"></Header>
-        Enter the institute detail below
+        Enter the institute detail below:
         <Box mb={4}>
+  {/* Unique years from the data */}
+  {/* const years = [...new Set(masterRoomData.map((room) => room.Year))]; */}
+
+  {years.length > 0 ? (
+    years.map((year) => (
+      <chakra.label key={year} display="inline-flex" alignItems="center" mr={4}>
+        <input
+          type="checkbox"
+          value={year}
+          checked={selectedYears.includes(year)}
+          onChange={() => handleYearChange(year)}
+        />
+        <Text ml={2}>{year}</Text>
+      </chakra.label>
+    ))
+  ) : (
+    <Text>Loading years...</Text>
+  )}
+
           <Input
             type="text"
             placeholder="Search by Institute Name"
