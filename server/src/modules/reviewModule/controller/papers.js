@@ -19,9 +19,20 @@ const findAllPapers = async (req, res) => {
   }
 };
 
+const findEventPaper = async (req, res) => {
+  let eventId = req.params.id;
+  const paper = await Paper.find({ eventId: eventId }).exec();
+
+  if (!paper) {
+    return res.status(401).json("Invalid paperId");
+  } else {
+    return res.status(200).send(paper);
+  }
+};
+
 const findPaper = async (req, res) => {
-  let paperId = req.params.id;
-  const paper = await Paper.find({ paperId: paperId }).exec();
+  let id = req.params.id;
+  const paper = await Paper.find({ paperId: id }).exec();
 
   if (!paper) {
     return res.status(401).json("Invalid paperId");
@@ -101,4 +112,4 @@ const updatePaper = async (req, res) => {
   }
 };
 
-module.exports = { findAllPapers, findPaper, updatePaper };
+module.exports = { findAllPapers, findEventPaper, findPaper, updatePaper };
