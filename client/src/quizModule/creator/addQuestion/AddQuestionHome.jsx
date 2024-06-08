@@ -4,8 +4,8 @@
   import { faCircleArrowLeft, faPenToSquare, faCopy, faGear, faCalendar } from '@fortawesome/free-solid-svg-icons';
   import './AddQuestionHome.css';
   import AddQuestion from './AddQuestion';
-  import Viewer from '../../../../components/quill/viewer';
-import getEnvironment from '../../../../getenvironment';
+  import Viewer from '../../components/quill/viewer';
+import getEnvironment from '../../../getenvironment';
 
   const QuestionGet = ({ questionGet, handleEditQuestion, handleDeleteQuestion, handleEditorChange }) => {
     const { question, answer, explanation, options, mark, questionLevel, questionType } = questionGet;
@@ -22,18 +22,16 @@ import getEnvironment from '../../../../getenvironment';
           <div>
             <p>Options:</p>
             {options.map((option, index) => {
-              const parsedOption = JSON.parse(option);
-              const isCorrectAnswer = parsedOption.isCorrect;
               return (
                 <div key={index}>
                   <input
                     type="radio"
                     name={`answer-${index}`} // Use a unique name for each question
-                    value={parsedOption.value}
-                    checked={isCorrectAnswer} // Only the correct answer will be checked
+                    value={option.value}
+                    checked={option.isCorrect} // Only the correct answer will be checked
                     disabled // Disable the radio button
                   />
-                  <label>{parsedOption.value}</label>
+                  <label>{option.value}</label>
                 </div>
               );
             })}
@@ -43,17 +41,16 @@ import getEnvironment from '../../../../getenvironment';
           <div>
             <p>Options:</p>
             {options.map((option, index) => {
-              const parsedOption = JSON.parse(option);
               return (
                 <div key={index}>
                   <input
                     type="checkbox"
                     name={`answer-${index}`}
-                    value={parsedOption.value}
-                    checked={parsedOption.isCorrect}
+                    value={option.value}
+                    checked={option.isCorrect}
                     readOnly
                   />
-                  <label>{parsedOption.value}</label>
+                  <label>{option.value}</label>
                 </div>
               );
             })}
@@ -90,11 +87,11 @@ import getEnvironment from '../../../../getenvironment';
       const fetchQuizQuestions = async () => {
         try {
           console.log(token);
-          const response = await fetch(`${apiurl}/api/quiz/quizquestion/${code}`, {
+          const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions`, {
             method: 'GET',
+            credentials: 'include',
             headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
             },
           });
 
@@ -122,11 +119,11 @@ import getEnvironment from '../../../../getenvironment';
     useEffect(() => {
       const fetchQuizDetails = async () => {
         try {
-          const response = await fetch(`${apiurl}/api/quiz/quizzes/${code}`, {
+          const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}`, {
             method: 'GET',
+            credentials: 'include',
             headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
             },
           });
 
@@ -170,9 +167,9 @@ import getEnvironment from '../../../../getenvironment';
         const token = localStorage.getItem('token');
         const response = await fetch(`${apiurl}/api/quiz/quizquestion/${code}/${question.id}`, {
           method: 'DELETE',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
         });
 

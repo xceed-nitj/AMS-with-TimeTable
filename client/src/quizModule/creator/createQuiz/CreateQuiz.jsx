@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 import moment from 'moment-timezone';
 import './createquiz.css';
-import StudentProfileChecker from '../../../../components/privateroutes/studentprofilechecker';
-import getEnvironment from '../../../../getenvironment';
+// import StudentProfileChecker from '../../../../components/privateroutes/studentprofilechecker';
+import getEnvironment from '../../../getenvironment';
 
 const CreateQuiz = () => {
   const initialValues = {
@@ -37,11 +37,11 @@ const CreateQuiz = () => {
       };
       
       // Submit the data to the backend
-      const response = await fetch(`${apiurl}/api/quiz/quizzes`, {
+      const response = await fetch(`${apiurl}/quizmodule/faculty/quiz`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formattedValues),
       });
