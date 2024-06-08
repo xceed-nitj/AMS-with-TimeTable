@@ -8,8 +8,17 @@ const quizQuestionSchema = new Schema({
     required: true,
   },
   answer: {
-    type: [String],
-    default: [],
+    type: [{
+      value: {
+        type: String,
+        required: true
+      },
+      isCorrect: {
+        type: Boolean,
+        required: true
+      }
+    }],
+    default: []
   },
   explanation: {
     type: String,
@@ -42,8 +51,17 @@ const quizQuestionSchema = new Schema({
     default: 0,
   },
   options: {
-    type: [String],
-    default: [],
+    type: [{
+      value: {
+        type: String,
+        required: true
+      },
+      isCorrect: {
+        type: Boolean,
+        required: true
+      }
+    }],
+    default: []
   },
   quizId: {
     type: Schema.Types.ObjectId,
