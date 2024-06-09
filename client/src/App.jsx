@@ -97,6 +97,8 @@ import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import NirfRanking from './nirf/rankings';
 
+import CreateQuiz from './quizModule/creator/createQuiz/CreateQuiz';
+import AddQuestionHome from './quizModule/creator/addQuestion/AddQuestionHome';
 
 function App() {
   return (
@@ -230,8 +232,13 @@ function App() {
           <Route path="souvenir" element={<Souvenir />} />
           <Route path="commontemplate" element={<CommonTemplate />} />
 
-
-
+          <Route path='/quiz/createquiz' element={<CreateQuiz/>}></Route>
+          <Route path="/quiz/:code" element={ <> <AddQuestionHome />   </>} />
+          {/* <Route path="/quiz/:code/addinstruction" element={<><AddInstruction /></>} />
+          <Route path="/quiz/:code/addinstruction/preview" element={<><PreviewInstructions /></>} />
+          <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
+          <Route path="/addQuestionHome" element={<><AddQuestionHome /></>} />
+          <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
 
         </Route>
       </Routes>

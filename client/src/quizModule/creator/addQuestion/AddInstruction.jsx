@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleArrowLeft } from '@fortawesome/free-solid-svg-icons';
+// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// import { faCircleArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import './AddInstruction.css';
-import logo from '../../../../assets/images/quiz/logo.png';
-import getEnvironment from '../../../../getenvironment';
+// import logo from '../../../../assets/images/quiz/logo.png';
+import getEnvironment from '../../../getenvironment';
 
 export default function AddInstruction() {
   const [inputValue, setInputValue] = useState('');
