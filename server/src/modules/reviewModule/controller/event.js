@@ -211,10 +211,14 @@ const addReviewer = async (req, res) => {
     event.reviewer.push({ user: reviewer._id, status: 'Invited' });
     await event.save();
 
+    frontendUrl='http://localhost:5173'||'https://xceed.nitj.ac.in'||'https://nitjtt.onrender.com';
+    const acceptLink = `${frontendUrl}/prm/${eventId}/reviewer/${reviewer._id}`;
+
     await sendMail(
       email,
       'You have been added as a reviewer',
-      'You have been added as a reviewer for the event.'
+      `You have been added as a reviewer for the event. <br>
+      Please click <a href="${acceptLink}">here</a> to accept the invitation`
     );
 
     res.status(200).send('Reviewer added to the event successfully');
@@ -300,4 +304,40 @@ const getEditorIdByEmail = async (req, res) => {
 };
 
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName};
+const updateReviewerStatus = async (req, res) => {
+  const eventId = req.params.eventId; 
+  const reviewerId = req.params.reviewerId; 
+  const newStatus = req.body.status; 
+
+  try {
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+
+    
+    if (!event) {
+      return res.status(404).send('Event not found');
+    }
+
+    
+    const reviewerIndex = event.reviewer.findIndex(reviewer => reviewer.user.toString() === reviewerId);
+
+
+    if (reviewerIndex === -1) {
+      return res.status(404).send('Reviewer not found in the event');
+    }
+
+  
+    event.reviewer[reviewerIndex].status = newStatus;
+    await event.save();
+
+    
+    res.status(200).send('Reviewer status updated successfully');
+  } catch (error) {
+    console.error('Error updating reviewer status:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus};
+
+
