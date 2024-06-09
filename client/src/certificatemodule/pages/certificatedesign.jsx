@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, VStack, IconButton, HStack, Textarea, Flex, Box, Text, Container, Select } from '@chakra-ui/react';
+import {
+  Input,
+  Button,
+  VStack,
+  IconButton,
+  HStack,
+  Textarea,
+  Flex,
+  Box,
+  Text,
+  Container,
+  Select,
+} from '@chakra-ui/react';
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
-import Header from "../../components/header";
-import { useToast } from "@chakra-ui/react";
+import Header from '../../components/header';
+import { useToast } from '@chakra-ui/react';
 import CertificateContent from './certificatetemplates/template01';
 import SelectCertficate from './SelectCertficate';
-
-
-
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
   const toast = useToast();
-  const [type, setType] = useState('')
+  const [type, setType] = useState('');
   const [formData, setFormData] = useState({
     logos: [''],
     header: [''],
@@ -24,7 +33,7 @@ const CertificateForm = () => {
     templateId: '', /// Template Design Number
   });
 
-  console.log(formData.templateId)
+  console.log(formData.templateId);
 
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -33,21 +42,30 @@ const CertificateForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${formData.certiType}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
+        const response = await fetch(
+          `${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${formData.certiType}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          }
+        );
 
         if (response.ok) {
           const responseData = await response.json();
-          console.log('response:',responseData)
-          if (responseData && Array.isArray(responseData) && responseData.length > 0) {
+          console.log('response:', responseData);
+          if (
+            responseData &&
+            Array.isArray(responseData) &&
+            responseData.length > 0
+          ) {
             setFormData(responseData[0]);
           } else {
-            console.error('Error: Fetched data does not match the expected structure.');
+            console.error(
+              'Error: Fetched data does not match the expected structure.'
+            );
           }
         } else {
           console.error('Error fetching form data:', response.statusText);
@@ -62,7 +80,6 @@ const CertificateForm = () => {
     }
   }, [apiUrl, eventId, formData.certiType]);
 
-
   const handleChange = (e, fieldName, index) => {
     const { value } = e.target;
 
@@ -72,7 +89,12 @@ const CertificateForm = () => {
         [fieldName]: value,
       }));
     }
-    if (fieldName === 'logos' || fieldName === 'header' || fieldName === 'footer' || fieldName === 'signatures') {
+    if (
+      fieldName === 'logos' ||
+      fieldName === 'header' ||
+      fieldName === 'footer' ||
+      fieldName === 'signatures'
+    ) {
       setFormData((prevData) => {
         const updatedField = [...prevData[fieldName]];
 
@@ -80,7 +102,10 @@ const CertificateForm = () => {
           // For signatures, update the specific property of the signature object
           if (fieldName === 'signatures') {
             const signatureField = e.target.name.split('.')[1]; // Extract the property name (name, position, url)
-            updatedField[index] = { ...updatedField[index], [signatureField]: value };
+            updatedField[index] = {
+              ...updatedField[index],
+              [signatureField]: value,
+            };
           } else {
             updatedField[index] = value;
           }
@@ -98,7 +123,6 @@ const CertificateForm = () => {
       }));
     }
   };
-
 
   const addField = (fieldName) => {
     if (fieldName === 'signatures') {
@@ -127,27 +151,29 @@ const CertificateForm = () => {
     }));
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${apiUrl}/certificatemodule/certificate/content/${eventId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        `${apiUrl}/certificatemodule/certificate/content/${eventId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(formData),
+        }
+      );
 
       if (response.ok) {
         const responseData = await response.json();
         // console.log(responseData);
         toast({
-          title: "Submission successfull",
+          title: 'Submission successfull',
           description: responseData.message,
-          status: "success",
+          status: 'success',
           duration: 2000,
           isClosable: true,
         });
@@ -189,8 +215,9 @@ const CertificateForm = () => {
               <option value="0">Template 1</option>
               <option value="1">Template 2</option>
               <option value="2">Template 3</option>
+              <option value="3">Template 5</option>
+              <option value="4">Template 6</option>
             </Select>
-
 
             <Text>Enter the link for the logos:</Text>
             {/* Logos Fields */}
@@ -296,7 +323,6 @@ const CertificateForm = () => {
             <Text>Any additoinal data:</Text>
 
             {formData.footer.map((footer, index) => (
-
               <HStack key={index}>
                 <Input
                   name="footer"
@@ -319,12 +345,9 @@ const CertificateForm = () => {
               </HStack>
             ))}
 
-
-
             <Button type="submit" colorScheme="blue">
               Submit
             </Button>
-
           </VStack>
         </form>
       </Container>
@@ -342,7 +365,6 @@ const CertificateForm = () => {
         />
       </Box>
     </Flex>
-
   );
 };
 
