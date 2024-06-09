@@ -4,7 +4,7 @@ const XUser= require("../../../models/usermanagement/user.js")
 const express = require("express");
 const bodyParser = require("body-parser");
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
-
+const getEnvironmentURL =require('../../../getEnvironmentURL.js')
 
 
 const app = express();
@@ -210,8 +210,8 @@ const addReviewer = async (req, res) => {
     // Add reviewer to the event
     event.reviewer.push({ user: reviewer._id, status: 'Invited' });
     await event.save();
-
-    frontendUrl='http://localhost:5173'||'https://xceed.nitj.ac.in'||'https://nitjtt.onrender.com';
+    const frontendUrl = getEnvironmentURL();
+    // frontendUrl='http://localhost:5173'||'https://xceed.nitj.ac.in'||'https://nitjtt.onrender.com';
     const acceptLink = `${frontendUrl}/prm/${eventId}/reviewer/${reviewer._id}`;
 
     await sendMail(
