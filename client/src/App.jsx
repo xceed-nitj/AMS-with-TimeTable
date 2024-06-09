@@ -234,8 +234,9 @@ function App() {
           <Route path="events" element={<Event />} />
           <Route path="souvenir" element={<Souvenir />} />
           <Route path="commontemplate" element={<CommonTemplate />} />
+
           </Route>
-          <Route path='/quiz/createquiz' element={<CreateQuiz/>}></Route>
+
         {/* Quiz Module Routes */}
         <Route path='/quiz/createquiz' element={<CreateQuiz/>}></Route>
           <Route path="/quiz/:code" element={ <> <AddQuestionHome />   </>} />
@@ -245,7 +246,7 @@ function App() {
           <Route path="/addQuestionHome" element={<><AddQuestionHome /></>} />
           <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
 
-       
+
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
