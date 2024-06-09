@@ -17,6 +17,7 @@ const paperSchema = new mongoose.Schema({
 
     reviewers: [{
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', editorAccess: true },
+        username:{ type: String, authorAccess: true },
         comment_author: { type: String, authorAccess: true },
         rating: { type: Number, reviewerAccess: true },
         comment_editor: { type: String, editorAccess: true },

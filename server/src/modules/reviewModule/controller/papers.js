@@ -1,6 +1,7 @@
 const Paper = require("../../../models/reviewModule/paper.js");
 const express = require("express");
 const bodyParser = require("body-parser");
+const User = require("../../../models/reviewModule/user.js")
 
 const app = express();
 app.use(
@@ -111,5 +112,41 @@ const updatePaper = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const addReviewer = async (req, res) => {
+  try {
+    const paperId = req.params.id;
+    const { email } = req.body;
 
-module.exports = { findAllPapers, findEventPaper, findPaper, updatePaper };
+    if (!email) {
+      console.error('Email is required');
+      return res.status(400).send('Email is required');
+    }
+    let reviewers = await User.findOne({ email });
+
+    const paper = await Paper.findById(paperId);
+
+    if (!paper) {
+      console.error('Given paper not found:', paperId);
+      return res.status(404).send('Paper not found');
+    }
+
+    // Check if reviewer is already assigned
+    const isAlreadyReviewer = paper.reviewers.some(r => r.userId.equals(reviewers._id));
+    if (isAlreadyReviewer) {
+      return res.status(400).send('Reviewer already added to this paper');
+    }
+
+    // Add reviewer to the paper
+    paper.reviewers.push({ userId: reviewers._id,username:email});
+    await paper.save();
+    console.log("added successfully");
+
+    res.status(200).send('Reviewer added to the event successfully');
+  } catch (error) {
+    console.error('Error adding reviewer:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
+
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper };
