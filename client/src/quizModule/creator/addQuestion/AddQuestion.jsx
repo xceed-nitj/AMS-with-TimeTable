@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
-import './AddQuestion.css';
+// import './AddQuestion.css';
 import QuillEditor from '../../components/quill/quillEditor';
 import getEnvironment from '../../../getenvironment';
 
