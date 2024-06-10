@@ -2,7 +2,7 @@
   import { useParams, Link } from 'react-router-dom';
   import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
   import { faCircleArrowLeft, faPenToSquare, faCopy, faGear, faCalendar } from '@fortawesome/free-solid-svg-icons';
-  import './AddQuestionHome.css';
+  // import './AddQuestionHome.css';
   import AddQuestion from './AddQuestion';
   import Viewer from '../../components/quill/viewer';
 import getEnvironment from '../../../getenvironment';
