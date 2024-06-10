@@ -5,6 +5,7 @@ import Template03 from './certificatetemplates/03_sarthak';
 import Template04 from './certificatetemplates/template04';
 import Template05 from './certificatetemplates/template05';
 import Template06 from './certificatetemplates/template06';
+import Template07 from './certificatetemplates/template07';
 
 function SelectCertficate({
   templateId,
@@ -83,6 +84,17 @@ function SelectCertficate({
       header={header}
       footer={footer}
       key={'5'}
+    />,
+    <Template07
+      eventId={eventId}
+      contentBody={contentBody}
+      certiType={certiType}
+      logos={logos}
+      participantDetail={participantDetail}
+      signature={signature}
+      header={header}
+      footer={footer}
+      key={'6'}
     />,
   ];
 
