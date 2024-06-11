@@ -88,8 +88,6 @@ const getEventsByUser = async (req, res) => {
   }
 };
 
-
-
 const getEventById = async (req, res) => {
   const id = req.params.id;
 
@@ -124,16 +122,13 @@ const updateEvent = async (req, res) => {
   const updateField = req.body;
 
   try {
-    const updatedEvent = await Event.findOneAndUpdate(
-      { _id: id },
-      updateField,
-      {
-        new: true,
-      }
-    );
-    res.status(200).send(updatedEvent);
+    const event = await Event.findByIdAndUpdate(id, updateField, { new: true, runValidators: true });
+    if (!event) {
+      return res.status(404).send({ error: 'User not found' });
+    }
+    res.send(event);
   } catch (error) {
-    res.status(500).send(error);
+    res.status(400).send(error);
   }
 };
 
@@ -338,6 +333,6 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus };
 
 

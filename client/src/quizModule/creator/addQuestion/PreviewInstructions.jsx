@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate} from 'react-router-dom';
 import './PreviewInstructions.css';
-import PropTypes from 'prop-types';
-import logo from '../../../../assets/images/quiz/logo.png';
+// import PropTypes from 'prop-types';
+// import logo from '../../../../assets/images/quiz/logo.png';
 import getEnvironment from '../../../getenvironment';
 
 export default function PreviewInstructions() {
@@ -23,10 +23,9 @@ export default function PreviewInstructions() {
         const token = localStorage.getItem('token');
         const code = window.location.pathname.split('/')[2];
 
-        const response = await fetch(`${apiurl}/api/quiz/quizzes/${code}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}`, {
+          credentials: 'include',
+          headers: {},
         });
 
         if (response.ok) {
@@ -47,7 +46,7 @@ export default function PreviewInstructions() {
     <>
       <div className="fresh"></div>
       <div className="instructions-content">
-        <img src={logo} alt="" id="logo" />
+        {/* <img src={logo} alt="" id="logo" /> */}
         <h2>Instructions to the candidates</h2>
 
         <p className="lines">
