@@ -163,7 +163,7 @@ const addEditor = async (req, res) => {
 const addReviewer = async (req, res) => {
   try {
     const eventId = req.params.id;
-    const { email } = req.body;
+    const { email, baseUrl } = req.body; 
 
     if (!email) {
       console.error('Email is required');
@@ -200,14 +200,13 @@ const addReviewer = async (req, res) => {
     const isAlreadyReviewer = event.reviewer.some(r => r.user.equals(reviewer._id));
     if (isAlreadyReviewer) {
       return res.status(400).send('Reviewer already added to the event');
-    }
+    } 
 
-    // Add reviewer to the event
+// Add reviewer to the event
     event.reviewer.push({ user: reviewer._id, status: 'Invited' });
     await event.save();
-    const frontendUrl = getEnvironmentURL();
-    // frontendUrl='http://localhost:5173'||'https://xceed.nitj.ac.in'||'https://nitjtt.onrender.com';
-    const acceptLink = `${frontendUrl}/prm/${eventId}/reviewer/${reviewer._id}`;
+
+    const acceptLink = `${baseUrl}/prm/${eventId}/reviewer/${reviewer._id}`; // Use the base URL
 
     await sendMail(
       email,
@@ -219,6 +218,45 @@ const addReviewer = async (req, res) => {
     res.status(200).send('Reviewer added to the event successfully');
   } catch (error) {
     console.error('Error adding reviewer:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
+const resendInvitation = async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const { email, baseUrl } = req.body;
+
+    if (!email) {
+      console.error('Email is required');
+      return res.status(400).send('Email is required');
+    }
+
+    const reviewer = await User.findOne({ email });
+
+    if (!reviewer) {
+      return res.status(404).send('Reviewer not found');
+    }
+
+    const event = await Event.findById(eventId);
+
+    if (!event) {
+      console.error('Event not found:', eventId);
+      return res.status(404).send('Event not found');
+    }
+
+    const acceptLink = `${baseUrl}/prm/${eventId}/reviewer/${reviewer._id}`;
+
+    await sendMail(
+      email,
+      'Invitation to be a Reviewer',
+      `You have been added as a reviewer for the event. <br>
+      Please click <a href="${acceptLink}">here</a> to accept the invitation`
+    );
+
+    res.status(200).send('Invitation resent successfully');
+  } catch (error) {
+    console.error('Error resending invitation:', error);
     res.status(500).send('Internal server error');
   }
 };
@@ -333,6 +371,4 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus };
-
-
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation};
