@@ -98,9 +98,14 @@ import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import NirfRanking from './nirf/rankings';
+import AddPaper from './reviewmodule/pages/addpaper'
 
+// imports for Quiz Module
 import CreateQuiz from './quizModule/creator/createQuiz/CreateQuiz';
 import AddQuestionHome from './quizModule/creator/addQuestion/AddQuestionHome';
+import AddInstruction from './quizModule/creator/addQuestion/AddInstruction';
+import PreviewInstructions from './quizModule/creator/addQuestion/PreviewInstructions';
+import Settings from './quizModule/creator/addQuestion/settings';
 
 function App() {
   return (
@@ -200,6 +205,7 @@ function App() {
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/addtemplate" element={<AddTemplate/>}/>
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
+    <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
@@ -239,13 +245,12 @@ function App() {
 
         {/* Quiz Module Routes */}
         <Route path='/quiz/createquiz' element={<CreateQuiz/>}></Route>
-          <Route path="/quiz/:code" element={ <> <AddQuestionHome />   </>} />
-          {/* <Route path="/quiz/:code/addinstruction" element={<><AddInstruction /></>} />
-          <Route path="/quiz/:code/addinstruction/preview" element={<><PreviewInstructions /></>} />
-          <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
-          <Route path="/addQuestionHome" element={<><AddQuestionHome /></>} />
-          <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
-
+        <Route path="/quiz/:code" element={ <> <AddQuestionHome />   </>} />
+        <Route path="/quiz/:code/addinstruction" element={<><AddInstruction /></>} />
+        <Route path="/quiz/:code/addinstruction/preview" element={<><PreviewInstructions /></>} />
+        <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
+        {/* <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
+        {/*<Route path="/addQuestionHome" element={<><AddQuestionHome /></>} /> */} 
 
       </Routes>
       {/* <Footer/> */}

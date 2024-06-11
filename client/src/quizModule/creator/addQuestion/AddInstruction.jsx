@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import { faCircleArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import './AddInstruction.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleArrowLeft } from '@fortawesome/free-solid-svg-icons';
+// import './AddInstruction.css';
 // import logo from '../../../../assets/images/quiz/logo.png';
 import getEnvironment from '../../../getenvironment';
 
@@ -41,11 +41,11 @@ export default function AddInstruction() {
       const token = localStorage.getItem('token');
       const code = window.location.pathname.split('/').filter((path) => path !== 'addinstruction').pop();
 
-      const response = await fetch(`${apiurl}/api/quiz/quizzes/${code}`, {
+      const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}`, {
         method: 'GET',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
       });
 
@@ -74,11 +74,11 @@ export default function AddInstruction() {
           instructions: instructions,
         };
 
-        const response = await fetch(`${apiurl}/api/quiz/quizzes/${code}`, {
+        const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}`, {
           method: 'PUT',
+          credentials: 'include',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(values),
         });
@@ -109,7 +109,7 @@ export default function AddInstruction() {
           <FontAwesomeIcon icon={faCircleArrowLeft} />
         </button>
       </div>
-      <img src={logo} alt="" />
+      {/* <img src={logo} alt="" /> */}
       <h2>ADD Instructions</h2>
       <form className="form-some">
         <textarea
