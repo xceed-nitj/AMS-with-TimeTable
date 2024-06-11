@@ -3,7 +3,7 @@ import { useNavigate} from 'react-router-dom';
 import './PreviewInstructions.css';
 import PropTypes from 'prop-types';
 import logo from '../../../../assets/images/quiz/logo.png';
-import getEnvironment from '../../../../getenvironment';
+import getEnvironment from '../../../getenvironment';
 
 export default function PreviewInstructions() {
   const [instructions, setInstructions] = useState([]);

@@ -3,8 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import './AddQuestion.css';
-import QuillEditor from '../../../../components/quill/quillEditor';
-import getEnvironment from '../../../../getenvironment';
+import QuillEditor from '../../components/quill/quillEditor';
+import getEnvironment from '../../../getenvironment';
 
 
 function AddQuestion({ editQuestionData, onClose }) {
@@ -48,11 +48,11 @@ function AddQuestion({ editQuestionData, onClose }) {
     const id = editQuestionData.id;
   
     try {
-      const response = await fetch(`${apiurl}/api/quiz/quizquestion/${code}/${id}`, {
+      const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions/${id}`, {
         method: 'GET',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
       });
   
@@ -103,11 +103,11 @@ function AddQuestion({ editQuestionData, onClose }) {
     if (editQuestionData) {
       const id = editQuestionData.id;
       try {
-        const response = await fetch(`${apiurl}/api/quiz/quizquestion/${code}/${id}`, {
+        const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions/${id}`, {
           method: 'PUT',
+          credentials: 'include',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(values),
         });
@@ -122,11 +122,11 @@ function AddQuestion({ editQuestionData, onClose }) {
       }
     } else {
       try {
-        const response = await fetch(`${apiurl}/api/quiz/quizquestion/${code}`, {
+        const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions`, {
           method: 'POST',
+          credentials: 'include',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(values),
         });
