@@ -144,7 +144,7 @@ const CertificateContent = ({
         </defs>
       </>
       <>
-        <foreignObject width={'90%'} height={'400'} y={'80'} x={'20%'}>
+        <foreignObject width={'74%'} height={'400'} y={'80'} x={'27%'}>
           <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
             {logos.map((item, key) => (
               <div
@@ -179,7 +179,7 @@ const CertificateContent = ({
           </div>
         </foreignObject>
 
-        <foreignObject x="328" y="200.473" width="68%" height="160">
+        <foreignObject x="328" y="222" width="68%" height="160">
           <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
             {header.map((item, ind) => (
               <h1
