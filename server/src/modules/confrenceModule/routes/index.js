@@ -23,7 +23,7 @@ router.use("/event", require("./events"));
 router.use("/souvenir", require("./souvenir"));
 router.use("/sponsorship-rates", require("./sponsorshipRates"));
 router.use("/accomodation", require("./accomodation"));
-
+router.use("/upload", require("./upload"));
 
 
 module.exports = router;
