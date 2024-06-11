@@ -98,6 +98,7 @@ import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import NirfRanking from './nirf/rankings';
+import AddPaper from './reviewmodule/pages/addpaper'
 
 // imports for Quiz Module
 import CreateQuiz from './quizModule/creator/createQuiz/CreateQuiz';
@@ -204,6 +205,7 @@ function App() {
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/addtemplate" element={<AddTemplate/>}/>
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
+    <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
