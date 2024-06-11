@@ -1,5 +1,5 @@
 const express = require('express');
-const {getEvents, getEventById, addEvent, updateEvent, deleteEvent, addEditor, addReviewer,getAllReviewersInEvent ,getEventsByUser ,getEventIdByName} = require('../controller/event');
+const {getEvents, getEventById, addEvent, updateEvent, deleteEvent, addEditor, addReviewer,getAllReviewersInEvent ,getEventsByUser ,getEventIdByName,updateReviewerStatus,resendInvitation} = require('../controller/event');
 const protectRoute =require("../../usermanagement/privateroute")
 const superAdminRoute=require("../../usermanagement/superadminroute")
 
@@ -18,8 +18,10 @@ router.get('/name/:name',getEventIdByName);
 router.post('/addevent', superAdminRoute, addEvent);
 router.post('/addEditor/:id', addEditor);
 router.post('/addReviewer/:id', addReviewer);
+router.post('/resendInvitation/:id',resendInvitation);
 
 router.patch('/:id',updateEvent);
 router.delete('/:id',superAdminRoute, deleteEvent);
+router.post('/updateReviewerStatus/:eventId/:reviewerId', updateReviewerStatus);
 
 module.exports = router;
