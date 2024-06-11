@@ -1,12 +1,12 @@
 import React from 'react';
-import CertificateContent from './certificatetemplates/template01';
-import Template02 from './certificatetemplates/template02';
+import CertificateContent from './certificatetemplates/basic01';
+import Template02 from './certificatetemplates/basic02';
 import Template03 from './certificatetemplates/03_sarthak';
-import Template04 from './certificatetemplates/template04';
-import Template05 from './certificatetemplates/template05';
-import Template06 from './certificatetemplates/template06';
-import Template07 from './certificatetemplates/template07';
-import Template08 from './certificatetemplates/template08';
+import Template04 from './certificatetemplates/basic04';
+import Template05 from './certificatetemplates/basic05';
+import Template06 from './certificatetemplates/basic06';
+import Template07 from './certificatetemplates/basic07';
+import Template08 from './certificatetemplates/premium01';
 
 function SelectCertficate({
   templateId,
