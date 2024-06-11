@@ -16,7 +16,7 @@ router.get("/reuploadpaper", (req, res) => {
 router.get("/", findAllPapers);
 router.get("/:id", findEventPaper); 
 router.get("/paper/:id", findEventPaper);// To find paper using paperId (not _id)
-router.post("/", fileUploadMiddleware, uploadPaper); // upload paper
+router.post("/addpaper/:id", fileUploadMiddleware, uploadPaper); // upload paper
 router.post('/addReviewer/:id', addReviewer);
 router.post("/reuploadPaper/:id", fileUploadMiddleware, reupload);
 router.patch("/:id", updatePaper); // By _id
