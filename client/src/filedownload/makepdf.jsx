@@ -16,12 +16,12 @@ import {
   Tr,
 } from '@chakra-ui/table';
 
-<<<<<<< HEAD
+
 pdfMake.vfs = pdfFonts.vfs;
-=======
+
 
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
->>>>>>> ba50fd0ff3e45f8623c5beea385b5e513b23be59
+
 //pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
 
