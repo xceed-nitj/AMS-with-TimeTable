@@ -17,12 +17,12 @@ import {
 } from '@chakra-ui/table';
 
 
-pdfMake.vfs = pdfFonts.vfs;
+//pdfMake.vfs = pdfFonts.vfs;
 
 
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-//pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
+pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
 
 class PDFGenerator extends React.Component {
