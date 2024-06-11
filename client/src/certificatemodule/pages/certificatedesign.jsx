@@ -16,7 +16,7 @@ import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
 import Header from '../../components/header';
 import { useToast } from '@chakra-ui/react';
-import CertificateContent from './certificatetemplates/template01';
+import CertificateContent from './certificatetemplates/basic01';
 import SelectCertficate from './SelectCertficate';
 
 const CertificateForm = () => {
@@ -212,16 +212,16 @@ const CertificateForm = () => {
               onChange={(e) => handleChange(e, 'templateId', null)}
               placeholder="Select Certificate Template Design"
             >
-              <option value="0">Template 1</option>
-              <option value="1">Template 2</option>
-              <option value="2">Template 3</option>
-              <option value="3">Template 4</option>
-              <option value="4">Template 5</option>
-              <option value="5">Template 6</option>
-              <option value="6">Template 7</option>
-              <option value="7">Template 8</option>
+              <option value="0">Basic 1</option>
+              <option value="1">Basic 2</option>
+              <option value="2">Basic 3</option>
+              <option value="3">Basic 4</option>
+              <option value="4">Basic 5</option>
+              <option value="5">Basic 6</option>
+              <option value="6">Basic 7</option>
+              <option value="7">Premium 1</option>
               <option value="8">Template 9</option>
-              <option value="9">Template 10</option>
+
             </Select>
 
             <Text>Enter the link for the logos:</Text>
