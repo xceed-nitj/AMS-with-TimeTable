@@ -66,187 +66,49 @@ const CertificateContent = ({
             transform="translate(0 0.23999)"
             fill="#FFFBF3"
           />
+          <rect
+            x="27"
+            y="29"
+            width="1069"
+            height="740"
+            rx="57"
+            fill="#FFFBF3"
+            stroke="#E5BC62"
+            strokeWidth="10"
+          />
           <rect width="1123" height="798" fill="url(#pattern0_54_75)" />
           <path
-            d="M1047.41 773.781H75.3987C45.8337 773.781 21.7852 749.611 21.7852 719.896V77.4993C21.7852 47.7842 45.8337 23.6089 75.3987 23.6089H1047.41C1076.97 23.6089 1101.02 47.7842 1101.02 77.4993V719.896C1101.02 749.611 1076.97 773.781 1047.41 773.781ZM75.3987 33.1858C51.0847 33.1858 31.314 53.0622 31.314 77.4993V719.896C31.314 744.333 51.0847 764.209 75.3987 764.209H1047.41C1071.72 764.209 1091.49 744.333 1091.49 719.896V77.4993C1091.49 53.0622 1071.72 33.1858 1047.41 33.1858H75.3987Z"
-            fill="#E5BC62"
+            d="M0 808.617V731.222H274.673L345.594 808.617H0Z"
+            fill="url(#paint0_linear_54_75)"
           />
-          <mask
-            id="mask0_54_75"
-            style="mask-type: luminance;"
-            maskUnits="userSpaceOnUse"
-            x="-15"
-            y="697"
-            width="484"
-            height="119"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M-14.4829 697.915V815.979H468.601L355.587 697.915H-14.4829Z"
-              fill="white"
-            />
-          </mask>
-          <g mask="url(#mask0_54_75)">
-            <path
-              d="M0.843262 697.915V797.81H468.601V697.915H0.843262Z"
-              fill="url(#paint0_linear_54_75)"
-            />
-          </g>
-          <mask
-            id="mask1_54_75"
-            style="mask-type: luminance;"
-            maskUnits="userSpaceOnUse"
-            x="-15"
-            y="704"
-            width="474"
-            height="112"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M-14.4829 704.413V815.979H458.786L348.067 704.413H-14.4829Z"
-              fill="white"
-            />
-          </mask>
-          <g mask="url(#mask1_54_75)">
-            <path
-              d="M0.843262 704.413V797.81H458.785V704.413H0.843262Z"
-              fill="url(#paint1_linear_54_75)"
-            />
-          </g>
-          <mask
-            id="mask2_54_75"
-            style="mask-type: luminance;"
-            maskUnits="userSpaceOnUse"
-            x="-15"
-            y="643"
-            width="354"
-            height="173"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M-14.3477 815.969H338.137L284.378 758.167H117.157C101.643 758.167 86.7749 751.538 75.8201 739.762L-14.0198 643.171L-14.3477 815.969Z"
-              fill="white"
-            />
-          </mask>
-          <g mask="url(#mask2_54_75)">
-            <path
-              d="M0.843262 643.171V797.81H338.137V643.171H0.843262Z"
-              fill="url(#paint2_linear_54_75)"
-            />
-          </g>
-          <mask
-            id="mask3_54_75"
-            style="mask-type: luminance;"
-            maskUnits="userSpaceOnUse"
-            x="-15"
-            y="660"
-            width="339"
-            height="156"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M-14.3477 815.969H323.982L272.382 763.989H111.875C96.9959 763.989 82.7208 758.026 72.2031 747.433L-14.0406 660.57L-14.3477 815.969Z"
-              fill="white"
-            />
-          </mask>
-          <g mask="url(#mask3_54_75)">
-            <path
-              d="M0.843262 660.57V797.81H323.981V660.57H0.843262Z"
-              fill="url(#paint3_linear_54_75)"
-            />
-          </g>
-          <mask
-            id="mask4_54_75"
-            style="mask-type: luminance;"
-            maskUnits="userSpaceOnUse"
-            x="718"
-            y="-19"
-            width="446"
-            height="110"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M1163.11 90.2336V-18.2227H718.953L822.865 90.2336H1163.11Z"
-              fill="white"
-            />
-          </mask>
-          <g mask="url(#mask4_54_75)">
-            <path
-              d="M1121.57 90.2336V0.23999H718.953V90.2336H1121.57Z"
-              fill="url(#paint4_linear_54_75)"
-            />
-          </g>
-          <mask
-            id="mask5_54_75"
-            style="mask-type: luminance;"
-            maskUnits="userSpaceOnUse"
-            x="727"
-            y="-19"
-            width="437"
-            height="104"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M1163.11 84.2644V-18.2227H727.977L829.771 84.2644H1163.11Z"
-              fill="white"
-            />
-          </mask>
-          <g mask="url(#mask5_54_75)">
-            <path
-              d="M1121.57 84.2644V0.23999H727.977V84.2644H1121.57Z"
-              fill="url(#paint5_linear_54_75)"
-            />
-          </g>
-          <mask
-            id="mask6_54_75"
-            style="mask-type: luminance;"
-            maskUnits="userSpaceOnUse"
-            x="838"
-            y="-19"
-            width="325"
-            height="160"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M1162.99 -18.2123H838.905L888.329 34.8822H1042.08C1056.34 34.8822 1070.01 40.9719 1080.08 51.7898L1162.69 140.521L1162.99 -18.2123Z"
-              fill="white"
-            />
-          </mask>
-          <g mask="url(#mask6_54_75)">
-            <path
-              d="M1121.57 140.506V0.23999H838.905V140.506H1121.57Z"
-              fill="url(#paint6_linear_54_75)"
-            />
-          </g>
-          <mask
-            id="mask7_54_75"
-            style="mask-type: luminance;"
-            maskUnits="userSpaceOnUse"
-            x="851"
-            y="-19"
-            width="312"
-            height="144"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M1162.99 -18.2123H851.92L899.362 29.5361H1046.94C1060.62 29.5361 1073.74 35.0131 1083.41 44.7419L1162.71 124.536L1162.99 -18.2123Z"
-              fill="white"
-            />
-          </mask>
-          <g mask="url(#mask7_54_75)">
-            <path
-              d="M1121.57 124.536V0.23999H851.92V124.536H1121.57Z"
-              fill="url(#paint7_linear_54_75)"
-            />
-          </g>
+          <path
+            d="M0 809V737.352H268.582L337.931 809H0Z"
+            fill="url(#paint1_linear_54_75)"
+          />
+          <path
+            d="M0 809V709L59.7021 761.237C73.1999 774.766 98.494 776.144 109.454 775.142H231.535L266.805 809H0Z"
+            fill="url(#paint2_linear_54_75)"
+          />
+          <path
+            d="M0 805.029V716.942L57.2614 767.123C70.2075 780.119 94.4675 781.443 104.979 780.48H225.726L253.112 805.029H0Z"
+            fill="url(#paint3_linear_54_75)"
+          />
+          <path
+            d="M1122.59 -4.61681V72.7778H847.921L777 -4.61681H1122.59Z"
+            fill="url(#paint4_linear_54_75)"
+          />
+          <path
+            d="M1122.59 -5.00005V66.6475H854.011L784.663 -5.00005H1122.59Z"
+            fill="url(#paint5_linear_54_75)"
+          />
+          <path
+            d="M1122.59 -5V95L1062.89 42.7629C1049.39 29.2339 1024.1 27.8559 1013.14 28.8581H891.058L855.789 -5H1122.59Z"
+            fill="url(#paint6_linear_54_75)"
+          />
+          <path
+            d="M1122.59 -1.0289V87.0577L1065.33 36.8772C1052.39 23.8808 1028.13 22.5571 1017.61 23.5198H896.868L869.482 -1.0289H1122.59Z"
+            fill="url(#paint7_linear_54_75)"
+          />
         </g>
         <defs>
           <pattern
@@ -262,262 +124,262 @@ const CertificateContent = ({
           </pattern>
           <linearGradient
             id="paint0_linear_54_75"
-            x1="0.844185"
-            y1="978.99"
-            x2="468.6"
-            y2="978.99"
+            x1="0.000945571"
+            y1="937.113"
+            x2="345.592"
+            y2="937.113"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stopColor="#FCEF96" />
-            <stop offset="0.00390625" stopColor="#FCEE94" />
-            <stop offset="0.0078125" stopColor="#FCED91" />
-            <stop offset="0.0117188" stopColor="#FCED8F" />
-            <stop offset="0.015625" stopColor="#FCEC8D" />
-            <stop offset="0.0195312" stopColor="#FBEB8A" />
-            <stop offset="0.0234375" stopColor="#FBEA88" />
-            <stop offset="0.0273438" stopColor="#FBE986" />
-            <stop offset="0.03125" stopColor="#FBE883" />
-            <stop offset="0.0351562" stopColor="#FBE881" />
-            <stop offset="0.0390625" stopColor="#FAE77E" />
-            <stop offset="0.0429688" stopColor="#FAE67C" />
-            <stop offset="0.046875" stopColor="#FAE57A" />
-            <stop offset="0.0507812" stopColor="#F9E479" />
-            <stop offset="0.0546875" stopColor="#F9E378" />
-            <stop offset="0.0585938" stopColor="#F8E377" />
-            <stop offset="0.0625" stopColor="#F8E276" />
-            <stop offset="0.0664062" stopColor="#F7E176" />
-            <stop offset="0.0703125" stopColor="#F7E075" />
-            <stop offset="0.0742187" stopColor="#F6DF74" />
-            <stop offset="0.078125" stopColor="#F5DE73" />
-            <stop offset="0.0820312" stopColor="#F5DD73" />
-            <stop offset="0.0859375" stopColor="#F4DD72" />
-            <stop offset="0.0898438" stopColor="#F4DC71" />
-            <stop offset="0.09375" stopColor="#F3DB70" />
-            <stop offset="0.0976563" stopColor="#F3DA6F" />
-            <stop offset="0.101562" stopColor="#F2D96F" />
-            <stop offset="0.105469" stopColor="#F1D86E" />
-            <stop offset="0.109375" stopColor="#F1D76D" />
-            <stop offset="0.113281" stopColor="#F0D66C" />
-            <stop offset="0.117188" stopColor="#F0D66C" />
-            <stop offset="0.121094" stopColor="#EFD56B" />
-            <stop offset="0.125" stopColor="#EFD46A" />
-            <stop offset="0.128906" stopColor="#EED369" />
-            <stop offset="0.132812" stopColor="#EED269" />
-            <stop offset="0.136719" stopColor="#EDD168" />
-            <stop offset="0.140625" stopColor="#ECD067" />
-            <stop offset="0.144531" stopColor="#ECD066" />
-            <stop offset="0.148438" stopColor="#EBCF66" />
-            <stop offset="0.152344" stopColor="#EBCE65" />
-            <stop offset="0.15625" stopColor="#EACD64" />
-            <stop offset="0.160156" stopColor="#EACC63" />
-            <stop offset="0.164062" stopColor="#E9CB63" />
-            <stop offset="0.167969" stopColor="#E8CA62" />
-            <stop offset="0.171875" stopColor="#E8CA61" />
-            <stop offset="0.175781" stopColor="#E7C960" />
-            <stop offset="0.179688" stopColor="#E7C860" />
-            <stop offset="0.183594" stopColor="#E6C75F" />
-            <stop offset="0.1875" stopColor="#E6C65E" />
-            <stop offset="0.191406" stopColor="#E5C55D" />
-            <stop offset="0.195312" stopColor="#E4C45D" />
-            <stop offset="0.199219" stopColor="#E4C35C" />
-            <stop offset="0.203125" stopColor="#E3C35B" />
-            <stop offset="0.207031" stopColor="#E3C25A" />
-            <stop offset="0.210938" stopColor="#E2C15A" />
-            <stop offset="0.214844" stopColor="#E2C059" />
-            <stop offset="0.21875" stopColor="#E1BF58" />
-            <stop offset="0.222656" stopColor="#E0BE57" />
-            <stop offset="0.226562" stopColor="#E0BD57" />
-            <stop offset="0.230469" stopColor="#DFBD56" />
-            <stop offset="0.234375" stopColor="#DFBC55" />
-            <stop offset="0.238281" stopColor="#DEBB54" />
-            <stop offset="0.242187" stopColor="#DEBA54" />
-            <stop offset="0.246094" stopColor="#DDB953" />
-            <stop offset="0.25" stopColor="#DCB852" />
-            <stop offset="0.253906" stopColor="#DCB751" />
-            <stop offset="0.257812" stopColor="#DBB751" />
-            <stop offset="0.261719" stopColor="#DBB650" />
-            <stop offset="0.265625" stopColor="#DAB54F" />
-            <stop offset="0.269531" stopColor="#DAB44E" />
-            <stop offset="0.273437" stopColor="#D9B34E" />
-            <stop offset="0.277344" stopColor="#D8B24D" />
-            <stop offset="0.28125" stopColor="#D8B14C" />
-            <stop offset="0.285156" stopColor="#D7B04B" />
-            <stop offset="0.289062" stopColor="#D7B04B" />
-            <stop offset="0.292969" stopColor="#D6AF4A" />
-            <stop offset="0.296875" stopColor="#D6AE49" />
-            <stop offset="0.300781" stopColor="#D5AD48" />
-            <stop offset="0.304687" stopColor="#D4AC48" />
-            <stop offset="0.308594" stopColor="#D4AB47" />
-            <stop offset="0.3125" stopColor="#D3AA46" />
-            <stop offset="0.316406" stopColor="#D3AA45" />
-            <stop offset="0.320312" stopColor="#D2A945" />
-            <stop offset="0.324219" stopColor="#D2A844" />
-            <stop offset="0.328125" stopColor="#D1A743" />
-            <stop offset="0.332031" stopColor="#D0A642" />
-            <stop offset="0.335937" stopColor="#D0A541" />
-            <stop offset="0.339844" stopColor="#CFA441" />
-            <stop offset="0.34375" stopColor="#CFA440" />
-            <stop offset="0.347656" stopColor="#CEA33F" />
-            <stop offset="0.351562" stopColor="#CEA23E" />
-            <stop offset="0.355469" stopColor="#CDA13E" />
-            <stop offset="0.359375" stopColor="#CDA03D" />
-            <stop offset="0.363281" stopColor="#CC9F3C" />
-            <stop offset="0.367187" stopColor="#CB9E3B" />
-            <stop offset="0.371094" stopColor="#CB9D3B" />
-            <stop offset="0.375" stopColor="#CA9D3A" />
-            <stop offset="0.378906" stopColor="#CA9C39" />
-            <stop offset="0.382812" stopColor="#C99B38" />
-            <stop offset="0.386719" stopColor="#C99A38" />
-            <stop offset="0.390625" stopColor="#C89937" />
-            <stop offset="0.394531" stopColor="#C79836" />
-            <stop offset="0.398438" stopColor="#C79735" />
-            <stop offset="0.402344" stopColor="#C69735" />
-            <stop offset="0.40625" stopColor="#C69634" />
-            <stop offset="0.410156" stopColor="#C59533" />
-            <stop offset="0.414062" stopColor="#C59432" />
-            <stop offset="0.417969" stopColor="#C49332" />
-            <stop offset="0.421875" stopColor="#C39231" />
-            <stop offset="0.425781" stopColor="#C39130" />
-            <stop offset="0.429687" stopColor="#C2912F" />
-            <stop offset="0.433594" stopColor="#C2902F" />
-            <stop offset="0.4375" stopColor="#C18F2E" />
-            <stop offset="0.441406" stopColor="#C18E2D" />
-            <stop offset="0.445312" stopColor="#C08D2C" />
-            <stop offset="0.449219" stopColor="#BF8C2C" />
-            <stop offset="0.453125" stopColor="#BF8B2B" />
-            <stop offset="0.457031" stopColor="#BE8A2A" />
-            <stop offset="0.460937" stopColor="#BE8A29" />
-            <stop offset="0.464844" stopColor="#BD8929" />
+            <stop stopColor="#FCED8F" />
+            <stop offset="0.00390625" stopColor="#FCEC8D" />
+            <stop offset="0.0078125" stopColor="#FBEB8A" />
+            <stop offset="0.0117187" stopColor="#FBEA88" />
+            <stop offset="0.015625" stopColor="#FBE986" />
+            <stop offset="0.0195312" stopColor="#FBE983" />
+            <stop offset="0.0234375" stopColor="#FBE881" />
+            <stop offset="0.0273437" stopColor="#FAE77F" />
+            <stop offset="0.03125" stopColor="#FAE67C" />
+            <stop offset="0.0351562" stopColor="#FAE57A" />
+            <stop offset="0.0390625" stopColor="#FAE479" />
+            <stop offset="0.0429687" stopColor="#F9E478" />
+            <stop offset="0.046875" stopColor="#F8E377" />
+            <stop offset="0.0507812" stopColor="#F8E276" />
+            <stop offset="0.0546875" stopColor="#F7E176" />
+            <stop offset="0.0585937" stopColor="#F7E075" />
+            <stop offset="0.0625" stopColor="#F6DF74" />
+            <stop offset="0.0664062" stopColor="#F6DE73" />
+            <stop offset="0.0703125" stopColor="#F5DE73" />
+            <stop offset="0.0742187" stopColor="#F4DD72" />
+            <stop offset="0.078125" stopColor="#F4DC71" />
+            <stop offset="0.0820312" stopColor="#F3DB70" />
+            <stop offset="0.0859375" stopColor="#F3DA70" />
+            <stop offset="0.0898437" stopColor="#F2D96F" />
+            <stop offset="0.09375" stopColor="#F2D86E" />
+            <stop offset="0.0976562" stopColor="#F1D86D" />
+            <stop offset="0.101562" stopColor="#F1D76D" />
+            <stop offset="0.105469" stopColor="#F0D66C" />
+            <stop offset="0.109375" stopColor="#EFD56B" />
+            <stop offset="0.113281" stopColor="#EFD46A" />
+            <stop offset="0.117187" stopColor="#EED36A" />
+            <stop offset="0.121094" stopColor="#EED269" />
+            <stop offset="0.125" stopColor="#EDD268" />
+            <stop offset="0.128906" stopColor="#EDD167" />
+            <stop offset="0.132812" stopColor="#ECD067" />
+            <stop offset="0.136719" stopColor="#EBCF66" />
+            <stop offset="0.140625" stopColor="#EBCE65" />
+            <stop offset="0.144531" stopColor="#EACD65" />
+            <stop offset="0.148437" stopColor="#EACD64" />
+            <stop offset="0.152344" stopColor="#E9CC63" />
+            <stop offset="0.15625" stopColor="#E9CB62" />
+            <stop offset="0.160156" stopColor="#E8CA62" />
+            <stop offset="0.164062" stopColor="#E8C961" />
+            <stop offset="0.167969" stopColor="#E7C860" />
+            <stop offset="0.171875" stopColor="#E6C75F" />
+            <stop offset="0.175781" stopColor="#E6C75F" />
+            <stop offset="0.179687" stopColor="#E5C65E" />
+            <stop offset="0.183594" stopColor="#E5C55D" />
+            <stop offset="0.1875" stopColor="#E4C45C" />
+            <stop offset="0.191406" stopColor="#E4C35C" />
+            <stop offset="0.195312" stopColor="#E3C25B" />
+            <stop offset="0.199219" stopColor="#E2C15A" />
+            <stop offset="0.203125" stopColor="#E2C159" />
+            <stop offset="0.207031" stopColor="#E1C059" />
+            <stop offset="0.210937" stopColor="#E1BF58" />
+            <stop offset="0.214844" stopColor="#E0BE57" />
+            <stop offset="0.21875" stopColor="#E0BD56" />
+            <stop offset="0.222656" stopColor="#DFBC56" />
+            <stop offset="0.226562" stopColor="#DFBB55" />
+            <stop offset="0.230469" stopColor="#DEBB54" />
+            <stop offset="0.234375" stopColor="#DDBA53" />
+            <stop offset="0.238281" stopColor="#DDB953" />
+            <stop offset="0.242187" stopColor="#DCB852" />
+            <stop offset="0.246094" stopColor="#DCB751" />
+            <stop offset="0.25" stopColor="#DBB650" />
+            <stop offset="0.253906" stopColor="#DBB550" />
+            <stop offset="0.257812" stopColor="#DAB54F" />
+            <stop offset="0.261719" stopColor="#D9B44E" />
+            <stop offset="0.265625" stopColor="#D9B34D" />
+            <stop offset="0.269531" stopColor="#D8B24D" />
+            <stop offset="0.273438" stopColor="#D8B14C" />
+            <stop offset="0.277344" stopColor="#D7B04B" />
+            <stop offset="0.28125" stopColor="#D7AF4A" />
+            <stop offset="0.285156" stopColor="#D6AF4A" />
+            <stop offset="0.289062" stopColor="#D6AE49" />
+            <stop offset="0.292969" stopColor="#D5AD48" />
+            <stop offset="0.296875" stopColor="#D4AC47" />
+            <stop offset="0.300781" stopColor="#D4AB47" />
+            <stop offset="0.304688" stopColor="#D3AA46" />
+            <stop offset="0.308594" stopColor="#D3A945" />
+            <stop offset="0.3125" stopColor="#D2A944" />
+            <stop offset="0.316406" stopColor="#D2A844" />
+            <stop offset="0.320312" stopColor="#D1A743" />
+            <stop offset="0.324219" stopColor="#D0A642" />
+            <stop offset="0.328125" stopColor="#D0A541" />
+            <stop offset="0.332031" stopColor="#CFA441" />
+            <stop offset="0.335938" stopColor="#CFA440" />
+            <stop offset="0.339844" stopColor="#CEA33F" />
+            <stop offset="0.34375" stopColor="#CEA23F" />
+            <stop offset="0.347656" stopColor="#CDA13E" />
+            <stop offset="0.351562" stopColor="#CDA03D" />
+            <stop offset="0.355469" stopColor="#CC9F3C" />
+            <stop offset="0.359375" stopColor="#CB9E3C" />
+            <stop offset="0.363281" stopColor="#CB9E3B" />
+            <stop offset="0.367188" stopColor="#CA9D3A" />
+            <stop offset="0.371094" stopColor="#CA9C39" />
+            <stop offset="0.375" stopColor="#C99B39" />
+            <stop offset="0.378906" stopColor="#C99A38" />
+            <stop offset="0.382812" stopColor="#C89937" />
+            <stop offset="0.386719" stopColor="#C79836" />
+            <stop offset="0.390625" stopColor="#C79836" />
+            <stop offset="0.394531" stopColor="#C69735" />
+            <stop offset="0.398438" stopColor="#C69634" />
+            <stop offset="0.402344" stopColor="#C59533" />
+            <stop offset="0.40625" stopColor="#C59433" />
+            <stop offset="0.410156" stopColor="#C49332" />
+            <stop offset="0.414062" stopColor="#C49231" />
+            <stop offset="0.417969" stopColor="#C39230" />
+            <stop offset="0.421875" stopColor="#C29130" />
+            <stop offset="0.425781" stopColor="#C2902F" />
+            <stop offset="0.429688" stopColor="#C18F2E" />
+            <stop offset="0.433594" stopColor="#C18E2D" />
+            <stop offset="0.4375" stopColor="#C08D2D" />
+            <stop offset="0.441406" stopColor="#C08C2C" />
+            <stop offset="0.445312" stopColor="#BF8C2B" />
+            <stop offset="0.449219" stopColor="#BE8B2A" />
+            <stop offset="0.453125" stopColor="#BE8A2A" />
+            <stop offset="0.457031" stopColor="#BD8929" />
+            <stop offset="0.460938" stopColor="#BD8828" />
             <stop offset="0.46875" stopColor="#BD8828" />
-            <stop offset="0.476562" stopColor="#BD8828" />
-            <stop offset="0.480469" stopColor="#BD8929" />
-            <stop offset="0.484375" stopColor="#BE8A29" />
-            <stop offset="0.488281" stopColor="#BE8B2A" />
-            <stop offset="0.492188" stopColor="#BF8C2B" />
-            <stop offset="0.496094" stopColor="#C08D2C" />
-            <stop offset="0.5" stopColor="#C08E2D" />
-            <stop offset="0.503906" stopColor="#C18E2E" />
-            <stop offset="0.507812" stopColor="#C28F2E" />
-            <stop offset="0.511719" stopColor="#C2902F" />
-            <stop offset="0.515625" stopColor="#C39130" />
-            <stop offset="0.519531" stopColor="#C39231" />
-            <stop offset="0.523438" stopColor="#C49332" />
-            <stop offset="0.527344" stopColor="#C59433" />
-            <stop offset="0.53125" stopColor="#C59534" />
-            <stop offset="0.535156" stopColor="#C69634" />
-            <stop offset="0.539062" stopColor="#C79735" />
-            <stop offset="0.542969" stopColor="#C79836" />
-            <stop offset="0.546875" stopColor="#C89937" />
-            <stop offset="0.550781" stopColor="#C99A38" />
-            <stop offset="0.554688" stopColor="#C99B39" />
-            <stop offset="0.558594" stopColor="#CA9C39" />
-            <stop offset="0.5625" stopColor="#CA9D3A" />
-            <stop offset="0.566406" stopColor="#CB9E3B" />
-            <stop offset="0.570312" stopColor="#CC9F3C" />
-            <stop offset="0.574219" stopColor="#CCA03D" />
-            <stop offset="0.578125" stopColor="#CDA13E" />
-            <stop offset="0.582031" stopColor="#CEA23E" />
-            <stop offset="0.585938" stopColor="#CEA33F" />
-            <stop offset="0.589844" stopColor="#CFA440" />
-            <stop offset="0.59375" stopColor="#D0A541" />
-            <stop offset="0.597656" stopColor="#D0A642" />
-            <stop offset="0.601562" stopColor="#D1A743" />
-            <stop offset="0.605469" stopColor="#D1A844" />
-            <stop offset="0.609375" stopColor="#D2A944" />
-            <stop offset="0.613281" stopColor="#D3A945" />
-            <stop offset="0.617188" stopColor="#D3AA46" />
-            <stop offset="0.621094" stopColor="#D4AB47" />
-            <stop offset="0.625" stopColor="#D5AC48" />
-            <stop offset="0.628906" stopColor="#D5AD49" />
-            <stop offset="0.632812" stopColor="#D6AE49" />
-            <stop offset="0.636719" stopColor="#D7AF4A" />
-            <stop offset="0.640625" stopColor="#D7B04B" />
-            <stop offset="0.644531" stopColor="#D8B14C" />
-            <stop offset="0.648438" stopColor="#D8B24D" />
-            <stop offset="0.652344" stopColor="#D9B34E" />
-            <stop offset="0.65625" stopColor="#DAB44E" />
-            <stop offset="0.660156" stopColor="#DAB54F" />
-            <stop offset="0.664062" stopColor="#DBB650" />
-            <stop offset="0.667969" stopColor="#DCB751" />
-            <stop offset="0.671875" stopColor="#DCB852" />
-            <stop offset="0.675781" stopColor="#DDB953" />
-            <stop offset="0.679688" stopColor="#DEBA54" />
-            <stop offset="0.683594" stopColor="#DEBB54" />
-            <stop offset="0.6875" stopColor="#DFBC55" />
-            <stop offset="0.691406" stopColor="#DFBD56" />
-            <stop offset="0.695312" stopColor="#E0BE57" />
-            <stop offset="0.699219" stopColor="#E1BF58" />
-            <stop offset="0.703125" stopColor="#E1C059" />
-            <stop offset="0.707031" stopColor="#E2C159" />
-            <stop offset="0.710938" stopColor="#E3C25A" />
-            <stop offset="0.714844" stopColor="#E3C35B" />
-            <stop offset="0.71875" stopColor="#E4C45C" />
+            <stop offset="0.472656" stopColor="#BD8828" />
+            <stop offset="0.476562" stopColor="#BD8929" />
+            <stop offset="0.480469" stopColor="#BE8A2A" />
+            <stop offset="0.484375" stopColor="#BF8B2B" />
+            <stop offset="0.488281" stopColor="#BF8C2C" />
+            <stop offset="0.492187" stopColor="#C08D2C" />
+            <stop offset="0.496094" stopColor="#C18E2D" />
+            <stop offset="0.5" stopColor="#C18F2E" />
+            <stop offset="0.503906" stopColor="#C2902F" />
+            <stop offset="0.507812" stopColor="#C39130" />
+            <stop offset="0.511719" stopColor="#C39231" />
+            <stop offset="0.515625" stopColor="#C49331" />
+            <stop offset="0.519531" stopColor="#C49432" />
+            <stop offset="0.523437" stopColor="#C59533" />
+            <stop offset="0.527344" stopColor="#C69634" />
+            <stop offset="0.53125" stopColor="#C69735" />
+            <stop offset="0.535156" stopColor="#C79836" />
+            <stop offset="0.539062" stopColor="#C89836" />
+            <stop offset="0.542969" stopColor="#C89937" />
+            <stop offset="0.546875" stopColor="#C99A38" />
+            <stop offset="0.550781" stopColor="#C99B39" />
+            <stop offset="0.554688" stopColor="#CA9C3A" />
+            <stop offset="0.558594" stopColor="#CB9D3B" />
+            <stop offset="0.5625" stopColor="#CB9E3B" />
+            <stop offset="0.566406" stopColor="#CC9F3C" />
+            <stop offset="0.570312" stopColor="#CDA03D" />
+            <stop offset="0.574219" stopColor="#CDA13E" />
+            <stop offset="0.578125" stopColor="#CEA23F" />
+            <stop offset="0.582031" stopColor="#CEA340" />
+            <stop offset="0.585938" stopColor="#CFA440" />
+            <stop offset="0.589844" stopColor="#D0A541" />
+            <stop offset="0.59375" stopColor="#D0A642" />
+            <stop offset="0.597656" stopColor="#D1A743" />
+            <stop offset="0.601563" stopColor="#D2A844" />
+            <stop offset="0.605469" stopColor="#D2A945" />
+            <stop offset="0.609375" stopColor="#D3AA45" />
+            <stop offset="0.613281" stopColor="#D3AB46" />
+            <stop offset="0.617188" stopColor="#D4AC47" />
+            <stop offset="0.621094" stopColor="#D5AD48" />
+            <stop offset="0.625" stopColor="#D5AD49" />
+            <stop offset="0.628906" stopColor="#D6AE4A" />
+            <stop offset="0.632812" stopColor="#D7AF4A" />
+            <stop offset="0.636719" stopColor="#D7B04B" />
+            <stop offset="0.640625" stopColor="#D8B14C" />
+            <stop offset="0.644531" stopColor="#D8B24D" />
+            <stop offset="0.648437" stopColor="#D9B34E" />
+            <stop offset="0.652344" stopColor="#DAB44F" />
+            <stop offset="0.65625" stopColor="#DAB54F" />
+            <stop offset="0.660156" stopColor="#DBB650" />
+            <stop offset="0.664062" stopColor="#DCB751" />
+            <stop offset="0.667969" stopColor="#DCB852" />
+            <stop offset="0.671875" stopColor="#DDB953" />
+            <stop offset="0.675781" stopColor="#DDBA53" />
+            <stop offset="0.679688" stopColor="#DEBB54" />
+            <stop offset="0.683594" stopColor="#DFBC55" />
+            <stop offset="0.6875" stopColor="#DFBD56" />
+            <stop offset="0.691406" stopColor="#E0BE57" />
+            <stop offset="0.695312" stopColor="#E1BF58" />
+            <stop offset="0.699219" stopColor="#E1C058" />
+            <stop offset="0.703125" stopColor="#E2C159" />
+            <stop offset="0.707031" stopColor="#E3C15A" />
+            <stop offset="0.710938" stopColor="#E3C25B" />
+            <stop offset="0.714844" stopColor="#E4C35C" />
+            <stop offset="0.71875" stopColor="#E4C45D" />
             <stop offset="0.722656" stopColor="#E5C55D" />
-            <stop offset="0.726563" stopColor="#E5C55E" />
-            <stop offset="0.730469" stopColor="#E6C65E" />
-            <stop offset="0.734375" stopColor="#E6C75F" />
-            <stop offset="0.738281" stopColor="#E7C860" />
-            <stop offset="0.742188" stopColor="#E8C961" />
-            <stop offset="0.746094" stopColor="#E8CA62" />
-            <stop offset="0.75" stopColor="#E9CB63" />
-            <stop offset="0.753906" stopColor="#EACC64" />
-            <stop offset="0.757812" stopColor="#EACD64" />
-            <stop offset="0.761719" stopColor="#EBCE65" />
-            <stop offset="0.765625" stopColor="#EBCF66" />
-            <stop offset="0.769531" stopColor="#ECD067" />
-            <stop offset="0.773438" stopColor="#EDD168" />
-            <stop offset="0.777344" stopColor="#EDD269" />
-            <stop offset="0.78125" stopColor="#EED369" />
-            <stop offset="0.785156" stopColor="#EFD46A" />
-            <stop offset="0.789062" stopColor="#EFD56B" />
+            <stop offset="0.726563" stopColor="#E6C65E" />
+            <stop offset="0.730469" stopColor="#E6C75F" />
+            <stop offset="0.734375" stopColor="#E7C860" />
+            <stop offset="0.738281" stopColor="#E8C961" />
+            <stop offset="0.742188" stopColor="#E8CA62" />
+            <stop offset="0.746094" stopColor="#E9CB62" />
+            <stop offset="0.75" stopColor="#E9CC63" />
+            <stop offset="0.753906" stopColor="#EACD64" />
+            <stop offset="0.757812" stopColor="#EBCE65" />
+            <stop offset="0.761719" stopColor="#EBCF66" />
+            <stop offset="0.765625" stopColor="#ECD067" />
+            <stop offset="0.769531" stopColor="#EDD167" />
+            <stop offset="0.773437" stopColor="#EDD268" />
+            <stop offset="0.777344" stopColor="#EED369" />
+            <stop offset="0.78125" stopColor="#EED46A" />
+            <stop offset="0.785156" stopColor="#EFD56B" />
+            <stop offset="0.789062" stopColor="#F0D66C" />
             <stop offset="0.792969" stopColor="#F0D66C" />
             <stop offset="0.796875" stopColor="#F1D76D" />
-            <stop offset="0.800781" stopColor="#F1D86E" />
-            <stop offset="0.804688" stopColor="#F2D96E" />
-            <stop offset="0.808594" stopColor="#F2DA6F" />
-            <stop offset="0.8125" stopColor="#F3DB70" />
+            <stop offset="0.800781" stopColor="#F2D86E" />
+            <stop offset="0.804688" stopColor="#F2D96F" />
+            <stop offset="0.808594" stopColor="#F3DA70" />
+            <stop offset="0.8125" stopColor="#F3DB71" />
             <stop offset="0.816406" stopColor="#F4DC71" />
-            <stop offset="0.820313" stopColor="#F4DD72" />
+            <stop offset="0.820312" stopColor="#F5DD72" />
             <stop offset="0.824219" stopColor="#F5DE73" />
             <stop offset="0.828125" stopColor="#F6DF74" />
-            <stop offset="0.832031" stopColor="#F6E074" />
-            <stop offset="0.835938" stopColor="#F7E075" />
-            <stop offset="0.839844" stopColor="#F8E176" />
-            <stop offset="0.84375" stopColor="#F8E277" />
-            <stop offset="0.847656" stopColor="#F9E378" />
-            <stop offset="0.851562" stopColor="#F9E479" />
+            <stop offset="0.832031" stopColor="#F7E075" />
+            <stop offset="0.835938" stopColor="#F7E176" />
+            <stop offset="0.839844" stopColor="#F8E276" />
+            <stop offset="0.84375" stopColor="#F8E377" />
+            <stop offset="0.847656" stopColor="#F9E478" />
+            <stop offset="0.851563" stopColor="#FAE579" />
             <stop offset="0.855469" stopColor="#FAE57A" />
             <stop offset="0.859375" stopColor="#FAE67B" />
-            <stop offset="0.863281" stopColor="#FAE67C" />
-            <stop offset="0.867188" stopColor="#FAE77D" />
+            <stop offset="0.863281" stopColor="#FAE67D" />
+            <stop offset="0.867188" stopColor="#FAE77E" />
             <stop offset="0.871094" stopColor="#FAE77F" />
-            <stop offset="0.875" stopColor="#FAE780" />
-            <stop offset="0.878906" stopColor="#FBE881" />
-            <stop offset="0.882812" stopColor="#FBE883" />
+            <stop offset="0.875" stopColor="#FBE881" />
+            <stop offset="0.878906" stopColor="#FBE882" />
+            <stop offset="0.882812" stopColor="#FBE983" />
             <stop offset="0.886719" stopColor="#FBE984" />
-            <stop offset="0.890625" stopColor="#FBE985" />
+            <stop offset="0.890625" stopColor="#FBE986" />
             <stop offset="0.894531" stopColor="#FBEA87" />
-            <stop offset="0.898438" stopColor="#FBEA88" />
-            <stop offset="0.902344" stopColor="#FBEB89" />
+            <stop offset="0.898437" stopColor="#FBEA88" />
+            <stop offset="0.902344" stopColor="#FBEB8A" />
             <stop offset="0.90625" stopColor="#FBEB8B" />
             <stop offset="0.910156" stopColor="#FBEC8C" />
-            <stop offset="0.914063" stopColor="#FCEC8D" />
-            <stop offset="0.917969" stopColor="#FCEC8F" />
+            <stop offset="0.914062" stopColor="#FCEC8E" />
+            <stop offset="0.917969" stopColor="#FCED8F" />
             <stop offset="0.921875" stopColor="#FCED90" />
             <stop offset="0.925781" stopColor="#FCED91" />
             <stop offset="0.929688" stopColor="#FCEE93" />
             <stop offset="0.933594" stopColor="#FCEE94" />
             <stop offset="0.9375" stopColor="#FCEF95" />
-            <stop offset="0.941406" stopColor="#FCEF96" />
+            <stop offset="0.941406" stopColor="#FCEF97" />
             <stop offset="0.945312" stopColor="#FCF098" />
             <stop offset="0.949219" stopColor="#FDF099" />
-            <stop offset="0.953125" stopColor="#FDF19A" />
+            <stop offset="0.953125" stopColor="#FDF19B" />
             <stop offset="0.957031" stopColor="#FDF19C" />
             <stop offset="0.960938" stopColor="#FDF29D" />
             <stop offset="0.964844" stopColor="#FDF29E" />
             <stop offset="0.96875" stopColor="#FDF2A0" />
             <stop offset="0.972656" stopColor="#FDF3A1" />
-            <stop offset="0.976562" stopColor="#FDF3A2" />
+            <stop offset="0.976563" stopColor="#FDF3A2" />
             <stop offset="0.980469" stopColor="#FDF4A4" />
             <stop offset="0.984375" stopColor="#FEF4A5" />
             <stop offset="0.988281" stopColor="#FEF5A6" />
@@ -527,10 +389,10 @@ const CertificateContent = ({
           </linearGradient>
           <linearGradient
             id="paint1_linear_54_75"
-            x1="0.844185"
-            y1="760.195"
-            x2="458.787"
-            y2="760.195"
+            x1="0.00068101"
+            y1="780.145"
+            x2="337.932"
+            y2="780.145"
             gradientUnits="userSpaceOnUse"
           >
             <stop stopColor="#6C0506" />
@@ -793,10 +655,10 @@ const CertificateContent = ({
           </linearGradient>
           <linearGradient
             id="paint2_linear_54_75"
-            x1="0.844185"
-            y1="1054.55"
-            x2="338.135"
-            y2="1054.55"
+            x1="0.000729999"
+            y1="975.027"
+            x2="266.803"
+            y2="975.027"
             gradientUnits="userSpaceOnUse"
           >
             <stop stopColor="#FCED8F" />
@@ -1058,10 +920,10 @@ const CertificateContent = ({
           </linearGradient>
           <linearGradient
             id="paint3_linear_54_75"
-            x1="0.844185"
-            y1="1170.46"
-            x2="323.982"
-            y2="1170.46"
+            x1="0.000722871"
+            y1="1044.21"
+            x2="253.112"
+            y2="1044.21"
             gradientUnits="userSpaceOnUse"
           >
             <stop stopColor="#C49432" />
@@ -1324,263 +1186,262 @@ const CertificateContent = ({
           </linearGradient>
           <linearGradient
             id="paint4_linear_54_75"
-            x1="1121.57"
-            y1="-167.964"
-            x2="718.954"
-            y2="-167.964"
+            x1="1122.59"
+            y1="-133.112"
+            x2="777.002"
+            y2="-133.112"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stopColor="#F8E176" />
-            <stop offset="0.00390625" stopColor="#F7E175" />
-            <stop offset="0.0078125" stopColor="#F6E075" />
-            <stop offset="0.0117188" stopColor="#F6DF74" />
-            <stop offset="0.015625" stopColor="#F5DE73" />
-            <stop offset="0.0195313" stopColor="#F5DD72" />
-            <stop offset="0.0234375" stopColor="#F4DD72" />
-            <stop offset="0.0273438" stopColor="#F4DC71" />
-            <stop offset="0.03125" stopColor="#F3DB70" />
-            <stop offset="0.0351563" stopColor="#F3DA70" />
-            <stop offset="0.0390625" stopColor="#F2D96F" />
-            <stop offset="0.0429688" stopColor="#F2D96E" />
-            <stop offset="0.046875" stopColor="#F1D86E" />
-            <stop offset="0.0507813" stopColor="#F1D76D" />
-            <stop offset="0.0546875" stopColor="#F0D66C" />
-            <stop offset="0.0585938" stopColor="#F0D56B" />
-            <stop offset="0.0625" stopColor="#EFD46B" />
-            <stop offset="0.0664062" stopColor="#EED46A" />
-            <stop offset="0.0703125" stopColor="#EED369" />
-            <stop offset="0.0742187" stopColor="#EDD269" />
-            <stop offset="0.078125" stopColor="#EDD168" />
-            <stop offset="0.0820313" stopColor="#ECD067" />
-            <stop offset="0.0859375" stopColor="#ECD066" />
-            <stop offset="0.0898438" stopColor="#EBCF66" />
-            <stop offset="0.09375" stopColor="#EBCE65" />
-            <stop offset="0.0976562" stopColor="#EACD64" />
-            <stop offset="0.101562" stopColor="#EACC64" />
-            <stop offset="0.105469" stopColor="#E9CC63" />
-            <stop offset="0.109375" stopColor="#E9CB62" />
-            <stop offset="0.113281" stopColor="#E8CA62" />
-            <stop offset="0.117188" stopColor="#E8C961" />
-            <stop offset="0.121094" stopColor="#E7C860" />
-            <stop offset="0.125" stopColor="#E7C85F" />
-            <stop offset="0.128906" stopColor="#E6C75F" />
-            <stop offset="0.132812" stopColor="#E5C65E" />
-            <stop offset="0.136719" stopColor="#E5C55D" />
-            <stop offset="0.140625" stopColor="#E4C45D" />
-            <stop offset="0.144531" stopColor="#E4C35C" />
-            <stop offset="0.148438" stopColor="#E3C35B" />
-            <stop offset="0.152344" stopColor="#E3C25A" />
-            <stop offset="0.15625" stopColor="#E2C15A" />
-            <stop offset="0.160156" stopColor="#E2C059" />
-            <stop offset="0.164062" stopColor="#E1BF58" />
-            <stop offset="0.167969" stopColor="#E1BF58" />
-            <stop offset="0.171875" stopColor="#E0BE57" />
-            <stop offset="0.175781" stopColor="#E0BD56" />
-            <stop offset="0.179688" stopColor="#DFBC56" />
-            <stop offset="0.183594" stopColor="#DFBB55" />
-            <stop offset="0.1875" stopColor="#DEBB54" />
-            <stop offset="0.191406" stopColor="#DDBA53" />
-            <stop offset="0.195313" stopColor="#DDB953" />
-            <stop offset="0.199219" stopColor="#DCB852" />
-            <stop offset="0.203125" stopColor="#DCB751" />
-            <stop offset="0.207031" stopColor="#DBB751" />
-            <stop offset="0.210938" stopColor="#DBB650" />
-            <stop offset="0.214844" stopColor="#DAB54F" />
-            <stop offset="0.21875" stopColor="#DAB44E" />
-            <stop offset="0.222656" stopColor="#D9B34E" />
-            <stop offset="0.226562" stopColor="#D9B34D" />
-            <stop offset="0.230469" stopColor="#D8B24C" />
-            <stop offset="0.234375" stopColor="#D8B14C" />
-            <stop offset="0.238281" stopColor="#D7B04B" />
-            <stop offset="0.242187" stopColor="#D7AF4A" />
-            <stop offset="0.246094" stopColor="#D6AE4A" />
-            <stop offset="0.25" stopColor="#D5AE49" />
-            <stop offset="0.253906" stopColor="#D5AD48" />
-            <stop offset="0.257812" stopColor="#D4AC47" />
-            <stop offset="0.261719" stopColor="#D4AB47" />
-            <stop offset="0.265625" stopColor="#D3AA46" />
-            <stop offset="0.269531" stopColor="#D3AA45" />
-            <stop offset="0.273438" stopColor="#D2A945" />
-            <stop offset="0.277344" stopColor="#D2A844" />
-            <stop offset="0.28125" stopColor="#D1A743" />
-            <stop offset="0.285156" stopColor="#D1A642" />
-            <stop offset="0.289062" stopColor="#D0A642" />
-            <stop offset="0.292969" stopColor="#D0A541" />
-            <stop offset="0.296875" stopColor="#CFA440" />
-            <stop offset="0.300781" stopColor="#CFA340" />
-            <stop offset="0.304688" stopColor="#CEA23F" />
-            <stop offset="0.308594" stopColor="#CDA23E" />
-            <stop offset="0.3125" stopColor="#CDA13E" />
-            <stop offset="0.316406" stopColor="#CCA03D" />
-            <stop offset="0.320313" stopColor="#CC9F3C" />
-            <stop offset="0.324219" stopColor="#CB9E3B" />
-            <stop offset="0.328125" stopColor="#CB9D3B" />
-            <stop offset="0.332031" stopColor="#CA9D3A" />
-            <stop offset="0.335938" stopColor="#CA9C39" />
-            <stop offset="0.339844" stopColor="#C99B39" />
-            <stop offset="0.34375" stopColor="#C99A38" />
-            <stop offset="0.347656" stopColor="#C89937" />
-            <stop offset="0.351563" stopColor="#C89936" />
-            <stop offset="0.355469" stopColor="#C79836" />
-            <stop offset="0.359375" stopColor="#C79735" />
-            <stop offset="0.363281" stopColor="#C69634" />
-            <stop offset="0.367188" stopColor="#C59534" />
-            <stop offset="0.371094" stopColor="#C59533" />
-            <stop offset="0.375" stopColor="#C49432" />
-            <stop offset="0.378906" stopColor="#C49332" />
-            <stop offset="0.382812" stopColor="#C39231" />
-            <stop offset="0.386719" stopColor="#C39130" />
-            <stop offset="0.390625" stopColor="#C2912F" />
-            <stop offset="0.394531" stopColor="#C2902F" />
-            <stop offset="0.398438" stopColor="#C18F2E" />
-            <stop offset="0.402344" stopColor="#C18E2D" />
-            <stop offset="0.40625" stopColor="#C08D2D" />
-            <stop offset="0.410156" stopColor="#C08C2C" />
-            <stop offset="0.414063" stopColor="#BF8C2B" />
-            <stop offset="0.417969" stopColor="#BF8B2A" />
-            <stop offset="0.421875" stopColor="#BE8A2A" />
-            <stop offset="0.425781" stopColor="#BD8929" />
-            <stop offset="0.429688" stopColor="#BD8828" />
-            <stop offset="0.433594" stopColor="#BC8828" />
-            <stop offset="0.4375" stopColor="#BC8727" />
-            <stop offset="0.441406" stopColor="#BD8828" />
-            <stop offset="0.445312" stopColor="#BD8929" />
-            <stop offset="0.449219" stopColor="#BE8A29" />
-            <stop offset="0.453125" stopColor="#BE8B2A" />
-            <stop offset="0.457031" stopColor="#BF8B2B" />
-            <stop offset="0.460937" stopColor="#C08C2C" />
-            <stop offset="0.464844" stopColor="#C08D2D" />
-            <stop offset="0.46875" stopColor="#C18E2D" />
-            <stop offset="0.472656" stopColor="#C18F2E" />
-            <stop offset="0.476562" stopColor="#C2902F" />
-            <stop offset="0.480469" stopColor="#C39130" />
-            <stop offset="0.484375" stopColor="#C39231" />
-            <stop offset="0.488281" stopColor="#C49331" />
-            <stop offset="0.492188" stopColor="#C49432" />
-            <stop offset="0.496094" stopColor="#C59433" />
-            <stop offset="0.5" stopColor="#C59534" />
-            <stop offset="0.503906" stopColor="#C69634" />
-            <stop offset="0.507812" stopColor="#C79735" />
-            <stop offset="0.511719" stopColor="#C79836" />
-            <stop offset="0.515625" stopColor="#C89937" />
-            <stop offset="0.519531" stopColor="#C89A38" />
-            <stop offset="0.523438" stopColor="#C99B38" />
-            <stop offset="0.527344" stopColor="#CA9C39" />
-            <stop offset="0.53125" stopColor="#CA9D3A" />
-            <stop offset="0.535156" stopColor="#CB9E3B" />
-            <stop offset="0.539062" stopColor="#CB9E3C" />
-            <stop offset="0.542969" stopColor="#CC9F3C" />
-            <stop offset="0.546875" stopColor="#CDA03D" />
-            <stop offset="0.550781" stopColor="#CDA13E" />
-            <stop offset="0.554688" stopColor="#CEA23F" />
-            <stop offset="0.558594" stopColor="#CEA33F" />
-            <stop offset="0.5625" stopColor="#CFA440" />
-            <stop offset="0.566406" stopColor="#D0A541" />
-            <stop offset="0.570312" stopColor="#D0A642" />
-            <stop offset="0.574219" stopColor="#D1A743" />
-            <stop offset="0.578125" stopColor="#D1A743" />
-            <stop offset="0.582031" stopColor="#D2A844" />
-            <stop offset="0.585938" stopColor="#D3A945" />
-            <stop offset="0.589844" stopColor="#D3AA46" />
-            <stop offset="0.59375" stopColor="#D4AB47" />
-            <stop offset="0.597656" stopColor="#D4AC47" />
-            <stop offset="0.601562" stopColor="#D5AD48" />
-            <stop offset="0.605469" stopColor="#D6AE49" />
-            <stop offset="0.609375" stopColor="#D6AF4A" />
-            <stop offset="0.613281" stopColor="#D7B04B" />
-            <stop offset="0.617188" stopColor="#D7B04B" />
-            <stop offset="0.621094" stopColor="#D8B14C" />
-            <stop offset="0.625" stopColor="#D9B24D" />
-            <stop offset="0.628906" stopColor="#D9B34E" />
-            <stop offset="0.632813" stopColor="#DAB44E" />
-            <stop offset="0.636719" stopColor="#DAB54F" />
-            <stop offset="0.640625" stopColor="#DBB650" />
-            <stop offset="0.644531" stopColor="#DBB751" />
-            <stop offset="0.648438" stopColor="#DCB852" />
-            <stop offset="0.652344" stopColor="#DDB952" />
-            <stop offset="0.65625" stopColor="#DDBA53" />
-            <stop offset="0.660156" stopColor="#DEBA54" />
-            <stop offset="0.664062" stopColor="#DEBB55" />
-            <stop offset="0.667969" stopColor="#DFBC56" />
-            <stop offset="0.671875" stopColor="#E0BD56" />
-            <stop offset="0.675781" stopColor="#E0BE57" />
-            <stop offset="0.679688" stopColor="#E1BF58" />
-            <stop offset="0.683594" stopColor="#E1C059" />
-            <stop offset="0.6875" stopColor="#E2C15A" />
-            <stop offset="0.691406" stopColor="#E3C25A" />
-            <stop offset="0.695313" stopColor="#E3C35B" />
-            <stop offset="0.699219" stopColor="#E4C35C" />
-            <stop offset="0.703125" stopColor="#E4C45D" />
-            <stop offset="0.707031" stopColor="#E5C55D" />
-            <stop offset="0.710938" stopColor="#E6C65E" />
-            <stop offset="0.714844" stopColor="#E6C75F" />
-            <stop offset="0.71875" stopColor="#E7C860" />
-            <stop offset="0.722656" stopColor="#E7C961" />
-            <stop offset="0.726563" stopColor="#E8CA61" />
-            <stop offset="0.730469" stopColor="#E9CB62" />
-            <stop offset="0.734375" stopColor="#E9CC63" />
-            <stop offset="0.738281" stopColor="#EACC64" />
-            <stop offset="0.742188" stopColor="#EACD65" />
-            <stop offset="0.746094" stopColor="#EBCE65" />
-            <stop offset="0.75" stopColor="#ECCF66" />
-            <stop offset="0.753906" stopColor="#ECD067" />
-            <stop offset="0.757812" stopColor="#EDD168" />
-            <stop offset="0.761719" stopColor="#EDD268" />
-            <stop offset="0.765625" stopColor="#EED369" />
-            <stop offset="0.769531" stopColor="#EFD46A" />
-            <stop offset="0.773438" stopColor="#EFD56B" />
-            <stop offset="0.777344" stopColor="#F0D66C" />
-            <stop offset="0.78125" stopColor="#F0D66C" />
-            <stop offset="0.785156" stopColor="#F1D76D" />
-            <stop offset="0.789062" stopColor="#F1D86E" />
-            <stop offset="0.792969" stopColor="#F2D96F" />
-            <stop offset="0.796875" stopColor="#F3DA70" />
-            <stop offset="0.800781" stopColor="#F3DB70" />
-            <stop offset="0.804688" stopColor="#F4DC71" />
-            <stop offset="0.808594" stopColor="#F4DD72" />
-            <stop offset="0.8125" stopColor="#F5DE73" />
-            <stop offset="0.816406" stopColor="#F6DF74" />
-            <stop offset="0.820312" stopColor="#F6DF74" />
-            <stop offset="0.824219" stopColor="#F7E075" />
-            <stop offset="0.828125" stopColor="#F7E176" />
-            <stop offset="0.832031" stopColor="#F8E277" />
-            <stop offset="0.835938" stopColor="#F9E377" />
-            <stop offset="0.839844" stopColor="#F9E478" />
-            <stop offset="0.84375" stopColor="#FAE579" />
-            <stop offset="0.847656" stopColor="#FAE57A" />
-            <stop offset="0.851563" stopColor="#FAE67B" />
-            <stop offset="0.855469" stopColor="#FAE67D" />
-            <stop offset="0.859375" stopColor="#FAE77E" />
-            <stop offset="0.863281" stopColor="#FAE77F" />
-            <stop offset="0.867188" stopColor="#FAE880" />
-            <stop offset="0.871094" stopColor="#FBE882" />
-            <stop offset="0.875" stopColor="#FBE883" />
-            <stop offset="0.878906" stopColor="#FBE984" />
-            <stop offset="0.882812" stopColor="#FBE985" />
-            <stop offset="0.886719" stopColor="#FBEA86" />
-            <stop offset="0.890625" stopColor="#FBEA88" />
-            <stop offset="0.894531" stopColor="#FBEB89" />
-            <stop offset="0.898438" stopColor="#FBEB8A" />
-            <stop offset="0.902344" stopColor="#FBEB8B" />
-            <stop offset="0.90625" stopColor="#FCEC8D" />
-            <stop offset="0.910156" stopColor="#FCEC8E" />
-            <stop offset="0.914062" stopColor="#FCED8F" />
-            <stop offset="0.917969" stopColor="#FCED90" />
-            <stop offset="0.921875" stopColor="#FCEE92" />
-            <stop offset="0.925781" stopColor="#FCEE93" />
-            <stop offset="0.929688" stopColor="#FCEE94" />
-            <stop offset="0.933594" stopColor="#FCEF95" />
-            <stop offset="0.9375" stopColor="#FCEF96" />
-            <stop offset="0.941406" stopColor="#FCF098" />
-            <stop offset="0.945312" stopColor="#FDF099" />
-            <stop offset="0.949219" stopColor="#FDF19A" />
+            <stop stopColor="#FCED8F" />
+            <stop offset="0.00390625" stopColor="#FCEC8D" />
+            <stop offset="0.0078125" stopColor="#FBEB8A" />
+            <stop offset="0.0117187" stopColor="#FBEA88" />
+            <stop offset="0.015625" stopColor="#FBE986" />
+            <stop offset="0.0195312" stopColor="#FBE983" />
+            <stop offset="0.0234375" stopColor="#FBE881" />
+            <stop offset="0.0273437" stopColor="#FAE77F" />
+            <stop offset="0.03125" stopColor="#FAE67C" />
+            <stop offset="0.0351562" stopColor="#FAE57A" />
+            <stop offset="0.0390625" stopColor="#FAE479" />
+            <stop offset="0.0429687" stopColor="#F9E478" />
+            <stop offset="0.046875" stopColor="#F8E377" />
+            <stop offset="0.0507812" stopColor="#F8E276" />
+            <stop offset="0.0546875" stopColor="#F7E176" />
+            <stop offset="0.0585937" stopColor="#F7E075" />
+            <stop offset="0.0625" stopColor="#F6DF74" />
+            <stop offset="0.0664062" stopColor="#F6DE73" />
+            <stop offset="0.0703125" stopColor="#F5DE73" />
+            <stop offset="0.0742187" stopColor="#F4DD72" />
+            <stop offset="0.078125" stopColor="#F4DC71" />
+            <stop offset="0.0820312" stopColor="#F3DB70" />
+            <stop offset="0.0859375" stopColor="#F3DA70" />
+            <stop offset="0.0898437" stopColor="#F2D96F" />
+            <stop offset="0.09375" stopColor="#F2D86E" />
+            <stop offset="0.0976562" stopColor="#F1D86D" />
+            <stop offset="0.101562" stopColor="#F1D76D" />
+            <stop offset="0.105469" stopColor="#F0D66C" />
+            <stop offset="0.109375" stopColor="#EFD56B" />
+            <stop offset="0.113281" stopColor="#EFD46A" />
+            <stop offset="0.117187" stopColor="#EED36A" />
+            <stop offset="0.121094" stopColor="#EED269" />
+            <stop offset="0.125" stopColor="#EDD268" />
+            <stop offset="0.128906" stopColor="#EDD167" />
+            <stop offset="0.132812" stopColor="#ECD067" />
+            <stop offset="0.136719" stopColor="#EBCF66" />
+            <stop offset="0.140625" stopColor="#EBCE65" />
+            <stop offset="0.144531" stopColor="#EACD65" />
+            <stop offset="0.148437" stopColor="#EACD64" />
+            <stop offset="0.152344" stopColor="#E9CC63" />
+            <stop offset="0.15625" stopColor="#E9CB62" />
+            <stop offset="0.160156" stopColor="#E8CA62" />
+            <stop offset="0.164062" stopColor="#E8C961" />
+            <stop offset="0.167969" stopColor="#E7C860" />
+            <stop offset="0.171875" stopColor="#E6C75F" />
+            <stop offset="0.175781" stopColor="#E6C75F" />
+            <stop offset="0.179687" stopColor="#E5C65E" />
+            <stop offset="0.183594" stopColor="#E5C55D" />
+            <stop offset="0.1875" stopColor="#E4C45C" />
+            <stop offset="0.191406" stopColor="#E4C35C" />
+            <stop offset="0.195312" stopColor="#E3C25B" />
+            <stop offset="0.199219" stopColor="#E2C15A" />
+            <stop offset="0.203125" stopColor="#E2C159" />
+            <stop offset="0.207031" stopColor="#E1C059" />
+            <stop offset="0.210937" stopColor="#E1BF58" />
+            <stop offset="0.214844" stopColor="#E0BE57" />
+            <stop offset="0.21875" stopColor="#E0BD56" />
+            <stop offset="0.222656" stopColor="#DFBC56" />
+            <stop offset="0.226562" stopColor="#DFBB55" />
+            <stop offset="0.230469" stopColor="#DEBB54" />
+            <stop offset="0.234375" stopColor="#DDBA53" />
+            <stop offset="0.238281" stopColor="#DDB953" />
+            <stop offset="0.242187" stopColor="#DCB852" />
+            <stop offset="0.246094" stopColor="#DCB751" />
+            <stop offset="0.25" stopColor="#DBB650" />
+            <stop offset="0.253906" stopColor="#DBB550" />
+            <stop offset="0.257812" stopColor="#DAB54F" />
+            <stop offset="0.261719" stopColor="#D9B44E" />
+            <stop offset="0.265625" stopColor="#D9B34D" />
+            <stop offset="0.269531" stopColor="#D8B24D" />
+            <stop offset="0.273438" stopColor="#D8B14C" />
+            <stop offset="0.277344" stopColor="#D7B04B" />
+            <stop offset="0.28125" stopColor="#D7AF4A" />
+            <stop offset="0.285156" stopColor="#D6AF4A" />
+            <stop offset="0.289062" stopColor="#D6AE49" />
+            <stop offset="0.292969" stopColor="#D5AD48" />
+            <stop offset="0.296875" stopColor="#D4AC47" />
+            <stop offset="0.300781" stopColor="#D4AB47" />
+            <stop offset="0.304688" stopColor="#D3AA46" />
+            <stop offset="0.308594" stopColor="#D3A945" />
+            <stop offset="0.3125" stopColor="#D2A944" />
+            <stop offset="0.316406" stopColor="#D2A844" />
+            <stop offset="0.320312" stopColor="#D1A743" />
+            <stop offset="0.324219" stopColor="#D0A642" />
+            <stop offset="0.328125" stopColor="#D0A541" />
+            <stop offset="0.332031" stopColor="#CFA441" />
+            <stop offset="0.335938" stopColor="#CFA440" />
+            <stop offset="0.339844" stopColor="#CEA33F" />
+            <stop offset="0.34375" stopColor="#CEA23F" />
+            <stop offset="0.347656" stopColor="#CDA13E" />
+            <stop offset="0.351562" stopColor="#CDA03D" />
+            <stop offset="0.355469" stopColor="#CC9F3C" />
+            <stop offset="0.359375" stopColor="#CB9E3C" />
+            <stop offset="0.363281" stopColor="#CB9E3B" />
+            <stop offset="0.367188" stopColor="#CA9D3A" />
+            <stop offset="0.371094" stopColor="#CA9C39" />
+            <stop offset="0.375" stopColor="#C99B39" />
+            <stop offset="0.378906" stopColor="#C99A38" />
+            <stop offset="0.382812" stopColor="#C89937" />
+            <stop offset="0.386719" stopColor="#C79836" />
+            <stop offset="0.390625" stopColor="#C79836" />
+            <stop offset="0.394531" stopColor="#C69735" />
+            <stop offset="0.398438" stopColor="#C69634" />
+            <stop offset="0.402344" stopColor="#C59533" />
+            <stop offset="0.40625" stopColor="#C59433" />
+            <stop offset="0.410156" stopColor="#C49332" />
+            <stop offset="0.414062" stopColor="#C49231" />
+            <stop offset="0.417969" stopColor="#C39230" />
+            <stop offset="0.421875" stopColor="#C29130" />
+            <stop offset="0.425781" stopColor="#C2902F" />
+            <stop offset="0.429688" stopColor="#C18F2E" />
+            <stop offset="0.433594" stopColor="#C18E2D" />
+            <stop offset="0.4375" stopColor="#C08D2D" />
+            <stop offset="0.441406" stopColor="#C08C2C" />
+            <stop offset="0.445312" stopColor="#BF8C2B" />
+            <stop offset="0.449219" stopColor="#BE8B2A" />
+            <stop offset="0.453125" stopColor="#BE8A2A" />
+            <stop offset="0.457031" stopColor="#BD8929" />
+            <stop offset="0.460938" stopColor="#BD8828" />
+            <stop offset="0.46875" stopColor="#BD8828" />
+            <stop offset="0.472656" stopColor="#BD8828" />
+            <stop offset="0.476562" stopColor="#BD8929" />
+            <stop offset="0.480469" stopColor="#BE8A2A" />
+            <stop offset="0.484375" stopColor="#BF8B2B" />
+            <stop offset="0.488281" stopColor="#BF8C2C" />
+            <stop offset="0.492187" stopColor="#C08D2C" />
+            <stop offset="0.496094" stopColor="#C18E2D" />
+            <stop offset="0.5" stopColor="#C18F2E" />
+            <stop offset="0.503906" stopColor="#C2902F" />
+            <stop offset="0.507812" stopColor="#C39130" />
+            <stop offset="0.511719" stopColor="#C39231" />
+            <stop offset="0.515625" stopColor="#C49331" />
+            <stop offset="0.519531" stopColor="#C49432" />
+            <stop offset="0.523437" stopColor="#C59533" />
+            <stop offset="0.527344" stopColor="#C69634" />
+            <stop offset="0.53125" stopColor="#C69735" />
+            <stop offset="0.535156" stopColor="#C79836" />
+            <stop offset="0.539062" stopColor="#C89836" />
+            <stop offset="0.542969" stopColor="#C89937" />
+            <stop offset="0.546875" stopColor="#C99A38" />
+            <stop offset="0.550781" stopColor="#C99B39" />
+            <stop offset="0.554688" stopColor="#CA9C3A" />
+            <stop offset="0.558594" stopColor="#CB9D3B" />
+            <stop offset="0.5625" stopColor="#CB9E3B" />
+            <stop offset="0.566406" stopColor="#CC9F3C" />
+            <stop offset="0.570312" stopColor="#CDA03D" />
+            <stop offset="0.574219" stopColor="#CDA13E" />
+            <stop offset="0.578125" stopColor="#CEA23F" />
+            <stop offset="0.582031" stopColor="#CEA340" />
+            <stop offset="0.585938" stopColor="#CFA440" />
+            <stop offset="0.589844" stopColor="#D0A541" />
+            <stop offset="0.59375" stopColor="#D0A642" />
+            <stop offset="0.597656" stopColor="#D1A743" />
+            <stop offset="0.601563" stopColor="#D2A844" />
+            <stop offset="0.605469" stopColor="#D2A945" />
+            <stop offset="0.609375" stopColor="#D3AA45" />
+            <stop offset="0.613281" stopColor="#D3AB46" />
+            <stop offset="0.617188" stopColor="#D4AC47" />
+            <stop offset="0.621094" stopColor="#D5AD48" />
+            <stop offset="0.625" stopColor="#D5AD49" />
+            <stop offset="0.628906" stopColor="#D6AE4A" />
+            <stop offset="0.632812" stopColor="#D7AF4A" />
+            <stop offset="0.636719" stopColor="#D7B04B" />
+            <stop offset="0.640625" stopColor="#D8B14C" />
+            <stop offset="0.644531" stopColor="#D8B24D" />
+            <stop offset="0.648437" stopColor="#D9B34E" />
+            <stop offset="0.652344" stopColor="#DAB44F" />
+            <stop offset="0.65625" stopColor="#DAB54F" />
+            <stop offset="0.660156" stopColor="#DBB650" />
+            <stop offset="0.664062" stopColor="#DCB751" />
+            <stop offset="0.667969" stopColor="#DCB852" />
+            <stop offset="0.671875" stopColor="#DDB953" />
+            <stop offset="0.675781" stopColor="#DDBA53" />
+            <stop offset="0.679688" stopColor="#DEBB54" />
+            <stop offset="0.683594" stopColor="#DFBC55" />
+            <stop offset="0.6875" stopColor="#DFBD56" />
+            <stop offset="0.691406" stopColor="#E0BE57" />
+            <stop offset="0.695312" stopColor="#E1BF58" />
+            <stop offset="0.699219" stopColor="#E1C058" />
+            <stop offset="0.703125" stopColor="#E2C159" />
+            <stop offset="0.707031" stopColor="#E3C15A" />
+            <stop offset="0.710938" stopColor="#E3C25B" />
+            <stop offset="0.714844" stopColor="#E4C35C" />
+            <stop offset="0.71875" stopColor="#E4C45D" />
+            <stop offset="0.722656" stopColor="#E5C55D" />
+            <stop offset="0.726563" stopColor="#E6C65E" />
+            <stop offset="0.730469" stopColor="#E6C75F" />
+            <stop offset="0.734375" stopColor="#E7C860" />
+            <stop offset="0.738281" stopColor="#E8C961" />
+            <stop offset="0.742188" stopColor="#E8CA62" />
+            <stop offset="0.746094" stopColor="#E9CB62" />
+            <stop offset="0.75" stopColor="#E9CC63" />
+            <stop offset="0.753906" stopColor="#EACD64" />
+            <stop offset="0.757812" stopColor="#EBCE65" />
+            <stop offset="0.761719" stopColor="#EBCF66" />
+            <stop offset="0.765625" stopColor="#ECD067" />
+            <stop offset="0.769531" stopColor="#EDD167" />
+            <stop offset="0.773437" stopColor="#EDD268" />
+            <stop offset="0.777344" stopColor="#EED369" />
+            <stop offset="0.78125" stopColor="#EED46A" />
+            <stop offset="0.785156" stopColor="#EFD56B" />
+            <stop offset="0.789062" stopColor="#F0D66C" />
+            <stop offset="0.792969" stopColor="#F0D66C" />
+            <stop offset="0.796875" stopColor="#F1D76D" />
+            <stop offset="0.800781" stopColor="#F2D86E" />
+            <stop offset="0.804688" stopColor="#F2D96F" />
+            <stop offset="0.808594" stopColor="#F3DA70" />
+            <stop offset="0.8125" stopColor="#F3DB71" />
+            <stop offset="0.816406" stopColor="#F4DC71" />
+            <stop offset="0.820312" stopColor="#F5DD72" />
+            <stop offset="0.824219" stopColor="#F5DE73" />
+            <stop offset="0.828125" stopColor="#F6DF74" />
+            <stop offset="0.832031" stopColor="#F7E075" />
+            <stop offset="0.835938" stopColor="#F7E176" />
+            <stop offset="0.839844" stopColor="#F8E276" />
+            <stop offset="0.84375" stopColor="#F8E377" />
+            <stop offset="0.847656" stopColor="#F9E478" />
+            <stop offset="0.851563" stopColor="#FAE579" />
+            <stop offset="0.855469" stopColor="#FAE57A" />
+            <stop offset="0.859375" stopColor="#FAE67B" />
+            <stop offset="0.863281" stopColor="#FAE67D" />
+            <stop offset="0.867188" stopColor="#FAE77E" />
+            <stop offset="0.871094" stopColor="#FAE77F" />
+            <stop offset="0.875" stopColor="#FBE881" />
+            <stop offset="0.878906" stopColor="#FBE882" />
+            <stop offset="0.882812" stopColor="#FBE983" />
+            <stop offset="0.886719" stopColor="#FBE984" />
+            <stop offset="0.890625" stopColor="#FBE986" />
+            <stop offset="0.894531" stopColor="#FBEA87" />
+            <stop offset="0.898437" stopColor="#FBEA88" />
+            <stop offset="0.902344" stopColor="#FBEB8A" />
+            <stop offset="0.90625" stopColor="#FBEB8B" />
+            <stop offset="0.910156" stopColor="#FBEC8C" />
+            <stop offset="0.914062" stopColor="#FCEC8E" />
+            <stop offset="0.917969" stopColor="#FCED8F" />
+            <stop offset="0.921875" stopColor="#FCED90" />
+            <stop offset="0.925781" stopColor="#FCED91" />
+            <stop offset="0.929688" stopColor="#FCEE93" />
+            <stop offset="0.933594" stopColor="#FCEE94" />
+            <stop offset="0.9375" stopColor="#FCEF95" />
+            <stop offset="0.941406" stopColor="#FCEF97" />
+            <stop offset="0.945312" stopColor="#FCF098" />
+            <stop offset="0.949219" stopColor="#FDF099" />
             <stop offset="0.953125" stopColor="#FDF19B" />
-            <stop offset="0.957031" stopColor="#FDF19D" />
-            <stop offset="0.960938" stopColor="#FDF29E" />
-            <stop offset="0.964844" stopColor="#FDF29F" />
-            <stop offset="0.96875" stopColor="#FDF3A0" />
-            <stop offset="0.972656" stopColor="#FDF3A2" />
-            <stop offset="0.976562" stopColor="#FDF4A3" />
+            <stop offset="0.957031" stopColor="#FDF19C" />
+            <stop offset="0.960938" stopColor="#FDF29D" />
+            <stop offset="0.964844" stopColor="#FDF29E" />
+            <stop offset="0.96875" stopColor="#FDF2A0" />
+            <stop offset="0.972656" stopColor="#FDF3A1" />
+            <stop offset="0.976563" stopColor="#FDF3A2" />
             <stop offset="0.980469" stopColor="#FDF4A4" />
             <stop offset="0.984375" stopColor="#FEF4A5" />
             <stop offset="0.988281" stopColor="#FEF5A6" />
@@ -1590,798 +1451,798 @@ const CertificateContent = ({
           </linearGradient>
           <linearGradient
             id="paint5_linear_54_75"
-            x1="1121.57"
-            y1="33.0215"
-            x2="727.976"
-            y2="33.0215"
+            x1="1122.59"
+            y1="23.8553"
+            x2="784.661"
+            y2="23.8553"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stopColor="#950E12" />
-            <stop offset="0.00390625" stopColor="#970F12" />
-            <stop offset="0.0078125" stopColor="#9A0F13" />
-            <stop offset="0.0117188" stopColor="#9C1014" />
-            <stop offset="0.015625" stopColor="#9E1014" />
-            <stop offset="0.0195313" stopColor="#A11115" />
-            <stop offset="0.0234375" stopColor="#A31116" />
-            <stop offset="0.0273438" stopColor="#A51216" />
-            <stop offset="0.03125" stopColor="#A71217" />
-            <stop offset="0.0351563" stopColor="#AA1318" />
-            <stop offset="0.0390625" stopColor="#AC1418" />
-            <stop offset="0.0429688" stopColor="#AE1419" />
-            <stop offset="0.046875" stopColor="#B1151A" />
-            <stop offset="0.0507812" stopColor="#B3151A" />
-            <stop offset="0.0546875" stopColor="#B5161B" />
-            <stop offset="0.0585938" stopColor="#B7161C" />
-            <stop offset="0.0625" stopColor="#BA171C" />
-            <stop offset="0.0664062" stopColor="#BC171D" />
-            <stop offset="0.0703125" stopColor="#BE181E" />
-            <stop offset="0.0742188" stopColor="#C1181E" />
-            <stop offset="0.078125" stopColor="#C3191F" />
-            <stop offset="0.0820312" stopColor="#C51920" />
-            <stop offset="0.0859375" stopColor="#C81A20" />
-            <stop offset="0.0898438" stopColor="#CA1A21" />
-            <stop offset="0.09375" stopColor="#CC1B22" />
-            <stop offset="0.0976562" stopColor="#CE1B22" />
-            <stop offset="0.101562" stopColor="#D11C23" />
-            <stop offset="0.105469" stopColor="#D31D24" />
-            <stop offset="0.109375" stopColor="#D51D24" />
-            <stop offset="0.113281" stopColor="#D81E25" />
-            <stop offset="0.117188" stopColor="#DA1E26" />
-            <stop offset="0.121094" stopColor="#DC1F26" />
-            <stop offset="0.125" stopColor="#DF1F27" />
-            <stop offset="0.128906" stopColor="#E12028" />
-            <stop offset="0.132812" stopColor="#E32028" />
-            <stop offset="0.136719" stopColor="#E42028" />
-            <stop offset="0.140625" stopColor="#E52129" />
-            <stop offset="0.144531" stopColor="#E32028" />
-            <stop offset="0.148438" stopColor="#E12028" />
-            <stop offset="0.152344" stopColor="#E01F27" />
-            <stop offset="0.15625" stopColor="#DE1F27" />
-            <stop offset="0.160156" stopColor="#DC1F26" />
-            <stop offset="0.164062" stopColor="#DB1E26" />
-            <stop offset="0.167969" stopColor="#D91E25" />
-            <stop offset="0.171875" stopColor="#D71E25" />
-            <stop offset="0.175781" stopColor="#D61D24" />
-            <stop offset="0.179687" stopColor="#D41D24" />
-            <stop offset="0.183594" stopColor="#D21C23" />
-            <stop offset="0.1875" stopColor="#D11C23" />
-            <stop offset="0.191406" stopColor="#CF1C22" />
-            <stop offset="0.195313" stopColor="#CD1B22" />
-            <stop offset="0.199219" stopColor="#CC1B21" />
-            <stop offset="0.203125" stopColor="#CA1A21" />
-            <stop offset="0.207031" stopColor="#C81A21" />
-            <stop offset="0.210938" stopColor="#C71A20" />
-            <stop offset="0.214844" stopColor="#C51920" />
-            <stop offset="0.21875" stopColor="#C3191F" />
-            <stop offset="0.222656" stopColor="#C2191F" />
-            <stop offset="0.226563" stopColor="#C0181E" />
-            <stop offset="0.230469" stopColor="#BE181E" />
-            <stop offset="0.234375" stopColor="#BD171D" />
-            <stop offset="0.238281" stopColor="#BB171D" />
-            <stop offset="0.242188" stopColor="#B9171C" />
-            <stop offset="0.246094" stopColor="#B8161C" />
-            <stop offset="0.25" stopColor="#B6161B" />
-            <stop offset="0.253906" stopColor="#B4151B" />
-            <stop offset="0.257812" stopColor="#B3151A" />
-            <stop offset="0.261719" stopColor="#B1151A" />
-            <stop offset="0.265625" stopColor="#AF1419" />
-            <stop offset="0.269531" stopColor="#AE1419" />
-            <stop offset="0.273438" stopColor="#AC1418" />
-            <stop offset="0.277344" stopColor="#AA1318" />
-            <stop offset="0.28125" stopColor="#A81317" />
-            <stop offset="0.285156" stopColor="#A71217" />
-            <stop offset="0.289062" stopColor="#A51216" />
-            <stop offset="0.292969" stopColor="#A31216" />
-            <stop offset="0.296875" stopColor="#A21115" />
-            <stop offset="0.300781" stopColor="#A01115" />
-            <stop offset="0.304688" stopColor="#9E1015" />
-            <stop offset="0.308594" stopColor="#9D1014" />
-            <stop offset="0.3125" stopColor="#9B1014" />
-            <stop offset="0.316406" stopColor="#990F13" />
-            <stop offset="0.320312" stopColor="#980F13" />
-            <stop offset="0.324219" stopColor="#960F12" />
-            <stop offset="0.328125" stopColor="#940E12" />
-            <stop offset="0.332031" stopColor="#930E11" />
-            <stop offset="0.335938" stopColor="#910D11" />
-            <stop offset="0.339844" stopColor="#8F0D10" />
-            <stop offset="0.34375" stopColor="#8E0D10" />
-            <stop offset="0.347656" stopColor="#8C0C0F" />
-            <stop offset="0.351562" stopColor="#8A0C0F" />
-            <stop offset="0.355469" stopColor="#890B0E" />
-            <stop offset="0.359375" stopColor="#870B0E" />
-            <stop offset="0.363281" stopColor="#850B0D" />
-            <stop offset="0.367188" stopColor="#840A0D" />
-            <stop offset="0.371094" stopColor="#820A0C" />
-            <stop offset="0.375" stopColor="#800A0C" />
-            <stop offset="0.378906" stopColor="#7F090B" />
-            <stop offset="0.382813" stopColor="#7D090B" />
-            <stop offset="0.386719" stopColor="#7B080A" />
-            <stop offset="0.390625" stopColor="#7A080A" />
-            <stop offset="0.394531" stopColor="#780809" />
-            <stop offset="0.398438" stopColor="#760709" />
-            <stop offset="0.402344" stopColor="#750709" />
-            <stop offset="0.40625" stopColor="#730608" />
-            <stop offset="0.410156" stopColor="#710608" />
-            <stop offset="0.414062" stopColor="#700607" />
-            <stop offset="0.417969" stopColor="#6E0507" />
-            <stop offset="0.421875" stopColor="#6C0506" />
-            <stop offset="0.425781" stopColor="#6B0506" />
-            <stop offset="0.429688" stopColor="#690405" />
-            <stop offset="0.433594" stopColor="#670405" />
-            <stop offset="0.4375" stopColor="#660304" />
-            <stop offset="0.441406" stopColor="#640304" />
-            <stop offset="0.445313" stopColor="#620303" />
-            <stop offset="0.449219" stopColor="#610203" />
-            <stop offset="0.453125" stopColor="#5F0202" />
-            <stop offset="0.457031" stopColor="#5D0102" />
-            <stop offset="0.460938" stopColor="#5C0101" />
-            <stop offset="0.464844" stopColor="#5A0101" />
-            <stop offset="0.46875" stopColor="#580000" />
-            <stop offset="0.472656" stopColor="#590001" />
-            <stop offset="0.476562" stopColor="#590101" />
-            <stop offset="0.480469" stopColor="#5B0101" />
-            <stop offset="0.484375" stopColor="#5D0102" />
+            <stop stopColor="#6C0506" />
+            <stop offset="0.00390625" stopColor="#6E0507" />
+            <stop offset="0.0078125" stopColor="#710607" />
+            <stop offset="0.0117187" stopColor="#730708" />
+            <stop offset="0.015625" stopColor="#760709" />
+            <stop offset="0.0195312" stopColor="#78080A" />
+            <stop offset="0.0234375" stopColor="#7B080A" />
+            <stop offset="0.0273437" stopColor="#7D090B" />
+            <stop offset="0.03125" stopColor="#80090C" />
+            <stop offset="0.0351562" stopColor="#820A0C" />
+            <stop offset="0.0390625" stopColor="#850A0D" />
+            <stop offset="0.0429688" stopColor="#870B0E" />
+            <stop offset="0.046875" stopColor="#8A0C0F" />
+            <stop offset="0.0507812" stopColor="#8C0C0F" />
+            <stop offset="0.0546875" stopColor="#8E0D10" />
+            <stop offset="0.0585937" stopColor="#910D11" />
+            <stop offset="0.0625" stopColor="#930E11" />
+            <stop offset="0.0664062" stopColor="#960E12" />
+            <stop offset="0.0703125" stopColor="#980F13" />
+            <stop offset="0.0742187" stopColor="#9B1013" />
+            <stop offset="0.078125" stopColor="#9D1014" />
+            <stop offset="0.0820312" stopColor="#A01115" />
+            <stop offset="0.0859375" stopColor="#A21116" />
+            <stop offset="0.0898437" stopColor="#A51216" />
+            <stop offset="0.09375" stopColor="#A71217" />
+            <stop offset="0.0976562" stopColor="#A91318" />
+            <stop offset="0.101562" stopColor="#AC1418" />
+            <stop offset="0.105469" stopColor="#AE1419" />
+            <stop offset="0.109375" stopColor="#B1151A" />
+            <stop offset="0.113281" stopColor="#B3151A" />
+            <stop offset="0.117187" stopColor="#B6161B" />
+            <stop offset="0.121094" stopColor="#B8161C" />
+            <stop offset="0.125" stopColor="#BB171D" />
+            <stop offset="0.128906" stopColor="#BD171D" />
+            <stop offset="0.132812" stopColor="#C0181E" />
+            <stop offset="0.136719" stopColor="#C2191F" />
+            <stop offset="0.140625" stopColor="#C4191F" />
+            <stop offset="0.144531" stopColor="#C71A20" />
+            <stop offset="0.148438" stopColor="#C91A21" />
+            <stop offset="0.152344" stopColor="#CC1B22" />
+            <stop offset="0.15625" stopColor="#CE1B22" />
+            <stop offset="0.160156" stopColor="#D11C23" />
+            <stop offset="0.164062" stopColor="#D31D24" />
+            <stop offset="0.167969" stopColor="#D61D24" />
+            <stop offset="0.171875" stopColor="#D81E25" />
+            <stop offset="0.175781" stopColor="#DB1E26" />
+            <stop offset="0.179687" stopColor="#DD1F26" />
+            <stop offset="0.183594" stopColor="#E01F27" />
+            <stop offset="0.1875" stopColor="#E22028" />
+            <stop offset="0.191406" stopColor="#E42028" />
+            <stop offset="0.195312" stopColor="#E52129" />
+            <stop offset="0.199219" stopColor="#E42028" />
+            <stop offset="0.203125" stopColor="#E22028" />
+            <stop offset="0.207031" stopColor="#E02027" />
+            <stop offset="0.210937" stopColor="#DE1F27" />
+            <stop offset="0.214844" stopColor="#DC1F26" />
+            <stop offset="0.21875" stopColor="#DB1E26" />
+            <stop offset="0.222656" stopColor="#D91E25" />
+            <stop offset="0.226562" stopColor="#D71D25" />
+            <stop offset="0.230469" stopColor="#D51D24" />
+            <stop offset="0.234375" stopColor="#D31D24" />
+            <stop offset="0.238281" stopColor="#D21C23" />
+            <stop offset="0.242187" stopColor="#D01C23" />
+            <stop offset="0.246094" stopColor="#CE1B22" />
+            <stop offset="0.25" stopColor="#CC1B22" />
+            <stop offset="0.253906" stopColor="#CB1B21" />
+            <stop offset="0.257812" stopColor="#C91A21" />
+            <stop offset="0.261719" stopColor="#C71A20" />
+            <stop offset="0.265625" stopColor="#C51920" />
+            <stop offset="0.269531" stopColor="#C3191F" />
+            <stop offset="0.273438" stopColor="#C2191F" />
+            <stop offset="0.277344" stopColor="#C0181E" />
+            <stop offset="0.28125" stopColor="#BE181E" />
+            <stop offset="0.285156" stopColor="#BC171D" />
+            <stop offset="0.289062" stopColor="#BA171D" />
+            <stop offset="0.292969" stopColor="#B9161C" />
+            <stop offset="0.296875" stopColor="#B7161C" />
+            <stop offset="0.300781" stopColor="#B5161B" />
+            <stop offset="0.304688" stopColor="#B3151A" />
+            <stop offset="0.308594" stopColor="#B1151A" />
+            <stop offset="0.3125" stopColor="#B01419" />
+            <stop offset="0.316406" stopColor="#AE1419" />
+            <stop offset="0.320312" stopColor="#AC1418" />
+            <stop offset="0.324219" stopColor="#AA1318" />
+            <stop offset="0.328125" stopColor="#A81317" />
+            <stop offset="0.332031" stopColor="#A71217" />
+            <stop offset="0.335937" stopColor="#A51216" />
+            <stop offset="0.339844" stopColor="#A31216" />
+            <stop offset="0.34375" stopColor="#A11115" />
+            <stop offset="0.347656" stopColor="#A01115" />
+            <stop offset="0.351562" stopColor="#9E1014" />
+            <stop offset="0.355469" stopColor="#9C1014" />
+            <stop offset="0.359375" stopColor="#9A0F13" />
+            <stop offset="0.363281" stopColor="#980F13" />
+            <stop offset="0.367188" stopColor="#970F12" />
+            <stop offset="0.371094" stopColor="#950E12" />
+            <stop offset="0.375" stopColor="#930E11" />
+            <stop offset="0.378906" stopColor="#910D11" />
+            <stop offset="0.382812" stopColor="#8F0D10" />
+            <stop offset="0.386719" stopColor="#8E0D10" />
+            <stop offset="0.390625" stopColor="#8C0C0F" />
+            <stop offset="0.394531" stopColor="#8A0C0F" />
+            <stop offset="0.398437" stopColor="#880B0E" />
+            <stop offset="0.402344" stopColor="#860B0E" />
+            <stop offset="0.40625" stopColor="#850B0D" />
+            <stop offset="0.410156" stopColor="#830A0D" />
+            <stop offset="0.414062" stopColor="#810A0C" />
+            <stop offset="0.417969" stopColor="#7F090C" />
+            <stop offset="0.421875" stopColor="#7E090B" />
+            <stop offset="0.425781" stopColor="#7C080B" />
+            <stop offset="0.429687" stopColor="#7A080A" />
+            <stop offset="0.433594" stopColor="#78080A" />
+            <stop offset="0.4375" stopColor="#760709" />
+            <stop offset="0.441406" stopColor="#750708" />
+            <stop offset="0.445312" stopColor="#730608" />
+            <stop offset="0.449219" stopColor="#710607" />
+            <stop offset="0.453125" stopColor="#6F0607" />
+            <stop offset="0.457031" stopColor="#6D0506" />
+            <stop offset="0.460938" stopColor="#6C0506" />
+            <stop offset="0.464844" stopColor="#6A0405" />
+            <stop offset="0.46875" stopColor="#680405" />
+            <stop offset="0.472656" stopColor="#660404" />
+            <stop offset="0.476562" stopColor="#640304" />
+            <stop offset="0.480469" stopColor="#630303" />
+            <stop offset="0.484375" stopColor="#610203" />
             <stop offset="0.488281" stopColor="#5F0202" />
-            <stop offset="0.492187" stopColor="#610203" />
-            <stop offset="0.496094" stopColor="#620303" />
-            <stop offset="0.5" stopColor="#640304" />
-            <stop offset="0.503906" stopColor="#660304" />
-            <stop offset="0.507813" stopColor="#680405" />
-            <stop offset="0.511719" stopColor="#6A0405" />
-            <stop offset="0.515625" stopColor="#6B0506" />
-            <stop offset="0.519531" stopColor="#6D0506" />
-            <stop offset="0.523438" stopColor="#6F0607" />
-            <stop offset="0.527344" stopColor="#710607" />
-            <stop offset="0.53125" stopColor="#730608" />
-            <stop offset="0.535156" stopColor="#750708" />
-            <stop offset="0.539062" stopColor="#760709" />
-            <stop offset="0.542969" stopColor="#78080A" />
-            <stop offset="0.546875" stopColor="#7A080A" />
-            <stop offset="0.550781" stopColor="#7C080B" />
-            <stop offset="0.554688" stopColor="#7E090B" />
-            <stop offset="0.558594" stopColor="#7F090C" />
-            <stop offset="0.5625" stopColor="#810A0C" />
-            <stop offset="0.566406" stopColor="#830A0D" />
-            <stop offset="0.570312" stopColor="#850B0D" />
-            <stop offset="0.574219" stopColor="#870B0E" />
-            <stop offset="0.578125" stopColor="#890B0E" />
-            <stop offset="0.582031" stopColor="#8A0C0F" />
-            <stop offset="0.585937" stopColor="#8C0C0F" />
-            <stop offset="0.589844" stopColor="#8E0D10" />
-            <stop offset="0.59375" stopColor="#900D10" />
-            <stop offset="0.597656" stopColor="#920D11" />
-            <stop offset="0.601563" stopColor="#930E11" />
-            <stop offset="0.605469" stopColor="#950E12" />
-            <stop offset="0.609375" stopColor="#970F12" />
-            <stop offset="0.613281" stopColor="#990F13" />
-            <stop offset="0.617188" stopColor="#9B1013" />
-            <stop offset="0.621094" stopColor="#9D1014" />
-            <stop offset="0.625" stopColor="#9E1014" />
-            <stop offset="0.628906" stopColor="#A01115" />
-            <stop offset="0.632812" stopColor="#A21116" />
-            <stop offset="0.636719" stopColor="#A41216" />
-            <stop offset="0.640625" stopColor="#A61217" />
-            <stop offset="0.644531" stopColor="#A71317" />
-            <stop offset="0.648437" stopColor="#A91318" />
-            <stop offset="0.652344" stopColor="#AB1318" />
-            <stop offset="0.65625" stopColor="#AD1419" />
-            <stop offset="0.660156" stopColor="#AF1419" />
-            <stop offset="0.664062" stopColor="#B1151A" />
-            <stop offset="0.667969" stopColor="#B2151A" />
-            <stop offset="0.671875" stopColor="#B4151B" />
-            <stop offset="0.675781" stopColor="#B6161B" />
-            <stop offset="0.679688" stopColor="#B8161C" />
-            <stop offset="0.683594" stopColor="#BA171C" />
-            <stop offset="0.6875" stopColor="#BB171D" />
-            <stop offset="0.691406" stopColor="#BD181D" />
-            <stop offset="0.695312" stopColor="#BF181E" />
-            <stop offset="0.699219" stopColor="#C1181E" />
-            <stop offset="0.703125" stopColor="#C3191F" />
-            <stop offset="0.707031" stopColor="#C5191F" />
-            <stop offset="0.710937" stopColor="#C61A20" />
-            <stop offset="0.714844" stopColor="#C81A20" />
-            <stop offset="0.71875" stopColor="#CA1A21" />
-            <stop offset="0.722656" stopColor="#CC1B22" />
-            <stop offset="0.726562" stopColor="#CE1B22" />
-            <stop offset="0.730469" stopColor="#CF1C23" />
-            <stop offset="0.734375" stopColor="#D11C23" />
-            <stop offset="0.738281" stopColor="#D31D24" />
-            <stop offset="0.742187" stopColor="#D51D24" />
-            <stop offset="0.746094" stopColor="#D71D25" />
-            <stop offset="0.75" stopColor="#D91E25" />
-            <stop offset="0.753906" stopColor="#DA1E26" />
-            <stop offset="0.757812" stopColor="#DC1F26" />
-            <stop offset="0.761719" stopColor="#DE1F27" />
-            <stop offset="0.765625" stopColor="#E01F27" />
-            <stop offset="0.769531" stopColor="#E22028" />
-            <stop offset="0.773437" stopColor="#E32028" />
-            <stop offset="0.777344" stopColor="#E42129" />
-            <stop offset="0.78125" stopColor="#E52129" />
-            <stop offset="0.785156" stopColor="#E32129" />
-            <stop offset="0.789062" stopColor="#E12129" />
-            <stop offset="0.792969" stopColor="#DE2129" />
-            <stop offset="0.796875" stopColor="#DC2229" />
-            <stop offset="0.800781" stopColor="#DA2229" />
-            <stop offset="0.804687" stopColor="#D82229" />
-            <stop offset="0.808594" stopColor="#D62229" />
-            <stop offset="0.8125" stopColor="#D42229" />
-            <stop offset="0.816406" stopColor="#D22229" />
-            <stop offset="0.820312" stopColor="#D02229" />
-            <stop offset="0.824219" stopColor="#CE2329" />
-            <stop offset="0.828125" stopColor="#CB232A" />
-            <stop offset="0.832031" stopColor="#C9232A" />
-            <stop offset="0.835938" stopColor="#C7232A" />
-            <stop offset="0.839844" stopColor="#C5232A" />
-            <stop offset="0.84375" stopColor="#C3232A" />
-            <stop offset="0.847656" stopColor="#C1232A" />
-            <stop offset="0.851562" stopColor="#BF242A" />
-            <stop offset="0.855469" stopColor="#BD242A" />
-            <stop offset="0.859375" stopColor="#BB242A" />
-            <stop offset="0.863281" stopColor="#B9242A" />
-            <stop offset="0.867187" stopColor="#B6242A" />
-            <stop offset="0.871094" stopColor="#B4242A" />
-            <stop offset="0.875" stopColor="#B2242A" />
-            <stop offset="0.878906" stopColor="#B0252A" />
-            <stop offset="0.882812" stopColor="#AE252A" />
-            <stop offset="0.886719" stopColor="#AC252A" />
-            <stop offset="0.890625" stopColor="#AA252A" />
-            <stop offset="0.894531" stopColor="#A8252A" />
-            <stop offset="0.898438" stopColor="#A6252A" />
-            <stop offset="0.902344" stopColor="#A4252A" />
-            <stop offset="0.90625" stopColor="#A1262A" />
-            <stop offset="0.910156" stopColor="#9F262A" />
-            <stop offset="0.914062" stopColor="#9D262A" />
-            <stop offset="0.917969" stopColor="#9B262A" />
-            <stop offset="0.921875" stopColor="#99262A" />
-            <stop offset="0.925781" stopColor="#97262A" />
-            <stop offset="0.929688" stopColor="#95262A" />
-            <stop offset="0.933594" stopColor="#93272A" />
-            <stop offset="0.9375" stopColor="#91272B" />
-            <stop offset="0.941406" stopColor="#8E272B" />
-            <stop offset="0.945312" stopColor="#8C272B" />
-            <stop offset="0.949219" stopColor="#8A272B" />
-            <stop offset="0.953125" stopColor="#88272B" />
-            <stop offset="0.957031" stopColor="#86272B" />
-            <stop offset="0.960937" stopColor="#84282B" />
-            <stop offset="0.964844" stopColor="#82282B" />
-            <stop offset="0.96875" stopColor="#80282B" />
-            <stop offset="0.972656" stopColor="#7E282B" />
-            <stop offset="0.976563" stopColor="#7C282B" />
-            <stop offset="0.980469" stopColor="#79282B" />
-            <stop offset="0.984375" stopColor="#77282B" />
-            <stop offset="0.988281" stopColor="#75292B" />
+            <stop offset="0.492187" stopColor="#5D0102" />
+            <stop offset="0.496094" stopColor="#5B0101" />
+            <stop offset="0.5" stopColor="#5A0101" />
+            <stop offset="0.503906" stopColor="#590001" />
+            <stop offset="0.507812" stopColor="#580000" />
+            <stop offset="0.511719" stopColor="#5A0101" />
+            <stop offset="0.515625" stopColor="#5C0101" />
+            <stop offset="0.519531" stopColor="#5E0202" />
+            <stop offset="0.523438" stopColor="#600202" />
+            <stop offset="0.527344" stopColor="#620203" />
+            <stop offset="0.53125" stopColor="#640304" />
+            <stop offset="0.535156" stopColor="#650304" />
+            <stop offset="0.539062" stopColor="#670405" />
+            <stop offset="0.542969" stopColor="#690405" />
+            <stop offset="0.546875" stopColor="#6B0506" />
+            <stop offset="0.550781" stopColor="#6D0506" />
+            <stop offset="0.554688" stopColor="#6F0607" />
+            <stop offset="0.558594" stopColor="#710608" />
+            <stop offset="0.5625" stopColor="#730608" />
+            <stop offset="0.566406" stopColor="#750709" />
+            <stop offset="0.570312" stopColor="#770709" />
+            <stop offset="0.574219" stopColor="#79080A" />
+            <stop offset="0.578125" stopColor="#7B080A" />
+            <stop offset="0.582031" stopColor="#7D090B" />
+            <stop offset="0.585938" stopColor="#7F090B" />
+            <stop offset="0.589844" stopColor="#810A0C" />
+            <stop offset="0.59375" stopColor="#830A0D" />
+            <stop offset="0.597656" stopColor="#850A0D" />
+            <stop offset="0.601562" stopColor="#870B0E" />
+            <stop offset="0.605469" stopColor="#880B0E" />
+            <stop offset="0.609375" stopColor="#8A0C0F" />
+            <stop offset="0.613281" stopColor="#8C0C0F" />
+            <stop offset="0.617188" stopColor="#8E0D10" />
+            <stop offset="0.621094" stopColor="#900D10" />
+            <stop offset="0.625" stopColor="#920E11" />
+            <stop offset="0.628906" stopColor="#940E12" />
+            <stop offset="0.632812" stopColor="#960F12" />
+            <stop offset="0.636719" stopColor="#980F13" />
+            <stop offset="0.640625" stopColor="#9A0F13" />
+            <stop offset="0.644531" stopColor="#9C1014" />
+            <stop offset="0.648438" stopColor="#9E1014" />
+            <stop offset="0.652344" stopColor="#A01115" />
+            <stop offset="0.65625" stopColor="#A21115" />
+            <stop offset="0.660156" stopColor="#A41216" />
+            <stop offset="0.664062" stopColor="#A61217" />
+            <stop offset="0.667969" stopColor="#A81317" />
+            <stop offset="0.671875" stopColor="#AA1318" />
+            <stop offset="0.675781" stopColor="#AB1318" />
+            <stop offset="0.679687" stopColor="#AD1419" />
+            <stop offset="0.683594" stopColor="#AF1419" />
+            <stop offset="0.6875" stopColor="#B1151A" />
+            <stop offset="0.691406" stopColor="#B3151A" />
+            <stop offset="0.695312" stopColor="#B5161B" />
+            <stop offset="0.699219" stopColor="#B7161C" />
+            <stop offset="0.703125" stopColor="#B9171C" />
+            <stop offset="0.707031" stopColor="#BB171D" />
+            <stop offset="0.710938" stopColor="#BD171D" />
+            <stop offset="0.714844" stopColor="#BF181E" />
+            <stop offset="0.71875" stopColor="#C1181E" />
+            <stop offset="0.722656" stopColor="#C3191F" />
+            <stop offset="0.726562" stopColor="#C51920" />
+            <stop offset="0.730469" stopColor="#C71A20" />
+            <stop offset="0.734375" stopColor="#C91A21" />
+            <stop offset="0.738281" stopColor="#CB1B21" />
+            <stop offset="0.742188" stopColor="#CD1B22" />
+            <stop offset="0.746094" stopColor="#CE1B22" />
+            <stop offset="0.75" stopColor="#D01C23" />
+            <stop offset="0.753906" stopColor="#D21C23" />
+            <stop offset="0.757812" stopColor="#D41D24" />
+            <stop offset="0.761719" stopColor="#D61D25" />
+            <stop offset="0.765625" stopColor="#D81E25" />
+            <stop offset="0.769531" stopColor="#DA1E26" />
+            <stop offset="0.773438" stopColor="#DC1F26" />
+            <stop offset="0.777344" stopColor="#DE1F27" />
+            <stop offset="0.78125" stopColor="#E02027" />
+            <stop offset="0.785156" stopColor="#E22028" />
+            <stop offset="0.789062" stopColor="#E42028" />
+            <stop offset="0.792969" stopColor="#E42129" />
+            <stop offset="0.796875" stopColor="#E42129" />
+            <stop offset="0.800781" stopColor="#E22129" />
+            <stop offset="0.804688" stopColor="#DF2129" />
+            <stop offset="0.808594" stopColor="#DD2129" />
+            <stop offset="0.8125" stopColor="#DB2229" />
+            <stop offset="0.816406" stopColor="#D92229" />
+            <stop offset="0.820313" stopColor="#D62229" />
+            <stop offset="0.824219" stopColor="#D42229" />
+            <stop offset="0.828125" stopColor="#D22229" />
+            <stop offset="0.832031" stopColor="#D02229" />
+            <stop offset="0.835938" stopColor="#CD2329" />
+            <stop offset="0.839844" stopColor="#CB232A" />
+            <stop offset="0.84375" stopColor="#C9232A" />
+            <stop offset="0.847656" stopColor="#C7232A" />
+            <stop offset="0.851562" stopColor="#C4232A" />
+            <stop offset="0.855469" stopColor="#C2232A" />
+            <stop offset="0.859375" stopColor="#C0242A" />
+            <stop offset="0.863281" stopColor="#BE242A" />
+            <stop offset="0.867188" stopColor="#BB242A" />
+            <stop offset="0.871094" stopColor="#B9242A" />
+            <stop offset="0.875" stopColor="#B7242A" />
+            <stop offset="0.878906" stopColor="#B5242A" />
+            <stop offset="0.882812" stopColor="#B2242A" />
+            <stop offset="0.886719" stopColor="#B0252A" />
+            <stop offset="0.890625" stopColor="#AE252A" />
+            <stop offset="0.894531" stopColor="#AC252A" />
+            <stop offset="0.898438" stopColor="#A9252A" />
+            <stop offset="0.902344" stopColor="#A7252A" />
+            <stop offset="0.90625" stopColor="#A5252A" />
+            <stop offset="0.910156" stopColor="#A3262A" />
+            <stop offset="0.914062" stopColor="#A0262A" />
+            <stop offset="0.917969" stopColor="#9E262A" />
+            <stop offset="0.921875" stopColor="#9C262A" />
+            <stop offset="0.925781" stopColor="#9A262A" />
+            <stop offset="0.929688" stopColor="#97262A" />
+            <stop offset="0.933594" stopColor="#95262A" />
+            <stop offset="0.9375" stopColor="#93272A" />
+            <stop offset="0.941406" stopColor="#91272B" />
+            <stop offset="0.945312" stopColor="#8E272B" />
+            <stop offset="0.949219" stopColor="#8C272B" />
+            <stop offset="0.953125" stopColor="#8A272B" />
+            <stop offset="0.957031" stopColor="#88272B" />
+            <stop offset="0.960938" stopColor="#85282B" />
+            <stop offset="0.964844" stopColor="#83282B" />
+            <stop offset="0.96875" stopColor="#81282B" />
+            <stop offset="0.972656" stopColor="#7F282B" />
+            <stop offset="0.976562" stopColor="#7C282B" />
+            <stop offset="0.980469" stopColor="#7A282B" />
+            <stop offset="0.984375" stopColor="#78282B" />
+            <stop offset="0.988281" stopColor="#76292B" />
             <stop offset="0.992188" stopColor="#73292B" />
             <stop offset="0.996094" stopColor="#71292B" />
             <stop offset="1" stopColor="#6F292B" />
           </linearGradient>
           <linearGradient
             id="paint6_linear_54_75"
-            x1="1121.57"
-            y1="-237.376"
-            x2="838.906"
-            y2="-237.376"
+            x1="1122.59"
+            y1="-171.027"
+            x2="855.79"
+            y2="-171.027"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stopColor="#F2DA6F" />
-            <stop offset="0.00390625" stopColor="#F2D96F" />
-            <stop offset="0.0078125" stopColor="#F1D86E" />
-            <stop offset="0.0117188" stopColor="#F1D76D" />
-            <stop offset="0.015625" stopColor="#F0D66C" />
-            <stop offset="0.0195313" stopColor="#F0D66C" />
-            <stop offset="0.0234375" stopColor="#EFD56B" />
-            <stop offset="0.0273437" stopColor="#EFD46A" />
-            <stop offset="0.03125" stopColor="#EED36A" />
-            <stop offset="0.0351562" stopColor="#EED369" />
-            <stop offset="0.0390625" stopColor="#EDD268" />
-            <stop offset="0.0429688" stopColor="#EDD168" />
-            <stop offset="0.046875" stopColor="#ECD067" />
-            <stop offset="0.0507812" stopColor="#ECCF66" />
-            <stop offset="0.0546875" stopColor="#EBCF66" />
-            <stop offset="0.0585938" stopColor="#EBCE65" />
-            <stop offset="0.0625" stopColor="#EACD64" />
-            <stop offset="0.0664063" stopColor="#EACC64" />
-            <stop offset="0.0703125" stopColor="#E9CC63" />
-            <stop offset="0.0742187" stopColor="#E9CB62" />
-            <stop offset="0.078125" stopColor="#E8CA62" />
-            <stop offset="0.0820312" stopColor="#E8C961" />
-            <stop offset="0.0859375" stopColor="#E7C860" />
-            <stop offset="0.0898438" stopColor="#E7C860" />
-            <stop offset="0.09375" stopColor="#E6C75F" />
-            <stop offset="0.0976562" stopColor="#E6C65E" />
-            <stop offset="0.101562" stopColor="#E5C55E" />
-            <stop offset="0.105469" stopColor="#E5C55D" />
-            <stop offset="0.109375" stopColor="#E4C45C" />
-            <stop offset="0.113281" stopColor="#E4C35B" />
-            <stop offset="0.117188" stopColor="#E3C25B" />
-            <stop offset="0.121094" stopColor="#E3C15A" />
-            <stop offset="0.125" stopColor="#E2C159" />
-            <stop offset="0.128906" stopColor="#E1C059" />
-            <stop offset="0.132812" stopColor="#E1BF58" />
-            <stop offset="0.136719" stopColor="#E0BE57" />
-            <stop offset="0.140625" stopColor="#E0BE57" />
-            <stop offset="0.144531" stopColor="#DFBD56" />
-            <stop offset="0.148438" stopColor="#DFBC55" />
-            <stop offset="0.152344" stopColor="#DEBB55" />
-            <stop offset="0.15625" stopColor="#DEBA54" />
-            <stop offset="0.160156" stopColor="#DDBA53" />
-            <stop offset="0.164062" stopColor="#DDB953" />
-            <stop offset="0.167969" stopColor="#DCB852" />
-            <stop offset="0.171875" stopColor="#DCB751" />
-            <stop offset="0.175781" stopColor="#DBB751" />
-            <stop offset="0.179688" stopColor="#DBB650" />
-            <stop offset="0.183594" stopColor="#DAB54F" />
-            <stop offset="0.1875" stopColor="#DAB44F" />
-            <stop offset="0.191406" stopColor="#D9B34E" />
-            <stop offset="0.195313" stopColor="#D9B34D" />
-            <stop offset="0.199219" stopColor="#D8B24D" />
-            <stop offset="0.203125" stopColor="#D8B14C" />
-            <stop offset="0.207031" stopColor="#D7B04B" />
-            <stop offset="0.210937" stopColor="#D7B04B" />
-            <stop offset="0.214844" stopColor="#D6AF4A" />
-            <stop offset="0.21875" stopColor="#D6AE49" />
-            <stop offset="0.222656" stopColor="#D5AD48" />
-            <stop offset="0.226562" stopColor="#D5AC48" />
-            <stop offset="0.230469" stopColor="#D4AC47" />
-            <stop offset="0.234375" stopColor="#D4AB46" />
-            <stop offset="0.238281" stopColor="#D3AA46" />
-            <stop offset="0.242188" stopColor="#D3A945" />
-            <stop offset="0.246094" stopColor="#D2A944" />
-            <stop offset="0.25" stopColor="#D2A844" />
-            <stop offset="0.253906" stopColor="#D1A743" />
-            <stop offset="0.257812" stopColor="#D1A642" />
-            <stop offset="0.261719" stopColor="#D0A542" />
-            <stop offset="0.265625" stopColor="#D0A541" />
-            <stop offset="0.269531" stopColor="#CFA440" />
-            <stop offset="0.273438" stopColor="#CFA340" />
-            <stop offset="0.277344" stopColor="#CEA23F" />
-            <stop offset="0.28125" stopColor="#CDA23E" />
-            <stop offset="0.285156" stopColor="#CDA13E" />
-            <stop offset="0.289062" stopColor="#CCA03D" />
-            <stop offset="0.292969" stopColor="#CC9F3C" />
-            <stop offset="0.296875" stopColor="#CB9E3C" />
-            <stop offset="0.300781" stopColor="#CB9E3B" />
-            <stop offset="0.304687" stopColor="#CA9D3A" />
-            <stop offset="0.308594" stopColor="#CA9C3A" />
-            <stop offset="0.3125" stopColor="#C99B39" />
-            <stop offset="0.316406" stopColor="#C99B38" />
-            <stop offset="0.320312" stopColor="#C89A38" />
-            <stop offset="0.324219" stopColor="#C89937" />
-            <stop offset="0.328125" stopColor="#C79836" />
-            <stop offset="0.332031" stopColor="#C79735" />
-            <stop offset="0.335938" stopColor="#C69735" />
-            <stop offset="0.339844" stopColor="#C69634" />
-            <stop offset="0.34375" stopColor="#C59533" />
-            <stop offset="0.347656" stopColor="#C59433" />
-            <stop offset="0.351562" stopColor="#C49432" />
-            <stop offset="0.355469" stopColor="#C49331" />
-            <stop offset="0.359375" stopColor="#C39231" />
-            <stop offset="0.363281" stopColor="#C39130" />
-            <stop offset="0.367187" stopColor="#C2902F" />
-            <stop offset="0.371094" stopColor="#C2902F" />
-            <stop offset="0.375" stopColor="#C18F2E" />
-            <stop offset="0.378906" stopColor="#C18E2D" />
-            <stop offset="0.382812" stopColor="#C08D2D" />
-            <stop offset="0.386719" stopColor="#C08D2C" />
-            <stop offset="0.390625" stopColor="#BF8C2B" />
-            <stop offset="0.394531" stopColor="#BF8B2B" />
-            <stop offset="0.398438" stopColor="#BE8A2A" />
-            <stop offset="0.402344" stopColor="#BE8929" />
-            <stop offset="0.40625" stopColor="#BD8929" />
-            <stop offset="0.410156" stopColor="#BD8828" />
-            <stop offset="0.414062" stopColor="#BC8727" />
-            <stop offset="0.417969" stopColor="#BC8828" />
-            <stop offset="0.421875" stopColor="#BD8828" />
-            <stop offset="0.425781" stopColor="#BD8929" />
-            <stop offset="0.429688" stopColor="#BE8A2A" />
-            <stop offset="0.433594" stopColor="#BF8B2B" />
-            <stop offset="0.4375" stopColor="#BF8C2B" />
-            <stop offset="0.441406" stopColor="#C08D2C" />
-            <stop offset="0.445313" stopColor="#C08E2D" />
-            <stop offset="0.449219" stopColor="#C18E2E" />
-            <stop offset="0.453125" stopColor="#C18F2E" />
-            <stop offset="0.457031" stopColor="#C2902F" />
-            <stop offset="0.460938" stopColor="#C39130" />
-            <stop offset="0.464844" stopColor="#C39231" />
-            <stop offset="0.46875" stopColor="#C49331" />
-            <stop offset="0.472656" stopColor="#C49432" />
-            <stop offset="0.476562" stopColor="#C59533" />
-            <stop offset="0.480469" stopColor="#C69534" />
-            <stop offset="0.484375" stopColor="#C69634" />
-            <stop offset="0.488281" stopColor="#C79735" />
-            <stop offset="0.492187" stopColor="#C79836" />
-            <stop offset="0.496094" stopColor="#C89937" />
-            <stop offset="0.5" stopColor="#C89A37" />
-            <stop offset="0.503906" stopColor="#C99B38" />
-            <stop offset="0.507812" stopColor="#CA9C39" />
-            <stop offset="0.511719" stopColor="#CA9C3A" />
-            <stop offset="0.515625" stopColor="#CB9D3B" />
-            <stop offset="0.519531" stopColor="#CB9E3B" />
-            <stop offset="0.523438" stopColor="#CC9F3C" />
-            <stop offset="0.527344" stopColor="#CCA03D" />
-            <stop offset="0.53125" stopColor="#CDA13E" />
-            <stop offset="0.535156" stopColor="#CEA23E" />
-            <stop offset="0.539062" stopColor="#CEA23F" />
-            <stop offset="0.542969" stopColor="#CFA340" />
-            <stop offset="0.546875" stopColor="#CFA441" />
-            <stop offset="0.550781" stopColor="#D0A541" />
-            <stop offset="0.554688" stopColor="#D0A642" />
-            <stop offset="0.558594" stopColor="#D1A743" />
-            <stop offset="0.5625" stopColor="#D2A844" />
-            <stop offset="0.566406" stopColor="#D2A944" />
-            <stop offset="0.570312" stopColor="#D3A945" />
-            <stop offset="0.574219" stopColor="#D3AA46" />
-            <stop offset="0.578125" stopColor="#D4AB47" />
-            <stop offset="0.582031" stopColor="#D4AC47" />
-            <stop offset="0.585937" stopColor="#D5AD48" />
-            <stop offset="0.589844" stopColor="#D6AE49" />
-            <stop offset="0.59375" stopColor="#D6AF4A" />
-            <stop offset="0.597656" stopColor="#D7AF4A" />
-            <stop offset="0.601562" stopColor="#D7B04B" />
-            <stop offset="0.605469" stopColor="#D8B14C" />
-            <stop offset="0.609375" stopColor="#D8B24D" />
-            <stop offset="0.613281" stopColor="#D9B34D" />
-            <stop offset="0.617188" stopColor="#DAB44E" />
-            <stop offset="0.621094" stopColor="#DAB54F" />
-            <stop offset="0.625" stopColor="#DBB650" />
-            <stop offset="0.628906" stopColor="#DBB651" />
-            <stop offset="0.632812" stopColor="#DCB751" />
-            <stop offset="0.636719" stopColor="#DCB852" />
-            <stop offset="0.640625" stopColor="#DDB953" />
-            <stop offset="0.644531" stopColor="#DEBA54" />
-            <stop offset="0.648438" stopColor="#DEBB54" />
-            <stop offset="0.652344" stopColor="#DFBC55" />
-            <stop offset="0.65625" stopColor="#DFBD56" />
-            <stop offset="0.660156" stopColor="#E0BD57" />
-            <stop offset="0.664062" stopColor="#E0BE57" />
-            <stop offset="0.667969" stopColor="#E1BF58" />
-            <stop offset="0.671875" stopColor="#E2C059" />
-            <stop offset="0.675781" stopColor="#E2C15A" />
-            <stop offset="0.679687" stopColor="#E3C25A" />
-            <stop offset="0.683594" stopColor="#E3C35B" />
-            <stop offset="0.6875" stopColor="#E4C35C" />
-            <stop offset="0.691406" stopColor="#E4C45D" />
-            <stop offset="0.695312" stopColor="#E5C55D" />
-            <stop offset="0.699219" stopColor="#E6C65E" />
-            <stop offset="0.703125" stopColor="#E6C75F" />
-            <stop offset="0.707031" stopColor="#E7C860" />
-            <stop offset="0.710938" stopColor="#E7C960" />
-            <stop offset="0.714844" stopColor="#E8CA61" />
-            <stop offset="0.71875" stopColor="#E8CA62" />
-            <stop offset="0.722656" stopColor="#E9CB63" />
-            <stop offset="0.726562" stopColor="#EACC63" />
-            <stop offset="0.730469" stopColor="#EACD64" />
-            <stop offset="0.734375" stopColor="#EBCE65" />
-            <stop offset="0.738281" stopColor="#EBCF66" />
-            <stop offset="0.742188" stopColor="#ECD066" />
-            <stop offset="0.746094" stopColor="#ECD167" />
-            <stop offset="0.75" stopColor="#EDD168" />
-            <stop offset="0.753906" stopColor="#EED269" />
-            <stop offset="0.757812" stopColor="#EED36A" />
-            <stop offset="0.761719" stopColor="#EFD46A" />
-            <stop offset="0.765625" stopColor="#EFD56B" />
-            <stop offset="0.769531" stopColor="#F0D66C" />
-            <stop offset="0.773437" stopColor="#F0D76D" />
-            <stop offset="0.777344" stopColor="#F1D76D" />
-            <stop offset="0.78125" stopColor="#F2D86E" />
-            <stop offset="0.785156" stopColor="#F2D96F" />
-            <stop offset="0.789062" stopColor="#F3DA70" />
-            <stop offset="0.792969" stopColor="#F3DB70" />
-            <stop offset="0.796875" stopColor="#F4DC71" />
-            <stop offset="0.800781" stopColor="#F4DD72" />
-            <stop offset="0.804688" stopColor="#F5DE73" />
-            <stop offset="0.808594" stopColor="#F6DE73" />
-            <stop offset="0.8125" stopColor="#F6DF74" />
-            <stop offset="0.816406" stopColor="#F7E075" />
-            <stop offset="0.820312" stopColor="#F7E176" />
-            <stop offset="0.824219" stopColor="#F8E276" />
-            <stop offset="0.828125" stopColor="#F8E377" />
-            <stop offset="0.832031" stopColor="#F9E478" />
-            <stop offset="0.835938" stopColor="#FAE479" />
-            <stop offset="0.839844" stopColor="#FAE57A" />
-            <stop offset="0.84375" stopColor="#FAE67B" />
-            <stop offset="0.847656" stopColor="#FAE67C" />
-            <stop offset="0.851562" stopColor="#FAE67D" />
-            <stop offset="0.855469" stopColor="#FAE77E" />
-            <stop offset="0.859375" stopColor="#FAE780" />
-            <stop offset="0.863281" stopColor="#FBE881" />
-            <stop offset="0.867187" stopColor="#FBE882" />
-            <stop offset="0.871094" stopColor="#FBE883" />
-            <stop offset="0.875" stopColor="#FBE984" />
-            <stop offset="0.878906" stopColor="#FBE985" />
-            <stop offset="0.882812" stopColor="#FBEA87" />
-            <stop offset="0.886719" stopColor="#FBEA88" />
-            <stop offset="0.890625" stopColor="#FBEB89" />
-            <stop offset="0.894531" stopColor="#FBEB8A" />
-            <stop offset="0.898438" stopColor="#FBEB8B" />
-            <stop offset="0.902344" stopColor="#FCEC8D" />
-            <stop offset="0.90625" stopColor="#FCEC8E" />
-            <stop offset="0.910156" stopColor="#FCED8F" />
-            <stop offset="0.914062" stopColor="#FCED90" />
-            <stop offset="0.917969" stopColor="#FCED91" />
-            <stop offset="0.921875" stopColor="#FCEE92" />
-            <stop offset="0.925781" stopColor="#FCEE94" />
-            <stop offset="0.929688" stopColor="#FCEF95" />
-            <stop offset="0.933594" stopColor="#FCEF96" />
-            <stop offset="0.9375" stopColor="#FCEF97" />
-            <stop offset="0.941406" stopColor="#FDF098" />
-            <stop offset="0.945312" stopColor="#FDF09A" />
-            <stop offset="0.949219" stopColor="#FDF19B" />
-            <stop offset="0.953125" stopColor="#FDF19C" />
-            <stop offset="0.957031" stopColor="#FDF29D" />
-            <stop offset="0.960937" stopColor="#FDF29E" />
-            <stop offset="0.964844" stopColor="#FDF29F" />
-            <stop offset="0.96875" stopColor="#FDF3A1" />
-            <stop offset="0.972656" stopColor="#FDF3A2" />
-            <stop offset="0.976562" stopColor="#FDF4A3" />
+            <stop stopColor="#FCED8F" />
+            <stop offset="0.00390625" stopColor="#FCEC8D" />
+            <stop offset="0.0078125" stopColor="#FBEB8A" />
+            <stop offset="0.0117187" stopColor="#FBEA88" />
+            <stop offset="0.015625" stopColor="#FBE986" />
+            <stop offset="0.0195312" stopColor="#FBE983" />
+            <stop offset="0.0234375" stopColor="#FBE881" />
+            <stop offset="0.0273437" stopColor="#FAE77F" />
+            <stop offset="0.03125" stopColor="#FAE67C" />
+            <stop offset="0.0351562" stopColor="#FAE57A" />
+            <stop offset="0.0390625" stopColor="#FAE479" />
+            <stop offset="0.0429687" stopColor="#F9E478" />
+            <stop offset="0.046875" stopColor="#F8E377" />
+            <stop offset="0.0507812" stopColor="#F8E276" />
+            <stop offset="0.0546875" stopColor="#F7E176" />
+            <stop offset="0.0585937" stopColor="#F7E075" />
+            <stop offset="0.0625" stopColor="#F6DF74" />
+            <stop offset="0.0664062" stopColor="#F6DE73" />
+            <stop offset="0.0703125" stopColor="#F5DE73" />
+            <stop offset="0.0742187" stopColor="#F4DD72" />
+            <stop offset="0.078125" stopColor="#F4DC71" />
+            <stop offset="0.0820312" stopColor="#F3DB70" />
+            <stop offset="0.0859375" stopColor="#F3DA70" />
+            <stop offset="0.0898437" stopColor="#F2D96F" />
+            <stop offset="0.09375" stopColor="#F2D86E" />
+            <stop offset="0.0976562" stopColor="#F1D86D" />
+            <stop offset="0.101562" stopColor="#F1D76D" />
+            <stop offset="0.105469" stopColor="#F0D66C" />
+            <stop offset="0.109375" stopColor="#EFD56B" />
+            <stop offset="0.113281" stopColor="#EFD46A" />
+            <stop offset="0.117187" stopColor="#EED36A" />
+            <stop offset="0.121094" stopColor="#EED269" />
+            <stop offset="0.125" stopColor="#EDD268" />
+            <stop offset="0.128906" stopColor="#EDD167" />
+            <stop offset="0.132812" stopColor="#ECD067" />
+            <stop offset="0.136719" stopColor="#EBCF66" />
+            <stop offset="0.140625" stopColor="#EBCE65" />
+            <stop offset="0.144531" stopColor="#EACD65" />
+            <stop offset="0.148437" stopColor="#EACD64" />
+            <stop offset="0.152344" stopColor="#E9CC63" />
+            <stop offset="0.15625" stopColor="#E9CB62" />
+            <stop offset="0.160156" stopColor="#E8CA62" />
+            <stop offset="0.164062" stopColor="#E8C961" />
+            <stop offset="0.167969" stopColor="#E7C860" />
+            <stop offset="0.171875" stopColor="#E6C75F" />
+            <stop offset="0.175781" stopColor="#E6C75F" />
+            <stop offset="0.179687" stopColor="#E5C65E" />
+            <stop offset="0.183594" stopColor="#E5C55D" />
+            <stop offset="0.1875" stopColor="#E4C45C" />
+            <stop offset="0.191406" stopColor="#E4C35C" />
+            <stop offset="0.195312" stopColor="#E3C25B" />
+            <stop offset="0.199219" stopColor="#E2C15A" />
+            <stop offset="0.203125" stopColor="#E2C159" />
+            <stop offset="0.207031" stopColor="#E1C059" />
+            <stop offset="0.210937" stopColor="#E1BF58" />
+            <stop offset="0.214844" stopColor="#E0BE57" />
+            <stop offset="0.21875" stopColor="#E0BD56" />
+            <stop offset="0.222656" stopColor="#DFBC56" />
+            <stop offset="0.226562" stopColor="#DFBB55" />
+            <stop offset="0.230469" stopColor="#DEBB54" />
+            <stop offset="0.234375" stopColor="#DDBA53" />
+            <stop offset="0.238281" stopColor="#DDB953" />
+            <stop offset="0.242187" stopColor="#DCB852" />
+            <stop offset="0.246094" stopColor="#DCB751" />
+            <stop offset="0.25" stopColor="#DBB650" />
+            <stop offset="0.253906" stopColor="#DBB550" />
+            <stop offset="0.257812" stopColor="#DAB54F" />
+            <stop offset="0.261719" stopColor="#D9B44E" />
+            <stop offset="0.265625" stopColor="#D9B34D" />
+            <stop offset="0.269531" stopColor="#D8B24D" />
+            <stop offset="0.273438" stopColor="#D8B14C" />
+            <stop offset="0.277344" stopColor="#D7B04B" />
+            <stop offset="0.28125" stopColor="#D7AF4A" />
+            <stop offset="0.285156" stopColor="#D6AF4A" />
+            <stop offset="0.289062" stopColor="#D6AE49" />
+            <stop offset="0.292969" stopColor="#D5AD48" />
+            <stop offset="0.296875" stopColor="#D4AC47" />
+            <stop offset="0.300781" stopColor="#D4AB47" />
+            <stop offset="0.304688" stopColor="#D3AA46" />
+            <stop offset="0.308594" stopColor="#D3A945" />
+            <stop offset="0.3125" stopColor="#D2A944" />
+            <stop offset="0.316406" stopColor="#D2A844" />
+            <stop offset="0.320312" stopColor="#D1A743" />
+            <stop offset="0.324219" stopColor="#D0A642" />
+            <stop offset="0.328125" stopColor="#D0A541" />
+            <stop offset="0.332031" stopColor="#CFA441" />
+            <stop offset="0.335938" stopColor="#CFA440" />
+            <stop offset="0.339844" stopColor="#CEA33F" />
+            <stop offset="0.34375" stopColor="#CEA23F" />
+            <stop offset="0.347656" stopColor="#CDA13E" />
+            <stop offset="0.351562" stopColor="#CDA03D" />
+            <stop offset="0.355469" stopColor="#CC9F3C" />
+            <stop offset="0.359375" stopColor="#CB9E3C" />
+            <stop offset="0.363281" stopColor="#CB9E3B" />
+            <stop offset="0.367188" stopColor="#CA9D3A" />
+            <stop offset="0.371094" stopColor="#CA9C39" />
+            <stop offset="0.375" stopColor="#C99B39" />
+            <stop offset="0.378906" stopColor="#C99A38" />
+            <stop offset="0.382812" stopColor="#C89937" />
+            <stop offset="0.386719" stopColor="#C79836" />
+            <stop offset="0.390625" stopColor="#C79836" />
+            <stop offset="0.394531" stopColor="#C69735" />
+            <stop offset="0.398438" stopColor="#C69634" />
+            <stop offset="0.402344" stopColor="#C59533" />
+            <stop offset="0.40625" stopColor="#C59433" />
+            <stop offset="0.410156" stopColor="#C49332" />
+            <stop offset="0.414062" stopColor="#C49231" />
+            <stop offset="0.417969" stopColor="#C39230" />
+            <stop offset="0.421875" stopColor="#C29130" />
+            <stop offset="0.425781" stopColor="#C2902F" />
+            <stop offset="0.429688" stopColor="#C18F2E" />
+            <stop offset="0.433594" stopColor="#C18E2D" />
+            <stop offset="0.4375" stopColor="#C08D2D" />
+            <stop offset="0.441406" stopColor="#C08C2C" />
+            <stop offset="0.445312" stopColor="#BF8C2B" />
+            <stop offset="0.449219" stopColor="#BE8B2A" />
+            <stop offset="0.453125" stopColor="#BE8A2A" />
+            <stop offset="0.457031" stopColor="#BD8929" />
+            <stop offset="0.460938" stopColor="#BD8828" />
+            <stop offset="0.46875" stopColor="#BD8828" />
+            <stop offset="0.472656" stopColor="#BD8828" />
+            <stop offset="0.476562" stopColor="#BD8929" />
+            <stop offset="0.480469" stopColor="#BE8A2A" />
+            <stop offset="0.484375" stopColor="#BF8B2B" />
+            <stop offset="0.488281" stopColor="#BF8C2C" />
+            <stop offset="0.492187" stopColor="#C08D2C" />
+            <stop offset="0.496094" stopColor="#C18E2D" />
+            <stop offset="0.5" stopColor="#C18F2E" />
+            <stop offset="0.503906" stopColor="#C2902F" />
+            <stop offset="0.507812" stopColor="#C39130" />
+            <stop offset="0.511719" stopColor="#C39231" />
+            <stop offset="0.515625" stopColor="#C49331" />
+            <stop offset="0.519531" stopColor="#C49432" />
+            <stop offset="0.523437" stopColor="#C59533" />
+            <stop offset="0.527344" stopColor="#C69634" />
+            <stop offset="0.53125" stopColor="#C69735" />
+            <stop offset="0.535156" stopColor="#C79836" />
+            <stop offset="0.539062" stopColor="#C89836" />
+            <stop offset="0.542969" stopColor="#C89937" />
+            <stop offset="0.546875" stopColor="#C99A38" />
+            <stop offset="0.550781" stopColor="#C99B39" />
+            <stop offset="0.554688" stopColor="#CA9C3A" />
+            <stop offset="0.558594" stopColor="#CB9D3B" />
+            <stop offset="0.5625" stopColor="#CB9E3B" />
+            <stop offset="0.566406" stopColor="#CC9F3C" />
+            <stop offset="0.570312" stopColor="#CDA03D" />
+            <stop offset="0.574219" stopColor="#CDA13E" />
+            <stop offset="0.578125" stopColor="#CEA23F" />
+            <stop offset="0.582031" stopColor="#CEA340" />
+            <stop offset="0.585938" stopColor="#CFA440" />
+            <stop offset="0.589844" stopColor="#D0A541" />
+            <stop offset="0.59375" stopColor="#D0A642" />
+            <stop offset="0.597656" stopColor="#D1A743" />
+            <stop offset="0.601563" stopColor="#D2A844" />
+            <stop offset="0.605469" stopColor="#D2A945" />
+            <stop offset="0.609375" stopColor="#D3AA45" />
+            <stop offset="0.613281" stopColor="#D3AB46" />
+            <stop offset="0.617188" stopColor="#D4AC47" />
+            <stop offset="0.621094" stopColor="#D5AD48" />
+            <stop offset="0.625" stopColor="#D5AD49" />
+            <stop offset="0.628906" stopColor="#D6AE4A" />
+            <stop offset="0.632812" stopColor="#D7AF4A" />
+            <stop offset="0.636719" stopColor="#D7B04B" />
+            <stop offset="0.640625" stopColor="#D8B14C" />
+            <stop offset="0.644531" stopColor="#D8B24D" />
+            <stop offset="0.648437" stopColor="#D9B34E" />
+            <stop offset="0.652344" stopColor="#DAB44F" />
+            <stop offset="0.65625" stopColor="#DAB54F" />
+            <stop offset="0.660156" stopColor="#DBB650" />
+            <stop offset="0.664062" stopColor="#DCB751" />
+            <stop offset="0.667969" stopColor="#DCB852" />
+            <stop offset="0.671875" stopColor="#DDB953" />
+            <stop offset="0.675781" stopColor="#DDBA53" />
+            <stop offset="0.679688" stopColor="#DEBB54" />
+            <stop offset="0.683594" stopColor="#DFBC55" />
+            <stop offset="0.6875" stopColor="#DFBD56" />
+            <stop offset="0.691406" stopColor="#E0BE57" />
+            <stop offset="0.695312" stopColor="#E1BF58" />
+            <stop offset="0.699219" stopColor="#E1C058" />
+            <stop offset="0.703125" stopColor="#E2C159" />
+            <stop offset="0.707031" stopColor="#E3C15A" />
+            <stop offset="0.710938" stopColor="#E3C25B" />
+            <stop offset="0.714844" stopColor="#E4C35C" />
+            <stop offset="0.71875" stopColor="#E4C45D" />
+            <stop offset="0.722656" stopColor="#E5C55D" />
+            <stop offset="0.726563" stopColor="#E6C65E" />
+            <stop offset="0.730469" stopColor="#E6C75F" />
+            <stop offset="0.734375" stopColor="#E7C860" />
+            <stop offset="0.738281" stopColor="#E8C961" />
+            <stop offset="0.742188" stopColor="#E8CA62" />
+            <stop offset="0.746094" stopColor="#E9CB62" />
+            <stop offset="0.75" stopColor="#E9CC63" />
+            <stop offset="0.753906" stopColor="#EACD64" />
+            <stop offset="0.757812" stopColor="#EBCE65" />
+            <stop offset="0.761719" stopColor="#EBCF66" />
+            <stop offset="0.765625" stopColor="#ECD067" />
+            <stop offset="0.769531" stopColor="#EDD167" />
+            <stop offset="0.773437" stopColor="#EDD268" />
+            <stop offset="0.777344" stopColor="#EED369" />
+            <stop offset="0.78125" stopColor="#EED46A" />
+            <stop offset="0.785156" stopColor="#EFD56B" />
+            <stop offset="0.789062" stopColor="#F0D66C" />
+            <stop offset="0.792969" stopColor="#F0D66C" />
+            <stop offset="0.796875" stopColor="#F1D76D" />
+            <stop offset="0.800781" stopColor="#F2D86E" />
+            <stop offset="0.804688" stopColor="#F2D96F" />
+            <stop offset="0.808594" stopColor="#F3DA70" />
+            <stop offset="0.8125" stopColor="#F3DB71" />
+            <stop offset="0.816406" stopColor="#F4DC71" />
+            <stop offset="0.820312" stopColor="#F5DD72" />
+            <stop offset="0.824219" stopColor="#F5DE73" />
+            <stop offset="0.828125" stopColor="#F6DF74" />
+            <stop offset="0.832031" stopColor="#F7E075" />
+            <stop offset="0.835938" stopColor="#F7E176" />
+            <stop offset="0.839844" stopColor="#F8E276" />
+            <stop offset="0.84375" stopColor="#F8E377" />
+            <stop offset="0.847656" stopColor="#F9E478" />
+            <stop offset="0.851563" stopColor="#FAE579" />
+            <stop offset="0.855469" stopColor="#FAE57A" />
+            <stop offset="0.859375" stopColor="#FAE67B" />
+            <stop offset="0.863281" stopColor="#FAE67D" />
+            <stop offset="0.867188" stopColor="#FAE77E" />
+            <stop offset="0.871094" stopColor="#FAE77F" />
+            <stop offset="0.875" stopColor="#FBE881" />
+            <stop offset="0.878906" stopColor="#FBE882" />
+            <stop offset="0.882812" stopColor="#FBE983" />
+            <stop offset="0.886719" stopColor="#FBE984" />
+            <stop offset="0.890625" stopColor="#FBE986" />
+            <stop offset="0.894531" stopColor="#FBEA87" />
+            <stop offset="0.898437" stopColor="#FBEA88" />
+            <stop offset="0.902344" stopColor="#FBEB8A" />
+            <stop offset="0.90625" stopColor="#FBEB8B" />
+            <stop offset="0.910156" stopColor="#FBEC8C" />
+            <stop offset="0.914062" stopColor="#FCEC8E" />
+            <stop offset="0.917969" stopColor="#FCED8F" />
+            <stop offset="0.921875" stopColor="#FCED90" />
+            <stop offset="0.925781" stopColor="#FCED91" />
+            <stop offset="0.929688" stopColor="#FCEE93" />
+            <stop offset="0.933594" stopColor="#FCEE94" />
+            <stop offset="0.9375" stopColor="#FCEF95" />
+            <stop offset="0.941406" stopColor="#FCEF97" />
+            <stop offset="0.945312" stopColor="#FCF098" />
+            <stop offset="0.949219" stopColor="#FDF099" />
+            <stop offset="0.953125" stopColor="#FDF19B" />
+            <stop offset="0.957031" stopColor="#FDF19C" />
+            <stop offset="0.960938" stopColor="#FDF29D" />
+            <stop offset="0.964844" stopColor="#FDF29E" />
+            <stop offset="0.96875" stopColor="#FDF2A0" />
+            <stop offset="0.972656" stopColor="#FDF3A1" />
+            <stop offset="0.976563" stopColor="#FDF3A2" />
             <stop offset="0.980469" stopColor="#FDF4A4" />
             <stop offset="0.984375" stopColor="#FEF4A5" />
-            <stop offset="0.988281" stopColor="#FEF5A7" />
+            <stop offset="0.988281" stopColor="#FEF5A6" />
             <stop offset="0.992188" stopColor="#FEF5A8" />
             <stop offset="0.996094" stopColor="#FEF6A9" />
             <stop offset="1" stopColor="#FEF6AA" />
           </linearGradient>
           <linearGradient
             id="paint7_linear_54_75"
-            x1="1121.57"
-            y1="-343.847"
-            x2="851.919"
-            y2="-343.847"
+            x1="1122.59"
+            y1="-240.211"
+            x2="869.481"
+            y2="-240.211"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stopColor="#D5AD48" />
-            <stop offset="0.00390625" stopColor="#D6AE49" />
-            <stop offset="0.0078125" stopColor="#D6AF4A" />
-            <stop offset="0.0117187" stopColor="#D7B04B" />
-            <stop offset="0.015625" stopColor="#D8B14C" />
-            <stop offset="0.0195312" stopColor="#D8B24C" />
-            <stop offset="0.0234375" stopColor="#D9B34D" />
-            <stop offset="0.0273438" stopColor="#D9B44E" />
-            <stop offset="0.03125" stopColor="#DAB54F" />
-            <stop offset="0.0351562" stopColor="#DBB650" />
-            <stop offset="0.0390625" stopColor="#DBB751" />
-            <stop offset="0.0429687" stopColor="#DCB852" />
-            <stop offset="0.046875" stopColor="#DDB952" />
-            <stop offset="0.0507812" stopColor="#DDBA53" />
-            <stop offset="0.0546875" stopColor="#DEBB54" />
-            <stop offset="0.0585937" stopColor="#DFBC55" />
-            <stop offset="0.0625" stopColor="#DFBC56" />
-            <stop offset="0.0664063" stopColor="#E0BD57" />
-            <stop offset="0.0703125" stopColor="#E0BE57" />
-            <stop offset="0.0742188" stopColor="#E1BF58" />
-            <stop offset="0.078125" stopColor="#E2C059" />
-            <stop offset="0.0820313" stopColor="#E2C15A" />
-            <stop offset="0.0859375" stopColor="#E3C25B" />
-            <stop offset="0.0898438" stopColor="#E4C35C" />
-            <stop offset="0.09375" stopColor="#E4C45D" />
-            <stop offset="0.0976563" stopColor="#E5C55D" />
-            <stop offset="0.101563" stopColor="#E6C65E" />
-            <stop offset="0.105469" stopColor="#E6C75F" />
-            <stop offset="0.109375" stopColor="#E7C860" />
-            <stop offset="0.113281" stopColor="#E8C961" />
-            <stop offset="0.117188" stopColor="#E8CA62" />
-            <stop offset="0.121094" stopColor="#E9CB62" />
-            <stop offset="0.125" stopColor="#E9CC63" />
-            <stop offset="0.128906" stopColor="#EACD64" />
-            <stop offset="0.132813" stopColor="#EBCE65" />
-            <stop offset="0.136719" stopColor="#EBCF66" />
-            <stop offset="0.140625" stopColor="#ECD067" />
-            <stop offset="0.144531" stopColor="#EDD168" />
-            <stop offset="0.148438" stopColor="#EDD268" />
-            <stop offset="0.152344" stopColor="#EED369" />
-            <stop offset="0.15625" stopColor="#EFD46A" />
-            <stop offset="0.160156" stopColor="#EFD56B" />
-            <stop offset="0.164062" stopColor="#F0D66C" />
-            <stop offset="0.167969" stopColor="#F0D76D" />
-            <stop offset="0.171875" stopColor="#F1D86D" />
-            <stop offset="0.175781" stopColor="#F2D96E" />
-            <stop offset="0.179688" stopColor="#F2DA6F" />
-            <stop offset="0.183594" stopColor="#F3DA70" />
-            <stop offset="0.1875" stopColor="#F4DB71" />
-            <stop offset="0.191406" stopColor="#F4DC72" />
-            <stop offset="0.195313" stopColor="#F5DD73" />
-            <stop offset="0.199219" stopColor="#F6DE73" />
-            <stop offset="0.203125" stopColor="#F6DF74" />
-            <stop offset="0.207031" stopColor="#F7E075" />
-            <stop offset="0.210938" stopColor="#F7E176" />
-            <stop offset="0.214844" stopColor="#F8E277" />
-            <stop offset="0.21875" stopColor="#F9E378" />
-            <stop offset="0.222656" stopColor="#F9E478" />
-            <stop offset="0.226563" stopColor="#FAE579" />
-            <stop offset="0.230469" stopColor="#FAE57A" />
-            <stop offset="0.234375" stopColor="#FAE67B" />
-            <stop offset="0.238281" stopColor="#FAE67C" />
-            <stop offset="0.242188" stopColor="#FAE67D" />
-            <stop offset="0.246094" stopColor="#FAE77E" />
-            <stop offset="0.25" stopColor="#FAE77E" />
-            <stop offset="0.253906" stopColor="#FAE77F" />
-            <stop offset="0.257813" stopColor="#FAE780" />
-            <stop offset="0.261719" stopColor="#FBE881" />
-            <stop offset="0.265625" stopColor="#FBE882" />
-            <stop offset="0.269531" stopColor="#FBE883" />
-            <stop offset="0.273438" stopColor="#FBE984" />
-            <stop offset="0.277344" stopColor="#FBE984" />
-            <stop offset="0.28125" stopColor="#FBE985" />
-            <stop offset="0.285156" stopColor="#FBEA86" />
-            <stop offset="0.289063" stopColor="#FBEA87" />
-            <stop offset="0.292969" stopColor="#FBEA88" />
-            <stop offset="0.296875" stopColor="#FBEA89" />
-            <stop offset="0.300781" stopColor="#FBEB8A" />
-            <stop offset="0.304688" stopColor="#FBEB8A" />
-            <stop offset="0.308594" stopColor="#FBEB8B" />
-            <stop offset="0.3125" stopColor="#FBEC8C" />
-            <stop offset="0.316406" stopColor="#FCEC8D" />
-            <stop offset="0.320312" stopColor="#FCEC8E" />
-            <stop offset="0.324219" stopColor="#FCED8F" />
-            <stop offset="0.328125" stopColor="#FCED90" />
-            <stop offset="0.332031" stopColor="#FCED90" />
-            <stop offset="0.335938" stopColor="#FCED91" />
-            <stop offset="0.339844" stopColor="#FCEE92" />
-            <stop offset="0.34375" stopColor="#FCEE93" />
-            <stop offset="0.347656" stopColor="#FCEE94" />
-            <stop offset="0.351563" stopColor="#FCEF95" />
-            <stop offset="0.355469" stopColor="#FCEF96" />
-            <stop offset="0.359375" stopColor="#FCEF96" />
-            <stop offset="0.363281" stopColor="#FCF097" />
-            <stop offset="0.367188" stopColor="#FCF098" />
-            <stop offset="0.371094" stopColor="#FDF099" />
-            <stop offset="0.375" stopColor="#FDF09A" />
-            <stop offset="0.378906" stopColor="#FDF19B" />
-            <stop offset="0.382812" stopColor="#FDF19C" />
-            <stop offset="0.386719" stopColor="#FDF19C" />
-            <stop offset="0.390625" stopColor="#FDF29D" />
-            <stop offset="0.394531" stopColor="#FDF29E" />
-            <stop offset="0.398438" stopColor="#FDF29F" />
-            <stop offset="0.402344" stopColor="#FDF3A0" />
-            <stop offset="0.40625" stopColor="#FDF3A1" />
-            <stop offset="0.410156" stopColor="#FDF3A2" />
-            <stop offset="0.414062" stopColor="#FDF3A2" />
-            <stop offset="0.417969" stopColor="#FDF4A3" />
-            <stop offset="0.421875" stopColor="#FDF4A4" />
-            <stop offset="0.425781" stopColor="#FEF4A5" />
-            <stop offset="0.429688" stopColor="#FEF5A6" />
-            <stop offset="0.433594" stopColor="#FEF5A7" />
-            <stop offset="0.4375" stopColor="#FEF5A8" />
-            <stop offset="0.441406" stopColor="#FEF6A9" />
-            <stop offset="0.445312" stopColor="#FEF6A9" />
-            <stop offset="0.453125" stopColor="#FEF6A9" />
-            <stop offset="0.457031" stopColor="#FEF5A8" />
-            <stop offset="0.460937" stopColor="#FEF5A8" />
-            <stop offset="0.464844" stopColor="#FEF5A7" />
-            <stop offset="0.46875" stopColor="#FEF5A6" />
-            <stop offset="0.472656" stopColor="#FEF4A5" />
-            <stop offset="0.476562" stopColor="#FDF4A4" />
-            <stop offset="0.480469" stopColor="#FDF4A4" />
-            <stop offset="0.484375" stopColor="#FDF4A3" />
-            <stop offset="0.488281" stopColor="#FDF3A2" />
-            <stop offset="0.492187" stopColor="#FDF3A1" />
-            <stop offset="0.496094" stopColor="#FDF3A0" />
-            <stop offset="0.5" stopColor="#FDF2A0" />
-            <stop offset="0.503906" stopColor="#FDF29F" />
-            <stop offset="0.507813" stopColor="#FDF29E" />
-            <stop offset="0.511719" stopColor="#FDF29D" />
-            <stop offset="0.515625" stopColor="#FDF19C" />
-            <stop offset="0.519531" stopColor="#FDF19C" />
-            <stop offset="0.523438" stopColor="#FDF19B" />
-            <stop offset="0.527344" stopColor="#FDF09A" />
-            <stop offset="0.53125" stopColor="#FDF099" />
-            <stop offset="0.535156" stopColor="#FCF098" />
-            <stop offset="0.539062" stopColor="#FCF098" />
-            <stop offset="0.542969" stopColor="#FCEF97" />
-            <stop offset="0.546875" stopColor="#FCEF96" />
-            <stop offset="0.550781" stopColor="#FCEF95" />
-            <stop offset="0.554688" stopColor="#FCEE94" />
-            <stop offset="0.558594" stopColor="#FCEE94" />
-            <stop offset="0.5625" stopColor="#FCEE93" />
-            <stop offset="0.566406" stopColor="#FCEE92" />
-            <stop offset="0.570312" stopColor="#FCED91" />
-            <stop offset="0.574219" stopColor="#FCED90" />
-            <stop offset="0.578125" stopColor="#FCED90" />
-            <stop offset="0.582031" stopColor="#FCED8F" />
-            <stop offset="0.585938" stopColor="#FCEC8E" />
-            <stop offset="0.589844" stopColor="#FCEC8D" />
-            <stop offset="0.59375" stopColor="#FBEC8C" />
-            <stop offset="0.597656" stopColor="#FBEB8C" />
-            <stop offset="0.601563" stopColor="#FBEB8B" />
-            <stop offset="0.605469" stopColor="#FBEB8A" />
-            <stop offset="0.609375" stopColor="#FBEB89" />
-            <stop offset="0.613281" stopColor="#FBEA88" />
-            <stop offset="0.617188" stopColor="#FBEA88" />
-            <stop offset="0.621094" stopColor="#FBEA87" />
-            <stop offset="0.625" stopColor="#FBE986" />
-            <stop offset="0.628906" stopColor="#FBE985" />
-            <stop offset="0.632812" stopColor="#FBE984" />
-            <stop offset="0.636719" stopColor="#FBE984" />
-            <stop offset="0.640625" stopColor="#FBE883" />
-            <stop offset="0.644531" stopColor="#FBE882" />
-            <stop offset="0.648438" stopColor="#FBE881" />
-            <stop offset="0.652344" stopColor="#FAE780" />
-            <stop offset="0.65625" stopColor="#FAE780" />
-            <stop offset="0.660156" stopColor="#FAE77F" />
-            <stop offset="0.664062" stopColor="#FAE77E" />
-            <stop offset="0.667969" stopColor="#FAE67D" />
-            <stop offset="0.671875" stopColor="#FAE67C" />
-            <stop offset="0.675781" stopColor="#FAE67B" />
-            <stop offset="0.679688" stopColor="#FAE67B" />
-            <stop offset="0.683594" stopColor="#FAE57A" />
-            <stop offset="0.6875" stopColor="#FAE579" />
-            <stop offset="0.691406" stopColor="#F9E478" />
-            <stop offset="0.695312" stopColor="#F8E377" />
-            <stop offset="0.699219" stopColor="#F8E176" />
-            <stop offset="0.703125" stopColor="#F7E075" />
-            <stop offset="0.707031" stopColor="#F6DF74" />
-            <stop offset="0.710938" stopColor="#F5DE73" />
-            <stop offset="0.714844" stopColor="#F4DD72" />
-            <stop offset="0.71875" stopColor="#F4DC71" />
-            <stop offset="0.722656" stopColor="#F3DA70" />
-            <stop offset="0.726562" stopColor="#F2D96F" />
-            <stop offset="0.730469" stopColor="#F1D86E" />
-            <stop offset="0.734375" stopColor="#F1D76D" />
-            <stop offset="0.738281" stopColor="#F0D66C" />
-            <stop offset="0.742188" stopColor="#EFD46B" />
-            <stop offset="0.746094" stopColor="#EED36A" />
-            <stop offset="0.75" stopColor="#EDD269" />
-            <stop offset="0.753906" stopColor="#EDD168" />
-            <stop offset="0.757812" stopColor="#ECD067" />
-            <stop offset="0.761719" stopColor="#EBCF66" />
-            <stop offset="0.765625" stopColor="#EACD65" />
-            <stop offset="0.769531" stopColor="#EACC64" />
-            <stop offset="0.773438" stopColor="#E9CB63" />
-            <stop offset="0.777344" stopColor="#E8CA61" />
-            <stop offset="0.78125" stopColor="#E7C960" />
-            <stop offset="0.785156" stopColor="#E7C85F" />
-            <stop offset="0.789062" stopColor="#E6C65E" />
-            <stop offset="0.792969" stopColor="#E5C55D" />
-            <stop offset="0.796875" stopColor="#E4C45C" />
-            <stop offset="0.800781" stopColor="#E3C35B" />
-            <stop offset="0.804688" stopColor="#E3C25A" />
-            <stop offset="0.808594" stopColor="#E2C059" />
-            <stop offset="0.8125" stopColor="#E1BF58" />
-            <stop offset="0.816406" stopColor="#E0BE57" />
-            <stop offset="0.820312" stopColor="#E0BD56" />
-            <stop offset="0.824219" stopColor="#DFBC55" />
-            <stop offset="0.828125" stopColor="#DEBB54" />
-            <stop offset="0.832031" stopColor="#DDB953" />
-            <stop offset="0.835938" stopColor="#DCB852" />
-            <stop offset="0.839844" stopColor="#DCB751" />
-            <stop offset="0.84375" stopColor="#DBB650" />
-            <stop offset="0.847656" stopColor="#DAB54F" />
-            <stop offset="0.851562" stopColor="#D9B44E" />
-            <stop offset="0.855469" stopColor="#D9B24D" />
-            <stop offset="0.859375" stopColor="#D8B14C" />
-            <stop offset="0.863281" stopColor="#D7B04B" />
-            <stop offset="0.867188" stopColor="#D6AF4A" />
-            <stop offset="0.871094" stopColor="#D5AE49" />
-            <stop offset="0.875" stopColor="#D5AD48" />
-            <stop offset="0.878906" stopColor="#D4AB47" />
-            <stop offset="0.882812" stopColor="#D3AA46" />
-            <stop offset="0.886719" stopColor="#D2A945" />
-            <stop offset="0.890625" stopColor="#D2A844" />
-            <stop offset="0.894531" stopColor="#D1A743" />
-            <stop offset="0.898437" stopColor="#D0A542" />
-            <stop offset="0.902344" stopColor="#CFA441" />
-            <stop offset="0.90625" stopColor="#CFA340" />
-            <stop offset="0.910156" stopColor="#CEA23F" />
-            <stop offset="0.914062" stopColor="#CDA13E" />
-            <stop offset="0.917969" stopColor="#CCA03D" />
-            <stop offset="0.921875" stopColor="#CB9E3C" />
-            <stop offset="0.925781" stopColor="#CB9D3B" />
-            <stop offset="0.929688" stopColor="#CA9C39" />
-            <stop offset="0.933594" stopColor="#C99B38" />
-            <stop offset="0.9375" stopColor="#C89A37" />
-            <stop offset="0.941406" stopColor="#C89936" />
-            <stop offset="0.945312" stopColor="#C79735" />
-            <stop offset="0.949219" stopColor="#C69634" />
-            <stop offset="0.953125" stopColor="#C59533" />
-            <stop offset="0.957031" stopColor="#C49432" />
-            <stop offset="0.960938" stopColor="#C49331" />
-            <stop offset="0.964844" stopColor="#C39130" />
-            <stop offset="0.96875" stopColor="#C2902F" />
-            <stop offset="0.972656" stopColor="#C18F2E" />
-            <stop offset="0.976562" stopColor="#C18E2D" />
-            <stop offset="0.980469" stopColor="#C08D2C" />
-            <stop offset="0.984375" stopColor="#BF8C2B" />
-            <stop offset="0.988281" stopColor="#BE8A2A" />
-            <stop offset="0.992187" stopColor="#BD8929" />
+            <stop stopColor="#C49432" />
+            <stop offset="0.00390625" stopColor="#C59533" />
+            <stop offset="0.0078125" stopColor="#C69634" />
+            <stop offset="0.0117187" stopColor="#C79735" />
+            <stop offset="0.015625" stopColor="#C79836" />
+            <stop offset="0.0195312" stopColor="#C89937" />
+            <stop offset="0.0234375" stopColor="#C99A38" />
+            <stop offset="0.0273438" stopColor="#C99B39" />
+            <stop offset="0.03125" stopColor="#CA9C3A" />
+            <stop offset="0.0351562" stopColor="#CB9D3B" />
+            <stop offset="0.0390625" stopColor="#CB9E3C" />
+            <stop offset="0.0429688" stopColor="#CC9F3C" />
+            <stop offset="0.046875" stopColor="#CDA13D" />
+            <stop offset="0.0507813" stopColor="#CEA23E" />
+            <stop offset="0.0546875" stopColor="#CEA33F" />
+            <stop offset="0.0585938" stopColor="#CFA440" />
+            <stop offset="0.0625" stopColor="#D0A541" />
+            <stop offset="0.0664063" stopColor="#D0A642" />
+            <stop offset="0.0703125" stopColor="#D1A743" />
+            <stop offset="0.0742188" stopColor="#D2A844" />
+            <stop offset="0.078125" stopColor="#D2A945" />
+            <stop offset="0.0820312" stopColor="#D3AA46" />
+            <stop offset="0.0859375" stopColor="#D4AB47" />
+            <stop offset="0.0898438" stopColor="#D5AC48" />
+            <stop offset="0.09375" stopColor="#D5AD49" />
+            <stop offset="0.0976563" stopColor="#D6AE4A" />
+            <stop offset="0.101562" stopColor="#D7AF4A" />
+            <stop offset="0.105469" stopColor="#D7B14B" />
+            <stop offset="0.109375" stopColor="#D8B24C" />
+            <stop offset="0.113281" stopColor="#D9B34D" />
+            <stop offset="0.117188" stopColor="#D9B44E" />
+            <stop offset="0.121094" stopColor="#DAB54F" />
+            <stop offset="0.125" stopColor="#DBB650" />
+            <stop offset="0.128906" stopColor="#DCB751" />
+            <stop offset="0.132813" stopColor="#DCB852" />
+            <stop offset="0.136719" stopColor="#DDB953" />
+            <stop offset="0.140625" stopColor="#DEBA54" />
+            <stop offset="0.144531" stopColor="#DEBB55" />
+            <stop offset="0.148438" stopColor="#DFBC56" />
+            <stop offset="0.152344" stopColor="#E0BD57" />
+            <stop offset="0.15625" stopColor="#E1BE57" />
+            <stop offset="0.160156" stopColor="#E1BF58" />
+            <stop offset="0.164063" stopColor="#E2C159" />
+            <stop offset="0.167969" stopColor="#E3C25A" />
+            <stop offset="0.171875" stopColor="#E3C35B" />
+            <stop offset="0.175781" stopColor="#E4C45C" />
+            <stop offset="0.179688" stopColor="#E5C55D" />
+            <stop offset="0.183594" stopColor="#E5C65E" />
+            <stop offset="0.1875" stopColor="#E6C75F" />
+            <stop offset="0.191406" stopColor="#E7C860" />
+            <stop offset="0.195313" stopColor="#E8C961" />
+            <stop offset="0.199219" stopColor="#E8CA62" />
+            <stop offset="0.203125" stopColor="#E9CB63" />
+            <stop offset="0.207031" stopColor="#EACC64" />
+            <stop offset="0.210938" stopColor="#EACD65" />
+            <stop offset="0.214844" stopColor="#EBCE65" />
+            <stop offset="0.21875" stopColor="#ECCF66" />
+            <stop offset="0.222656" stopColor="#ECD167" />
+            <stop offset="0.226563" stopColor="#EDD268" />
+            <stop offset="0.230469" stopColor="#EED369" />
+            <stop offset="0.234375" stopColor="#EFD46A" />
+            <stop offset="0.238281" stopColor="#EFD56B" />
+            <stop offset="0.242188" stopColor="#F0D66C" />
+            <stop offset="0.246094" stopColor="#F1D76D" />
+            <stop offset="0.25" stopColor="#F1D86E" />
+            <stop offset="0.253906" stopColor="#F2D96F" />
+            <stop offset="0.257812" stopColor="#F3DA70" />
+            <stop offset="0.261719" stopColor="#F3DB71" />
+            <stop offset="0.265625" stopColor="#F4DC72" />
+            <stop offset="0.269531" stopColor="#F5DD72" />
+            <stop offset="0.273437" stopColor="#F6DE73" />
+            <stop offset="0.277344" stopColor="#F6E074" />
+            <stop offset="0.28125" stopColor="#F7E175" />
+            <stop offset="0.285156" stopColor="#F8E276" />
+            <stop offset="0.289063" stopColor="#F8E377" />
+            <stop offset="0.292969" stopColor="#F9E478" />
+            <stop offset="0.296875" stopColor="#FAE579" />
+            <stop offset="0.300781" stopColor="#FAE57A" />
+            <stop offset="0.304688" stopColor="#FAE67B" />
+            <stop offset="0.308594" stopColor="#FAE67C" />
+            <stop offset="0.3125" stopColor="#FAE67D" />
+            <stop offset="0.316406" stopColor="#FAE77E" />
+            <stop offset="0.320312" stopColor="#FAE77F" />
+            <stop offset="0.324219" stopColor="#FAE780" />
+            <stop offset="0.328125" stopColor="#FBE881" />
+            <stop offset="0.332031" stopColor="#FBE882" />
+            <stop offset="0.335938" stopColor="#FBE882" />
+            <stop offset="0.339844" stopColor="#FBE983" />
+            <stop offset="0.34375" stopColor="#FBE984" />
+            <stop offset="0.347656" stopColor="#FBE985" />
+            <stop offset="0.351562" stopColor="#FBEA86" />
+            <stop offset="0.355469" stopColor="#FBEA87" />
+            <stop offset="0.359375" stopColor="#FBEA88" />
+            <stop offset="0.363281" stopColor="#FBEB89" />
+            <stop offset="0.367187" stopColor="#FBEB8A" />
+            <stop offset="0.371094" stopColor="#FBEB8B" />
+            <stop offset="0.375" stopColor="#FBEC8C" />
+            <stop offset="0.378906" stopColor="#FCEC8D" />
+            <stop offset="0.382813" stopColor="#FCEC8E" />
+            <stop offset="0.386719" stopColor="#FCED8F" />
+            <stop offset="0.390625" stopColor="#FCED90" />
+            <stop offset="0.394531" stopColor="#FCED91" />
+            <stop offset="0.398438" stopColor="#FCEE92" />
+            <stop offset="0.402344" stopColor="#FCEE93" />
+            <stop offset="0.40625" stopColor="#FCEE93" />
+            <stop offset="0.410156" stopColor="#FCEF94" />
+            <stop offset="0.414062" stopColor="#FCEF95" />
+            <stop offset="0.417969" stopColor="#FCEF96" />
+            <stop offset="0.421875" stopColor="#FCF097" />
+            <stop offset="0.425781" stopColor="#FCF098" />
+            <stop offset="0.429688" stopColor="#FDF099" />
+            <stop offset="0.433594" stopColor="#FDF09A" />
+            <stop offset="0.4375" stopColor="#FDF19B" />
+            <stop offset="0.441406" stopColor="#FDF19C" />
+            <stop offset="0.445312" stopColor="#FDF19D" />
+            <stop offset="0.449219" stopColor="#FDF29E" />
+            <stop offset="0.453125" stopColor="#FDF29F" />
+            <stop offset="0.457031" stopColor="#FDF2A0" />
+            <stop offset="0.460937" stopColor="#FDF3A1" />
+            <stop offset="0.464844" stopColor="#FDF3A2" />
+            <stop offset="0.46875" stopColor="#FDF3A3" />
+            <stop offset="0.472656" stopColor="#FDF4A4" />
+            <stop offset="0.476563" stopColor="#FEF4A5" />
+            <stop offset="0.480469" stopColor="#FEF4A5" />
+            <stop offset="0.484375" stopColor="#FEF5A6" />
+            <stop offset="0.488281" stopColor="#FEF5A7" />
+            <stop offset="0.492188" stopColor="#FEF5A8" />
+            <stop offset="0.496094" stopColor="#FEF6A9" />
+            <stop offset="0.5" stopColor="#FEF6AA" />
+            <stop offset="0.503906" stopColor="#FEF6A9" />
+            <stop offset="0.507813" stopColor="#FEF5A8" />
+            <stop offset="0.511719" stopColor="#FEF5A7" />
+            <stop offset="0.515625" stopColor="#FEF5A6" />
+            <stop offset="0.519531" stopColor="#FEF4A6" />
+            <stop offset="0.523438" stopColor="#FEF4A5" />
+            <stop offset="0.527344" stopColor="#FDF4A4" />
+            <stop offset="0.53125" stopColor="#FDF4A3" />
+            <stop offset="0.535156" stopColor="#FDF3A2" />
+            <stop offset="0.539063" stopColor="#FDF3A1" />
+            <stop offset="0.542969" stopColor="#FDF3A0" />
+            <stop offset="0.546875" stopColor="#FDF29F" />
+            <stop offset="0.550781" stopColor="#FDF29E" />
+            <stop offset="0.554688" stopColor="#FDF29E" />
+            <stop offset="0.558594" stopColor="#FDF19D" />
+            <stop offset="0.5625" stopColor="#FDF19C" />
+            <stop offset="0.566406" stopColor="#FDF19B" />
+            <stop offset="0.570312" stopColor="#FDF09A" />
+            <stop offset="0.574219" stopColor="#FDF099" />
+            <stop offset="0.578125" stopColor="#FCF098" />
+            <stop offset="0.582031" stopColor="#FCF097" />
+            <stop offset="0.585938" stopColor="#FCEF97" />
+            <stop offset="0.589844" stopColor="#FCEF96" />
+            <stop offset="0.59375" stopColor="#FCEF95" />
+            <stop offset="0.597656" stopColor="#FCEE94" />
+            <stop offset="0.601562" stopColor="#FCEE93" />
+            <stop offset="0.605469" stopColor="#FCEE92" />
+            <stop offset="0.609375" stopColor="#FCED91" />
+            <stop offset="0.613281" stopColor="#FCED90" />
+            <stop offset="0.617188" stopColor="#FCED8F" />
+            <stop offset="0.621094" stopColor="#FCEC8F" />
+            <stop offset="0.625" stopColor="#FCEC8E" />
+            <stop offset="0.628906" stopColor="#FCEC8D" />
+            <stop offset="0.632812" stopColor="#FBEC8C" />
+            <stop offset="0.636719" stopColor="#FBEB8B" />
+            <stop offset="0.640625" stopColor="#FBEB8A" />
+            <stop offset="0.644531" stopColor="#FBEB89" />
+            <stop offset="0.648437" stopColor="#FBEA88" />
+            <stop offset="0.652344" stopColor="#FBEA88" />
+            <stop offset="0.65625" stopColor="#FBEA87" />
+            <stop offset="0.660156" stopColor="#FBE986" />
+            <stop offset="0.664062" stopColor="#FBE985" />
+            <stop offset="0.667969" stopColor="#FBE984" />
+            <stop offset="0.671875" stopColor="#FBE883" />
+            <stop offset="0.675781" stopColor="#FBE882" />
+            <stop offset="0.679687" stopColor="#FBE881" />
+            <stop offset="0.683594" stopColor="#FBE880" />
+            <stop offset="0.6875" stopColor="#FAE780" />
+            <stop offset="0.691406" stopColor="#FAE77F" />
+            <stop offset="0.695313" stopColor="#FAE77E" />
+            <stop offset="0.699219" stopColor="#FAE67D" />
+            <stop offset="0.703125" stopColor="#FAE67C" />
+            <stop offset="0.707031" stopColor="#FAE67B" />
+            <stop offset="0.710938" stopColor="#FAE57A" />
+            <stop offset="0.714844" stopColor="#FAE579" />
+            <stop offset="0.71875" stopColor="#F9E478" />
+            <stop offset="0.722656" stopColor="#F8E377" />
+            <stop offset="0.726562" stopColor="#F8E276" />
+            <stop offset="0.730469" stopColor="#F7E075" />
+            <stop offset="0.734375" stopColor="#F6DF74" />
+            <stop offset="0.738281" stopColor="#F5DE73" />
+            <stop offset="0.742188" stopColor="#F4DC72" />
+            <stop offset="0.746094" stopColor="#F3DB70" />
+            <stop offset="0.75" stopColor="#F3DA6F" />
+            <stop offset="0.753906" stopColor="#F2D86E" />
+            <stop offset="0.757812" stopColor="#F1D76D" />
+            <stop offset="0.761719" stopColor="#F0D66C" />
+            <stop offset="0.765625" stopColor="#EFD56B" />
+            <stop offset="0.769531" stopColor="#EED36A" />
+            <stop offset="0.773438" stopColor="#EDD269" />
+            <stop offset="0.777344" stopColor="#EDD167" />
+            <stop offset="0.78125" stopColor="#ECCF66" />
+            <stop offset="0.785156" stopColor="#EBCE65" />
+            <stop offset="0.789062" stopColor="#EACD64" />
+            <stop offset="0.792969" stopColor="#E9CC63" />
+            <stop offset="0.796875" stopColor="#E8CA62" />
+            <stop offset="0.800781" stopColor="#E7C961" />
+            <stop offset="0.804687" stopColor="#E7C860" />
+            <stop offset="0.808594" stopColor="#E6C65E" />
+            <stop offset="0.8125" stopColor="#E5C55D" />
+            <stop offset="0.816406" stopColor="#E4C45C" />
+            <stop offset="0.820313" stopColor="#E3C25B" />
+            <stop offset="0.824219" stopColor="#E2C15A" />
+            <stop offset="0.828125" stopColor="#E1C059" />
+            <stop offset="0.832031" stopColor="#E1BF58" />
+            <stop offset="0.835938" stopColor="#E0BD56" />
+            <stop offset="0.839844" stopColor="#DFBC55" />
+            <stop offset="0.84375" stopColor="#DEBB54" />
+            <stop offset="0.847656" stopColor="#DDB953" />
+            <stop offset="0.851563" stopColor="#DCB852" />
+            <stop offset="0.855469" stopColor="#DBB751" />
+            <stop offset="0.859375" stopColor="#DBB650" />
+            <stop offset="0.863281" stopColor="#DAB44F" />
+            <stop offset="0.867188" stopColor="#D9B34D" />
+            <stop offset="0.871094" stopColor="#D8B24C" />
+            <stop offset="0.875" stopColor="#D7B04B" />
+            <stop offset="0.878906" stopColor="#D6AF4A" />
+            <stop offset="0.882812" stopColor="#D6AE49" />
+            <stop offset="0.886719" stopColor="#D5AC48" />
+            <stop offset="0.890625" stopColor="#D4AB47" />
+            <stop offset="0.894531" stopColor="#D3AA46" />
+            <stop offset="0.898438" stopColor="#D2A944" />
+            <stop offset="0.902344" stopColor="#D1A743" />
+            <stop offset="0.90625" stopColor="#D0A642" />
+            <stop offset="0.910156" stopColor="#D0A541" />
+            <stop offset="0.914062" stopColor="#CFA340" />
+            <stop offset="0.917969" stopColor="#CEA23F" />
+            <stop offset="0.921875" stopColor="#CDA13E" />
+            <stop offset="0.925781" stopColor="#CCA03C" />
+            <stop offset="0.929688" stopColor="#CB9E3B" />
+            <stop offset="0.933594" stopColor="#CA9D3A" />
+            <stop offset="0.9375" stopColor="#CA9C39" />
+            <stop offset="0.941406" stopColor="#C99A38" />
+            <stop offset="0.945312" stopColor="#C89937" />
+            <stop offset="0.949219" stopColor="#C79836" />
+            <stop offset="0.953125" stopColor="#C69635" />
+            <stop offset="0.957031" stopColor="#C59533" />
+            <stop offset="0.960937" stopColor="#C49432" />
+            <stop offset="0.964844" stopColor="#C49331" />
+            <stop offset="0.96875" stopColor="#C39130" />
+            <stop offset="0.972656" stopColor="#C2902F" />
+            <stop offset="0.976562" stopColor="#C18F2E" />
+            <stop offset="0.980469" stopColor="#C08D2D" />
+            <stop offset="0.984375" stopColor="#BF8C2C" />
+            <stop offset="0.988281" stopColor="#BE8B2A" />
+            <stop offset="0.992187" stopColor="#BE8929" />
             <stop offset="0.996094" stopColor="#BD8828" />
             <stop offset="1" stopColor="#BC8727" />
           </linearGradient>
