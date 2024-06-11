@@ -1,10 +1,14 @@
-import pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import header from '../assets/header.png';
 import footer from '../assets/footer.png';
 
 //pdfMake.vfs = pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
+<<<<<<< HEAD
+pdfMake.vfs = pdfFonts.vfs;
+=======
 
+>>>>>>> ba50fd0ff3e45f8623c5beea385b5e513b23be59
 
 const loadImage = (src) => new Promise((resolve, reject) => {
   const image = new Image();
