@@ -6,7 +6,7 @@ const uploadPaper = (req, res) => {
   const fileName = req.fileName;
   const title = req.title;
   const abstract = req.abstract;
-  const eventId=req.params.eventId;
+  const eventId=req.params.id;
 
   if (!fileName) {
     return res.status(400).send("File name is missing in the request.");

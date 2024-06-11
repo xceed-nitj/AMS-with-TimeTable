@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+// import React, { useState } from "react";
 import {
   Box,
   Stepper,
@@ -89,7 +89,7 @@ export default function MultiStepForm() {
             >
               Back
             </Button>
-            <Box sx={{ flex: '1 1 auto' }} />
+            <Box sx={{ flex: '0.1 1 auto' }} />
             {activeStep !== steps.length - 1 ? (
               <Button onClick={handleNext} disabled={!next}>
                 Next

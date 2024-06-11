@@ -4,7 +4,9 @@ import header from '../assets/header.png';
 import footer from '../assets/footer.png';
 import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 
-//pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+// pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
 //pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
 

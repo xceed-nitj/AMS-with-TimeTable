@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import moment from 'moment-timezone';
 import { useNavigate } from 'react-router-dom';
-import './settings.css'
-import getEnvironment from '../../../../getenvironment';
+// import './settings.css'
+import getEnvironment from '../../../getenvironment';
 
 const Settings = () => {
   const [quizData, setQuizData] = useState({
@@ -31,11 +31,11 @@ const Settings = () => {
       const token = localStorage.getItem('token');
       const code = window.location.pathname.split('/').filter((path) => path !== 'settings').pop();
       console.log(token);
-      const response = await fetch(`${apiurl}/api/quiz/quizzes/${code}`, {
+      const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}`, {
         method: 'GET',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
           // Include any other headers required by your API
         },
       });
@@ -90,11 +90,11 @@ const Settings = () => {
       const token = localStorage.getItem('token');
       const code = window.location.pathname.split('/').filter((path) => path !== 'settings').pop();
       console.log(code);
-      const response = await fetch(`${apiurl}/api/quiz/quizzes/${code}`, {
+      const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
           // Include any other headers required by your API
         },
         body: JSON.stringify({
