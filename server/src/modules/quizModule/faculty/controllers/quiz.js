@@ -4,7 +4,7 @@ const QuizQuestion = require('../../../../models/quizModule/quizQuestion');
 const StudentAnswer = require('../../../../models/quizModule/studentAns');
 const StudentResult = require('../../../../models/quizModule/studentResult');
 
-const {newQuiz} = require('../controllers/dto');
+const {findQuiz} = require('../controllers/dto');
 
 //const HttpException = require('../../../../models/http-exception');
   
@@ -84,6 +84,31 @@ class QuizController {
         code
       });
 
+      if (quiz) {
+        res.status(200).json({
+          success: true,
+          data: quiz
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          message: 'Quiz not found'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching quiz:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal Server Error'
+      });
+    }
+  }
+
+  async getQuizByCodeDTO(req, res) {
+    try {
+      const { code } = req.params;
+      const quiz = await findQuiz(code); // Add await here
+      console.log(quiz);
       if (quiz) {
         res.status(200).json({
           success: true,
@@ -277,7 +302,7 @@ class QuizController {
     }
   };
 
-  async getAQuestion(req, res) {
+  async findQuestionById(req, res) {
     try {
       const { code, id } = req.params;
 
@@ -412,9 +437,6 @@ class QuizController {
     }
 };
 
-
 }
-
-
 
 module.exports = QuizController;

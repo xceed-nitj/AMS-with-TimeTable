@@ -3,11 +3,11 @@ const { Schema } = mongoose;
 
 const studentResultSchema = new Schema({
   quizId: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
   studentId: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
   totalScore: {

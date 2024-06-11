@@ -37,19 +37,6 @@ const generateUniqueLink = async () => {
   return generatedLink;
 };
 
-// async function facultyCheck(req, res, next){
-//   try {
-//     user=req.user;
-//     if (user.profileType != 'faculty') {
-//       return res.status(401);
-//     }
-//     req.user = user; // Attach the user object to the request for further use
-//     next(); // Call the next middleware or route handler
-//   } catch (error) {
-//     return res.status(401).json({ error: 'Error in authorisation' });
-//   }
-// };
-
 const quizBelongsToUser = async (req, res, next) => {
   try {
       const user = req.user;
@@ -68,6 +55,24 @@ const quizBelongsToUser = async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid token' });
   }
 };
+
+module.exports = {
+  generateUniqueLink,
+  quizBelongsToUser
+};
+
+// async function facultyCheck(req, res, next){
+//   try {
+//     user=req.user;
+//     if (user.profileType != 'faculty') {
+//       return res.status(401);
+//     }
+//     req.user = user; // Attach the user object to the request for further use
+//     next(); // Call the next middleware or route handler
+//   } catch (error) {
+//     return res.status(401).json({ error: 'Error in authorisation' });
+//   }
+// };
 
 // // save answer from the option structure
 // const correctAnswer = async(options, correctAnsInteger, questionType) =>{
@@ -160,15 +165,3 @@ const quizBelongsToUser = async (req, res, next) => {
 
 //   return consolidatedData;
 // };
-
-
-
-module.exports = {
-generateUniqueLink,
-// facultyCheck,
-quizBelongsToUser
-// correctAnswer,
-// addQuestion,
-// editQuestion,
-// consolidateStudentData
-};
