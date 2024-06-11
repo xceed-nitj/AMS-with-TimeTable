@@ -3,6 +3,3 @@ node_modules
 yarn.lock
 .yarn
 .env
-
-uploads/
-
