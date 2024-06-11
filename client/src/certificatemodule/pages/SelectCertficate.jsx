@@ -8,6 +8,8 @@ import Template06 from './certificatetemplates/template06';
 import Template07 from './certificatetemplates/template07';
 import Template08 from './certificatetemplates/template08';
 import Template09 from './certificatetemplates/template09';
+import Template10 from './certificatetemplates/Template10';
+
 
 function SelectCertficate({
   templateId,
@@ -119,6 +121,17 @@ function SelectCertficate({
       header={header}
       footer={footer}
       key={'8'}
+    />,
+    <Template10
+      eventId={eventId}
+      contentBody={contentBody}
+      certiType={certiType}
+      logos={logos}
+      participantDetail={participantDetail}
+      signature={signature}
+      header={header}
+      footer={footer}
+      key={'9'}
     />,
   ];
 
