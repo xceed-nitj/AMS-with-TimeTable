@@ -20,9 +20,9 @@ function AddReviewer() {
       try {
         const response = await axios.get(`${apiUrl}/reviewmodule/event/getReviewerInEvent/${eventId}`);
         setReviewers(response.data);
-      console.log(response.data)
+        console.log(response.data)
 
-      } catch (error) {
+       } catch (error) {
         console.error('Error fetching reviewers:', error);
       }
     };
@@ -36,16 +36,18 @@ function AddReviewer() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const baseUrl = window.location.origin;
 
     try {
-      // Adding reviewer to the event
-      console.log(eventId);
-      const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/event/addReviewer/${eventId}`, { email: reviewerEmail });
-// console.log(addReviewerResponse)
+      const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/event/addReviewer/${eventId}`, { 
+        email: reviewerEmail,
+        baseUrl
+      });
+
       if (addReviewerResponse) {
         const response = await axios.get(`${apiUrl}/reviewmodule/event/getReviewerInEvent/${eventId}`);
-      setReviewers(response.data);
-      console.log(response.data)
+        setReviewers(response.data);
+        console.log(response.data)
         toast({
           title: 'Reviewer Invited successfully',
           status: 'success',
@@ -53,7 +55,7 @@ function AddReviewer() {
           isClosable: true,
           position: 'bottom',
         });
-        // setReviewers(prevReviewers => [...prevReviewers, { email: reviewerEmail }]); // Assuming you're only adding the email here
+         // setReviewers(prevReviewers => [...prevReviewers, { email: reviewerEmail }]); // Assuming you're only adding the email here
       } else {
         toast({
           title: 'Error adding Reviewer as api path is wrong',
@@ -77,7 +79,33 @@ function AddReviewer() {
     }
   };
 
-  
+  const handleResendInvitation = async (email) => {
+    const baseUrl = window.location.origin;
+    try {
+      await axios.post(`${apiUrl}/reviewmodule/event/resendInvitation/${eventId}`, { 
+        email,
+        baseUrl
+      });
+      toast({
+        title: 'Invitation resent successfully',
+        status: 'success',
+        duration: 6000,
+        isClosable: true,
+        position: 'bottom',
+      });
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast({
+        title: 'Error resending invitation',
+        description: 'Please try again later',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+        position: 'bottom',
+      });
+    }
+  };
+
   return (
     <Container>
       <Header title="Add Reviewer" />
@@ -87,7 +115,7 @@ function AddReviewer() {
           <Input
             mb={4}
             type="email"
-            placeholder="Enter reviewer email to add to event "
+            placeholder="Enter reviewer email to add to event"
             value={reviewerEmail}
             onChange={handleReviewerEmailChange}
           />
@@ -103,6 +131,7 @@ function AddReviewer() {
               <Th>Name</Th>
               <Th>Email</Th>
               <Th>Status</Th>
+              <Th>Actions</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -111,7 +140,11 @@ function AddReviewer() {
                 <Td>{reviewer.name}</Td>
                 <Td>{reviewer.email}</Td>
                 <Td>{reviewer.status}</Td>
-                
+                <Td>
+                  <Button onClick={() => handleResendInvitation(reviewer.email)} colorScheme="blue">
+                    Resend Invitation
+                  </Button>
+                </Td>
               </Tr>
             ))}
           </Tbody>
