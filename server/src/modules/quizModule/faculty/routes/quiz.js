@@ -74,7 +74,7 @@ quizRouter.get("/:code/questions", facultyRoute, quizBelongsToUser, async (req, 
 
 quizRouter.get("/:code/questions/:id", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
-        await quizController.getAQuestion(req, res);
+        await quizController.findQuestionById(req, res);
     } catch (e) {
         res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
     }
