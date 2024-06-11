@@ -144,7 +144,7 @@ const CertificateContent = ({
         </defs>
       </>
       <>
-        <foreignObject width={'90%'} height={'400'} y={'80'} x={'5%'}>
+        <foreignObject width={'90%'} height={'400'} y={'80'} x={'20%'}>
           <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
             {logos.map((item, key) => (
               <div
@@ -179,7 +179,7 @@ const CertificateContent = ({
           </div>
         </foreignObject>
 
-        <foreignObject x="10%" y="200.473" width="85%" height="160">
+        <foreignObject x="328" y="200.473" width="68%" height="160">
           <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
             {header.map((item, ind) => (
               <h1
@@ -193,7 +193,7 @@ const CertificateContent = ({
         </foreignObject>
 
         <text
-          x="561.26"
+          x="700"
           y="340.473"
           fill="#424847"
           fontFamily="AbhayaLibre-Regular"
@@ -204,13 +204,13 @@ const CertificateContent = ({
           CERTIFICATE OF APPRECIATION
         </text>
 
-        <foreignObject x="12.5%" y="370.473" width="75%" height="160">
+        <foreignObject x="328" y="370.473" width="68%" height="160">
           <p className="font-serif text-xl opacity-80">
             <div>{ReactHtmlParser(contentBody)}</div>
           </p>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={515} width={'60%'} height={400}>
+        <foreignObject x={'35%'} y={515} width={'60%'} height={400}>
           <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
             {signature.map((item, key) => (
               <div
@@ -232,7 +232,7 @@ const CertificateContent = ({
           </div>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
+        <foreignObject x={'32%'} y={'90%'} width={'60%'} height={'100'}>
           <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
             {window.location.href}
           </div>
