@@ -47,9 +47,11 @@ function NirfRanking() {
         return response.json();
       })
       .then((data) => {
-        // Sort the data based on 'dept' in alphabetical order
-        // const sortedData = data.sort((a, b) => a.dept.localeCompare(b.dept));
-        const uniqueYears = [...new Set(data.map((room) => room.Year))];
+        // // Sort the data based on 'dept' in alphabetical order
+        // // const sortedData = data.sort((a, b) => a.dept.localeCompare(b.dept));
+        // const uniqueYears = [...new Set(data.map((room) => room.Year))];
+        // Get unique years and sort them in descending order
+        const uniqueYears = [...new Set(data.map((room) => room.Year))].sort((a, b) => b - a);
         setYears(uniqueYears); // Update years before rendering
         setMasterRoomData(data);
         setLoading(false);
@@ -85,11 +87,12 @@ function NirfRanking() {
 
     const filteredRooms = masterRoomData.filter((room) => {
       const sanitizedRoom = sanitizeString(room.Institute);
+      const sanitizedLocation =sanitizeString(room.Location);
       const roomYear = room.Year;
 
 
          return (
-      sanitizedRoom.includes(sanitizedSearchTerm) &&
+      sanitizedRoom.includes(sanitizedSearchTerm)|| sanitizedLocation.includes(sanitizedSearchTerm) &&
       (selectedYears.length === 0 || selectedYears.includes(roomYear))
     );      
     });

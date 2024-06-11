@@ -4,7 +4,7 @@ const XUser= require("../../../models/usermanagement/user.js")
 const express = require("express");
 const bodyParser = require("body-parser");
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
-
+const getEnvironmentURL =require('../../../getEnvironmentURL.js')
 
 
 const app = express();
@@ -88,8 +88,6 @@ const getEventsByUser = async (req, res) => {
   }
 };
 
-
-
 const getEventById = async (req, res) => {
   const id = req.params.id;
 
@@ -124,16 +122,13 @@ const updateEvent = async (req, res) => {
   const updateField = req.body;
 
   try {
-    const updatedEvent = await Event.findOneAndUpdate(
-      { _id: id },
-      updateField,
-      {
-        new: true,
-      }
-    );
-    res.status(200).send(updatedEvent);
+    const event = await Event.findByIdAndUpdate(id, updateField, { new: true, runValidators: true });
+    if (!event) {
+      return res.status(404).send({ error: 'User not found' });
+    }
+    res.send(event);
   } catch (error) {
-    res.status(500).send(error);
+    res.status(400).send(error);
   }
 };
 
@@ -210,8 +205,8 @@ const addReviewer = async (req, res) => {
     // Add reviewer to the event
     event.reviewer.push({ user: reviewer._id, status: 'Invited' });
     await event.save();
-
-    frontendUrl='http://localhost:5173'||'https://xceed.nitj.ac.in'||'https://nitjtt.onrender.com';
+    const frontendUrl = getEnvironmentURL();
+    // frontendUrl='http://localhost:5173'||'https://xceed.nitj.ac.in'||'https://nitjtt.onrender.com';
     const acceptLink = `${frontendUrl}/prm/${eventId}/reviewer/${reviewer._id}`;
 
     await sendMail(
@@ -338,6 +333,6 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus };
 
 

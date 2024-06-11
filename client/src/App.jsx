@@ -99,8 +99,12 @@ import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import NirfRanking from './nirf/rankings';
 
+// imports for Quiz Module
 import CreateQuiz from './quizModule/creator/createQuiz/CreateQuiz';
 import AddQuestionHome from './quizModule/creator/addQuestion/AddQuestionHome';
+import AddInstruction from './quizModule/creator/addQuestion/AddInstruction';
+import PreviewInstructions from './quizModule/creator/addQuestion/PreviewInstructions';
+import Settings from './quizModule/creator/addQuestion/settings';
 
 function App() {
   return (
@@ -234,18 +238,18 @@ function App() {
           <Route path="events" element={<Event />} />
           <Route path="souvenir" element={<Souvenir />} />
           <Route path="commontemplate" element={<CommonTemplate />} />
+
           </Route>
-          <Route path='/quiz/createquiz' element={<CreateQuiz/>}></Route>
+
         {/* Quiz Module Routes */}
         <Route path='/quiz/createquiz' element={<CreateQuiz/>}></Route>
-          <Route path="/quiz/:code" element={ <> <AddQuestionHome />   </>} />
-          {/* <Route path="/quiz/:code/addinstruction" element={<><AddInstruction /></>} />
-          <Route path="/quiz/:code/addinstruction/preview" element={<><PreviewInstructions /></>} />
-          <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
-          <Route path="/addQuestionHome" element={<><AddQuestionHome /></>} />
-          <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
+        <Route path="/quiz/:code" element={ <> <AddQuestionHome />   </>} />
+        <Route path="/quiz/:code/addinstruction" element={<><AddInstruction /></>} />
+        <Route path="/quiz/:code/addinstruction/preview" element={<><PreviewInstructions /></>} />
+        <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
+        {/* <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
+        {/*<Route path="/addQuestionHome" element={<><AddQuestionHome /></>} /> */} 
 
-       
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
