@@ -55,16 +55,32 @@ function InstituteLoad() {
   // const currentURL = window.location.pathname;
   // const parts = currentURL.split("/");
   // const currentCode = parts[parts.length - 2];
+  const [excludeTheory, setExcludeTheory] = useState(false);
+  const [availableSems, setAvailableSems] = useState([]);
+  const [availableRooms, setAvailableRooms] = useState([]);
+  const [availableFaculties, setAvailableFaculties] = useState([]);
+  const [facultyHoursCount, setFacultyHoursCount] = useState({});
+  // const [lockedTime, setLockedTime] = useState();
+  // const [facultyLockedTime, setFacultyLockedTime] = useState();
+  // const [roomlockedTime, setRoomLockedTime] = useState()
+  const [allsessions, setAllSessions]=useState([]);
+  const [availableDepts, setAvailableDepts] = useState([]);
+  const [availableLoad, setAvailableLoad] = useState({});
+  const [selectedSession, setSelectedSession]=useState('');
+  const [selectedDept, setSelectedDept]=useState('');
+  const [facultyDesignation, setFacultyDesignation]=useState({});
+  const [loading, setLoading] = useState(false);
 
+  const semesters = availableSems;
 
   useEffect(() => {
     if (sseEventSource) {
       sseEventSource.close();
     }
 
-    if (selectedSession && selectedDept) {
+    if (selectedSession) {
       const newEventSource = new EventSource(
-        `${apiUrl}/timetablemodule/instituteLoad/sse/${selectedSession}/${selectedDept}`
+        `${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`
       );
 
       newEventSource.onmessage = (event) => {
@@ -96,29 +112,8 @@ function InstituteLoad() {
         setSseEventSource(null);
       }
     };
-  }, [selectedSession, selectedDept]);
+  }, [selectedSession]);
 
-  const [excludeTheory, setExcludeTheory] = useState(false);
-
-  const [availableSems, setAvailableSems] = useState([]);
-  const [availableRooms, setAvailableRooms] = useState([]);
-  const [availableFaculties, setAvailableFaculties] = useState([]);
-  const [facultyHoursCount, setFacultyHoursCount] = useState({});
-
-
-  // const [lockedTime, setLockedTime] = useState();
-  // const [facultyLockedTime, setFacultyLockedTime] = useState();
-  // const [roomlockedTime, setRoomLockedTime] = useState();
-
-  const [allsessions, setAllSessions]=useState([]);
-  const [availableDepts, setAvailableDepts] = useState([]);
-  const [availableLoad, setAvailableLoad] = useState({});
-  const [selectedSession, setSelectedSession]=useState('');
-  const [selectedDept, setSelectedDept]=useState('');
-  const [facultyDesignation, setFacultyDesignation]=useState({});
-  const [loading, setLoading] = useState(false);
-
-  const semesters = availableSems;
 
   useEffect(() => {
     const fetchSessions = async () => {
