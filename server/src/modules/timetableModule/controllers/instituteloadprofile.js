@@ -1,6 +1,6 @@
 const HttpException = require("../../../models/http-exception");
 const instituteLoad = require("../../../models/instituteLoad");
-
+const { EventSource } = require('eventsource');
 const lockSem = require("../../../models/locksem");
 
 const LockTimeTableController= require("./locktimetable")
@@ -50,27 +50,25 @@ class InstituteLoadController {
       // let isCalculating = false;
     
       async calculateInstituteLoad(req, res) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
         // const release = await calculationMutex.acquire();
-        try {
-          
-      
-          // if (!release()) {
-          //   // If the lock is not acquired, it means another calculation is in progress
-          //   res.status(409).json({ message: "Calculation already in progress" });
-          //   return;
-          // }
-          
+        try {         
           const currentSession = req.params.session; 
           const allcodes = await TimeTableDto.getAllCodesOfSession(currentSession);
           console.log('All Codes:', allcodes);
           console.log('user name:',req.user);
           await instituteLoad.deleteMany({ session: currentSession });
-      
+          res.write(`data: {"message": "Deleted previous load and started calculation for new!", "progress": 0}\n\n`);
+          let progress = 0;
           for (const code of allcodes) {
-            
             const codeData2 = await CommonLoad.find({ code });
             // console.log('commonload objects', codeData2)
             for(const data of codeData2){
+              progress += 1;
+              res.write(`data: {"message": "Processing code ${code}", "progress": ${progress}}\n\n`);
+  
               console.log('Processing sem:',data.sem );
 
               const subDetails = await Subject.find({ subName: data.subName });
@@ -109,6 +107,7 @@ class InstituteLoadController {
                 });
                 // console.log('commonlaod',loadInstance)  
                 await loadInstance.save();
+
             }       
             }
             const codeData = await LockSem.find({ code });
@@ -164,9 +163,11 @@ class InstituteLoadController {
               }
             }
           }
-          const loads = await instituteLoad.find({ session: currentSession });
+          // const loads = await instituteLoad.find({ session: currentSession });
       // return loads;
-          res.status(200).json({loads, message: "Institute load calculation completed successfully" });
+          res.write(`data: {"message": "Calculation completed", "progress": 100}\n\n`);
+          res.end();
+          // res.status(200).json({loads, message: "Institute load calculation completed successfully" });
         } catch (error) {
           console.error(error); 
           res.status(500).json({ error: "Internal server error" });
