@@ -27,6 +27,7 @@
     "@uidotdev/usehooks": "^2.4.1",
     "axios": "^1.6.3",
     "clsx": "^2.0.0",
+    "eventsource": "^2.0.2",
     "formik": "^2.4.6",
     "framer-motion": "^10.16.16",
     "html2canvas": "^1.4.1",
