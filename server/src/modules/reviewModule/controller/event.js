@@ -206,12 +206,14 @@ const addReviewer = async (req, res) => {
     event.reviewer.push({ user: reviewer._id, status: 'Invited' });
     await event.save();
 
+    const reviewerSubmissionTemplate=event.templates.reviewSubmission;
+
     const acceptLink = `${baseUrl}/prm/${eventId}/reviewer/${reviewer._id}`; // Use the base URL
 
     await sendMail(
       email,
       'You have been added as a reviewer',
-      `You have been added as a reviewer for the event. <br>
+      ` ${reviewerSubmissionTemplate} <br>
       Please click <a href="${acceptLink}">here</a> to accept the invitation`
     );
 
