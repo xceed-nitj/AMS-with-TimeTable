@@ -1,6 +1,7 @@
 const HttpException = require("../../../models/http-exception");
 const instituteLoad = require("../../../models/instituteLoad");
 const { EventSource } = require('eventsource');
+
 const lockSem = require("../../../models/locksem");
 
 const LockTimeTableController= require("./locktimetable")
