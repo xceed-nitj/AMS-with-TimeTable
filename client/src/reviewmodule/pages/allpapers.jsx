@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
-import { Link } from "react-router-dom"; // Import Link for navigation
+import { useNavigate, Link } from "react-router-dom"; // Import Link for navigation
 import getEnvironment from "../../getenvironment";
 import Header from "../../components/header";
 import { useToast } from '@chakra-ui/react';
@@ -28,6 +28,7 @@ function EventPaper() {
   const [papers, setPapers] = useState([]); // State to store papers
   const apiUrl = getEnvironment();
   const toast = useToast();
+  const navigate = useNavigate();
   const currentURL = window.location.pathname;
   const parts = currentURL.split("/");
   const eventId = parts[parts.length - 3];
@@ -120,6 +121,7 @@ function EventPaper() {
       <Header title="Paper Details"></Header>
       
       <Box boxShadow="md" p={6} rounded="md" bg="white">
+      <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button>
         
         <Table variant="Strip">
           <TableCaption>Papers for Event ID: {eventId}</TableCaption>

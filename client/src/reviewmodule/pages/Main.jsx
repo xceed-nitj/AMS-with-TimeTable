@@ -63,7 +63,7 @@ function HomePage() {
   let content;
   switch (activeTab) {
     case 'Home':
-    //   content = <Home />;
+      // content = <Home />;
       break;
     case 'Author':
     //   content = <About />;

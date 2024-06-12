@@ -165,7 +165,7 @@ import getEnvironment from '../../../getenvironment';
     const handleDeleteQuestion = async (question) => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${apiurl}/api/quiz/quizquestion/${code}/${question.id}`, {
+        const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions/${question.id}`, {
           method: 'DELETE',
           credentials: 'include',
           headers: {
