@@ -12,7 +12,7 @@ import jsPDF from 'jspdf';
 
 // const apiUrl = getEnvironment();
 
-const Template10 = ({
+const Template11 = ({
     eventId,
     contentBody,
     certiType,
@@ -62,7 +62,7 @@ const Template10 = ({
             height="595.499987"
             viewBox="0 0 841.92 595.499987"
             id="svg"
-            className="svg-img"
+            className="svg-img tw-object-contain"
             ref={svgRef}>
 
             <>
@@ -175,4 +175,4 @@ const Template10 = ({
     );
 };
 
-export default Template10;
+export default Template11;

@@ -21,43 +21,47 @@ const Template08 = ({
     signature,
     header,
     footer,
-  }) => {var num_logos = logos.length;
+}) => {
+    var num_logos = logos.length;
     var num_left = 0;
     if (num_logos % 2 === 0) {
-      num_left = num_logos / 2 - 1;
+        num_left = num_logos / 2 - 1;
     } else {
-      num_left = Math.floor(num_logos / 2);
+        num_left = Math.floor(num_logos / 2);
     }
     const svgRef = useRef();
-  
+
     useEffect(() => {
-      const url = window.location.href; // Replace with your URL
-      const svg = svgRef.current;
-  
-      QRCode.toDataURL(url, (err, dataUrl) => {
-        if (err) throw err;
-  
-        const image = document.createElementNS(
-          'http://www.w3.org/2000/svg',
-          'image'
-        );
-        image.setAttribute('x', '100');
-        image.setAttribute('y', '500');
-        image.setAttribute('width', '100');
-        image.setAttribute('height', '100');
-        image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
-  
-        svg.appendChild(image);
-      });
+        const url = window.location.href; // Replace with your URL
+        const svg = svgRef.current;
+
+        QRCode.toDataURL(url, (err, dataUrl) => {
+            if (err) throw err;
+
+            const image = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'image'
+            );
+            image.setAttribute('x', '100');
+            image.setAttribute('y', '500');
+            image.setAttribute('width', '100');
+            image.setAttribute('height', '100');
+            image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+
+            svg.appendChild(image);
+        });
     }, []);
-  
+
     return (
 
-        <svg xmlns="http://www.w3.org/2000/svg" 
-        viewBox="0 0 1122.52 793.7" 
-        id="svg" 
-        className="svg-img" 
-        ref={svgRef}
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="841.92"
+            height="595.499987"
+            viewBox="0 0 1122.52 793.7"
+            id="svg"
+            className="svg-img tw-object-contain"
+            ref={svgRef}
         >
             <>
                 <g mask="url(#mask0_18_2)">
@@ -238,7 +242,7 @@ const Template08 = ({
 
                 <foreignObject x={"20%"} y={"90%"} width={"60%"} height={"100"}>
                     <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-                        verifiable link
+                        {window.location.href}
                     </div>
                 </foreignObject>
             </>
