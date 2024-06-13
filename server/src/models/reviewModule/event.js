@@ -12,7 +12,7 @@ const templateSchema = new mongoose.Schema({
     paperAssignment:{type: String, default: "No data"},
     reviewSubmission: {type:String, default: "No data"},
     paperRevision: {type: String,default: "No data"},
-    paperDecision: {type: String, default: "No data"},
+    signature: {type: String, default: "No data"},
 });
 
 
