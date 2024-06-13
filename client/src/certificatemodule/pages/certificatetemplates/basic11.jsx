@@ -55,57 +55,78 @@ const CertificateContent = ({
       xmlns="http://www.w3.org/2000/svg"
       width="841.92"
       height="595.499987"
-      viewBox="0 0 1124 800"
+      viewBox="0 0 1122.52 793.7"
       id="svg"
       className="svg-img tw-object-contain"
       ref={svgRef}
     >
       <>
-        <g clipPath="url(#clip0_53_2)">
-          <rect
-            width="1122.52"
-            height="797.659"
-            transform="translate(0.23999 0.170532)"
-            fill="#FFFBF3"
-          />
+      <g clipPath="url(#clip0_120_3)">
+        <path
+          fill="#fff"
+          d="M0 0H1122.52V798.236H0z"
+          transform="translate(.74 .882)"
+        ></path>
+        <path
+          fill="#265E6A"
+          d="M-116.969 -147.535H-105.276V242.229H-116.969z"
+          transform="rotate(-45 -116.969 -147.535)"
+        ></path>
+        <path
+          fill="#265E6A"
+          d="M426.015 -155.803H437.70799999999997V233.961H426.015z"
+          transform="rotate(45 426.015 -155.803)"
+        ></path>
+        <path
+          fill="#F2C32E"
+          d="M-26.543 -123.37H-14.85V266.394H-26.543z"
+          transform="rotate(-45 -26.543 -123.37)"
+        ></path>
+        <path
+          fill="#F2C32E"
+          d="M516.44 -131.638H528.133V258.126H516.44z"
+          transform="rotate(45 516.44 -131.638)"
+        ></path>
+        <path
+          fill="#265E6A"
+          d="M1152.23 992.873H1163.923V1382.6370000000002H1152.23z"
+          transform="rotate(135 1152.23 992.873)"
+        ></path>
+        <path
+          fill="#265E6A"
+          d="M609.244 1001.14H620.937V1390.904H609.244z"
+          transform="rotate(-135 609.244 1001.14)"
+        ></path>
+        <path
+          fill="#F2C32E"
+          d="M1061.8 968.707H1073.493V1358.471H1061.8z"
+          transform="rotate(135 1061.8 968.707)"
+        ></path>
+        <path
+          fill="#F2C32E"
+          d="M518.818 976.975H530.511V1366.739H518.818z"
+          transform="rotate(-135 518.818 976.975)"
+        ></path>
+        <path
+          fill="#F2C32E"
+          d="M915.905 -61.134H1348.543V318.039H915.905z"
+          transform="rotate(-45 915.905 -61.134)"
+        ></path>
+        <path
+          fill="#F2C32E"
+          d="M-362.52 947.575H70.118V1326.748H-362.52z"
+          transform="rotate(-45 -362.52 947.575)"
+        ></path>
+      </g>
+      <defs>
+        <clipPath id="clip0_120_3">
           <path
-            d="M-16.5166 470.951L727.128 803.899L712.645 836.448L-31 503.5L-16.5166 470.951Z"
-            fill="#E5BC62"
-          />
-          <path
-            d="M-169.261 433L776.845 851.347L604.111 1242L-342 823.651L-169.261 433Z"
-            fill="#283361"
-          />
-          <path
-            d="M247.262 -120.087L1233.43 174.336L1203.18 285.659L217.006 -8.75647L247.262 -120.087Z"
-            fill="#E5BC62"
-          />
-          <path
-            d="M379.724 -428.193L1374.34 -143.804L1256.92 266.874L262.3 -17.5094L379.724 -428.193Z"
-            fill="#283361"
-          />
-          <rect x="29" y="21" width="1065" height="756" rx="8" fill="white" />
-          <rect
-            x="37.5"
-            y="29.5"
-            width="1048"
-            height="739"
-            rx="5.5"
-            stroke="#E5BC62"
-            strokeWidth="5"
-            fill="white"
-          />
-        </g>
-        <defs>
-          <clipPath id="clip0_53_2">
-            <rect
-              width="1122.52"
-              height="797.659"
-              fill="white"
-              transform="translate(0.23999 0.170532)"
-            />
-          </clipPath>
-        </defs>
+            fill="#fff"
+            d="M0 0H1122.52V798.236H0z"
+            transform="translate(.74 .882)"
+          ></path>
+        </clipPath>
+      </defs>
       </>
       <>
         <foreignObject width={'90%'} height={'400'} y={'80'} x={'5%'}>

@@ -122,6 +122,42 @@ const updateEvent = async (req, res) => {
   }
 };
 
+const updateEventTemplate = async (req, res) => {
+  try {
+      const eventId = req.params.id;
+      const { templates } = req.body;
+
+      if (!templates) {
+          return res.status(400).json({ message: 'Templates data is missing.' });
+      }
+
+      const event = await Event.findById(eventId);
+
+      if (!event) {
+          return res.status(404).json({ message: 'Event not found.' });
+      }
+
+      // Ensure templates object exists in the event before updating
+      if (!event.templates) {
+          event.templates = {};
+      }
+
+      Object.keys(templates).forEach((key) => {
+          event.templates[key] = templates[key];
+      });
+
+      const updatedEvent = await event.save();
+
+      res.status(200).json(updatedEvent.toObject());
+  } catch (error) {
+      console.error('Error updating event template:', error);
+      res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+
+
+
 const addEditor = async (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -244,15 +280,19 @@ const addReviewer = async (req, res) => {
     event.reviewer.push({ user: reviewer._id, status: 'Invited' });
     await event.save();
 
-    const reviewerSubmissionTemplate = event.templates.reviewSubmission;
+    const reviewerInvitationTemplate=event.templates.reviewerInvitation;
+    const signature=event.templates.signature;
     const acceptLink = `${baseUrl}/prm/${eventId}/reviewer/${reviewer._id}`; // Use the base URL
 
     // Send the reviewer invitation email
     await sendMail(
       email,
       'You have been added as a reviewer',
-      `${reviewerSubmissionTemplate} <br>
-      Please click <a href="${acceptLink}">here</a> to accept the invitation`
+      ` ${reviewerInvitationTemplate} <br>
+      Please click <a href="${acceptLink}">here</a> to accept the invitation <br>
+      ${signature}
+      `
+
     );
 
     res.status(200).send('Reviewer added to the event successfully');
@@ -287,12 +327,16 @@ const resendInvitation = async (req, res) => {
     }
 
     const acceptLink = `${baseUrl}/prm/${eventId}/reviewer/${reviewer._id}`;
-
+     
+    const reviewerInvitationTemplate=event.templates.reviewerInvitation;
+    const signature=event.templates.signature;
     await sendMail(
       email,
-      'Invitation to be a Reviewer',
-      `You have been added as a reviewer for the event. <br>
-      Please click <a href="${acceptLink}">here</a> to accept the invitation`
+      'Invitation to be a Reviewer ',
+      ` ${reviewerInvitationTemplate}<br>
+      Please click <a href="${acceptLink}">here</a> to accept the invitation <br>
+      ${signature}
+      `
     );
 
     res.status(200).send('Invitation resent successfully');
@@ -412,4 +456,4 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation};

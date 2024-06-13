@@ -8,11 +8,11 @@ const reviewerSchema = new mongoose.Schema({
 
 const templateSchema = new mongoose.Schema({
     paperSubmission: { type: String, default: "No data"},
-    reviewerInvitation: { type: String, dafault: "No data"},
-    paperAssignment:{type: String, dafault: "No data"},
-    reviewSubmission: {type:String, dafault: "No data"},
-    paperRevision: {type: String,dafault: "No data"},
-    PaperDecision: {type: String, dafault: "No data"},
+    reviewerInvitation: { type: String, default: "No data"},
+    paperAssignment:{type: String, default: "No data"},
+    reviewSubmission: {type:String, default: "No data"},
+    paperRevision: {type: String,default: "No data"},
+    signature: {type: String, default: "No data"},
 });
 
 

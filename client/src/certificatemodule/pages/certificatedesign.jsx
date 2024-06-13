@@ -187,7 +187,14 @@ const CertificateForm = () => {
 
   return (
     <Flex>
-      <Container maxW="lg">
+      <Container
+        maxW="lg"
+        style={{
+          height: '90dvh',
+          overflowY: 'scroll',
+          clipPath: 'content-box',
+        }}
+      >
         <Header title="Enter Certificate Details"></Header>
 
         <form onSubmit={handleSubmit}>
@@ -219,9 +226,14 @@ const CertificateForm = () => {
               <option value="4">Basic 5</option>
               <option value="5">Basic 6</option>
               <option value="6">Basic 7</option>
-              <option value="7">Premium 1</option>
-              <option value="8">Template 9</option>
-
+              <option value="7">Basic 8</option>
+              <option value="8">Basic 9</option>
+              <option value="13">Basic 11</option>
+              <option value="9">Premium 1</option>
+              <option value="10">Premium 2</option>
+              <option value="11">Premium 3</option>
+              <option value="12">Premium 4</option>
+              <option value="14">Premium 5</option>
             </Select>
 
             <Text>Enter the link for the logos:</Text>
