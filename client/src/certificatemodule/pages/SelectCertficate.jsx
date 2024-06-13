@@ -2,7 +2,6 @@ import React from 'react';
 import CertificateContent from './certificatetemplates/basic01';
 import Template02 from './certificatetemplates/basic02';
 import Template03 from './certificatetemplates/03_sarthak';
-
 import Template04 from './certificatetemplates/basic04';
 import Template05 from './certificatetemplates/basic05';
 import Template06 from './certificatetemplates/basic06';
@@ -14,7 +13,7 @@ import Template11 from './certificatetemplates/premium02';
 import Template12 from './certificatetemplates/premium03';
 import Template13 from './certificatetemplates/premium04';
 import Template14 from './certificatetemplates/basic11';
-
+import Template15 from './certificatetemplates/premium05';
 
 function SelectCertficate({
   templateId,
@@ -172,7 +171,6 @@ function SelectCertficate({
       footer={footer}
       key={'12'}
     />,
-
     <Template14
       eventId={eventId}
       contentBody={contentBody}
@@ -184,7 +182,17 @@ function SelectCertficate({
       footer={footer}
       key={'13'}
     />,
-
+<Template15
+      eventId={eventId}
+      contentBody={contentBody}
+      certiType={certiType}
+      logos={logos}
+      participantDetail={participantDetail}
+      signature={signature}
+      header={header}
+      footer={footer}
+      key={'14'}
+    />,
   ];
 
   return <div>{certiDesignTemp[templateId]}</div>;
