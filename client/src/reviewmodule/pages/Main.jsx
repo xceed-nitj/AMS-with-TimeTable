@@ -6,6 +6,7 @@ import { Box } from '@chakra-ui/react';
 // import Settings from './Settings';
 // import About from './About';
 // import Author1 from './Author1';
+import SearchEvent from "./searchEvent"
 
 import getEnvironment from "../../getenvironment";
 
@@ -69,8 +70,8 @@ function HomePage() {
     //   content = <About />;
       break;
     case 'New Submission':
-      content = <MultiStepForm />;
-      break;
+          content = <SearchEvent />;
+    break;
     case 'Papers Submitted':
     //   content = <Author2 />;
       break;

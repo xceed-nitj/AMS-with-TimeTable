@@ -4,8 +4,9 @@ import { Box, VStack, Text, Collapse, IconButton, Flex, Icon } from '@chakra-ui/
 import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
 import { FaHome, FaFileAlt, FaTasks, FaTimes } from 'react-icons/fa';
 import getEnvironment from '../../getenvironment';
-import MultiStepForm from '../pages/MultiStepForm';
+//import MultiStepForm from '../pages/MultiStepForm';
 import PRMDashboard from '../pages/prmdashboard';
+import SearchEvent from '../pages/searchEvent';
 
 const SideBarFinal = () => {
   const navigate = useNavigate();
@@ -86,8 +87,8 @@ const SideBarFinal = () => {
     case 'Author':
       content = <Text>Author Page</Text>;
       break;
-    case 'New Submission':
-      content = <MultiStepForm />;
+      case 'New Submission':
+          content = <SearchEvent />;
       break;
     case 'Submitted Papers':
       content = <Text>Submitted Papers Page</Text>;
