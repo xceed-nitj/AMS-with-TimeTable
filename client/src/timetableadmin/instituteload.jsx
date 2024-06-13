@@ -7,6 +7,7 @@ import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
 import Papa from 'papaparse';
 // import { saveAs } from 'file-saver';
+const { EventSource } = require('eventsource');
 
 import {   Container } from "@chakra-ui/layout";
 import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
