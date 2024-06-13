@@ -20,7 +20,8 @@ router.post('/addEditor/:id', addEditor);
 router.post('/addReviewer/:id', addReviewer);
 router.post('/resendInvitation/:id',resendInvitation);
 
-router.patch('/:id',updateEventTemplate);
+router.patch('/:id',updateEvent);
+router.patch('/template/:id',updateEventTemplate);
 router.delete('/:id',superAdminRoute, deleteEvent);
 router.post('/updateReviewerStatus/:eventId/:reviewerId', updateReviewerStatus);
 

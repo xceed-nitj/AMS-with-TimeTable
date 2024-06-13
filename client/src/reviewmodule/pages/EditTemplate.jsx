@@ -60,11 +60,11 @@ const handleSave = async (templateType, newContent) => {
 
         const { _id, ...templatesWithoutId } = updatedTemplates;
 
-        const response = await axios.patch(
-            `${apiUrl}/reviewmodule/event/${eventId}`,
-            { templates: templatesWithoutId },
-            { headers: { 'Content-Type': 'application/json' } }
-        );
+            const response = await axios.patch(
+                `${apiUrl}/reviewmodule/event/template/${eventId}`,
+                { templates: templatesWithoutId },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
 
         if (response.status === 200) {
             toast({
