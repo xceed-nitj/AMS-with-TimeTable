@@ -9,11 +9,14 @@ import Template06 from './certificatetemplates/basic06';
 import Template07 from './certificatetemplates/basic07';
 import Template08 from './certificatetemplates/basic08';
 import Template09 from './certificatetemplates/basic09';
+import Template14 from './certificatetemplates/basic11';
+import Template15 from './certificatetemplates/basic12';
+import Template16 from './certificatetemplates/basic13';
 import Template10 from './certificatetemplates/premium01';
 import Template11 from './certificatetemplates/premium02';
 import Template12 from './certificatetemplates/premium03';
 import Template13 from './certificatetemplates/premium04';
-import Template14 from './certificatetemplates/basic11';
+
 
 
 function SelectCertficate({
@@ -183,6 +186,30 @@ function SelectCertficate({
       header={header}
       footer={footer}
       key={'13'}
+    />,
+
+    <Template15
+      eventId={eventId}
+      contentBody={contentBody}
+      certiType={certiType}
+      logos={logos}
+      participantDetail={participantDetail}
+      signature={signature}
+      header={header}
+      footer={footer}
+      key={'14'}
+    />,
+
+    <Template16
+      eventId={eventId}
+      contentBody={contentBody}
+      certiType={certiType}
+      logos={logos}
+      participantDetail={participantDetail}
+      signature={signature}
+      header={header}
+      footer={footer}
+      key={'15'}
     />,
 
   ];
