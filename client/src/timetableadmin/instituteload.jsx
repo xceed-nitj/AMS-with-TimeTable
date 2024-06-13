@@ -7,7 +7,7 @@ import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
 import Papa from 'papaparse';
 // import { saveAs } from 'file-saver';
-const { EventSource } = require('eventsource');
+// import { EventSource } from 'eventsource';
 
 import {   Container } from "@chakra-ui/layout";
 import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
@@ -74,46 +74,46 @@ function InstituteLoad() {
 
   const semesters = availableSems;
 
-  useEffect(() => {
-    if (sseEventSource) {
-      sseEventSource.close();
-    }
+  // useEffect(() => {
+  //   if (sseEventSource) {
+  //     sseEventSource.close();
+  //   }
 
-    if (selectedSession) {
-      const newEventSource = new EventSource(
-        `${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`
-      );
+  //   if (selectedSession) {
+  //     const newEventSource = new EventSource(
+  //       `${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`
+  //     );
 
-      newEventSource.onmessage = (event) => {
-        const eventData = JSON.parse(event.data);
-        // Handle status updates here
-        setStatusMessages((prevMessages) => [...prevMessages, eventData.message]);
-        // Handle load and designation updates
-        setAvailableLoad(eventData.availableLoad);
-        setFacultyDesignation(eventData.facultyDesignation);
-      };
+  //     newEventSource.onmessage = (event) => {
+  //       const eventData = JSON.parse(event.data);
+  //       // Handle status updates here
+  //       setStatusMessages((prevMessages) => [...prevMessages, eventData.message]);
+  //       // Handle load and designation updates
+  //       setAvailableLoad(eventData.availableLoad);
+  //       setFacultyDesignation(eventData.facultyDesignation);
+  //     };
 
-      newEventSource.onerror = (error) => {
-        console.error("SSE Error:", error);
-        newEventSource.close();
-        setSseEventSource(null);
-        // Optionally handle SSE error messages or retries
-        setStatusMessages((prevMessages) => [
-          ...prevMessages,
-          "Error connecting to server for updates",
-        ]);
-      };
+  //     newEventSource.onerror = (error) => {
+  //       console.error("SSE Error:", error);
+  //       newEventSource.close();
+  //       setSseEventSource(null);
+  //       // Optionally handle SSE error messages or retries
+  //       setStatusMessages((prevMessages) => [
+  //         ...prevMessages,
+  //         "Error connecting to server for updates",
+  //       ]);
+  //     };
 
-      setSseEventSource(newEventSource);
-    }
+  //     setSseEventSource(newEventSource);
+  //   }
 
-    return () => {
-      if (sseEventSource) {
-        sseEventSource.close();
-        setSseEventSource(null);
-      }
-    };
-  }, [selectedSession]);
+  //   return () => {
+  //     if (sseEventSource) {
+  //       sseEventSource.close();
+  //       setSseEventSource(null);
+  //     }
+  //   };
+  // }, [selectedSession]);
 
 
   useEffect(() => {
