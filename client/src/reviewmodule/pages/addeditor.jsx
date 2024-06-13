@@ -10,10 +10,11 @@ function MultiEditorEvent() {
   const apiUrl = getEnvironment();
   const [eventName, setEventName] = useState("");
   const [editorEmail, setEditorEmail] = useState("");
+  const [editorPassword, setEditorPassword] = useState("");
   const toast = useToast();
 
-  const handleEventNameChange = (e) => {
-    setEventName(e.target.value);
+  const handleEditorPasswordChange = (e) => {
+    setEditorPassword(e.target.value);
   };
 
   const handleEditorEmailChange = (e) => {
@@ -42,7 +43,7 @@ function MultiEditorEvent() {
       // Adding editor to the event
       const addEditorResponse = await axios.post(
         `${apiUrl}/reviewmodule/event/addEditor/${eventId}`,
-        { email: editorEmail}
+        { email: editorEmail, password: editorPassword}
       );
 
       if (addEditorResponse.status === 200) {
@@ -95,6 +96,13 @@ function MultiEditorEvent() {
             placeholder="Enter editor email to add to event "
             value={editorEmail}
             onChange={handleEditorEmailChange}
+          />
+          <Input
+            mb={4}
+            type="password"
+            placeholder="Enter editor password to add to event "
+            value={editorPassword}
+            onChange={handleEditorPasswordChange}
           />
           <Button type="submit" colorScheme="teal">
             Save
