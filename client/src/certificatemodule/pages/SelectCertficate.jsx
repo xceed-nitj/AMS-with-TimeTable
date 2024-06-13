@@ -12,7 +12,8 @@ import Template10 from './certificatetemplates/premium01';
 import Template11 from './certificatetemplates/premium02';
 import Template12 from './certificatetemplates/premium03';
 import Template13 from './certificatetemplates/premium04';
-import Template14 from './certificatetemplates/premium05';
+import Template14 from './certificatetemplates/basic11';
+import Template15 from './certificatetemplates/premium05';
 
 function SelectCertficate({
   templateId,
@@ -180,6 +181,17 @@ function SelectCertficate({
       header={header}
       footer={footer}
       key={'13'}
+    />,
+<Template15
+      eventId={eventId}
+      contentBody={contentBody}
+      certiType={certiType}
+      logos={logos}
+      participantDetail={participantDetail}
+      signature={signature}
+      header={header}
+      footer={footer}
+      key={'14'}
     />,
   ];
 
