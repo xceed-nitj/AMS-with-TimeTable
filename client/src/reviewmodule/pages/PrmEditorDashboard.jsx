@@ -1,6 +1,9 @@
 // src/components/EditorDashboard.js
 
 import React from 'react';
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import getEnvironment from '../../getenvironment';
 import { Box, Button, HStack, Text } from '@chakra-ui/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
@@ -11,6 +14,35 @@ import Header from "../../components/header";
 const PrmEditorDashboard = () => {
   const navigate = useNavigate();
   const location =useLocation();
+  const apiUrl = getEnvironment();
+  const { eventId } = useParams();
+  const [event, setEvent] = useState(null);
+
+  const fetchEvent = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reviewmodule/event/getEvents/${eventId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if (response.ok) {
+        const event = await response.json();
+        console.log(event.name)
+        setEvent(event.name);
+      } else {
+        console.error("Failed to fetch event");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvent();
+  }, [apiUrl]);
 
   // Sample data for pie charts
   const data1 = [
@@ -43,6 +75,7 @@ const PrmEditorDashboard = () => {
   return (
     <Container maxW='7xl'>
     <Header title="Welcome to the Editor Dashoarad"></Header>
+    <Text fontSize="xl" align="center">{event}</Text>
 
     <Box p={9}>
        {/* <Text fontSize="2xl" fontWeight="bold">Editor Dashboard</Text> */}
