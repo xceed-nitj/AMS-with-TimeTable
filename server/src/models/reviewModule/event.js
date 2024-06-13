@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const User = require("./user.js");
 
 const reviewerSchema = new mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'PRS-User' },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
     status: { type: String, enum: ['Invited', 'Accepted', 'Pending', 'Not Accepted'], default: 'Pending' }
 });
 
@@ -28,7 +28,7 @@ const eventSchema = new mongoose.Schema({
         type: Date,
     },
     tracks:[{type: String}],
-    editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PRS-User' }],
+    editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
     reviewer: [reviewerSchema],
     paperSubmissionDate: {
         type: Date,
