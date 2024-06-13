@@ -97,6 +97,7 @@ import MultiStepForm from './reviewmodule/pages/MultiStepForm';
 import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
+import EditTemplate from './reviewmodule/pages/EditTemplate';
 import NirfRanking from './nirf/rankings';
 import AddPaper from './reviewmodule/pages/addpaper'
 
@@ -204,13 +205,14 @@ function App() {
     <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/addtemplate" element={<AddTemplate/>}/>
+    <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
     <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
 
-    <Route path="/prm/:eventId/:paperId/edit" element={<MultiStepForm />} />
+    <Route path="/prm/:eventId/author/newpaper" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     <Route path="/prm/home" element={<HomePage/>}/>
 

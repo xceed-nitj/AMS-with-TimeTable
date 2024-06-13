@@ -18,6 +18,8 @@
     "csv-parser": "^3.0.0",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.9",
+    "eventsource": "^2.0.2",
+    "eventsource-polyfill": "^0.9.6",
     "expres": "^0.0.5",
     "express": "^4.19.2",
     "html2pdf.js": "^0.10.1",

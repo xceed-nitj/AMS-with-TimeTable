@@ -56,192 +56,93 @@ const PrmEditorDashboard = () => {
       <Container maxW="7xl">
         <Header title="Welcome to the Editor Dashboard" />
 
-        <Box p={9}>
-          <Grid
-            templateColumns={['repeat(1, 1fr)', 'repeat(2, 1fr)', 'repeat(3, 1fr)', 'repeat(4, 1fr)']}
-            gap={6}
-            mb={8}
-          >
-            <Button
-              width="100%"
-              height="50px"
-              bgGradient="linear(to-r, cyan.600, cyan.500)"
-              color="white"
-              _hover={{ bgGradient: "linear(to-r, cyan.500, cyan.400)" }}
-              onClick={() => navigate(`${location.pathname}/confdetails`)}
-              leftIcon={<Icon as={FaInfoCircle} color="white" />}
-              whiteSpace="normal" // Ensure text wraps within the button
+    <Box p={9}>
+       {/* <Text fontSize="2xl" fontWeight="bold">Editor Dashboard</Text> */}
+ 
+      <HStack spacing={7} align="center">
+        <Button width="230px" height="50px" colorScheme="teal" onClick={() => navigate(`${location.pathname}/confdetails`)}>Conference Details</Button>
+        <Button width="230px" height="50px" colorScheme="orange" onClick={() => navigate(`${location.pathname}/addtrack`)}>Add Tracks</Button>
+        <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/papers`)}>Paper Details</Button>
+        <Button width="230px" height="50px" colorScheme="blue" onClick={() => navigate(`${location.pathname}/addreviewer`)}>Invite Reviewer</Button>
+        <Button width="230px" height="50px" colorScheme="green" onClick={() => navigate(`${location.pathname}/addtemplate`)}>Communication Templates</Button>
+</HStack>
+<HStack>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={data1}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
             >
-              Conference Details
-            </Button>
-            <Button
-              width="100%"
-              height="50px"
-              bgGradient="linear(to-r, orange.600, orange.500)"
-              color="white"
-              _hover={{ bgGradient: "linear(to-r, orange.500, orange.400)" }}
-              onClick={() => navigate(`${location.pathname}/addtrack`)}
-              leftIcon={<Icon as={FaChartPie} color="white" />}
-              whiteSpace="normal" // Ensure text wraps within the button
+              {data1.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Legend />
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={data2}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#82ca9d"
+              dataKey="value"
             >
-              Add Tracks
-            </Button>
-            <Button
-              width="100%"
-              height="50px"
-              bgGradient="linear(to-r, red.600, red.500)"
-              color="white"
-              _hover={{ bgGradient: "linear(to-r, red.500, red.400)" }}
-              onClick={() => navigate(`${location.pathname}/papers`)}
-              leftIcon={<Icon as={FaFileAlt} color="white" />}
-              whiteSpace="normal" // Ensure text wraps within the button
+              {data2.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Legend />
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={data4}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#ffc658"
+              dataKey="value"
             >
-              Paper Details
-            </Button>
-            <Button
-              width="100%"
-              height="50px"
-              bgGradient="linear(to-r, blue.600, blue.500)"
-              color="white"
-              _hover={{ bgGradient: "linear(to-r, blue.500, blue.400)" }}
-              onClick={() => navigate(`${location.pathname}/addreviewer`)}
-              leftIcon={<Icon as={FaUserFriends} color="white" />}
-              whiteSpace="normal" // Ensure text wraps within the button
+              {data3.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Legend />
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={data2}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#82ca9d"
+              dataKey="value"
             >
-              Invite Reviewer
-            </Button>
-            <Button
-              width={['100%', '100%', '230px', '230px']}
-              height="50px"
-              bgGradient="linear(to-r, green.600, green.500)"
-              color="white"
-              _hover={{ bgGradient: "linear(to-r, green.500, green.400)" }}
-              onClick={() => navigate(`${location.pathname}/addtemplate`)}
-              leftIcon={<Icon as={FaEnvelope} color="white" />}
-              whiteSpace="normal" // Ensure text wraps within the button
->
-            Communication Templates
-            </Button>
+              {data2.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Legend />
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
 
-          </Grid>
-
-          <Grid
-            templateColumns={['1fr', '1fr', 'repeat(2, 1fr)', 'repeat(4, 1fr)']}
-            gap={6}
-          >
-            <GridItem colSpan={[1, 1, 1, 1]}>
-              <Box
-                height={calculateHeight(data1.length)}
-                bg="gray.800"
-                borderRadius="lg"
-                p={4}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={data1}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {data1.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-            </GridItem>
-
-            <GridItem colSpan={[1, 1, 1, 1]}>
-              <Box
-                height={calculateHeight(data2.length)}
-                bg="gray.800"
-                borderRadius="lg"
-                p={4}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={data2}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#82ca9d"
-                      dataKey="value"
-                    >
-                      {data2.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-            </GridItem>
-
-            <GridItem colSpan={[1, 1, 1, 1]}>
-              <Box
-                height={calculateHeight(data3.length)}
-                bg="gray.800"
-                borderRadius="lg"
-                p={4}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={data3}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#ffc658"
-                      dataKey="value"
-                    >
-                      {data3.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-            </GridItem>
-
-            <GridItem colSpan={[1, 1, 1, 1]}>
-              <Box
-                height={calculateHeight(data4.length)}
-                bg="gray.800"
-                borderRadius="lg"
-                p={4}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={data4}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {data4.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-            </GridItem>
-          </Grid>
-        </Box>
+      </HStack>    </Box>
       </Container>
     </Box>
   );
