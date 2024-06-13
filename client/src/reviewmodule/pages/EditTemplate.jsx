@@ -61,7 +61,7 @@
             const { _id, ...templatesWithoutId } = updatedTemplates;
 
             const response = await axios.patch(
-                `${apiUrl}/reviewmodule/event/${eventId}`,
+                `${apiUrl}/reviewmodule/event/template/${eventId}`,
                 { templates: templatesWithoutId },
                 { headers: { 'Content-Type': 'application/json' } }
             );

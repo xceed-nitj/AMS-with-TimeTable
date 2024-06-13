@@ -287,12 +287,16 @@ const resendInvitation = async (req, res) => {
     }
 
     const acceptLink = `${baseUrl}/prm/${eventId}/reviewer/${reviewer._id}`;
-
+     
+    const reviewerInvitationTemplate=event.templates.reviewerInvitation;
+    const signature=event.templates.signature;
     await sendMail(
       email,
-      'Invitation to be a Reviewer',
-      `You have been added as a reviewer for the event. <br>
-      Please click <a href="${acceptLink}">here</a> to accept the invitation`
+      'Invitation to be a Reviewer ',
+      ` ${reviewerInvitationTemplate}<br>
+      Please click <a href="${acceptLink}">here</a> to accept the invitation <br>
+      ${signature}
+      `
     );
 
     res.status(200).send('Invitation resent successfully');
