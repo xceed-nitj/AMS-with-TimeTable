@@ -116,7 +116,7 @@ const PrmEditorDashboard = () => {
                             bgGradient="linear(to-r, green.600, green.500)"
                             color="white"
                             _hover={{ bgGradient: "linear(to-r, green.500, green.400)" }}
-                            onClick={() => navigate(`${location.pathname}/addtemplate`)}
+                            onClick={() => navigate(`${location.pathname}/edittemplate`)}
                             leftIcon={<Icon as={FaEnvelope} color="white" />}
                             whiteSpace="normal" // Ensure text wraps within the button
                         >
