@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Grid, GridItem, Icon } from '@chakra-ui/react';
+import { Box, Button,HStack,VStack, Grid, GridItem, Icon } from '@chakra-ui/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { Container } from "@chakra-ui/layout";
