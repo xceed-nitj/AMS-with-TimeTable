@@ -229,14 +229,11 @@ const CertificateForm = () => {
               <option value="7">Basic 8</option>
               <option value="8">Basic 9</option>
               <option value="13">Basic 11</option>
-              <option value="15">Basic 12</option>              
-              <option value="16">Basic 13</option>
               <option value="9">Premium 1</option>
               <option value="10">Premium 2</option>
               <option value="11">Premium 3</option>
               <option value="12">Premium 4</option>
               <option value="14">Premium 5</option>
-
             </Select>
 
             <Text>Enter the link for the logos:</Text>
