@@ -34,8 +34,7 @@ exports.register = async (req, res, next) => {
       // Create the user with the hashed password
       try {
         const user = await User.create({
-          name: email,
-          email: email,
+          email,
           password: hash,
           role:roles,
         });
@@ -43,7 +42,7 @@ exports.register = async (req, res, next) => {
         // Generate a JWT token
         const maxAge = 3 * 60 * 60 * 60; // 3 hours in seconds
         const token = jwt.sign(
-          { id: user._id, name: email, email: email, role: user.role },
+          { id: user._id, email, role: user.role },
           jwtSecret,
           {
             expiresIn: maxAge,

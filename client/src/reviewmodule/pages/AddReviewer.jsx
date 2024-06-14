@@ -11,7 +11,6 @@ function AddReviewer() {
   const apiUrl = getEnvironment();
   const { eventId } = useParams();
   const [reviewerEmail, setReviewerEmail] = useState('');
-  const [reviewerPassword, setReviewerPassword] = useState('');
   const [reviewers, setReviewers] = useState([]);
   const toast = useToast();
 
@@ -34,9 +33,6 @@ function AddReviewer() {
   const handleReviewerEmailChange = (e) => {
     setReviewerEmail(e.target.value);
   };
-  const handleReviewerPasswordChange = (e) => {
-    setReviewerPassword(e.target.value);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,7 +41,6 @@ function AddReviewer() {
     try {
       const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/event/addReviewer/${eventId}`, { 
         email: reviewerEmail,
-        password: reviewerPassword,
         baseUrl
       });
 
@@ -123,13 +118,6 @@ function AddReviewer() {
             placeholder="Enter reviewer email to add to event"
             value={reviewerEmail}
             onChange={handleReviewerEmailChange}
-          />
-          <Input
-            mb={4}
-            type="password"
-            placeholder="Enter reviewer password to add to event"
-            value={reviewerPassword}
-            onChange={handleReviewerPasswordChange}
           />
           <Button type="submit" colorScheme="teal">
             Save

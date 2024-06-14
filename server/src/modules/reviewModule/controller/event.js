@@ -5,11 +5,6 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
 const getEnvironmentURL =require('../../../getEnvironmentURL.js')
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const jwtSecret =
-  "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
-
 
 
 const app = express();
@@ -21,10 +16,11 @@ app.use(
 app.use(bodyParser.json());
 
 const addEvent = async (req, res) => {
-  const { name, editor} =
+  const { name, startDate, endDate, editor, paperSubmissionDate, reviewTime,instructions } =
     req.body;
 
   try {
+    let newUser;
     const xceedUser= await XUser.findById(editor)
     if (!xceedUser) {
       throw new Error('User not found');
@@ -33,9 +29,24 @@ const addEvent = async (req, res) => {
       xceedUser.role.push('PRM');
       await xceedUser.save(); // Save the updated user
   }
+    const eventUser=await User.findOne({email: xceedUser.email})
+    if(!eventUser || eventUser.length===0)
+    {
+      newUser = new User({
+        name: xceedUser.email,
+        email: xceedUser.email,
+        role:"Editor",
+        password: "1234"
+      });
+    newUser.save()
+
+    }
+    else{
+      newUser=eventUser;
+    }
     const newEvent = new Event({
       name:name,
-      editor: xceedUser._id,
+      editor: newUser.id,
       });
     await newEvent.save();
 
@@ -67,11 +78,10 @@ const getEvents = async (req, res) => {
 
 const getEventsByUser = async (req, res) => {
   const Xuser= await XUser.findById(req.user.id)
-  //const userId= await User.findOne({email:Xuser.email});
-  //console.log(Xuser);
+  const userId= await User.findOne({email:Xuser.email});
 
   try {
-    const events = await Event.find({ 'editor': { $in: [Xuser._id] } }).exec();
+    const events = await Event.find({ 'editor': { $in: [userId.id] } }).exec();
     res.status(200).json(events);
   } catch (error) {
     res.status(500).send(error);
@@ -160,54 +170,24 @@ const updateEventTemplate = async (req, res) => {
 
 const addEditor = async (req, res) => {
   const email = req.body.email;
-  const password = req.body.password;
   const id=req.params.id;
-  //const userId = await User.find({email:email})
-  const XuserId = await XUser.find({email:email})
-  if(!XuserId || XuserId.length===0)
+  const userId = await User.find({email:email})
+  if(!userId || userId.length===0)
   {
-    try {
-      // Hash the password using bcrypt
-      bcrypt.hash(password, 10, async (hashErr, hash) => {
-        if (hashErr) {
-          return res
-            .status(500)
-            .json({ message: "Password hashing failed", error: hashErr.message });
-        }
+    const newUser = new User({
+      name: email,
+      email: email,
+      role:"Editor",
+      password: "1234"
+    });
   
-        // Create the user with the hashed password
-        try {
-          const newUser = new XUser({
-            name: email,
-            email: email,
-            role:["PRM","Editor"],
-            password: hash
-          });
-        
-          newUser.save()
-          res.status(201).json({
-            message: "User successfully created",
-            user,
-          });
-        } catch (createErr) {
-          res.status(400).json({
-            message: "User not successful created",
-            error: createErr.message,
-          });
-        }
-      });
-    } catch (err) {
-      res.status(401).json({
-        message: "User not successful created",
-        error: err.message,
-      });
+    newUser.save()
     }
-  }
   if (!id) res.send("id not found");
   // const newEditor = req.body.editor;
   try {
     const event = await Event.findById(id);
-    const updatedId = await XUser.findOne({email:email})
+    const updatedId = await User.findOne({email:email})
     event.editor.push(updatedId._id);
     await event.save();
     res.status(200).send("Editor is added successfully");
@@ -219,49 +199,32 @@ const addEditor = async (req, res) => {
 const addReviewer = async (req, res) => {
   try {
     const eventId = req.params.id;
-    const { email, password, baseUrl } = req.body; 
+    const { email, baseUrl } = req.body; 
 
     if (!email) {
       console.error('Email is required');
       return res.status(400).send('Email is required');
     }
 
-    let reviewer = await XUser.findOne({ name: email });
+    let reviewer = await User.findOne({ email });
 
     if (!reviewer) {
-      // If reviewer does not exist, create a new one
-      try {
-        // Hash the password
-        const hash = await bcrypt.hash(password, 10);
-        
-        // Create the user with the hashed password
-        reviewer = new XUser({
-          name: email,
-          email: email,
-          role: ["PRM", "Reviewer"],
-          password: hash
-        });
+      const temporaryPassword = generateRandomPassword();
+      reviewer = new User({
+        name: email,
+        email: email,
+        role: 'Reviewer',
+        password: temporaryPassword
+      });
+      await reviewer.save();
 
-        await reviewer.save();  // Save the new reviewer to the database
-
-        // Send the welcome email
-        await sendMail(
-          email,
-          'Welcome as a Reviewer',
-          `You have been added as a reviewer. This is your password: ${password}`  // Send the original password or a predefined one
-        );
-
-        console.log('Reviewer created:', reviewer);
-      } catch (createErr) {
-        console.error('User creation failed:', createErr);
-        return res.status(500).json({
-          message: "User creation failed",
-          error: createErr.message,
-        });
-      }
+      await sendMail(
+        email,
+        'Welcome as a Reviewer',
+        `You have been added as a reviewer. Please set your password using this temporary password: ${temporaryPassword}`
+      );
     }
 
-    // Fetch the event
     const event = await Event.findById(eventId);
 
     if (!event) {
@@ -270,13 +233,12 @@ const addReviewer = async (req, res) => {
     }
 
     // Check if reviewer is already assigned
-    const isAlreadyReviewer = event.reviewer.some(r => r?.user?.equals(reviewer._id));
-
+    const isAlreadyReviewer = event.reviewer.some(r => r.user.equals(reviewer._id));
     if (isAlreadyReviewer) {
       return res.status(400).send('Reviewer already added to the event');
-    }
+    } 
 
-    // Add reviewer to the event
+// Add reviewer to the event
     event.reviewer.push({ user: reviewer._id, status: 'Invited' });
     await event.save();
 
@@ -284,7 +246,6 @@ const addReviewer = async (req, res) => {
     const signature=event.templates.signature;
     const acceptLink = `${baseUrl}/prm/${eventId}/reviewer/${reviewer._id}`; // Use the base URL
 
-    // Send the reviewer invitation email
     await sendMail(
       email,
       'You have been added as a reviewer',
@@ -302,7 +263,6 @@ const addReviewer = async (req, res) => {
   }
 };
 
-
 const resendInvitation = async (req, res) => {
   try {
     const eventId = req.params.id;
@@ -313,7 +273,7 @@ const resendInvitation = async (req, res) => {
       return res.status(400).send('Email is required');
     }
 
-    const reviewer = await XUser.findOne({ email });
+    const reviewer = await User.findOne({ email });
 
     if (!reviewer) {
       return res.status(404).send('Reviewer not found');
@@ -366,12 +326,12 @@ const getAllReviewersInEvent = async (req, res) => {
     if (!event) {
       return res.status(404).send('Event not found');
     }
-    console.log(event.reviewer);
+
     // Extract reviewer details (name, email, and status) from the event
-    const reviewers = event.reviewer.map(r => ({
-      name: r.user.name,  // Assuming the User schema has a name field
-      email: r.user.email,  // Assuming the User schema has an email field
-      status: r.status
+    const reviewers = event.reviewer.map(reviewer => ({
+      name: reviewer.user.name,  // Assuming the User schema has a name field
+      email: reviewer.user.email,  // Assuming the User schema has an email field
+      status: reviewer.status
     }));
 
     // Send the list of reviewers in the event
@@ -406,7 +366,7 @@ const getEditorIdByEmail = async (req, res) => {
   const editorEmail = req.params.email;
   try {
     // Find the user by email and role "Editor"
-    const user = await XUser.find({ email: editorEmail });
+    const user = await User.find({ email: editorEmail });
 
     if (!user) {
       // If no user with the email and role "Editor" is found, return error
