@@ -1,19 +1,23 @@
 const Mongoose = require("mongoose");
 require('../commonFields');
 const UserSchema = new Mongoose.Schema({
-  email: {
+  name: {
     type: String,
-    unique: true,
-    required: true,
-  },
-  password: {
-    type: String,
-    required: true,
   },
   role: {
     type: [String],
     required: true,
   },
+  password: {
+    type: String,
+    required: true,
+  }, 
+  profession: {type: String},
+  email: [{
+    type: String,
+    required: true,
+  }],
+  area:[{type: String}],
 });
 const User = Mongoose.model("user", UserSchema);
 module.exports = User;
