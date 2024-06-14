@@ -8,7 +8,7 @@ import { Toast } from "@chakra-ui/react";
 import JoditEditor from "jodit-react";
 import { CheckIcon } from "@chakra-ui/icons";
 import Header from "../../components/header";
-
+import { Link } from 'react-router-dom';
 
 
 
@@ -112,17 +112,20 @@ return (
     >
         <Header title="Edit Templates" />
 
-        {/* https://v2.chakra-ui.com/docs/components/tabs/usage */}
-        {/* ChakraUI Tabs Documentaion */}
-        {/* Refer to this in future */}
-        <ChakraProvider theme={theme}>
-            <Tabs variant='soft-rounded' colorScheme='scheme1'> {/* removed colorScheme = 'green' */}
-            <TabList
-                style={{display:'flex', flexWrap:'nowrap'}}
-                >
-                {Object.keys(template).map(templateType =>(
-                    <Tab key={templateType} style={{textWrap:'nowrap', border: '2px solid #00bcd4'}}>{
-                        templateType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</Tab>
+            {/* https://v2.chakra-ui.com/docs/components/tabs/usage */}
+            {/* ChakraUI Tabs Documentaion */}
+            {/* Refer to this in future */}
+            <ChakraProvider theme={theme}>
+                <Tabs variant='soft-rounded' colorScheme='scheme1'> {/* removed colorScheme = 'green' */}
+                    <TabList
+                        style={{ display: 'flex', flexWrap: 'nowrap' }}
+                    >
+                        {Object.keys(template).map(templateType => (
+                            <Tab
+                                _selected={{border: '2px solid #121826 !important', color: 'white', backgroundColor: '#121826'}}
+                                _hover = {{backgroundColor: '#1f2536', color: 'white'}}
+                             key={templateType} style={{ textWrap: 'nowrap', border: '2px solid #00bcd4' }}>{
+                                templateType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</Tab>
                         ))}
             </TabList>
             <TabPanels>
@@ -135,21 +138,33 @@ return (
                                 [templateType]: newContent
                                 }))}
                                 />
-                        <Button
-                            colorScheme="scheme1"
-                            leftIcon={<CheckIcon />}
-                            mt={2}
-                            onClick={() => handleSave(templateType, template[templateType])}
-                            >
-                            Save {templateType}
-                        </Button>
-                    </TabPanel>
-                ))}
-            </TabPanels>
-            </Tabs>
-        </ChakraProvider>
-    </Container>
-);
+                                {/* <Button
+                                    colorScheme="scheme1"
+                                    leftIcon={<CheckIcon />}
+                                    mt={2}
+                                    onClick={() => handleSave(templateType, template[templateType])}
+                                    >
+                                    Save {templateType}
+                                    </Button> */}
+                                {/* <Link
+                                    // onClick={() => handleSave(templateType, template[templateType])}
+                                    className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+                                    >Save {Template}</Link> */}
+                                <br/>
+                                <Link
+                                    onClick={() => handleSave(templateType, template[templateType])}
+                                    className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+                                    style={{gap: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 'fit-content'}}
+                                    >
+                                    <CheckIcon />Save {templateType}
+                                </Link>
+                            </TabPanel>
+                        ))}
+                    </TabPanels>
+                </Tabs>
+            </ChakraProvider>
+        </Container>
+    );
 }
 
 export default EditTemplate;
