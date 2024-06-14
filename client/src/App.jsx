@@ -204,7 +204,6 @@ function App() {
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
     <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
-    <Route path="/prm/:eventId/editor/addtemplate" element={<AddTemplate/>}/>
     <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
     <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
