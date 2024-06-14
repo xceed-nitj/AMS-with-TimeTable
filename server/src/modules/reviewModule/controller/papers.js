@@ -2,6 +2,7 @@ const Paper = require("../../../models/reviewModule/paper.js");
 const express = require("express");
 const bodyParser = require("body-parser");
 const User = require("../../../models/reviewModule/user.js")
+const XUser = require("../../../models/usermanagement/user.js")
 
 const app = express();
 app.use(
@@ -121,7 +122,7 @@ const addReviewer = async (req, res) => {
       console.error('Email is required');
       return res.status(400).send('Email is required');
     }
-    let reviewers = await User.findOne({ email });
+    let reviewers = await XUser.findOne({ email });
 
     const paper = await Paper.findById(paperId);
 

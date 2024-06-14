@@ -2,7 +2,6 @@ import React from 'react';
 import CertificateContent from './certificatetemplates/basic01';
 import Template02 from './certificatetemplates/basic02';
 import Template03 from './certificatetemplates/03_sarthak';
-
 import Template04 from './certificatetemplates/basic04';
 import Template05 from './certificatetemplates/basic05';
 import Template06 from './certificatetemplates/basic06';
@@ -10,13 +9,12 @@ import Template07 from './certificatetemplates/basic07';
 import Template08 from './certificatetemplates/basic08';
 import Template09 from './certificatetemplates/basic09';
 import Template14 from './certificatetemplates/basic11';
-import Template15 from './certificatetemplates/basic12';
-import Template16 from './certificatetemplates/basic13';
+import Template16 from './certificatetemplates/basic12';
+import Template17 from './certificatetemplates/basic13';
 import Template10 from './certificatetemplates/premium01';
 import Template11 from './certificatetemplates/premium02';
 import Template12 from './certificatetemplates/premium03';
 import Template13 from './certificatetemplates/premium04';
-
 
 
 function SelectCertficate({
@@ -175,7 +173,6 @@ function SelectCertficate({
       footer={footer}
       key={'12'}
     />,
-
     <Template14
       eventId={eventId}
       contentBody={contentBody}
@@ -187,7 +184,6 @@ function SelectCertficate({
       footer={footer}
       key={'13'}
     />,
-
     <Template15
       eventId={eventId}
       contentBody={contentBody}
@@ -199,7 +195,6 @@ function SelectCertficate({
       footer={footer}
       key={'14'}
     />,
-
     <Template16
       eventId={eventId}
       contentBody={contentBody}
@@ -211,7 +206,17 @@ function SelectCertficate({
       footer={footer}
       key={'15'}
     />,
-
+    <Template17
+      eventId={eventId}
+      contentBody={contentBody}
+      certiType={certiType}
+      logos={logos}
+      participantDetail={participantDetail}
+      signature={signature}
+      header={header}
+      footer={footer}
+      key={'16'}
+    />,
   ];
 
   return <div>{certiDesignTemp[templateId]}</div>;
