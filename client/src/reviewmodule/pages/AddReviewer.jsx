@@ -11,6 +11,7 @@ function AddReviewer() {
   const apiUrl = getEnvironment();
   const { eventId } = useParams();
   const [reviewerEmail, setReviewerEmail] = useState('');
+  const [reviewerPassword, setReviewerPassword] = useState('');
   const [reviewers, setReviewers] = useState([]);
   const toast = useToast();
 
@@ -32,6 +33,9 @@ function AddReviewer() {
 
   const handleReviewerEmailChange = (e) => {
     setReviewerEmail(e.target.value);
+  };
+  const handleReviewerPasswordChange = (e) => {
+    setReviewerPassword(e.target.value);
   };
 
   const handleSubmit = async (e) => {
@@ -82,8 +86,8 @@ function AddReviewer() {
   const handleResendInvitation = async (email) => {
     const baseUrl = window.location.origin;
     try {
-      await axios.post(`${apiUrl}/reviewmodule/event/resendInvitation/${eventId}`, { 
-        email,
+        await axios.post(`${apiUrl}/reviewmodule/event/resendInvitation/${eventId}`, {
+            email: reviewerEmail,
         baseUrl
       });
       toast({
@@ -119,6 +123,7 @@ function AddReviewer() {
             value={reviewerEmail}
             onChange={handleReviewerEmailChange}
           />
+        
           <Button type="submit" colorScheme="teal">
             Save
           </Button>
