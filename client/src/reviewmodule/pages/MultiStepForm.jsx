@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Stepper, Step, StepTitle, StepIndicator, StepStatus, StepSeparator, Icon } from '@chakra-ui/react';
-import { FaAngleLeft, FaAngleRight } from 'react-icons/fa';
+import { FaAlignJustify, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 import AuthorDetails from '../components/AuthorDetails';
 import PaperDetails from '../components/PaperDetails';
 import CodeDetails from '../components/CodeDetails';
@@ -70,8 +70,10 @@ function MultiStepForm({ isSidebarOpen }) {
   }
 
   const containerStyle = {
-    padding: '35px 35px 35px 0',
-    marginLeft: isSidebarOpen ? '0' : '0vw',
+    paddingTop: '35px',
+    margin: 'auto',
+    // alignSelf: 'center',
+    // marginLeft: isSidebarOpen ? '0' : '0vw', // not sure about this
     width: isSidebarOpen ? '82vw' : '82vw',
     overflowX: 'hidden',
     zIndex: '9997',
@@ -81,11 +83,15 @@ function MultiStepForm({ isSidebarOpen }) {
 
   return (
     <div style={containerStyle}>
-      <Stepper size="md" index={activeStep}>
+      <Stepper size="md" index={activeStep}
+        style={{display:'flex', flexWrap: 'wrap'}}
+       >
         {steps.map((step, index) => (
+          
           <Step
             key={index}
             cursor="pointer" // Add pointer cursor
+            style={{padding: '1px'}}
           >
             <StepIndicator>
               <StepStatus
