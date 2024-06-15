@@ -1,13 +1,9 @@
 import React from 'react';
-<<<<<<< HEAD
-import { Box, Button,HStack,VStack, Grid, GridItem, Icon } from '@chakra-ui/react';
-=======
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import getEnvironment from '../../getenvironment';
 import { Box, Button, HStack, Text } from '@chakra-ui/react';
 import {Grid, GridItem, Icon } from '@chakra-ui/react';
->>>>>>> d6fb84960429bca488db58bde16bcce129bccde6
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { Container } from "@chakra-ui/layout";
