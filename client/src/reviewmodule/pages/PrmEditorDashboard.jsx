@@ -16,6 +16,8 @@ const PrmEditorDashboard = () => {
   const apiUrl = getEnvironment();
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
+  const [table, setTable] = useState([]);
+  const [counts, setCounts] = useState({ Accepted: 0, Invited: 0, NotAccepted: 0 });
 
   const fetchEvent = async () => {
     try {
@@ -43,6 +45,48 @@ const PrmEditorDashboard = () => {
     fetchEvent();
   }, [apiUrl]);
 
+  
+  const fetchReviewer = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reviewmodule/event/getEvents/${eventId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if(response.ok) {
+        const data = await response.json();
+        setTable(data.reviewer);
+      } else {
+        console.error("Failed to fetch reviewer details");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+  useEffect(() => {
+    console.log("Fetching reviewer details with apiUrl:", apiUrl);
+    fetchReviewer();
+  }, [apiUrl]);
+
+  useEffect(() => {
+    let AcceptedCount = 0;
+    let InvitedCount = 0;
+    let NotAcceptedCount = 0;
+    table.forEach(reviewer => {
+        if (reviewer.status === "Accepted") AcceptedCount++;
+        if (reviewer.status === "Invited") InvitedCount++;
+        if (reviewer.status === "Not Accepted") NotAcceptedCount++;
+      });
+    setCounts({
+        Accepted: AcceptedCount,
+        Invited: InvitedCount,
+        NotAccepted: NotAcceptedCount,
+      });
+  },[table])
+
     // Sample data for pie charts
     const data1 = [
         { name: 'Track-1', value: 400 },
@@ -51,9 +95,9 @@ const PrmEditorDashboard = () => {
         { name: 'Track-4', value: 200 },
     ];
     const data2 = [
-        { name: 'Reviewers Invited', value: 2400 },
-        { name: 'Reviewers Accepted', value: 4567 },
-        { name: 'Reviewers Rejected', value: 1398 },
+        { name: 'Reviewers Invited', value : counts.Invited},
+        { name: 'Reviewers Accepted', value: counts.Accepted },
+        { name: 'Reviewers Rejected', value: counts.NotAccepted },
     ];
     const data3 = [
         { name: 'Reviewers Assigned', value: 1000 },
