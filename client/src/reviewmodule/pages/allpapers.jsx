@@ -158,8 +158,9 @@ function EventPaper() {
                     </MenuButton>
                     <MenuList>
                       {reviewers.map((reviewer)=>(
-                        <MenuItem  onClick={()=>handlesubmit(paper._id,reviewer.name)} minH='48px'>
-                          <span>{reviewer.name}</span>
+                        //fixed the assign reviewer button for those users, not having a name value
+                        <MenuItem  onClick={()=>handlesubmit(paper._id,reviewer.email[0])} minH='48px'>
+                          <span>{reviewer.email[0]}</span>
                         </MenuItem>
                       ))}
                     </MenuList>
