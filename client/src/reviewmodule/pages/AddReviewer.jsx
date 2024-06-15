@@ -87,7 +87,7 @@ function AddReviewer() {
     const baseUrl = window.location.origin;
     try {
         await axios.post(`${apiUrl}/reviewmodule/event/resendInvitation/${eventId}`, {
-            email: reviewerEmail,
+            email: email,
         baseUrl
       });
       toast({
