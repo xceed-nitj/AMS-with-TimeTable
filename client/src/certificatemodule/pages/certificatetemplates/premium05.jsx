@@ -269,8 +269,8 @@ const CertificateContent = ({
         </foreignObject>
 
         <text
-          x="570"
-          y="340.473"
+          x="576"
+          y="350"
           fill="#323B60"
           fontFamily="Poppins"
           fontSize="88"
@@ -278,17 +278,6 @@ const CertificateContent = ({
           fontWeight="600"
         >
           CERTIFICATE
-        </text>
-        <text
-          x="570"
-          y="367"
-          fill="#323B60"
-          fontFamily="Poppins"
-          fontSize="22"
-          textAnchor="middle"
-          fontWeight="500"
-        >
-          This is Cetify that
         </text>
 
         <foreignObject x="15%" y="395" width="70%" height="160">

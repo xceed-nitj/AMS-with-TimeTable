@@ -219,37 +219,38 @@ const addEditor = async (req, res) => {
 const addReviewer = async (req, res) => {
   try {
     const eventId = req.params.id;
-    const { email, password, baseUrl } = req.body; 
+    const { email, baseUrl } = req.body; 
 
     if (!email) {
       console.error('Email is required');
       return res.status(400).send('Email is required');
     }
 
-    let reviewer = await XUser.findOne({ name: email });
+    let reviewer = await XUser.findOne({ email });
 
     if (!reviewer) {
       // If reviewer does not exist, create a new one
       try {
-        // Hash the password
+          // Hash the password
+          const password = "1234";
         const hash = await bcrypt.hash(password, 10);
         
         // Create the user with the hashed password
         reviewer = new XUser({
           name: email,
           email: email,
-          role: ["PRM", "Reviewer"],
+          role: ["PRM"],
           password: hash
         });
 
         await reviewer.save();  // Save the new reviewer to the database
 
         // Send the welcome email
-        await sendMail(
-          email,
-          'Welcome as a Reviewer',
-          `You have been added as a reviewer. This is your password: ${password}`  // Send the original password or a predefined one
-        );
+        //await sendMail(
+        //  email,
+        //  'Welcome as a Reviewer',
+        //  `You have been added as a reviewer. This is your password: ${password}`  // Send the original password or a predefined one
+        //);
 
         console.log('Reviewer created:', reviewer);
       } catch (createErr) {
