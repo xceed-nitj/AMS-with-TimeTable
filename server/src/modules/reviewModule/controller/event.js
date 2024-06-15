@@ -370,7 +370,7 @@ const getAllReviewersInEvent = async (req, res) => {
     console.log(event.reviewer);
     // Extract reviewer details (name, email, and status) from the event
     const reviewers = event.reviewer.map(r => ({
-      name: r.user.name,  // Assuming the User schema has a name field
+      name: r.user.email[0],  // Assuming the User schema has a name field
       email: r.user.email,  // Assuming the User schema has an email field
       status: r.status
     }));
