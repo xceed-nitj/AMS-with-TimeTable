@@ -134,74 +134,79 @@ function EventForm() {
   };
 
   return (
-    <Container>
-      <Header title="Add conference details"></Header>
-      <Box maxW="md" mx="auto" mt={10}>
-     
+    <Container maxW="md" p={8}  mx="auto" bg="white"  borderRadius="md" boxShadow="md" maxWidth='100%' size='md'>
+      <Box bg="white" p={8} borderTopRadius="md" borderTopLeftRadius="xl" borderTopRightRadius="xl" borderBottomLeftRadius="xl" ˀborderBottomRightRadius="xl">
+        <Header as="h2" size="lg" color="white" textAlign="center" title="Add conference details"/>
+      </Box>
+      <Box bg="white" p={8} borderBottomRadius="md" borderTopLeftRadius="md" borderTopRightRadius="md" borderBottomLeftRadius="md" ˀborderBottomRightRadius="md">
         <form onSubmit={handleSubmit}>
           <FormControl id="name" mb={4}>
             <FormLabel>Name</FormLabel>
             <Input
               type="text"
               name="name"
-              value={formData.name}
-              onChange={handleChange}
-              isDisabled
-            />
-          </FormControl>
-          <FormControl id="startDate" mb={4}>
-            <FormLabel>Start Date of the conference</FormLabel>
-            <Input
-              type="date"
-              name="startDate"
-              value={formData.startDate}
-              onChange={handleChange}
-            />
-          </FormControl>
-          <FormControl id="endDate" mb={4}>
-            <FormLabel>End Date of the conference</FormLabel>
-            <Input
-              type="date"
-              name="endDate"
-              value={formData.endDate}
-              onChange={handleChange}
-            />
-          </FormControl>
-          <FormControl id="paperSubmissionDate" mb={4}>
-            <FormLabel>Paper Submission Deadline</FormLabel>
-            <Input
-              type="date"
-              name="paperSubmissionDate"
-              value={formData.paperSubmissionDate}
-              onChange={handleChange}
-            />
-          </FormControl>
-          <FormControl id="reviewTime" mb={4}>
-            <FormLabel>Review Time</FormLabel>
-            <Input
-              type="text"
-              name="reviewTime"
-              value={formData.reviewTime}
-              onChange={handleChange}
-            />
-          </FormControl>          
-          <FormControl id="name" mb={4}>
-            <FormLabel>List of Editors</FormLabel>
-            <Input
-              type="text"
-              name="name"
-              value={formData.editor}
-              onChange={handleChange}
-              isDisabled
-            />
-          </FormControl>
+                value={formData.name}
+                onChange={handleChange}ˀ
+                border="1.5px solid black"
+              />
+            </FormControl>
+            <FormControl id="startDate" mb={4}>
+              <FormLabel>Start Date of the conference</FormLabel>
+              <Input
+                type="date"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleChange}
+                border="1.5px solid black"
+              />
+            </FormControl>
+            <FormControl id="endDate" mb={4}>
+              <FormLabel >End Date of the conference</FormLabel>
+              <Input
+                type="date"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleChange}
+                border="1.5px solid black"
+              />
+            </FormControl>
+            <FormControl id="paperSubmissionDate" mb={4}>
+              <FormLabel>Paper Submission Deadline</FormLabel>
+              <Input
+                type="date"
+                name="paperSubmissionDate"
+                value={formData.paperSubmissionDate}
+                onChange={handleChange}
+                border="1.5px solid black"
+              />
+            </FormControl>
+            <FormControl id="reviewTime" mb={4}>
+              <FormLabel>Review Time</FormLabel>
+              <Input
+                type="text"
+                name="reviewTime"
+                value={formData.reviewTime}
+                onChange={handleChange}
+                border="1.5px solid black"
+              />
+            </FormControl>          
+            <FormControl id="name" mb={4}>
+              <FormLabel>List of Editors</FormLabel>
+              <Input
+                type="text"
+                name="name"
+                value={formData.editor}
+                onChange={handleChange}
+                border="1.5px solid black"
+              />
+            </FormControl>
 
-          <Button type="submit" colorScheme="teal">
-            Save
-          </Button>
-        </form>
-      </Box>
-    </Container>
+            <Button type="submit" style={{backgroundColor:'#0096C7'}}>
+              Save
+            </Button>
+          </form>
+        </Box>
+      </Container>
   );
 }
 
