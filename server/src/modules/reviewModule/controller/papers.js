@@ -148,6 +148,30 @@ const addReviewer = async (req, res) => {
     res.status(500).send('Internal server error');
   }
 };
+const removeReviewer = async (req,res)=>{
+  try {
+    // Find the paper by paperId
+    const paperid = req.params.id;
+    const {userId} = req.body;
+    console.log(paperid);
+    const paper = await Paper.findById(paperid);
+    console.log(paper);
 
+    if (!paper) {
+        throw new Error('Paper not found');
+    }
 
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper };
+    // Filter out the reviewer with the given userId
+    paper.reviewers = paper.reviewers.filter(reviewer => String(reviewer.userId) !== userId);
+
+    // Save the updated paper document
+    await paper.save();
+    console.log(`Reviewer with userId ${userId} removed successfully from paper ${paperid}`);
+    res.status(200).send("REMOVED SUCCESSFULLY"); // or you can return some meaningful response
+} catch (error) {
+    console.error('Error removing reviewer:', error.message);
+    res.status(500).send(error) // or handle the error appropriately
+}
+}
+
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer };
