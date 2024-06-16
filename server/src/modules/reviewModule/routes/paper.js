@@ -1,5 +1,5 @@
 const express = require("express");
-const { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper } = require("../controller/papers");
+const { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer } = require("../controller/papers");
 const fileUploadMiddleware = require("../controller/uploadFileMiddleWare");
 const uploadPaper = require("../controller/uploadFile");
 const reupload = require("../controller/reupload");
@@ -18,6 +18,7 @@ router.get("/:id", findEventPaper);
 router.get("/paper/:id", findEventPaper);// To find paper using paperId (not _id)
 router.post("/addpaper/:id", fileUploadMiddleware, uploadPaper); // upload paper
 router.post('/addReviewer/:id', addReviewer);
+router.post('/removeReviewer/:id', removeReviewer);
 router.post("/reuploadPaper/:id", fileUploadMiddleware, reupload);
 router.patch("/:id", updatePaper); // By _id
 
