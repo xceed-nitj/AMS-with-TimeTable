@@ -3,6 +3,7 @@ import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
 import { Button, Stack, Text, HStack, VStack, Box, Input, Icon, AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogBody, AlertDialogFooter, AlertDialogCloseButton } from '@chakra-ui/react';
 import { FaUpload, FaTimes } from 'react-icons/fa';
+import { Link } from 'react-router-dom'
 
 function PaperUpload({ setNext, handleNext, handlePrevious }) {
   const [paper, setPaper] = useRecoilState(paperState);
@@ -52,7 +53,10 @@ function PaperUpload({ setNext, handleNext, handlePrevious }) {
 
   return (
     <VStack spacing={6} align="flex-start" width="100%">
-      <Text fontSize="2xl" fontWeight="bold" mb={4}>Paper Upload</Text>
+      {/* <Text fontSize="2xl" fontWeight="bold" mb={4}>Paper Upload</Text> */}
+      <h1 className="tw-font-bold tw-text-xl tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 tw-width tw-w-fit tw-m-auto"
+          style={{color:'transparent', backgroundClip: 'text', fontSize:'xx-large', paddingBottom:'10px'}} //matched the styling on the heading with tailwind button styling
+        >Paper Upload</h1>
       <Box borderWidth="1px" borderRadius="md" p={4} width="100%" bg="gray.50">
         <VStack spacing={4} align="flex-start" width="100%">
           <Button as="label" htmlFor="file-upload" colorScheme="blue" leftIcon={<Icon as={FaUpload} />} width="fit-content" cursor="pointer">
@@ -82,8 +86,16 @@ function PaperUpload({ setNext, handleNext, handlePrevious }) {
         </VStack>
       </Box>
       <HStack justifyContent="space-between" width="100%">
-        <Button onClick={handlePrevious}>Back</Button>
-        <Button onClick={handleNextClick} colorScheme="blue">Next</Button>
+        {/* <Button onClick={handlePrevious}>Back</Button> */}
+        {/* <Button onClick={handleNextClick} colorScheme="blue">Next</Button> */}
+        <Link
+          onClick={handlePrevious}
+          className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+        >Back</Link>
+        <Link
+          onClick={handleNextClick}
+          className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+        >Next</Link>
       </HStack>
 
       <AlertDialog
