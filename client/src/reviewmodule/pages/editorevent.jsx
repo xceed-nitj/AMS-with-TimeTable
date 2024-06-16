@@ -176,7 +176,7 @@ function EventForm() {
   };
 
   return (
-    <Container maxW="md" p={5} mx="auto" bg="white"  maxWidth='32%'>
+    <Container maxWidth={{ base: "100%", md: "md" }} p={5} mx="auto" bg="white" >
       <Box bg="black" p={0.01} borderTopRadius="md" >
         <HeaderEditorPage  color="white" textAlign="center" title="Add conference details"/>
       </Box>
