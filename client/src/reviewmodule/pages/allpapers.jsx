@@ -78,6 +78,43 @@ function EventPaper() {
     fetchPapersById();
     fetchReviewersById();
   }, [apiUrl, eventId]);
+  const handledelete = async (paper_id,user_id)=>{
+    console.log("function is called: ",paper_id,user_id);
+    try{
+      const removeResponse = await axios.post(`${apiUrl}/reviewmodule/paper/removeReviewer/${paper_id}`, {userId: user_id });
+      if(removeResponse){
+        console.log("removed successfully");
+        toast({
+          title: 'Reviewer Removed successfully',
+          status: 'success',
+          duration: 6000,
+          isClosable: true,
+          position: 'bottom',
+        });
+        window.location.reload();
+        // setReviewers(prevReviewers => [...prevReviewers, { email: reviewerEmail }]); // Assuming you're only adding the email here
+      } else {
+        toast({
+          title: 'Error removing Reviewer as api path is wrong',
+          description: 'Please try again later',
+          status: 'error',
+          duration: 6000,
+          isClosable: true,
+          position: 'bottom',
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: error.response.data,
+        description: 'Check again',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+        position: 'bottom',
+      }); 
+    }
+  }
   const handlesubmit = async (paper_id,reviewer_email)=>{
     console.log("function is called: ",paper_id,reviewer_email);
     try {
@@ -170,7 +207,7 @@ function EventPaper() {
                   <ol>
                     {paper.reviewers.map((r)=>(
                         <li>
-                          <span>username:{r.username},</span><br></br>
+                          <span>username:{r.username},</span><Button  onClick={()=>handledelete(paper._id,r.userId)}>Delete</Button><br></br>
                           <span>userId:{r.userId}</span>
                         </li>
                     ))}

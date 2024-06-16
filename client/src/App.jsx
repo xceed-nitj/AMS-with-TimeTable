@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, RouterProvider } from 'react-router-dom';
 import Timetable from './timetableadmin/timetable';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
@@ -107,6 +107,7 @@ import AddQuestionHome from './quizModule/creator/addQuestion/AddQuestionHome';
 import AddInstruction from './quizModule/creator/addQuestion/AddInstruction';
 import PreviewInstructions from './quizModule/creator/addQuestion/PreviewInstructions';
 import Settings from './quizModule/creator/addQuestion/settings';
+import PrmEdDashboard from './reviewmodule/pages/PrmEdDashboard';
 
 function App() {
   return (
@@ -210,6 +211,8 @@ function App() {
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
+    <Route path="/prm/:eventId/ed" element={<PrmEdDashboard/>} /> 
+    
 
     <Route path="/prm/:eventId/author/newpaper" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
