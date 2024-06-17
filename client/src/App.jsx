@@ -76,6 +76,7 @@ import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
 import AddReviewer from './reviewmodule/pages/AddReviewer';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
+import UserRegistration from './reviewmodule/pages/userRegistration';
 
 // import HomePage from './reviewmodule/pages/Main';
 
@@ -214,6 +215,7 @@ function App() {
     <Route path="/prm/:eventId/author/newpaper" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     <Route path="/prm/home" element={<HomePage/>}/>
+    <Route path="/prm/register" element={<UserRegistration/>}/>
 
     
 
