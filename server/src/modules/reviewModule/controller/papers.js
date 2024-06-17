@@ -1,8 +1,11 @@
 const Paper = require("../../../models/reviewModule/paper.js");
 const express = require("express");
 const bodyParser = require("body-parser");
-const User = require("../../../models/reviewModule/user.js")
-const XUser = require("../../../models/usermanagement/user.js")
+const User = require("../../../models/reviewModule/user.js");
+const XUser = require("../../../models/usermanagement/user.js");
+const Event = require("../../../models/reviewModule/event.js");
+const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
+const getEnvironmentURL =require('../../../getEnvironmentURL.js')
 
 const app = express();
 app.use(
@@ -116,7 +119,7 @@ const updatePaper = async (req, res) => {
 const addReviewer = async (req, res) => {
   try {
     const paperId = req.params.id;
-    const { email } = req.body;
+    const { email,baseUrl } = req.body;
 
     if (!email) {
       console.error('Email is required');
@@ -136,13 +139,27 @@ const addReviewer = async (req, res) => {
     if (isAlreadyReviewer) {
       return res.status(400).send('Reviewer already added to this paper');
     }
-
     // Add reviewer to the paper
     paper.reviewers.push({ userId: reviewers._id,username:email});
+    const eventId=paper.eventId;
+    const event = await Event.findById(eventId);
     await paper.save();
     console.log("added successfully");
+    const reviewerInvitationTemplate=event.templates.paperAssignment;
+    const signature=event.templates.signature;
+    const viewLink = `${baseUrl}/prm/${eventId}/editor/papers`; // Use the base URL
 
-    res.status(200).send('Reviewer added to the event successfully');
+    // Send the reviewer invitation email
+    await sendMail(
+      email,
+      `You have been added as a reviewer to the paper with title: ${paper.title}`,
+      ` ${reviewerInvitationTemplate} <br>
+      Please click <a href="${viewLink}">here</a> to view the papers <br>
+      ${signature}
+      `
+
+    );
+    res.status(200).send('Reviewer added to the paper successfully');
   } catch (error) {
     console.error('Error adding reviewer:', error);
     res.status(500).send('Internal server error');
@@ -172,6 +189,7 @@ const removeReviewer = async (req,res)=>{
     console.error('Error removing reviewer:', error.message);
     res.status(500).send(error) // or handle the error appropriately
 }
-}
+};
+
 
 module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer };
