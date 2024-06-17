@@ -85,6 +85,7 @@ function MultiStepForm({ isSidebarOpen }) {
     <div style={containerStyle}>
       <Stepper size="md" index={activeStep}
         style={{display:'flex', flexWrap: 'wrap'}}
+        colorScheme='green'
        >
         {steps.map((step, index) => (
           
@@ -93,13 +94,25 @@ function MultiStepForm({ isSidebarOpen }) {
             cursor="pointer" // Add pointer cursor
             style={{padding: '1px'}}
           >
-            <StepIndicator>
-              <StepStatus
-                complete={<Icon boxSize={iconSize} as={FaAngleLeft} />}
-                incomplete={<Icon boxSize={iconSize} as={FaAngleRight} />}
-                active={<Icon boxSize={iconSize} as={FaAngleRight} />}
-              />
-            </StepIndicator>
+            <StepStatus
+              complete={
+                <StepIndicator>
+                  <Icon boxSize={iconSize} as={FaAngleLeft} />
+                </StepIndicator>
+              }
+              incomplete={
+                <StepIndicator>
+                  <Icon boxSize={iconSize} as={FaAngleRight} />
+                </StepIndicator>
+              }
+              active={
+                <StepIndicator
+                  style={{backgroundColor: '#3182ce'}}
+                >
+                  <Icon boxSize={iconSize} as={FaAngleRight} style={{color: 'white'}}/>
+                </StepIndicator>
+              }
+            />
             <Box flexShrink="0">
               <StepTitle>{step.title}</StepTitle>
             </Box>
