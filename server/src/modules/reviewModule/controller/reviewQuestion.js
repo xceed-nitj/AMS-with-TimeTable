@@ -27,6 +27,16 @@ const getReviewQuestions = async (req, res) => {
     }
 };
 
+const getReviewQuestionsByEventId = async (req, res) => {
+    const { eventId } = req.params;
+    try {
+        const reviewQuestions = await ReviewQuestion.find({ eventId }).populate('eventId');
+        res.status(200).json(reviewQuestions);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching review questions", error });
+    }
+};
+
 const getReviewQuestionById = async (req, res) => {
     const { id } = req.params;
     try {
@@ -63,4 +73,4 @@ const deleteReviewQuestion = async (req, res) => {
     }
 };
 
-module.exports = { addReviewQuestion, getReviewQuestions, getReviewQuestionById, updateReviewQuestion, deleteReviewQuestion };
+module.exports = { addReviewQuestion, getReviewQuestionsByEventId , getReviewQuestions, getReviewQuestionById, updateReviewQuestion, deleteReviewQuestion };
