@@ -241,7 +241,7 @@ const SideBarFinal = () => {
           </VStack>
         )}
       </Box>
-      <Box p={4} flex="1" ml={{ base: "12vw", md: isSidebarOpen ? "8vw" : "4vw", lg: isSidebarOpen ? "4vw" : "4vw" }} transition="margin-left 0.3s ease">
+      <Box p={4} flex="1" ml={{ base: "12vw", md: isSidebarOpen ? "6vw" : "6vw", lg: isSidebarOpen ? "4vw" : "4vw" }} transition="margin-left 0.3s ease">
         {content}
       </Box>
     </Box>
