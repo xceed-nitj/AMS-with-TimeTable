@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, VStack, Text, Collapse, IconButton, Flex, Icon } from '@chakra-ui/react';
+import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, useBreakpointValue } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
 import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle } from 'react-icons/fa';
 import getEnvironment from '../../getenvironment';
 import PRMDashboard from '../pages/prmdashboard';
 import SearchEvent from '../pages/searchEvent';
-import PendingAssignment from '../pages/pendingAssignment';
-import CompletedAssignment from '../pages/completedPaper';
 
 const SideBarFinal = () => {
   const navigate = useNavigate();
   const apiUrl = getEnvironment();
 
+  const isLargeScreen = useBreakpointValue({ base: false, md: true });
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const [editorData, setEditorData] = useState([]);
   const [activeTab, setActiveTab] = useState('Home');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(isLargeScreen);
 
   const tabs = [
     { label: 'Home', icon: FaHome },
@@ -101,10 +100,10 @@ const SideBarFinal = () => {
       content = <Text>Submitted Papers Page</Text>;
       break;
     case 'Pending assignment':
-      content = <PendingAssignment />
+      content = <Text>Pending Assignment Page</Text>;
       break;
     case 'Completed':
-      content = <CompletedAssignment />
+      content = <Text>Completed Reviews Page</Text>;
       break;
     case 'Event Dashboard':
       content = <PRMDashboard />;
@@ -114,15 +113,19 @@ const SideBarFinal = () => {
       break;
   }
 
+  useEffect(() => {
+    setIsSidebarOpen(isLargeScreen);
+  }, [isLargeScreen]);
+
   return (
     <Box display="flex">
       <Box
-        w={isSidebarOpen ? { base: "60vw", md: "35vw", lg: "25vw" } : { base: "14vw", md: "8vw", lg: "5vw" }}
-        h={{ base: 'calc(100vh)', lg: `calc(100vh - 60px)` }} // Adjust according to the height of the navbar
-        bg={isSidebarOpen ? bg : 'transparent'}
+        w={isSidebarOpen ? { base: "50vw", md: "25vw", lg: "20vw" } : { base: "14vw", md: "11vw", lg: "6vw" }}
+        h={{ base: 'calc(100vh - 80px)', md: 'calc(100vh - 60px)', lg: 'calc(100vh - 60px)' }} 
+        bg={bg}
         p={isSidebarOpen ? 4 : 2}
         position="fixed"
-        top={{ base: '80px', md: '60px', lg: '60px' }} // Adjust according to the height of the navbar
+        top={{ base: '80px', md: '60px', lg: '60px' }} 
         left={0}
         transition="width 0.3s ease"
         overflowY="auto"
@@ -130,13 +133,13 @@ const SideBarFinal = () => {
       >
         <Flex justifyContent="space-between" alignItems="center" mb={4}>
           <IconButton
-            icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={isSidebarOpen ? {textColor}:"black"} />}
+            icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={textColor} />}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             aria-label="Toggle Sidebar"
-            variant={isSidebarOpen ? 'unstyled' : ''}
-            outlineColor={isSidebarOpen ? '' : 'blue.800'}
-            left={-1}
-            _hover={{ bg: hoverBg,outline:"none",color:"white" }}
+            variant={isSidebarOpen ? 'unstyled' : 'outline.1'}
+            _hover={isSidebarOpen ? { bg: hoverBg, outlineColor:'' } : { bg: 'gray.800',outlineColor:hoverBg }}
+            left={0}
+            
           />
           {isSidebarOpen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
         </Flex>
@@ -227,7 +230,7 @@ const SideBarFinal = () => {
           </VStack>
         )}
       </Box>
-      <Box p={4} flex="1" ml={{ base: "12vw", md: isSidebarOpen ? "6vw" : "6vw", lg: isSidebarOpen ? "4vw" : "4vw" }} transition="margin-left 0.3s ease">
+      <Box p={4} flex="1" ml={{ base: "12vw", md: isSidebarOpen ? "26vw" : "7vw", lg: isSidebarOpen ? "21vw" : "6vw" }} transition="margin-left 0.3s ease">
         {content}
       </Box>
     </Box>
