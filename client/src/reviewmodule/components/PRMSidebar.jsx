@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, useBreakpointValue } from '@chakra-ui/react';
+import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, Center } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
 import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle } from 'react-icons/fa';
 import getEnvironment from '../../getenvironment';
@@ -112,16 +112,16 @@ const SideBarFinal = () => {
       break;
   }
 
-  const isLargeScreen = useBreakpointValue({ base: false, md: true, lg: true });
-
   return (
-    <Box display="flex">
+    <Box display="flex" position="relative">
       <Box
-        w={isSidebarOpen ? (isLargeScreen ? "18vw" : "18vw") : (isLargeScreen ? "5vw" : "15vw")}
+        w={isSidebarOpen ? { base: "60vw", md: "35vw", lg:"25vw" } : { base: "10vw", md: "8vw",lg:"5vw" }}
         h="100vh"
         bg={bg}
         p={isSidebarOpen ? 4 : 2}
-        position="fixed"
+        position="absolute"
+        top={0}
+        left={0}
         transition="width 0.3s ease"
         overflow="hidden"
         zIndex="9999"
@@ -131,10 +131,12 @@ const SideBarFinal = () => {
             icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={textColor} />}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             aria-label="Toggle Sidebar"
-            variant="styled"
-          
+            variant={isSidebarOpen ? 'unstyled' : 'outline.0'}
+            outlineColor={activeBg}
+            left={-1}
+            _hover={{ bg: hoverBg }}
           />
-          {isSidebarOpen && isLargeScreen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
+          {isSidebarOpen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
         </Flex>
         {isSidebarOpen && (
           <VStack spacing={4} align="stretch">
@@ -159,25 +161,23 @@ const SideBarFinal = () => {
                   justifyContent="space-between"
                 >
                   <Icon as={tab.icon} />
-                  {isSidebarOpen && isLargeScreen && (
-                    <Text ml={2}>
-                      {tab.label}
-                      {tab.submenu && (
-                        <IconButton
-                          icon={openSubmenu === tab.label ? <ChevronDownIcon color={textColor} /> : <ChevronRightIcon color={textColor} />}
-                          variant="unstyled"
-                          size="xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSubmenuToggle(tab.label);
-                          }}
-                          aria-label="Toggle Submenu"
-                        />
-                      )}
-                    </Text>
-                  )}
+                  <Text ml={2}>
+                    {tab.label}
+                    {tab.submenu && (
+                      <IconButton
+                        icon={openSubmenu === tab.label ? <ChevronDownIcon color={textColor} /> : <ChevronRightIcon color={textColor} />}
+                        variant="unstyled"
+                        size="xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubmenuToggle(tab.label);
+                        }}
+                        aria-label="Toggle Submenu"
+                      />
+                    )}
+                  </Text>
                 </Box>
-                {tab.submenu && isSidebarOpen && (
+                {tab.submenu && (
                   <Collapse in={openSubmenu === tab.label} animateOpacity>
                     <VStack pl={4} align="stretch">
                       {tab.label === 'Editor' ? (
@@ -225,7 +225,7 @@ const SideBarFinal = () => {
           </VStack>
         )}
       </Box>
-      <Box ml={isSidebarOpen ? (isLargeScreen ? "18vw" : "20vw") : (isLargeScreen ? "5vw" : "20vw")} p={4} flex="1" transition="margin-left 0.3s ease">
+      <Box p={4} flex="1" ml={{ base: "10vw", md: isSidebarOpen ? "10vw" : "10vw",lg: isSidebarOpen ? "7vw" : "7vw" }} transition="margin-left 0.3s ease">
         {content}
       </Box>
     </Box>
