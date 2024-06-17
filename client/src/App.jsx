@@ -109,6 +109,9 @@ import AddInstruction from './quizModule/creator/addQuestion/AddInstruction';
 import PreviewInstructions from './quizModule/creator/addQuestion/PreviewInstructions';
 import Settings from './quizModule/creator/addQuestion/settings';
 import PrmEdDashboard from './reviewmodule/pages/PrmEdDashboard';
+import Quizzing from './quizModule/student/quizzing/Quizzing';
+// import Instructions from './quizModule/student/Instructions';
+import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
 
 function App() {
   return (
@@ -257,6 +260,11 @@ function App() {
         <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
         {/* <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
         {/*<Route path="/addQuestionHome" element={<><AddQuestionHome /></>} /> */} 
+        
+        {/* quiz-student-routes */}
+        {/* <Route path="/quiz/:code/test" element={<Instructions />} /> */}
+        <Route path="/quiz/:code/live" element={<Quizzing />} />
+        <Route path="/quiz/:code/feedback" element={<QuizFeedback />} />
 
       </Routes>
       {/* <Footer/> */}

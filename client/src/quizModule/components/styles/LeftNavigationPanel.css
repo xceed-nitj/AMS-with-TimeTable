@@ -1,0 +1,515 @@
+/* NAVBAR */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Lato:wght@400;700;900&display=swap");
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+a, a:visited, a:hover, a:focus ,a:hover, a:active { text-decoration: none; }
+
+header {
+  display: flex;
+  height: 7vh;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 3%;
+  background: linear-gradient(316deg, #2a2323 60%, #50d8d7 130%);
+  background-color: #000;
+}
+
+img {
+  width: 250px;
+}
+
+.logo {
+  cursor: pointer;
+}
+
+/* MAIN NAV */
+
+.nav_links {
+  list-style: none;
+}
+
+.nav_links li {
+  display: inline-block;
+  padding: 0px 10px;
+}
+
+.nav-subjective-btn:hover {
+  cursor: pointer;
+}
+
+.nav-placement-btn:hover {
+  cursor: pointer;
+}
+
+.nav_links li a,
+.dropbtn {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  color: #edf0f1;
+  text-decoration: none;
+  transition: all 0.3s ease 0s;
+}
+
+.nav_links li a:hover,
+.dropdown:hover .dropbtn {
+  color: #50d8d7;
+}
+
+li.dropdown {
+  display: inline-block;
+  position: relative;
+}
+
+.dropbtn {
+  padding: 10px;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+
+  background-color: #000;
+  min-width: 180px;
+  padding: 10px 16px;
+
+  animation-name: fadeInUp;
+  -webkit-animation-name: fadeInUp;
+  animation-duration: 0.2s;
+  -webkit-animation-duration: 0.2s;
+  animation-fill-mode: both;
+  -webkit-animation-fill-mode: both;
+
+  box-shadow: 0 20px 25px rgb(0 0 0 / 20%) !important;
+  border-radius: 10px;
+  z-index: 4;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 10px 0px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+
+.dropdown-content a span {
+  font-size: 16px;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.dropdown-content a small {
+  font-size: 11px;
+  color: #adafaf;
+  display: block;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* PROFILE BUTTON */
+
+.click-dropbtn {
+  border: none;
+  cursor: pointer;
+}
+
+.click-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.click-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #000;
+  padding: 10px 16px;
+  overflow: auto;
+  right: 0;
+  box-shadow: 0 20px 25px rgb(0 0 0 / 20%) !important;
+  border-radius: 10px;
+  z-index: 4;
+}
+
+.click-dropdown-content a {
+  font-family: "Montserrat", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #edf0f1;
+  text-decoration: none;
+  padding: 10px 0px;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.click-dropdown a:hover,
+.click-dropdown a:active {
+  color: #50d8d7;
+}
+
+.click-dropdown-content-a {
+  font-family: "Montserrat", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #edf0f1;
+  text-decoration: none;
+  display: block;
+  padding: 10px 0px;
+
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.click-dropdown-a:hover,
+.click-dropdown-a:active {
+  color: #50d8d7;
+}
+
+.btn-txt {
+  margin-right: 10px;
+}
+
+.show {
+  display: block;
+}
+
+.click-dropbtn a,
+.click-dropbtn-a {
+  text-decoration: none;
+  font-size: 18px;
+  background-color: #000;
+  color: #fff;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;
+
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.click-dropbtn a span,
+.click-dropbtn a p {
+  transition: all 0.3s ease 0s;
+}
+
+.click-dropbtn-a span,
+.click-dropbtn-a p {
+  transition: all 0.3s ease 0s;
+}
+
+.profile {
+  margin-left: 5px;
+}
+
+button:hover a span,
+button:hover a p {
+  color: #50d8d7;
+}
+
+/* GOOGLE FONTS ICONS */
+
+/* ICONS-SIZE */
+.material-icons.md-18 {
+  font-size: 18px;
+}
+
+.material-icons.md-24 {
+  font-size: 24px;
+}
+
+.material-icons.md-36 {
+  font-size: 36px;
+}
+
+.material-icons.md-48 {
+  font-size: 48px;
+}
+
+/* ICON-COLOR */
+.material-icons.md-dark {
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.material-icons.md-dark.md-inactive {
+  color: rgba(0, 0, 0, 0.26);
+}
+
+.material-icons.md-light {
+  color: rgb(255, 255, 255, 1);
+}
+
+.material-icons.md-light.md-inactive {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ICONS-SIZE */
+.material-icons-outlined.md-18 {
+  font-size: 18px;
+}
+
+.material-icons-outlined.md-24 {
+  font-size: 24px;
+}
+
+.material-icons-outlined.md-36 {
+  font-size: 36px;
+}
+
+.material-icons-outlined.md-48 {
+  font-size: 48px;
+}
+
+/* ICON-COLOR */
+.material-icons-outlined.md-dark {
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.material-icons-outlined.md-dark.md-inactive {
+  color: rgba(0, 0, 0, 0.26);
+}
+
+.material-icons-outlined.md-light {
+  color: rgb(255, 255, 255, 1);
+}
+
+.material-icons-outlined.md-light.md-inactive {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes fadeInUp {
+  0% {
+    transform: translate3d(0, 20%, 0);
+    visibility: visible;
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/*  */
+.ham {
+  display: none;
+}
+
+.sidenav {
+  height: 100%;
+  width: 0;
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  left: 0;
+  background-color: #000;
+  overflow-x: hidden;
+  transition: 0.5s;
+  padding-top: 60px;
+  display: none;
+}
+
+.sidenav a {
+  display: block;
+  padding: 16px;
+  text-decoration: none;
+  color: #fff;
+}
+
+.sidenav .closebtn {
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
+}
+
+@media screen and (max-width: 950px) {
+
+  .main-menu,
+  .profile-dropdown {
+    display: none;
+  }
+
+  .ham {
+    display: block;
+    color: white;
+  }
+
+  .ham:hover {
+    color: #50d8d7;
+  }
+
+  .nav_links li {
+    padding: 0px;
+    display: block;
+  }
+
+  .sidenav {
+    display: block;
+  }
+
+  .click-dropdown {
+    position: relative;
+  }
+
+  .click-dropdown-content {
+    position: absolute;
+    left: 0px;
+  }
+}
+
+@media screen and (max-width: 290px) {
+  .logo {
+    display: none;
+  }
+}
+
+/* SIDENAV */
+
+.side-bar {
+  width: 240px;
+  height: 100%;
+
+  padding-top: 20px;
+  background-color: whitesmoke;
+  overflow-x: hidden;
+  border-right: 2px solid black;
+}
+
+/* Style the side-bar Quizs and the dropdown button */
+.side-bar a,
+.side-bar h1,
+.side-bar-item,
+.sidebar-btn {
+  padding: 6px 8px 6px 16px;
+  text-decoration: none;
+  font-size: 20px;
+  color: black;
+  display: block;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+.side-bar h1 {
+  font-size: x-large;
+}
+
+.side-bar a {
+  padding: 4px 8px 4px 28px;
+  font-size: 16px;
+}
+
+/* On mouse-over */
+.side-bar a:hover,
+.side-bar-item:hover,
+.sidebar-btn:hover {
+  color: rgb(68, 148, 148);
+}
+
+/* Add an active class to the active dropdown button */
+.active {
+  color: rgb(68, 148, 148);
+}
+
+/* Dropdown container (hidden by default). Optional: add a lighter background color and some left padding to change the design of the dropdown content */
+.dropdown-container {
+  padding-left: 8px;
+}
+
+/* Optional: Style the caret down icon */
+.fa-caret-down {
+  float: right;
+  padding-right: 8px;
+}
+
+body {
+  background-color: #eeeeee;
+  font-family: "Montserrat", sans-serif;
+}
+
+.w-100 {
+  width: 100vw;
+}
+
+.h-93 {
+  height: 93vh;
+}
+
+
+#side-navigation-arrow{
+  display: none !important;
+}
+
+@media (max-width:950px) {
+
+#side-navigation-arrow{
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  height: fit-content;
+  /* padding: 0.7rem; */
+  height: 2.7rem;
+  width: 2.7rem;
+  margin: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  background-color: whitesmoke;
+  box-shadow: 2px 2px 13px 1px #00000030;
+  transition: all 300ms;
+}
+  .side-bar-hidden{
+    display: none;
+  }
+  .side-bar-shown{
+    display: block;
+  }
+#side-navigation-arrow:hover{
+  background-color: #3f8887;
+  color: white;
+}
+.side-navigation-container-shown{
+  height: 100%;
+  position: absolute;
+  z-index: 10;
+  display: flex;
+}
+}
+
+.blur{
+  width:100vw;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: rgba(0,0,0,0.6);
+  z-index: 5;
+  display: none;
+}
+
+
+    @media  (max-width:606px) {
+        .search-bar-panel{
+            width:15rem;
+            font-size: 0.9rem;
+        }
+        
+    }
+    @media (max-width:500px) {
+      .content-card{
+        width:70vw;
+      }
+      
+    }
