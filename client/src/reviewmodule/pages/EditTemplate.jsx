@@ -104,9 +104,15 @@ function EditTemplate() {
         },
     })
 
+    function removeId(dataset) { // filters out the _id field and returns a list without it
+        let datasetRemovedId = []
+        for(let i = 0; i < dataset.length; i++) if (dataset[i] != '_id') datasetRemovedId.push(dataset[i])
+        return datasetRemovedId
+    }
+
     return (
         <Container
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly' }}
+            style={{ display: 'flex', minWidth:'85vw',flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly' }}
         >
             <Header title="Edit Templates" />
 
@@ -114,11 +120,11 @@ function EditTemplate() {
             {/* ChakraUI Tabs Documentaion */}
             {/* Refer to this in future */}
             <ChakraProvider theme={theme}>
-                <Tabs variant='soft-rounded' colorScheme='scheme1'> {/* removed colorScheme = 'green' */}
+                <Tabs size='md' variant='soft-rounded' colorScheme='scheme1'> {/* removed colorScheme = 'green' */}
                     <TabList
-                        style={{ display: 'flex', flexWrap: 'nowrap' }}
+                        style={{ display: 'flex', flexWrap: 'wrap' }}
                     >
-                        {Object.keys(template).map(templateType => (
+                        {removeId(Object.keys(template)).map(templateType => (
                             <Tab
                                 _selected={{border: '2px solid #121826 !important', color: 'white', backgroundColor: '#121826'}}
                                 _hover = {{backgroundColor: '#1f2536', color: 'white'}}
@@ -127,7 +133,7 @@ function EditTemplate() {
                         ))}
                     </TabList>
                     <TabPanels>
-                        {Object.keys(template).map(templateType => (
+                        {removeId(Object.keys(template)).map(templateType => (
                             <TabPanel>
                                 <JoditEditor
                                     value={template[templateType]}
@@ -151,10 +157,10 @@ function EditTemplate() {
                                 <br/>
                                 <Link
                                     onClick={() => handleSave(templateType, template[templateType])}
-                                    className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+                                    className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center tw-m-auto"
                                     style={{gap: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 'fit-content'}}
                                     >
-                                    <CheckIcon />Save {templateType}
+                                    <CheckIcon />Save {templateType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                                 </Link>
                             </TabPanel>
                         ))}

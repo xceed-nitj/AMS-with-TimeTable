@@ -117,9 +117,10 @@ function EventPaper() {
   }
   const handlesubmit = async (paper_id,reviewer_email)=>{
     console.log("function is called: ",paper_id,reviewer_email);
+    const baseUrl = window.location.origin;
     try {
       // Adding reviewer to the paper
-      const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/paper/addReviewer/${paper_id}`, { email: reviewer_email });
+      const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/paper/addReviewer/${paper_id}`, { email: reviewer_email, baseUrl });
       if (addReviewerResponse) {
         console.log("added successfully");
         toast({
