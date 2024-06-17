@@ -16,6 +16,8 @@ const Template12 = ({
     eventId,
     contentBody,
     certiType,
+    title,
+    verifiableLink,
     logos,
     participantDetail,
     signature,
@@ -47,10 +49,12 @@ const Template12 = ({
             image.setAttribute('width', '100');
             image.setAttribute('height', '100');
             image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
-
+            image.classList.add("qrcode");
+            
             svg.appendChild(image);
+            if(!verifiableLink){document.querySelectorAll(".qrcode").forEach((elem)=>{elem.remove()})}
         });
-    }, []);
+    }, [verifiableLink]);
 
     return (
 
@@ -7559,7 +7563,13 @@ const Template12 = ({
                     <div className="tw-flex tw-items-center tw-justify-center tw-w-full tw-px-4">
                         <div className='tw-flex tw-flex-col tw-items-center tw-pr-8'>
                             <>
-                                <p className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                            {title.map((item, key) => (
+                                    <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                                        {item}
+                                    </p>
+                                ))
+                                }
+                                {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
                                     डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
                                 </p>
                                 <p className="tw-font-nunito-bold tw-text-[12px] tw-text-center">
@@ -7570,7 +7580,7 @@ const Template12 = ({
                                 </p>
                                 <p className="tw-font-nunito-bold tw-text-[12px] tw-text-center">
                                     G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144011
-                                </p>
+                                </p> */}
                             </>
                         </div>
                         <div className='tw-flex tw-items-center tw-justify-center tw-flex-wrap tw-w-1/4 tw-gap-3'>
@@ -7626,11 +7636,11 @@ const Template12 = ({
                     </div>
                 </foreignObject>
 
-                <foreignObject x={'10%'} y={'95%'} width={'60%'} height={'100'}>
+                {verifiableLink && <foreignObject x={'10%'} y={'95%'} width={'60%'} height={'100'}>
                     <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
                         {window.location.href}
                     </div>
-                </foreignObject>
+                </foreignObject>}
             </>
         </svg>
     );
