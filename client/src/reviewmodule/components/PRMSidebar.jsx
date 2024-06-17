@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, useBreakpointValue } from '@chakra-ui/react';
+import { Box, VStack, Text, Collapse, IconButton, Flex, Icon } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
 import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle } from 'react-icons/fa';
 import getEnvironment from '../../getenvironment';
@@ -114,29 +114,31 @@ const SideBarFinal = () => {
       break;
   }
 
-  const isLargeScreen = useBreakpointValue({ base: false, md: true, lg: true });
-
   return (
     <Box display="flex">
       <Box
-        w={isSidebarOpen ? (isLargeScreen ? "18vw" : "18vw") : (isLargeScreen ? "5vw" : "15vw")}
-        h="100vh"
-        bg={bg}
+        w={isSidebarOpen ? { base: "60vw", md: "35vw", lg: "25vw" } : { base: "14vw", md: "8vw", lg: "5vw" }}
+        h={{ base: 'calc(100vh)', lg: `calc(100vh - 60px)` }} // Adjust according to the height of the navbar
+        bg={isSidebarOpen ? bg : 'transparent'}
         p={isSidebarOpen ? 4 : 2}
         position="fixed"
+        top={{ base: '80px', md: '60px', lg: '60px' }} // Adjust according to the height of the navbar
+        left={0}
         transition="width 0.3s ease"
-        overflow="hidden"
+        overflowY="auto"
         zIndex="9999"
       >
         <Flex justifyContent="space-between" alignItems="center" mb={4}>
           <IconButton
-            icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={textColor} />}
+            icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={isSidebarOpen ? {textColor}:"black"} />}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             aria-label="Toggle Sidebar"
-            variant="styled"
-          
+            variant={isSidebarOpen ? 'unstyled' : ''}
+            outlineColor={isSidebarOpen ? '' : 'blue.800'}
+            left={-1}
+            _hover={{ bg: hoverBg,outline:"none",color:"white" }}
           />
-          {isSidebarOpen && isLargeScreen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
+          {isSidebarOpen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
         </Flex>
         {isSidebarOpen && (
           <VStack spacing={4} align="stretch">
@@ -161,25 +163,23 @@ const SideBarFinal = () => {
                   justifyContent="space-between"
                 >
                   <Icon as={tab.icon} />
-                  {isSidebarOpen && isLargeScreen && (
-                    <Text ml={2}>
-                      {tab.label}
-                      {tab.submenu && (
-                        <IconButton
-                          icon={openSubmenu === tab.label ? <ChevronDownIcon color={textColor} /> : <ChevronRightIcon color={textColor} />}
-                          variant="unstyled"
-                          size="xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSubmenuToggle(tab.label);
-                          }}
-                          aria-label="Toggle Submenu"
-                        />
-                      )}
-                    </Text>
-                  )}
+                  <Text ml={2}>
+                    {tab.label}
+                    {tab.submenu && (
+                      <IconButton
+                        icon={openSubmenu === tab.label ? <ChevronDownIcon color={textColor} /> : <ChevronRightIcon color={textColor} />}
+                        variant="unstyled"
+                        size="xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubmenuToggle(tab.label);
+                        }}
+                        aria-label="Toggle Submenu"
+                      />
+                    )}
+                  </Text>
                 </Box>
-                {tab.submenu && isSidebarOpen && (
+                {tab.submenu && (
                   <Collapse in={openSubmenu === tab.label} animateOpacity>
                     <VStack pl={4} align="stretch">
                       {tab.label === 'Editor' ? (
@@ -227,7 +227,7 @@ const SideBarFinal = () => {
           </VStack>
         )}
       </Box>
-      <Box ml={isSidebarOpen ? (isLargeScreen ? "18vw" : "20vw") : (isLargeScreen ? "5vw" : "20vw")} p={4} flex="1" transition="margin-left 0.3s ease">
+      <Box p={4} flex="1" ml={{ base: "12vw", md: isSidebarOpen ? "6vw" : "6vw", lg: isSidebarOpen ? "4vw" : "4vw" }} transition="margin-left 0.3s ease">
         {content}
       </Box>
     </Box>
