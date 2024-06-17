@@ -7583,7 +7583,7 @@ const Template12 = ({
                                 </p> */}
                             </>
                         </div>
-                        <div className='tw-flex tw-items-center tw-justify-center tw-flex-wrap tw-w-1/4 tw-gap-3'>
+                        <div className='tw-flex tw-items-center tw-justify-center tw-flex-wrap tw-w-1/3 tw-gap-1'>
                             {logos.map((item, key) => (
                                 <div key={key} className="tw-flex tw-items-center tw-justify-center">
                                     <div className="tw-shrink-0 tw-mx-3">
