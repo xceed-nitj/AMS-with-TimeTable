@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, Center } from '@chakra-ui/react';
+import { Box, VStack, Text, Collapse, IconButton, Flex, Icon } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
 import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle } from 'react-icons/fa';
 import getEnvironment from '../../getenvironment';
@@ -113,28 +113,28 @@ const SideBarFinal = () => {
   }
 
   return (
-    <Box display="flex" position="relative">
+    <Box display="flex">
       <Box
-        w={isSidebarOpen ? { base: "60vw", md: "35vw", lg:"25vw" } : { base: "10vw", md: "8vw",lg:"5vw" }}
-        h="100vh"
-        bg={bg}
+        w={isSidebarOpen ? { base: "60vw", md: "35vw", lg: "25vw" } : { base: "14vw", md: "8vw", lg: "5vw" }}
+        h={{ base: 'calc(100vh)', lg: `calc(100vh - 60px)` }} // Adjust according to the height of the navbar
+        bg={isSidebarOpen ? bg : 'transparent'}
         p={isSidebarOpen ? 4 : 2}
-        position="absolute"
-        top={0}
+        position="fixed"
+        top={{ base: '80px', md: '60px', lg: '60px' }} // Adjust according to the height of the navbar
         left={0}
         transition="width 0.3s ease"
-        overflow="hidden"
+        overflowY="auto"
         zIndex="9999"
       >
         <Flex justifyContent="space-between" alignItems="center" mb={4}>
           <IconButton
-            icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={textColor} />}
+            icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={isSidebarOpen ? {textColor}:"black"} />}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             aria-label="Toggle Sidebar"
-            variant={isSidebarOpen ? 'unstyled' : 'outline.0'}
-            outlineColor={activeBg}
+            variant={isSidebarOpen ? 'unstyled' : ''}
+            outlineColor={isSidebarOpen ? '' : 'blue.800'}
             left={-1}
-            _hover={{ bg: hoverBg }}
+            _hover={{ bg: hoverBg,outline:"none",color:"white" }}
           />
           {isSidebarOpen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
         </Flex>
@@ -225,7 +225,7 @@ const SideBarFinal = () => {
           </VStack>
         )}
       </Box>
-      <Box p={4} flex="1" ml={{ base: "10vw", md: isSidebarOpen ? "10vw" : "10vw",lg: isSidebarOpen ? "7vw" : "7vw" }} transition="margin-left 0.3s ease">
+      <Box p={4} flex="1" ml={{ base: "12vw", md: isSidebarOpen ? "6vw" : "6vw", lg: isSidebarOpen ? "4vw" : "4vw" }} transition="margin-left 0.3s ease">
         {content}
       </Box>
     </Box>
