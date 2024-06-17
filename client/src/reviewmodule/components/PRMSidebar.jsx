@@ -38,23 +38,7 @@ const SideBarFinal = () => {
       label: 'Editor',
       icon: EditIcon,
       submenu: [] // Editor submenu will be populated dynamically
-    },{
-      label: 'Editor',
-      icon: EditIcon,
-      submenu: [] // Editor submenu will be populated dynamically
-    },
-    {
-      label: 'Editor',
-      icon: EditIcon,
-      submenu: [] // Editor submenu will be populated dynamically
-    },{
-      label: 'Reviewer',
-      icon: FaTasks,
-      submenu: [
-        { label: 'Pending assignment', icon: FaClock },
-        { label: 'Completed', icon: FaCheckCircle }
-      ]
-    },
+    }
   ];
 
   useEffect(() => {
