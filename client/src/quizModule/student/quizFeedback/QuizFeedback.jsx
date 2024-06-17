@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-
-import './QuizFeedback.css'
+// import './QuizFeedback.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faHome, faCircle, faStar } from '@fortawesome/free-solid-svg-icons'
-import smileyFace from '../../../../assets/images/student/undraw_Smiley_face_re_9uid.svg'
-import logo from '../../../../assets/images/user/Logo enlarged-03.png'
-import getEnvironment from '../../../../getenvironment';
+// import smileyFace from '../../../../assets/images/student/undraw_Smiley_face_re_9uid.svg'
+// import logo from '../../../../assets/images/user/Logo enlarged-03.png'
+import getEnvironment from '../../../getenvironment';
 // import { useState } from 'react';
 
 const QuizFeedback = () => {
@@ -21,10 +20,11 @@ useEffect(() => {
             const token = localStorage.getItem('token');
             const code = window.location.pathname.split('/')[2];
     
-            const response = await fetch(`${apiurl}/api/quiz/studentresult/${code}`, {
+            const response = await fetch(`${apiurl}/quizmodule/student/quiz/${code}/result`, {
               method: 'GET',
+              credentials: 'include',
               headers: {
-                Authorization: `Bearer ${token}`,
+                
               },
             });
     
@@ -48,7 +48,7 @@ useEffect(() => {
             {submitted ? (
                 <>
                     <div>
-                        <img src= {logo} className="logo_head" />
+                        {/* <img src= {logo} className="logo_head" /> */}
                     </div>
                     <div className="quizFeedback-main_box">
                         <div className="quizFeedback-heading">
@@ -63,7 +63,7 @@ useEffect(() => {
             </a>
             <div className="news">
                 <div className="score">
-                    <img src={smileyFace} alt="" />
+                    {/* <img src={smileyFace} alt="" /> */}
                     <div className="your">
                         <h2>{quizDetails.totalScore}/{quizDetails.totalCorrect + quizDetails.totalWrong }</h2>
                     </div>
@@ -94,7 +94,7 @@ useEffect(() => {
                 </div>
             </div>
 
-            <div className="videos">
+            {/* <div className="videos">
                 <iframe
                     width="560"
                     height="315"
@@ -124,8 +124,8 @@ useEffect(() => {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                 ></iframe>
-            </div>
-{/* 
+            </div> */}
+            {/* 
             <div className="quizFeedback-container">
                 <form method="POST" onSubmit={handleSubmit}>
                     <input

@@ -26,6 +26,8 @@ class QuizController {
       } = req.body;
       
       const generatedLink = await generateUniqueLink();
+      // const creatorString = user.email[0];
+      // console.log(creatorString);
       
       const quiz = new Quiz({
         code: generatedLink,
@@ -37,7 +39,7 @@ class QuizController {
         negativeMarking,
         preventMobile,
         allowTabchange,
-        creator: user.email,
+        creator: user.email[0],
         user: user._id 
       });
   

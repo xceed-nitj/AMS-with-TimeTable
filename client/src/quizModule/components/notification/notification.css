@@ -1,0 +1,11 @@
+.confirmation-notification {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.confirmation-buttons button {
+  margin: 5px;
+}
