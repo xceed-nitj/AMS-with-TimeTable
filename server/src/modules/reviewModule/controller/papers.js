@@ -43,6 +43,17 @@ const findPaper = async (req, res) => {
   }
 };
 
+const findPaperByReviewer = async (req, res) => {
+  let id = req.params.id;
+  const paper = await Paper.find({ 'reviewers.userId': id }).exec();
+
+  if (!paper) {
+    return res.status(401).json("Invalid ReviewerId");
+  } else {
+    return res.status(200).send(paper);
+  }
+};
+
 const updatePaper = async (req, res) => {
   let paperId = req.params.id;
   console.log(paperId);
@@ -174,4 +185,4 @@ const removeReviewer = async (req,res)=>{
 }
 }
 
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer };
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperByReviewer };
