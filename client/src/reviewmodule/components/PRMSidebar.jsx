@@ -6,6 +6,8 @@ import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircl
 import getEnvironment from '../../getenvironment';
 import PRMDashboard from '../pages/prmdashboard';
 import SearchEvent from '../pages/searchEvent';
+import PendingAssignment from '../pages/pendingAssignment';
+import CompletedAssignment from '../pages/completedPaper';
 
 const SideBarFinal = () => {
   const navigate = useNavigate();
@@ -99,10 +101,10 @@ const SideBarFinal = () => {
       content = <Text>Submitted Papers Page</Text>;
       break;
     case 'Pending assignment':
-      content = <Text>Pending Assignment Page</Text>;
+      content = <PendingAssignment />
       break;
     case 'Completed':
-      content = <Text>Completed Reviews Page</Text>;
+      content = <CompletedAssignment />
       break;
     case 'Event Dashboard':
       content = <PRMDashboard />;
