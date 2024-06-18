@@ -213,8 +213,8 @@ function AddTrack() {
   return (
     <Container maxWidth='100%' >
       <br />
-      <Box display="flex" justifyContent="center">
-        <Box  bg="black"  p={0.2} maxWidth={{ base: "100%", md: "30%" }}  >
+      <Box display="flex" justifyContent="center" mt={4} >
+      <Box  bg="black" p={0.2} width='80%'>
           <HeaderAddTrack  color="white" textAlign="center" title="Add Track Details"/>
         </Box>
       </Box>
@@ -228,7 +228,7 @@ function AddTrack() {
             value={trackName}
             onChange={handleTrackNameChange}
             p={2}
-            maxWidth={{ base: "50%", md: "16%" }}
+            maxWidth='80%'
           />
         </Box>
         <Box display="flex" justifyContent="center" pt='5'>
@@ -242,7 +242,7 @@ function AddTrack() {
               </Button>
             </>
           ) : (
-            <Button type="submit" colorScheme="teal" leftIcon={<EditIcon />}>
+            <Button type="submit" colorScheme="blue" leftIcon={<EditIcon />}>
               Add
             </Button>
           )}
@@ -265,40 +265,61 @@ function AddTrack() {
               </Thead>
               <Tbody>
                 {tracks.map((track, index) => (
+                  
                   <Tr key={index}>
-                    <Td>{index === editIndex ? (
+                    <Td>
+                    <Box display="flex" justifyContent="center" alignItems="center">
+                      {index === editIndex ? (
                       <Input
                         value={trackName}
                         onChange={handleTrackNameChange}
                       />
                     ) : (
                       track
-                    )}</Td>
+                    )}
+                    </Box>
+                    </Td>
+                    
                     <Td>
-                      {index === editIndex ? (
-                        <>
-                          <IconButton
-                            aria-label="Save"
-                            icon={<CheckIcon />}
-                            onClick={handleSaveEdit}
-                            mr={2}
-                          />
-                          <IconButton
-                            aria-label="Cancel"
-                            icon={<CloseIcon />}
-                            onClick={handleCancelEdit}
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <Button onClick={() => handleEditTrack(index)} type="button" size='md' width='100px' colorScheme="blue">
-                            Edit
-                          </Button>
-                          <Button onClick={() => handleDelete(index)} type="button" size='md' colorScheme='red' width='100px'>
-                            Delete
-                          </Button>
-                        </>
-                      )}
+                      <Box display="flex" justifyContent="center" alignItems="center">
+                        {index === editIndex ? (
+                          <>
+                            <IconButton
+                              aria-label="Save"
+                              icon={<CheckIcon />}
+                              onClick={handleSaveEdit}
+                              mr={2}
+                            />
+                            <IconButton
+                              aria-label="Cancel"
+                              icon={<CloseIcon />}
+                              onClick={handleCancelEdit}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              onClick={() => handleEditTrack(index)}
+                              type="button"
+                              size="md"
+                              width="100px"
+                              colorScheme="blue"
+                              mr={2} 
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              onClick={() => handleDelete(index)}
+                              type="button"
+                              size="md"
+                              colorScheme="red"
+                              width="100px"
+                            >
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                      </Box>
                     </Td>
                   </Tr>
                 ))}
