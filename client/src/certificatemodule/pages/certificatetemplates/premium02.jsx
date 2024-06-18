@@ -16,6 +16,8 @@ const Template11 = ({
     eventId,
     contentBody,
     certiType,
+    title,
+    verifiableLink,
     logos,
     participantDetail,
     signature,
@@ -30,11 +32,9 @@ const Template11 = ({
         num_left = Math.floor(num_logos / 2);
     }
     const svgRef = useRef();
-
     useEffect(() => {
         const url = window.location.href; // Replace with your URL
         const svg = svgRef.current;
-
         QRCode.toDataURL(url, (err, dataUrl) => {
             if (err) throw err;
 
@@ -46,11 +46,12 @@ const Template11 = ({
             image.setAttribute('y', '400');
             image.setAttribute('width', '100');
             image.setAttribute('height', '100');
+            image.classList.add("qrcode");
             image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
-
-            svg.appendChild(image);
+            svg.appendChild(image)
+            if(!verifiableLink){document.querySelectorAll(".qrcode").forEach((elem)=>{elem.remove()})}
         });
-    }, []);
+    }, [verifiableLink]);
 
     return (
 
@@ -98,7 +99,13 @@ const Template11 = ({
                     <div className="tw-flex tw-items-center tw-justify-center tw-w-full tw-px-4">
                         <div className='tw-flex tw-flex-col tw-items-center tw-pr-8'>
                             <>
-                                <p className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                                {title.map((item, key) => (
+                                    <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                                        {item}
+                                    </p>
+                                ))
+                                }
+                                {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
                                     डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
                                 </p>
                                 <p className="tw-font-nunito-bold tw-text-[12px] tw-text-center">
@@ -109,17 +116,17 @@ const Template11 = ({
                                 </p>
                                 <p className="tw-font-nunito-bold tw-text-[12px] tw-text-center">
                                     G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144011
-                                </p>
+                                </p> */}
                             </>
                         </div>
-                        <div className='tw-flex tw-items-center tw-justify-center tw-flex-wrap tw-w-1/4 tw-gap-3'>
-                        {logos.map((item, key) => (
-                            <div key={key} className="tw-flex tw-items-center tw-justify-center">
-                                <div className="tw-shrink-0 tw-mx-3">
-                                    <img src={item} hieght="65px" width="65px" alt="" />
+                        <div className='tw-flex tw-items-center tw-justify-center tw-flex-wrap tw-w-1/3 tw-gap-1'>
+                            {logos.map((item, key) => (
+                                <div key={key} className="tw-flex tw-items-center tw-justify-center">
+                                    <div className="tw-shrink-0 tw-mx-3">
+                                        <img src={item} hieght="65px" width="65px" alt="" />
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                         </div>
                     </div>
                 </foreignObject>
@@ -165,11 +172,12 @@ const Template11 = ({
                     </div>
                 </foreignObject>
 
-                <foreignObject x={'10%'} y={'95%'} width={'60%'} height={'100'}>
-                    <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-                        {window.location.href}
-                    </div>
-                </foreignObject>
+                {verifiableLink &&
+                    <foreignObject x={'10%'} y={'95%'} width={'60%'} height={'100'}>
+                        <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
+                            {window.location.href}
+                        </div>
+                    </foreignObject>}
             </>
         </svg>
     );
