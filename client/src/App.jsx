@@ -75,7 +75,10 @@ import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
 import AddReviewer from './reviewmodule/pages/AddReviewer';
+import ReviewerQuestion from './reviewmodule/pages/ReviewQuestion';
+import ReviewerQuestionHome from './reviewmodule/pages/ReviewQuestionHome';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
+import UserRegistration from './reviewmodule/pages/userRegistration';
 
 // import HomePage from './reviewmodule/pages/Main';
 
@@ -108,6 +111,9 @@ import AddInstruction from './quizModule/creator/addQuestion/AddInstruction';
 import PreviewInstructions from './quizModule/creator/addQuestion/PreviewInstructions';
 import Settings from './quizModule/creator/addQuestion/settings';
 import PrmEdDashboard from './reviewmodule/pages/PrmEdDashboard';
+import Quizzing from './quizModule/student/quizzing/Quizzing';
+// import Instructions from './quizModule/student/Instructions';
+import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
 
 function App() {
   return (
@@ -203,6 +209,8 @@ function App() {
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
+    <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
+    <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
     <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
@@ -217,6 +225,7 @@ function App() {
     <Route path="/prm/:eventId/author/newpaper" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     <Route path="/prm/home" element={<HomePage/>}/>
+    <Route path="/prm/register" element={<UserRegistration/>}/>
 
     
 
@@ -255,6 +264,11 @@ function App() {
         <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
         {/* <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
         {/*<Route path="/addQuestionHome" element={<><AddQuestionHome /></>} /> */} 
+        
+        {/* quiz-student-routes */}
+        {/* <Route path="/quiz/:code/test" element={<Instructions />} /> */}
+        <Route path="/quiz/:code/live" element={<Quizzing />} />
+        <Route path="/quiz/:code/feedback" element={<QuizFeedback />} />
 
       </Routes>
       {/* <Footer/> */}

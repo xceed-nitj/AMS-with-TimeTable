@@ -16,6 +16,8 @@ const Template09 = ({
     eventId,
     contentBody,
     certiType,
+    title,
+    verifiableLink,
     logos,
     participantDetail,
     signature,
@@ -47,10 +49,12 @@ const Template09 = ({
             image.setAttribute('width', '100');
             image.setAttribute('height', '100');
             image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+            image.classList.add("qrcode");
 
             svg.appendChild(image);
+            if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
         });
-    }, []);
+    }, [verifiableLink]);
 
     return (
         <svg
@@ -92,7 +96,13 @@ const Template09 = ({
                                 <div className="tw-text-center">
                                     {key === num_left && (
                                         <>
-                                            <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
+                                            {title.map((item, key) => (
+                                                <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                                                    {item}
+                                                </p>
+                                            ))
+                                            }
+                                            {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
                                                 डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
                                             </p>
                                             <p className="tw-font-nunito-bold tw-text-[12px]">
@@ -103,7 +113,7 @@ const Template09 = ({
                                             </p>
                                             <p className="tw-font-nunito-bold tw-text-[12px] ">
                                                 G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144011
-                                            </p>
+                                            </p> */}
                                         </>
                                     )}
                                 </div>
@@ -153,11 +163,12 @@ const Template09 = ({
                     </div>
                 </foreignObject>
 
-                <foreignObject x={'10%'} y={'90%'} width={'60%'} height={'100'}>
-                    <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-                        {window.location.href}
-                    </div>
-                </foreignObject>
+                {verifiableLink &&
+                    <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
+                        <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
+                            {window.location.href}
+                        </div>
+                    </foreignObject>}
             </>
         </svg>
     );
