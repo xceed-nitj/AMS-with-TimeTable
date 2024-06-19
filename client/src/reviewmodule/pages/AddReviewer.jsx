@@ -1,5 +1,5 @@
 import React, { useState , useEffect} from 'react';
-import { Container, Box, Input, Button , Table, Thead, Tbody, Tr, Th, Td } from '@chakra-ui/react';
+import { Container, Box, Input, Button , Table, Thead, Tbody, Tr, Th, Td,Text } from '@chakra-ui/react';
 import { IconButton, Heading, chakra } from '@chakra-ui/react';
 import axios from 'axios';
 import getEnvironment from '../../getenvironment';
@@ -145,6 +145,31 @@ function AddReviewer() {
       </Heading>
     );
   };
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Accepted':
+        return 'green.400';
+      case 'Invited':
+        return 'yellow.400';
+      case 'Not Accepted':
+        return 'red.400';
+      default:
+        return 'gray.200';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'Accepted':
+        return 'Accepted';
+      case 'Invited':
+        return 'Invited';
+      case 'Not Accepted':
+        return 'Not Accepted';
+      default:
+        return 'Unknown';
+    }
+  };
 
 
   return (
@@ -197,7 +222,11 @@ function AddReviewer() {
               <Tr key={index}>
                 <Td textAlign="center">{reviewer.name}</Td>
                 <Td textAlign="center">{reviewer.email}</Td>
-                <Td textAlign="center">{reviewer.status}</Td>
+                <Td textAlign="center">
+                    <Box bg={getStatusColor(reviewer.status)} p={2} borderRadius="md">
+                      <Text color="white">{getStatusText(reviewer.status)}</Text>
+                    </Box>
+                  </Td>
                 <Td textAlign="center">
                   <Button
                     onClick={() => handleResendInvitation(reviewer.email)}
