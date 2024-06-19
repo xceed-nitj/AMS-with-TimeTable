@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, RouterProvider } from 'react-router-dom';
+import Lottie from 'lottie-react'
 import Timetable from './timetableadmin/timetable';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
@@ -39,6 +40,9 @@ import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
 
 import Home from './pages/Home';
+import ErrorPage from './pages/ErrorPage.jsx';
+import animation404 from '../public/404.json'
+import { LogoAnimation } from './components/login/LogoAnimation.jsx';
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
 import CertificateForm from './certificatemodule/pages/certificatedesign';
@@ -217,6 +221,12 @@ function App() {
     <Route path="/prm/:eventId/author/newpaper" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     <Route path="/prm/home" element={<HomePage/>}/>
+    <Route path='/prm/*' element={<ErrorPage 
+                                      message='The page you are looking for does not exist...' 
+                                      destination='/prm/home'
+                                      destinationName='Paper Review Manager Home'
+                                      animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
+                                      />}></Route>
 
     
 
@@ -256,6 +266,18 @@ function App() {
         {/* <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
         {/*<Route path="/addQuestionHome" element={<><AddQuestionHome /></>} /> */} 
 
+
+        <Route path='test-message' element={<ErrorPage 
+                    message='Custom error message...' 
+                    destinationName={false}
+                    animation={<LogoAnimation style={{opacity:'20%'}} />}  // any type of component can be sent here
+                    />}></Route>
+        <Route path='*' element={<ErrorPage 
+                    message='The page you are looking for does not exist...' 
+                    destination='/'
+                    destinationName='Home' 
+                    animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
+                    />}></Route>
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
