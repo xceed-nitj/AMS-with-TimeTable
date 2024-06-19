@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
-import './results.css'
+// import './results.css'
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs'; // Import react-tabs components
 import 'react-tabs/style/react-tabs.css'; // Import the default styling for react-tabs
 import getEnvironment from '../../../../getenvironment';

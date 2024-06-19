@@ -6,15 +6,18 @@ import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircl
 import getEnvironment from '../../getenvironment';
 import PRMDashboard from '../pages/prmdashboard';
 import SearchEvent from '../pages/searchEvent';
+import CompletedAssignment from '../pages/completedPaper'
+import PendingAssignment from '../pages/pendingAssignment'
 
 const SideBarFinal = () => {
   const navigate = useNavigate();
   const apiUrl = getEnvironment();
 
+  const isLargeScreen = useBreakpointValue({ base: false, md: true });
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const [editorData, setEditorData] = useState([]);
   const [activeTab, setActiveTab] = useState('Home');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(isLargeScreen);
 
   const tabs = [
     { label: 'Home', icon: FaHome },
@@ -99,10 +102,10 @@ const SideBarFinal = () => {
       content = <Text>Submitted Papers Page</Text>;
       break;
     case 'Pending assignment':
-      content = <Text>Pending Assignment Page</Text>;
+      content = <PendingAssignment />;
       break;
     case 'Completed':
-      content = <Text>Completed Reviews Page</Text>;
+      content = <CompletedAssignment />;
       break;
     case 'Event Dashboard':
       content = <PRMDashboard />;
@@ -112,18 +115,22 @@ const SideBarFinal = () => {
       break;
   }
 
-  const isLargeScreen = useBreakpointValue({ base: false, md: true, lg: true });
+  useEffect(() => {
+    setIsSidebarOpen(isLargeScreen);
+  }, [isLargeScreen]);
 
   return (
     <Box display="flex">
       <Box
-        w={isSidebarOpen ? (isLargeScreen ? "18vw" : "18vw") : (isLargeScreen ? "5vw" : "15vw")}
-        h="100vh"
+        w={isSidebarOpen ? { base: "50vw", md: "25vw", lg: "20vw" } : { base: "14vw", md: "11vw", lg: "6vw" }}
+        h={{ base: 'calc(100vh - 80px)', md: 'calc(100vh - 60px)', lg: 'calc(100vh - 60px)' }} 
         bg={bg}
         p={isSidebarOpen ? 4 : 2}
         position="fixed"
+        top={{ base: '80px', md: '60px', lg: '60px' }} 
+        left={0}
         transition="width 0.3s ease"
-        overflow="hidden"
+        overflowY="auto"
         zIndex="9999"
       >
         <Flex justifyContent="space-between" alignItems="center" mb={4}>
@@ -131,10 +138,12 @@ const SideBarFinal = () => {
             icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={textColor} />}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             aria-label="Toggle Sidebar"
-            variant="styled"
-          
+            variant={isSidebarOpen ? 'unstyled' : 'outline.1'}
+            _hover={isSidebarOpen ? { bg: hoverBg, outlineColor:'' } : { bg: 'gray.800',outlineColor:hoverBg }}
+            left={0}
+            
           />
-          {isSidebarOpen && isLargeScreen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
+          {isSidebarOpen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
         </Flex>
         {isSidebarOpen && (
           <VStack spacing={4} align="stretch">
@@ -159,25 +168,23 @@ const SideBarFinal = () => {
                   justifyContent="space-between"
                 >
                   <Icon as={tab.icon} />
-                  {isSidebarOpen && isLargeScreen && (
-                    <Text ml={2}>
-                      {tab.label}
-                      {tab.submenu && (
-                        <IconButton
-                          icon={openSubmenu === tab.label ? <ChevronDownIcon color={textColor} /> : <ChevronRightIcon color={textColor} />}
-                          variant="unstyled"
-                          size="xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSubmenuToggle(tab.label);
-                          }}
-                          aria-label="Toggle Submenu"
-                        />
-                      )}
-                    </Text>
-                  )}
+                  <Text ml={2}>
+                    {tab.label}
+                    {tab.submenu && (
+                      <IconButton
+                        icon={openSubmenu === tab.label ? <ChevronDownIcon color={textColor} /> : <ChevronRightIcon color={textColor} />}
+                        variant="unstyled"
+                        size="xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubmenuToggle(tab.label);
+                        }}
+                        aria-label="Toggle Submenu"
+                      />
+                    )}
+                  </Text>
                 </Box>
-                {tab.submenu && isSidebarOpen && (
+                {tab.submenu && (
                   <Collapse in={openSubmenu === tab.label} animateOpacity>
                     <VStack pl={4} align="stretch">
                       {tab.label === 'Editor' ? (
@@ -225,7 +232,7 @@ const SideBarFinal = () => {
           </VStack>
         )}
       </Box>
-      <Box ml={isSidebarOpen ? (isLargeScreen ? "18vw" : "20vw") : (isLargeScreen ? "5vw" : "20vw")} p={4} flex="1" transition="margin-left 0.3s ease">
+      <Box p={4} flex="1" ml={{ base: "12vw", md: isSidebarOpen ? "26vw" : "7vw", lg: isSidebarOpen ? "21vw" : "6vw" }} transition="margin-left 0.3s ease">
         {content}
       </Box>
     </Box>

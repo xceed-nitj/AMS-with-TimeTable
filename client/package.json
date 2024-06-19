@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
-    "@chakra-ui/react": "^2.8.1",
+    "@chakra-ui/react": "^2.8.2",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
@@ -29,7 +29,7 @@
     "clsx": "^2.0.0",
     "eventsource": "^2.0.2",
     "formik": "^2.4.6",
-    "framer-motion": "^10.16.16",
+    "framer-motion": "^11.2.10",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.1",
     "jodit-react": "^4.0.15",
