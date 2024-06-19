@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Text, Heading,FormLabel} from '@chakra-ui/react'
 import * as Yup from 'yup';
 import moment from 'moment-timezone';
-import './createquiz.css';
+// import './createquiz.css';
 // import StudentProfileChecker from '../../../../components/privateroutes/studentprofilechecker';
 import getEnvironment from '../../../getenvironment';
 

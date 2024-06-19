@@ -5,6 +5,14 @@ const quizController = new QuizController();
 const studentRoute = require('../../../usermanagement/studentRoute');
 const { quizBelongsToUser } = require('../../faculty/controllers/helper');
 
+quizRouter.get(`/quizzes`, studentRoute, async (req, res) => {
+    try {
+        await quizController.getStudentQuiz(req, res);
+    } catch (e) {
+        res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+    }
+});
+
 quizRouter.get("/:code", studentRoute, async (req, res) => {
     try {
         await quizController.getFirstQuestion(req, res);
@@ -13,46 +21,30 @@ quizRouter.get("/:code", studentRoute, async (req, res) => {
     }
 });
 
+quizRouter.post(`/:code/:currentIndex`, studentRoute, async (req, res) => {
+    try {
+        await quizController.saveAnsAndGetQues(req, res);
+    } catch (e) {
+        res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+    }
+});
+
+quizRouter.get(`/:code/result`, studentRoute, async (req, res) => {
+    try {
+        await quizController.getStudentResult(req, res);
+    } catch (e) {
+        res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+    }
+});
+
 module.exports = quizRouter;
 
-    // // Student answer routes
-    // router.get('/studentanswer/:code', authentication, async (req, res) => {
-    //     try {
-    //         await controller.getFirstQuestion(req, res);
-    //     } catch (e) {
-    //         res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
-    //     }
-    // });
 
-    // router.post(`${baseUrl}/studentanswer/:code/:currentIndex`, authentication, async (req, res) => {
-    //     try {
-    //         await controller.saveAnswerAndGetNextQuestion(req, res);
-    //     } catch (e) {
-    //         res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
-    //     }
-    // });
-
-    // router.get(`${baseUrl}/studentresult/:code`, authentication, async (req, res) => {
-    //     try {
-    //         await controller.getStudentResult(req, res);
-    //     } catch (e) {
-    //         res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
-    //     }
-    // });
-
-    // router.get(`${baseUrl}/studentquiz`, authentication, async (req, res) => {
-    //     try {
-    //         await controller.getStudentQuiz(req, res);
-    //     } catch (e) {
-    //         res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
-    //     }
-    // });
-
-    // // Uncomment and implement if needed
-    // router.post(`${baseUrl}/endquiz/:code`, authentication, async (req, res) => {
-    //     try {
-    //         await controller.endQuizAndCalculateScore(req, res);
-    //     } catch (e) {
-    //         res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
-    //     }
-    // });
+// // Uncomment and implement if needed
+// router.post(`${baseUrl}/endquiz/:code`, authentication, async (req, res) => {
+//     try {
+//         await controller.endQuizAndCalculateScore(req, res);
+//     } catch (e) {
+//         res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+//     }
+// });

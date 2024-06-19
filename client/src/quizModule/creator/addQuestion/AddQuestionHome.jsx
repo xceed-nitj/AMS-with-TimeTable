@@ -2,7 +2,7 @@
   import { useParams, Link } from 'react-router-dom';
   import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
   import { faCircleArrowLeft, faPenToSquare, faCopy, faGear, faCalendar } from '@fortawesome/free-solid-svg-icons';
-  import './AddQuestionHome.css';
+  // import './AddQuestionHome.css';
   import AddQuestion from './AddQuestion';
   import Viewer from '../../components/quill/viewer';
 import getEnvironment from '../../../getenvironment';
@@ -165,7 +165,7 @@ import getEnvironment from '../../../getenvironment';
     const handleDeleteQuestion = async (question) => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${apiurl}/api/quiz/quizquestion/${code}/${question.id}`, {
+        const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions/${question.id}`, {
           method: 'DELETE',
           credentials: 'include',
           headers: {

@@ -1,32 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, VStack, Text, useColorModeValue, Collapse, IconButton } from '@chakra-ui/react';
-import { ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, useBreakpointValue } from '@chakra-ui/react';
+import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
+import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle } from 'react-icons/fa';
 import getEnvironment from '../../getenvironment';
-import MultiStepForm from '../pages/MultiStepForm';
 import PRMDashboard from '../pages/prmdashboard';
-import PrmEditorDashboard from '../pages/PrmEditorDashboard';
+import SearchEvent from '../pages/searchEvent';
+import CompletedAssignment from '../pages/completedPaper'
+import PendingAssignment from '../pages/pendingAssignment'
 
 const SideBarFinal = () => {
   const navigate = useNavigate();
   const apiUrl = getEnvironment();
 
+  const isLargeScreen = useBreakpointValue({ base: false, md: true });
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const [editorData, setEditorData] = useState([]);
   const [activeTab, setActiveTab] = useState('Home');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(isLargeScreen);
 
   const tabs = [
-    { label: 'Home' },
+    { label: 'Home', icon: FaHome },
     {
       label: 'Author',
-      submenu: ['Submitted Papers', 'New Submission']
+      icon: FaFileAlt,
+      submenu: [
+        { label: 'Submitted Papers', icon: FaPaperPlane },
+        { label: 'New Submission', icon: FaPlus }
+      ]
     },
     {
       label: 'Reviewer',
-      submenu: ['Pending assignment', 'Completed']
+      icon: FaTasks,
+      submenu: [
+        { label: 'Pending assignment', icon: FaClock },
+        { label: 'Completed', icon: FaCheckCircle }
+      ]
     },
     {
       label: 'Editor',
+      icon: EditIcon,
       submenu: [] // Editor submenu will be populated dynamically
     }
   ];
@@ -51,16 +64,15 @@ const SideBarFinal = () => {
     fetchEditorData();
   }, [apiUrl]);
 
-  const bg = useColorModeValue('gray.100', 'gray.900');
-  const activeBg = useColorModeValue('blue.500', 'blue.300');
-  const activeColor = useColorModeValue('white', 'black');
+  const bg = 'gray.900';
+  const activeBg = 'cyan.300';
+  const activeColor = 'black';
+  const textColor = 'white';
+  const hoverBg = 'cyan.500';
+  const hoverColor = 'black';
 
   const handleSubmenuToggle = (tab) => {
-    if (openSubmenu === tab) {
-      setOpenSubmenu(null);
-    } else {
-      setOpenSubmenu(tab);
-    }
+    setOpenSubmenu(openSubmenu === tab ? null : tab);
   };
 
   const handleSubmenuClick = (tabLabel, subTabName) => {
@@ -84,103 +96,143 @@ const SideBarFinal = () => {
       content = <Text>Author Page</Text>;
       break;
     case 'New Submission':
-      content = <MultiStepForm />;
+      content = <SearchEvent />;
       break;
     case 'Submitted Papers':
       content = <Text>Submitted Papers Page</Text>;
       break;
     case 'Pending assignment':
-      content = <Text>Pending Assignment Page</Text>;
+      content = <PendingAssignment />;
       break;
     case 'Completed':
-      content = <Text>Completed Reviews Page</Text>;
+      content = <CompletedAssignment />;
       break;
     case 'Event Dashboard':
       content = <PRMDashboard />;
       break;
     default:
-      content = [];
+      content = <Text>Page Not Found</Text>;
       break;
   }
 
+  useEffect(() => {
+    setIsSidebarOpen(isLargeScreen);
+  }, [isLargeScreen]);
+
   return (
     <Box display="flex">
-      <Box w="250px" h="100vh" bg={bg} p={4} position="fixed">
-        <VStack spacing={4} align="stretch">
-          {tabs.map((tab, index) => (
-            <React.Fragment key={index}>
-              <Box
-                p={2}
-                borderRadius="md"
-                cursor="pointer"
-                bg={activeTab === tab.label ? activeBg : 'transparent'}
-                color={activeTab === tab.label ? activeColor : 'inherit'}
-                _hover={{ bg: activeBg, color: activeColor }}
-                onClick={() => {
-                  if (tab.submenu) {
-                    handleSubmenuToggle(tab.label);
-                  } else {
-                    setActiveTab(tab.label);
-                  }
-                }}
-              >
-                <Text>{tab.label}
-                {tab.submenu && (
-                  <IconButton
-                    icon={openSubmenu === tab.label ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                    variant="unstyled"
-                    size="xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
+      <Box
+        w={isSidebarOpen ? { base: "50vw", md: "25vw", lg: "20vw" } : { base: "14vw", md: "11vw", lg: "6vw" }}
+        h={{ base: 'calc(100vh - 80px)', md: 'calc(100vh - 60px)', lg: 'calc(100vh - 60px)' }} 
+        bg={bg}
+        p={isSidebarOpen ? 4 : 2}
+        position="fixed"
+        top={{ base: '80px', md: '60px', lg: '60px' }} 
+        left={0}
+        transition="width 0.3s ease"
+        overflowY="auto"
+        zIndex="9999"
+      >
+        <Flex justifyContent="space-between" alignItems="center" mb={4}>
+          <IconButton
+            icon={isSidebarOpen ? <CloseIcon color={textColor} /> : <HamburgerIcon color={textColor} />}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            aria-label="Toggle Sidebar"
+            variant={isSidebarOpen ? 'unstyled' : 'outline.1'}
+            _hover={isSidebarOpen ? { bg: hoverBg, outlineColor:'' } : { bg: 'gray.800',outlineColor:hoverBg }}
+            left={0}
+            
+          />
+          {isSidebarOpen && <Text fontSize="1xl" color={textColor}>Menu</Text>}
+        </Flex>
+        {isSidebarOpen && (
+          <VStack spacing={4} align="stretch">
+            {tabs.map((tab, index) => (
+              <React.Fragment key={index}>
+                <Box
+                  p={2}
+                  borderRadius="md"
+                  cursor="pointer"
+                  bg={activeTab === tab.label ? activeBg : 'transparent'}
+                  color={activeTab === tab.label ? activeColor : textColor}
+                  _hover={{ bg: hoverBg, color: hoverColor }}
+                  onClick={() => {
+                    if (tab.submenu) {
                       handleSubmenuToggle(tab.label);
-                    }}
-                    aria-label="Toggle Submenu"
-                  />
-                )}
-                </Text>
-              </Box>
-              {tab.submenu && (
-                <Collapse in={openSubmenu === tab.label} animateOpacity>
-                  <VStack pl={4} align="stretch">
-                    {tab.label === 'Editor' ? (
-                      editorData.map((item, subIndex) => (
-                        <Box
-                          key={subIndex}
-                          p={2}
-                          borderRadius="md"
-                          cursor="pointer"
-                          bg={activeTab === item.name ? activeBg : 'transparent'}
-                          color={activeTab === item.name ? activeColor : 'inherit'}
-                          _hover={{ bg: activeBg, color: activeColor }}
-                          onClick={() => handleSubmenuClick(tab.label, item.name)}
-                        >
-                          <Text>{item.name}</Text>
-                        </Box>
-                      ))
-                    ) : (
-                      tab.submenu.map((subTabName, subIndex) => (
-                        <Box
-                          key={subIndex}
-                          p={2}
-                          borderRadius="md"
-                          cursor="pointer"
-                          bg={activeTab === subTabName ? activeBg : 'transparent'}
-                          color={activeTab === subTabName ? activeColor : 'inherit'}
-                          _hover={{ bg: activeBg, color: activeColor }}
-                          onClick={() => setActiveTab(subTabName)}
-                        >
-                          <Text>{subTabName}</Text>
-                        </Box>
-                      ))
+                    } else {
+                      setActiveTab(tab.label);
+                    }
+                  }}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <Icon as={tab.icon} />
+                  <Text ml={2}>
+                    {tab.label}
+                    {tab.submenu && (
+                      <IconButton
+                        icon={openSubmenu === tab.label ? <ChevronDownIcon color={textColor} /> : <ChevronRightIcon color={textColor} />}
+                        variant="unstyled"
+                        size="xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubmenuToggle(tab.label);
+                        }}
+                        aria-label="Toggle Submenu"
+                      />
                     )}
-                  </VStack>
-                </Collapse>
-              )}
-            </React.Fragment>
-          ))}
-        </VStack>
+                  </Text>
+                </Box>
+                {tab.submenu && (
+                  <Collapse in={openSubmenu === tab.label} animateOpacity>
+                    <VStack pl={4} align="stretch">
+                      {tab.label === 'Editor' ? (
+                        editorData.map((item, subIndex) => (
+                          <Box
+                            key={subIndex}
+                            p={2}
+                            borderRadius="md"
+                            cursor="pointer"
+                            bg={activeTab === item.name ? activeBg : 'transparent'}
+                            color={activeTab === item.name ? activeColor : textColor}
+                            _hover={{ bg: hoverBg, color: hoverColor }}
+                            onClick={() => handleSubmenuClick(tab.label, item.name)}
+                            display="flex"
+                            alignItems="center"
+                          >
+                            <Icon as={EditIcon} />
+                            <Text ml={2}>{item.name}</Text>
+                          </Box>
+                        ))
+                      ) : (
+                        tab.submenu.map((subTab, subIndex) => (
+                          <Box
+                            key={subIndex}
+                            p={2}
+                            borderRadius="md"
+                            cursor="pointer"
+                            bg={activeTab === subTab.label ? activeBg : 'transparent'}
+                            color={activeTab === subTab.label ? activeColor : textColor}
+                            _hover={{ bg: hoverBg, color: hoverColor }}
+                            onClick={() => setActiveTab(subTab.label)}
+                            display="flex"
+                            alignItems="center"
+                          >
+                            <Icon as={subTab.icon} />
+                            <Text ml={2}>{subTab.label}</Text>
+                          </Box>
+                        ))
+                      )}
+                    </VStack>
+                  </Collapse>
+                )}
+              </React.Fragment>
+            ))}
+          </VStack>
+        )}
       </Box>
-      <Box ml="250px" p={4} flex="1">
+      <Box p={4} flex="1" ml={{ base: "12vw", md: isSidebarOpen ? "26vw" : "7vw", lg: isSidebarOpen ? "21vw" : "6vw" }} transition="margin-left 0.3s ease">
         {content}
       </Box>
     </Box>

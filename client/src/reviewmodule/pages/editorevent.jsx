@@ -9,7 +9,8 @@ import {
   VStack,
   Textarea,
 } from "@chakra-ui/react";
-import { FormControl, FormLabel } from "@chakra-ui/react";
+import { FormControl, FormLabel} from "@chakra-ui/react";
+import { IconButton as Button1, Heading, chakra } from '@chakra-ui/react';
 import { useToast } from "@chakra-ui/react";
 import Header from "../../components/header";
 
@@ -133,75 +134,120 @@ function EventForm() {
     }
   };
 
+  const HeaderEditorPage = ({ title }) => {
+    const navigate = useNavigate();
+    
+    return (
+      <Heading display='flex' >
+        <Button1
+        mb='1'
+          variant='ghost'
+          onClick={() => navigate(-1)}
+          _hover={{ bgColor: 'transparent' }}
+        >
+          <chakra.svg
+            xmlns='http://www.w3.org/2000/svg'
+            fill='none'
+            viewBox='0 0 24 24'
+            strokeWidth={1.5}
+            stroke='white'
+            className='w-6 h-6'
+            _hover={{ stroke: '#00BFFF' }}
+          >
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              d='M11.25 9l-3 3m0 0l3 3m-3-3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+            />
+          </chakra.svg>
+        </Button1>
+        <chakra.div marginInline='auto' color="white" fontSize='30px' mt='2' >
+          {title}
+        </chakra.div>
+      </Heading>
+    );
+  };
+
+  const clearAllInputs = () => {
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach(input => {
+      input.value = '';
+    });
+  };
+
   return (
-    <Container>
-      <Header title="Add conference details"></Header>
-      <Box maxW="md" mx="auto" mt={10}>
-     
+    <Container maxWidth={{ base: "100%", md: "md" }} p={5} mx="auto" bg="white" >
+      <Box bg="black" p={0.01} borderTopRadius="md" >
+        <HeaderEditorPage  color="white" textAlign="center" title="Add conference details"/>
+      </Box>
+      <Box bg="white" p={8} borderBottomRadius="md">
         <form onSubmit={handleSubmit}>
           <FormControl id="name" mb={4}>
             <FormLabel>Name</FormLabel>
             <Input
               type="text"
               name="name"
-              value={formData.name}
-              onChange={handleChange}
-              isDisabled
-            />
-          </FormControl>
-          <FormControl id="startDate" mb={4}>
-            <FormLabel>Start Date of the conference</FormLabel>
-            <Input
-              type="date"
-              name="startDate"
-              value={formData.startDate}
-              onChange={handleChange}
-            />
-          </FormControl>
-          <FormControl id="endDate" mb={4}>
-            <FormLabel>End Date of the conference</FormLabel>
-            <Input
-              type="date"
-              name="endDate"
-              value={formData.endDate}
-              onChange={handleChange}
-            />
-          </FormControl>
-          <FormControl id="paperSubmissionDate" mb={4}>
-            <FormLabel>Paper Submission Deadline</FormLabel>
-            <Input
-              type="date"
-              name="paperSubmissionDate"
-              value={formData.paperSubmissionDate}
-              onChange={handleChange}
-            />
-          </FormControl>
-          <FormControl id="reviewTime" mb={4}>
-            <FormLabel>Review Time</FormLabel>
-            <Input
-              type="text"
-              name="reviewTime"
-              value={formData.reviewTime}
-              onChange={handleChange}
-            />
-          </FormControl>          
-          <FormControl id="name" mb={4}>
-            <FormLabel>List of Editors</FormLabel>
-            <Input
-              type="text"
-              name="name"
-              value={formData.editor}
-              onChange={handleChange}
-              isDisabled
-            />
-          </FormControl>
+                value={formData.name}
+                onChange={handleChange}
+              />
+            </FormControl>
+            <FormControl id="startDate" mb={4}>
+              <FormLabel>Start Date of the conference</FormLabel>
+              <Input
+                type="date"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleChange}
+              />
+            </FormControl>
+            <FormControl id="endDate" mb={4}>
+              <FormLabel >End Date of the conference</FormLabel>
+              <Input
+                type="date"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleChange}
+              />
+            </FormControl>
+            <FormControl id="paperSubmissionDate" mb={4}>
+              <FormLabel>Paper Submission Deadline</FormLabel>
+              <Input
+                type="date"
+                name="paperSubmissionDate"
+                value={formData.paperSubmissionDate}
+                onChange={handleChange}
+              />
+            </FormControl>
+            <FormControl id="reviewTime" mb={4}>
+              <FormLabel>Review Time</FormLabel>
+              <Input
+                type="text"
+                name="reviewTime"
+                value={formData.reviewTime}
+                onChange={handleChange}
+              />
+            </FormControl>          
+            <FormControl id="name" mb={4}>
+              <FormLabel>List of Editors</FormLabel>
+              <Input
+                type="text"
+                name="name"
+                value={formData.editor}
+                onChange={handleChange}
+              />
+            </FormControl>
 
-          <Button type="submit" colorScheme="teal">
-            Save
-          </Button>
-        </form>
-      </Box>
-    </Container>
+            <Box display="flex" justifyContent="center" p={4}>
+              <Button type="submit" size='lg' style={{backgroundColor:'green',width:'100px'}}>
+                Save
+              </Button>
+              <Button onClick={clearAllInputs} type="submit" size='lg' style={{ backgroundColor: '#CC0000',width:'100px' }}>
+                Cancel
+              </Button>
+            </Box>
+          </form>
+        </Box>
+      </Container>
   );
 }
 

@@ -7,6 +7,7 @@ import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
 import Papa from 'papaparse';
 // import { saveAs } from 'file-saver';
+// import { EventSource } from 'eventsource';
 
 import {   Container } from "@chakra-ui/layout";
 import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
@@ -47,25 +48,22 @@ function InstituteLoad() {
   const [selectedRoom, setSelectedRoom] = useState("");
   const [commonLoad, setCommonLoad]=useState();
   const [currentDept, setCurrentDept]=useState();
-
+  const [sseEventSource, setSseEventSource] = useState(null);
   const apiUrl = getEnvironment();
   const toast = useToast();
+  const [statusMessages, setStatusMessages] = useState([]);
   // const navigate = useNavigate();
   // const currentURL = window.location.pathname;
   // const parts = currentURL.split("/");
   // const currentCode = parts[parts.length - 2];
   const [excludeTheory, setExcludeTheory] = useState(false);
-
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [availableFaculties, setAvailableFaculties] = useState([]);
   const [facultyHoursCount, setFacultyHoursCount] = useState({});
-
-
   // const [lockedTime, setLockedTime] = useState();
   // const [facultyLockedTime, setFacultyLockedTime] = useState();
-  // const [roomlockedTime, setRoomLockedTime] = useState();
-
+  // const [roomlockedTime, setRoomLockedTime] = useState()
   const [allsessions, setAllSessions]=useState([]);
   const [availableDepts, setAvailableDepts] = useState([]);
   const [availableLoad, setAvailableLoad] = useState({});
@@ -75,6 +73,48 @@ function InstituteLoad() {
   const [loading, setLoading] = useState(false);
 
   const semesters = availableSems;
+
+  // useEffect(() => {
+  //   if (sseEventSource) {
+  //     sseEventSource.close();
+  //   }
+
+  //   if (selectedSession) {
+  //     const newEventSource = new EventSource(
+  //       `${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`
+  //     );
+
+  //     newEventSource.onmessage = (event) => {
+  //       const eventData = JSON.parse(event.data);
+  //       // Handle status updates here
+  //       setStatusMessages((prevMessages) => [...prevMessages, eventData.message]);
+  //       // Handle load and designation updates
+  //       setAvailableLoad(eventData.availableLoad);
+  //       setFacultyDesignation(eventData.facultyDesignation);
+  //     };
+
+  //     newEventSource.onerror = (error) => {
+  //       console.error("SSE Error:", error);
+  //       newEventSource.close();
+  //       setSseEventSource(null);
+  //       // Optionally handle SSE error messages or retries
+  //       setStatusMessages((prevMessages) => [
+  //         ...prevMessages,
+  //         "Error connecting to server for updates",
+  //       ]);
+  //     };
+
+  //     setSseEventSource(newEventSource);
+  //   }
+
+  //   return () => {
+  //     if (sseEventSource) {
+  //       sseEventSource.close();
+  //       setSseEventSource(null);
+  //     }
+  //   };
+  // }, [selectedSession]);
+
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -302,6 +342,15 @@ function InstituteLoad() {
       <Button colorScheme="blue" onClick={handleCalculateLoad} isLoading={loading}>
         Calculate Load
       </Button>
+
+
+{/* Display status messages */}
+<ul>
+        {statusMessages.map((message, index) => (
+          <li key={index}>{message}</li>
+        ))}
+      </ul>
+
       <Header title="Departmentwise load distribution"></Header>
 
       {/* <FormLabel fontWeight="bold">Select Session:</FormLabel> */}

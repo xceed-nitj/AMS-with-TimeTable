@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;
 const User = require('../../../../models/usermanagement/user');
 const Quiz = require('../../../../models/quizModule/quiz');
 const QuizQuestion = require('../../../../models/quizModule/quizQuestion');
@@ -34,48 +36,22 @@ const newQuiz = async (details) => {
   return newquiz;
 }
 
-// Check if the generated link exists in the "Quizzes" table
 const findQuiz = async (code) => {
-  const oldQuiz = await Quiz.findOne({
-    where: {
-      code: code,
-    },
-  });
-  return oldQuiz;
-}
-
-const verifyQuiz = async (code, user) =>{
-  const foundQuiz = await Quiz.findOne({
-    where: {
-      code: code 
-    },
-  });
-  return foundQuiz;
-}
-
-
-const findallQuiz = async (reqId) => {
-	const user = await User.findByPk(reqId);
-	if (user) {
-		const quizzes = await Quiz.findAll({
-			where: {
-				userId: reqId
-			},
-		});
-		if (!quizzes) throw new Error('Unable to find quizzes.');
-		return quizzes;
-	} else {
-		throw new Error('User not found');
-	}
-}
+  try {
+    const quiz = await Quiz.findOne({ code });
+    // console.log(quiz);
+    return quiz;
+  } catch (error) {
+    console.error('Error finding quiz:', error);
+    throw error;
+  }
+};
 
 const findQuizById = async (reqId) => {
 	if (reqId) {
-		const quizzes = await Quiz.findAll({
-			where: {
-				id: reqId
-			},
-		});
+		const quizzes = await Quiz.find({
+      _id: reqId
+    });
 		if (!quizzes) throw new Error('Unable to find quizzes.');
 		return quizzes;
 	} else {
@@ -84,72 +60,86 @@ const findQuizById = async (reqId) => {
 	}
 }
 
+const getAllQuestions = async(quiz) =>{
+  if (quiz.id) {
+    const questions = await QuizQuestion.find({ quizId: quiz._id });
+    return questions;
+  } else {
+    throw new Error('No Quiz Questions found');
+  }
+}
 
-//       const deleteQuizByCode = async(code)=>{
-//   // const quiz = await Quiz.findByPk(id);
-//   if (code) {
-//       await Quiz.destroy({
-//           where: {
-//             code: code,
-//           },
-//         });
-//       return true;
-//   } else {
-//     throw new Error('Quiz not found');
 
-// }
-// };
+const findQuestionById = async (id) => {
+  if (id) {
+    try {
+      // Convert string id to ObjectId using the new keyword
+      const objectId = new ObjectId(id);
+      const ques = await QuizQuestion.findOne({ _id: objectId });
 
-// const getAllQuestions = async(quiz) =>{
-// if (quiz.id) {
-//   const allques = await QuizQuestion.findAll({
-//   where: { quizId:quiz.id},
-//    });
-//    return allques;
-//   }
-// else
-// {
-//   throw new Error('No Quiz Questions found');
-// }
-// }
+      if (!ques) {
+        console.error(`Question with id ${id} not found in the database.`);
+      }
 
-// const findQuestionById = async(id) =>{
-//   if (id) {
-//   const ques=QuizQuestion.findOne({ where: { id:id } });
-//   return ques
-//   }
-//   else
-//   {
-//     throw new Error('No Quiz Question found');
-//   }
-//   }
+      return ques;
+    } catch (error) {
+      console.error(`Error fetching question with id ${id}:`, error);
+      return null;
+    }
+  } else {
+    throw new Error('No Quiz Question found: Invalid ID');
+  }
+};
 
-//   const getAllAnswers = async(quiz) =>{
-//     const ans= await StudentAnswer.findAll({
-//       where: { quizId: quiz.id },
-//     });
-//     if(!ans) throw new Error('No Answer found');
-//     return ans
-//     }
 
-//     const getAllResults = async(quiz) =>{
-//       const ans= await StudentResult.findAll({
-//         where: { quizId: quiz.id },
-//       });
-//       if(!ans) throw new Error('No Result found');
-//       return ans
-//       }  
+
+const verifyQuiz = async (code, user) => {
+  const foundQuiz = await Quiz.findOne({ code: code });
+  return foundQuiz;
+};
+
+// finding all quizzes by user Id
+const findallQuiz = async (reqId) => {
+  const user = await User.findById(reqId);
+  if (user) {
+    const quizzes = await Quiz.find({ userId: reqId });
+    if (!quizzes.length) throw new Error('Unable to find quizzes.');
+    return quizzes;
+  } else {
+    throw new Error('User not found');
+  }
+};
+
+
+
+const deleteQuizByCode = async (code) => {
+  if (code) {
+    const result = await Quiz.deleteOne({ code: code });
+    if (result.deletedCount === 0) throw new Error('Quiz not found');
+    return true;
+  } else {
+    throw new Error('Quiz not found');
+  }
+};
+
+
+const getAllAnswers = async (quiz) => {
+  const ans = await StudentAnswer.find({ quizId: quiz.id });
+  if (!ans.length) throw new Error('No Answer found');
+  return ans;
+};
+
+
+const getAllResults = async (quiz) => {
+  const ans = await StudentResult.find({ quizId: quiz.id });
+  if (!ans.length) throw new Error('No Result found');
+  return ans;
+};
 
 
 module.exports = {
-  //newQuiz,
-  findQuiz
-  //findallQuiz,
-  //   findQuizById,
-  //   deleteQuizByCode,
-  // verifyQuiz
-  //   getAllQuestions,
-  //   findQuestionById,
-  //   getAllAnswers,
-  //   getAllResults
+  findQuiz,
+  findQuizById,
+  getAllQuestions,
+  findQuestionById
 }

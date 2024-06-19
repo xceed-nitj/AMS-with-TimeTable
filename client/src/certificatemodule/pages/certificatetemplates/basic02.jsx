@@ -1,15 +1,27 @@
-import ProxifiedImage from '../../components/ProxifiedImage';
+import React from 'react';
+import { useEffect, useRef } from 'react';
+
 import ReactHtmlParser from 'react-html-parser';
+// import getEnvironment from "../../../../getenvironment";
+import ProxifiedImage from '../../components/ProxifiedImage';
+import QRCode from 'qrcode';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
+// const apiUrl = getEnvironment();
 
-export default function Template04({ eventId,
+const CertificateContent = ({
+  eventId,
   contentBody,
   certiType,
+  title,
+  verifiableLink,
   logos,
   participantDetail,
   signature,
   header,
-  footer, }) {
+  footer,
+}) => {
   var num_logos = logos.length;
   var num_left = 0;
   if (num_logos % 2 === 0) {
@@ -17,65 +29,89 @@ export default function Template04({ eventId,
   } else {
     num_left = Math.floor(num_logos / 2);
   }
+  const svgRef = useRef();
+
+  useEffect(() => {
+    const url = window.location.href; // Replace with your URL
+    const svg = svgRef.current;
+
+    QRCode.toDataURL(url, (err, dataUrl) => {
+      if (err) throw err;
+
+      const image = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'image'
+      );
+      image.setAttribute('x', '100');
+      image.setAttribute('y', '500');
+      image.setAttribute('width', '100');
+      image.setAttribute('height', '100');
+      image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+      image.classList.add("qrcode");
+
+      svg.appendChild(image);
+      if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
+    });
+  }, [verifiableLink]);
+
   return (
-    <div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1122.52 793.7" id="svg" className="svg-img">
-        <g clipPath="url(#clip0_435_2)">
-          <rect width={400} height={280} fill="white" />
-          <path d="M128.802 278L0.0742188 134V278H128.802Z" fill="#EDEDED" />
-          <path d="M96.9998 261.455L1 160V261.455H96.9998Z" fill="#D9D8D6" />
-          <path
-            opacity="0.6"
-            d="M82.9093 244.182L112.909 278H87.8185L69.8184 259.342L82.9093 244.182Z"
-            fill="#F08C65"
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="841.92"
+      height="595.499987"
+      viewBox="0 0 1124 800"
+      id="svg"
+      className="svg-img tw-object-contain"
+      ref={svgRef}
+    >
+      <>
+        <g clipPath="url(#clip0_53_2)">
+          <rect
+            width="1122.52"
+            height="797.659"
+            transform="translate(0.23999 0.170532)"
+            fill="#FFFBF3"
           />
           <path
-            d="M27.2727 183.636L0 155.818V183.636L15.8183 197.818L27.2727 183.636Z"
-            fill="#26364D"
-          />
-          <path d="M55.091 278L0 219.091V278H55.091Z" fill="#26364D" />
-          <path
-            opacity="0.5"
-            d="M33.818 233.818L0 195.636V268.182L33.818 233.818Z"
-            fill="#F08C65"
+            d="M-16.5166 470.951L727.128 803.899L712.645 836.448L-31 503.5L-16.5166 470.951Z"
+            fill="#E5BC62"
           />
           <path
-            opacity="0.5"
-            d="M51.2725 252.909L73.0905 278H26.7271L51.2725 252.909Z"
-            fill="#F08C65"
+            d="M-169.261 433L776.845 851.347L604.111 1242L-342 823.651L-169.261 433Z"
+            fill="#283361"
           />
           <path
-            d="M293 2.28882e-05L400.272 120V2.28882e-05H293Z"
-            fill="#EDEDED"
+            d="M247.262 -120.087L1233.43 174.336L1203.18 285.659L217.006 -8.75647L247.262 -120.087Z"
+            fill="#E5BC62"
           />
           <path
-            d="M319.88 2.28882e-05L399.88 84.5455V2.28882e-05H319.88Z"
-            fill="#D9D8D6"
+            d="M379.724 -428.193L1374.34 -143.804L1256.92 266.874L262.3 -17.5094L379.724 -428.193Z"
+            fill="#283361"
           />
-          <path
-            d="M377.607 78.6364L400.334 101.818V78.6364L387.153 66.8182L377.607 78.6364Z"
-            fill="#26364D"
-          />
-          <path
-            d="M354.425 3.8147e-06L400.334 49.0909V3.8147e-06H354.425Z"
-            fill="#26364D"
-          />
-          <path
-            opacity="0.5"
-            d="M372.153 36.8182L400.334 68.6364V8.18182L372.153 36.8182Z"
-            fill="#F08C65"
-          />
-          <path
-            opacity="0.5"
-            d="M357.608 20.9091L339.426 3.05176e-05H378.062L357.608 20.9091Z"
-            fill="#F08C65"
+          <rect x="29" y="21" width="1065" height="756" rx="8" fill="white" />
+          <rect
+            x="37.5"
+            y="29.5"
+            width="1048"
+            height="739"
+            rx="5.5"
+            stroke="#E5BC62"
+            strokeWidth="5"
+            fill="white"
           />
         </g>
         <defs>
-          <clipPath id="clip0_435_2">
-            <rect width={400} height={280} fill="white" />
+          <clipPath id="clip0_53_2">
+            <rect
+              width="1122.52"
+              height="797.659"
+              fill="white"
+              transform="translate(0.23999 0.170532)"
+            />
           </clipPath>
         </defs>
+      </>
+      <>
         <foreignObject width={'90%'} height={'400'} y={'80'} x={'5%'}>
           <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
             {logos.map((item, key) => (
@@ -89,11 +125,17 @@ export default function Template04({ eventId,
                 <div className="tw-text-center">
                   {key === num_left && (
                     <>
-                      <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
+                      {title.map((item, key) => (
+                        <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                          {item}
+                        </p>
+                      ))
+                      }
+                      {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
                         डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
                       </p>
                       <p className="tw-font-nunito-bold tw-text-[12px]">
-                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144011
+                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144008
                       </p>
                       <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
                         Dr. B R Ambedkar National Institute of Technology
@@ -101,8 +143,8 @@ export default function Template04({ eventId,
                       </p>
                       <p className="tw-font-nunito-bold tw-text-[12px] ">
                         G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-
-                        144011
-                      </p>
+                        144008
+                      </p> */}
                     </>
                   )}
                 </div>
@@ -164,12 +206,16 @@ export default function Template04({ eventId,
           </div>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
-          <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-            verifiable link
-          </div>
-        </foreignObject>
-      </svg>
-    </div>
+        {verifiableLink &&
+          <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
+            <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
+              {window.location.href}
+            </div>
+          </foreignObject>}
+      </>
+      );
+    </svg>
   );
-}
+};
+
+export default CertificateContent;

@@ -1,13 +1,12 @@
-import React from "react";
+import React from 'react';
 import { useEffect, useRef } from 'react';
 
 import ReactHtmlParser from 'react-html-parser';
 // import getEnvironment from "../../../../getenvironment";
-import ProxifiedImage from "../../components/ProxifiedImage";
+import ProxifiedImage from '../../components/ProxifiedImage';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-
 
 // const apiUrl = getEnvironment();
 
@@ -15,6 +14,8 @@ const CertificateContent = ({
   eventId,
   contentBody,
   certiType,
+  title,
+  verifiableLink,
   logos,
   participantDetail,
   signature,
@@ -45,18 +46,24 @@ const CertificateContent = ({
       image.setAttribute('y', '500');
       image.setAttribute('width', '100');
       image.setAttribute('height', '100');
+      image.classList.add("qrcode");
       image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
 
       svg.appendChild(image);
+      if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
     });
-  }, []);
-
-
-
+  }, [verifiableLink]);
 
   return (
-
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1122.52 793.7" id="svg" className="svg-img" ref={svgRef}>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="841.92"
+      height="595.499987"
+      viewBox="0 0 1122.52 793.7"
+      id="svg"
+      className="svg-img tw-object-contain"
+      ref={svgRef}
+    >
       <>
         <path fill="#424847" d="M-4.729-6.627h1131.977v806.954H-4.729Z" />
         <path
@@ -124,34 +131,42 @@ const CertificateContent = ({
           <path d="M104.187 705.463c-2.504 3.706-5.945 6.817-9.038 10.038-3.436 3.577-6.769 7.502-10.712 10.538-.226.174-.64-.053-.44-.335 2.76-3.861 6.359-7.161 9.66-10.567 3.28-3.384 6.44-7.147 10.265-9.937.156-.115.37.11.265.263z" />
           <path d="M101.385 702.983c.028.01.054.022.082.033.073.029.073.117 0 .145l-.082.032c-.176.07-.177-.28 0-.21z" />
           <path d="M101.587 703.185c-1.089 2.172-3.313 3.95-4.996 5.692-1.719 1.778-3.366 3.915-5.463 5.258-.167.107-.361-.101-.266-.263 1.257-2.14 3.345-3.87 5.062-5.654 1.672-1.738 3.367-4.021 5.501-5.193.108-.06.215.057.162.16z" />
-
-
-
         </g>
       </>
       <>
-        <foreignObject width={"90%"} height={"400"} y={"80"} x={"5%"}>
+        <foreignObject width={'90%'} height={'400'} y={'80'} x={'5%'}>
           <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
             {logos.map((item, key) => (
-              <div key={key} className="tw-flex tw-items-center tw-justify-center ">
+              <div
+                key={key}
+                className="tw-flex tw-items-center tw-justify-center "
+              >
                 <div className="tw-w-20 tw-shrink-0 tw-mx-6">
                   <img src={item} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
                     <>
-                      <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
+                      {title.map((item, key) => (
+                        <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                          {item}
+                        </p>
+                      ))
+                      }
+                      {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
                         डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
                       </p>
                       <p className="tw-font-nunito-bold tw-text-[12px]">
                         जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144008
                       </p>
                       <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
-                        Dr. B R Ambedkar National Institute of Technology Jalandhar
+                        Dr. B R Ambedkar National Institute of Technology
+                        Jalandhar
                       </p>
                       <p className="tw-font-nunito-bold tw-text-[12px] ">
-                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144008
-                      </p>
+                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-
+                        144008
+                      </p> */}
                     </>
                   )}
                 </div>
@@ -163,7 +178,12 @@ const CertificateContent = ({
         <foreignObject x="10%" y="200.473" width="85%" height="160">
           <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
             {header.map((item, ind) => (
-              <h1 className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase" key={ind}>{item}</h1>
+              <h1
+                className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase"
+                key={ind}
+              >
+                {item}
+              </h1>
             ))}
           </div>
         </foreignObject>
@@ -186,31 +206,37 @@ const CertificateContent = ({
           </p>
         </foreignObject>
 
-        <foreignObject x={"20%"} y={515} width={"60%"} height={400}>
+        <foreignObject x={'20%'} y={515} width={'60%'} height={400}>
           <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
             {signature.map((item, key) => (
-              <div key={key} className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
+              <div
+                key={key}
+                className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2"
+              >
                 <div className="tw-w-[100px]">
                   <ProxifiedImage src={item.url} alt="" />
                 </div>
                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                <p className="tw-text-black tw-text-[15px] tw-font-semibold">{item.name}</p>
-                <p className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">{item.position}</p>
+                <p className="tw-text-black tw-text-[15px] tw-font-semibold">
+                  {item.name}
+                </p>
+                <p className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">
+                  {item.position}
+                </p>
               </div>
             ))}
           </div>
         </foreignObject>
 
-        <foreignObject x={"20%"} y={"90%"} width={"60%"} height={"100"}>
-          <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-            {window.location.href}
-          </div>
-        </foreignObject>
+        {verifiableLink &&
+          <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
+            <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
+              {window.location.href}
+            </div>
+          </foreignObject>}
       </>
       );
-
     </svg>
-
   );
 };
 
