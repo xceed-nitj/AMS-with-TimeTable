@@ -33,13 +33,15 @@ export default function AuthorDetails({ setNext, handleNext, handlePrevious }) {
   }, [isNextEnabled, setNext]);
 
   function handleRemove(order) {
+
     setPaper(prevPaper => ({
       ...prevPaper,
       authors: prevPaper.authors.filter(author => author.order !== order),
     }));
   }
 
-  function handleAddAuthor(newAuthor) {
+  async function handleAddAuthor(newAuthor) { 
+    console.log(newAuthor);
     setPaper(prevPaper => ({
       ...prevPaper,
       authors: [...prevPaper.authors, newAuthor],
@@ -101,7 +103,7 @@ export default function AuthorDetails({ setNext, handleNext, handlePrevious }) {
               </Tr>
             </Thead>
             <Tbody>
-            {/* {paper.authors.map(author => ( */}
+            {/* changes have to be done in frontend to fetch and display users ( */}
             {SortedAuthors(paper.authors).map(author => (
               <ItemChakraUI
               author={author}
