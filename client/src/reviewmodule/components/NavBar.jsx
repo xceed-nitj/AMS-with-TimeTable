@@ -1,9 +1,84 @@
 import { Link } from 'react-router-dom';
 import { Bars3Icon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import clsx from 'clsx';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import getEnvironment from '../../getenvironment';
+import { Text, Button, Flex } from '@chakra-ui/react';
 
 function NavBar() {
   const [navbarOpen, setNavbarOpen] = useState(false);
+  const apiUrl = getEnvironment();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const getUserDetails = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/user/getuser/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user details');
+        }
+
+        const userdetail = await response.json();
+        return userdetail;
+      } catch (error) {
+        console.error('Error fetching user details:', error.message);
+        throw error;
+      }
+    };
+
+    const fetchUserDetails = async () => {
+      try {
+        const userDetails = await getUserDetails();
+        setUserDetails(userDetails);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // Handle error (e.g., display an error message or redirect to an error page)
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserDetails();
+  }, [apiUrl]);
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/user/getuser/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to logout');
+      }
+      navigate('/login');
+    } catch (error) {
+      console.error('Error during logout:', error.message);
+    }
+  };
+
+  const excludedRoutes = ['/login', '/cm/c'];
+
+  const isExcluded = excludedRoutes.some((route) =>
+    location.pathname.startsWith(route)
+  );
+
+  if (isLoading || isExcluded) {
+    return null;
+  }
+
 
   return (
     <nav
@@ -47,12 +122,34 @@ function NavBar() {
               </a>
             </li>
             <li>
-              <Link
-                to="/prm/login"
-                className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
-              >
-                Login
-              </Link>
+            {!isAuthenticated ? (
+                <Link
+                  to="/login"
+                  className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+                >
+                  Login
+                </Link>
+              ) : null}
+              {isAuthenticated && (
+                <>
+                  {userDetails && (
+                    <Flex align={'center'} gap={2}>
+                      <Text fontSize="sm" color="orange">
+                        {userDetails.user.email}
+                      </Text>
+
+                      <Button
+                        colorScheme="white"
+                        variant={'outline'}
+                        size="sm"
+                        onClick={handleLogout}
+                      >
+                        Logout
+                      </Button>
+                    </Flex>
+                  )}
+                </>
+              )}
             </li>
           </ul>
         </div>
