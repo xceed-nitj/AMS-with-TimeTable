@@ -4,8 +4,8 @@
 .container {
   width: 50%;
   margin: 0 auto;
-  border-width: 2px;
-  border-color: aquamarine;
+  /* border-width: 2px; */
+  /* border-color: aquamarine; */
   padding: 2px;  
   font-family: Arial, sans-serif;
 }
@@ -13,7 +13,7 @@
 /* Heading style */
 h1 {
   font-size: 40px;
-  margin-bottom: 2px;
+  margin-bottom: 8px;
 }
 
 /* Form inputs */
@@ -23,9 +23,9 @@ h1 {
 }
 
 .form-label {
-  display: flex;
-  /* text-align: right; */
-  margin-bottom: 5px;
+  /* display: flex; */
+  /* text-align: left; */
+  /* margin-bottom: 0px; */
   font-weight: bold;
 }
 
@@ -131,15 +131,15 @@ h1 {
   width: 45%;
   color: rgb(255, 255, 255);
   font-size: 20px;
-  /* margin-top:10px; */
-  /* margin-bottom: 10px; */
-  /* padding: 10px 1.4rem; */
+  margin-top:10px;
+  margin-bottom: 10px;
+  padding: 10px 1.4rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  /* padding-top: 10px; */
-  /* padding-bottom: 10px; */
+  padding-top: 10px;
+  padding-bottom: 10px;
   
   letter-spacing: 1px;
   transition: all 0.1s ease;
