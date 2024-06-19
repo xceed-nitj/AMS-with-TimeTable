@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { useNavigate } from 'react-router-dom';
+import { Text, Heading,FormLabel} from '@chakra-ui/react'
 import * as Yup from 'yup';
 import moment from 'moment-timezone';
 import './createquiz.css';
@@ -105,25 +106,40 @@ const CreateQuiz = () => {
         ) : (
           <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
             {({ values }) => (
-              <Form id="div1">
-
-                <h1 id="createquiz_heading">Create your own quiz</h1>
+          
+              <Form id="container">
+           <div className='left'>
+  <div className='logo'>
+  <img src="/clublogo.png" alt="X Logo"/>
+  <div className='create-text'>
+  <Heading size='lg' fontSize='50px'> CREATE<br/>QUIZ</Heading>
+  </div>
+ 
+</div>
+</div>
+<div className='right'>
+<div id="div1">
+               
                 <div id="createquiz_edit">
                 <div id="label">
-                  <label className="custom-label" htmlFor="quizName">
+                  <FormLabel className="custom-label" htmlFor="quizName">
+                  <Text fontSize="lg" fontWeight="bold">
                     Course Quiz:
-                  </label>
+                    </Text>
+                  </FormLabel>
                   <div className='createquiz_container'>
-                  <Field type="text" id="quizName" name="quizName" className="custom-input" />
+                  <Field type="text" id="quizName" name="quizName" className='createquiz_inputbox_edit2'/>
                   <ErrorMessage name="quizName" component="div" className="error-message1" />
                   </div>
                   </div>
                
 
                 <div id="createquiz_input">
-                  <label className="createquiz_inputbox" htmlFor="startTime">
+                  <FormLabel className="createquiz_inputbox" htmlFor="startTime">
+                  <Text fontSize="lg" fontWeight="bold">
                     Start Date and Time:
-                  </label>
+                    </Text>
+                  </FormLabel>
                   <div className='createquiz_container'>
                   <Field type="datetime-local" id="startTime" name="startTime" className="createquiz_inputbox_edit" />
                   <ErrorMessage name="startTime" component="div" className="error-message1" />
@@ -131,9 +147,12 @@ const CreateQuiz = () => {
                 </div>
 
                 <div id="createquiz_input">
-                  <label className="createquiz_inputbox" htmlFor="marginTime">
+                  <FormLabel className="createquiz_inputbox" htmlFor="marginTime">
+                  <Text fontSize="lg" fontWeight="bold">  
+                    
                     Margin Date and Time:
-                  </label>
+                    </Text>
+                  </FormLabel>
                   <div className='createquiz_container'>
                   <Field type="datetime-local" id="marginTime" name="marginTime" className="createquiz_inputbox_edit" />
                   <ErrorMessage name="marginTime" component="div" className="error-message1" />
@@ -141,9 +160,11 @@ const CreateQuiz = () => {
                 </div>
 
                 <div id="createquiz_input">
-                  <label className="createquiz_inputbox" htmlFor="resultTime">
+                  <FormLabel className="createquiz_inputbox" htmlFor="resultTime">
+                  <Text fontSize="lg" fontWeight="bold">
                     Result Date and Time:
-                  </label>
+                    </Text>
+                  </FormLabel>
                   <div className='createquiz_container'>
                   <Field type="datetime-local" id="resultTime" name="resultTime" className="createquiz_inputbox_edit" />
                   <ErrorMessage name="resultTime" component="div" className="error-message1" />
@@ -151,25 +172,31 @@ const CreateQuiz = () => {
                 </div>
 
                 <div id="createquiz_input4">
-                  <label className="createquiz_inputbox" htmlFor="negativeMarking">
+                  <FormLabel className="createquiz_inputbox" htmlFor="negativeMarking">
+                  <Text fontSize="lg" fontWeight="bold">
                     Negative Marking:
-                  </label>
+                    </Text>
+                  </FormLabel>
                   <Field type="number" id="negativeMarking" name="negativeMarking" className="createquiz_inputbox_edit" />
                   <ErrorMessage name="negativeMarking" component="div" className="error-message1" />
                 </div>
 
                 <div id="createquiz_input5">
-                  <label className="createquiz_inputbox" htmlFor="preventMobile">
+                  <FormLabel className="createquiz_inputbox" htmlFor="preventMobile">
+                  <Text fontSize="lg" fontWeight="bold">
                     Prevent Mobile:
-                  </label>
+                    </Text>
+                  </FormLabel>
                   <Field type="checkbox" id="preventMobile" name="preventMobile" className="createquiz_inputbox_edit" />
                   <ErrorMessage name="preventMobile" component="div" className="error-message1" />
                 </div>
 
                 <div id="createquiz_input6">
-                  <label className="createquiz_inputbox" htmlFor="allowTabchange">
+                  <FormLabel className="createquiz_inputbox" htmlFor="allowTabchange">
+                  <Text fontSize="lg" fontWeight="bold">
                     Allow Tab Change:
-                  </label>
+                    </Text>
+                  </FormLabel>
                   <Field type="checkbox" id="allowTabchange" name="allowTabchange" className="createquiz_inputbox_edit" />
                   <ErrorMessage name="allowTabchange" component="div" className="error-message1" />
                 </div>
@@ -179,6 +206,8 @@ const CreateQuiz = () => {
                     Create Quiz
                   </button>
                 </div>
+               </div>
+               </div>
                </div>
               </Form>
             )}
