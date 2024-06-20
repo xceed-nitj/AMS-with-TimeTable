@@ -83,11 +83,11 @@ function HomePage() {
     //   content = <Home />;
   }
   return (
-    <Box display="flex">
+    <Box>
       <SideBarFinal/>
-      <Box ml="250px" p={4} flex="1">
+      {/* <Box ml="250px" p={4} flex="1">
         {content}
-      </Box>
+      </Box> */}
         </Box>
   );
 }
