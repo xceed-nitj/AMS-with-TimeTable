@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, useBreakpointValue } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
-import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle } from 'react-icons/fa';
+import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle, FaMailBulk, FaMailchimp } from 'react-icons/fa';
 import getEnvironment from '../../getenvironment';
 import PRMDashboard from '../pages/prmdashboard';
 import SearchEvent from '../pages/searchEvent';
 import CompletedAssignment from '../pages/completedPaper'
 import PendingAssignment from '../pages/pendingAssignment'
+import Invitations from '../pages/Invitations'
 
 const SideBarFinal = () => {
   const navigate = useNavigate();
@@ -34,7 +35,8 @@ const SideBarFinal = () => {
       icon: FaTasks,
       submenu: [
         { label: 'Pending assignment', icon: FaClock },
-        { label: 'Completed', icon: FaCheckCircle }
+        { label: 'Completed', icon: FaCheckCircle },
+        { label: 'Invitation', icon: FaMailBulk},
       ]
     },
     {
@@ -106,6 +108,9 @@ const SideBarFinal = () => {
       break;
     case 'Completed':
       content = <CompletedAssignment />;
+      break;
+    case 'Invitation':
+      content = <Invitations />;
       break;
     case 'Event Dashboard':
       content = <PRMDashboard />;

@@ -1,9 +1,11 @@
-import React from 'react';
+import React,{useState} from 'react';
+import axios from 'axios';
 import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
 import { Button } from '@chakra-ui/react';
 import { Link } from 'react-router-dom'
-import { Center, Input, FormControl, FormLabel, Textarea } from '@chakra-ui/react'
+import getEnvironment from "../../getenvironment";
+import { Center, Input, FormControl, FormLabel, Textarea, useToast  } from '@chakra-ui/react'
 import  {Table,
   Thead,
   Tbody,
@@ -14,9 +16,56 @@ import  {Table,
   TableCaption,
   TableContainer} from '@chakra-ui/table';
 
-function Submission({ activeStep, setActiveStep, handlePrevious, handleSubmit }) {
+function Submission({ activeStep, setActiveStep, handlePrevious }) {
+  const apiUrl = getEnvironment();
+  const [isLoading, setIsLoading] = useState(false);
+  const toast = useToast();
   const [paper, setPaper] = useRecoilState(paperState);
-
+  const eventId = paper.eventId;
+  const handleSubmit = async ()=>{
+    var form_data = new FormData();
+    for ( var key in paper ) {
+        console.log(key,":",paper[key]);
+        if (key === "paperUploads"){
+          console.log('file==>',paper[key][0].name);
+          form_data.append('pdfFile', paper[key][0], paper[key][0].name);
+        }else if(key === "codeUploads"){
+          console.log('file==>',paper[key][0].name);
+          form_data.append('codeFile', paper[key][0], paper[key][0].name);
+        }else{
+          form_data.append(key, paper[key]);
+        }
+    }
+    console.log("paper details below=====>,");
+    console.log(paper);
+    setIsLoading(true);
+    try {
+      const response = await axios.post(`${apiUrl}/reviewmodule/paper/addpaper/${eventId}`, form_data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log(response);
+      toast({
+        title: 'Upload successful.',
+        description: response.data.message || 'Paper has been uploaded.',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: 'Upload failed.',
+        description: error.response?.data?.message || 'An error occurred during upload.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
   const handleEditClick = (step) => {
     setActiveStep(step);
   };
@@ -157,6 +206,7 @@ function Submission({ activeStep, setActiveStep, handlePrevious, handleSubmit })
           className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
         >Back</Link>
         <Link
+          isLoading={isLoading}
           onClick={handleSubmit}
           className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
         >Submit</Link>

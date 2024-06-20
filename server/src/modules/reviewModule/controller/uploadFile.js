@@ -1,5 +1,5 @@
 const Paper = require("../../../models/reviewModule/paper.js");
-const User = require("../../../models/reviewModule/user.js"); // Importing the User model
+const XUser = require("../../../models/usermanagement/user.js"); // Importing the User model
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
 
 const uploadPaper = (req, res) => {
@@ -7,6 +7,10 @@ const uploadPaper = (req, res) => {
   const title = req.title;
   const abstract = req.abstract;
   const eventId=req.params.id;
+  const authors=req.authors;
+  const terms=req.terms;
+  const track=req.track;
+  const codefile = req.codeName;
 
   if (!fileName) {
     return res.status(400).send("File name is missing in the request.");
@@ -14,34 +18,42 @@ const uploadPaper = (req, res) => {
 
   const newPaper = new Paper({
     paperId: fileName,
+    eventId:eventId,
     title: title,
     abstract: abstract,
     uploadLink: fileName,
+    codeLink: codefile,
     eventId:eventId,
+    authors: authors,
+    tracks:[track],
+    terms: terms,
   });
 
   newPaper
     .save()
     .then(async (savedPaper) => {
       // Fetch email addresses of authors from User model based on their IDs
-      const authorIds = savedPaper.authors[0];
-      const authors = await User.find({ _id: { $in: authorIds } }, 'email');
-      const authorEmails = authors.map(author => author.email);
+      for (let i=0;i<savedPaper.authors.length;i++){
+        const authorIds = savedPaper.authors[i];
+        console.log(authorIds);
+        const authors = await XUser.find({_id:authorIds});
+        const authorEmails = authors.map(author => author.email);
+        console.log(authors);
 
-      // Send email notification to author(s)
-      const to = "virgarg772003@gmail.com"; //Author is not linked with paper as of now so add your gmail to get email for testing purpose
-      const subject = "New Paper Uploaded";
-      const message = `A new paper titled "${title}" has been uploaded.`;
-      const attachments=[
-        {
-          //filename:"title.pdf",
-          //path:""
-        }
-       ];
-       
-      
-      await sendMail(to, subject, message);
-      
+        // Send email notification to author(s)
+        const to = authorEmails[0]; //Author is not linked with paper as of now so add your gmail to get email for testing purpose
+        const subject = "New Paper Uploaded";
+        const message = `A new paper titled "${title}" has been uploaded.`;
+        const attachments=[
+          {
+            //filename:"title.pdf",
+            //path:""
+          }
+        ];
+        
+        
+        await sendMail(to, subject, message);
+      }
 
       console.log("Paper saved successfully:", savedPaper);
       res.status(200).send("Paper uploaded and saved successfully!");

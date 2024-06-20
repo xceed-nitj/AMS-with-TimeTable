@@ -1,5 +1,6 @@
 const multer = require('multer');
 const path = require("path");
+const user = require("../../usermanagement/routes/user");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -16,16 +17,29 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const fileUploadMiddleware = (req, res, next) => {
-  upload.single('pdfFile')(req, res, (err) => {
+  upload.fields([
+    { name: 'pdfFile', maxCount: 1 },   // Upload 1 file with field name 'pdfFile'
+    { name: 'codeFile', maxCount: 1 }   // Upload 1 file with field name 'codeFile'
+  ])(req, res, (err) => {
     if (err) {
       return res.status(400).send('Error uploading file.');
     }
-    if (!req.file) {
-      return res.status(400).send('No file uploaded.');
+    if (!req.files || (!req.files.pdfFile && !req.files.codeFile)) {
+      return res.status(400).send('No files uploaded.');
     }
-    req.fileName = req.file.filename;
+
+    // Attach file information to the request object
+    if (req.files.pdfFile) {
+      req.fileName = req.files.pdfFile[0].filename;
+    }
+    if (req.files.codeFile) {
+      req.codeName = req.files.codeFile[0].filename;
+    }
+    req.track = req.body.tracks;
     req.title = req.body.title;
     req.abstract = req.body.abstract;
+    req.authors = req.body.authors;
+    req.terms = req.body.terms;
     next();
   });
 };

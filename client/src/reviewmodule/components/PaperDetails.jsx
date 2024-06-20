@@ -122,6 +122,15 @@ function PaperDetails({ handleNext, handlePrevious }) {
                 onChange={handleChange}
               />
         </FormControl>
+        <FormControl mt={4}>
+              <FormLabel>Tracks :</FormLabel>
+              <Textarea
+                placeholder='Enter Tracks'
+                id='tracks'
+                value={paper.tracks || ''}
+                onChange={handleChange}
+              />
+        </FormControl>
         <br />
         {/* <Button onClick={handleSave} colorScheme="blue" zIndex={9996}>Save</Button> */}
         <div
@@ -192,6 +201,10 @@ function SavedPaperDetails({ paper }) {
       <Tr>
         <Td>Abstract</Td>
         <Td>{paper.abstract || ''}</Td>
+      </Tr>
+      <Tr>
+        <Td>Tracks</Td>
+        <Td>{paper.tracks || ''}</Td>
       </Tr>
     </>
   );
