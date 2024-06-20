@@ -3,7 +3,7 @@ import JoditEditor from 'jodit-react';
 import axios from 'axios';
 import { useToast } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
- import './ReviewQuestion.css'; // Import the CSS file
+import './ReviewQuestion.css'; // Import the CSS file
 import getEnvironment from '../../getenvironment';
 
 const apiUrl = getEnvironment();
@@ -11,8 +11,35 @@ const apiUrl = getEnvironment();
 const AddQuestion = () => {
   const editor = useRef(null);
   const [question, setQuestion] = useState('');
+  const [type, setType] = useState('');
+  const [options, setOptions] = useState(['']);
   const toast = useToast();
-  const { eventId } = useParams(); // Extract eventId from URL parameters
+  const { eventId } = useParams(); 
+
+  const handleTypeChange = (e) => {
+    setType(e.target.value);
+    setOptions(['']); 
+  };
+
+  const handleOptionChange = (index, newValue) => {
+    const updatedOptions = options.map((option, i) => (i === index ? newValue : option));
+    setOptions(updatedOptions);
+  };
+
+  const handleAddOption = () => {
+    setOptions([...options, '']);
+  };
+
+  const handleRemoveOption = (index) => {
+    const updatedOptions = options.filter((_, i) => i !== index);
+    setOptions(updatedOptions);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,8 +47,8 @@ const AddQuestion = () => {
       eventId,
       question: [question],
       show: true,
-      type: [],
-      options: []
+      type: [type],
+      options: options.filter(option => option.trim() !== '') 
     };
 
     try {
@@ -34,6 +61,8 @@ const AddQuestion = () => {
         isClosable: true,
       });
       setQuestion('');
+      setType('');
+      setOptions(['']);
     } catch (error) {
       toast({
         title: 'Error saving question.',
@@ -57,6 +86,39 @@ const AddQuestion = () => {
             onChange={(newContent) => setQuestion(newContent)}
           />
         </div>
+        <div className="form-group">
+          <label>Type:</label>
+          <select value={type} onChange={handleTypeChange}>
+            <option value="">Select Type</option>
+            <option value="Single Correct">Single Correct</option>
+            <option value="Multiple Correct">Multiple Correct</option>
+            <option value="Text">Text</option>
+          </select>
+        </div>
+        {(type === 'Single Correct' || type === 'Multiple Correct') && (
+          <div className="form-group">
+            <label>Options:</label>
+            {options.map((option, index) => (
+              <div key={index} className="option">
+                <input
+                  type={type === 'Single Correct' ? "radio" : "checkbox"}
+                  name={type === 'Single Correct' ? "singleCorrectOption" : `multipleCorrectOption${index}`}
+                  disabled
+                />
+                <input
+                  type="text"
+                  value={option}
+                  onChange={(e) => handleOptionChange(index, e.target.value)}
+                  onKeyPress={handleKeyPress}
+                />
+                {options.length > 1 && (
+                  <button type="button" className="remove-button" onClick={() => handleRemoveOption(index)}>Remove</button>
+                )}
+              </div>
+            ))}
+            <button type="button" className="add-button" onClick={handleAddOption}>Add Option</button>
+          </div>
+        )}
         <button type="submit" className="submit-button">Save Question</button>
       </form>
     </div>
