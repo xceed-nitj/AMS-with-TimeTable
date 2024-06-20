@@ -1,11 +1,14 @@
 const ReviewQuestion = require("../../../models/reviewModule/reviewQuestion");
+const Event = require("../../../models/reviewModule/event.js");
+const Paper = require("../../../models/reviewModule/paper.js");
 
 const addReviewQuestion = async (req, res) => {
-    const { eventId, show, type, question, options } = req.body;
+    const { eventId,paperId,show, type, question, options } = req.body;
 
     try {
         const newReviewQuestion = new ReviewQuestion({
             eventId,
+            paperId,
             show,
             type,
             question,
@@ -73,4 +76,16 @@ const deleteReviewQuestion = async (req, res) => {
     }
 };
 
-module.exports = { addReviewQuestion, getReviewQuestionsByEventId , getReviewQuestions, getReviewQuestionById, updateReviewQuestion, deleteReviewQuestion };
+const getReviewQuestionsByEventIdAndPaperId = async (req, res) => {
+    const { eventId, paperId } = req.params;
+    try {
+        
+        const reviewQuestions = await ReviewQuestion.find({ eventId: eventId, paperId: paperId});
+        res.status(200).json(reviewQuestions);
+    } catch (error) { 
+        //console.error("Error fetching review questions:", error); // Log the error to the console
+        res.status(500).json({ message: "Error fetching review questions", error: error.message });
+    }
+};
+
+module.exports = { addReviewQuestion, getReviewQuestionsByEventId , getReviewQuestions, getReviewQuestionById, updateReviewQuestion, deleteReviewQuestion,getReviewQuestionsByEventIdAndPaperId };
