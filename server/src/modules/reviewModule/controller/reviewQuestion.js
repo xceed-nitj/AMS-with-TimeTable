@@ -3,12 +3,12 @@ const Event = require("../../../models/reviewModule/event.js");
 const Paper = require("../../../models/reviewModule/paper.js");
 
 const addReviewQuestion = async (req, res) => {
-    const { eventId,paperId,show, type, question, options } = req.body;
+    const { eventId,show, type, question, options } = req.body;
 
     try {
         const newReviewQuestion = new ReviewQuestion({
             eventId,
-            paperId,
+            
             show,
             type,
             question,
