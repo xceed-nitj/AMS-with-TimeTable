@@ -215,7 +215,7 @@ function App() {
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
     <Route path="/prm/:eventId/:paperId/:userId/Review" element={<Review/>}/>
-    <Route path="/prm/:eventId/:paperId/ReviewQuestion" element={<ReviewerQuestion/>}/>
+    <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
     <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
     <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
