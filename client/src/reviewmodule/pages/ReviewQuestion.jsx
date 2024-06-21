@@ -14,7 +14,7 @@ const AddQuestion = () => {
   const [type, setType] = useState('');
   const [options, setOptions] = useState(['']);
   const toast = useToast();
-  const { eventId } = useParams(); 
+  const { eventId ,paperId} = useParams(); 
 
   const handleTypeChange = (e) => {
     setType(e.target.value);
@@ -45,6 +45,7 @@ const AddQuestion = () => {
     e.preventDefault();
     const newQuestion = {
       eventId,
+      paperId,
       question: [question],
       show: true,
       type: [type],
