@@ -4,7 +4,7 @@ const Event =require("./event");
 const Paper=require("./paper");
 
 const reviewSchema = new mongoose.Schema({
-    paperId: { type: mongoose.Schema.Types.ObjectId, ref: 'Paper', required: true },
+    paperId: { type: String,  required:true },
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
     reviewerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     reviewans: [{ type: String }],

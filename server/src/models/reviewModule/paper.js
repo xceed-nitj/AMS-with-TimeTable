@@ -6,17 +6,19 @@ const paperSchema = new mongoose.Schema({
 
     paperId: { type: String,  required:true},                          
     eventId: { type: mongoose.Schema.Types.ObjectId, ref:'Event' },    
-    authors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],  
+    authors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],  
     abstract: {type:String, authorAccess:true,},
+    tracks:[{type: String}],
     title: {type:String, authorAccess:true,},
     uploadLink: [{type:String, authorAccess:true,}],
+    codeLink: [{type:String, authorAccess:true,}],
     version:{type: Number, default: 1,},
     createdAt: {type:Date, },
     updatedAt: {type:Date, },
     ResubmissionDate: {type:Date, editorAccess:true,},
 
     reviewers: [{
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', editorAccess: true },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'user', editorAccess: true },
         username:{ type: String, authorAccess: true },
         comment_author: { type: String, authorAccess: true },
         rating: { type: Number, reviewerAccess: true },
@@ -40,12 +42,16 @@ const paperSchema = new mongoose.Schema({
             reviewerAccess: true,
         }
     }],
-    editors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    editors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
     finalDecision: { type: String },
     status: {
         type: String,
         enum: ['Accepted', 'Rejected', 'Under Review'],
         default: 'Under Review'
+    },
+    terms: {
+        type: Boolean,
+        default: true,
     }
 });
 
