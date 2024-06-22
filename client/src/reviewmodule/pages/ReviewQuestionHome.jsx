@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Box, Heading, Text, VStack, IconButton, chakra, Spinner, useToast, Button, Flex } from '@chakra-ui/react';
-import getEnvironment from '../../getenvironment';
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { Box, Heading, Text, VStack, IconButton, chakra, Spinner, useToast, Button, Flex } from '@chakra-ui/react'
+import getEnvironment from '../../getenvironment'
 
-const apiUrl = getEnvironment();
+const apiUrl = getEnvironment()
 
 const ViewQuestions = () => {
   const [questions, setQuestions] = useState([]);
