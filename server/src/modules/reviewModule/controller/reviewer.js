@@ -70,19 +70,22 @@ const addReviewer = async (req, res) => {
 };
 
 const updateReviewer = async (req, res) => {
-  const { paperId, userId } = req.query;
-  const { updateData } = req.body;
+  const paperId = req.params.paperid;
+  const userId = req.params.reviewerid;
+  const updateData = req.body;
   console.log(paperId, userId, updateData);
   try {
+    const pseudo_paper = await Paper.findOne({_id:paperId,"reviewers.userId": userId});
     const paper = await Paper.findOneAndUpdate(
       { _id:paperId, "reviewers.userId": userId },
       {
         $set: {
-          "reviewers.$.rating": updateData.rating || undefined,
-          "reviewers.$.comment_author": updateData.comment_author || undefined,
-          "reviewers.$.comment_editor": updateData.comment_editor || undefined,
-          "reviewers.$.status": updateData.status || undefined,
-          "reviewers.$.reviewerStatus": updateData.reviewerStatus || undefined,
+          "reviewers.$.rating": updateData.rating || pseudo_paper.reviewers.rating,
+          "reviewers.$.comment_author": updateData.comment_author || pseudo_paper.reviewers.comment_author,
+          "reviewers.$.comment_editor": updateData.comment_editor || pseudo_paper.reviewers.comment_editor,
+          "reviewers.$.status": updateData.status || pseudo_paper.reviewers.status,
+          "reviewers.$.dueDate": updateData.newDate || pseudo_paper.reviewers.dueDate,
+          "reviewers.$.reviewerStatus": updateData.reviewerStatus || pseudo_paper.reviewers.reviewerStatus,
         },
       },
       { new: true }

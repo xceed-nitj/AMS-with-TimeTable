@@ -21,6 +21,8 @@ function MultiStepForm({ isSidebarOpen }) {
   var urlParts = url.split('/');
   var value1 = urlParts[4];
   var value2 = urlParts[5];
+  //console.log("values: ",value1,value2);
+  paper.eventId=value1;
 
   async function handleNext(data) {
     if (!data) {
@@ -36,7 +38,7 @@ function MultiStepForm({ isSidebarOpen }) {
       body: JSON.stringify({ ...data, eventId: value1, paperId: value2 }),
     });
     const dataa = await res.json();
-    console.log(dataa);
+    //console.log("dataa: ",dataa);
     if (res.ok) {
       if (activeStep === steps.length - 1) return;
       setActiveStep(activeStep + 1);
