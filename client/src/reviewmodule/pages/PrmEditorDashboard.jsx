@@ -4,11 +4,12 @@ import { useParams } from "react-router-dom";
 import getEnvironment from '../../getenvironment';
 import { Box, Button, HStack, Text } from '@chakra-ui/react';
 import {Grid, GridItem, Icon } from '@chakra-ui/react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { Container } from "@chakra-ui/layout";
 import Header from "../../components/header";
 import { FaInfoCircle, FaFileAlt, FaUserFriends, FaChartPie, FaEnvelope } from 'react-icons/fa';
+import { FiCheckCircle } from 'react-icons/fi'
 
 const PrmEditorDashboard = () => {
   const navigate = useNavigate();
@@ -188,7 +189,7 @@ const PrmEditorDashboard = () => {
                             Invite Reviewer
                         </Button>
                         <Button
-                            width={['100%', '100%', '230px', '230px']}
+                            width='100%'
                             height="50px"
                             bgGradient="linear(to-r, green.600, green.500)"
                             color="white"
@@ -199,6 +200,19 @@ const PrmEditorDashboard = () => {
                         >
                             Communication Templates
                         </Button>
+                        <Button
+                            width='100%'
+                            height="50px"
+                            bgGradient="linear(to-r, purple.600, purple.500)"
+                            color="white"
+                            _hover={{ bgGradient: "linear(to-r, purple.500, purple.400)" }}
+                            onClick={() => navigate(`/prm/${eventId}/ReviewQuestionHome`)}
+                            leftIcon={<Icon as={FiCheckCircle} color="white" />}
+                            whiteSpace="normal" // Ensure text wraps within the button
+                        >
+                            Review Questions
+                        </Button>
+                        
 
                     </Grid>
                     <Grid
