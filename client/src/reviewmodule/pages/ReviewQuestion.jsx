@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import JoditEditor from 'jodit-react';
 import axios from 'axios';
-import { useToast } from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
+import { useToast, FormLabel, FormControl, Input, Button, chakra, Heading, IconButton, Box, Text } from '@chakra-ui/react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import './ReviewQuestion.css'; // Import the CSS file
 import getEnvironment from '../../getenvironment';
 
@@ -15,6 +15,8 @@ const AddQuestion = () => {
   const [options, setOptions] = useState(['']);
   const toast = useToast();
   const { eventId } = useParams(); 
+
+  console.log('type is', type)
 
   const handleTypeChange = (e) => {
     setType(e.target.value);
@@ -41,8 +43,8 @@ const AddQuestion = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    // e.preventDefault(); // ^ put e here in the parameters to use this
     const newQuestion = {
       eventId,
     
@@ -75,12 +77,52 @@ const AddQuestion = () => {
     }
   };
 
+  const HeaderReviewQuestion = ({ title }) => {
+    const navigate = useNavigate();
+    
+    return (
+      <Heading mr='1' ml='1' display='flex' >
+        <IconButton
+          mb='1'
+          variant='ghost'
+          onClick={() => navigate(-1)}
+          _hover={{ bgColor: 'transparent' }}
+        >
+          <chakra.svg
+            xmlns='http://www.w3.org/2000/svg'
+            fill='none'
+            viewBox='0 0 24 24'
+            strokeWidth={1.5}
+            stroke='white'
+            className='w-6 h-6'
+            _hover={{ stroke: '#00BFFF' }}
+          >
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              d='M11.25 9l-3 3m0 0l3 3m-3-3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+            />
+          </chakra.svg>
+        </IconButton>
+        <chakra.div marginInline='auto' color="white" fontSize='25px' mt='2' >
+          {title}
+        </chakra.div>
+      </Heading>
+    );
+  };
+
   return (
-    <div className="add-question-page">
-      <h1>Add Review Question</h1>
-      <form onSubmit={handleSubmit} className="question-form">
+    <div 
+    className="add-question-page">
+        <Box  bg="black" p={0.2} width='80%'>
+          <HeaderReviewQuestion color="white" textAlign="center" title={'Add Review Question'+(type?' - '+type:'')}/>
+        </Box>
+        <br/>
+      <FormControl onSubmit={handleSubmit} className="question-form">
         <div className="form-group">
-          <label>Question:</label>
+        <Box bg={'#48835d'} style={{fontWeight:'500', opacity:'100%',borderTopLeftRadius:'5px',borderTopRightRadius:'5px'}} p={2}>
+          <Text color="white" textAlign={'center'}>Question</Text>
+        </Box>
           <JoditEditor
             ref={editor}
             value={question}
@@ -88,8 +130,11 @@ const AddQuestion = () => {
           />
         </div>
         <div className="form-group">
-          <label>Type:</label>
-          <select value={type} onChange={handleTypeChange}>
+          {/* <FormLabel>Type</FormLabel> */}
+          <Box bg={'#48835d'} style={{fontWeight:'500', opacity:'100%',borderTopLeftRadius:'5px',borderTopRightRadius:'5px'}} p={2}>
+          <Text color="white" textAlign={'center'}>Type</Text>
+        </Box>
+          <select value={type} onChange={handleTypeChange} id='typeSelector'>
             <option value="">Select Type</option>
             <option value="Single Correct">Single Correct</option>
             <option value="Multiple Correct">Multiple Correct</option>
@@ -98,7 +143,10 @@ const AddQuestion = () => {
         </div>
         {(type === 'Single Correct' || type === 'Multiple Correct') && (
           <div className="form-group">
-            <label>Options:</label>
+            {/* <FormLabel>Options:</FormLabel> */}
+            <Box bg={'#48835d'} style={{fontWeight:'500', opacity:'100%',borderTopLeftRadius:'5px',borderTopRightRadius:'5px'}} p={2}>
+              <Text color="white" textAlign={'center'}>Options</Text>
+            </Box>
             {options.map((option, index) => (
               <div key={index} className="option">
                 <input
@@ -106,22 +154,27 @@ const AddQuestion = () => {
                   name={type === 'Single Correct' ? "singleCorrectOption" : `multipleCorrectOption${index}`}
                   disabled
                 />
-                <input
+                <Input
                   type="text"
                   value={option}
                   onChange={(e) => handleOptionChange(index, e.target.value)}
                   onKeyPress={handleKeyPress}
                 />
                 {options.length > 1 && (
-                  <button type="button" className="remove-button" onClick={() => handleRemoveOption(index)}>Remove</button>
+                  <Button type="button" colorScheme='red' onClick={() => handleRemoveOption(index)}>Remove</Button>
                 )}
               </div>
             ))}
-            <button type="button" className="add-button" onClick={handleAddOption}>Add Option</button>
+            <Button type="button" colorScheme='green' onClick={handleAddOption}>Add Option</Button>
           </div>
         )}
-        <button type="submit" className="submit-button">Save Question</button>
-      </form>
+        {(!type)?'':(
+          <Link
+            onClick={handleSubmit}
+            className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+            >Save Question</Link>
+          )} 
+      </FormControl>
     </div>
   );
 };
