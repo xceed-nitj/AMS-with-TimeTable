@@ -1,8 +1,9 @@
 const Paper = require("../../../models/reviewModule/paper.js");
 const XUser = require("../../../models/usermanagement/user.js"); // Importing the User model
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
+const Event  = require("../../../models/reviewModule/event.js");
 
-const uploadPaper = (req, res) => {
+const uploadPaper = async(req, res) => {
   const fileName = req.fileName;
   const title = req.title;
   const abstract = req.abstract;
@@ -12,6 +13,16 @@ const uploadPaper = (req, res) => {
   const track=req.track;
   const codefile = req.codeName;
 
+  const event = await Event.findById(eventId);
+  const deadline = event.paperSubmissionDate;
+  const today = new Date();
+  const deadlineDate = new Date(deadline);
+  today.setHours(0, 0, 0, 0);
+  deadlineDate.setHours(0, 0, 0, 0);
+  if (today > deadlineDate) {
+      return res.status(503).send("Paper submission after deadline is forbidden");
+  }
+  
   if (!fileName) {
     return res.status(400).send("File name is missing in the request.");
   }

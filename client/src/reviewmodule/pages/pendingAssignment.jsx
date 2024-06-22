@@ -10,7 +10,8 @@ import { useToast } from "@chakra-ui/react";
 function PendingAssignment() {
     const apiUrl = getEnvironment();
     const [Papers, setPapers] = useState([]);
-    const [pending,setPending] = useState([]);
+    const [pending, setPending] = useState([]);
+    const [userId, setUserId] = useState('');
     const toast = useToast();
     useEffect(() => {
         const fetchPapers = async () => {
@@ -18,19 +19,20 @@ function PendingAssignment() {
                 const User = await fetch(`${apiUrl}/user/getuser`, {
                     method: "GET",
                     headers: {
-                      'Content-Type': 'application/json',
+                        'Content-Type': 'application/json',
                     },
                     credentials: 'include',
                 });
                 const userdetails = await User.json();
                 const id = userdetails.user._id;
+                setUserId(id); // Set the userId from logged-in user
                 const response = await axios.get(`${apiUrl}/reviewmodule/paper/reviewer/${id}`);
                 const Papers = response.data;
                 let pendingPaper = [];
                 for (let i = 0; i < Papers.length; i++) {
-                        if(Papers[i].status === 'Under Review'){
-                            pendingPaper.push(Papers[i]);
-                        }       
+                    if (Papers[i].status === 'Under Review') {
+                        pendingPaper.push(Papers[i]);
+                    }
                 }
 
                 setPapers(Papers);
@@ -62,14 +64,20 @@ function PendingAssignment() {
                             <Th>Paper ID</Th>
                             <Th>Paper Title</Th>
                             <Th>Abstract</Th>
+                            <Th>Action</Th> {/* New column for the link */}
                         </Tr>
                     </Thead>
                     <Tbody>
                         {pending.map((paper) => (
-                            <Tr>
+                            <Tr key={paper.paperId}>
                                 <Td>{paper.paperId}</Td>
                                 <Td>{paper.title}</Td>
                                 <Td>{paper.abstract}</Td>
+                                <Td>
+                                    <Link as={RouterLink} to={`/prm/${paper.eventId}/${paper.paperId}/${userId}/Review`} color="teal.500">
+                                        Answer
+                                    </Link>
+                                </Td>
                             </Tr>
                         ))}
                     </Tbody>
