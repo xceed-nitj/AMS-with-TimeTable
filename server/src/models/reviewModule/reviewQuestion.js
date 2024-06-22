@@ -6,7 +6,7 @@ const Paper=require("./paper");
 
 const reviewQuestionSchema = new mongoose.Schema({
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
-    paperId:{type:mongoose.Schema.Types.ObjectId, ref:'Paper' },
+    
     show: { type: Boolean, default: false },
     type: [{ type: String }],
     question: [{ type: String }],

@@ -1,89 +1,91 @@
-import { useState, useEffect } from "react";
-import React from 'react';
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import getEnvironment from "../../getenvironment";
-import axios from 'axios';
+import axios from "axios";
 import JoditEditor from "jodit-react";
-import { useToast, ChakraProvider, Box, Button, RadioGroup, Radio, Checkbox, FormControl, FormLabel, Textarea, Select } from "@chakra-ui/react";
+import {
+    ChakraProvider,
+    Box,
+    Button,
+    RadioGroup,
+    Radio,
+    Checkbox,
+    FormControl,
+    FormLabel,
+    Textarea,
+    Select,
+    useToast,
+} from "@chakra-ui/react";
+import getEnvironment from "../../getenvironment";
 
 const Review = () => {
     const apiUrl = getEnvironment();
     const { eventId, paperId, userId } = useParams();
-    const [isPaperAssigned, setIsPaperAssigned] = useState(false);
     const [questions, setQuestions] = useState([]);
     const [answers, setAnswers] = useState({});
     const [comments, setComments] = useState({});
     const [decisions, setDecisions] = useState({});
     const toast = useToast();
 
-    const checkAssignedPaper = async () => {
-        try {
-            const paperResponse = await axios.get(`${apiUrl}/reviewmodule/paper/getpaperdetail/${paperId}`);
-            const reviewers = paperResponse.data.reviewers;
-            const userResponse = await axios.get(`${apiUrl}/reviewmodule/user/getuser/${userId}`);
-            const user = userResponse.data;
-
-            let matchFound = false;
-            reviewers.forEach(reviewer => {
-                user.email.forEach(email => {
-                    if (reviewer.username === email) {
-                        matchFound = true;
-                    }
-                });
-            });
-
-            if (matchFound) {
-                setIsPaperAssigned(true);
-                fetchQuestions();
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
+    // Function to fetch questions based on eventId and paperId
     const fetchQuestions = async () => {
         try {
-            const response = await axios.get(`${apiUrl}/reviewmodule/reviewQuestion/${eventId}/${paperId}`);
+            const response = await axios.get(`${apiUrl}/reviewmodule/reviewQuestion/get/${eventId}`);
             setQuestions(response.data);
         } catch (error) {
             console.log("Error fetching questions:", error);
         }
     };
 
+    // Handler to update answers state
     const handleAnswerChange = (index, value) => {
         setAnswers(prev => ({ ...prev, [index]: value }));
     };
 
+    // Handler to update comments state
     const handleCommentChange = (index, value) => {
         setComments(prev => ({ ...prev, [index]: value }));
     };
 
+    // Handler to update decisions state
     const handleDecisionChange = (index, value) => {
         setDecisions(prev => ({ ...prev, [index]: value }));
     };
 
+    // Handler to save answers, comments, and decisions for a question
     const handleSaveAnswer = async (index) => {
         try {
-            await axios.post(`${apiUrl}/reviewmodule/review/add`, {
-                eventId,
+            const response = await axios.post(`${apiUrl}/reviewmodule/review/add`, {
                 paperId,
+                eventId,
                 reviewerId: userId,
-                reviewans: answers[index],
+                reviewans: [answers[index]], // Assuming answers are stored in an array
                 commentsAuthor: comments[index] || "",
-                commentsEditor: "",
+                commentsEditor: "", // Leave empty or adjust as per your logic
                 decision: decisions[index] || "Needs Revision"
             });
-            toast({
-                title: "Answer saved.",
-                description: "Your answer has been saved successfully.",
-                status: "success",
-                duration: 5000,
-                isClosable: true,
-            });
+
+            if (response.status === 201) {
+                toast({
+                    title: "Answer saved.",
+                    description: "Your answer has been saved successfully.",
+                    status: "success",
+                    duration: 5000,
+                    isClosable: true,
+                });
+            } else {
+                toast({
+                    title: "Error saving answer.",
+                    description: "There was an error saving your answer. Please try again later.",
+                    status: "error",
+                    duration: 5000,
+                    isClosable: true,
+                });
+            }
         } catch (error) {
+            console.error("Error saving answer:", error);
             toast({
                 title: "Error saving answer.",
-                description: "There was an error saving your answer.",
+                description: "There was an error saving your answer. Please try again later.",
                 status: "error",
                 duration: 5000,
                 isClosable: true,
@@ -91,13 +93,10 @@ const Review = () => {
         }
     };
 
+    // Effect to fetch questions when eventId or paperId changes
     useEffect(() => {
-        checkAssignedPaper();
-    }, [paperId, userId]);
-
-    if (!isPaperAssigned) {
-        return <h1>This paper is not assigned to you</h1>;
-    }
+        fetchQuestions();
+    }, [eventId, paperId]);
 
     return (
         <ChakraProvider>
