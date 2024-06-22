@@ -23,6 +23,8 @@ const paperSchema = new mongoose.Schema({
         comment_author: { type: String, authorAccess: true },
         rating: { type: Number, reviewerAccess: true },
         comment_editor: { type: String, editorAccess: true },
+        dueDate: { type: Date, editorAcess: true },
+        completedDate: { type: Date, editorAcess: true },
         status: {
             type: String,
             enum: ['Under Review', 'Accepted', 'Rejected'],

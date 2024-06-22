@@ -35,43 +35,47 @@ export default function AuthorForm(props) {
   async function handleSubmit(e) {
     e.preventDefault();
     const apiUrl = getEnvironment();
-    console.log(author);
-    var form_data = new FormData();
-    for ( var key in author ) {
-      console.log(key,":",author[key]);
-      form_data.append(key, AuthorForm[key]);
-    }
-    try {
-      const response = await axios.post(`${apiUrl}/reviewmodule/paper/addAuthor`, author,{
-        name: author.name,
-        email: author.email,
-        designation: author.designation,
-      });
-      console.log("userid:",response.data.updatedId);
-      setAuthorid({ ...aid, _id: response.data.updatedId});
-      authorId.push(response.data.updatedId);
-      toast({
-        title: 'Upload successful.',
-        description: response.data.message || 'Paper has been uploaded.',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: 'Upload failed.',
-        description: error.response?.data?.message || 'An error occurred during upload.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    }
     function dupliCheck(entry) {
       for(let l = 0; l < paper.authors.length; l++){
-        if(entry == paper.authors[l]._id) return true
+        if(entry == paper.pseudo_authors[l].order) return true
       }
       return false
+    }
+    //console.log(author);
+    var form_data = new FormData();
+    for ( var key in author ) {
+      //console.log(key,":",author[key]);
+      form_data.append(key, AuthorForm[key]);
+    }
+    if(!dupliCheck(author.order)){
+      try {
+        const response = await axios.post(`${apiUrl}/reviewmodule/paper/addAuthor`, author,{
+          name: author.name,
+          email: author.email,
+          designation: author.designation,
+        });
+        //console.log("userid:",response.data.updatedId);
+        setAuthorid({ ...aid, _id: response.data.updatedId});
+        authorId.splice(0,0,response.data.updatedId);
+        toast({
+          title: 'Upload successful.',
+          description: response.data.message || 'Paper has been uploaded.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast({
+          title: 'Upload failed.',
+          description: error.response?.data?.message || 'An error occurred during upload.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }else{
+      console.log("order is taken!");
     }
 
     function PrevPaperFunc(prevPaper) { //it removes the entry that you are trying to edit
@@ -85,17 +89,22 @@ export default function AuthorForm(props) {
         return prevPaperEdited
       }
     }
-    if(dupliCheck(aid._id)&&(!props.edit)){
-      alert('The order '+ aid._id+ ' has already been filled...')
+    if(dupliCheck(author.order)&&(!props.edit)){
+      alert('The order '+ author.order+ ' has already been filled...')
     }
     else {
-      console.log(authorId);
-      console.log('no obstacle encounterd',authorId[0]);
+      //console.log(authorId);
+      //console.log('no obstacle encounterd',authorId[0]);
       if (!isFormValid) return;
       setPaper(prevPaper => ({
         ...PrevPaperFunc(prevPaper),
         authors: [...PrevPaperFunc(prevPaper).authors, authorId[0]],
       }));
+      setPaper(prevPaper => ({
+        ...PrevPaperFunc(prevPaper),
+        pseudo_authors: [...PrevPaperFunc(prevPaper).pseudo_authors, author],
+      }));
+      //console.log("done!")
       onClose();
     }
 

@@ -7,6 +7,7 @@ export const paperState = atom({
   default: {
     eventId: value1,
     authors: [],
+    pseudo_authors: [],
     title: '',
     tracks:[],
     abstract: '',

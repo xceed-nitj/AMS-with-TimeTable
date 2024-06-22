@@ -39,6 +39,7 @@ const fileUploadMiddleware = (req, res, next) => {
     req.title = req.body.title;
     req.abstract = req.body.abstract;
     req.authors = req.body.authors;
+    console.log(typeof(req.authors));
     req.terms = req.body.terms;
     next();
   });
