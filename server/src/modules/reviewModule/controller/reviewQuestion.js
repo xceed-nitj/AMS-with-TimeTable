@@ -1,3 +1,4 @@
+const mongoose = require('mongoose'); 
 const ReviewQuestion = require("../../../models/reviewModule/reviewQuestion");
 const Event = require("../../../models/reviewModule/event.js");
 const Paper = require("../../../models/reviewModule/paper.js");
@@ -31,12 +32,25 @@ const getReviewQuestions = async (req, res) => {
 };
 
 const getReviewQuestionsByEventId = async (req, res) => {
-    const { eventId } = req.params;
     try {
-        const reviewQuestions = await ReviewQuestion.find({ eventId }).populate('eventId');
-        res.status(200).json(reviewQuestions);
+        const { eventId } = req.params;
+
+        // Validate and convert eventId to ObjectId
+        if (!mongoose.Types.ObjectId.isValid(eventId)) {
+            return res.status(400).json({ message: "Invalid eventId format" });
+        }
+        const objectId = mongoose.Types.ObjectId(eventId);
+
+        const questions = await ReviewQuestion.find({ eventId: objectId });
+
+        if (!questions || questions.length === 0) {
+            return res.status(404).json({ message: "No questions found for this event." });
+        }
+
+        res.status(200).json(questions);
     } catch (error) {
-        res.status(500).json({ message: "Error fetching review questions", error });
+        console.error("Error fetching questions by eventId:", error);
+        res.status(500).json({ message: "Server error while fetching questions.", error: error.message });
     }
 };
 
@@ -48,6 +62,36 @@ const getReviewQuestionById = async (req, res) => {
         res.status(200).json(reviewQuestion);
     } catch (error) {
         res.status(500).json({ message: "Error fetching review question", error });
+    }
+};
+
+const getQuestionsByEventId = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        // Log the eventId
+       // console.log(`Received eventId: ${eventId}`);
+
+        // Validate the eventId
+        if (!mongoose.Types.ObjectId.isValid(eventId)) {
+            console.log('Invalid eventId');
+            return res.status(400).json({ message: "Invalid eventId" });
+        }
+
+        // Find the review questions by eventId
+        const questions = await ReviewQuestion.find({ eventId });
+
+        // Log the number of questions found
+       // console.log(`Number of questions found: ${questions.length}`);
+
+        if (!questions.length) {
+            return res.status(404).json({ message: "Review question not found" });
+        }
+
+        res.status(200).json(questions);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -88,4 +132,4 @@ const getReviewQuestionsByEventIdAndPaperId = async (req, res) => {
     }
 };
 
-module.exports = { addReviewQuestion, getReviewQuestionsByEventId , getReviewQuestions, getReviewQuestionById, updateReviewQuestion, deleteReviewQuestion,getReviewQuestionsByEventIdAndPaperId };
+module.exports = { addReviewQuestion, getReviewQuestionsByEventId , getReviewQuestions, getReviewQuestionById, updateReviewQuestion, deleteReviewQuestion,getReviewQuestionsByEventIdAndPaperId ,getQuestionsByEventId };
