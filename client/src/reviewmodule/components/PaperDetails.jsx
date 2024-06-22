@@ -106,6 +106,38 @@ function PaperDetails({ handleNext, handlePrevious }) {
         >
           Paper Details
         </h1>
+         {/* <form>
+          <Box mb={4}>
+            <label htmlFor="title" className="tw-font-semibold">Title:</label>
+            <input
+              id="title"
+              
+              value={paper.title || ''}
+              className="tw-w-full tw-p-1"
+              style={{ maxWidth: '100%', wordWrap: 'break-word', whiteSpace: 'pre-wrap', 
+                backgroundColor:'#f3f4f6',
+                borderRadius:"6px"
+              }}
+              onChange={handleChange}
+              placeholder="Enter paper title"
+            />
+          </Box>
+          <Box mb={4}>
+            <label htmlFor="abstract" className="tw-font-semibold">Abstract:</label>
+            <textarea
+              id="abstract"
+              
+              value={paper.abstract || ''}
+              className="tw-w-full tw-p-1"
+              style={{ maxWidth: '100%', wordWrap: 'break-word', whiteSpace: 'pre-wrap', 
+                backgroundColor:'#f3f4f6',
+                borderRadius:"6px"
+              }}
+              onChange={handleChange}
+              placeholder="Enter paper abstract"
+            />
+          </Box>
+        </form> */}
         <FormControl mt={4}>
           <FormLabel>Title :</FormLabel>
           <Input
@@ -135,6 +167,14 @@ function PaperDetails({ handleNext, handlePrevious }) {
           </Box>
         )}
       </Box>
+        {/* <Box p={8} bg="gray.100" borderRadius="md" shadow="md" maxWidth="600px" mx="auto" mt={6}>
+          <Heading as="h2" size="lg" mb={6}>Saved Paper Details</Heading>
+          <Table>
+            <Tbody>
+              <SavedPaperDetails paper={paper} />
+            </Tbody>
+          </Table>
+        </Box> */}
       <div className="tw-flex tw-justify-between tw-mt-6">
         <Link
           onClick={handlePrevious}
