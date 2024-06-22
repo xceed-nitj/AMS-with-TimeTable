@@ -1,26 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faL, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
-// import './AddQuestion.css';
+import './AddQuestion.css';
 import QuillEditor from '../../components/quill/quillEditor';
 import getEnvironment from '../../../getenvironment';
-
+import { Box } from '@chakra-ui/react';
 
 function AddQuestion({ editQuestionData, onClose }) {
+  // console.log(editQuestionData);
   const apiurl = getEnvironment();
   const [data, setData] = useState({
     questionTime: 60,
-    question: '',
-    marks: 1,
+    question: editQuestionData?.question ? editQuestionData.question : '',
+    marks: editQuestionData?.mark ? editQuestionData.mark : 1,
     file: '',
-    correctAnsInteger: '',
-    explanation: '',
+    correctAnsInteger: editQuestionData?.answer ? editQuestionData.answer : '',
+    explanation: editQuestionData?.explanation
+      ? editQuestionData.explanation
+      : '',
   });
-  const [options, setOptions] = useState(['']);
+  const [options, setOptions] = useState([]);
   const [correctOptions, setCorrectOptions] = useState([]);
-  const [questionType, setQuestionType] = useState('single');
-  const [questionLevel, setQuestionLevel] = useState('easy');
+  const [currentOption, setCurrentOption] = useState([]);
+  const [questionType, setQuestionType] = useState(
+    editQuestionData?.questionType ? editQuestionData.questionType : 'single'
+  );
+  const [questionLevel, setQuestionLevel] = useState(
+    editQuestionData?.questionLevel ? editQuestionData.questionLevel : 'easy'
+  );
   const [showHeading, setShowHeading] = useState(false);
   const [showButton, setShowButton] = useState({
     display: 'initial',
@@ -36,40 +44,82 @@ function AddQuestion({ editQuestionData, onClose }) {
 
   useEffect(() => {
     if (editQuestionData) {
-      fetchData();
+      if (editQuestionData.questionType === 'numerical') {
+        setShowCorrectAns({
+          display: 'initial',
+        });
+        setShowButton({
+          display: 'none',
+        });
+        setData({ ...data, correctAnsInteger: editQuestionData.answer });
+      } else if (
+        editQuestionData.questionType === 'multiple' ||
+        editQuestionData.questionType === 'single'
+      ) {
+        setShowCorrectAns({
+          display: 'none',
+        });
+        setShowButton({
+          display: 'initial',
+        });
+
+        let newOptions = [];
+        let newCorrectOptions = [];
+        let newsetCurrentOption = [];
+
+        editQuestionData.options.forEach((option, index) => {
+          newOptions.push(option.value);
+          newCorrectOptions.push(option.isCorrect);
+          newsetCurrentOption.push(index);
+        });
+
+        setOptions(newOptions);
+        setCorrectOptions(newCorrectOptions);
+        setCurrentOption(newsetCurrentOption);
+        // fetchData();
+      }
     }
   }, [editQuestionData]);
-  
-
 
   const fetchData = async () => {
     const token = localStorage.getItem('token');
     const code = window.location.pathname.split('/').pop();
-    const id = editQuestionData.id;
-  
+    const id = editQuestionData._id;
     try {
-      const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions/${id}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-      });
-  
+      const response = await fetch(
+        `${apiurl}/quizmodule/faculty/quiz/${code}/questions/${id}`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
       if (response.ok) {
         const dat = await response.json();
-        console.log('Fetched data:', dat);
-        const data=dat.data;
+        // console.log('Fetched data:', dat);
+        const data = dat.data;
         if (data.options && Array.isArray(data.options)) {
-          const parsedOptions = data.options.map(option => JSON.parse(option));
-          const fetchedOptions = parsedOptions.map(option => option.value);
-          const fetchedCorrectOptions = parsedOptions
-            .filter(option => option.isCorrect)
-            .map(option => `option ${parsedOptions.indexOf(option) + 1}`);
-            console.log(fetchedOptions)
-          setOptions(fetchedOptions);
-          setCorrectOptions(fetchedCorrectOptions);
-  
+          const parsedOptions = data.options.map((option) =>
+            JSON.parse(option)
+          );
+
+          let newOptions = [];
+          let newCorrectOptions = [];
+          let newsetCurrentOption = [];
+
+          parsedOptions.forEach((option, index) => {
+            newOptions.push(option.value);
+            newCorrectOptions.push(option.isCorrect);
+            newsetCurrentOption.push(index);
+          });
+
+          setOptions(newOptions);
+          setCorrectOptions(newCorrectOptions);
+          setCurrentOption(newsetCurrentOption);
+
           setData({
             questionTime: data.questionTime,
             question: data.question,
@@ -77,43 +127,47 @@ function AddQuestion({ editQuestionData, onClose }) {
             correctAnsInteger: '',
             explanation: data.explanation,
           });
-  
+
           setQuestionType(data.questionType);
           setQuestionLevel(data.questionLevel);
         } else {
           console.error('Invalid options data:', data.options);
         }
       } else {
-        console.error('Failed to fetch data:', response.status);
+        console.error('Failed to fetch data:', response);
       }
     } catch (error) {
       console.error('An error occurred while fetching data:', error);
     }
   };
-  
+
   const handleCancel = () => {
     // Call the onClose function to close the AddQuestion component
     onClose();
   };
-  
+
   const handleChangeData = async (values) => {
     const token = localStorage.getItem('token');
     const code = window.location.pathname.split('/').pop();
-    
+
     if (editQuestionData) {
-      const id = editQuestionData.id;
+      const id = editQuestionData._id;
       try {
-        const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions/${id}`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(values),
-        });
-        
+        const response = await fetch(
+          `${apiurl}/quizmodule/faculty/quiz/${code}/questions/${id}`,
+          {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(values),
+          }
+        );
+
         if (response.ok) {
           setSubmitted(true);
+          window.location.reload();
         } else {
           console.error('Failed to edit question:', response.status);
         }
@@ -122,17 +176,21 @@ function AddQuestion({ editQuestionData, onClose }) {
       }
     } else {
       try {
-        const response = await fetch(`${apiurl}/quizmodule/faculty/quiz/${code}/questions`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(values),
-        });
-        
+        const response = await fetch(
+          `${apiurl}/quizmodule/faculty/quiz/${code}/questions`,
+          {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(values),
+          }
+        );
+
         if (response.ok) {
           setSubmitted(true);
+          window.location.reload();
         } else {
           console.error('Failed to create question:', response.status);
         }
@@ -141,11 +199,12 @@ function AddQuestion({ editQuestionData, onClose }) {
       }
     }
   };
-  
-  
+
   const handleTypeChange = (event) => {
     setQuestionType(event.target.value);
+    setCurrentOption([]);
     setOptions([]);
+    setCorrectOptions([]);
     if (event.target.value === 'numerical') {
       setShowCorrectAns({
         display: 'initial',
@@ -153,7 +212,10 @@ function AddQuestion({ editQuestionData, onClose }) {
       setShowButton({
         display: 'none',
       });
-    } else if (event.target.value === 'multiple' || event.target.value === 'single') {
+    } else if (
+      event.target.value === 'multiple' ||
+      event.target.value === 'single'
+    ) {
       setShowCorrectAns({
         display: 'none',
       });
@@ -167,60 +229,91 @@ function AddQuestion({ editQuestionData, onClose }) {
     setQuestionLevel(event.target.value);
   };
 
-  const handleChange = (index, event) => {
-    const updatedOptions = [...options];
-    updatedOptions[index] = event.target.value;
-    setOptions(updatedOptions);
+  const handleChange = (event, inputField) => {
+    setOptions((oldOptions) =>
+      oldOptions.map((data, index) => {
+        if (index === inputField) return event.target.value;
+        else return data;
+      })
+    );
   };
 
   const handleAddFields = () => {
-    const lastTextFieldValue = options[options.length - 1];
-
-    if (lastTextFieldValue === '') {
-      alert('Please fill the current text field');
-      return;
-    }
-    setOptions([...options, '']);
-  };
-
-  const handleRemoveFields = (index) => {
-    const updatedOptions = [...options];
-    updatedOptions.splice(index, 1);
-    setOptions(updatedOptions);
-  };
-
-  const handleRadiobox = (e) => {
-    const value = e.target.value;
-    const checked = e.target.checked;
-    setCorrectOptions([]);
-    if (checked) {
-      setCorrectOptions([value]);
-    }
-  };
-
-  const handleCheckbox = (e, index) => {
-    const value = e.target.value;
-    const checked = e.target.checked;
-  
-    if (checked) {
-      setCorrectOptions([...correctOptions, `option ${index + 1}`]);
+    if (currentOption.length === 0) {
+      setCurrentOption([0]);
+      setOptions(['']);
+      setCorrectOptions([false]);
     } else {
-      setCorrectOptions(correctOptions.filter((opt) => opt !== `option ${index + 1}`));
+      let unfiledOption = true;
+      currentOption.forEach((data, index) => {
+        if (options[data] === '') {
+          unfiledOption = false;
+          alert('Please fill all option');
+        }
+      });
+      if (unfiledOption) {
+        setCurrentOption((oldCurrentOption) => [
+          ...oldCurrentOption,
+          options.length,
+        ]);
+        setOptions((oldOptions) => [...oldOptions, '']);
+        setCorrectOptions((oldCorrectOptions) => [...oldCorrectOptions, false]);
+      }
     }
   };
-   
-  const quillRef = useRef(null); 
-  // const quillRef2 = useRef(null); 
+
+  // console.log(currentOption);
+  // console.log(options);
+  // console.log(correctOptions);
+
+  const handleRemoveFields = (e, inputField) => {
+    let newOptions = [...options];
+    newOptions[inputField] = '';
+
+    let newCorrectOptions = [...correctOptions];
+    newCorrectOptions[inputField] = false;
+
+    let newsetCurrentOption = currentOption.filter((d) => {
+      return d != inputField;
+    });
+    
+    setCurrentOption(newsetCurrentOption);
+    setOptions(newOptions);
+    setCorrectOptions(newCorrectOptions);
+  };
+
+  const handleRadiobox = (e, inputField) => {
+    setCorrectOptions((oldData) =>
+      oldData.map((data, index) => {
+        if (index === inputField) return !data;
+        else return false;
+      })
+    );
+  };
+
+  const handleCheckbox = (e, inputField) => {
+    setCorrectOptions((oldData) =>
+      oldData.map((data, index) => {
+        if (index === inputField) return !data;
+        else return data;
+      })
+    );
+  };
+
+  const quillRef = useRef(null);
+  // const quillRef2 = useRef(null);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const field1 = data.questionTime;
     const field2 = data.question;
     const field3 = data.explanation;
-    console.log(field3);
-    console.log(field1);
+    // console.log(field3);
+    // console.log(field1);
 
     if (field1 === '' || field2 === '' || field3 === '') {
       setShowHeading(true);
+      alert('Please fill all the fields!');
       setTimeout(() => {
         setShowHeading(false);
       }, 3000);
@@ -230,75 +323,86 @@ function AddQuestion({ editQuestionData, onClose }) {
       return;
     }
     const quillEditor = quillRef.current;
-    const questionData = {
-      questionType,
-      questionLevel,
-      questionTime: data.questionTime,
-      question: data.question,
-      marks: data.marks,
-      correctAnsInteger: data.correctAnsInteger,
-      explanation: data.explanation,
-      options: options.map((option, index) => ({
-        value: option,
-        isCorrect: correctOptions.includes(`option ${index + 1}`),
-      })),
-    };
-    console.log(questionData);
-    handleChangeData(questionData);
 
-    window.location.reload();
+    let isCorrectOption = true;
+    if (questionType !== 'numerical') {
+      let text = correctOptions.toString();
+      isCorrectOption = text.includes('true');
+    }
+
+    if (isCorrectOption) {
+      let isFilledOption = true;
+      currentOption.map((option, index) => {
+        if (options[option] === '') {
+          isFilledOption = false;
+        }
+      });
+      if (isFilledOption) {
+        const questionData = {
+          questionType,
+          questionLevel,
+          questionTime: data.questionTime,
+          question: data.question,
+          marks: data.marks,
+          answer: data.correctAnsInteger,
+          explanation: data.explanation,
+          options: currentOption.map((option, index) => ({
+            value: options[option],
+            isCorrect: correctOptions[option],
+          })),
+        };
+        console.log('Submitted data', questionData);
+        handleChangeData(questionData);
+      } else {
+        alert('Please fill all the options');
+      }
+    } else {
+      alert('Please select correct option');
+    }
   };
 
   const renderOptions = () => {
-    return options.map((inputField, index) => (
-      <div key={index} className="option1">
-        {questionType === 'single' && (
+    return currentOption.map((inputField, index) => {
+      return (
+        <Box key={index} className="option1">
+          {questionType === 'single' && (
+            <input
+              type="radio"
+              name="o"
+              value={options[inputField]}
+              onChange={(e) => handleRadiobox(e, inputField)}
+              // checked={inputField}
+              checked={correctOptions[inputField]}
+            />
+          )}
+          {questionType === 'multiple' && (
+            <input
+              type="checkbox"
+              name="m"
+              value={options[inputField]}
+              onChange={(e) => handleCheckbox(e, inputField)} // Add the index parameter here
+              checked={correctOptions[inputField]}
+            />
+          )}
           <input
-            type="radio"
-            name="o"
-            value={'option ' + (index + 1)}
-            onChange={handleRadiobox}
-            checked={correctOptions.includes(`option ${index + 1}`)}
-          />
-        )}
-        {questionType === 'multiple' && (
-          <input
-          type="checkbox"
-          name="m"
-          value={'option ' + (index + 1)}
-          onChange={(e) => handleCheckbox(e, index)}  // Add the index parameter here
-          checked={correctOptions.includes(`option ${index + 1}`)}
-        />
-        
-        )}
-        {questionType === 'numerical' && (
-          <input
+            className="options_written"
+            placeholder={'Option ' + (index + 1)}
             type="text"
-            id="hide"
-            name="correct"
-            value=""
-            placeholder="Correct answer"
+            value={options[inputField]}
+            onChange={(event) => handleChange(event, inputField)}
           />
-        )}
-  
-        <input
-          className="options_written"
-          placeholder={'Option ' + (index + 1)}
-          type="text"
-          value={inputField}
-          onChange={(event) => handleChange(index, event)}
-        />
-        <button
-          className="delete_opt"
-          type="button"
-          onClick={() => handleRemoveFields(index)}
-        >
-          <FontAwesomeIcon icon={faTrashCan} />
-        </button>
-      </div>
-    ));
+          <button
+            className="delete_opt"
+            type="button"
+            onClick={(e) => handleRemoveFields(e, inputField)}
+          >
+            <FontAwesomeIcon icon={faTrashCan} />
+          </button>
+        </Box>
+      );
+    });
   };
-  
+
   return (
     <div className="add-question-container">
       {!submitted && (
@@ -313,7 +417,11 @@ function AddQuestion({ editQuestionData, onClose }) {
             <div className="type_box">
               <div className="type">
                 <label>Type:</label>
-                <select id="questionType" value={questionType} onChange={handleTypeChange}>
+                <select
+                  id="questionType"
+                  value={questionType}
+                  onChange={handleTypeChange}
+                >
                   <option value="single">Objective Type Question</option>
                   <option value="multiple">Multiple Correct Question</option>
                   <option value="numerical">Integer Type Question</option>
@@ -334,7 +442,9 @@ function AddQuestion({ editQuestionData, onClose }) {
                   id="quantity"
                   name="questionTime"
                   value={data.questionTime}
-                  onChange={(e) => setData({ ...data, questionTime: e.target.value })}
+                  onChange={(e) =>
+                    setData({ ...data, questionTime: e.target.value })
+                  }
                   min="1"
                   max="360"
                 />
@@ -351,9 +461,7 @@ function AddQuestion({ editQuestionData, onClose }) {
                   max="100"
                 />
               </div>
-
             </div>
-
 
             {/* <textarea
               type="text"
@@ -366,25 +474,32 @@ function AddQuestion({ editQuestionData, onClose }) {
               rows="2"
               cols="50"
             ></textarea> */}
-            <div className='question2'>
+            <div className="instruction-container">
               Enter the question below:
             </div>
 
             <QuillEditor
-            // ref={quillRef2} 
-            value={data.question}
+              // ref={quillRef2}
+              value={data.question}
               placeholder="Write the question here"
               onChange={(content) => setData({ ...data, question: content })}
             />
-            <div className='question2'>
+            <div className="instruction-container">
               Enter the options and select correct answer:
             </div>
 
             {questionType && (
               <div>
                 {renderOptions()}
-                <button type="button" className="add-option" id="add-BUTTON" style={showButton} onClick={handleAddFields}>
-                  <FontAwesomeIcon className="faPlus" icon={faPlus} /> Add Options
+                <button
+                  type="button"
+                  className="add-option"
+                  id="add-BUTTON"
+                  style={showButton}
+                  onClick={handleAddFields}
+                >
+                  <FontAwesomeIcon className="faPlus" icon={faPlus} /> Add
+                  Options
                 </button>
               </div>
             )}
@@ -394,42 +509,48 @@ function AddQuestion({ editQuestionData, onClose }) {
               id="hide"
               name="correctAnsInteger"
               value={data.correctAnsInteger}
-              onChange={(e) => setData({ ...data, correctAnsInteger: e.target.value })}
+              onChange={(e) =>
+                setData({ ...data, correctAnsInteger: e.target.value })
+              }
               style={showCorrectAns}
               placeholder="Correct answer"
             />
-            <div className='question2'>
-              Enter the explanation:
-            </div>
+            <div className="instruction-container">Enter the explanation:</div>
             <QuillEditor
-            // ref={quillRef} 
-  value={data.explanation}
-  onChange={(content) => {
-    // console.log(content);
-    setData({ ...data, explanation: content })}}
-  placeholder="Write the explanation here"
-/>  
+              // ref={quillRef}
+              value={data.explanation}
+              onChange={(content) => {
+                setData({ ...data, explanation: content });
+              }}
+              placeholder="Write the explanation here"
+            />
             {/* <MyckEditor
               data={data.explanation}
               placeholder="Write the explanation here"
               onChange={(content) => setData({ ...data, explanation: content })}
             /> */}
             <div className="last">
-              <input className="btn" id="save_btn" type="submit" value="Save" placeholder="save" />
-              <button className="btn_cancel" id="cancel_btn" type="button" onClick={handleCancel}>
+              <button type="submit" className="btn_save btn" id="save_btn">
+                Save
+              </button>
+              <button
+                className="btn_cancel btn"
+                id="cancel_btn"
+                type="button"
+                onClick={handleCancel}
+              >
                 Cancel
               </button>
             </div>
           </div>
-
         </form>
-
       )}
-      <script src="http://kit.fontawesome.com/7e7a25b297.js" crossOrigin="anonymous"></script>
+      <script
+        src="http://kit.fontawesome.com/7e7a25b297.js"
+        crossOrigin="anonymous"
+      ></script>
       {fetchedData && (
-        <div>
-          {/* <p>Fetched Data: {JSON.stringify(fetchedData)}</p> */}
-        </div>
+        <div>{/* <p>Fetched Data: {JSON.stringify(fetchedData)}</p> */}</div>
       )}
     </div>
   );

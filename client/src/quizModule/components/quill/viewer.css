@@ -1,9 +1,16 @@
 /* Add this CSS to your project's stylesheet or a <style> tag in your HTML */
 .quill-viewer .ql-editor {
-    font-size: 25px; /* Adjust the font size as needed */
-  }
-  
-  .quill-viewer-ques .ql-editor {
-    font-size: 30px; /* Adjust the font size as needed */
-  }
-  
+  font-size: 25px; /* Adjust the font size as needed */
+}
+
+.quill-viewer-ques .ql-editor {
+  font-size: 30px; /* Adjust the font size as needed */
+}
+
+.quill-viewer{
+  border: none;
+}
+.quill-viewer  .ql-container {
+  border: none;
+  border-color: white;
+}
