@@ -44,7 +44,7 @@ function NavBar() {
         setUserDetails(userDetails);
         setIsAuthenticated(true);
       } catch (error) {
-        // Handle error (e.g., display an error message or redirect to an error page)
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
@@ -52,6 +52,13 @@ function NavBar() {
 
     fetchUserDetails();
   }, [apiUrl]);
+
+  // useEffect for redirection
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && location.pathname !== '/login') {
+      navigate('/login');
+    }
+  }, [isLoading, isAuthenticated, navigate, location.pathname]);
 
   const handleLogout = async () => {
     try {
