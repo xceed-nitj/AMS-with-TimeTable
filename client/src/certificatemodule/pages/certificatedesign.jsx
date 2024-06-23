@@ -11,6 +11,8 @@ import {
   Text,
   Container,
   Select,
+  Checkbox,
+  
 } from '@chakra-ui/react';
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
@@ -31,9 +33,9 @@ const CertificateForm = () => {
     signatures: [''],
     certiType: '',
     templateId: '', /// Template Design Number
-    title : [''],
+    title: [''],
+    verifiableLink: false,
   });
-
 
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -81,15 +83,19 @@ const CertificateForm = () => {
   }, [apiUrl, eventId, formData.certiType]);
 
   const handleChange = (e, fieldName, index) => {
-    const { value } = e.target;
+    const { value, type, checked } = e.target;
 
-    if (fieldName === 'templateId') {
+    if (fieldName === 'verifiableLink') {
+      setFormData((prevData) => ({
+        ...prevData,
+        [fieldName]: checked,
+      }));
+    } else if (fieldName === 'templateId') {
       setFormData((prevData) => ({
         ...prevData,
         [fieldName]: value,
       }));
-    }
-    if (
+    } else if (
       fieldName === 'logos' ||
       fieldName === 'header' ||
       fieldName === 'footer' ||
@@ -172,7 +178,7 @@ const CertificateForm = () => {
         const responseData = await response.json();
         // console.log(responseData);
         toast({
-          title: 'Submission successfull',
+          title: 'Submission successful',
           description: responseData.message,
           status: 'success',
           duration: 2000,
@@ -266,7 +272,7 @@ const CertificateForm = () => {
             ))}
 
             {/* Header Fields */}
-            <Text>Enter Department or Culb data:</Text>
+            <Text>Enter Department or Club data:</Text>
 
             {formData.header.map((header, index) => (
               <HStack key={index}>
@@ -292,33 +298,33 @@ const CertificateForm = () => {
               </HStack>
             ))}
 
-{/* Tittle Field */}
+            {/* Title Field */}
 
-<Text>Enter TItle </Text>
+            <Text>Enter Title:</Text>
 
-{formData.title.map((title, index) => (
-  <HStack key={index}>
-    <Input
-      name="title"
-      value={title}
-      onChange={(e) => handleChange(e, 'title', index)}
-      placeholder="Tittle"
-      width="100%"
-    />
-    {index > 0 && (
-      <IconButton
-        icon={<CloseIcon />}
-        onClick={() => handleDelete('title', index)}
-      />
-    )}
-    {index === formData.header.length - 1 && (
-      <IconButton
-        icon={<AddIcon />}
-        onClick={() => addField('title')}
-      />
-    )}
-  </HStack>
-))}
+            {formData.title.map((title, index) => (
+              <HStack key={index}>
+                <Input
+                  name="title"
+                  value={title}
+                  onChange={(e) => handleChange(e, 'title', index)}
+                  placeholder="Title"
+                  width="100%"
+                />
+                {index > 0 && (
+                  <IconButton
+                    icon={<CloseIcon />}
+                    onClick={() => handleDelete('title', index)}
+                  />
+                )}
+                {index === formData.title.length - 1 && (
+                  <IconButton
+                    icon={<AddIcon />}
+                    onClick={() => addField('title')}
+                  />
+                )}
+              </HStack>
+            ))}
 
             <Text>Enter the body of the certificate:</Text>
 
@@ -328,8 +334,7 @@ const CertificateForm = () => {
               onChange={(e) => handleChange(e, 'body', null)}
               placeholder="Body"
             />
-            {/* Footer Fields */}
-
+{/* Footer Fields */}
             <Text>Enter the link for signatures:</Text>
 
             {formData.signatures.map((signature, index) => (
@@ -392,6 +397,15 @@ const CertificateForm = () => {
               </HStack>
             ))}
 
+            <Text>Verifiable Link:</Text>
+            <Checkbox
+              name="verifiableLink"
+              isChecked={formData.verifiableLink}
+              onChange={(e) => handleChange(e, 'verifiableLink', null)}
+            >
+              Is the certificate verifiable?
+            </Checkbox>
+
             <Button type="submit" colorScheme="blue">
               Submit
             </Button>
@@ -400,7 +414,8 @@ const CertificateForm = () => {
       </Container>
       <Box flex="1" p="4">
         <SelectCertficate
-         title={formData.title}
+          title={formData.title}
+          verifiableLink={formData.verifiableLink}
           eventId={eventId}
           templateId={formData.templateId}
           contentBody={formData.body}
