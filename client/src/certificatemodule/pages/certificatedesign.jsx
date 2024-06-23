@@ -11,8 +11,6 @@ import {
   Text,
   Container,
   Select,
-  Checkbox,
-  
 } from '@chakra-ui/react';
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
@@ -35,9 +33,9 @@ const CertificateForm = () => {
     signatures: [''],
     certiType: '',
     templateId: '', /// Template Design Number
-    title: [''],
-    verifiableLink: false,
   });
+
+  console.log(formData.templateId);
 
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -85,19 +83,15 @@ const CertificateForm = () => {
   }, [apiUrl, eventId, formData.certiType]);
 
   const handleChange = (e, fieldName, index) => {
-    const { value, type, checked } = e.target;
+    const { value } = e.target;
 
-    if (fieldName === 'verifiableLink') {
-      setFormData((prevData) => ({
-        ...prevData,
-        [fieldName]: checked,
-      }));
-    } else if (fieldName === 'templateId') {
+    if (fieldName === 'templateId') {
       setFormData((prevData) => ({
         ...prevData,
         [fieldName]: value,
       }));
-    } else if (
+    }
+    if (
       fieldName === 'logos' ||
       fieldName === 'header' ||
       fieldName === 'footer' ||
@@ -180,7 +174,7 @@ const CertificateForm = () => {
         const responseData = await response.json();
         // console.log(responseData);
         toast({
-          title: 'Submission successful',
+          title: 'Submission successfull',
           description: responseData.message,
           status: 'success',
           duration: 2000,
@@ -304,7 +298,7 @@ const CertificateForm = () => {
             ))}
 
             {/* Header Fields */}
-            <Text>Enter Department or Club data:</Text>
+            <Text>Enter Department or Culb data:</Text>
 
             {formData.header.map((header, index) => (
               <HStack key={index}>
@@ -330,34 +324,6 @@ const CertificateForm = () => {
               </HStack>
             ))}
 
-            {/* Title Field */}
-
-            <Text>Enter Title:</Text>
-
-            {formData.title.map((title, index) => (
-              <HStack key={index}>
-                <Input
-                  name="title"
-                  value={title}
-                  onChange={(e) => handleChange(e, 'title', index)}
-                  placeholder="Title"
-                  width="100%"
-                />
-                {index > 0 && (
-                  <IconButton
-                    icon={<CloseIcon />}
-                    onClick={() => handleDelete('title', index)}
-                  />
-                )}
-                {index === formData.title.length - 1 && (
-                  <IconButton
-                    icon={<AddIcon />}
-                    onClick={() => addField('title')}
-                  />
-                )}
-              </HStack>
-            ))}
-
             <Text>Enter the body of the certificate:</Text>
 
             <Textarea
@@ -366,7 +332,8 @@ const CertificateForm = () => {
               onChange={(e) => handleChange(e, 'body', null)}
               placeholder="Body"
             />
-{/* Footer Fields */}
+            {/* Footer Fields */}
+
             <Text>Enter the link for signatures:</Text>
 
             {formData.signatures.map((signature, index) => (
@@ -440,15 +407,6 @@ const CertificateForm = () => {
               </HStack>
             ))}
 
-            <Text>Verifiable Link:</Text>
-            <Checkbox
-              name="verifiableLink"
-              isChecked={formData.verifiableLink}
-              onChange={(e) => handleChange(e, 'verifiableLink', null)}
-            >
-              Is the certificate verifiable?
-            </Checkbox>
-
             <Button type="submit" colorScheme="blue">
               Submit
             </Button>
@@ -457,8 +415,6 @@ const CertificateForm = () => {
       </Container>
       <Box flex="1" p="4">
         <SelectCertficate
-          title={formData.title}
-          verifiableLink={formData.verifiableLink}
           eventId={eventId}
           templateId={formData.templateId}
           contentBody={formData.body}
