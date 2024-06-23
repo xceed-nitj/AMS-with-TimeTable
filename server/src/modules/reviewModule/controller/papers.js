@@ -1,8 +1,15 @@
 const Paper = require("../../../models/reviewModule/paper.js");
 const express = require("express");
 const bodyParser = require("body-parser");
-const User = require("../../../models/reviewModule/user.js")
-const XUser = require("../../../models/usermanagement/user.js")
+const User = require("../../../models/reviewModule/user.js");
+const XUser = require("../../../models/usermanagement/user.js");
+const Event = require("../../../models/reviewModule/event.js");
+const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
+const getEnvironmentURL =require('../../../getEnvironmentURL.js')
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const jwtSecret =
+  "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
 
 const app = express();
 app.use(
@@ -40,6 +47,33 @@ const findPaper = async (req, res) => {
     return res.status(401).json("Invalid paperId");
   } else {
     return res.status(200).send(paper);
+  }
+};
+
+const findPaperByReviewer = async (req, res) => {
+  let id = req.params.id;
+  const paper = await Paper.find({ 'reviewers.userId': id }).exec();
+
+  if (!paper) {
+    return res.status(401).json("Invalid ReviewerId");
+  } else {
+    return res.status(200).send(paper);
+  }
+};
+
+const findPaperById=async(req,res)=>{
+  try{
+      const id=req.params.id;
+      const paper= await Paper.findById(id).exec();
+      if(!paper){
+        return res.status(404).json("Invalid paper id or no papers found");
+      } else{
+        return res.status(200).send(paper);
+      }
+  }
+  catch(error){
+     console.log("Error is ",error);
+     res.status(500).json({ error: error.message });
   }
 };
 
@@ -116,7 +150,7 @@ const updatePaper = async (req, res) => {
 const addReviewer = async (req, res) => {
   try {
     const paperId = req.params.id;
-    const { email } = req.body;
+    const { email,baseUrl } = req.body;
 
     if (!email) {
       console.error('Email is required');
@@ -136,13 +170,27 @@ const addReviewer = async (req, res) => {
     if (isAlreadyReviewer) {
       return res.status(400).send('Reviewer already added to this paper');
     }
-
     // Add reviewer to the paper
     paper.reviewers.push({ userId: reviewers._id,username:email});
+    const eventId=paper.eventId;
+    const event = await Event.findById(eventId);
     await paper.save();
     console.log("added successfully");
+    const reviewerInvitationTemplate=event.templates.paperAssignment;
+    const signature=event.templates.signature;
+    const viewLink = `${baseUrl}/prm/${eventId}/editor/papers`; // Use the base URL
 
-    res.status(200).send('Reviewer added to the event successfully');
+    // Send the reviewer invitation email
+    await sendMail(
+      email,
+      `You have been added as a reviewer to the paper with title: ${paper.title}`,
+      ` ${reviewerInvitationTemplate} <br>
+      Please click <a href="${viewLink}">here</a> to view the papers <br>
+      ${signature}
+      `
+
+    );
+    res.status(200).send('Reviewer added to the paper successfully');
   } catch (error) {
     console.error('Error adding reviewer:', error);
     res.status(500).send('Internal server error');
@@ -172,6 +220,73 @@ const removeReviewer = async (req,res)=>{
     console.error('Error removing reviewer:', error.message);
     res.status(500).send(error) // or handle the error appropriately
 }
-}
+};
 
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer };
+const addAuthor = async (req, res) => {
+  const { name,email,designation } = req.body;
+  const password = "1234";//random password could be used
+  console.log("email: ",email);
+  //const userId = await User.find({email:email})
+  const XuserId = await XUser.find({email:email})
+  if(!XuserId || XuserId.length===0)
+  {
+    
+    console.log("user not found");
+    try {
+      // Hash the password using bcrypt
+      bcrypt.hash(password, 10, async (hashErr, hash) => {
+        if (hashErr) {
+          return res
+            .status(500)
+            .json({ message: "Password hashing failed", error: hashErr.message });
+        }
+  
+        // Create the user with the hashed password
+        try {
+          const newUser = new XUser({
+            name: name,
+            email: email,
+            profession: designation,
+            role:["PRM","Author"],
+            password: hash
+          });
+          
+          console.log("user created");
+        
+          newUser.save();
+        } catch (createErr) {
+          return res.status(400).json({
+            message: "User not successful created",
+            error: createErr.message,
+          });
+        }
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  try {
+    await sendMail(
+    email,
+    'You have been added as a reviewer',
+    `You're added as an author in a paper<br>
+    Here's your temporary password 1234, login to change it <br>
+    XCEED
+    `
+  );
+  const updatedId = await XUser.findOne({email:email});
+  console.log("id: ",updatedId._id);
+  return res.status(201).json({
+    message: "User successfully created",
+    updatedId: updatedId._id,
+  });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "User not successful created",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper,findPaperById , updatePaper, removeReviewer, findPaperByReviewer , addAuthor};

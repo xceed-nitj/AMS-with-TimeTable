@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './PreviewInstructions.css';
+// import './PreviewInstructions.css';
 import PropTypes from 'prop-types';
 import logo from '../../../assets/images/quiz/logo.png';
 import {formatTime} from '../../../components/timer/formatTime.js';

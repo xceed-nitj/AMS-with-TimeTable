@@ -22,6 +22,8 @@ function SelectCertficate({
   eventId,
   contentBody,
   certiType,
+  title,
+  verifiableLink,
   logos,
   participantDetail,
   signature,
@@ -34,6 +36,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -45,6 +49,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -56,6 +62,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -67,6 +75,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -78,6 +88,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -89,6 +101,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -100,6 +114,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -111,6 +127,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -123,6 +141,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -134,6 +154,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -145,6 +167,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -156,6 +180,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -167,6 +193,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -178,6 +206,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -189,6 +219,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
@@ -200,6 +232,8 @@ function SelectCertficate({
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}

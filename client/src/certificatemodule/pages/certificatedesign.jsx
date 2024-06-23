@@ -24,6 +24,8 @@ const CertificateForm = () => {
   const toast = useToast();
   const [type, setType] = useState('');
   const [formData, setFormData] = useState({
+    title: [''],
+    verifiableLink: "",
     logos: [''],
     header: [''],
     body: '',
@@ -117,7 +119,7 @@ const CertificateForm = () => {
           [fieldName]: updatedField,
         };
       });
-    } else if (fieldName === 'body' || fieldName === 'certiType') {
+    } else if (fieldName === 'body' || fieldName === 'certiType' ||fieldName === 'verifiableLink') {
       setFormData((prevData) => ({
         ...prevData,
         [fieldName]: value,
@@ -212,6 +214,36 @@ const CertificateForm = () => {
               <option value="speaker">Speaker</option>
               <option value="organizer">Organizer</option>
             </Select>
+
+
+            {/* Title Fields */}
+            <Text>Enter the name of Institute</Text>
+
+            {formData.title.length == 0 ? formData.title = [''] : formData.title.map((title, index) => (
+              <HStack key={index}>
+                <Input
+                  name="title"
+                  value={title}
+                  onChange={(e) => handleChange(e, 'title', index)}
+                  placeholder="Title"
+                  width="100%"
+                />
+                {index > 0 && (
+                  <IconButton
+                    icon={<CloseIcon />}
+                    onClick={() => handleDelete('title', index)}
+                  />
+                )}
+                {index === formData.title.length - 1 && (
+                  <IconButton
+                    icon={<AddIcon />}
+                    onClick={() => addField('title')}
+                  />
+                )}
+              </HStack>
+            ))}
+
+
 
             <Text>Select Certificate Template Design:</Text>
             <Select
@@ -367,6 +399,17 @@ const CertificateForm = () => {
               </VStack>
             ))}
 
+            <Text>QR code with verifiable link:</Text>
+            <Select
+              name="verifiableLink"
+              value={formData.verifiableLink}
+              onChange={(e) => handleChange(e, 'verifiableLink', null)}
+              // placeholder="Select Required or not"
+            >
+              <option value="true">Required</option>
+              <option value="">Not Required</option>
+            </Select>
+
             <Text>Any additoinal data:</Text>
 
             {formData.footer.map((footer, index) => (
@@ -405,6 +448,8 @@ const CertificateForm = () => {
           templateId={formData.templateId}
           contentBody={formData.body}
           certiType={formData.certiType}
+          title={formData.title}
+          verifiableLink={formData.verifiableLink}
           logos={formData.logos}
           participantDetail={{}}
           signature={formData.signatures}
