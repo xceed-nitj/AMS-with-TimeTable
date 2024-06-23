@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import logo from '../../../../assets/images/user/Logo enlarged-03.png';
-import './Quizzing.css';
+// import logo from '../../../../assets/images/user/Logo enlarged-03.png';
+// import './Quizzing.css';
 // import CKEditorViewer from '../../../../components/ckeditor/ckeditorviewer';
-import { formatMinutes } from '../../../../components/timer/formatMinutes';
-import Error from "../../../../components/error/Error";
-import Viewer from '../../../../components/quill/viewer';
-import getEnvironment from '../../../../getenvironment';
+import { formatMinutes } from '../../components/timer/formatMinutes';
+import Error from "../../components/error/Error";
+import Viewer from '../../components/quill/viewer';
+import getEnvironment from '../../../getenvironment';
 // import Notification from '../../../../components/notification';
 // import TabVisibilityHandler from '../../../../components/tabchange/TabVisibilityHandler';
 
@@ -36,10 +36,11 @@ function Quizzing() {
   const fetchQuestionDetails = async () => {
     try {
 
-      const response = await fetch(`${apiurl}/api/quiz/studentanswer/${code}`, {
+      const response = await fetch(`${apiurl}/quizmodule/student/quiz/${code}`, {
         method: 'GET',
+        credentials:'include',
         headers: {
-          Authorization: `Bearer ${token}`,
+          
         },
       });
 
@@ -170,11 +171,11 @@ const handleSubmit = async () => {
     const token = localStorage.getItem('token');
     const code = window.location.pathname.split('/')[2];
 
-    const response = await fetch(`${apiurl}/api/quiz/studentanswer/${code}/${currentIndex}`, {
+    const response = await fetch(`${apiurl}/quizmodule/student/quiz/${code}/${currentIndex}`, {
       method: 'POST',
+      credentials:'include',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ answer, timeElapsed }),
     });
@@ -208,7 +209,7 @@ const handleSubmit = async () => {
         <div className="quizzing-container" id="quiz">
           <div className="quizzing-wrapper">
             <div className="quizzing-logo">
-              <img src={logo} alt="logo" />
+              {/* <img src={logo} alt="logo" /> */}
             </div>
             <br />
             <h1 id="subject" className="designh1"></h1>

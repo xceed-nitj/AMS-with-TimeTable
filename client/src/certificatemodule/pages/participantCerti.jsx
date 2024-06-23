@@ -18,6 +18,8 @@ function ViewCertificate() {
   console.log(participantId)
   const [certiType, setCertiType] = useState('');
   const [templateId, setTemplateId] = useState("0");
+  const [title, setTitle] = useState([""]);
+  const [verifiableLink, setVerifiableLink] = useState("");
   const [logos, setLogos] = useState([]);
   const [participantDetail, setParticipantDetail] = useState({});
   const [signature, setSignatures] = useState([]);
@@ -87,6 +89,8 @@ function ViewCertificate() {
       console.log('Data from response_two:', data_two);
 
       let content_body = data_one[0].body;
+      setTitle(data_one[0].title);
+      setVerifiableLink(data_one[0].verifiableLink);
       setLogos(data_one[0].logos);
       setSignatures(data_one[0].signatures);
       setHeader(data_one[0].header)
@@ -126,17 +130,16 @@ function ViewCertificate() {
       QRCode.toDataURL(url, (err, dataUrl) => {
         if (err) throw err;
 
-        const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-        image.setAttribute('x', '100');
-        image.setAttribute('y', '470');
-        image.setAttribute('width', '100');
-        image.setAttribute('height', '100');
-        image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+      const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      image.setAttribute('x', '100');
+      image.setAttribute('y', '470');
+      image.setAttribute('width', '100');
+      image.setAttribute('height', '100');
+      image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
 
-        svg.appendChild(image);
-      });
-    }
-  }, [verifiableLink]); // Added dependency
+      svg.appendChild(image);
+    });
+  }, []);
 
   return (
     <>
@@ -144,6 +147,8 @@ function ViewCertificate() {
         title={title}
         eventId={eventId}
         templateId={templateId}
+        title={title}
+        verifiableLink={verifiableLink}
         contentBody={contentBody}
         certiType={certiType}
         logos={logos}

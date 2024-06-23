@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/', getAllReviewers);
 router.post('/addReviewer', addReviewer);
-router.patch('/updateReview', updateReviewer);
+router.patch('/updateReviewer/:paperid/:reviewerid', updateReviewer);
 router.delete('/deleteReviewer', deleteReviewer);
 
 module.exports = router;

@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;
 const User = require('../../../../models/usermanagement/user');
 const Quiz = require('../../../../models/quizModule/quiz');
 const QuizQuestion = require('../../../../models/quizModule/quizQuestion');
@@ -67,14 +69,29 @@ const getAllQuestions = async(quiz) =>{
   }
 }
 
-const findQuestionById = async(id) =>{
+
+const findQuestionById = async (id) => {
   if (id) {
-    const ques=QuizQuestion.findOne({ where: { id:id } });
-    return ques
+    try {
+      // Convert string id to ObjectId using the new keyword
+      const objectId = new ObjectId(id);
+      const ques = await QuizQuestion.findOne({ _id: objectId });
+
+      if (!ques) {
+        console.error(`Question with id ${id} not found in the database.`);
+      }
+
+      return ques;
+    } catch (error) {
+      console.error(`Error fetching question with id ${id}:`, error);
+      return null;
+    }
   } else {
-    throw new Error('No Quiz Question found');
+    throw new Error('No Quiz Question found: Invalid ID');
   }
-}
+};
+
+
 
 const verifyQuiz = async (code, user) => {
   const foundQuiz = await Quiz.findOne({ code: code });

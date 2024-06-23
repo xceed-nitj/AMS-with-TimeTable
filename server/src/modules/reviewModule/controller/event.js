@@ -78,6 +78,17 @@ const getEventsByUser = async (req, res) => {
   }
 };
 
+const findEventByReviewer = async (req, res) => {
+  let id = req.params.id;
+  const paper = await Event.find({ 'reviewer.user': id }).exec();
+
+  if (!paper) {
+    return res.status(401).json("Invalid ReviewerId");
+  } else {
+    return res.status(200).send(paper);
+  }
+};
+
 const getEventById = async (req, res) => {
   const id = req.params.id;
 
@@ -457,4 +468,4 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
