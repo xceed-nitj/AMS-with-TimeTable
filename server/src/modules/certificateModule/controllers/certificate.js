@@ -18,6 +18,8 @@ class AddcertificateController {
           {
             $set: {
               logos: newCertificate.logos,
+              title: newCertificate.title,
+              verifiableLink: newCertificate.verifiableLink,
               certiType: newCertificate.certiType,
               header: newCertificate.header,
               body: newCertificate.body,
@@ -33,6 +35,8 @@ class AddcertificateController {
       } else {
         // If not exists, create a new certificate
         const createdCertificate = await certificate.create({
+          title: newCertificate.title,
+          verifiableLink: newCertificate.verifiableLink,
           logos: newCertificate.logos,
           header: newCertificate.header,
           body: newCertificate.body,

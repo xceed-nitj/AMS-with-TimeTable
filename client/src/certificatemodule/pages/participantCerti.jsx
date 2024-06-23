@@ -19,12 +19,13 @@ function ViewCertificate() {
   console.log(participantId)
   const [certiType, setCertiType] = useState('');
   const [templateId, setTemplateId] = useState("0");
-
   const [logos, setLogos] = useState([]);
   const [participantDetail, setParticipantDetail] = useState({});
   const [signature, setSignatures] = useState([]);
   const [header, setHeader] = useState([]);
   const [footer, setFooter] = useState([]);
+  const [title , setTitle] = useState([]);
+
 
   useEffect(() => {
     const fetchCertiType = async () => {
@@ -92,8 +93,9 @@ function ViewCertificate() {
       setHeader(data_one[0].header)
       setFooter(data_one[0].footer)
       setTemplateId(data_one[0].templateId);
-
+      setTitle(data_one[0].title);
       // Replace all placeholders with actual values from data_two
+
       Object.keys(data_two).forEach(variable => {
         const placeholder = new RegExp(`{{${variable}}}`, 'g');
         content_body = content_body.replace(placeholder, `<strong>${data_two[variable]}</strong>`);
@@ -139,6 +141,7 @@ function ViewCertificate() {
   return (
     <>
       <SelectCertficate
+        title={title}
         eventId={eventId}
         templateId={templateId}
         contentBody={contentBody}

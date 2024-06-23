@@ -11,6 +11,7 @@ import jsPDF from 'jspdf';
 // const apiUrl = getEnvironment();
 
 const CertificateContent = ({
+  title,
   eventId,
   contentBody,
   certiType,
@@ -175,9 +176,11 @@ const CertificateContent = ({
                 {item}
               </h1>
             ))}
+
+            <p className='tw-text-[40.707px] tw-text-[#424847] tw-font-bold'>{title[0]}</p>
           </div>
         </foreignObject>
-
+{/* 
         <text
           x="561.26"
           y="340.473"
@@ -188,7 +191,7 @@ const CertificateContent = ({
           fontWeight="550"
         >
           CERTIFICATE OF APPRECIATION
-        </text>
+        </text> */}
 
         <foreignObject x="12.5%" y="370.473" width="75%" height="160">
           <p className="font-serif text-xl opacity-80">

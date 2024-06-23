@@ -17,6 +17,7 @@ import Template15 from './certificatetemplates/premium05';
 import Template16 from './certificatetemplates/premium06';
 
 function SelectCertficate({
+  title,
   templateId,
   eventId,
   contentBody,
@@ -29,6 +30,7 @@ function SelectCertficate({
 }) {
   const certiDesignTemp = [
     <CertificateContent
+    title={title}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}

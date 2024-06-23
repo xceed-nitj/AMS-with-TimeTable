@@ -31,9 +31,9 @@ const CertificateForm = () => {
     signatures: [''],
     certiType: '',
     templateId: '', /// Template Design Number
+    title : [''],
   });
 
-  console.log(formData.templateId);
 
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
@@ -93,7 +93,8 @@ const CertificateForm = () => {
       fieldName === 'logos' ||
       fieldName === 'header' ||
       fieldName === 'footer' ||
-      fieldName === 'signatures'
+      fieldName === 'signatures' ||
+      fieldName === 'title'
     ) {
       setFormData((prevData) => {
         const updatedField = [...prevData[fieldName]];
@@ -291,6 +292,34 @@ const CertificateForm = () => {
               </HStack>
             ))}
 
+{/* Tittle Field */}
+
+<Text>Enter TItle </Text>
+
+{formData.title.map((title, index) => (
+  <HStack key={index}>
+    <Input
+      name="title"
+      value={title}
+      onChange={(e) => handleChange(e, 'title', index)}
+      placeholder="Tittle"
+      width="100%"
+    />
+    {index > 0 && (
+      <IconButton
+        icon={<CloseIcon />}
+        onClick={() => handleDelete('title', index)}
+      />
+    )}
+    {index === formData.header.length - 1 && (
+      <IconButton
+        icon={<AddIcon />}
+        onClick={() => addField('title')}
+      />
+    )}
+  </HStack>
+))}
+
             <Text>Enter the body of the certificate:</Text>
 
             <Textarea
@@ -371,6 +400,7 @@ const CertificateForm = () => {
       </Container>
       <Box flex="1" p="4">
         <SelectCertficate
+         title={formData.title}
           eventId={eventId}
           templateId={formData.templateId}
           contentBody={formData.body}
