@@ -93,6 +93,22 @@ const findPaperByAuthor = async (req, res) => {
   }
 };
 
+const findPaperById=async(req,res)=>{
+  try{
+      const id=req.params.id;
+      const paper= await Paper.findById(id).exec();
+      if(!paper){
+        return res.status(404).json("Invalid paper id or no papers found");
+      } else{
+        return res.status(200).send(paper);
+      }
+  }
+  catch(error){
+     console.log("Error is ",error);
+     res.status(500).json({ error: error.message });
+  }
+};
+
 const updatePaper = async (req, res) => {
   let paperId = req.params.id;
   console.log(paperId);
@@ -305,4 +321,4 @@ const addAuthor = async (req, res) => {
   }
 };
 
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperByReviewer,findPaperByAuthor,addAuthor};
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper,findPaperById , updatePaper, removeReviewer, findPaperByReviewer,findPaperByAuthor , addAuthor};

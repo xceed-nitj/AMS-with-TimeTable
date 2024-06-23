@@ -11,6 +11,8 @@ import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
 import getEnvironment from '../../getenvironment';
 
+import './revolveAnimation.css'
+
 function MultiStepForm({ isSidebarOpen }) {
   const [activeStep, setActiveStep] = useState(0); // State to manage active step index
   const [paper, setPaper] = useRecoilState(paperState);
@@ -95,6 +97,7 @@ function MultiStepForm({ isSidebarOpen }) {
             key={index}
             cursor="pointer" // Add pointer cursor
             style={{padding: '1px'}}
+            onClick={() => setActiveStep(index)}
           >
             <StepStatus
               complete={
@@ -108,11 +111,18 @@ function MultiStepForm({ isSidebarOpen }) {
                 </StepIndicator>
               }
               active={
-                <StepIndicator
-                  style={{backgroundColor: '#3182ce'}}
-                >
-                  <Icon boxSize={iconSize} as={FaAngleRight} style={{color: 'white'}}/>
-                </StepIndicator>
+                <div style={{border:'2px solid #3182ce', borderRadius:'50px', padding:'5px', 
+                display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <div className='revolveAnimation'
+                  style={{zIndex:'60', position:'absolute', height:'100%'}}>
+                    <div style={{border:'4px solid #3182ce', borderRadius:'50px', top:'0', transform:'translateY(-20%)'}}></div>
+                  </div>
+                  <StepIndicator
+                    style={{zIndex:'3',backgroundColor: '#3182ce', border:'2px solid #3182ce'}}
+                  >
+                    <Icon boxSize={iconSize} as={FaAngleRight} style={{color: 'white'}}/>
+                  </StepIndicator>
+                </div>
               }
             />
             <Box flexShrink="0">
