@@ -321,4 +321,4 @@ const addAuthor = async (req, res) => {
   }
 };
 
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper,findPaperById , updatePaper, removeReviewer, findPaperByReviewer,findPaperByAuthor , addAuthor};
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor};
