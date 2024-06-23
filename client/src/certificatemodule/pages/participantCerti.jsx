@@ -7,7 +7,6 @@ import ReactHtmlParser from 'react-html-parser';
 import getEnvironment from "../../getenvironment";
 import SelectCertficate from './SelectCertficate';
 
-
 const apiUrl = getEnvironment();
 
 function ViewCertificate() {
@@ -19,7 +18,6 @@ function ViewCertificate() {
   console.log(participantId)
   const [certiType, setCertiType] = useState('');
   const [templateId, setTemplateId] = useState("0");
-
   const [title, setTitle] = useState([""]);
   const [verifiableLink, setVerifiableLink] = useState("");
   const [logos, setLogos] = useState([]);
@@ -27,6 +25,8 @@ function ViewCertificate() {
   const [signature, setSignatures] = useState([]);
   const [header, setHeader] = useState([]);
   const [footer, setFooter] = useState([]);
+  const [title, setTitle] = useState([]);
+  const [verifiableLink, setVerifiableLink] = useState(true); // Added verifiableLink state
 
   useEffect(() => {
     const fetchCertiType = async () => {
@@ -83,7 +83,7 @@ function ViewCertificate() {
       // Await the data_one promise
       const data_one = await response_one.json();
       // Await the data_one promise
-      const data_two = participantDetail; // Await the data_two promise
+      const data_two = participantDetail;
 
       console.log('Data from response dataaaaaaaaa:', data_one);
       console.log('Data from response_two:', data_two);
@@ -96,8 +96,9 @@ function ViewCertificate() {
       setHeader(data_one[0].header)
       setFooter(data_one[0].footer)
       setTemplateId(data_one[0].templateId);
-
+      setTitle(data_one[0].title);
       // Replace all placeholders with actual values from data_two
+
       Object.keys(data_two).forEach(variable => {
         const placeholder = new RegExp(`{{${variable}}}`, 'g');
         content_body = content_body.replace(placeholder, `<strong>${data_two[variable]}</strong>`);
@@ -108,7 +109,7 @@ function ViewCertificate() {
       const result = `${content_body}`;
       setContentBody(result);
 
-      // Now content_body has all the placeholders replaced with actual values from data_two
+       // Now content_body has all the placeholders replaced with actual values from data_two
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -117,33 +118,33 @@ function ViewCertificate() {
   // Call the fetch function when the component mounts
   useEffect(() => {
     fetchData();
-  }, [participantId, certiType]); // Empty dependency array to execute the effect only once
+  }, [participantId, certiType]); // Added certiType to dependencies
 
   const svgRef = useRef();
 
   useEffect(() => {
+    if (verifiableLink) { // Added condition
+      const url = window.location.href;
+      const svg = svgRef.current;
 
-    const url = window.location.href; // Replace with your URL
-    const svg = svgRef.current;
-
-    QRCode.toDataURL(url, (err, dataUrl) => {
-      if (err) throw err;
+      QRCode.toDataURL(url, (err, dataUrl) => {
+        if (err) throw err;
 
       const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
       image.setAttribute('x', '100');
       image.setAttribute('y', '470');
       image.setAttribute('width', '100');
       image.setAttribute('height', '100');
-      image.classList.add("qrcode");
       image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
-      svg.appendChild(image)
-      if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
+
+      svg.appendChild(image);
     });
-  }, [verifiableLink]);
+  }, []);
 
   return (
     <>
       <SelectCertficate
+        title={title}
         eventId={eventId}
         templateId={templateId}
         title={title}
@@ -155,6 +156,7 @@ function ViewCertificate() {
         signature={signature}
         header={header}
         footer={footer}
+        verifiableLink={verifiableLink} // Passed verifiableLink
       />
 
       <button

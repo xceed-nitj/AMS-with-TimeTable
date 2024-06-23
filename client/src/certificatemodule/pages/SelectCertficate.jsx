@@ -17,6 +17,7 @@ import Template15 from './certificatetemplates/premium05';
 import Template16 from './certificatetemplates/premium06';
 
 function SelectCertficate({
+  title,
   templateId,
   eventId,
   contentBody,
@@ -28,9 +29,12 @@ function SelectCertficate({
   signature,
   header,
   footer,
+  verifiableLink
 }) {
   const certiDesignTemp = [
     <CertificateContent
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -44,6 +48,8 @@ function SelectCertficate({
       key={'0'}
     />,
     <Template02
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -57,6 +63,8 @@ function SelectCertficate({
       key={'1'}
     />,
     <Template03
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -70,6 +78,8 @@ function SelectCertficate({
       key={'2'}
     />,
     <Template04
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -83,6 +93,8 @@ function SelectCertficate({
       key={'3'}
     />,
     <Template05
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -96,6 +108,8 @@ function SelectCertficate({
       key={'4'}
     />,
     <Template06
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -109,6 +123,8 @@ function SelectCertficate({
       key={'5'}
     />,
     <Template07
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -122,6 +138,8 @@ function SelectCertficate({
       key={'6'}
     />,
     <Template08
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -136,6 +154,8 @@ function SelectCertficate({
     />,
 
     <Template09
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -149,6 +169,8 @@ function SelectCertficate({
       key={'8'}
     />,
     <Template10
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -162,6 +184,8 @@ function SelectCertficate({
       key={'9'}
     />,
     <Template11
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -175,6 +199,8 @@ function SelectCertficate({
       key={'10'}
     />,
     <Template12
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -188,6 +214,8 @@ function SelectCertficate({
       key={'11'}
     />,
     <Template13
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -201,6 +229,8 @@ function SelectCertficate({
       key={'12'}
     />,
     <Template14
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -214,6 +244,8 @@ function SelectCertficate({
       key={'13'}
     />,
     <Template15
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -227,6 +259,8 @@ function SelectCertficate({
       key={'14'}
     />,
     <Template16
+    title={title}
+    verifiableLink={verifiableLink}
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}

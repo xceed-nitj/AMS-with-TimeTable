@@ -11,6 +11,7 @@ import jsPDF from 'jspdf';
 // const apiUrl = getEnvironment();
 
 const CertificateContent = ({
+  title,
   eventId,
   contentBody,
   certiType,
@@ -21,6 +22,7 @@ const CertificateContent = ({
   signature,
   header,
   footer,
+  verifiableLink,
 }) => {
   var num_logos = logos.length;
   var num_left = 0;
@@ -32,11 +34,13 @@ const CertificateContent = ({
   const svgRef = useRef();
 
   useEffect(() => {
-    const url = window.location.href; // Replace with your URL
-    const svg = svgRef.current;
+    if (verifiableLink) {
+      // Added condition
+      const url = window.location.href;
+      const svg = svgRef.current;
 
-    QRCode.toDataURL(url, (err, dataUrl) => {
-      if (err) throw err;
+      QRCode.toDataURL(url, (err, dataUrl) => {
+        if (err) throw err;
 
       const image = document.createElementNS(
         'http://www.w3.org/2000/svg',
@@ -46,13 +50,11 @@ const CertificateContent = ({
       image.setAttribute('y', '500');
       image.setAttribute('width', '100');
       image.setAttribute('height', '100');
-      image.classList.add("qrcode");
       image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
 
       svg.appendChild(image);
-      if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
     });
-  }, [verifiableLink]);
+  }, []);
 
   return (
     <svg
@@ -185,9 +187,13 @@ const CertificateContent = ({
                 {item}
               </h1>
             ))}
+
+            <p className="tw-text-[40.707px] tw-text-[#424847] tw-font-bold">
+              {title[0]}
+            </p>
           </div>
         </foreignObject>
-
+        {/* 
         <text
           x="561.26"
           y="340.473"
@@ -198,7 +204,7 @@ const CertificateContent = ({
           fontWeight="550"
         >
           CERTIFICATE OF APPRECIATION
-        </text>
+        </text> */}
 
         <foreignObject x="12.5%" y="370.473" width="75%" height="160">
           <p className="font-serif text-xl opacity-80">
@@ -228,12 +234,11 @@ const CertificateContent = ({
           </div>
         </foreignObject>
 
-        {verifiableLink &&
-          <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
-            <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-              {window.location.href}
-            </div>
-          </foreignObject>}
+        <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
+          <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
+            {window.location.href}
+          </div>
+        </foreignObject>
       </>
       );
     </svg>

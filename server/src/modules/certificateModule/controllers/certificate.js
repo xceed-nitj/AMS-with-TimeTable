@@ -20,6 +20,8 @@ class AddcertificateController {
               title: newCertificate.title,
               verifiableLink: newCertificate.verifiableLink,
               logos: newCertificate.logos,
+              title: newCertificate.title,
+              verifiableLink: newCertificate.verifiableLink,
               certiType: newCertificate.certiType,
               header: newCertificate.header,
               body: newCertificate.body,
