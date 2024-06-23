@@ -39,6 +39,32 @@ const findEventPaper = async (req, res) => {
   }
 };
 
+const PaperCountByTrack = async (req, res) => {
+  let eventId = req.params.id;
+  const paper = await Paper.find({ eventId: eventId }).exec();
+
+  if (!paper) {
+    return res.status(401).json("Invalid paperId");
+  } else {
+    let trackCounts ={};
+    const countPapersByTrack = (paper) => {
+      trackCounts ={};
+      paper.forEach(paper => {
+        paper.tracks.forEach(track => {
+          if (trackCounts[track]) {
+            trackCounts[track].count += 1;
+          } else {
+            trackCounts[track] = { name: track, count: 1 };
+          }
+        });
+      });
+    };
+    countPapersByTrack(paper);
+    console.log(trackCounts);
+    return res.status(200).send(trackCounts);
+  }
+};
+
 const findPaper = async (req, res) => {
   let id = req.params.id;
   const paper = await Paper.find({ paperId: id }).exec();
@@ -321,4 +347,4 @@ const addAuthor = async (req, res) => {
   }
 };
 
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor};
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
