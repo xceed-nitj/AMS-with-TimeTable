@@ -230,7 +230,7 @@ function AddReviewer() {
                 <Td textAlign="center">
                   <Button
                     onClick={() => handleResendInvitation(reviewer.email)}
-                    colorScheme="green"
+                    colorScheme="blue"
                     size="sm"
                   >
                     Resend Invitation
