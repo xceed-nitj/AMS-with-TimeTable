@@ -1,182 +1,210 @@
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
-import JoditEditor from "jodit-react";
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import {
-    ChakraProvider,
-    Box,
-    Button,
-    RadioGroup,
-    Radio,
-    Checkbox,
-    FormControl,
-    FormLabel,
-    Textarea,
-    Select,
-    useToast,
-} from "@chakra-ui/react";
-import getEnvironment from "../../getenvironment";
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Checkbox,
+  Radio,
+  RadioGroup,
+  Stack,
+  Textarea,
+  useToast,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  CloseButton,
+} from '@chakra-ui/react';
+import JoditEditor from 'jodit-react';
+import getEnvironment from '../../getenvironment';
 
-const Review = () => {
-    const apiUrl = getEnvironment();
-    const { eventId, paperId, userId } = useParams();
-    const [questions, setQuestions] = useState([]);
-    const [answers, setAnswers] = useState({});
-    const [comments, setComments] = useState({});
-    const [decisions, setDecisions] = useState({});
-    const toast = useToast();
+const ReviewPage = () => {
+  const apiUrl = getEnvironment();
+  const { eventId, paperId, userId } = useParams();
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [commentsAuthor, setCommentsAuthor] = useState('');
+  const [commentsEditor, setCommentsEditor] = useState('');
+  const [decision, setDecision] = useState('Need Revision');
+  const [isSubmitted, setIsSubmitted] = useState(false); // Local state to track submission
+  const toast = useToast();
 
-    // Function to fetch questions based on eventId and paperId
-    const fetchQuestions = async () => {
-        try {
-            const response = await axios.get(`${apiUrl}/reviewmodule/reviewQuestion/get/${eventId}`);
-            setQuestions(response.data);
-        } catch (error) {
-            console.log("Error fetching questions:", error);
+  useEffect(() => {
+    // Fetch questions from the backend
+    axios.get(`${apiUrl}/reviewmodule/reviewQuestion/get/${eventId}`)
+      .then(response => {
+        setQuestions(response.data);
+        // Initialize answers object with empty values for each question
+        const initialAnswers = {};
+        response.data.forEach(question => {
+          if (question.type.includes('Text')) {
+            initialAnswers[question._id] = '';
+          } else if (question.type.includes('Multiple Correct')) {
+            initialAnswers[question._id] = [];
+          } else if (question.type.includes('Single Correct')) {
+            initialAnswers[question._id] = '';
+          } else {
+            // Handle other question types as needed
+          }
+        });
+        setAnswers(initialAnswers);
+      })
+      .catch(error => console.error('Error fetching questions:', error));
+
+    // Check if review has been submitted for this paper and reviewer
+    axios.get(`${apiUrl}/reviewmodule/review/get/${eventId}/${paperId}/${userId}`)
+      .then(response => {
+        console.log(response.data);
+        if (response.data) {
+          setIsSubmitted(true); // If review exists, disable the form
         }
+      })
+      .catch(error => console.error('Error checking review status:', error));
+  }, [apiUrl, eventId, paperId, userId]);
+
+  const handleAnswerChange = (questionId, newValue) => {
+    setAnswers({
+      ...answers,
+      [questionId]: newValue,
+    });
+  };
+
+  const handleSubmit = () => {
+    const reviewData = {
+      eventId,
+      paperId,
+      reviewerId: userId,
+      reviewAnswers: Object.entries(answers).map(([questionId, answer]) => ({
+        questionId,
+        answer
+      })),
+      commentsAuthor,
+      commentsEditor,
+      decision,
     };
 
-    // Handler to update answers state
-    const handleAnswerChange = (index, value) => {
-        setAnswers(prev => ({ ...prev, [index]: value }));
-    };
+    axios.post(`${apiUrl}/reviewmodule/review/save`, reviewData)
+      .then(() => {
+        setIsSubmitted(true);
+        toast({
+          title: 'Review submitted.',
+          description: 'Your review has been submitted successfully.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      })
+      .catch(error => {
+        console.error('Error submitting review:', error);
+        toast({
+          title: 'Error.',
+          description: 'There was an error submitting your review.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      });
+  };
 
-    // Handler to update comments state
-    const handleCommentChange = (index, value) => {
-        setComments(prev => ({ ...prev, [index]: value }));
-    };
-
-    // Handler to update decisions state
-    const handleDecisionChange = (index, value) => {
-        setDecisions(prev => ({ ...prev, [index]: value }));
-    };
-
-    // Handler to save answers, comments, and decisions for a question
-    const handleSaveAnswer = async (index) => {
-        try {
-            const response = await axios.post(`${apiUrl}/reviewmodule/review/add`, {
-                paperId,
-                eventId,
-                reviewerId: userId,
-                reviewans: [answers[index]], // Assuming answers are stored in an array
-                commentsAuthor: comments[index] || "",
-                commentsEditor: "", // Leave empty or adjust as per your logic
-                decision: decisions[index] || "Needs Revision"
-            });
-
-            if (response.status === 201) {
-                toast({
-                    title: "Answer saved.",
-                    description: "Your answer has been saved successfully.",
-                    status: "success",
-                    duration: 5000,
-                    isClosable: true,
-                });
-            } else {
-                toast({
-                    title: "Error saving answer.",
-                    description: "There was an error saving your answer. Please try again later.",
-                    status: "error",
-                    duration: 5000,
-                    isClosable: true,
-                });
-            }
-        } catch (error) {
-            console.error("Error saving answer:", error);
-            toast({
-                title: "Error saving answer.",
-                description: "There was an error saving your answer. Please try again later.",
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            });
-        }
-    };
-
-    // Effect to fetch questions when eventId or paperId changes
-    useEffect(() => {
-        fetchQuestions();
-    }, [eventId, paperId]);
-
-    return (
-        <ChakraProvider>
-            <Box p={4}>
-                <h1>Review Questions</h1>
-                {questions.map((question, index) => (
-                    <Box key={question._id} p={4} shadow="md" borderWidth="1px">
-                        <p dangerouslySetInnerHTML={{ __html: question.question[0] }}></p>
-                        {question.type[0] === "Single Correct" && (
-                            <FormControl as="fieldset">
-                                <RadioGroup
-                                    name={`question-${index}`}
-                                    onChange={(value) => handleAnswerChange(index, value)}
-                                    value={answers[index] || ""}
-                                >
-                                    {question.options.map((option, i) => (
-                                        <Radio key={i} value={option}>
-                                            {option}
-                                        </Radio>
-                                    ))}
-                                </RadioGroup>
-                            </FormControl>
-                        )}
-                        {question.type[0] === "Multiple Correct" && (
-                            <FormControl as="fieldset">
-                                {question.options.map((option, i) => (
-                                    <Checkbox
-                                        key={i}
-                                        value={option}
-                                        onChange={(e) => {
-                                            const updatedAnswers = answers[index] ? [...answers[index]] : [];
-                                            if (e.target.checked) {
-                                                updatedAnswers.push(option);
-                                            } else {
-                                                const optionIndex = updatedAnswers.indexOf(option);
-                                                if (optionIndex > -1) {
-                                                    updatedAnswers.splice(optionIndex, 1);
-                                                }
-                                            }
-                                            handleAnswerChange(index, updatedAnswers);
-                                        }}
-                                        isChecked={answers[index] && answers[index].includes(option)}
-                                    >
-                                        {option}
-                                    </Checkbox>
-                                ))}
-                            </FormControl>
-                        )}
-                        {question.type[0] === "Text" && (
-                            <JoditEditor
-                                value={answers[index] || ""}
-                                onChange={(newContent) => handleAnswerChange(index, newContent)}
-                            />
-                        )}
-                        <FormControl mt={4}>
-                            <FormLabel>Comments</FormLabel>
-                            <Textarea
-                                value={comments[index] || ""}
-                                onChange={(e) => handleCommentChange(index, e.target.value)}
-                            />
-                        </FormControl>
-                        <FormControl mt={4}>
-                            <FormLabel>Decision</FormLabel>
-                            <Select
-                                value={decisions[index] || "Needs Revision"}
-                                onChange={(e) => handleDecisionChange(index, e.target.value)}
-                            >
-                                <option value="Accepted">Accepted</option>
-                                <option value="Rejected">Rejected</option>
-                                <option value="Needs Revision">Needs Revision</option>
-                            </Select>
-                        </FormControl>
-                        <Button mt={4} onClick={() => handleSaveAnswer(index)}>
-                            Save Answer
-                        </Button>
-                    </Box>
+  return (
+    <Box p={5}>
+        {isSubmitted && (
+        <Alert status="info" mb={4}>
+          <AlertIcon />
+          <AlertTitle>Your review has been submitted.</AlertTitle>
+          <CloseButton position="absolute" right="8px" top="8px" onClick={() => setIsSubmitted(false)} />
+        </Alert>
+      )}
+      {questions.map((question) => (
+        <Box key={question._id} p={5} shadow="md" borderWidth="1px">
+          <FormControl as="fieldset">
+            <FormLabel as="legend">{question.question}</FormLabel>
+            {question.type.includes('Text') ? (
+              <JoditEditor
+                value={answers[question._id] || ''}
+                onChange={(value) => handleAnswerChange(question._id, value)}
+                disabled={isSubmitted}
+              />
+            ) : question.type.includes("Multiple Correct") ? (
+              <Stack direction="column">
+                {question.options.map((option, idx) => (
+                  <Checkbox
+                    key={idx}
+                    isChecked={answers[question._id]?.includes(option) || false}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      let newAnswers = [...(answers[question._id] || [])];
+                      if (isChecked && !newAnswers.includes(option)) {
+                        newAnswers.push(option);
+                      } else {
+                        newAnswers = newAnswers.filter((ans) => ans !== option);
+                      }
+                      handleAnswerChange(question._id, newAnswers);
+                    }}
+                    isDisabled={isSubmitted}
+                  >
+                    {option}
+                  </Checkbox>
                 ))}
-            </Box>
-        </ChakraProvider>
-    );
+              </Stack>
+            ) : question.type.includes("Single Correct") ? (
+              <RadioGroup
+                value={answers[question._id] || ''}
+                onChange={(newValue) => handleAnswerChange(question._id, newValue)}
+                isDisabled={isSubmitted}
+              >
+                <Stack direction="column">
+                  {question.options.map((option, idx) => (
+                    <Radio key={idx} value={option}>
+                      {option}
+                    </Radio>
+                  ))}
+                </Stack>
+              </RadioGroup>
+            ) : null}
+          </FormControl>
+        </Box>
+      ))}
+      <FormControl mt={4} isDisabled={isSubmitted}>
+        <FormLabel>Comments (Author)</FormLabel>
+        <Textarea
+          value={commentsAuthor}
+          onChange={(e) => setCommentsAuthor(e.target.value)}
+        />
+      </FormControl>
+      <FormControl mt={4} isDisabled={isSubmitted}>
+        <FormLabel>Comments (Editor)</FormLabel>
+        <Textarea
+          value={commentsEditor}
+          onChange={(e) => setCommentsEditor(e.target.value)}
+        />
+      </FormControl>
+      <FormControl mt={4} isDisabled={isSubmitted}>
+        <FormLabel>Decision</FormLabel>
+        <RadioGroup
+          value={decision}
+          onChange={(newValue) => setDecision(newValue)}
+          isDisabled={isSubmitted}
+        >
+          <Stack direction="row">
+            <Radio value="Accepted">Accepted</Radio>
+            <Radio value="Rejected">Rejected</Radio>
+            <Radio value="Need Revision">Need Revision</Radio>
+          </Stack>
+        </RadioGroup>
+      </FormControl>
+      <Button
+        mt={4}
+        colorScheme="teal"
+        onClick={handleSubmit}
+        isDisabled={isSubmitted}
+      >
+        Save
+      </Button>
+    </Box>
+  );
 };
 
-export default Review;
+export default ReviewPage;

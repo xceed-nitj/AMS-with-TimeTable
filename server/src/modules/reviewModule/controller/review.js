@@ -22,7 +22,7 @@ const addReview = async (req, res) => {
 
 const getReviews = async (req, res) => {
     try {
-        const reviews = await Review.find().populate('paperId eventId reviewerId');
+        const reviews = await Review.find();
         res.status(200).json(reviews);
     } catch (error) {
         res.status(500).json({ message: "Error fetching reviews", error });
@@ -39,6 +39,40 @@ const getReviewById = async (req, res) => {
         res.status(500).json({ message: "Error fetching review", error });
     }
 };
+
+const getReviewsByEventPaperUser = async (req, res) => {
+    const { paperId, eventId, userId } = req.params;
+
+    try {
+        const reviews = await Review.find({ paperId, eventId, reviewerId: userId });
+
+        if (!reviews || reviews.length === 0) {
+            return res.status(404).json({ message: 'No reviews found' });
+        }
+
+        res.status(200).json(reviews);
+    } catch (error) {
+        console.error('Error fetching reviews:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const deleteReviewByPaperEventUser = async (req, res) => {
+    const { paperId, eventId, userId } = req.params;
+
+    try {
+        const result = await Review.deleteMany({ paperId, eventId, reviewerId: userId });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ message: 'No reviews found to delete' });
+        }
+
+        res.status(200).json({ message: 'Reviews deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting review:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+}; 
 
 const updateReview = async (req, res) => {
     const { id } = req.params;
@@ -64,5 +98,37 @@ const deleteReview = async (req, res) => {
         res.status(500).json({ message: "Error deleting review", error });
     }
 };
-
-module.exports = { addReview, getReviews, getReviewById, updateReview, deleteReview };
+const submitReview = async (req, res) => {
+    const { eventId, paperId, reviewerId, reviewAnswers, commentsAuthor, commentsEditor, decision } = req.body;
+  
+    try {
+      const newReview = new Review({
+        eventId,
+        paperId,
+        reviewerId,
+        reviewAnswers,
+        commentsAuthor,
+        commentsEditor,
+        decision,
+      });
+  
+      await newReview.save();
+  
+      res.status(200).json({ message: "Review submitted successfully", review: newReview });
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      res.status(500).json({ error: "Error submitting review" });
+    }
+  };
+  const getAnswers = async (req, res) => {
+    const { eventId, paperId, userId } = req.params;
+  
+    try {
+      const answers = await Answer.find({ eventId, paperId, userId });
+      res.status(200).json(answers);
+    } catch (error) {
+      console.error('Error fetching answers:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+module.exports = { addReview,getAnswers,submitReview ,getReviews, getReviewById, updateReview, deleteReview ,getReviewsByEventPaperUser,deleteReviewByPaperEventUser};
