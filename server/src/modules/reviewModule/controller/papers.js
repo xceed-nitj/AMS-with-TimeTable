@@ -61,6 +61,38 @@ const findPaperByReviewer = async (req, res) => {
   }
 };
 
+const findPaperByAuthor = async (req, res) => {
+  let id = req.params.id;
+  try{
+    const papers = await Paper.find({ 'authors': id })
+                        .select('_id eventId title')
+                        .exec();
+    if (!papers.length) {
+      return res.status(401).json("No papers found for this author");
+    }
+    const eventIds = papers.map(paper => paper.eventId);
+
+    const events = await Event.find({ _id: { $in: eventIds } })
+                              .select('_id name')
+                              .exec();
+    const eventMap = events.reduce((map, event) => {
+      map[event._id.toString()] = event.name;
+      return map;
+    }, {});
+    // Merge the event names into the papers array
+    const papersWithEventNames = papers.map(paper => ({
+      _id: paper._id,
+      eventId: paper.eventId,
+      eventName: eventMap[paper.eventId.toString()],
+      title: paper.title
+                              }));
+    return res.status(200).send(papersWithEventNames);
+  }catch(err){
+    console.log("invalid");
+    return res.status(401).send(err);
+  }
+};
+
 const findPaperById=async(req,res)=>{
   try{
       const id=req.params.id;
@@ -289,4 +321,4 @@ const addAuthor = async (req, res) => {
   }
 };
 
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper,findPaperById , updatePaper, removeReviewer, findPaperByReviewer , addAuthor};
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor};
