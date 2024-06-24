@@ -5,7 +5,7 @@ const defaultQuestionSchema = new mongoose.Schema({
     type: [{ type: String }],
     question: [{ type: String }],
     options: [{ type: String }]
-});
+},{timestamps: true});
 
 const DefaultQuestion = mongoose.model("PRS-DefaultQuestion", defaultQuestionSchema);
 

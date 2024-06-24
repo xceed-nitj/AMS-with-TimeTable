@@ -11,7 +11,7 @@ const reviewQuestionSchema = new mongoose.Schema({
     type: [{ type: String }],
     question: [{ type: String }],
     options: [{ type: String }]
-});
+},{timestamps: true});
 
 const ReviewQuestion = mongoose.model("ReviewQuestion", reviewQuestionSchema);
 
