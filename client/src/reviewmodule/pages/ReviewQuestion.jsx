@@ -13,10 +13,11 @@ const AddQuestion = () => {
   const [question, setQuestion] = useState('');
   const [type, setType] = useState('');
   const [options, setOptions] = useState(['']);
+  const [order, setOrder] = useState('');
   const toast = useToast();
   const { eventId } = useParams(); 
 
-  console.log('type is', type)
+  console.log('type is', type);
 
   const handleTypeChange = (e) => {
     setType(e.target.value);
@@ -44,14 +45,13 @@ const AddQuestion = () => {
   };
 
   const handleSubmit = async () => {
-    // e.preventDefault(); // ^ put e here in the parameters to use this
     const newQuestion = {
       eventId,
-    
       question: [question],
       show: true,
       type: [type],
-      options: options.filter(option => option.trim() !== '') 
+      options: options.filter(option => option.trim() !== ''), 
+      order: [parseInt(order, 10)]
     };
 
     try {
@@ -66,6 +66,7 @@ const AddQuestion = () => {
       setQuestion('');
       setType('');
       setOptions(['']);
+      setOrder('');
     } catch (error) {
       toast({
         title: 'Error saving question.',
@@ -112,17 +113,16 @@ const AddQuestion = () => {
   };
 
   return (
-    <div 
-    className="add-question-page">
-        <Box  bg="black" p={0.2} width='80%'>
-          <HeaderReviewQuestion color="white" textAlign="center" title={'Add Review Question'+(type?' - '+type:'')}/>
-        </Box>
-        <br/>
+    <div className="add-question-page">
+      <Box bg="black" p={0.2} width='80%'>
+        <HeaderReviewQuestion color="white" textAlign="center" title={'Add Review Question'+(type?' - '+type:'')}/>
+      </Box>
+      <br/>
       <FormControl onSubmit={handleSubmit} className="question-form">
         <div className="form-group">
-        <Box bg={'#48835d'} style={{fontWeight:'500', opacity:'100%',borderTopLeftRadius:'5px',borderTopRightRadius:'5px'}} p={2}>
-          <Text color="white" textAlign={'center'}>Question</Text>
-        </Box>
+          <Box bg={'#48835d'} style={{fontWeight:'500', opacity:'100%',borderTopLeftRadius:'5px',borderTopRightRadius:'5px'}} p={2}>
+            <Text color="white" textAlign={'center'}>Question</Text>
+          </Box>
           <JoditEditor
             ref={editor}
             value={question}
@@ -130,10 +130,9 @@ const AddQuestion = () => {
           />
         </div>
         <div className="form-group">
-          {/* <FormLabel>Type</FormLabel> */}
           <Box bg={'#48835d'} style={{fontWeight:'500', opacity:'100%',borderTopLeftRadius:'5px',borderTopRightRadius:'5px'}} p={2}>
-          <Text color="white" textAlign={'center'}>Type</Text>
-        </Box>
+            <Text color="white" textAlign={'center'}>Type</Text>
+          </Box>
           <select value={type} onChange={handleTypeChange} id='typeSelector'>
             <option value="">Select Type</option>
             <option value="Single Correct">Single Correct</option>
@@ -141,9 +140,19 @@ const AddQuestion = () => {
             <option value="Text">Text</option>
           </select>
         </div>
+        <div className="form-group">
+          <Box bg={'#48835d'} style={{fontWeight:'500', opacity:'100%',borderTopLeftRadius:'5px',borderTopRightRadius:'5px'}} p={2}>
+            <Text color="white" textAlign={'center'}>Order</Text>
+          </Box>
+          <select value={order} onChange={(e) => setOrder(e.target.value)} id='orderSelector'>
+            <option value="">Select Order</option>
+            {Array.from({ length: 50 }, (_, i) => i + 1).map(number => (
+              <option key={number} value={number}>{number}</option>
+            ))}
+          </select>
+        </div>
         {(type === 'Single Correct' || type === 'Multiple Correct') && (
           <div className="form-group">
-            {/* <FormLabel>Options:</FormLabel> */}
             <Box bg={'#48835d'} style={{fontWeight:'500', opacity:'100%',borderTopLeftRadius:'5px',borderTopRightRadius:'5px'}} p={2}>
               <Text color="white" textAlign={'center'}>Options</Text>
             </Box>
@@ -172,8 +181,10 @@ const AddQuestion = () => {
           <Link
             onClick={handleSubmit}
             className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
-            >Save Question</Link>
-          )} 
+          >
+            Save Question
+          </Link>
+        )} 
       </FormControl>
     </div>
   );

@@ -4,7 +4,7 @@ const Event = require("../../../models/reviewModule/event.js");
 const Paper = require("../../../models/reviewModule/paper.js");
 
 const addReviewQuestion = async (req, res) => {
-    const { eventId,show, type, question, options } = req.body;
+    const { eventId,show, type, question, options,order } = req.body;
 
     try {
         const newReviewQuestion = new ReviewQuestion({
@@ -13,7 +13,8 @@ const addReviewQuestion = async (req, res) => {
             show,
             type,
             question,
-            options
+            options,
+            order
         });
         await newReviewQuestion.save();
         res.status(201).json(newReviewQuestion);
