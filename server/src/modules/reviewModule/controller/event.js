@@ -272,7 +272,10 @@ const addReviewer = async (req, res) => {
         });
       }
     }
-
+    if (!reviewer.role.includes("PRM")) {
+      reviewer.role.push("PRM");
+      reviewer.save();
+    }
     // Fetch the event
     const event = await Event.findById(eventId);
 

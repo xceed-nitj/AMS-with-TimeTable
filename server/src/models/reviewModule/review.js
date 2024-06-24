@@ -19,7 +19,7 @@ const reviewSchema = new mongoose.Schema({
   },
   updatedAt: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now }
-});
+},{timestamps: true});
 
 const Review = mongoose.model('Review', reviewSchema);
 
