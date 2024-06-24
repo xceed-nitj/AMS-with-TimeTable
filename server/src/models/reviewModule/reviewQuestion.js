@@ -10,7 +10,8 @@ const reviewQuestionSchema = new mongoose.Schema({
     show: { type: Boolean, default: false },
     type: [{ type: String }],
     question: [{ type: String }],
-    options: [{ type: String }]
+    options: [{ type: String }],
+    order: [{type:Number}]
 });
 
 const ReviewQuestion = mongoose.model("ReviewQuestion", reviewQuestionSchema);
