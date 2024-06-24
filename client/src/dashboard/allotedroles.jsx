@@ -74,7 +74,7 @@ const AllocatedRolesPage = () => {
                         {role === "CM" ? (<Text>Event Certificate Manager</Text>):null}
                         {role === "admin" ? (<Text>XCEED Super User</Text>):null}
                         {role === "EO" ? (<Text>Event Organiser</Text>):null}
-                        {role === "PRM" ? (<Text>Paper Review Management</Text>):null}
+                        {role === "editor" ? (<Text>Paper Review Management</Text>):null}
 
                         </Td>
                         <Td>
@@ -105,7 +105,7 @@ const AllocatedRolesPage = () => {
                             </ChakraLink>
                           ) : null}
 
-{role === "PRM" ? (
+{role === "editor" ? (
                             <ChakraLink href="/prm/dashboard" color="teal.500">
                               Review Manager
                             </ChakraLink>

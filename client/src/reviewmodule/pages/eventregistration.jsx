@@ -50,7 +50,7 @@ const PRMEventRegistration = () => {
         setEvents(data);
         console.log(data)
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching events:', error);
       }
     };
     fetchUsers();

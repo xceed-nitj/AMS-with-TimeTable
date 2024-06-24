@@ -8,6 +8,25 @@ const path = require("path");
 const axios = require("axios");
 const v1router = require("./routes");
 
+// CORS configuration
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",  "http://localhost:5174","https://chemcon2024.com",
+      "https://nitjtt.netlify.app",
+      "http://localhost:8010",
+      //for chemcon
+      "http://localhost:5174","https://chemcon2024.com","https://pro1-chemcon.vercel.app",
+  //for eaic2025
+  "https://eaicnitj.com",
+    ], // Change this to your allowed origins or '*' to allow all origins
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    optionsSuccessStatus: 204,
+    allowedHeaders: "Content-Type",
+    credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
+  })
+);
+
 // Load environment variables from .env file
 dotenv.config({ path: "../.env" });
 
@@ -41,24 +60,7 @@ mongoose.connection.on("connected", () => {
   });
 });
 
-// CORS configuration
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",  "http://localhost:5174","https://chemcon2024.com",
-      "https://nitjtt.netlify.app",
-      "http://localhost:8010",
-      //for chemcon
-      "http://localhost:5174","https://chemcon2024.com","https://pro1-chemcon.vercel.app",
-  //for eaic2025
-  "https://eaicnitj.com",
-    ], // Change this to your allowed origins or '*' to allow all origins
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    optionsSuccessStatus: 204,
-    allowedHeaders: "Content-Type",
-    credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
-  })
-);
+
 
 // default route
 // app.get('/', (req, res) => {

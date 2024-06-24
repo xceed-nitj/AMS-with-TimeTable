@@ -1,7 +1,7 @@
 import { Flex } from '@chakra-ui/react'
 import { useRive, Layout, Fit, Alignment } from '@rive-app/react-canvas'
 
-export const LogoAnimation = () => {
+export const LogoAnimation = (props) => {
   const { RiveComponent } = useRive({
     src: '/xceed_logo_animation.riv',
     position: 'absolute',
@@ -33,7 +33,7 @@ export const LogoAnimation = () => {
           position: 'absolute',
         },
       }}>
-      <RiveComponent />
+      <RiveComponent style={props.style}/>
     </Flex>
   )
 }

@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, RouterProvider } from 'react-router-dom';
+import Lottie from 'lottie-react'
 import Timetable from './timetableadmin/timetable';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
@@ -39,6 +40,9 @@ import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
 
 import Home from './pages/Home';
+import ErrorPage from './pages/ErrorPage.jsx';
+import animation404 from '../public/404.json'
+import { LogoAnimation } from './components/login/LogoAnimation.jsx';
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
 import CertificateForm from './certificatemodule/pages/certificatedesign';
@@ -75,11 +79,18 @@ import PRMDashboard from './reviewmodule/pages/prmdashboard';
 import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
 import AddReviewer from './reviewmodule/pages/AddReviewer';
+import Review from './reviewmodule/pages/Review.jsx';
+import ReviewerQuestion from './reviewmodule/pages/ReviewQuestion';
+import ReviewerQuestionHome from './reviewmodule/pages/ReviewQuestionHome';
+import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
+import UserRegistration from './reviewmodule/pages/userRegistration';
+
 // import HomePage from './reviewmodule/pages/Main';
 
 import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
 
 // import ConferenceDetails from './reviewmodule/pages/EditorConferencePage';
+import AllPaper from './reviewmodule/pages/allpapers'
 import EventForm from './reviewmodule/pages/editorevent';
 import MultiEditorEvent from "./reviewmodule/pages/addeditor";
 import PaperDetails from './reviewmodule/components/PaperDetails';
@@ -94,7 +105,20 @@ import MultiStepForm from './reviewmodule/pages/MultiStepForm';
 import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
+import EditTemplate from './reviewmodule/pages/EditTemplate';
+import NirfRanking from './nirf/rankings';
+import AddPaper from './reviewmodule/pages/addpaper'
 
+// imports for Quiz Module
+import CreateQuiz from './quizModule/creator/createQuiz/CreateQuiz';
+import AddQuestionHome from './quizModule/creator/addQuestion/AddQuestionHome';
+import AddInstruction from './quizModule/creator/addQuestion/AddInstruction';
+import PreviewInstructions from './quizModule/creator/addQuestion/PreviewInstructions';
+import Settings from './quizModule/creator/addQuestion/settings';
+import PrmEdDashboard from './reviewmodule/pages/PrmEdDashboard';
+import Quizzing from './quizModule/student/quizzing/Quizzing';
+// import Instructions from './quizModule/student/Instructions';
+import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
 
 function App() {
   return (
@@ -107,6 +131,8 @@ function App() {
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<Home />} />
+        <Route path="/nirf" element={<NirfRanking />} />
+
         <Route path="/services/:serviceId" element={<ServicePage />} />
         {/* ********* */}
 
@@ -188,15 +214,30 @@ function App() {
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
+    <Route path="/prm/:eventId/:paperId/:userId/Review" element={<Review/>}/>
+    <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
+    <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
+    <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
-    <Route path="/prm/:eventId/editor/addtemplate" element={<AddTemplate/>}/>
+    <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
+    <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
+    <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
+    <Route path="/prm/:eventId/ed" element={<PrmEdDashboard/>} /> 
+    
 
-    <Route path="/prm/:eventId/:paperId/edit" element={<MultiStepForm />} />
+    <Route path="/prm/:eventId/author/newpaper" element={<MultiStepForm />} />
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     <Route path="/prm/home" element={<HomePage/>}/>
+    <Route path="/prm/register" element={<UserRegistration/>}/>
+    <Route path='/prm/*' element={<ErrorPage 
+                                      message='The page you are looking for does not exist...' 
+                                      destination='/prm/home'
+                                      destinationName='Paper Review Manager Home'
+                                      animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
+                                      />}></Route>
 
     
 
@@ -225,10 +266,34 @@ function App() {
           <Route path="souvenir" element={<Souvenir />} />
           <Route path="commontemplate" element={<CommonTemplate />} />
 
+          </Route>
+
+        {/* Quiz Module Routes */}
+        <Route path='/quiz/createquiz' element={<CreateQuiz/>}></Route>
+        <Route path="/quiz/:code" element={ <> <AddQuestionHome />   </>} />
+        <Route path="/quiz/:code/addinstruction" element={<><AddInstruction /></>} />
+        <Route path="/quiz/:code/addinstruction/preview" element={<><PreviewInstructions /></>} />
+        <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
+        {/* <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
+        {/*<Route path="/addQuestionHome" element={<><AddQuestionHome /></>} /> */} 
+        
+        {/* quiz-student-routes */}
+        {/* <Route path="/quiz/:code/test" element={<Instructions />} /> */}
+        <Route path="/quiz/:code/live" element={<Quizzing />} />
+        <Route path="/quiz/:code/feedback" element={<QuizFeedback />} />
 
 
-
-        </Route>
+        <Route path='test-message' element={<ErrorPage 
+                    message='Custom error message...' 
+                    destinationName={false}
+                    animation={<LogoAnimation style={{opacity:'20%'}} />}  // any type of component can be sent here
+                    />}></Route>
+        <Route path='*' element={<ErrorPage 
+                    message='The page you are looking for does not exist...' 
+                    destination='/'
+                    destinationName='Home' 
+                    animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
+                    />}></Route>
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}

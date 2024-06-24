@@ -36,6 +36,20 @@ const getUsers = async (req, res) => {
   }
 };
 
+const getUserbyId=async(req,res)=>{
+    try{
+         const userId=req.params.id;
+         const user=await User.findById(userId).exec();
+         if(user){
+            res.status(200).send(user);
+            }else{
+                res.status(404).send("User not found");
+                }
+    } catch(error){
+        res.status(500).send("Internal server error", error);
+    }
+};
+
 const deleteUser = async (req, res) => {
     const _id = req.params.id;
 
@@ -108,4 +122,4 @@ const addUserEmail = async (req, res) => {
 
 
 
-module.exports = {addUser,  getUsers, deleteUser, updateUser, addUserEmail };
+module.exports = {addUser,  getUsers, deleteUser, updateUser, addUserEmail ,getUserbyId};

@@ -1,0 +1,59 @@
+/* resultSummary.css */
+
+.table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  .table th, .table td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: center;
+  }
+  
+  .table th {
+    background-color: #f2f2f2;
+  }
+  
+  /* resultSummaryTabs.css */
+
+/* Style for the tab container */
+.react-tabs {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 20px;
+  }
+  
+  /* Style for the tab list (the tabs) */
+  .react-tabs__tab-list {
+    display: flex;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    background-color: #f2f2f2;
+    border: 1px solid #ddd;
+    border-bottom: none;
+  }
+  
+  /* Style for each tab */
+  .react-tabs__tab {
+    flex: 1;
+    padding: 10px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Style for the active tab */
+  .react-tabs__tab--selected {
+    background-color: #21e5f3;
+    color: rgb(84, 188, 206);
+    border-bottom: 1px solid #2196F3;
+  }
+  
+  /* Style for tab panels */
+  .react-tabs__tab-panel {
+    padding: 20px;
+    border: 1px solid #ddd;
+  }
+  

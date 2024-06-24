@@ -237,6 +237,7 @@ function MasterSemester() {
               <Input
                 type="text"
                 value={editedSemester.type}
+                placeholder={"B.Tech-1 (1 indicates sem number)"}
                 onChange={(e) =>
                   setEditedSemester({ ...editedSemester, type: e.target.value })
                 }

@@ -4,9 +4,10 @@ const { Schema } = mongoose;
 const Quiz = require('./quiz');
 const QuizQuestion = require('./quizQuestion');
 
-const studentAnswerSchema = new Schema({
+const studentAnswerSchema = new mongoose.Schema({
   studentId: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
   },
   answer: {
@@ -26,12 +27,12 @@ const studentAnswerSchema = new Schema({
     default: null,
   },
   questionId: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'QuizQuestion',
     required: true,
   },
   quizId: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Quiz',
     required: true,
   },
@@ -39,6 +40,6 @@ const studentAnswerSchema = new Schema({
   timestamps: true,
 });
 
-const StudentAnswer = mongoose.model('StudentAnswer', studentAnswerSchema);
+const StudentAnswer = mongoose.model('qz-studentans', studentAnswerSchema);
 
 module.exports = StudentAnswer;

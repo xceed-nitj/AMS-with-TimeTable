@@ -24,6 +24,8 @@ router.use('/paper', require('./paper.js'));
 router.use('/event', require('./event.js'));
 router.use('/reviewer', require('./reviewer.js'));
 router.use('/user', require('./user.js'));
-router.use('/reviewerAcceptance',require('./reviewerAcceptance.js'))
-
+router.use('/reviewerAcceptance',require('./reviewerAcceptance.js'));
+router.use('/review',require('./review.js'));
+router.use('/reviewQuestion',require('./reviewQuestion.js'));
+router.use('/defaultQuestion',require('./defaultQuestion.js'));
 module.exports = router;

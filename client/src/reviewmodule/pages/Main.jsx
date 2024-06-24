@@ -6,6 +6,7 @@ import { Box } from '@chakra-ui/react';
 // import Settings from './Settings';
 // import About from './About';
 // import Author1 from './Author1';
+import SearchEvent from "./searchEvent"
 
 import getEnvironment from "../../getenvironment";
 
@@ -63,14 +64,14 @@ function HomePage() {
   let content;
   switch (activeTab) {
     case 'Home':
-    //   content = <Home />;
+      // content = <Home />;
       break;
     case 'Author':
     //   content = <About />;
       break;
     case 'New Submission':
-      content = <MultiStepForm />;
-      break;
+          content = <SearchEvent />;
+    break;
     case 'Papers Submitted':
     //   content = <Author2 />;
       break;
@@ -82,11 +83,11 @@ function HomePage() {
     //   content = <Home />;
   }
   return (
-    <Box display="flex">
+    <Box>
       <SideBarFinal/>
-      <Box ml="250px" p={4} flex="1">
+      {/* <Box ml="250px" p={4} flex="1">
         {content}
-      </Box>
+      </Box> */}
         </Box>
   );
 }

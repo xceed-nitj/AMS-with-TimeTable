@@ -26,7 +26,6 @@ const Home = () => {
       {/* <Navbar /> */}
       <Hero />
       <Services />
-      <RevenueDistribution />
       <About />
       <TeamSection />
       <JoinUs />

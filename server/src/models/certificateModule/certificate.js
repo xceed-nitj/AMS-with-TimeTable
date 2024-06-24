@@ -3,6 +3,12 @@ const { commonFields, updateTimestamps } = require("../commonFields");
 
 // Define your Mongoose schema based on the interface
 const CertificateSchema = new mongoose.Schema({
+  title: {
+    type: Array,
+  },
+  verifiableLink: {
+    type: Boolean,
+  },
   logos: {
     type: Array,
   },

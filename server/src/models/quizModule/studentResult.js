@@ -3,11 +3,11 @@ const { Schema } = mongoose;
 
 const studentResultSchema = new Schema({
   quizId: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
   studentId: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
   totalScore: {
@@ -29,5 +29,5 @@ const studentResultSchema = new Schema({
 });
 
 // Export the model
-const StudentResult = mongoose.model('StudentResult', studentResultSchema);
+const StudentResult = mongoose.model('qz-studentres', studentResultSchema);
 module.exports = StudentResult;

@@ -1,11 +1,18 @@
-import * as pdfMake from 'pdfmake/build/pdfmake';
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import pdfMakeInitializer from './pdfMakeInitializer';
+// Import other dependencies
+
+pdfMakeInitializer(); 
+
 import header from '../assets/header.png';
 import footer from '../assets/footer.png';
 import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles';
 
+//pdfMake.vfs = pdfFonts.vfs;
+
+
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
-pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
+
+//pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
 
 function downloadPDF(timetableData, summaryData, type, ttdata, updatedTime, headTitle,notes) {
