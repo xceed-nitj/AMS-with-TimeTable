@@ -25,7 +25,7 @@ const addReviewQuestion = async (req, res) => {
 
 const getReviewQuestions = async (req, res) => {
     try {
-        const reviewQuestions = await ReviewQuestion.find().populate('eventId');
+        const reviewQuestions = await ReviewQuestion.find();
         res.status(200).json(reviewQuestions);
     } catch (error) {
         res.status(500).json({ message: "Error fetching review questions", error });

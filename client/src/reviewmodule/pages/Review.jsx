@@ -32,13 +32,14 @@ const ReviewPage = () => {
   const toast = useToast();
 
   useEffect(() => {
-    // Fetch questions from the backend
+    // Fetch questions from the backend and sort by order
     axios.get(`${apiUrl}/reviewmodule/reviewQuestion/get/${eventId}`)
       .then(response => {
-        setQuestions(response.data);
+        const sortedQuestions = response.data.sort((a, b) => a.order - b.order);
+        setQuestions(sortedQuestions);
         // Initialize answers object with empty values for each question
         const initialAnswers = {};
-        response.data.forEach(question => {
+        sortedQuestions.forEach(question => {
           if (question.type.includes('Text')) {
             initialAnswers[question._id] = '';
           } else if (question.type.includes('Multiple Correct')) {
@@ -76,10 +77,14 @@ const ReviewPage = () => {
       eventId,
       paperId,
       reviewerId: userId,
-      reviewAnswers: Object.entries(answers).map(([questionId, answer]) => ({
-        questionId,
-        answer
-      })),
+      reviewAnswers: Object.entries(answers).map(([questionId, answer]) => {
+        const question = questions.find(q => q._id === questionId);
+        return {
+          questionId,
+          order: question.order[0],
+          answer,
+        };
+      }),
       commentsAuthor,
       commentsEditor,
       decision,
@@ -110,7 +115,7 @@ const ReviewPage = () => {
 
   return (
     <Box p={5}>
-        {isSubmitted && (
+      {isSubmitted && (
         <Alert status="info" mb={4}>
           <AlertIcon />
           <AlertTitle>Your review has been submitted.</AlertTitle>

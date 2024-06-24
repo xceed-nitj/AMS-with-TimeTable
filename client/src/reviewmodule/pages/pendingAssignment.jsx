@@ -69,12 +69,12 @@ function PendingAssignment() {
                     </Thead>
                     <Tbody>
                         {pending.map((paper) => (
-                            <Tr key={paper.paperId}>
+                            <Tr key={paper._id}>
                                 <Td>{paper.paperId}</Td>
                                 <Td>{paper.title}</Td>
                                 <Td>{paper.abstract}</Td>
                                 <Td>
-                                    <Link as={RouterLink} to={`/prm/${paper.eventId}/${paper.paperId}/${userId}/Review`} color="teal.500">
+                                    <Link as={RouterLink} to={`/prm/${paper.eventId}/${paper._id}/${userId}/Review`} color="teal.500">
                                         Answer
                                     </Link>
                                 </Td>
