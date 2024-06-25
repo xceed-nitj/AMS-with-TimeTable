@@ -7,10 +7,10 @@ import Header from '../../components/header';
 import { useToast } from "@chakra-ui/react";
 
 
-function PendingAssignment() {
+function ReviewsCompleted() {
     const apiUrl = getEnvironment();
     const [Papers, setPapers] = useState([]);
-    const [pending, setPending] = useState([]);
+    const [result, setResult] = useState([]);
     const [userId, setUserId] = useState('');
     const toast = useToast();
     useEffect(() => {
@@ -28,20 +28,18 @@ function PendingAssignment() {
                 setUserId(id); // Set the userId from logged-in user
                 const response = await axios.get(`${apiUrl}/reviewmodule/paper/reviewer/${id}`);
                 const Papers = response.data;
-                let pendingPaper = [];
+                let result = [];
                 for (let i = 0; i < Papers.length; i++) {
-                    if(Papers[i].status==='Under Review'){
-                        for(let j=0;j<Papers[i].reviewers.length;j++){
-                            if(Papers[i].reviewers[j].userId === id && !Papers[i].reviewers[j].completedDate){
-                                pendingPaper.push(Papers[i]);
-                            }
+                    for(let j=0;j<Papers[i].reviewers.length;j++){
+                        if(Papers[i].reviewers[j].userId === id && Papers[i].reviewers[j].completedDate){
+                            Papers[i].reviewers = Papers[i].reviewers[j]
+                            result.push(Papers[i]);
                         }
                     }
                 }
-
                 setPapers(Papers);
-                setPending(pendingPaper);
-            } catch (error) {
+                setResult(result);
+            }catch (error) {
                 console.error('Error fetching Papers:', error);
                 toast({
                     title: "Error",
@@ -58,30 +56,26 @@ function PendingAssignment() {
 
     return (
         <Container>
-            <Header title="Pending Paper List" />
+            <Header title="Completed Review List" />
 
             <Box maxW="xl" mx="auto" mt={10}>
-                <h1>Pending Papers</h1>
+                <h1>Completed Reviews</h1>
                 <Table variant="simple" mt={8}>
                     <Thead>
                         <Tr>
                             <Th>Paper ID</Th>
                             <Th>Paper Title</Th>
                             <Th>Abstract</Th>
-                            <Th>Action</Th> {/* New column for the link */}
+                            <Th>Completed Date</Th> {/* New column for the link */}
                         </Tr>
                     </Thead>
                     <Tbody>
-                        {pending.map((paper) => (
+                        {result.map((paper) => (
                             <Tr key={paper._id}>
                                 <Td>{paper.paperId}</Td>
                                 <Td>{paper.title}</Td>
                                 <Td>{paper.abstract}</Td>
-                                <Td>
-                                    <Link as={RouterLink} to={`/prm/${paper.eventId}/${paper._id}/${userId}/Review`} color="teal.500">
-                                        Answer
-                                    </Link>
-                                </Td>
+                                <Td>{new Date(paper.reviewers.completedDate).toLocaleDateString()}</Td>
                             </Tr>
                         ))}
                     </Tbody>
@@ -91,4 +85,4 @@ function PendingAssignment() {
     );
 }
 
-export default PendingAssignment;
+export default ReviewsCompleted;

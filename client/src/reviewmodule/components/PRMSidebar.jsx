@@ -10,6 +10,7 @@ import SearchEvent from '../pages/searchEvent';
 import CompletedAssignment from '../pages/completedPaper'
 import PendingAssignment from '../pages/pendingAssignment'
 import Invitations from '../pages/Invitations'
+import ReviewsCompleted from '../pages/reviewsCompleted';
 
 const SideBarFinal = () => {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ const SideBarFinal = () => {
         { label: 'Pending assignment', icon: FaClock },
         { label: 'Completed', icon: FaCheckCircle },
         { label: 'Invitation', icon: FaMailBulk},
+        { label: 'Completed Reviews', icon: FaCheckCircle}
       ]
     },
     {
@@ -112,6 +114,9 @@ const SideBarFinal = () => {
       break;
     case 'Invitation':
       content = <Invitations />;
+      break;
+    case 'Completed Reviews':
+      content = <ReviewsCompleted />;
       break;
     case 'Event Dashboard':
       content = <PRMDashboard />;
