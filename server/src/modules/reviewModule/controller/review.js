@@ -131,4 +131,23 @@ const submitReview = async (req, res) => {
       res.status(500).json({ message: 'Internal server error' });
     }
   };
-module.exports = { addReview,getAnswers,submitReview ,getReviews, getReviewById, updateReview, deleteReview ,getReviewsByEventPaperUser,deleteReviewByPaperEventUser};
+  const getAnswersByEVentIdPaperId =async(req,res)=>{
+    const {eventId,paperId}=req.params;
+    try{
+        const review=await Review.findOne({eventId,paperId});
+        if(!review)
+            {
+                return res.status(404).json({ message: 'Review not found' });
+            }
+            //console.log(review.reviewAnswers);
+            res.json(review.reviewAnswers);
+            
+            
+
+    } catch(error)
+    {
+        res.status(500).json({message:'Server error',error});
+    }
+  };
+ 
+module.exports = {addReview,getAnswersByEVentIdPaperId ,getAnswers,submitReview ,getReviews, getReviewById, updateReview, deleteReview ,getReviewsByEventPaperUser,deleteReviewByPaperEventUser};
