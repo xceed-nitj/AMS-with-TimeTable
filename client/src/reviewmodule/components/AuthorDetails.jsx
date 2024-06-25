@@ -32,19 +32,19 @@ export default function AuthorDetails({ setNext, handleNext, handlePrevious }) {
     setNext(isNextEnabled);
   }, [isNextEnabled, setNext]);
 
-  function handleRemove(order) {
+  function handleRemove(order,id) {
 
     setPaper(prevPaper => ({
       ...prevPaper,
-      authors: prevPaper.authors.filter(author => author.order !== order),
+      pseudo_authors: prevPaper.pseudo_authors.filter(author => author.order !== order),
     }));
   }
 
   async function handleAddAuthor(newAuthor) { 
-    console.log(newAuthor);
+    //console.log(newAuthor);
     setPaper(prevPaper => ({
       ...prevPaper,
-      authors: [...prevPaper.authors, newAuthor],
+      pseudo_authors: [...prevPaper.pseudo_authors, newAuthor],
     }));
   }
 
@@ -103,8 +103,8 @@ export default function AuthorDetails({ setNext, handleNext, handlePrevious }) {
               </Tr>
             </Thead>
             <Tbody>
-            {/* changes have to be done in frontend to fetch and display users ( */}
-            {SortedAuthors(paper.authors).map(author => (
+            {/*console.log(paper)*/}
+            {SortedAuthors(paper.pseudo_authors).map(author => (
               <ItemChakraUI
               author={author}
               key={author.order}
@@ -115,7 +115,7 @@ export default function AuthorDetails({ setNext, handleNext, handlePrevious }) {
           </Table>
         </TableContainer>
 
-          {(paper.authors.length)?(''):(
+          {(paper.pseudo_authors.length)?(''):(
             <p
               style={{color: 'slategrey', textAlign:'center'}}
             >Please Enter Author Details to continue...</p>

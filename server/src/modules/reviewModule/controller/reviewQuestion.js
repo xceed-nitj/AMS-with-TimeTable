@@ -4,7 +4,7 @@ const Event = require("../../../models/reviewModule/event.js");
 const Paper = require("../../../models/reviewModule/paper.js");
 
 const addReviewQuestion = async (req, res) => {
-    const { eventId,show, type, question, options } = req.body;
+    const { eventId,show, type, question, options,order } = req.body;
 
     try {
         const newReviewQuestion = new ReviewQuestion({
@@ -13,7 +13,8 @@ const addReviewQuestion = async (req, res) => {
             show,
             type,
             question,
-            options
+            options,
+            order
         });
         await newReviewQuestion.save();
         res.status(201).json(newReviewQuestion);
@@ -24,7 +25,7 @@ const addReviewQuestion = async (req, res) => {
 
 const getReviewQuestions = async (req, res) => {
     try {
-        const reviewQuestions = await ReviewQuestion.find().populate('eventId');
+        const reviewQuestions = await ReviewQuestion.find();
         res.status(200).json(reviewQuestions);
     } catch (error) {
         res.status(500).json({ message: "Error fetching review questions", error });
@@ -57,7 +58,7 @@ const getReviewQuestionsByEventId = async (req, res) => {
 const getReviewQuestionById = async (req, res) => {
     const { id } = req.params;
     try {
-        const reviewQuestion = await ReviewQuestion.findById(id).populate('eventId');
+        const reviewQuestion = await ReviewQuestion.findById(id);
         if (!reviewQuestion) return res.status(404).json({ message: "Review question not found" });
         res.status(200).json(reviewQuestion);
     } catch (error) {
@@ -96,6 +97,7 @@ const getQuestionsByEventId = async (req, res) => {
 };
 
 const updateReviewQuestion = async (req, res) => {
+    console.log('Attempting to update question..')
     const { id } = req.params;
     const updateFields = req.body;
 
@@ -109,6 +111,7 @@ const updateReviewQuestion = async (req, res) => {
 };
 
 const deleteReviewQuestion = async (req, res) => {
+    console.log('attempting to delete review question')
     const { id } = req.params;
 
     try {

@@ -25,19 +25,23 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
   const handleSubmit = async ()=>{
     var form_data = new FormData();
     for ( var key in paper ) {
-        console.log(key,":",paper[key]);
+        //console.log(key,":",paper[key]);
         if (key === "paperUploads"){
-          console.log('file==>',paper[key][0].name);
+          //console.log('file==>',paper[key][0].name);
           form_data.append('pdfFile', paper[key][0], paper[key][0].name);
         }else if(key === "codeUploads"){
-          console.log('file==>',paper[key][0].name);
+          //console.log('file==>',paper[key][0].name);
           form_data.append('codeFile', paper[key][0], paper[key][0].name);
+        }else if(key==="authors") {
+          for (var i = 0; i < paper[key].length; i++) {
+            form_data.append('authors[]', paper[key][i]);
+          }
         }else{
           form_data.append(key, paper[key]);
         }
     }
-    console.log("paper details below=====>,");
-    console.log(paper);
+    //console.log("paper details below=====>,");
+    //console.log(paper);
     setIsLoading(true);
     try {
       const response = await axios.post(`${apiUrl}/reviewmodule/paper/addpaper/${eventId}`, form_data, {
@@ -45,7 +49,7 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log(response);
+      //console.log(response);
       toast({
         title: 'Upload successful.',
         description: response.data.message || 'Paper has been uploaded.',
@@ -120,7 +124,7 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
             </Thead>
             <Tbody>
             {/* {paper.authors.map(author => ( */}
-            {SortedAuthors(paper.authors).map(author => (
+            {SortedAuthors(paper.pseudo_authors).map(author => (
               <ItemChakraUI
               author={author}
               key={author.order}

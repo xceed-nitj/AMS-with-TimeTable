@@ -55,13 +55,13 @@ function PaperDetails({ handleNext, handlePrevious }) {
     setIsNextEnabled(value.trim() !== '');
   };
 
-  const handleTrackChange = (e) => {
+  /*const handleTrackChange = (e) => {
     const { value } = e.target;
     setPaper((prevPaper) => ({
       ...prevPaper,
       tracks: value,
     }));
-  };
+  };*/
 
   const handleSave = () => {
     if (!isNextEnabled) {
