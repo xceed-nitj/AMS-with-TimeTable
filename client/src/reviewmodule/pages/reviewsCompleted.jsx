@@ -33,7 +33,6 @@ function ReviewsCompleted() {
                     for(let j=0;j<Papers[i].reviewers.length;j++){
                         if(Papers[i].reviewers[j].userId === id && Papers[i].reviewers[j].completedDate){
                             Papers[i].reviewers = Papers[i].reviewers[j]
-                            Papers[i].reviewers.completedDate;
                             result.push(Papers[i]);
                         }
                     }
