@@ -5,6 +5,7 @@ import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon }
 import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle, FaMailBulk, FaMailchimp } from 'react-icons/fa';
 import getEnvironment from '../../getenvironment';
 import PRMDashboard from '../pages/prmdashboard';
+import SubmittedPapers from '../pages/SubmittedPapers';
 import SearchEvent from '../pages/searchEvent';
 import CompletedAssignment from '../pages/completedPaper'
 import PendingAssignment from '../pages/pendingAssignment'
@@ -101,7 +102,7 @@ const SideBarFinal = () => {
       content = <SearchEvent />;
       break;
     case 'Submitted Papers':
-      content = <Text>Submitted Papers Page</Text>;
+      content = <SubmittedPapers/>;
       break;
     case 'Pending assignment':
       content = <PendingAssignment />;
