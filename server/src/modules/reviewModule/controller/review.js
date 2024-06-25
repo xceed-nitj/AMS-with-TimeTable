@@ -134,14 +134,16 @@ const submitReview = async (req, res) => {
   const getAnswersByEVentIdPaperId =async(req,res)=>{
     const {eventId,paperId}=req.params;
     try{
-        const review=await Review.find({eventId,paperId});
+        const review=await Review.findOne({eventId,paperId});
         if(!review)
             {
                 return res.status(404).json({ message: 'Review not found' });
             }
-            const allReviewAnswers = review.map(review => review.reviewAnswers);
-          //console.log(allReviewAnswers);
-            res.json(allReviewAnswers);
+            //console.log(review.reviewAnswers);
+            res.json(review.reviewAnswers);
+            
+            
+
     } catch(error)
     {
         res.status(500).json({message:'Server error',error});
