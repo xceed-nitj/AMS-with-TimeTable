@@ -4,11 +4,12 @@ import { useParams } from "react-router-dom";
 import getEnvironment from '../../getenvironment';
 import { Box, Button, HStack, Text } from '@chakra-ui/react';
 import {Grid, GridItem, Icon } from '@chakra-ui/react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { Container } from "@chakra-ui/layout";
 import Header from "../../components/header";
 import { FaInfoCircle, FaFileAlt, FaUserFriends, FaChartPie, FaEnvelope } from 'react-icons/fa';
+import { FiCheckCircle } from 'react-icons/fi'
 
 const PrmEditorDashboard = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const PrmEditorDashboard = () => {
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
   const [table, setTable] = useState([]);
+  const [trackcount, setTrackCount] = useState([]);
   const [counts, setCounts] = useState({ Accepted: 0, Invited: 0, NotAccepted: 0 });
 
   const fetchEvent = async () => {
@@ -87,13 +89,39 @@ const PrmEditorDashboard = () => {
       });
   },[table])
 
+  const fetchCount = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reviewmodule/paper/trackcount/${eventId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if(response.ok) {
+        const data = await response.json();
+        console.log(data);
+        setTrackCount(data);
+      } else {
+        console.error("Failed to fetch reviewer details");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+  useEffect(() => {
+    console.log("Fetching Count with apiUrl:", apiUrl);
+    fetchCount();
+  }, [apiUrl]);
+
+  const trackCountsArray = Object.values(trackcount);
+
+    const data1 = trackCountsArray.map(item => ({
+        name: item.name,
+        value: item.count
+    }));
     // Sample data for pie charts
-    const data1 = [
-        { name: 'Track-1', value: 400 },
-        { name: 'Track-2', value: 300 },
-        { name: 'Track-3', value: 300 },
-        { name: 'Track-4', value: 200 },
-    ];
     const data2 = [
         { name: 'Reviewers Invited', value : counts.Invited},
         { name: 'Reviewers Accepted', value: counts.Accepted },
@@ -188,7 +216,7 @@ const PrmEditorDashboard = () => {
                             Invite Reviewer
                         </Button>
                         <Button
-                            width={['100%', '100%', '230px', '230px']}
+                            width='100%'
                             height="50px"
                             bgGradient="linear(to-r, green.600, green.500)"
                             color="white"
@@ -199,6 +227,19 @@ const PrmEditorDashboard = () => {
                         >
                             Communication Templates
                         </Button>
+                        <Button
+                            width='100%'
+                            height="50px"
+                            bgGradient="linear(to-r, purple.600, purple.500)"
+                            color="white"
+                            _hover={{ bgGradient: "linear(to-r, purple.500, purple.400)" }}
+                            onClick={() => navigate(`/prm/${eventId}/ReviewQuestionHome`)}
+                            leftIcon={<Icon as={FiCheckCircle} color="white" />}
+                            whiteSpace="normal" // Ensure text wraps within the button
+                        >
+                            Review Questions
+                        </Button>
+                        
 
                     </Grid>
                     <Grid

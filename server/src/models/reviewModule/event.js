@@ -40,7 +40,7 @@ const eventSchema = new mongoose.Schema({
         type: String
     },
     templates:templateSchema,
-});
+},{timestamps: true});
 
 const Event = mongoose.model("PRS-Event", eventSchema);
 
