@@ -2,9 +2,19 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Box, Heading, Text, VStack, IconButton, chakra, Spinner, useToast, Button, Flex } from '@chakra-ui/react'
+import {  AlertDialog,
+  useDisclosure,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  AlertDialogCloseButton } from '@chakra-ui/react'
 import getEnvironment from '../../getenvironment'
 
 const apiUrl = getEnvironment()
+
+
 
 const ViewQuestions = () => {
   const [questions, setQuestions] = useState([]);
@@ -13,9 +23,11 @@ const ViewQuestions = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
+  console.log(questions)
+
   useEffect(() => {
     fetchQuestions();
-  }, [eventId]);
+  }, []);
 
   const fetchQuestions = async () => {
     try {
@@ -34,6 +46,74 @@ const ViewQuestions = () => {
       });
     }
   };
+
+  function DeleteQuestion(props) {
+    const toast = useToast()
+  
+    const handleSubmit = async () =>{
+      try {
+        await axios.delete(`${apiUrl}/reviewmodule/reviewQuestion/${props.id}`)
+        toast({
+          title: 'Question deleted.',
+          description: 'Your question has been deleted successfully.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+        fetchQuestions()
+      } catch (error) {
+        toast({
+          title: 'Error deleting question.',
+          description: 'An error occurred while deleting your question.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }
+  
+    const { isOpen, onOpen, onClose } = useDisclosure()
+    const cancelRef = React.useRef()
+  
+    return (
+      <>
+      <Button style={{width: '80px'}} colorScheme='red' onClick={onOpen}>
+        Delete
+      </Button>
+      <AlertDialog
+          motionPreset='slideInBottom'
+          isCentered
+          isOpen={isOpen}
+          leastDestructiveRef={cancelRef}
+          onClose={onClose}
+        >
+          <AlertDialogOverlay>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <Text textAlign={'center'}>
+                  Delete Question
+                </Text>
+              </AlertDialogHeader>
+              <AlertDialogCloseButton/>
+              <AlertDialogBody>
+                <Text textAlign={'center'}>
+                  Are you sure ?<br/>You cannot undo this action afterwards...
+                </Text>
+              </AlertDialogBody>
+              <AlertDialogFooter>
+                <Button margin={"auto"} onClick={onClose} ref={cancelRef}>
+                  Cancel
+                </Button>
+                <Button colorScheme='red' margin={"auto"} onClick={()=>{onClose();handleSubmit()}}>
+                  Delete
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialogOverlay>
+        </AlertDialog>
+      </>
+    )
+  }
 
   const HeaderReviewQuestion = ({ title }) => (
     <Heading mr='1' ml='1' display='flex'>
@@ -68,25 +148,51 @@ const ViewQuestions = () => {
 
   const QuestionCard = ({ question, index }) => (
    <Box borderWidth="1px" borderRadius="lg" p={4} mb={4} bg="white" boxShadow="none" _hover={{ boxShadow: 'lg' }}>
-     <Flex justifyContent="space-between" alignItems="flex-start">
-         <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontWeight: 'bold' }}>Question {index + 1} :</span>
-            <span dangerouslySetInnerHTML={{ __html: question.question[0] }} />
-         </div>
-       <Text color="white" fontSize="sm" ml={2} flexShrink={0} bg='yellow.400' p='1.5' borderRadius="md">
-         Type: {question.type[0]}
-       </Text>
-     </Flex>
-     {question.options && question.options.length > 0 && (
-       <VStack align="start" spacing={1} mt={2}>
-         <Text fontWeight="semibold">Options:</Text>
-         {question.options.map((option, optionIndex) => (
-           <Text key={optionIndex}>{option}</Text>
-         ))}
-       </VStack>
-     )}
+      <Flex justifyContent="space-between" alignItems="flex-start">
+
+      <Flex alignItems={'center'} width={'100%'}>
+        <Flex style={{boxSizing:'border-box', width: '100%'}}>
+          <Text color="white" fontSize="sm" ml={2} bg='yellow.400' p='1.5' borderRadius="md">
+            Type: {question.type[0]}
+          </Text>
+        </Flex>
+        {/* <div style={{flexGrow: '1'}}></div> */}
+        <Flex alignItems={'center'} justifyContent={'center'} gap={'8px'}>
+        <span style={{ fontWeight: 'bold', textWrap:'nowrap' }}>Question {index + 1}</span>
+        </Flex>
+        {/* <div style={{flexGrow: '1'}}></div> */}
+        <Flex style={{boxSizing:'border-box', width: '100%', justifyContent:'flex-end', flexGrow:'1', alignItems:'center'}}>
+          <Button
+            as={Link}
+            style={{width: '80px'}}
+            to={`/prm/${eventId}/ReviewQuestion?edit=${question._id}`} colorScheme='green'>
+            Edit
+          </Button>
+          <DeleteQuestion id={question._id}/>
+        </Flex>
+      </Flex>
+
+      </Flex>
+      <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: question.question[0] }} />
+      {question.options && question.options.length > 0 && (
+        <VStack align="start" spacing={1} mt={2}>
+          <Text fontWeight="semibold">Options:</Text>
+          {question.options.map((option, optionIndex) => (
+            <Text key={optionIndex}>{option}</Text>
+          ))}
+        </VStack>
+      )}
    </Box>
  );
+
+ function sortQuestions(qArgs) {
+  let keyset = []
+  let sortedQuestions = []
+  for(let i = 0; i < qArgs.length; i++) keyset.push(qArgs[i].order[0])
+  keyset.sort()
+  for(let i = 0; i < keyset.length; i++) for (let j = 0; j < qArgs.length; j++) if (qArgs[j].order[0] == keyset[i]) sortedQuestions.push(qArgs[j])
+  return sortedQuestions
+ }
 
   return (
     <div className="view-questions-page">
@@ -110,7 +216,7 @@ const ViewQuestions = () => {
         <Spinner size="xl" />
       ) : questions.length > 0 ? (
         <VStack spacing={4} align="stretch" width="80%" margin="auto">
-          {questions.map((question, index) => (
+          {sortQuestions(questions).map((question, index) => (
             <QuestionCard key={index} question={question} index={index} />
           ))}
         </VStack>
