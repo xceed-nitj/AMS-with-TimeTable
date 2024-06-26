@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faL, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
-import './AddQuestion.css';
+// import './AddQuestion.css';
 import QuillEditor from '../../components/quill/quillEditor';
 import getEnvironment from '../../../getenvironment';
 import { Box } from '@chakra-ui/react';
@@ -276,7 +276,7 @@ function AddQuestion({ editQuestionData, onClose }) {
     let newsetCurrentOption = currentOption.filter((d) => {
       return d != inputField;
     });
-    
+
     setCurrentOption(newsetCurrentOption);
     setOptions(newOptions);
     setCorrectOptions(newCorrectOptions);
@@ -351,7 +351,7 @@ function AddQuestion({ editQuestionData, onClose }) {
             isCorrect: correctOptions[option],
           })),
         };
-        console.log('Submitted data', questionData);
+        // console.log('Submitted data', questionData);
         handleChangeData(questionData);
       } else {
         alert('Please fill all the options');

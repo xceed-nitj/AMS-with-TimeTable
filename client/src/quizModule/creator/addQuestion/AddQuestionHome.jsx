@@ -11,9 +11,9 @@ import {
   faTrash,
   faPlus,
   faAngleUp,
-  faAngleDown
+  faAngleDown,
 } from '@fortawesome/free-solid-svg-icons';
-import './AddQuestionHome.css';
+// import './AddQuestionHome.css';
 import AddQuestion from './AddQuestion';
 import Viewer from '../../components/quill/viewer';
 import getEnvironment from '../../../getenvironment';
@@ -56,15 +56,9 @@ const QuestionGet = ({
   return (
     <Box className="question">
       <Stack spacing={2}>
-        {/* <Heading fontWeight="500" as="h4" size="sm">
-          {index + 1}.
-        </Heading> */}
         <Heading fontWeight="500" as="h4" size="sm">
           {index + 1}. Question:{' '}
         </Heading>
-        {/* <Box className="question_info_holder" ml={5}>
-          {question}{' '}
-        </Box> */}
         <Viewer content={question} />
         {questionType === 'single' && (
           <Box>
@@ -113,60 +107,43 @@ const QuestionGet = ({
           </Box>
         )}
         <Box className="explanation-container">
-          <Box className='toggle-button-container'>
+          <Box className="toggle-button-container">
             <Heading fontWeight="500" as="h4" size="sm">
               Explanation:
             </Heading>
-            {/* <Accordion allowToggle className="accordion-item-container">
-            <AccordionItem>
-              <h2>
-                <AccordionButton className="accordionButton">
-                  <Box as="span" flex="1" textAlign="left"> */}
-            {/* See the explaination */}
-            {/* </Box>
-                  <AccordionIcon />
-                </AccordionButton>
-              </h2>
-              <AccordionPanel pb={4}>
-                <Viewer content={explanation} />
-              </AccordionPanel>
-            </AccordionItem>
-          </Accordion> */}
-            <Button onClick={onToggle} mb={4} className='toggle-button' sx={{backgroundColor: "white"}}>
-              {isOpen ? <FontAwesomeIcon icon={faAngleUp} /> : <FontAwesomeIcon icon={faAngleDown} />}
+            <Button
+              onClick={onToggle}
+              mb={4}
+              className="toggle-button"
+              sx={{ backgroundColor: 'white' }}
+            >
+              {isOpen ? (
+                <FontAwesomeIcon icon={faAngleUp} />
+              ) : (
+                <FontAwesomeIcon icon={faAngleDown} />
+              )}
             </Button>
           </Box>
-          <Accordion allowMultiple index={isOpen ? [0] : []} >
-            <AccordionItem className='accordion-item' sx={{border: 'none'}}>
+          <Accordion allowMultiple index={isOpen ? [0] : []}>
+            <AccordionItem className="accordion-item" sx={{ border: 'none' }}>
               {({ isExpanded }) => (
                 <>
-                  <h2 style={{height: "0px"}}>
-                    <AccordionButton sx={{height: '0px'}}>
-                      {/* <Box flex="1" textAlign="left">
-                        Section 1
-                      </Box>
-                      <AccordionIcon /> */}
-                    </AccordionButton>
+                  <h2 style={{ height: '0px' }}>
+                    <AccordionButton sx={{ height: '0px' }}></AccordionButton>
                   </h2>
                   <AccordionPanel pb={4}>
-                  <Viewer content={explanation} />
+                    <Viewer content={explanation} />
                   </AccordionPanel>
                 </>
               )}
             </AccordionItem>
           </Accordion>
         </Box>
-        {/* <Box className="question_info_holder" ml={5}>
-          {explanation}{' '}
-        </Box> */}
         {questionType === 'numerical' && (
           <Stack>
             <Heading fontWeight="500" as="h4" size="sm">
               Answer: {answer}{' '}
             </Heading>
-            {/* <Box className="question_info_holder" ml={5}>
-              {answer}{' '}
-            </Box> */}
           </Stack>
         )}
         <Box className="question_info" mb={2}>
@@ -394,7 +371,7 @@ export const AddQuestionHome = () => {
           </Box>
           <Box className="topic-box">
             <Heading as="h2" size="xl">
-              Test Quiz{quiz?.quizName}
+              {quiz?.quizName}
             </Heading>
           </Box>
           {!addQuestion ? (
