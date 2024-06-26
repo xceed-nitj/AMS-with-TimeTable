@@ -1,5 +1,5 @@
 const express = require('express');
-const { addReview, getAnswers,getReviews,submitReview ,getReviewById, updateReview, deleteReview,getReviewsByEventPaperUser ,deleteReviewByPaperEventUser} = require('../controller/review');
+const { addReview, getAnswersByEVentIdPaperId,getAnswers,getReviews,submitReview ,getReviewById, updateReview, deleteReview,getReviewsByEventPaperUser ,deleteReviewByPaperEventUser} = require('../controller/review');
 
 const router = express.Router();
 
@@ -7,6 +7,7 @@ router.post('/add', addReview);
 router.post('/save',submitReview);
 router.get('/all', getReviews);
 router.get('/get/:eventId/:paperId/:userId',getReviewsByEventPaperUser);
+router.get('/get/:eventId/:paperId', getAnswersByEVentIdPaperId);
 router.get('/getAnswers/:eventId/:paperId/:userId',getAnswers)
 router.get('/:id', getReviewById);
 router.delete('/delete/:eventId/:paperId/:userId',deleteReviewByPaperEventUser);

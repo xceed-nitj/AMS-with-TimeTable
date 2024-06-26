@@ -308,67 +308,58 @@ const removeReviewer = async (req,res)=>{
 };
 
 const addAuthor = async (req, res) => {
-  const { name,email,designation } = req.body;
-  const password = "1234";//random password could be used
-  console.log("email: ",email);
-  //const userId = await User.find({email:email})
-  const XuserId = await XUser.find({email:email})
-  if(!XuserId || XuserId.length===0)
-  {
-    
-    console.log("user not found");
-    try {
-      // Hash the password using bcrypt
-      bcrypt.hash(password, 10, async (hashErr, hash) => {
-        if (hashErr) {
-          return res
-            .status(500)
-            .json({ message: "Password hashing failed", error: hashErr.message });
-        }
-  
-        // Create the user with the hashed password
-        try {
-          const newUser = new XUser({
-            name: name,
-            email: email,
-            profession: designation,
-            role:["PRM","Author"],
-            password: hash
-          });
-          
-          console.log("user created");
-        
-          newUser.save();
-        } catch (createErr) {
-          return res.status(400).json({
-            message: "User not successful created",
-            error: createErr.message,
-          });
-        }
-      });
-    } catch (err) {
-      console.log(err);
-    }
-  }
+  const { name, email, designation } = req.body;
+  const password = "1234"; // A random password could be used
+  console.log("email: ", email);
+
   try {
+    // Check if the user already exists
+    const existingUser = await XUser.findOne({ email: email });
+
+    if (existingUser) {
+      console.log("User already exists");
+      return res.status(200).json({
+        message: "User already exists",
+        updatedId: existingUser._id,
+      });
+    }
+
+    console.log("User not found, creating new user");
+
+    // Hash the password using bcrypt
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the user with the hashed password
+    const newUser = new XUser({
+      name: name,
+      email: email,
+      profession: designation,
+      role: ["PRM", "Author"],
+      password: hashedPassword,
+    });
+
+    // Save the new user
+    await newUser.save();
+
+    // Send email notification
     await sendMail(
-    email,
-    'You have been added as a reviewer',
-    `You're added as an author in a paper<br>
-    Here's your temporary password 1234, login to change it <br>
-    XCEED
-    `
-  );
-  const updatedId = await XUser.findOne({email:email});
-  console.log("id: ",updatedId._id);
-  return res.status(201).json({
-    message: "User successfully created",
-    updatedId: updatedId._id,
-  });
+      email,
+      'You have been added as a reviewer',
+      `You're added as an author in a paper.<br>
+      Here's your temporary password: ${password}. Please login to change it.<br>
+      XCEED`
+    );
+
+    console.log("User created and email sent");
+
+    return res.status(201).json({
+      message: "User successfully created",
+      updatedId: newUser._id,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
-      message: "User not successful created",
+      message: "An error occurred while creating the user",
       error: error.message,
     });
   }
