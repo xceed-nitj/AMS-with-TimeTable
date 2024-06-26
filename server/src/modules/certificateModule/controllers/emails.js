@@ -48,6 +48,16 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
       }
     }
 
+    // Update number of certificateIssued property
+    const certificateIssued = await Participant.countDocuments({
+      $and: [
+        { eventId: eventId },
+        { isCertificateSent: true },
+      ],
+    })
+    event.certificateIssued = certificateIssued
+    await event.save()
+
     console.log("Emails sent successfully!");
   } catch (error) {
     console.error("Error sending emails:", error);

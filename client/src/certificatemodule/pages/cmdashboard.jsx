@@ -49,7 +49,7 @@ function CMDashboard() {
         // console.log(data)
         setTable(data);
       } else {
-        console.error("Failed to fetch timetables");
+        console.error("Failed to fetch events");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -118,6 +118,7 @@ function CMDashboard() {
               {/* <CustomTh>Department/Club</CustomTh> */}
               <CustomTh>Edit certificate details</CustomTh>
               <CustomTh>Edit participant details</CustomTh>
+              <CustomTh>Certificates issued</CustomTh>
               <CustomTh>Lock Status</CustomTh>
             </Tr>
           </Thead>
@@ -160,6 +161,7 @@ function CMDashboard() {
                   Participants Locked
                 </Center>)}
                 </Td>
+                <Td><Center>{event.certificateIssued}</Center></Td>
                 <Td>
                 <center>
                 {!event.lock ? (
@@ -167,7 +169,7 @@ function CMDashboard() {
     Lock The Event
   </CustomTealButton>
 ) : (
-  <span>Event Locked on {new Date(event.updated_at).toLocaleDateString('en-GB')}</span>
+  <span>Locked on {new Date(event.updated_at).toLocaleDateString('en-GB')}</span>
 )}
      </center>
                 </Td>

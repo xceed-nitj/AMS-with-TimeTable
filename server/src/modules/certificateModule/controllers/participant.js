@@ -1,5 +1,6 @@
 const HttpException = require("../../../models/http-exception");
 const participant = require("../../../models/certificateModule/participant");
+const addEvent = require("../../../models/certificateModule/addevent");
 const csv = require("csv-parser");
 const { Readable } = require("stream");
 
@@ -31,8 +32,8 @@ class AddparticipantController {
     }
   }
 
-  async addparticipant(newparticipant,eventId) {
-    
+  async addparticipant(newparticipant, eventId) {
+
     try {
       // If not exists, create a new certificate
       const createdCertificate = await participant.create({
@@ -83,10 +84,29 @@ class AddparticipantController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
+      const pt = await participant.findById(id,{ cache: false });
       const updatedparticipant = await participant.findByIdAndUpdate(
         id,
-        participantData
+        participantData,
+        { new:true } // return the updated document
       );
+
+      if (updatedparticipant.isCertificateSent) {
+        const event = await addEvent.findById(pt.eventId, { cache: false });
+        console.log(event);
+        const certificateIssued = await participant.countDocuments({
+          $and: [
+            { eventId: pt.eventId },
+            { isCertificateSent: true },
+          ],
+        })
+        console.log(certificateIssued)
+        event.certificateIssued = certificateIssued
+        await event.save()
+      }
+
+
+
       return updatedparticipant;
     } catch (e) {
       throw new HttpException(500, e);
