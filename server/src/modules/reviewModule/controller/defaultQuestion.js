@@ -1,14 +1,15 @@
 const DefaultQuestion = require('../../../models/reviewModule/defaultQuestion');
 
 const addDefaultQuestion = async (req, res) => {
-    const { show, type, question, options } = req.body;
+    const { show, type, question, options ,order } = req.body;
 
     try {
         const newDefaultQuestion = new DefaultQuestion({
             show,
             type,
             question,
-            options
+            options,
+            order
         });
 
         await newDefaultQuestion.save();
