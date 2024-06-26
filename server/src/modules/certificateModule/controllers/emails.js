@@ -2,6 +2,7 @@ const Participant = require("../../../models/certificateModule/participant");
 const addEvent = require("../../../models/certificateModule/addevent");
 const mailSender = require("../../mailsender");
 const ejs = require("ejs");
+const { issuedCertificates } = require("../helper/issuedCertificates");
 
 const sendEmailsToParticipants = async (eventId, baseURL) => {
   try {
@@ -49,14 +50,7 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
     }
 
     // Update number of certificateIssued property
-    const certificateIssued = await Participant.countDocuments({
-      $and: [
-        { eventId: eventId },
-        { isCertificateSent: true },
-      ],
-    })
-    event.certificateIssued = certificateIssued
-    await event.save()
+    await issuedCertificates(eventId)
 
     console.log("Emails sent successfully!");
   } catch (error) {

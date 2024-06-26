@@ -1,8 +1,8 @@
 const HttpException = require("../../../models/http-exception");
 const participant = require("../../../models/certificateModule/participant");
-const addEvent = require("../../../models/certificateModule/addevent");
 const csv = require("csv-parser");
 const { Readable } = require("stream");
+const {issuedCertificates} = require("../helper/issuedCertificates")
 
 class AddparticipantController {
   async addBatchparticipant(fileBuffer, eventId) {
@@ -91,18 +91,8 @@ class AddparticipantController {
         { new:true } // return the updated document
       );
 
-      if (updatedparticipant.isCertificateSent) {
-        const event = await addEvent.findById(pt.eventId, { cache: false });
-        console.log(event);
-        const certificateIssued = await participant.countDocuments({
-          $and: [
-            { eventId: pt.eventId },
-            { isCertificateSent: true },
-          ],
-        })
-        console.log(certificateIssued)
-        event.certificateIssued = certificateIssued
-        await event.save()
+      if (!(pt.isCertificateSent == updatedparticipant.isCertificateSent)) {
+        issuedCertificates(pt.eventId)
       }
 
 
@@ -118,7 +108,10 @@ class AddparticipantController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      await participant.findByIdAndDelete(id);
+      const pt =await participant.findById(id);
+      const eventid=pt.eventId;
+      await participant.deleteOne({_id:pt.id})
+      await issuedCertificates(eventid)
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
