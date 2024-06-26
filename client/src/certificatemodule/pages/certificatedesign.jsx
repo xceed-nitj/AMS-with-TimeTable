@@ -24,7 +24,7 @@ const CertificateForm = () => {
   const toast = useToast();
   const [type, setType] = useState('');
   const [formData, setFormData] = useState({
-    title: [''],
+    title: ['Dr B R Ambedkar National Institute of Technology Jalandhar','डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर'],
     verifiableLink: "",
     logos: [''],
     header: [''],
