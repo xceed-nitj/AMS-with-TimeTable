@@ -135,6 +135,33 @@ const findPaperById=async(req,res)=>{
   }
 };
 
+const updateReviewerOfPaper = async (req, res) => {
+  try{
+    let paperId = req.params.id;
+    const updateFields = req.body;
+    const reviewerId = req.body.reviewerId;
+    let paper = await Paper.findById(paperId);
+
+    const updateObject = {};
+    for (const key of Object.keys(updateFields)) {
+      if (key !== 'id') { // Ensure not to include _id field in the updateObject
+        updateObject[`reviewers.$.${key}`] = updateFields[key];
+      }
+    }
+
+    paper = await Paper.findOneAndUpdate(
+      { _id: paperId, 'reviewers.userId': reviewerId },
+      { $set: updateObject },
+      { new: true, runValidators: true }
+    );
+    const newPaper = await paper.save();
+    return res.status(200).json({ message: "Paper updated", newPaper });
+  }catch(error){
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 const updatePaper = async (req, res) => {
   let paperId = req.params.id;
   console.log(paperId);
@@ -281,9 +308,9 @@ const removeReviewer = async (req,res)=>{
 };
 
 const addAuthor = async (req, res) => {
-  const { name, email, designation } = req.body;
+  const { name, email, designation, eventId } = req.body;
   const password = "1234"; // A random password could be used
-  console.log("email: ", email);
+  console.log("email: ", email, "\neventid: ",eventId);
 
   try {
     // Check if the user already exists
@@ -303,6 +330,7 @@ const addAuthor = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user with the hashed password
+    const event = await Event.findById(eventId);
     const newUser = new XUser({
       name: name,
       email: email,
@@ -315,10 +343,12 @@ const addAuthor = async (req, res) => {
     await newUser.save();
 
     // Send email notification
+    const reviewerInvitationTemplate=event.templates.paperSubmission;
+    const signature=event.templates.signature;
     await sendMail(
       email,
-      'You have been added as a reviewer',
-      `You're added as an author in a paper.<br>
+      'You have been added as an author',
+      ` ${reviewerInvitationTemplate} <br>'
       Here's your temporary password: ${password}. Please login to change it.<br>
       XCEED`
     );
@@ -338,5 +368,4 @@ const addAuthor = async (req, res) => {
   }
 };
 
-
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, updateReviewerOfPaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
