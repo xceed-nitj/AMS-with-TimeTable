@@ -107,6 +107,11 @@ const ReviewPage = () => {
       decision,
     };
 
+    const updatedField = {
+      completedDate : new Date(),
+      reviewerId : userId
+    }
+    axios.patch(`${apiUrl}/reviewmodule/paper/updatereviewer/${paperId}`, updatedField)
     axios.post(`${apiUrl}/reviewmodule/review/save`, reviewData)
       .then(() => {
         setIsSubmitted(true);

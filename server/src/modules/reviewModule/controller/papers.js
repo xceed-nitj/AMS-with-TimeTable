@@ -135,6 +135,33 @@ const findPaperById=async(req,res)=>{
   }
 };
 
+const updateReviewerOfPaper = async (req, res) => {
+  try{
+    let paperId = req.params.id;
+    const updateFields = req.body;
+    const reviewerId = req.body.reviewerId;
+    let paper = await Paper.findById(paperId);
+
+    const updateObject = {};
+    for (const key of Object.keys(updateFields)) {
+      if (key !== 'id') { // Ensure not to include _id field in the updateObject
+        updateObject[`reviewers.$.${key}`] = updateFields[key];
+      }
+    }
+
+    paper = await Paper.findOneAndUpdate(
+      { _id: paperId, 'reviewers.userId': reviewerId },
+      { $set: updateObject },
+      { new: true, runValidators: true }
+    );
+    const newPaper = await paper.save();
+    return res.status(200).json({ message: "Paper updated", newPaper });
+  }catch(error){
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 const updatePaper = async (req, res) => {
   let paperId = req.params.id;
   console.log(paperId);
@@ -341,5 +368,4 @@ const addAuthor = async (req, res) => {
   }
 };
 
-
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
+module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, updateReviewerOfPaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
