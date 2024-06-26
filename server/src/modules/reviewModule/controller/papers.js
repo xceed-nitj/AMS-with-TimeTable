@@ -281,9 +281,9 @@ const removeReviewer = async (req,res)=>{
 };
 
 const addAuthor = async (req, res) => {
-  const { name, email, designation } = req.body;
+  const { name, email, designation, eventId } = req.body;
   const password = "1234"; // A random password could be used
-  console.log("email: ", email);
+  console.log("email: ", email, "\neventid: ",eventId);
 
   try {
     // Check if the user already exists
@@ -303,6 +303,7 @@ const addAuthor = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user with the hashed password
+    const event = await Event.findById(eventId);
     const newUser = new XUser({
       name: name,
       email: email,
@@ -315,10 +316,12 @@ const addAuthor = async (req, res) => {
     await newUser.save();
 
     // Send email notification
+    const reviewerInvitationTemplate=event.templates.paperSubmission;
+    const signature=event.templates.signature;
     await sendMail(
       email,
-      'You have been added as a reviewer',
-      `You're added as an author in a paper.<br>
+      'You have been added as an author',
+      ` ${reviewerInvitationTemplate} <br>'
       Here's your temporary password: ${password}. Please login to change it.<br>
       XCEED`
     );

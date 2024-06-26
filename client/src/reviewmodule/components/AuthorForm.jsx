@@ -49,10 +49,11 @@ export default function AuthorForm(props) {
     }
     if(!dupliCheck(author.order)){
       try {
-        const response = await axios.post(`${apiUrl}/reviewmodule/paper/addAuthor`, author,{
+        const response = await axios.post(`${apiUrl}/reviewmodule/paper/addAuthor`,{
           name: author.name,
           email: author.email,
           designation: author.designation,
+          eventId: paper.eventId,
         });
         //console.log("userid:",response.data.updatedId);
         setAuthorid({ ...aid, _id: response.data.updatedId});
