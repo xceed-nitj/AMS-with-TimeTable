@@ -5,6 +5,7 @@ const participantController = new ParticipantController();
 const multer = require('multer');
 const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
+const {totalCertificates} = require("../helper/countCertificates");
 
 
 const storage = multer.memoryStorage({
@@ -23,6 +24,7 @@ participantRouter.post("/batchupload/:eventId",ecmadminRoute,LockStatus,upload.s
   try {
     const fileBuffer = req.file.buffer;
     await participantController.addBatchparticipant(fileBuffer,req.params?.eventId);
+    totalCertificates(eventId)
     return res.status(200).json({message: 'Data added succesfully'});
   } 
   catch (e) {

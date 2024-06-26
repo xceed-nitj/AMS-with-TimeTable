@@ -28,7 +28,11 @@ const addEventSchema = new mongoose.Schema({
   eventType:{
     type: String,
   },
-  certificateIssued:{
+  totalCertificates:{
+    type:Number,
+    default:0,
+  },
+  certificatesIssued:{
     type:Number,
     default:0,
   },

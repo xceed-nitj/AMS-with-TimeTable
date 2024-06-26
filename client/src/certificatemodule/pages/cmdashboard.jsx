@@ -103,7 +103,7 @@ function CMDashboard() {
   const domainName = urlParts[2];
 
   return (
-    <Container maxW='5xl'>
+    <Container maxW='7xl'>
         <Header title="List of Events"></Header>
       <TableContainer>
         <Table
@@ -118,7 +118,8 @@ function CMDashboard() {
               {/* <CustomTh>Department/Club</CustomTh> */}
               <CustomTh>Edit certificate details</CustomTh>
               <CustomTh>Edit participant details</CustomTh>
-              <CustomTh>Certificates issued</CustomTh>
+              <CustomTh>Total Certificates</CustomTh>
+              <CustomTh>Certificates Issued</CustomTh>
               <CustomTh>Lock Status</CustomTh>
             </Tr>
           </Thead>
@@ -161,7 +162,8 @@ function CMDashboard() {
                   Participants Locked
                 </Center>)}
                 </Td>
-                <Td><Center>{event.certificateIssued}</Center></Td>
+                <Td><Center>{event.totalCertificates}</Center></Td>
+                <Td><Center>{event.certificatesIssued}</Center></Td>
                 <Td>
                 <center>
                 {!event.lock ? (
