@@ -189,7 +189,7 @@ const ViewQuestions = () => {
   let keyset = []
   let sortedQuestions = []
   for(let i = 0; i < qArgs.length; i++) keyset.push(qArgs[i].order[0])
-  keyset.sort()
+  keyset.sort((a,b)=>a-b)
   for(let i = 0; i < keyset.length; i++) for (let j = 0; j < qArgs.length; j++) if (qArgs[j].order[0] == keyset[i]) sortedQuestions.push(qArgs[j])
   return sortedQuestions
  }
