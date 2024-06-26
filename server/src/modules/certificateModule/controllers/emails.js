@@ -41,7 +41,7 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
         const emailTitle = `${event.name}: Your certificate is here!`;
 
         // Send email
-        // await mailSender(participant.mailId, emailTitle, emailBody);
+        await mailSender(participant.mailId, emailTitle, emailBody);
 
         // Update isCertificateSent property and save the participant in the database
         participant.isCertificateSent = true;
