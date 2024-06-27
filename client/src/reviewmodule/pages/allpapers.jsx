@@ -6,6 +6,8 @@ import Header from "../../components/header";
 import { useToast } from '@chakra-ui/react';
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
+  Text,
+  Select,
   Menu,
   MenuButton,
   MenuList,
@@ -32,6 +34,8 @@ function EventPaper() {
   const currentURL = window.location.pathname;
   const parts = currentURL.split("/");
   const eventId = parts[parts.length - 3];
+  const [selectedDate, setSelectedDate] = useState(null);
+  const day_count = Array.from({ length: 30 }, (_, i) => i + 1);
 
   useEffect(() => {
     const fetchPapersById = async () => {
@@ -78,11 +82,78 @@ function EventPaper() {
     fetchPapersById();
     fetchReviewersById();
   }, [apiUrl, eventId]);
+
+  const handleSelection = async (value,paperId,reviewerId) => {
+    try {
+      const daysToAdd = parseInt(value, 10);
+      const currentDate = new Date();
+      const newDate = new Date(currentDate);
+      newDate.setDate(currentDate.getDate() + daysToAdd);
+      await axios.patch(`${apiUrl}/reviewmodule/reviewer/updateReviewer/${paperId}/${reviewerId}`, { newDate,rating:false,comment_author:false,comment_editor:false,status:false,reviewerStatus:false });
+      toast({
+        title: 'Reviewer due date updated successfully',
+        status: 'success',
+        duration: 6000,
+        isClosable: true,
+        position: 'bottom',
+      });
+      window.location.href = `${window.location.origin}/prm/${eventId}/editor/papers`;
+    } catch (error) {
+      console.error('Error updating reviewer due date:', error);
+      toast({
+        title: 'Error updating reviewer due date',
+        description: error.response ? error.response.data : 'Unknown error occurred',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+        position: 'bottom',
+      });
+    }
+  };
+
+  const handledelete = async (paper_id,user_id)=>{
+    console.log("function is called: ",paper_id,user_id);
+    try{
+      const removeResponse = await axios.post(`${apiUrl}/reviewmodule/paper/removeReviewer/${paper_id}`, {userId: user_id });
+      if(removeResponse){
+        console.log("removed successfully");
+        toast({
+          title: 'Reviewer Removed successfully',
+          status: 'success',
+          duration: 6000,
+          isClosable: true,
+          position: 'bottom',
+        });
+        window.location.reload();
+        // setReviewers(prevReviewers => [...prevReviewers, { email: reviewerEmail }]); // Assuming you're only adding the email here
+      } else {
+        toast({
+          title: 'Error removing Reviewer as api path is wrong',
+          description: 'Please try again later',
+          status: 'error',
+          duration: 6000,
+          isClosable: true,
+          position: 'bottom',
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: error.response.data,
+        description: 'Check again',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+        position: 'bottom',
+      }); 
+    }
+  }
   const handlesubmit = async (paper_id,reviewer_email)=>{
     console.log("function is called: ",paper_id,reviewer_email);
+    const baseUrl = window.location.origin;
     try {
       // Adding reviewer to the paper
-      const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/paper/addReviewer/${paper_id}`, { email: reviewer_email });
+      const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/paper/addReviewer/${paper_id}`, { email: reviewer_email, baseUrl });
       if (addReviewerResponse) {
         console.log("added successfully");
         toast({
@@ -158,8 +229,9 @@ function EventPaper() {
                     </MenuButton>
                     <MenuList>
                       {reviewers.map((reviewer)=>(
-                        <MenuItem  onClick={()=>handlesubmit(paper._id,reviewer.name)} minH='48px'>
-                          <span>{reviewer.name}</span>
+                        //fixed the assign reviewer button for those users, not having a name value
+                        <MenuItem  onClick={()=>handlesubmit(paper._id,reviewer.email[0])} minH='48px'>
+                          <span>{reviewer.email[0]}</span>
                         </MenuItem>
                       ))}
                     </MenuList>
@@ -169,7 +241,33 @@ function EventPaper() {
                   <ol>
                     {paper.reviewers.map((r)=>(
                         <li>
-                          <span>username:{r.username},</span><br></br>
+                          <span>username:{r.username},</span><Button  onClick={()=>handledelete(paper._id,r.userId)}>Delete</Button>
+                          <Select
+                            placeholder="Assign Due Date"
+                            onChange={(e) => handleSelection(e.target.value,paper._id,r.userId)}
+                          >
+                            {day_count.map((day) => (
+                              <option key={day} value={day}>
+                                {day} {day === 1 ? 'day' : 'days'}
+                              </option>
+                            ))}
+                          </Select>
+                          {r.dueDate && (
+                            <Text mt={4}>
+                                Due Date: {new Date(r.dueDate).toLocaleDateString()}
+                            </Text>
+                          )}
+                          {!r.dueDate && (
+                            <Text mt={4}>
+                                Due Date: {"NO DUE DATE"}
+                            </Text>
+                          )}
+                          {r.completedDate && (
+                            <Text mt={4}>
+                                Completed On: {new Date(r.completedDate).toLocaleDateString()}
+                            </Text>
+                          )}
+                          <br></br>
                           <span>userId:{r.userId}</span>
                         </li>
                     ))}

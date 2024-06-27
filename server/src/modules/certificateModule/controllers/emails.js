@@ -2,11 +2,12 @@ const Participant = require("../../../models/certificateModule/participant");
 const addEvent = require("../../../models/certificateModule/addevent");
 const mailSender = require("../../mailsender");
 const ejs = require("ejs");
+const { issuedCertificates } = require("../helper/countCertificates");
 
 const sendEmailsToParticipants = async (eventId, baseURL) => {
   try {
     // Fetch all participants from the database
-    const allParticipants = await Participant.find({eventId});
+    const allParticipants = await Participant.find({ eventId });
     if (!allParticipants) {
       throw new Error("No participants found");
     }
@@ -45,6 +46,9 @@ const sendEmailsToParticipants = async (eventId, baseURL) => {
         // Update isCertificateSent property and save the participant in the database
         participant.isCertificateSent = true;
         await participant.save();
+
+        // Update number of certificateIssued property
+        await issuedCertificates(eventId)
       }
     }
 

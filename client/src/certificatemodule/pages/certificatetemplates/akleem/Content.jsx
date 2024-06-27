@@ -14,6 +14,8 @@ function Content() {
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 2];
   const participantId = parts[parts.length - 1];
+  const [title,settitle]=useState(['Dr B R Ambedkar National Institute of Technology Jalandhar','डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर'])
+  const [verifiableLink,setVerifiableLink]=useState("")
   const [certiType, setCertiType] = useState('');
   const [logos, setLogos] = useState([]);
   const [participantDetail, setParticipantDetail] = useState({});
@@ -79,6 +81,8 @@ function Content() {
 
         let content_body = data_one[0].body;
         setLogos(data_one[0].logos);
+        if(!data_one[0].title){settitle(data_one[0].title)};
+        setVerifiableLink(data_one[0].verifiableLink);
         setSignatures(data_one[0].signatures);
         setHeader(data_one[0].header)
         setTemplateId(data_one[0]?.templateId || "0")
@@ -109,6 +113,8 @@ function Content() {
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}

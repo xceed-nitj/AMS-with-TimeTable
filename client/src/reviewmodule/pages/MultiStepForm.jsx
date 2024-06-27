@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Stepper, Step, StepTitle, StepIndicator, StepStatus, StepSeparator, Icon } from '@chakra-ui/react';
-import { FaAngleLeft, FaAngleRight } from 'react-icons/fa';
+import { FaAlignJustify, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 import AuthorDetails from '../components/AuthorDetails';
 import PaperDetails from '../components/PaperDetails';
 import CodeDetails from '../components/CodeDetails';
@@ -10,6 +10,8 @@ import Submission from '../components/Submission';
 import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
 import getEnvironment from '../../getenvironment';
+
+import './revolveAnimation.css'
 
 function MultiStepForm({ isSidebarOpen }) {
   const [activeStep, setActiveStep] = useState(0); // State to manage active step index
@@ -21,6 +23,8 @@ function MultiStepForm({ isSidebarOpen }) {
   var urlParts = url.split('/');
   var value1 = urlParts[4];
   var value2 = urlParts[5];
+  //console.log("values: ",value1,value2);
+  paper.eventId=value1;
 
   async function handleNext(data) {
     if (!data) {
@@ -36,7 +40,7 @@ function MultiStepForm({ isSidebarOpen }) {
       body: JSON.stringify({ ...data, eventId: value1, paperId: value2 }),
     });
     const dataa = await res.json();
-    console.log(dataa);
+    //console.log("dataa: ",dataa);
     if (res.ok) {
       if (activeStep === steps.length - 1) return;
       setActiveStep(activeStep + 1);
@@ -70,8 +74,10 @@ function MultiStepForm({ isSidebarOpen }) {
   }
 
   const containerStyle = {
-    padding: '35px 35px 35px 0',
-    marginLeft: isSidebarOpen ? '0' : '0vw',
+    paddingTop: '35px',
+    margin: 'auto',
+    // alignSelf: 'center',
+    // marginLeft: isSidebarOpen ? '0' : '0vw', // not sure about this
     width: isSidebarOpen ? '82vw' : '82vw',
     overflowX: 'hidden',
     zIndex: '9997',
@@ -81,19 +87,44 @@ function MultiStepForm({ isSidebarOpen }) {
 
   return (
     <div style={containerStyle}>
-      <Stepper size="md" index={activeStep}>
+      <Stepper size="md" index={activeStep}
+        style={{display:'flex', flexWrap: 'wrap'}}
+        colorScheme='green'
+       >
         {steps.map((step, index) => (
+          
           <Step
             key={index}
             cursor="pointer" // Add pointer cursor
+            style={{padding: '1px'}}
+            onClick={() => setActiveStep(index)}
           >
-            <StepIndicator>
-              <StepStatus
-                complete={<Icon boxSize={iconSize} as={FaAngleLeft} />}
-                incomplete={<Icon boxSize={iconSize} as={FaAngleRight} />}
-                active={<Icon boxSize={iconSize} as={FaAngleRight} />}
-              />
-            </StepIndicator>
+            <StepStatus
+              complete={
+                <StepIndicator>
+                  <Icon boxSize={iconSize} as={FaAngleLeft} />
+                </StepIndicator>
+              }
+              incomplete={
+                <StepIndicator>
+                  <Icon boxSize={iconSize} as={FaAngleRight} />
+                </StepIndicator>
+              }
+              active={
+                <div style={{border:'2px solid #3182ce', borderRadius:'50px', padding:'5px', 
+                display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <div className='revolveAnimation'
+                  style={{zIndex:'60', position:'absolute', height:'100%'}}>
+                    <div style={{border:'4px solid #3182ce', borderRadius:'50px', top:'0', transform:'translateY(-20%)'}}></div>
+                  </div>
+                  <StepIndicator
+                    style={{zIndex:'3',backgroundColor: '#3182ce', border:'2px solid #3182ce'}}
+                  >
+                    <Icon boxSize={iconSize} as={FaAngleRight} style={{color: 'white'}}/>
+                  </StepIndicator>
+                </div>
+              }
+            />
             <Box flexShrink="0">
               <StepTitle>{step.title}</StepTitle>
             </Box>

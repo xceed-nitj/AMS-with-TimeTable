@@ -14,6 +14,8 @@ const CertificateContent = ({
   eventId,
   contentBody,
   certiType,
+  title,
+  verifiableLink,
   logos,
   participantDetail,
   signature,
@@ -45,10 +47,12 @@ const CertificateContent = ({
       image.setAttribute('width', '100');
       image.setAttribute('height', '100');
       image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+      image.classList.add("qrcode");
 
       svg.appendChild(image);
+      if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
     });
-  }, []);
+  }, [verifiableLink]);
 
   return (
     <svg
@@ -233,7 +237,13 @@ const CertificateContent = ({
                 <div className="tw-text-center">
                   {key === num_left && (
                     <>
-                      <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
+                      {title.map((item, key) => (
+                        <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                          {item}
+                        </p>
+                      ))
+                      }
+                      {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
                         डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
                       </p>
                       <p className="tw-font-nunito-bold tw-text-[12px]">
@@ -246,7 +256,7 @@ const CertificateContent = ({
                       <p className="tw-font-nunito-bold tw-text-[12px] ">
                         G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-
                         144008
-                      </p>
+                      </p> */}
                     </>
                   )}
                 </div>
@@ -269,8 +279,8 @@ const CertificateContent = ({
         </foreignObject>
 
         <text
-          x="570"
-          y="340.473"
+          x="576"
+          y="350"
           fill="#323B60"
           fontFamily="Poppins"
           fontSize="88"
@@ -278,17 +288,6 @@ const CertificateContent = ({
           fontWeight="600"
         >
           CERTIFICATE
-        </text>
-        <text
-          x="570"
-          y="367"
-          fill="#323B60"
-          fontFamily="Poppins"
-          fontSize="22"
-          textAnchor="middle"
-          fontWeight="500"
-        >
-          This is Cetify that
         </text>
 
         <foreignObject x="15%" y="395" width="70%" height="160">
@@ -319,11 +318,11 @@ const CertificateContent = ({
           </div>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
+        {verifiableLink && <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
           <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
             {window.location.href}
           </div>
-        </foreignObject>
+        </foreignObject>}
       </>
       );
     </svg>

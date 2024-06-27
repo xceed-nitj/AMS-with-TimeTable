@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
 import { Button, Checkbox, Text, VStack, HStack, Spacer, ListItem, OrderedList, Alert, AlertIcon, AlertDescription } from '@chakra-ui/react';
+import { Link } from 'react-router-dom'
 
 export default function Terms({ setNext, handlePrevious, handleNext }) {
   const [paper, setPaper] = useRecoilState(paperState);
@@ -26,7 +27,10 @@ export default function Terms({ setNext, handlePrevious, handleNext }) {
 
   return (
     <VStack spacing={6} alignItems="flex-start">
-      <Text fontSize="2xl" fontWeight="bold">Terms and Conditions</Text>
+      {/* <Text fontSize="2xl" fontWeight="bold">Terms and Conditions</Text> */}
+      <h1 className="tw-font-bold tw-text-xl tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 tw-width tw-w-fit tw-m-auto"
+          style={{color:'transparent', backgroundClip: 'text', fontSize:'xx-large', paddingBottom:'10px'}} //matched the styling on the heading with tailwind button styling
+        >Terms and Conditions</h1>
       <VStack spacing={2} align="start">
         <OrderedList pl={0}>
           <ListItem>
@@ -68,10 +72,20 @@ export default function Terms({ setNext, handlePrevious, handleNext }) {
         )}
       </VStack>
       <HStack spacing={4} width="100%">
-        <Button onClick={handlePrevious}>Back</Button>
-        <Spacer />
-        <Button onClick={handleNextClick} colorScheme="blue" disabled={!paper.terms}>Next</Button>
+        {/* <Button onClick={handlePrevious}>Back</Button> */}
+        {/* <Spacer /> */}
+        {/* <Button onClick={handleNextClick} colorScheme="blue" disabled={!paper.terms}>Next</Button> */}
+        <Link
+          onClick={handlePrevious}
+          className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+        >Back</Link>
+        <Link
+          onClick={handleNextClick}
+          disabled={!paper.terms}
+          className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
+        >Next</Link>
       </HStack>
+      <br/>
     </VStack>
   );
 }

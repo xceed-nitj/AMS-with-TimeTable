@@ -20,6 +20,8 @@ function ViewCertificate() {
   const [certiType, setCertiType] = useState('');
   const [templateId, setTemplateId] = useState("0");
 
+  const [title, setTitle] = useState([""]);
+  const [verifiableLink, setVerifiableLink] = useState("");
   const [logos, setLogos] = useState([]);
   const [participantDetail, setParticipantDetail] = useState({});
   const [signature, setSignatures] = useState([]);
@@ -87,6 +89,8 @@ function ViewCertificate() {
       console.log('Data from response_two:', data_two);
 
       let content_body = data_one[0].body;
+      setTitle(data_one[0].title);
+      setVerifiableLink(data_one[0].verifiableLink);
       setLogos(data_one[0].logos);
       setSignatures(data_one[0].signatures);
       setHeader(data_one[0].header)
@@ -130,17 +134,20 @@ function ViewCertificate() {
       image.setAttribute('y', '470');
       image.setAttribute('width', '100');
       image.setAttribute('height', '100');
+      image.classList.add("qrcode");
       image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
-
-      svg.appendChild(image);
+      svg.appendChild(image)
+      if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
     });
-  }, []);
+  }, [verifiableLink]);
 
   return (
     <>
       <SelectCertficate
         eventId={eventId}
         templateId={templateId}
+        title={title}
+        verifiableLink={verifiableLink}
         contentBody={contentBody}
         certiType={certiType}
         logos={logos}

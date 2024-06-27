@@ -44,6 +44,7 @@ function UpdateReviewerStatus() {
         isClosable: true,
         position: 'bottom',
       });
+      window.location.href = `${window.location.origin}/prm/login`;
     } catch (error) {
       console.error('Error updating reviewer status:', error);
       toast({

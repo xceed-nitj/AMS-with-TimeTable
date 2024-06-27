@@ -78,6 +78,17 @@ const getEventsByUser = async (req, res) => {
   }
 };
 
+const findEventByReviewer = async (req, res) => {
+  let id = req.params.id;
+  const paper = await Event.find({ 'reviewer.user': id }).exec();
+
+  if (!paper) {
+    return res.status(401).json("Invalid ReviewerId");
+  } else {
+    return res.status(200).send(paper);
+  }
+};
+
 const getEventById = async (req, res) => {
   const id = req.params.id;
 
@@ -219,37 +230,38 @@ const addEditor = async (req, res) => {
 const addReviewer = async (req, res) => {
   try {
     const eventId = req.params.id;
-    const { email, password, baseUrl } = req.body; 
+    const { email, baseUrl } = req.body; 
 
     if (!email) {
       console.error('Email is required');
       return res.status(400).send('Email is required');
     }
 
-    let reviewer = await XUser.findOne({ name: email });
+    let reviewer = await XUser.findOne({ email });
 
     if (!reviewer) {
       // If reviewer does not exist, create a new one
       try {
-        // Hash the password
+          // Hash the password
+          const password = "1234";
         const hash = await bcrypt.hash(password, 10);
         
         // Create the user with the hashed password
         reviewer = new XUser({
           name: email,
           email: email,
-          role: ["PRM", "Reviewer"],
+          role: ["PRM"],
           password: hash
         });
 
         await reviewer.save();  // Save the new reviewer to the database
 
         // Send the welcome email
-        await sendMail(
-          email,
-          'Welcome as a Reviewer',
-          `You have been added as a reviewer. This is your password: ${password}`  // Send the original password or a predefined one
-        );
+        //await sendMail(
+        //  email,
+        //  'Welcome as a Reviewer',
+        //  `You have been added as a reviewer. This is your password: ${password}`  // Send the original password or a predefined one
+        //);
 
         console.log('Reviewer created:', reviewer);
       } catch (createErr) {
@@ -260,7 +272,10 @@ const addReviewer = async (req, res) => {
         });
       }
     }
-
+    if (!reviewer.role.includes("PRM")) {
+      reviewer.role.push("PRM");
+      reviewer.save();
+    }
     // Fetch the event
     const event = await Event.findById(eventId);
 
@@ -369,7 +384,7 @@ const getAllReviewersInEvent = async (req, res) => {
     console.log(event.reviewer);
     // Extract reviewer details (name, email, and status) from the event
     const reviewers = event.reviewer.map(r => ({
-      name: r.user.name,  // Assuming the User schema has a name field
+      name: r.user.email[0],  // Assuming the User schema has a name field
       email: r.user.email,  // Assuming the User schema has an email field
       status: r.status
     }));
@@ -456,4 +471,4 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation};
+module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
