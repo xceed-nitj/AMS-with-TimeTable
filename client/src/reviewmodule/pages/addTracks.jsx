@@ -5,16 +5,29 @@ import axios from 'axios';
 
 import {
   Container,
+  Text,
   Box,
   Input,
   Button,
+  TableContainer,
   Table,
   Thead,
+  HStack,
+  Tfoot,
+  Avatar,
   Tr,
   Th,
   Tbody,
   Td,
   IconButton,
+  Checkbox,
+  Tab,
+  Tabs,
+  TabPanel,
+  TabPanels,
+  TabList,
+  Center,
+  Spacer
 } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
@@ -157,88 +170,66 @@ function AddTrack() {
 };
 
   return (
-    <Container>
-      <Header title="Add Track Details"></Header>
-      <Box maxW="xl" mx="auto" mt={10}>
-        <form onSubmit={handleSubmit}>
-          <Input
-            mb={4}
-            type="text"
-            placeholder="Enter track name to add to event"
-            value={trackName}
-            onChange={handleTrackNameChange}
-          />
-          {editIndex !== null ? (
-            <>
-              <Button type="button" colorScheme="blue" onClick={handleSaveEdit} leftIcon={<CheckIcon />} mr={2}>
-                Save
-              </Button>
-              <Button type="button" colorScheme="red" onClick={handleCancelEdit} leftIcon={<CloseIcon />}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button type="submit" colorScheme="teal" leftIcon={<EditIcon />}>
-              Add
-            </Button>
-          )}
-        </form>
-
-        <h1>Existing Tracks</h1>
-        <Table variant="simple" mt={8}>
-          <Thead>
-            <Tr>
-              <Th>Track Name</Th>
-              <Th>Actions</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {tracks.map((track, index) => (
-              <Tr key={index}>
-                <Td>{index === editIndex ? (
-                  <Input
-                    value={trackName}
-                    onChange={handleTrackNameChange}
-                  />
-                ) : (
-                  track
-                )}</Td>
-                <Td>
-                  {index === editIndex ? (
-                    <>
-                      <IconButton
-                        aria-label="Save"
-                        icon={<CheckIcon />}
-                        onClick={handleSaveEdit}
-                        mr={2}
-                      />
-                      <IconButton
-                        aria-label="Cancel"
-                        icon={<CloseIcon />}
-                        onClick={handleCancelEdit}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <IconButton
-                        aria-label="Edit"
-                        icon={<EditIcon />}
-                        onClick={() => handleEditTrack(index)}
-                        mr={2}
-                      />
-                      <IconButton
-                        aria-label="Delete"
-                        icon={<DeleteIcon />}
-                        onClick={() => handleDeleteTrack(index)}
-                      />
-                    </>
-                  )}
-                </Td>
+    <Container maxWidth="1300px">
+      <Center fontSize="50px" fontWeight="bold">Track Details</Center>
+      <Spacer></Spacer>
+        <TableContainer>
+          <Table  size="md" overflowX="auto">
+            <Thead>
+              <Tr>
+                <Th><Checkbox></Checkbox></Th>
+                <Th>Company</Th>
+                <Th>Status</Th>
+                <Th>Type</Th>
+                <Th>SKU</Th>
+                <Th>Conatct</Th>
+                <Th>Price</Th>
+                <Th>Action</Th>
               </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </Box>
+            </Thead>
+            <Tbody>
+              <Tr>
+                <Td><Checkbox></Checkbox></Td>
+                <Td><HStack>
+                  <Avatar name='Mickey Mouse' src='https://www.google.com/url?sa=i&url=https%3A%2F%2Fgallery.yopriceville.com%2FFree-Clipart-Pictures%2FCartoons-PNG%2FMickey_Mouse_PNG_Clip-Art_Image&psig=AOvVaw0ZITEjx0G9z4Nqymi6R2aN&ust=1718538451634000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCJD6l-HE3YYDFQAAAAAdAAAAABAEclient\public\Mickey_Mouse_PNG_Clip-Art_Image.png'></Avatar>
+                  <Text>Mickey Mouse</Text>
+                  </HStack></Td>
+                <Td>millimetres (mm)</Td>
+                <Td isNumeric>25.4</Td>
+                <Td>inches</Td>
+                <Td>millimetres (mm)</Td>
+                <Td isNumeric>25.4</Td>
+                <Td>inches</Td>
+              </Tr>
+              <Tr>
+                <Td><Checkbox></Checkbox></Td>
+                <Td><HStack>
+                  <Avatar name='Mickey Mouse' src='https://www.google.com/url?sa=i&url=https%3A%2F%2Fgallery.yopriceville.com%2FFree-Clipart-Pictures%2FCartoons-PNG%2FMickey_Mouse_PNG_Clip-Art_Image&psig=AOvVaw0ZITEjx0G9z4Nqymi6R2aN&ust=1718538451634000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCJD6l-HE3YYDFQAAAAAdAAAAABAEclient\public\Mickey_Mouse_PNG_Clip-Art_Image.png'></Avatar>
+                  <Text>Mickey Mouse</Text>
+                  </HStack></Td>
+                <Td>centimetres (cm)</Td>
+                <Td isNumeric>30.48</Td>
+                <Td>inches</Td>
+                <Td>millimetres (mm)</Td>
+                <Td isNumeric>25.4</Td>
+                <Td>inches</Td>
+              </Tr>
+              <Tr>
+                <Td><Checkbox></Checkbox></Td>
+                <Td><HStack>
+                  <Avatar name='Mickey Mouse' src="Mickey.png"></Avatar>
+                  <Text>Mickey Mouse</Text>
+                  </HStack></Td>
+                <Td><Box border="1px solid green.500">Online</Box></Td>
+                <Td isNumeric>0.91444</Td>
+                <Td>inches</Td>
+                <Td>millimetres (mm)</Td>
+                <Td isNumeric>25.4</Td>
+                <Td>inches</Td>
+              </Tr>
+            </Tbody>
+          </Table>
+       </TableContainer>      
     </Container>
   );
 }
