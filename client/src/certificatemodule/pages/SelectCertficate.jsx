@@ -246,83 +246,99 @@ function SelectCertficate({
       footer={footer}
       key={'15'}
     />,
+    
     <Template17
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
       header={header}
       footer={footer}
       key={'16'}
-    />,
-    <Template18
+      />,
+
+      <Template18
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
       header={header}
       footer={footer}
       key={'17'}
-    />,
-    <Template19
+      />,
+      <Template19
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
       header={header}
       footer={footer}
       key={'18'}
-    />,
-    <Template20
+      />,
+      <Template20
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
       header={header}
       footer={footer}
       key={'19'}
-    />,
-    <Template21
+      />,
+      <Template21
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
       header={header}
       footer={footer}
       key={'20'}
-    />,
-    <Template22
+      />,
+      <Template22
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
       header={header}
       footer={footer}
       key={'21'}
-    />,
-    <Template23
+      />,
+      <Template23
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
+      title={title}
+      verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
       signature={signature}
       header={header}
       footer={footer}
       key={'22'}
-    />,
+      />,
   ];
 
   return <div>{certiDesignTemp[templateId]}</div>;

@@ -14,6 +14,8 @@ const CertificateContent = ({
   eventId,
   contentBody,
   certiType,
+  title,
+  verifiableLink,
   logos,
   participantDetail,
   signature,
@@ -47,8 +49,9 @@ const CertificateContent = ({
       image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
 
       svg.appendChild(image);
+      if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
     });
-  }, []);
+  }, [verifiableLink]);
 
   return (
     <svg
@@ -306,6 +309,13 @@ const CertificateContent = ({
             {window.location.href}
           </div>
         </foreignObject>
+
+        {verifiableLink &&
+          <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
+            <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
+              {window.location.href}
+            </div>
+          </foreignObject>}
       </>
       );
     </svg>
