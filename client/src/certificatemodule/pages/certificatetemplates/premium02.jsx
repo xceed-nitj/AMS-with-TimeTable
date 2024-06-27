@@ -6,7 +6,7 @@ import getEnvironment from "../../../getenvironment";
 import ProxifiedImage from "../../components/ProxifiedImage";
 
 import QRCode from 'qrcode';
-import { Button } from '@chakra-ui/react';
+import { Button,Text } from '@chakra-ui/react';
 import jsPDF from 'jspdf';
 
 
@@ -24,6 +24,7 @@ const Template11 = ({
     header,
     footer,
 }) => {
+    verifiableLink=(verifiableLink=="true")?true:false;
     var num_logos = logos.length;
     var num_left = 0;
     if (num_logos % 2 === 0) {
@@ -95,14 +96,14 @@ const Template11 = ({
                 />
             </>
             <>
-                <foreignObject width={"95%"} height={"200"} y={"40"} x={"-3%"}>
-                    <div className="tw-flex tw-items-center tw-justify-center tw-w-full tw-px-4">
-                        <div className='tw-flex tw-flex-col tw-items-center tw-pr-8'>
+                <foreignObject width={"95%"} height={"200"} y={"40"} x={"0%"}>
+                    <div className="tw-flex tw-items-center tw-justify-between tw-w-full tw-px-4">
+                        <div className='tw-flex tw-flex-col tw-items-center tw-pr-2'>
                             <>
                                 {title.map((item, key) => (
-                                    <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
-                                        {item}
-                                    </p>
+                                    <Text fontSize={item.fontSize} key={key} className="tw-font-nunito-bold tw-font-medium tw-text-center" >
+                                        {item.name}
+                                    </Text>
                                 ))
                                 }
                                 {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
