@@ -274,6 +274,7 @@ const CertificateForm = () => {
               <option value="19">Basic 14</option>              
               <option value="20">Basic 15</option>
               <option value="21">Basic 16</option>
+              <option value="22">Premium 7</option>
             </Select>
 
             <Text>Enter the link for the logos:</Text>
