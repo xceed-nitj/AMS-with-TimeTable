@@ -155,13 +155,7 @@ const submitReview = async (req, res) => {
             {
                 return res.status(404).json({ message: 'Review not found' });
             }
-            //console.log(review.reviewAnswers);
-            const allReviewAnswers = review.map(review => review.reviewAnswers);
-            console.log(allReviewAnswers);
-            res.json(allReviewAnswers);
-            
-            
-
+        res.json(review);
     } catch(error)
     {
         res.status(500).json({message:'Server error',error});
