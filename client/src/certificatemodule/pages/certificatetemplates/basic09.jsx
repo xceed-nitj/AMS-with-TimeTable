@@ -61,7 +61,7 @@ const Template09 = ({
             xmlns="http://www.w3.org/2000/svg"
             width="841.92"
             height="595.499987"
-            viewBox="0 0 900 600"
+            viewBox="0 0 841.92 595.499987"
             id="svg"
             className="svg-img tw-object-contain"
             ref={svgRef}
@@ -86,7 +86,7 @@ const Template09 = ({
                 </g>
             </>
             <>
-                <foreignObject width={"90%"} height={"400"} y={"70"} x={"1.5%"}>
+                <foreignObject width={"90%"} height={"400"} y={"70"} x={"5%"}>
                     <div className="tw-flex tw-items-center tw-justify-center tw-w-full tw-px-4">
                         {logos.map((item, key) => (
                             <div key={key} className="tw-flex tw-items-center tw-justify-center ">
@@ -122,7 +122,7 @@ const Template09 = ({
                     </div>
                 </foreignObject>
 
-                <foreignObject x="0%" y="170" width="85%" height="160">
+                <foreignObject x="5%" y="170" width="85%" height="160">
                     <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
                         {header.map((item, ind) => (
                             <h1 className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase" key={ind}>{item}</h1>
@@ -142,13 +142,13 @@ const Template09 = ({
                     CERTIFICATE OF APPRECIATION
                 </text>
 
-                <foreignObject x="6%" y="300" width="75%" height="160">
+                <foreignObject x="10%" y="300" width="85%" height="160">
                     <p className="font-serif text-xl opacity-80">
                         <div>{ReactHtmlParser(contentBody)}</div>
                     </p>
                 </foreignObject>
 
-                <foreignObject x={"14%"} y={425} width={"70%"} height={100}>
+                <foreignObject x={"13%"} y={425} width={"75%"} height={100}>
                     <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
                         {signature.map((item, key) => (
                             <div key={key} className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">

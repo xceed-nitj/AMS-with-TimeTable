@@ -189,13 +189,19 @@ const CertificateForm = () => {
   };
 
   return (
-    <Flex>
+    <Flex 
+    style={{
+      height: '89dvh',
+      // overflowY: 'scroll',
+      clipPath: 'content-box',
+    }}
+    >
       <Container
         maxW="lg"
         style={{
-          height: '90dvh',
+          height: '89dvh',
           overflowY: 'scroll',
-          clipPath: 'content-box',
+          // clipPath: 'content-box',
         }}
       >
         <Header title="Enter Certificate Details"></Header>
