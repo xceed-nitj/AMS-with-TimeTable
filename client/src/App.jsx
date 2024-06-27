@@ -83,6 +83,7 @@ import Review from './reviewmodule/pages/Review.jsx';
 import ReviewerQuestion from './reviewmodule/pages/ReviewQuestion';
 import DefaultQuestion from './reviewmodule/pages/DefaultQuestion.jsx';
 import ReviewerQuestionHome from './reviewmodule/pages/ReviewQuestionHome';
+import DefaultQuestionHome from './reviewmodule/pages/DefaultQuestionHome.jsx';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
 import UserRegistration from './reviewmodule/pages/userRegistration';
 
@@ -219,6 +220,7 @@ function App() {
     <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
     <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
     <Route path="/prm/DefaultQuestion" element={<DefaultQuestion/>}/>
+    <Route path="/prm/DefaultQuestionHome" element={<DefaultQuestionHome/>}/>
     <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
