@@ -1,5 +1,5 @@
 const express = require("express");
-const { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperById,findPaperByReviewer,findPaperByAuthor, addAuthor, PaperCountByTrack, updateReviewerOfPaper } = require("../controller/papers");
+const { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperById,findPaperByReviewer,findPaperByAuthor, addAuthor, PaperCountByTrack } = require("../controller/papers");
 const fileUploadMiddleware = require("../controller/uploadFileMiddleWare");
 const uploadPaper = require("../controller/uploadFile");
 const reupload = require("../controller/reupload");
@@ -26,6 +26,5 @@ router.post('/addAuthor', addAuthor);
 router.post('/removeReviewer/:id', removeReviewer);
 router.post("/reuploadPaper/:id", fileUploadMiddleware, reupload);
 router.patch("/:id", updatePaper); // By _id
-router.patch("/updatereviewer/:id", updateReviewerOfPaper);
 
 module.exports = router;
