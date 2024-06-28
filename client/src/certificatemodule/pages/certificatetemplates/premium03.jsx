@@ -24,7 +24,7 @@ const Template12 = ({
     header,
     footer,
 }) => {
-    verifiableLink=(verifiableLink=="true")?true:false;
+    verifiableLink=(verifiableLink=="true")
     var num_logos = logos.length;
     var num_left = 0;
     if (num_logos % 2 === 0) {

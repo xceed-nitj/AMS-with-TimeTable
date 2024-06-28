@@ -6,7 +6,7 @@ import getEnvironment from "../../../getenvironment";
 import ProxifiedImage from "../../components/ProxifiedImage";
 
 import QRCode from 'qrcode';
-import { Button,Text } from '@chakra-ui/react';
+import { Button, Text } from '@chakra-ui/react';
 import jsPDF from 'jspdf';
 
 
@@ -24,7 +24,7 @@ const Template11 = ({
     header,
     footer,
 }) => {
-    verifiableLink=(verifiableLink=="true")?true:false;
+    verifiableLink = (verifiableLink == "true")
     var num_logos = logos.length;
     var num_left = 0;
     if (num_logos % 2 === 0) {
@@ -50,7 +50,7 @@ const Template11 = ({
             image.classList.add("qrcode");
             image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
             svg.appendChild(image)
-            if(!verifiableLink){document.querySelectorAll(".qrcode").forEach((elem)=>{elem.remove()})}
+            if (!verifiableLink) { document.querySelectorAll(".qrcode").forEach((elem) => { elem.remove() }) }
         });
     }, [verifiableLink]);
 
@@ -96,12 +96,12 @@ const Template11 = ({
                 />
             </>
             <>
-                <foreignObject width={"95%"} height={"200"} y={"40"} x={"0%"}>
+                <foreignObject width={"95%"} height={"200"} y={"40"} x={"4%"}>
                     <div className="tw-flex tw-items-center tw-justify-between tw-w-full tw-px-4">
                         <div className='tw-flex tw-flex-col tw-items-center tw-pr-2'>
                             <>
                                 {title.map((item, key) => (
-                                    <Text fontSize={item.fontSize} key={key} className="tw-font-nunito-bold tw-font-medium tw-text-center" >
+                                    <Text fontSize={item.fontSize} key={key} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} className="tw-text-center" >
                                         {item.name}
                                     </Text>
                                 ))
@@ -132,10 +132,10 @@ const Template11 = ({
                     </div>
                 </foreignObject>
 
-                <foreignObject x="0%" y="160" width="65%" height="120">
+                <foreignObject x="3%" y="160" width="65%" height="120">
                     <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
                         {header.map((item, ind) => (
-                            <h1 className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase" key={ind}>{item}</h1>
+                            <Text fontSize={item.fontSize} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} className="tw-text-xl tw-text-gray-700 tw-uppercase" key={ind}>{item.header}</Text>
                         ))}
                     </div>
                 </foreignObject>
@@ -153,12 +153,12 @@ const Template11 = ({
                 </text>
 
                 <foreignObject x="4%" y="300" width="75%" height="160">
-                    <p className="font-serif text-xl opacity-80">
-                        <div>{ReactHtmlParser(contentBody)}</div>
-                    </p>
+                    <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="text-xl opacity-80">
+                        <div>{ReactHtmlParser(contentBody.body)}</div>
+                    </Text>
                 </foreignObject>
 
-                <foreignObject x={"4%"} y={450} width={"70%"} height={105}>
+                <foreignObject x={"4%"} y={450} width={"73%"} height={135}>
                     <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-3 ">
                         {signature.map((item, key) => (
                             <div key={key} className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
@@ -166,8 +166,8 @@ const Template11 = ({
                                     <ProxifiedImage src={item.url} alt="" />
                                 </div>
                                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                                <p className="tw-text-black tw-text-[15px] tw-font-semibold">{item.name}</p>
-                                <p className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">{item.position}</p>
+                                <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} className="tw-text-black tw-text-[15px]">{item.name.name}</Text>
+                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
                             </div>
                         ))}
                     </div>
