@@ -49,6 +49,9 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
           'Content-Type': 'multipart/form-data',
         },
       });
+      const urlcode = await response.data.codelink;
+      const urlpaper = await response.data.paperlink;
+      console.log("url for paper: ",urlpaper,"\nurl for code: ", urlcode);
       //console.log(response);
       toast({
         title: 'Upload successful.',
@@ -57,6 +60,26 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
         duration: 5000,
         isClosable: true,
       });
+      //this is the data of the file below 👇
+      //const show = await axios.get(`${apiUrl}/reviewmodule/${url}`);
+      /*await axios(`${apiUrl}/reviewmodule/uploads/${url}`, {
+        method: "GET",
+        responseType: "blob"
+        //Force to receive data in a Blob Format
+      })
+        .then(response => {
+          //Create a Blob from the PDF Stream
+          const file = new Blob([response.data], {
+            type: "application/pdf"
+          });
+          //Build a URL from the file
+          const fileURL = URL.createObjectURL(file);
+          //Open the URL on new Window
+          window.open(fileURL);
+        })
+        .catch(error => {
+          console.log(error);
+        });*/
     } catch (error) {
       console.error('Upload error:', error);
       toast({
