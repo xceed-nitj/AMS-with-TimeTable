@@ -32,24 +32,24 @@ const CertificateForm = () => {
         header: "",
         fontSize: "",
         fontFamily: "",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       }
     ],
     body: {
       body: "",
       fontSize: "",
       fontFamily: "",
-      bold: "",
-      italic: ""
+      bold: "normal",
+      italic: "normal"
     },
     footer: [
       {
         footer: "",
         fontSize: "",
         fontFamily: "",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       }
     ],
     signatures: [
@@ -58,15 +58,15 @@ const CertificateForm = () => {
           name: "",
           fontSize: "",
           fontFamily: "",
-          bold: "",
-          italic: ""
+          bold: "normal",
+          italic: "normal"
         },
         position: {
           position: "",
           fontSize: "",
           fontFamily: "",
-          bold: "",
-          italic: ""
+          bold: "normal",
+          italic: "normal"
         },
         url: "",
       },
@@ -78,29 +78,29 @@ const CertificateForm = () => {
         name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर",
         fontSize: 20,
         fontFamily: "sans-serif",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       },
       {
         name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008",
         fontSize: 14,
         fontFamily: "serif",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       },
       {
         name: "Dr B R Ambedkar National Institute of Technology Jalandhar",
         fontSize: 19,
         fontFamily: "serif",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       },
       {
         name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008",
         fontSize: 14,
         fontFamily: "serif",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       }
     ],
     verifiableLink: false,
