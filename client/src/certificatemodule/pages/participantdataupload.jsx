@@ -273,7 +273,7 @@ function Participant() {
       if (rowIndex !== -1) {
        
         data.isCertificateSent=true;
-        console.log('dat to b sent', editedData)
+        console.log('data to b sent', editedData)
         fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${RowId}`, {
 
           method: "PUT",

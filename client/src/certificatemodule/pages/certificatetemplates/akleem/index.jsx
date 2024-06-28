@@ -36,8 +36,8 @@ function Template01() {
     // const input = document.getElementById('id-card');
     const input = document.getElementById('id-card-class');
     console.log(input)
-    input.style.width = '1754px';
-    input.style.height = '1240px';
+    input.style.width = '841.92px';
+    input.style.height = '595.499987px';
     html2canvas(input, {
       logging: true,
       allowTaint: true,

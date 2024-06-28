@@ -27,8 +27,10 @@ const uploadPaper = async(req, res) => {
     return res.status(400).send("File name is missing in the request.");
   }
 
+  const papers = await Paper.find({"eventId" : eventId});
+  const count = papers.length+1;
   const newPaper = new Paper({
-    paperId: fileName,
+    paperId: count,
     eventId:eventId,
     title: title,
     abstract: abstract,

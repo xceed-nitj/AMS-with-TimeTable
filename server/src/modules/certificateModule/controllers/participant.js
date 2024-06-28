@@ -2,6 +2,7 @@ const HttpException = require("../../../models/http-exception");
 const participant = require("../../../models/certificateModule/participant");
 const csv = require("csv-parser");
 const { Readable } = require("stream");
+const {issuedCertificates , totalCertificates} = require("../helper/countCertificates");
 
 class AddparticipantController {
   async addBatchparticipant(fileBuffer, eventId) {
@@ -31,8 +32,8 @@ class AddparticipantController {
     }
   }
 
-  async addparticipant(newparticipant,eventId) {
-    
+  async addparticipant(newparticipant, eventId) {
+
     try {
       // If not exists, create a new certificate
       const createdCertificate = await participant.create({
@@ -48,7 +49,7 @@ class AddparticipantController {
         eventId: eventId,
         isCertificateSent: false,
       });
-
+      totalCertificates(eventId)
       return createdCertificate;
     } catch (e) {
       throw new HttpException(500, e);
@@ -83,10 +84,19 @@ class AddparticipantController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
+      const pt = await participant.findById(id,{ cache: false });
       const updatedparticipant = await participant.findByIdAndUpdate(
         id,
-        participantData
+        participantData,
+        { new:true } // return the updated document
       );
+
+      if (!(pt.isCertificateSent == updatedparticipant.isCertificateSent)) {
+        issuedCertificates(pt.eventId)
+      }
+
+
+
       return updatedparticipant;
     } catch (e) {
       throw new HttpException(500, e);
@@ -98,7 +108,10 @@ class AddparticipantController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      await participant.findByIdAndDelete(id);
+      const pt = await participant.findById(id);
+      const eventId = pt.eventId;
+      await participant.deleteOne({_id:id})
+      totalCertificates(eventId)
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }

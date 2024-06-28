@@ -67,6 +67,7 @@ function ReviewsCompleted() {
                             <Th>Paper Title</Th>
                             <Th>Abstract</Th>
                             <Th>Completed Date</Th> {/* New column for the link */}
+                            <Th>Submitted Review</Th>
                         </Tr>
                     </Thead>
                     <Tbody>
@@ -76,6 +77,11 @@ function ReviewsCompleted() {
                                 <Td>{paper.title}</Td>
                                 <Td>{paper.abstract}</Td>
                                 <Td>{new Date(paper.reviewers.completedDate).toLocaleDateString()}</Td>
+                                <Td>
+                                    <Link as={RouterLink} to={`/prm/${paper.eventId}/${paper._id}/${userId}/Review`} color="teal.500">
+                                        Review
+                                    </Link>
+                                </Td>
                             </Tr>
                         ))}
                     </Tbody>

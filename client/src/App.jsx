@@ -80,9 +80,11 @@ import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
 import AddReviewer from './reviewmodule/pages/AddReviewer';
 import Review from './reviewmodule/pages/Review.jsx';
+import PaperSummary from './reviewmodule/pages/PaperSummary.jsx';
 import ReviewerQuestion from './reviewmodule/pages/ReviewQuestion';
 import DefaultQuestion from './reviewmodule/pages/DefaultQuestion.jsx';
 import ReviewerQuestionHome from './reviewmodule/pages/ReviewQuestionHome';
+import DefaultQuestionHome from './reviewmodule/pages/DefaultQuestionHome.jsx';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
 import UserRegistration from './reviewmodule/pages/userRegistration';
 
@@ -216,9 +218,11 @@ function App() {
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
     <Route path="/prm/:eventId/:paperId/:userId/Review" element={<Review/>}/>
+    <Route path="/prm/:eventId/:paperId/summary" element={<PaperSummary/>}/>
     <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
     <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
     <Route path="/prm/DefaultQuestion" element={<DefaultQuestion/>}/>
+    <Route path="/prm/DefaultQuestionHome" element={<DefaultQuestionHome/>}/>
     <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
