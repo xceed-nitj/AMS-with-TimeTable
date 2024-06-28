@@ -39,7 +39,6 @@ const eventSchema = new mongoose.Schema({
     instructions: {
         type: String
     },
-    defaultQuestionsAdded: { type: Boolean, default: false },
     templates:templateSchema,
 },{timestamps: true});
 
