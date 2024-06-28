@@ -54,7 +54,7 @@ const uploadPaper = async(req, res) => {
         // Send email notification to author(s)
         const to = authorEmails[0]; //Author is not linked with paper as of now so add your gmail to get email for testing purpose
         const subject = "New Paper Uploaded";
-        const message = `A new paper titled "${title}" has been uploaded.\n${event.templates.paperSubmission}`;
+        const message = `A new paper titled "${title}" has been uploaded.`;
         const attachments=[
           {
             //filename:"title.pdf",
@@ -67,7 +67,7 @@ const uploadPaper = async(req, res) => {
       }
 
       console.log("Paper saved successfully:", savedPaper);
-      res.status(200).json({message: "Paper uploaded and saved successfully!", codelink:`reviewmodule/uploads/${req.fileName}`,filelink:`reviewmodule/uploads${req.codeName}`});
+      res.status(200).json({message: "Paper uploaded and saved successfully!", codelink:`reviewmodule/uploads/${req.fileName}`,paperlink:`reviewmodule/uploads${req.codeName}`});
     })
     .catch((error) => {
       console.error("Error saving paper:", error);
