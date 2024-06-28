@@ -21,7 +21,7 @@ router.get("/delete/:eventId/:userId/:type/:filename", (req, res) => {
     if(err) return console.log(err);
     console.log('file deleted successfully');
 }); 
-  res.sendFile(filepath);
+  res.sendFile('file deleted successfully');
 })
 
 module.exports = router;
