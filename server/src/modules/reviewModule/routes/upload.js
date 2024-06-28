@@ -22,7 +22,7 @@ router.get("/delete/:eventId/:userId/:type/:filename", (req, res) => {
     if(err) return console.log(err);
     console.log('file deleted successfully');
 }); 
-  res.sendFile('file deleted successfully');
+  res.send('file deleted successfully');
 }catch(err){
   res.status(404).send("cannot find the specified file!");
 }
