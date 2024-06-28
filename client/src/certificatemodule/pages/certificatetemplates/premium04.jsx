@@ -6,7 +6,7 @@ import getEnvironment from "../../../getenvironment";
 import ProxifiedImage from "../../components/ProxifiedImage";
 
 import QRCode from 'qrcode';
-import { Button } from '@chakra-ui/react';
+import { Button,Text } from '@chakra-ui/react';
 import jsPDF from 'jspdf';
 
 
@@ -24,6 +24,7 @@ const Template13 = ({
     header,
     footer,
 }) => {
+    verifiableLink=(verifiableLink=="true")
     var num_logos = logos.length;
     var num_left = 0;
     if (num_logos % 2 === 0) {
@@ -45,7 +46,7 @@ const Template13 = ({
                 'image'
             );
             image.setAttribute('x', '56');
-            image.setAttribute('y', '370');
+            image.setAttribute('y', '390');
             image.setAttribute('width', '70');
             image.setAttribute('height', '70');
             image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
@@ -816,7 +817,7 @@ const Template13 = ({
                 </g>
             </>
             <>
-                <foreignObject width={"95%"} height={"400"} y={"60"} x={"2%"}>
+                <foreignObject width={"95%"} height={"450"} y={"60"} x={"2%"}>
                     <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
                         {logos.map((item, key) => (
                             <div key={key} className="tw-flex tw-items-center tw-justify-center ">
@@ -827,9 +828,9 @@ const Template13 = ({
                                     {key === num_left && (
                                         <>
                                             {title.map((item, key) => (
-                                                <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
-                                                    {item}
-                                                </p>
+                                                <Text key={key} fontSize={item.fontSize} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} className="tw-text-center">
+                                                    {item.name}
+                                                </Text>
                                             ))
                                             }
                                             {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
@@ -855,13 +856,13 @@ const Template13 = ({
                 <foreignObject x="7%" y="165" width="85%" height="160">
                     <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
                         {header.map((item, ind) => (
-                            <h1 className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase" key={ind}>{item}</h1>
+                            <Text fontSize={item.fontSize} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} className=" tw-text-gray-700 tw-uppercase" key={ind}>{item.header}</Text>
                         ))}
                     </div>
                 </foreignObject>
 
                 <text
-                    x="430"
+                    x="420"
                     y="270"
                     fill="#424847"
                     fontFamily="AbhayaLibre-Regular"
@@ -872,13 +873,13 @@ const Template13 = ({
                     CERTIFICATE OF APPRECIATION
                 </text>
 
-                <foreignObject x="12.5%" y="285" width="80%" height="160">
-                    <p className="font-serif text-xl opacity-80">
-                        <div>{ReactHtmlParser(contentBody)}</div>
-                    </p>
+                <foreignObject x="10%" y="295" width="80%" height="160">
+                    <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="tw-text-center opacity-80">
+                        <div>{ReactHtmlParser(contentBody.body)}</div>
+                    </Text>
                 </foreignObject>
 
-                <foreignObject x={"15%"} y={390} width={"70%"} height={400}>
+                <foreignObject x={"16%"} y={410} width={"70%"} height={400}>
                     <div className="tw-flex tw-items-center tw-justify-between tw-px-6 ">
                         {signature.map((item, key) => (
                             <div key={key} className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
@@ -886,8 +887,8 @@ const Template13 = ({
                                     <ProxifiedImage src={item.url} alt="" />
                                 </div>
                                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                                <p className="tw-text-black tw-text-[15px] tw-font-semibold">{item.name}</p>
-                                <p className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">{item.position}</p>
+                                <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} className="tw-text-black">{item.name.name}</Text>
+                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} className="-tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
                             </div>
                         ))}
                     </div>
