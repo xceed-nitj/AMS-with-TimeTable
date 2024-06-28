@@ -13,6 +13,6 @@ const reviewQuestionSchema = new mongoose.Schema({
     order: [{type:Number}]
 },{timestamps: true});
 
-const ReviewQuestion = mongoose.model("ReviewQuestion", reviewQuestionSchema);
+const ReviewQuestion = mongoose.model("PRS-ReviewQuestion", reviewQuestionSchema);
 
 module.exports = ReviewQuestion;
