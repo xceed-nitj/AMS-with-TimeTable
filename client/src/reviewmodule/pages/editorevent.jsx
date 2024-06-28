@@ -8,6 +8,7 @@ import {
   Button,
   VStack,
   Textarea,
+  HStack,
 } from "@chakra-ui/react";
 import { FormControl, FormLabel} from "@chakra-ui/react";
 import { IconButton as Button1, Heading, chakra } from '@chakra-ui/react';
@@ -21,6 +22,7 @@ function EventForm() {
     endDate: "",
     paperSubmissionDate: "",
     reviewTime: "",
+    editorEmails:[],
     // instructions: "",
   });
 
@@ -76,6 +78,7 @@ function EventForm() {
           paperSubmissionDate: data.paperSubmissionDate
             ? data.paperSubmissionDate.split("T")[0]
             : "",
+            editorEmails: data.editor.map(editor => editor.email).flat(),
         });
       }
       } catch (error) {
@@ -227,7 +230,7 @@ function EventForm() {
                 onChange={handleChange}
               />
             </FormControl>          
-            <FormControl id="name" mb={4}>
+            {/* <FormControl id="name" mb={4}>
               <FormLabel>List of Editors</FormLabel>
               <Input
                 type="text"
@@ -235,7 +238,29 @@ function EventForm() {
                 value={formData.editor}
                 onChange={handleChange}
               />
-            </FormControl>
+            </FormControl> */}
+            
+            
+            <FormControl id="editorEmails" mb={4}>
+            <HStack justifyContent="space-between">
+              <FormLabel>List of Editors</FormLabel>
+              <Button colorScheme="blue" size="sm">
+                Add Editor
+              </Button>
+            </HStack>
+            <VStack align="stretch">
+              {formData.editorEmails.map((email, index) => (
+                <HStack key={index} p={2} border="1px" borderRadius="md">
+                  <Box flex="1">{email}</Box>
+                  <Button size="sm" colorScheme="red">
+                    Delete
+                  </Button>
+                </HStack>
+              ))}
+            </VStack>
+          </FormControl>
+
+
 
             <Box display="flex" justifyContent="center" p={4}>
               <Button type="submit" size='lg' style={{backgroundColor:'green',width:'100px'}}>
@@ -248,7 +273,7 @@ function EventForm() {
           </form>
         </Box>
       </Container>
-  );
+  ); 
 }
 
 export default EventForm;

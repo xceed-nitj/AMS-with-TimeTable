@@ -23,7 +23,7 @@ const DefaultQuestion = () => {
 
   const fetchSavedQuestion = async (qId) => {
     try {
-      const response = await axios.get(`${apiUrl}/api/v1/reviewmodule/reviewQuestion/${qId}`);
+      const response = await axios.get(`${apiUrl}/api/v1/reviewmodule/DefaultQuestion/${qId}`);
       setQuestions(response.data);
       // setLoading(false);
     } catch (error) {
@@ -89,7 +89,7 @@ const DefaultQuestion = () => {
     }
 
     try {
-      if(edit) {await axios.patch(`${apiUrl}/reviewmodule/reviewQuestion/${edit}`, editQuestion)}
+      if(edit) {await axios.patch(`${apiUrl}/reviewmodule/DefaultQuestion/${edit}`, editQuestion)}
       else {await axios.post(`${apiUrl}/reviewmodule/DefaultQuestion/add`, newQuestion);}
       toast({
         title: 'Question saved.',
