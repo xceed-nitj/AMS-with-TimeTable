@@ -9,18 +9,79 @@ import SelectCertficate from '../../SelectCertficate';
 const apiUrl = getEnvironment();
 
 function Content() {
-  const [contentBody, setContentBody] = useState("");
+  const [contentBody, setContentBody] = useState({
+    body: "",
+    fontSize: "",
+    fontFamily: "",
+    bold: "normal",
+    italic: "normal"
+  });
   const currentURL = window.location.href;
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 2];
   const participantId = parts[parts.length - 1];
-  const [title,settitle]=useState(['Dr B R Ambedkar National Institute of Technology Jalandhar','डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर'])
-  const [verifiableLink,setVerifiableLink]=useState("")
+  const [title,settitle]=useState([
+    {
+      name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर",
+      fontSize: 20,
+      fontFamily: "sans-serif",
+      bold: "normal",
+      italic: "normal"
+    },
+    {
+      name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008",
+      fontSize: 14,
+      fontFamily: "serif",
+      bold: "normal",
+      italic: "normal"
+    },
+    {
+      name: "Dr B R Ambedkar National Institute of Technology Jalandhar",
+      fontSize: 19,
+      fontFamily: "serif",
+      bold: "normal",
+      italic: "normal"
+    },
+    {
+      name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008",
+      fontSize: 14,
+      fontFamily: "serif",
+      bold: "normal",
+      italic: "normal"
+    }
+  ])
+  const [verifiableLink,setVerifiableLink]=useState(false)
   const [certiType, setCertiType] = useState('');
-  const [logos, setLogos] = useState([]);
+  const [logos, setLogos] = useState([""]);
   const [participantDetail, setParticipantDetail] = useState({});
-  const [signature, setSignatures] = useState([]);
-  const [header, setHeader] = useState([]);
+  const [signature, setSignatures] = useState([
+    {
+      name: {
+        name: "",
+        fontSize: "",
+        fontFamily: "",
+        bold: "normal",
+        italic: "normal"
+      },
+      position: {
+        position: "",
+        fontSize: "",
+        fontFamily: "",
+        bold: "normal",
+        italic: "normal"
+      },
+      url: "",
+    },
+  ]);
+  const [header, setHeader] = useState([
+    {
+      header: "",
+      fontSize: "",
+      fontFamily: "",
+      bold: "normal",
+      italic: "normal"
+    }
+  ]);
   const [templateId, setTemplateId] = useState("0")
 
   // const [footer, setFooter] = useState([]);
@@ -92,14 +153,15 @@ function Content() {
         // Replace all placeholders with actual values from data_two
         Object.keys(data_two).forEach(variable => {
           const placeholder = new RegExp(`{{${variable}}}`, 'g');
-          content_body = content_body.replace(placeholder, `<strong>${data_two[variable]}</strong>`);
+          content_body.body = content_body.body.replace(placeholder, `<strong>${data_two[variable]}</strong>`);
+          console.log(content_body.body)
           console.log('variable data', data_two[variable]);
         });
 
         // Now content_body has all the placeholders replaced with actual values from data_two
-        const result = `${content_body}`;
-        setContentBody(result);
-
+        const result = `${content_body.body}`;
+        setContentBody({body:result,italic:content_body.italic,fontFamily:content_body.fontFamily,fontSize:content_body.fontSize,bold:content_body.bold});
+        console.log(eventId,contentBody,certiType,title,verifiableLink,logos,participantDetail,signature,header,templateId)
         // Now content_body has all the placeholders replaced with actual values from data_two
       } catch (error) {
         console.error('Error fetching data:', error);
