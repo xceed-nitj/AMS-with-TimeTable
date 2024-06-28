@@ -15,6 +15,7 @@ router.get("/:eventId/:userId/:type/:filename", (req, res) => {
 });
 //to delete the uploaded file
 router.get("/delete/:eventId/:userId/:type/:filename", (req, res) => {
+  try{
   const filepath = path.join(__dirname, `../controller/uploads/${req.params.eventId}/${req.params.userId}/${req.params.type}/${req.params.filename}`)
   console.log(filepath);
   fs.unlink(filepath,function(err){
@@ -22,6 +23,9 @@ router.get("/delete/:eventId/:userId/:type/:filename", (req, res) => {
     console.log('file deleted successfully');
 }); 
   res.sendFile('file deleted successfully');
+}catch(err){
+  res.status(404).send("cannot find the specified file!");
+}
 })
 
 module.exports = router;
