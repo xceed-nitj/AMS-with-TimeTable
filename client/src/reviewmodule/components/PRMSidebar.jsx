@@ -36,9 +36,10 @@ const SideBarFinal = () => {
       label: 'Reviewer',
       icon: FaTasks,
       submenu: [
-        { label: 'Pending assignment', icon: FaClock },
-        { label: 'Completed', icon: FaCheckCircle },
+       
+        // { label: 'Completed', icon: FaCheckCircle },
         { label: 'Invitation', icon: FaMailBulk},
+        { label: 'Pending assignment', icon: FaClock },
         { label: 'Completed Reviews', icon: FaCheckCircle}
       ]
     },
@@ -106,14 +107,15 @@ const SideBarFinal = () => {
     case 'Submitted Papers':
       content = <SubmittedPapers/>;
       break;
-    case 'Pending assignment':
-      content = <PendingAssignment />;
-      break;
-    case 'Completed':
-      content = <CompletedAssignment />;
-      break;
+    
+    // case 'Completed':
+    //   content = <CompletedAssignment />;
+    //   break;
     case 'Invitation':
       content = <Invitations />;
+      break;
+      case 'Pending assignment':
+      content = <PendingAssignment />;
       break;
     case 'Completed Reviews':
       content = <ReviewsCompleted />;

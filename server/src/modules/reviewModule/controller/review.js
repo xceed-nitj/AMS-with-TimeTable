@@ -1,4 +1,5 @@
 const Review = require("../../../models/reviewModule/review");
+const Paper = require("../../../models/reviewModule/paper");
 
 const addReview = async (req, res) => {
     const { paperId, eventId, reviewerId, reviewans, commentsAuthor, commentsEditor, decision } = req.body;
@@ -98,9 +99,24 @@ const deleteReview = async (req, res) => {
         res.status(500).json({ message: "Error deleting review", error });
     }
 };
+
 const submitReview = async (req, res) => {
     const { eventId, paperId, reviewerId, reviewAnswers, commentsAuthor, commentsEditor, decision } = req.body;
   
+    const completedDate = new Date();
+    const paper = await Paper.findOneAndUpdate({
+        _id: paperId,
+        'reviewers.userId': reviewerId
+    }, {
+        $set: {
+            'reviewers.$.completedDate': completedDate
+        }
+    }, {
+        new: true,
+        runValidators: true
+    });
+    await paper.save();
+
     try {
       const newReview = new Review({
         eventId,
@@ -139,13 +155,7 @@ const submitReview = async (req, res) => {
             {
                 return res.status(404).json({ message: 'Review not found' });
             }
-            //console.log(review.reviewAnswers);
-            const allReviewAnswers = review.map(review => review.reviewAnswers);
-            console.log(allReviewAnswers);
-            res.json(allReviewAnswers);
-            
-            
-
+        res.json(review);
     } catch(error)
     {
         res.status(500).json({message:'Server error',error});

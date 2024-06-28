@@ -15,6 +15,9 @@ function NavBar() {
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const excludedRoutes = ['/login', '/cm/c'];
+  const excludedRoutesLogin = [/\/prm\/[a-zA-Z0-9]\/reviewer\/.*/,'/prm/register'];
+
   useEffect(() => {
     const getUserDetails = async () => {
       try {
@@ -53,12 +56,15 @@ function NavBar() {
     fetchUserDetails();
   }, [apiUrl]);
 
-  // useEffect for redirection
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && location.pathname !== '/login') {
+    const isExcludedLogin = excludedRoutesLogin.some((route) =>
+      route instanceof RegExp ? route.test(location.pathname) : location.pathname.startsWith(route)
+    );
+
+    if (!isLoading && !isAuthenticated && !isExcludedLogin && location.pathname !== '/login') {
       navigate('/login');
     }
-  }, [isLoading, isAuthenticated, navigate, location.pathname]);
+  }, [isLoading, isAuthenticated, navigate, location.pathname, excludedRoutesLogin]);
 
   const handleLogout = async () => {
     try {
@@ -76,8 +82,6 @@ function NavBar() {
     }
   };
 
-  const excludedRoutes = ['/login', '/cm/c'];
-
   const isExcluded = excludedRoutes.some((route) =>
     location.pathname.startsWith(route)
   );
@@ -85,7 +89,6 @@ function NavBar() {
   if (isLoading || isExcluded) {
     return null;
   }
-
 
   return (
     <nav
@@ -129,7 +132,7 @@ function NavBar() {
               </a>
             </li>
             <li>
-            {!isAuthenticated ? (
+              {!isAuthenticated ? (
                 <Link
                   to="/login"
                   className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
