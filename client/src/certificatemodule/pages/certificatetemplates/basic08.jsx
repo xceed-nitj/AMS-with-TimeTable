@@ -231,7 +231,7 @@ const Template08 = ({
                 </text>
 
                 <foreignObject x="10%" y="390.473" width="83%" height="160">
-                    <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="opacity-80">
+                    <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="tw-text-center opacity-80">
                         <div>{ReactHtmlParser(contentBody.body)}</div>
                     </Text>
                 </foreignObject>
@@ -244,8 +244,8 @@ const Template08 = ({
                                     <ProxifiedImage src={item.url} alt="" />
                                 </div>
                                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                                <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} className="tw-text-black tw-text-[15px] tw-font-semibold">{item.name.name}</Text>
-                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
+                                <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} className="tw-text-black">{item.name.name}</Text>
+                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} className="-tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
                             </div>
                         ))}
                     </div>

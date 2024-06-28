@@ -856,7 +856,7 @@ const Template13 = ({
                 <foreignObject x="7%" y="165" width="85%" height="160">
                     <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
                         {header.map((item, ind) => (
-                            <Text fontSize={item.fontSize} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} className="tw-text-xl tw-text-gray-700 tw-uppercase" key={ind}>{item.header}</Text>
+                            <Text fontSize={item.fontSize} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} className=" tw-text-gray-700 tw-uppercase" key={ind}>{item.header}</Text>
                         ))}
                     </div>
                 </foreignObject>
@@ -873,13 +873,13 @@ const Template13 = ({
                     CERTIFICATE OF APPRECIATION
                 </text>
 
-                <foreignObject x="12.5%" y="285" width="80%" height="160">
-                    <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="font-serif text-xl opacity-80">
+                <foreignObject x="10%" y="295" width="80%" height="160">
+                    <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="tw-text-center opacity-80">
                         <div>{ReactHtmlParser(contentBody.body)}</div>
                     </Text>
                 </foreignObject>
 
-                <foreignObject x={"15%"} y={390} width={"70%"} height={400}>
+                <foreignObject x={"16%"} y={410} width={"70%"} height={400}>
                     <div className="tw-flex tw-items-center tw-justify-between tw-px-6 ">
                         {signature.map((item, key) => (
                             <div key={key} className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
@@ -887,8 +887,8 @@ const Template13 = ({
                                     <ProxifiedImage src={item.url} alt="" />
                                 </div>
                                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                                <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} className="tw-text-black tw-text-[15px]">{item.name.name}</Text>
-                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
+                                <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} className="tw-text-black">{item.name.name}</Text>
+                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} className="-tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
                             </div>
                         ))}
                     </div>

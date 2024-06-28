@@ -7617,7 +7617,7 @@ const Template12 = ({
                 </text>
 
                 <foreignObject x="4%" y="300" width="75%" height="160">
-                    <p className="font-serif text-xl opacity-80">
+                    <p className=" opacity-80">
                         <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontWeight={contentBody.bold} fontStyle={contentBody.italic}>{ReactHtmlParser(contentBody.body)}</Text>
                     </p>
                 </foreignObject>
@@ -7631,7 +7631,7 @@ const Template12 = ({
                                 </div>
                                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                                 <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontWeight={item.name.bold} fontStyle={item.name.italic}>{item.name.name}</Text>
-                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontWeight={item.position.bold} fontStyle={item.position.italic} className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
+                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontWeight={item.position.bold} fontStyle={item.position.italic} className="-tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
                             </div>
                         ))}
                     </div>

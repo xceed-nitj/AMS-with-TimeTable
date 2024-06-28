@@ -143,13 +143,13 @@ const Template09 = ({
                     CERTIFICATE OF APPRECIATION
                 </text>
 
-                <foreignObject x="10%" y="300" width="85%" height="160">
-                <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="opacity-80">
+                <foreignObject x="8%" y="300" width="85%" height="160">
+                <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="tw-text-center opacity-80">
                         <div>{ReactHtmlParser(contentBody.body)}</div>
                     </Text>
                 </foreignObject>
 
-                <foreignObject x={"13%"} y={425} width={"75%"} height={100}>
+                <foreignObject x={"13%"} y={415} width={"75%"} height={140}>
                     <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
                         {signature.map((item, key) => (
                             <div key={key} className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
