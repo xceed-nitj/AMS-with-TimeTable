@@ -1,18 +1,18 @@
 const mongoose = require("mongoose");
-const User = require("../../../models/reviewModule/user.js");
+const User = require("../../../models/usermanagement/user");
 
 const addUser = async (req, res) => {
-  const { name, Dept, Designation, College, Period, profession, email, role, password, area } =
+  const { name,  profession, email, role, password, area } =
     req.body;
 
   const newUser = new User({
     name: name,
-    experience: {
-      Dept: Dept,
-      Designation: Designation,
-      College: College,
-      Period: Period,
-    },
+    // experience: {
+    //   Dept: Dept,
+    //   Designation: Designation,
+    //   College: College,
+    //   Period: Period,
+    // },
     profession: profession,
     email: email,
     role:role,
