@@ -32,24 +32,24 @@ const CertificateForm = () => {
         header: "",
         fontSize: "",
         fontFamily: "",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       }
     ],
     body: {
       body: "",
       fontSize: "",
       fontFamily: "",
-      bold: "",
-      italic: ""
+      bold: "normal",
+      italic: "normal"
     },
     footer: [
       {
         footer: "",
         fontSize: "",
         fontFamily: "",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       }
     ],
     signatures: [
@@ -58,15 +58,15 @@ const CertificateForm = () => {
           name: "",
           fontSize: "",
           fontFamily: "",
-          bold: "",
-          italic: ""
+          bold: "normal",
+          italic: "normal"
         },
         position: {
           position: "",
           fontSize: "",
           fontFamily: "",
-          bold: "",
-          italic: ""
+          bold: "normal",
+          italic: "normal"
         },
         url: "",
       },
@@ -78,29 +78,29 @@ const CertificateForm = () => {
         name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर",
         fontSize: 20,
         fontFamily: "sans-serif",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       },
       {
         name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008",
         fontSize: 14,
         fontFamily: "serif",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       },
       {
         name: "Dr B R Ambedkar National Institute of Technology Jalandhar",
         fontSize: 19,
         fontFamily: "serif",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       },
       {
         name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008",
         fontSize: 14,
         fontFamily: "serif",
-        bold: "",
-        italic: ""
+        bold: "normal",
+        italic: "normal"
       }
     ],
     verifiableLink: false,
@@ -135,7 +135,69 @@ const CertificateForm = () => {
             Array.isArray(responseData) &&
             responseData.length > 0
           ) {
-            setFormData(responseData[0]);
+            const {title,signatures,header,footer,body,certiType,logos,templateId,verifiableLink}=responseData[0];
+            //condition for signatures
+            let Signatures=[];
+            if(signatures[0].name.name){
+              Signatures=signatures
+            }else{
+              signatures.forEach(element => {
+              let sign={
+                name:{name:element.name,fontSize: "",fontFamily: "",bold: "normal",italic: "normal"},
+                position:{position:element.position,fontSize: "",fontFamily: "",bold: "normal",italic: "normal"},
+                url:element.url,
+              } 
+              Signatures.push(sign)    
+            });}
+            //for header
+            let Header= []
+            if(header[0].header){
+              Header=header
+            }else{
+              header.forEach(element => {
+                let str=""
+                for(let key in element){parseInt(key)||(key=="0")?str=str+element[key]:""}
+                let head={header:str,fontSize: "",fontFamily: "",bold: "normal",italic: "normal"}      
+                Header.push(head)                
+            });}
+            // for footer
+            let Footer= []
+            if(footer[0].footer){
+              Footer=footer
+            }else{
+              footer.forEach(element => {
+                let str=""
+                for(let key in element){parseInt(key)||(key=="0")?str=str+element[key]:""}
+                let foot={footer:str,fontSize: "",fontFamily: "",bold: "normal",italic: "normal"}      
+                Footer.push(foot)                          
+            });}
+            // for body
+            let Body=formData.body
+            if(body.body){
+              Body=body
+            }else{
+              Body.body=body
+            }
+            //for title
+            let Title=[]
+            if(typeof(title[0])==Object){
+              Title=title
+            }else if(typeof(title[0])==String){
+              title.forEach(element => {
+                let str=""
+                for(let key in element){parseInt(key)||(key=="0")?str=str+element[key]:""}
+                let obj={name:str,fontSize: "",fontFamily: "",bold: "normal",italic: "normal"}
+                Title.push(obj)
+              });
+            }else{
+              Title=formData.title
+            }
+            //for verifiableLink
+            console.log(verifiableLink)
+
+            // console.log(Title,Body,Footer,Header,Signatures)
+            setFormData({title:Title,body:Body,footer:Footer,header:Header,signatures:Signatures,certiType:certiType,logos:logos,templateId:templateId,verifiableLink:verifiableLink});
+            console.log(formData)            
           } else {
             console.error(
               'Error: Fetched data does not match the expected structure.'
