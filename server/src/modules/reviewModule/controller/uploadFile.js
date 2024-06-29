@@ -17,8 +17,6 @@ const uploadPaper = async(req, res) => {
   const deadline = event.paperSubmissionDate;
   const today = new Date();
   const deadlineDate = new Date(deadline);
-  today.setHours(0, 0, 0, 0);
-  deadlineDate.setHours(0, 0, 0, 0);
   if (today > deadlineDate) {
       return res.status(503).send("Paper submission after deadline is forbidden");
   }
@@ -69,7 +67,7 @@ const uploadPaper = async(req, res) => {
       }
 
       console.log("Paper saved successfully:", savedPaper);
-      res.status(200).send("Paper uploaded and saved successfully!");
+      res.status(200).json({message: "Paper uploaded and saved successfully!", paperlink:`reviewmodule/uploads/${req.fileName}`,codelink:`reviewmodule/uploads${req.codeName}`});
     })
     .catch((error) => {
       console.error("Error saving paper:", error);

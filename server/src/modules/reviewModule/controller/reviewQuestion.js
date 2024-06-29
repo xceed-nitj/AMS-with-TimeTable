@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const ReviewQuestion = require("../../../models/reviewModule/reviewQuestion");
 const Event = require("../../../models/reviewModule/event.js");
 const Paper = require("../../../models/reviewModule/paper.js");
+const DefaultQuestion =require("../../../models/reviewModule/defaultQuestion.js")
 
 const addReviewQuestion = async (req, res) => {
     const { eventId,show, type, question, options,order } = req.body;
@@ -78,6 +79,7 @@ const getQuestionsByEventId = async (req, res) => {
             console.log('Invalid eventId');
             return res.status(400).json({ message: "Invalid eventId" });
         }
+    
 
         // Find the review questions by eventId
         const questions = await ReviewQuestion.find({ eventId });

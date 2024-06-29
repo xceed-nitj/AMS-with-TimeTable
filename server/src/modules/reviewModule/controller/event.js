@@ -9,7 +9,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const jwtSecret =
   "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
-
+const DefaultQuestion=require("../../../models/reviewModule/defaultQuestion.js");
+const ReviewQuestion=require("../../../models/reviewModule/reviewQuestion.js");
 
 
 const app = express();
@@ -48,6 +49,21 @@ const addEvent = async (req, res) => {
     const editorEmails = event.editor.map(editor => editor.email);
     console.log("Editor Emails:", editorEmails);
     await sendMail(editorEmails, "Welcome to Review Management", `You have been added as editor for the conference "${name}"`);
+     
+    const defaultQuestions = await DefaultQuestion.find({});
+    
+    // Map default questions to include eventId and save in ReviewQuestion 
+    const reviewQuestions = defaultQuestions.map(question => ({
+      eventId: newEvent._id,
+      show: question.show,
+      type: question.type,
+      question: question.question,
+      options: question.options,
+      order: question.order,
+    }));
+    
+    await ReviewQuestion.insertMany(reviewQuestions);
+
     res.status(200).send(newEvent);
 
   } catch (error) {
@@ -471,4 +487,27 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
+const updateStartSubmission = async (req, res) => {
+  const eventId = req.params.id;
+  const { startSubmission } = req.body;
+
+  if (typeof startSubmission !== 'boolean') {
+      return res.status(400).send('Invalid value for startSubmission');
+  }
+
+  try {
+      const event = await Event.findById(eventId);
+      if (!event) {
+          return res.status(404).send('Event not found');
+      }
+
+      event.startSubmission = startSubmission;
+      await event.save();
+
+      res.status(200).send(event);
+  } catch (error) {
+      res.status(500).send(error);
+  }
+};
+
+module.exports = { getEvents,getEventsByUser,updateStartSubmission ,addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};

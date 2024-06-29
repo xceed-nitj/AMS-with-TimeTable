@@ -22,6 +22,6 @@ const reviewSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 },{timestamps: true});
 
-const Review = mongoose.model('Review', reviewSchema);
+const Review = mongoose.model('PRS-Review', reviewSchema);
 
 module.exports = Review;

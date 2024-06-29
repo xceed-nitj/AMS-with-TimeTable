@@ -1,34 +1,116 @@
 const mongoose = require("mongoose");
 const { commonFields, updateTimestamps } = require("../commonFields");
+const { type } = require("os");
+const { stringify } = require("querystring");
 
 // Define your Mongoose schema based on the interface
 const CertificateSchema = new mongoose.Schema({
-  title: {
-    type: Array,
-  },
+  title: [
+    {
+      name: {
+        type: String
+      },
+      fontFamily: {
+        type: String
+      },
+      fontSize: {
+        type: Number
+      },
+      bold: {
+        type: String
+      },
+      italic: {
+        type: String
+      },
+    }
+  ],
   verifiableLink: {
     type: Boolean,
   },
   logos: {
     type: Array,
   },
-  header: {
-    type: Array,
-  },
+  header: [{
+    header: {
+      type: String
+    },
+    fontFamily: {
+      type: String
+    },
+    fontSize: {
+      type: Number
+    },
+    bold: {
+      type: String
+    },
+    italic: {
+      type: String
+    },
+  }],
   body: {
-    type: String,
+    body: {
+      type: String
+    },
+    fontFamily: {
+      type: String
+    },
+    fontSize: {
+      type: Number
+    },
+    bold: {
+      type: String
+    },
+    italic: {
+      type: String
+    },
   },
-  footer: {
-    type: Array,
-  },
+  footer: [{
+    footer: {
+      type: String
+    },
+    fontFamily: {
+      type: String
+    },
+    fontSize: {
+      type: Number
+    },
+  }],
   signatures: [
     {
       name: {
-        type: String,
+        name: {
+          type: String
+        },
+        fontFamily: {
+          type: String
+        },
+        fontSize: {
+          type: Number
+        },
+        bold: {
+          type: String
+        },
+        italic: {
+          type: String
+        },
         // required: true,
       },
       position: {
-        type: String,
+        position: {
+          type: String
+        },
+        fontFamily: {
+          type: String
+        },
+        fontSize: {
+          type: Number
+        },
+        bold: {
+          type: String
+        },
+        italic: {
+          type: String
+        },
         // required: true,
       },
       url: {

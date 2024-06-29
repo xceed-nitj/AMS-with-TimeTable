@@ -28,4 +28,5 @@ router.use('/reviewerAcceptance',require('./reviewerAcceptance.js'));
 router.use('/review',require('./review.js'));
 router.use('/reviewQuestion',require('./reviewQuestion.js'));
 router.use('/defaultQuestion',require('./defaultQuestion.js'));
+router.use('/uploads',require('./upload.js'));//to get files
 module.exports = router;
