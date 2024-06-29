@@ -60,7 +60,7 @@ function EventForm() {
             ...data,
             startDate: data.startDate ? data.startDate.split("T")[0] : "",
             endDate: data.endDate ? data.endDate.split("T")[0] : "",
-            paperSubmissionDate: data.paperSubmissionDate ? data.paperSubmissionDate.split("T")[0] : "",
+            paperSubmissionDate: data.paperSubmissionDate.toString().slice(0, 16),
             editorEmails: data.editor.map(editor => editor.email).flat()
           });
         }
@@ -110,6 +110,8 @@ function EventForm() {
     if (!validateDates()) return;
 
     try {
+      const formdate = new Date(formData.paperSubmissionDate);
+      const finalDate = new Date(formdate.getTime() - formdate.getTimezoneOffset() * 60000).toISOString();
       const response = await fetch(
         `${apiUrl}/api/v1/reviewmodule/event/${eventId}`,
         {
@@ -118,7 +120,7 @@ function EventForm() {
             "Content-Type": "application/json"
           },
           credentials: "include",
-          body: JSON.stringify(formData)
+          body: JSON.stringify({...formData,paperSubmissionDate: finalDate}),
         }
       );
       const data = await response.json();
@@ -236,7 +238,7 @@ function EventForm() {
           <FormControl id="paperSubmissionDate" mb={4}>
             <FormLabel>Paper Submission Deadline</FormLabel>
             <Input
-              type="date"
+              type="datetime-local"
               name="paperSubmissionDate"
               value={formData.paperSubmissionDate}
               onChange={handleChange}
