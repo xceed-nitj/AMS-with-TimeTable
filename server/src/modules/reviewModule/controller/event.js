@@ -487,4 +487,27 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
+const updateStartSubmission = async (req, res) => {
+  const eventId = req.params.id;
+  const { startSubmission } = req.body;
+
+  if (typeof startSubmission !== 'boolean') {
+      return res.status(400).send('Invalid value for startSubmission');
+  }
+
+  try {
+      const event = await Event.findById(eventId);
+      if (!event) {
+          return res.status(404).send('Event not found');
+      }
+
+      event.startSubmission = startSubmission;
+      await event.save();
+
+      res.status(200).send(event);
+  } catch (error) {
+      res.status(500).send(error);
+  }
+};
+
+module.exports = { getEvents,getEventsByUser,updateStartSubmission ,addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
