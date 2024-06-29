@@ -142,8 +142,10 @@ function Content() {
 
         let content_body = data_one[0].body;
         setLogos(data_one[0].logos);
-        if(!data_one[0].title){settitle(data_one[0].title)};
-        setVerifiableLink(data_one[0].verifiableLink);
+        if(data_one[0].title){settitle(data_one[0].title)};
+        const verifiablelink=data_one[0].verifiableLink.toString()
+        // console.log(verifiableLink)
+        setVerifiableLink(verifiablelink);
         setSignatures(data_one[0].signatures);
         setHeader(data_one[0].header)
         setTemplateId(data_one[0]?.templateId || "0")
@@ -154,7 +156,7 @@ function Content() {
         Object.keys(data_two).forEach(variable => {
           const placeholder = new RegExp(`{{${variable}}}`, 'g');
           content_body.body = content_body.body.replace(placeholder, `<strong>${data_two[variable]}</strong>`);
-          console.log(content_body.body)
+          // console.log(content_body.body)
           console.log('variable data', data_two[variable]);
         });
 
