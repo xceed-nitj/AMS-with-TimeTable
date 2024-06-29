@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
-import { Text, Button, Flex } from '@chakra-ui/react';
+import { Text, Button, Flex, Spinner } from '@chakra-ui/react';
 
 function NavBar() {
   const [navbarOpen, setNavbarOpen] = useState(false);
@@ -86,7 +86,7 @@ function NavBar() {
     location.pathname.startsWith(route)
   );
 
-  if (isLoading || isExcluded) {
+  if ( isExcluded) {
     return null;
   }
 
@@ -132,14 +132,6 @@ function NavBar() {
               </a>
             </li>
             <li>
-              {!isAuthenticated ? (
-                <Link
-                  to="/login"
-                  className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
-                >
-                  Login
-                </Link>
-              ) : null}
               {isAuthenticated && (
                 <>
                   {userDetails && (
