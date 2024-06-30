@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const User = require("../../../models/usermanagement/user");
+const User = require("../../../models/usermanagement/user.js");
 
 const addUser = async (req, res) => {
   const { name,  profession, email, role, password, area } =
