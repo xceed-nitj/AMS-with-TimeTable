@@ -35,6 +35,7 @@ const eventSchema = new mongoose.Schema({
     },
     reviewTime: {
         type: String,
+        default: "10"
     },
     instructions: {
         type: String
