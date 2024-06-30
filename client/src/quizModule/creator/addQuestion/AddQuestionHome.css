@@ -11,31 +11,25 @@
     height: 100vh;
 }
 
-
+.left-button-center {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
 
 .center-area {
 
 
     /* border: 1px solid rgb(110, 110, 110); */
-    max-width: 1024px;
-    /* text-align: center; */
+    width: 80%;
+    text-align: center;
     margin: auto;
     margin-top: 25px;
-    margin-bottom: 20px;
-    /* padding: 20px; */
-    /* box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px; */
+    box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
     font-size: 18px;
     display: flex;
     flex-direction: column;
-    position: relative;
-    /* border-radius: 10px; */
-}
-
-@media(max-width:1064px) {
-    .center-area{
-        margin-left: 20px;
-        margin-right: 20px;
-    }
+    border-radius: 10px;
 }
 
 .right-box {
@@ -45,6 +39,12 @@
     align-items: center;
 }
 
+.bottom-left-button {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    position:fixed;
+}
 
 .box2 {
     width: 100px;
@@ -52,36 +52,16 @@
     background-color: #eaeaea;
 }
 
-.center-area .left-button-center {
-    border: 3px solid black;
-    padding: 5px;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.left-button-center:hover {
-    background-color: #EDF2F7;
-}
-
-.left-button-center-container{
-    position: absolute;
-    top: 10px;
-}
-
-/* .go_back {
+.go_back {
     position: fixed;
     top: 48%;
     left: 1rem;
     font-size: 3rem;
     color: #59b4b4;
     transition: transform 0.2s ease;
-} */
+}
 
-/* .go_back:hover {
+.go_back:hover {
     transform: scale(1.2);
 }
 
@@ -104,118 +84,6 @@
         font-size: 2rem;
         top: 90px;
     }
-} */
-
-
-/* .bottom-left-button {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    position:fixed;
-} */
-
-.question{
-    /* border: 1px solid rgb(207, 196, 196); */
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 2px 8px 10px rgba(0, 0, 0, 0.1);
-    box-shadow: 0px 8px 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 10px;
-}
-
-.accordionButton{
-    color: black;
-    /* position: absolute;
-    margin-bottom: 200px; */
-}
-
-.accordion-item{
-    border-bottom-width: 0px;
-    border-top-width: 0px;
-}
-
-.chakra-accordion__panel{
-    padding-bottom: 0px !important;
-    padding-top: 0px !important;
-}
-
-.chakra-accordion__button {
-    height: 0px !important;
-}
-
-.toggle-button-container{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0px;
-    height: 20px;
-}
-
-.toggle-button{
-    background-color: white;
-    height: 20px !important;
-    width: 20px !important;
-    padding: 0px;
-    margin: 0px;
-}
-
-.toggle-button:hover {
-    background-color: white !important;
-}
-
-.extra-add-question{
-    position: fixed;
-    top: 350px;
-    right: 5px;
-    background-color: #3E9595;
-    color: white;
-    padding: 10px;
-    border: 1px solid #ccc;
-    z-index: 10; /* Ensure it appears above other content */
-    width: 50px;
-    height: 50px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 32px;
-    border-radius: 50%;
-}
-
-.instruction-section-container{
-    /* width: auto; */
-    margin: 9px;
-    opacity: 0.9;
-    color: rgb(255, 255, 255);
-    text-decoration: none;
-    font-size: 18px;
-    font-weight: 400;
-    padding: 5px;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    align-items: center;
-    background-color: #298A8A;
-    color: white;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-
-    display: block;
-    min-width: 200px;
-    /* width: 50%; */
-    margin: 10px auto;
-}
-
-.instruction-section-container:hover {
-    background-color: #285E61;
-}
-
-.instruction-section{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.instruction-section p{
-    margin-left: 5px;
 }
 
 .instructions {
@@ -233,7 +101,6 @@
     border-radius: 21px;
     transition: all 0.5s ease;
     z-index:999;
-    width: auto;
 }
 
 .instructive_text2 {
@@ -277,26 +144,23 @@
     border-radius: 29px;
     border: none;
     font-size: 18px;
-    text-align: center;
     font-weight: bolder;
     margin: 0px 10px;
     /* color: #455251; */
-    /* background-color: #298A8A; */
-    color: black;
+    background: linear-gradient(316deg, #50d8d7 0%, #2a2323 74%);
+    color: white;
     padding: 5px 1.5rem;
 }
 
 .topic-box {
     display: flex;
-    text-align: center;
     justify-content: center;
-    align-items: center;
-    padding: 0px 35px;
+    padding-top: 10px;
 }
 
 .add-question {
     margin: 9px;
-    text-align: center;
+    
     opacity: 0.9;
     color: rgb(255, 255, 255);
     text-decoration: none;
@@ -305,23 +169,16 @@
     padding: 5px;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     align-items: center;
-    background-color: #298A8A;
-    color: white;
+    background: linear-gradient(316deg, #50d8d7 0%, #2a2323 74%);
     border-radius: 5px;
     border: none;
     cursor: pointer;
 }
-
-.add-question:hover{
-    background-color: #285E61;
-}
 @media(max-width:450px){
     .add-question{
         font-size: 25px;
-        text-align: center;
     }
     .topic{
-        text-align: center;
         font-size: 30px;
     }
 }
@@ -329,7 +186,7 @@
     display: block;
     min-width: 200px;
     width: 50%;
-    margin: 10px auto;
+    margin: 20px auto;
 }
 
 .icon-bar {
@@ -494,45 +351,3 @@
     transition-duration: 0.1s;
     transform: scale(1.01);
 }
-
-/* Indivisual Question */
-
-.question_info_holder {
-    font-size: 18px; /* Adjust the font size as needed */
-    font-weight: bold;
-}
-
-.explanation-container{
-    position: relative;
-}
-
-.accordion-item-container{
-    /* border-color: white; */
-}
-
-.question_info{
-    display: flex;
-    justify-content: space-around;
-}
-
-@media(max-width:550px) {
-    .question_info{
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-    }
-}
-
-.option_holder{
-    padding-left: 30px;
-    padding-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-/* .option_holder span{
-    display: inline-block;
-    border: 0.5px solid rgb(133, 129, 129);
-} */
