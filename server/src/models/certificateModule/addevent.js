@@ -39,7 +39,12 @@ const addEventSchema = new mongoose.Schema({
   lock:{
     type: Boolean,
     default:false,
-  }
+  },
+  plan: {
+    type: String,
+    enum: ["basic", "premium"],
+    default: "basic",
+  },
 });
 
 addEventSchema.add(commonFields);
