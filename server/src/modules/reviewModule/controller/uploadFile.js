@@ -17,8 +17,6 @@ const uploadPaper = async(req, res) => {
   const deadline = event.paperSubmissionDate;
   const today = new Date();
   const deadlineDate = new Date(deadline);
-  today.setHours(0, 0, 0, 0);
-  deadlineDate.setHours(0, 0, 0, 0);
   if (today > deadlineDate) {
       return res.status(503).send("Paper submission after deadline is forbidden");
   }

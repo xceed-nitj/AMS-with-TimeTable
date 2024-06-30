@@ -40,6 +40,10 @@ const eventSchema = new mongoose.Schema({
         type: String
     },
     templates:templateSchema,
+    startSubmission: {
+        type: Boolean,
+        default: false
+    },
 },{timestamps: true});
 
 const Event = mongoose.model("PRS-Event", eventSchema);

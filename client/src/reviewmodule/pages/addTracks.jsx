@@ -30,13 +30,13 @@ import {
 } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/react";
 import { EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import {  Heading, chakra } from '@chakra-ui/react';
+import {  Heading, chakra, Spinner } from '@chakra-ui/react';
 
 function AddTrack() {
   const apiUrl = getEnvironment();
   const { eventId } = useParams();
   const [trackName, setTrackName] = useState('');
-  const [tracks, setTracks] = useState([]);
+  const [tracks, setTracks] = useState();
   const [editIndex, setEditIndex] = useState(null);
   const toast = useToast();
   const [trackToDelete, setTrackToDelete] = useState(null);
@@ -253,7 +253,7 @@ function AddTrack() {
 
       <p style={{textAlign:'center',margin:'10px',fontWeight:'bold',fontSize:'28px'}}>Existing Tracks</p>
       
-      {tracks.length > 0 && (
+      {tracks && (tracks.length > 0 ? (
         <>
           <Box display="flex" justifyContent="center" overflowX="auto">
             <Table variant="simple" mt={8} maxWidth='80%'>
@@ -327,11 +327,15 @@ function AddTrack() {
             </Table>
           </Box>
         </>
-      )}
-
-      {tracks.length === 0 && (
+      ):(
         <Box mt={8} textAlign="center" fontSize="lg" fontWeight="bold">
-          Table is empty
+          No tracks found...
+        </Box>
+      ))}
+
+      {!tracks && (
+        <Box mt={8} textAlign="center" fontSize="lg" fontWeight="bold">
+          <Spinner/>
         </Box>
       )}
       
