@@ -1,10 +1,28 @@
 const HttpException = require("../../../models/http-exception");
 const addEvent = require("../../../models/certificateModule/addevent");
+const User = require("../../../models/usermanagement/user"); 
 
 class AddEventController {
   async addEvent(data) {
     try {
       await addEvent.create(data);
+
+      
+      const userId = data.user;
+      if (userId) {
+        const user = await User.findById(userId);
+        if (user) {
+          // Check if user has 'CM' role
+          if (!user.role.includes('CM')) {
+            user.role.push('CM'); // Add 'CM' role
+            await user.save(); // Save the updated user
+          }
+        } else {
+          throw new HttpException(404, "User not found");
+        }
+      } else {
+        throw new HttpException(400, "User ID not provided");
+      }
     } catch (e) {
       throw new HttpException(500, e);
     }
@@ -77,6 +95,8 @@ class AddEventController {
       throw new HttpException(500, e);
     }
   }
+
+
 }
 
 module.exports = AddEventController;
