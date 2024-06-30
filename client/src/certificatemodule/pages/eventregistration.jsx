@@ -113,20 +113,19 @@ console.log(formData)
         </FormControl>
 
         <FormControl mb="4">
-  <FormLabel>User</FormLabel>
-  <Select
-    name="user"
-    value={formData.user}
-    onChange={handleChange}
-  >
-    {users.filter(user => user.role.includes('CM')).map((user) => (  // filter users with role CM
-      <option key={user._id} value={user._id}>
-        {user.email}
-      </option>
-    ))}
-  </Select>
-</FormControl>
-
+          <FormLabel>User</FormLabel>
+          <Select
+            name="user"
+            value={formData.user}
+            onChange={handleChange}
+          >
+            {users.map((user) => (
+              <option key={user._id} value={user._id}>
+                {user.email}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
 
         <FormControl mb="4">
           <FormLabel>Event Date</FormLabel>
