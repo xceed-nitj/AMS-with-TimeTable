@@ -1,8 +1,7 @@
 const multer = require('multer');
 const path = require("path");
 const fs = require('fs');  // Include the 'fs' module
-
-const storage = multer.diskStorage({
+/*const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const { eventId} = req.body;  // Extract eventId and userId from the request body
     const userId = req.user.id;
@@ -35,9 +34,10 @@ const storage = multer.diskStorage({
     const newFileName = `${originalFileName}_${timestamp}${path.extname(file.originalname)}`;
     cb(null, newFileName);
   },
-});
+});*/
 
-const upload = multer({ storage: storage });
+//const upload = multer({storage: storage});
+const upload = multer();
 
 const fileUploadMiddleware = (req, res, next) => {
   upload.fields([
@@ -53,10 +53,10 @@ const fileUploadMiddleware = (req, res, next) => {
 
     // Attach file information to the request object
     if (req.files.pdfFile) {
-      req.fileName = `${req.body.eventId}/${req.user.id}/paperupload/${req.files.pdfFile[0].filename}`;
+      req.fileName = `${req.body.eventId}/${req.user.id}/paperupload/${req.files.pdfFile[0].originalname}`;
     }
     if (req.files.codeFile) {
-      req.codeName = `${req.body.eventId}/${req.user.id}/codeupload/${req.files.codeFile[0].filename}`;
+      req.codeName = `${req.body.eventId}/${req.user.id}/codeupload/${req.files.codeFile[0].originalname}`;
     }
     req.track = req.body.tracks;
     req.title = req.body.title;
