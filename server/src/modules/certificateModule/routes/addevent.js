@@ -7,10 +7,11 @@ const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
 
 // Route to create a new event
-addEventRouter.post("/",ecmadminRoute, async (req, res) => {
+addEventRouter.post("/", ecmadminRoute, async (req, res) => {
   try {
-    await addEventController.addEvent(req.body);
-    return res.status(201).json({ response: "Event created sucesfully" });
+    const { user, ...eventData } = req.body; // extract userId from request body
+    await addEventController.addEvent({ user, ...eventData });
+    return res.status(201).json({ response: "Event created successfully" });
   } catch (e) {
     return res
       .status(e?.status || 500)
