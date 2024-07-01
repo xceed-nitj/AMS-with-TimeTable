@@ -196,9 +196,9 @@ const PrmEditorDashboard = () => {
                         <Button
                             width="100%"
                             height="50px"
-                            bgGradient="linear(to-r, blue.600, blue.500)"
+                            bgGradient="linear(to-r, yellow.600, yellow.500)"
                             color="white"
-                            _hover={{ bgGradient: "linear(to-r, blue.500, blue.400)" }}
+                            _hover={{ bgGradient: "linear(to-r, yellow.500, yellow.400)" }}
                             onClick={() => navigate(`${location.pathname}/startSubmission`)}
                             leftIcon={<Icon as={FaBullseye} color="white" />}
                             whiteSpace="normal" // Ensure text wraps within the button
@@ -218,7 +218,8 @@ const PrmEditorDashboard = () => {
                         >
                             Paper Details
                         </Button>
-                        {/* <Button
+                        <Button
+                            isDisabled = {!startSubmission}
                             width="100%"
                             height="50px"
                             bgGradient="linear(to-r, blue.600, blue.500)"
@@ -229,7 +230,7 @@ const PrmEditorDashboard = () => {
                             whiteSpace="normal" // Ensure text wraps within the button
                         >
                             Invite Reviewer
-                        </Button> */}
+                        </Button>
                         <Button
                             isDisabled = {!startSubmission}
                             width='100%'
@@ -243,8 +244,7 @@ const PrmEditorDashboard = () => {
                         >
                             Communication Templates
                         </Button>
-                        <Button
-                            isDisabled = {!startSubmission}
+                        {/* <Button
                             width='100%'
                             height="50px"
                             bgGradient="linear(to-r, purple.600, purple.500)"
@@ -255,7 +255,7 @@ const PrmEditorDashboard = () => {
                             whiteSpace="normal" // Ensure text wraps within the button
                         >
                             Review Questions
-                        </Button>
+                        </Button> */}
                         
 
                     </Grid>
