@@ -84,6 +84,7 @@ import PaperSummary from './reviewmodule/pages/PaperSummary.jsx';
 import ReviewerQuestion from './reviewmodule/pages/ReviewQuestion';
 import DefaultQuestion from './reviewmodule/pages/DefaultQuestion.jsx';
 import ReviewerQuestionHome from './reviewmodule/pages/ReviewQuestionHome';
+import StartSubmission from './reviewmodule/pages/StartSubmission.jsx';
 import DefaultQuestionHome from './reviewmodule/pages/DefaultQuestionHome.jsx';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
 import UserRegistration from './reviewmodule/pages/userRegistration';
@@ -228,6 +229,7 @@ function App() {
     <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
     <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
+    <Route path="/prm/:eventId/editor/startSubmission" element={<StartSubmission/>}/>
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
