@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
 import {
   Container,
@@ -7,7 +7,6 @@ import {
   Input,
   Button,
   VStack,
-  Textarea,
   HStack,
   FormControl,
   FormLabel,
@@ -30,7 +29,7 @@ function EventForm() {
 
   const toast = useToast();
   const apiUrl = getEnvironment();
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -201,6 +200,28 @@ function EventForm() {
     });
   };
 
+  const handleAddEditor = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      editorEmails: [...prevData.editorEmails, ""]
+    }));
+  };
+
+  const handleDeleteEditor = (index) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      editorEmails: prevData.editorEmails.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleEditorEmailChange = (index, value) => {
+    setFormData((prevData) => {
+      const newEditorEmails = [...prevData.editorEmails];
+      newEditorEmails[index] = value;
+      return { ...prevData, editorEmails: newEditorEmails };
+    });
+  };
+
   return (
     <Container maxWidth={{ base: "100%", md: "80%" }} p={5} mx="auto" bg="white">
       <Box bg="black" p={0.01} borderTopRadius="md">
@@ -256,17 +277,24 @@ function EventForm() {
           <FormControl id="editorEmails" mb={4}>
             <HStack justifyContent="space-between">
               <FormLabel>List of Editors</FormLabel>
-              <Button colorScheme="blue" size="sm">
+              <Button colorScheme="blue" size="sm" onClick={handleAddEditor}>
                 Add Editor
               </Button>
             </HStack>
             <VStack align="stretch">
               {formData.editorEmails.map((email, index) => (
                 <HStack key={index} p={2} border="1px" borderRadius="md">
-                  <Box flex="1">{email}</Box>
-                  <Button size="sm" colorScheme="red">
-                    Delete
-                  </Button>
+                  <Input
+                    flex="1"
+                    value={email}
+                    onChange={(e) => handleEditorEmailChange(index, e.target.value)}
+                    placeholder="Editor Email"
+                  />
+                  {formData.editorEmails.length > 1 && (
+                    <Button size="sm" colorScheme="red" onClick={() => handleDeleteEditor(index)}>
+                      Delete
+                    </Button>
+                  )}
                 </HStack>
               ))}
             </VStack>
@@ -275,9 +303,6 @@ function EventForm() {
             <Button type="submit" size="lg" style={{ backgroundColor: 'green', width: '100px' }}>
               Save
             </Button>
-            {/* <Button onClick={clearAllInputs} type="button" size="lg" style={{ backgroundColor: '#CC0000', width: '100px', color: 'white' }}>
-              Cancel
-            </Button> */}
           </Box>
         </form>
       </Box>
