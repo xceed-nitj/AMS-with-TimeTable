@@ -67,7 +67,7 @@ const uploadPaper = async(req, res) => {
       }
 
       console.log("Paper saved successfully:", savedPaper);
-      res.status(200).json({message: "Paper uploaded and saved successfully!", paperlink:`reviewmodule/uploads/${req.fileName}`,codelink:`reviewmodule/uploads${req.codeName}`});
+      res.status(200).json({message: "Paper uploaded and saved successfully!", paperlink:`reviewmodule/uploads/${req.fileName}`,codelink:`reviewmodule/uploads/${req.codeName}`});
     })
     .catch((error) => {
       console.error("Error saving paper:", error);

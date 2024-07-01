@@ -229,9 +229,13 @@ const addReviewer = async (req, res) => {
       return res.status(400).send('Reviewer already added to this paper');
     }
     // Add reviewer to the paper
-    paper.reviewers.push({ userId: reviewers._id,username:email});
     const eventId=paper.eventId;
     const event = await Event.findById(eventId);
+    const currentDate = new Date();
+    const daysToAdd = event.reviewTime;
+    const days = parseInt(daysToAdd, 10);
+    currentDate.setDate(currentDate.getDate() + days);
+    paper.reviewers.push({ userId: reviewers._id,username:email, dueDate:currentDate});
     await paper.save();
     console.log("added successfully");
     const reviewerInvitationTemplate=event.templates.paperAssignment;
