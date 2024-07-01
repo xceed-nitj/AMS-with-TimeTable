@@ -10,21 +10,21 @@ import { Link, useNavigate } from 'react-router-dom';
 
 async function updateStartSubmission(toast) { 
     const apiUrl = getEnvironment()
-
+    const parts = window.location.pathname.split('/')
     try {
         const response = await fetch(
-          `${apiUrl}/api/v1/reviewmodule/event/updateStartSubmission/${window.location.pathname.split('/')[2]}`,
+          `${apiUrl}/api/v1/reviewmodule/event/updateStartSubmission/${parts[2]}`,
           {
             method: "PATCH",
             credentials: "include",
-            body: {startSubmission : true}
-          }
-        );
+            body: JSON.stringify({startSubmission : true}),
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (response.ok) {
           window.history.back()
         }
     } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Error starting submission :", error);
         toast({
             title: 'Error starting submission',
             description: 'An error occurred while starting the questions.',
@@ -184,7 +184,7 @@ function StartSubmission() {
             <Flex justifyContent='space-evenly' width={'100%'} flexWrap={'wrap'}>
                 <Flex flexDirection='column' alignItems={'center'} gap={'5px'}>
                     <Button
-                        width="200px"
+                        width="250px"
                         height="50px"
                         bgGradient="linear(to-r, cyan.600, cyan.500)"
                         color="white"
@@ -199,7 +199,7 @@ function StartSubmission() {
                 </Flex>
                 <Flex flexDirection='column' alignItems={'center'} gap={'5px'}>
                     <Button
-                        width="200px"
+                        width="250px"
                         height="50px"
                         bgGradient="linear(to-r, orange.600, orange.500)"
                         color="white"
@@ -214,7 +214,7 @@ function StartSubmission() {
                 </Flex>
                 <Flex flexDirection='column' alignItems={'center'} gap={'5px'}>
                     <Button
-                        width='200px'
+                        width='250px'
                         height="50px"
                         bgGradient="linear(to-r, purple.600, purple.500)"
                         color="white"
