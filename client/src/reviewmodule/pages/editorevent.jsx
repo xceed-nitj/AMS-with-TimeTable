@@ -275,9 +275,9 @@ function EventForm() {
             <Button type="submit" size="lg" style={{ backgroundColor: 'green', width: '100px' }}>
               Save
             </Button>
-            <Button onClick={clearAllInputs} type="button" size="lg" style={{ backgroundColor: '#CC0000', width: '100px', color: 'white' }}>
+            {/* <Button onClick={clearAllInputs} type="button" size="lg" style={{ backgroundColor: '#CC0000', width: '100px', color: 'white' }}>
               Cancel
-            </Button>
+            </Button> */}
           </Box>
         </form>
       </Box>
