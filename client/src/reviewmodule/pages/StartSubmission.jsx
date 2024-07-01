@@ -8,6 +8,33 @@ import axios from "axios";
 import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
 import { Link, useNavigate } from 'react-router-dom';
 
+async function updateStartSubmission(toast) { 
+    const apiUrl = getEnvironment()
+
+    try {
+        const response = await fetch(
+          `${apiUrl}/api/v1/reviewmodule/event/updateStartSubmission/${window.location.pathname.split('/')[2]}`,
+          {
+            method: "PATCH",
+            credentials: "include",
+            body: {startSubmission : true}
+          }
+        );
+        if (response.ok) {
+          window.history.back()
+        }
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({
+            title: 'Error starting submission',
+            description: 'An error occurred while starting the questions.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+        });
+    }
+
+} 
 
 function StartSubmission() {
     //status 0 for loading, 1 for complete, 2 for pending
@@ -205,7 +232,7 @@ function StartSubmission() {
             {
                 (confDetailsStatus&&(tracksStatus&&reviewQuestionsStatus)) ?
                 <Link
-                    onClick={()=>{console.log('click detected')}}
+                    onClick={()=>updateStartSubmission(toast)}
                     className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center tw-m-auto"
                     style={{gap: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 'fit-content'}}
                     >
