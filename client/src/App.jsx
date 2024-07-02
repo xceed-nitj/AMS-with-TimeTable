@@ -88,6 +88,7 @@ import StartSubmission from './reviewmodule/pages/StartSubmission.jsx';
 import DefaultQuestionHome from './reviewmodule/pages/DefaultQuestionHome.jsx';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
 import UserRegistration from './reviewmodule/pages/userRegistration';
+import OTPverification from './reviewmodule/pages/OTPverification.jsx';
 
 // import HomePage from './reviewmodule/pages/Main';
 
@@ -214,6 +215,7 @@ function App() {
     <Route path="/prm/signup" element={<CreateUser/>} />
     <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
+    <Route path="/prm/emailverification" element={<OTPverification/>} />
     {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
