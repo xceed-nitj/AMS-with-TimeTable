@@ -1,5 +1,5 @@
 const Paper = require("../../../models/reviewModule/paper.js");
-const User = require("../../../models/reviewModule/user.js");
+const User = require("../../../models/usermanagement/user.js");
 const mailSender = require("../../mailsender.js");
 const express = require("express");
 const bodyParser = require("body-parser");
