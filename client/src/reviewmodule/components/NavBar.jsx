@@ -16,7 +16,7 @@ function NavBar() {
   const [isLoading, setIsLoading] = useState(true);
 
   const excludedRoutes = ['/login', '/cm/c'];
-  const excludedRoutesLogin = [/\/prm\/[a-zA-Z0-9]\/reviewer\/.*/,'/prm/register'];
+  const excludedRoutesLogin = [/\/prm\/[a-zA-Z0-9]\/reviewer\/.*/,'/prm/register','/prm/emailverification'];
 
   useEffect(() => {
     const getUserDetails = async () => {
