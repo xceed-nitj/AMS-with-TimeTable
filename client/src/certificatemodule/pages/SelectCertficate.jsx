@@ -28,6 +28,7 @@ function SelectCertficate({
   eventId,
   contentBody,
   certiType,
+  certificateOf,
   title,
   verifiableLink,
   logos,
@@ -42,6 +43,7 @@ function SelectCertficate({
       contentBody={contentBody}
       certiType={certiType}
       title={title}
+      certificateOf={certificateOf}
       verifiableLink={verifiableLink}
       logos={logos}
       participantDetail={participantDetail}
