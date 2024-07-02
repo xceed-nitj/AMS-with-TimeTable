@@ -1,5 +1,5 @@
 const Event = require("../../../models/reviewModule/event.js");
-const User = require("../../../models/reviewModule/user.js")
+const User = require("../../../models/usermanagement/user.js")
 const XUser= require("../../../models/usermanagement/user.js")
 const express = require("express");
 const bodyParser = require("body-parser");

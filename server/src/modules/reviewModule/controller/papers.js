@@ -1,7 +1,7 @@
 const Paper = require("../../../models/reviewModule/paper.js");
 const express = require("express");
 const bodyParser = require("body-parser");
-const User = require("../../../models/reviewModule/user.js");
+const User = require("../../../models/usermanagement/user.js");
 const XUser = require("../../../models/usermanagement/user.js");
 const Event = require("../../../models/reviewModule/event.js");
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function

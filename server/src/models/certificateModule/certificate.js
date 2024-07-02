@@ -8,113 +8,192 @@ const CertificateSchema = new mongoose.Schema({
   title: [
     {
       name: {
-        type: String
+        type: String,
+        default:"",
       },
       fontFamily: {
-        type: String
+        type: String,
+        default:"serif"
       },
       fontSize: {
-        type: Number
+        type: Number,
+        default:16,
       },
       bold: {
-        type: String
+        type: String,
+        default:"normal"
       },
       italic: {
-        type: String
+        type: String,
+        default:"normal"
       },
+      fontColor:{
+        type:String,
+        default: "black"
+      }
     }
   ],
   verifiableLink: {
     type: Boolean,
+    default:false,
   },
-  logos: {
-    type: Array,
-  },
+  logos: [{
+    url:{
+      type: String,
+      default:"",
+    },
+    height:{
+      type:Number,
+      default:80,
+    },
+    width:{
+      type:Number,
+      default:80,
+    }
+  }],
   header: [{
     header: {
-      type: String
+      type: String,
+      default:"",
     },
     fontFamily: {
-      type: String
+      type: String,
+      default:"serif"
     },
     fontSize: {
-      type: Number
+      type: Number,
+      default:16,
     },
     bold: {
-      type: String
+      type: String,
+      default:"normal"
     },
     italic: {
-      type: String
+      type: String,
+      default:"normal"
     },
+    fontColor:{
+      type:String,
+      default: "black"
+    }
   }],
+  certificateOf:{
+    certificateOf:{
+      type:String,
+      default:"CERTIFICATE OF APPRECIATION"
+    },
+    fontFamily: {
+      type: String,
+      default:"serif",
+    },
+    fontSize: {
+      type: Number,
+      default:16,
+    },
+    bold: {
+      type: String,
+      default:"normal"
+    },
+    italic: {
+      type: String,
+      default:"normal"
+    },
+    fontColor:{
+      type:String,
+      default: "black"
+    }
+  },
   body: {
     body: {
-      type: String
+      type: String,
+      default:"",
     },
     fontFamily: {
-      type: String
+      type: String,
+      default:"serif"
     },
     fontSize: {
-      type: Number
+      type: Number,
+      default:16,
     },
     bold: {
-      type: String
+      type: String,
+      default:"normal"
     },
     italic: {
-      type: String
+      type: String,
+      default:"normal"
+    },
+    fontColor:{
+      type:String,
+      default: "black"
+    }
+  },
+  footer: {
+    footer: {
+      type: String,
+      default:"",
     },
   },
-  footer: [{
-    footer: {
-      type: String
-    },
-    fontFamily: {
-      type: String
-    },
-    fontSize: {
-      type: Number
-    },
-  }],
   signatures: [
     {
       name: {
         name: {
-          type: String
+          type: String,
+          default:"",
         },
         fontFamily: {
-          type: String
+          type: String,
+          default:"serif"
         },
         fontSize: {
-          type: Number
+          type: Number,
+          default:16,
         },
         bold: {
-          type: String
+          type: String,
+          default:"normal"
         },
         italic: {
-          type: String
+          type: String,
+          default:"normal"
         },
+        fontColor:{
+          type:String,
+          default: "black"
+        }
         // required: true,
       },
       position: {
         position: {
-          type: String
+          type: String,
+          default:"",
         },
         fontFamily: {
-          type: String
+          type: String,
+          default:"serif"
         },
         fontSize: {
-          type: Number
+          type: Number,
+          default:16,
         },
         bold: {
-          type: String
+          type: String,
+          default:"normal"
         },
         italic: {
-          type: String
+          type: String,
+          default:"normal"
         },
+        fontColor:{
+          type:String,
+          default: "black"
+        }
         // required: true,
       },
       url: {
         type: String,
+        default:"",
         // required: true,
       },
     },
@@ -122,10 +201,12 @@ const CertificateSchema = new mongoose.Schema({
   ],
   certiType: {
     type: String,
+    required:true,
   },
 
   eventId: {
     type: String,
+    required:true,
   },
   templateId: {
     type: String,

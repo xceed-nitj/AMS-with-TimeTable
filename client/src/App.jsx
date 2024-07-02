@@ -84,9 +84,11 @@ import PaperSummary from './reviewmodule/pages/PaperSummary.jsx';
 import ReviewerQuestion from './reviewmodule/pages/ReviewQuestion';
 import DefaultQuestion from './reviewmodule/pages/DefaultQuestion.jsx';
 import ReviewerQuestionHome from './reviewmodule/pages/ReviewQuestionHome';
+import StartSubmission from './reviewmodule/pages/StartSubmission.jsx';
 import DefaultQuestionHome from './reviewmodule/pages/DefaultQuestionHome.jsx';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
 import UserRegistration from './reviewmodule/pages/userRegistration';
+import OTPverification from './reviewmodule/pages/OTPverification.jsx';
 
 // import HomePage from './reviewmodule/pages/Main';
 
@@ -213,6 +215,7 @@ function App() {
     <Route path="/prm/signup" element={<CreateUser/>} />
     <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
+    <Route path="/prm/emailverification" element={<OTPverification/>} />
     {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
@@ -228,6 +231,7 @@ function App() {
     <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
     <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
+    <Route path="/prm/:eventId/editor/startSubmission" element={<StartSubmission/>}/>
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 

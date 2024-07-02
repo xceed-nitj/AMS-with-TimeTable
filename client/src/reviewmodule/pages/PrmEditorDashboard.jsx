@@ -8,7 +8,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { Container } from "@chakra-ui/layout";
 import Header from "../../components/header";
-import { FaInfoCircle, FaFileAlt, FaUserFriends, FaChartPie, FaEnvelope } from 'react-icons/fa';
+import { FaInfoCircle, FaFileAlt, FaUserFriends, FaChartPie, FaEnvelope, FaPlay, FaBullseye } from 'react-icons/fa';
 import { FiCheckCircle } from 'react-icons/fi'
 
 const PrmEditorDashboard = () => {
@@ -20,6 +20,7 @@ const PrmEditorDashboard = () => {
   const [table, setTable] = useState([]);
   const [trackcount, setTrackCount] = useState([]);
   const [counts, setCounts] = useState({ Accepted: 0, Invited: 0, NotAccepted: 0 });
+  const [startSubmission, setStartSubmission] = useState(false)
 
   const fetchEvent = async () => {
     try {
@@ -33,8 +34,9 @@ const PrmEditorDashboard = () => {
   
       if (response.ok) {
         const event = await response.json();
-        console.log(event.name)
+        console.log(event)
         setEvent(event.name);
+        if(event.startSubmission) setStartSubmission(true)
       } else {
         console.error("Failed to fetch event");
       }
@@ -167,7 +169,7 @@ const PrmEditorDashboard = () => {
                         gap={6}
                         mb={8}
                     >
-                        <Button
+                        {/* <Button
                             width="100%"
                             height="50px"
                             bgGradient="linear(to-r, cyan.600, cyan.500)"
@@ -190,8 +192,21 @@ const PrmEditorDashboard = () => {
                             whiteSpace="normal" // Ensure text wraps within the button
                         >
                             Add Tracks
+                        </Button> */}
+                        <Button
+                            width="100%"
+                            height="50px"
+                            bgGradient="linear(to-r, yellow.600, yellow.500)"
+                            color="white"
+                            _hover={{ bgGradient: "linear(to-r, yellow.500, yellow.400)" }}
+                            onClick={() => navigate(`${location.pathname}/startSubmission`)}
+                            leftIcon={<Icon as={FaBullseye} color="white" />}
+                            whiteSpace="normal" // Ensure text wraps within the button
+                        >
+                            Start Submission
                         </Button>
                         <Button
+                            isDisabled = {!startSubmission}
                             width="100%"
                             height="50px"
                             bgGradient="linear(to-r, red.600, red.500)"
@@ -204,6 +219,7 @@ const PrmEditorDashboard = () => {
                             Paper Details
                         </Button>
                         <Button
+                            isDisabled = {!startSubmission}
                             width="100%"
                             height="50px"
                             bgGradient="linear(to-r, blue.600, blue.500)"
@@ -216,6 +232,7 @@ const PrmEditorDashboard = () => {
                             Invite Reviewer
                         </Button>
                         <Button
+                            isDisabled = {!startSubmission}
                             width='100%'
                             height="50px"
                             bgGradient="linear(to-r, green.600, green.500)"
@@ -227,7 +244,7 @@ const PrmEditorDashboard = () => {
                         >
                             Communication Templates
                         </Button>
-                        <Button
+                        {/* <Button
                             width='100%'
                             height="50px"
                             bgGradient="linear(to-r, purple.600, purple.500)"
@@ -238,10 +255,14 @@ const PrmEditorDashboard = () => {
                             whiteSpace="normal" // Ensure text wraps within the button
                         >
                             Review Questions
-                        </Button>
+                        </Button> */}
                         
 
                     </Grid>
+                    {
+                        !startSubmission &&
+                        <Text style={{color: 'gray', textAlign:'center', paddingBottom:'30px'}} >Start submission to enable other options...</Text>
+                    }
                     <Grid
                         templateColumns={['1fr', '1fr', 'repeat(2, 1fr)', 'repeat(4, 1fr)']}
                         gap={6}
