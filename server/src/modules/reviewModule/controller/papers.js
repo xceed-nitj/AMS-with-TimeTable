@@ -298,6 +298,7 @@ const addAuthor = async (req, res) => {
       return res.status(200).json({
         message: "User already exists",
         updatedId: existingUser._id,
+        mail: false
       });
     }
 
@@ -322,19 +323,20 @@ const addAuthor = async (req, res) => {
     // Send email notification
     const reviewerInvitationTemplate=event.templates.paperSubmission;
     const signature=event.templates.signature;
-    await sendMail(
+    /*await sendMail(
       email,
       'You have been added as an author',
       ` ${reviewerInvitationTemplate} <br>'
       Here's your temporary password: ${password}. Please login to change it.<br>
       XCEED`
-    );
+    );*/
 
     console.log("User created and email sent");
 
     return res.status(201).json({
       message: "User successfully created",
       updatedId: newUser._id,
+      mail: true
     });
   } catch (error) {
     console.log(error);

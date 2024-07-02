@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import getEnvironment from "../../getenvironment";
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -14,6 +15,8 @@ import {
 } from '@chakra-ui/react';
 
 const UserRegistration = () => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false)
   const [formValues, setFormValues] = useState({
     name: '',
     designation: '',
@@ -50,7 +53,7 @@ const UserRegistration = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setIsLoading(true)
     try {
       console.log(formValues)
       const response = await fetch(
@@ -66,16 +69,10 @@ const UserRegistration = () => {
       );
       const data = await response.json();
       if (response.ok) {
-        toast({
-          title: "User Registered Successfully",
-          status: "success",
-          duration: 6000,
-          isClosable: true,
-          position: "bottom"
-        });
+        navigate('/prm/emailverification', { state: formValues});
       } else {
         toast({
-          title: "Error Registering User data",
+          title: data.message,
           description: "Please try again later",
           status: "error",
           duration: 6000,
@@ -94,6 +91,8 @@ const UserRegistration = () => {
         isClosable: true,
         position: "bottom"
       });
+    }finally {
+      setIsLoading(false)
     }
   };
 
@@ -197,7 +196,7 @@ const UserRegistration = () => {
             />
           </FormControl>
         </SimpleGrid>
-        <Button colorScheme="blue" type="submit">Register</Button>
+        <Button colorScheme="blue" type="submit" isLoading={isLoading}>Register</Button>
       </VStack>
     </Box>
   );

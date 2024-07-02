@@ -22,11 +22,11 @@ export default function AuthorDetails({ setNext, handleNext, handlePrevious }) {
   const [isTableEmptyDialogOpen, setIsTableEmptyDialogOpen] = useState(false);
 
   useEffect(() => {
-    const areAtLeastTwoAuthorsFilled = paper.authors.length >= 2 && paper.authors.slice(1).every(author =>
+    const areAtLeastTwoAuthorsFilled = paper.pseudo_authors.length >= 2 && paper.pseudo_authors.slice(1).every(author =>
       Object.values(author).every(value => value !== "")
     );
     setIsNextEnabled(areAtLeastTwoAuthorsFilled);
-  }, [paper.authors]);
+  }, [paper.pseudo_authors]);
 
   useEffect(() => {
     setNext(isNextEnabled);
@@ -49,7 +49,7 @@ export default function AuthorDetails({ setNext, handleNext, handlePrevious }) {
   }
 
   const handleNextClick = () => {
-    if (paper.authors.length === 0) {
+    if (paper.pseudo_authors.length === 0) {
       setIsTableEmptyDialogOpen(true);
     } else {
       handleNext(paper);

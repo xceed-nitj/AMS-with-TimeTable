@@ -50,19 +50,28 @@ const fileUploadMiddleware = (req, res, next) => {
     if (!req.files || (!req.files.pdfFile && !req.files.codeFile)) {
       return res.status(400).send('No files uploaded.');
     }
+    console.log("user::",req.body.user);
 
     // Attach file information to the request object
     if (req.files.pdfFile) {
-      req.fileName = `${req.body.eventId}/${req.user.id}/paperupload/${req.files.pdfFile[0].originalname}`;
+      req.fileName = `${req.body.eventId}/${req.body.user}/paperupload/${req.files.pdfFile[0].originalname}`;
     }
     if (req.files.codeFile) {
-      req.codeName = `${req.body.eventId}/${req.user.id}/codeupload/${req.files.codeFile[0].originalname}`;
+      req.codeName = `${req.body.eventId}/${req.body.user}/codeupload/${req.files.codeFile[0].originalname}`;
     }
     req.track = req.body.tracks;
     req.title = req.body.title;
     req.abstract = req.body.abstract;
     req.authors = req.body.authors;
     req.terms = req.body.terms;
+    try {
+      req.ps = JSON.parse(req.body.pseudo_authors);
+    } catch (error) {
+      console.error("Error parsing pseudo_authors:", error);
+      req.ps = []; // Set to empty array if parsing fails
+    }
+
+    console.log("Parsed pseudo_authors:", req.ps);
     next();
   });
 };
