@@ -137,15 +137,15 @@ const CertificateContent = ({
         </g>
       </>
       <>
-        <foreignObject width={'90%'} height={'400'} y={'80'} x={'5%'}>
-          <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
+        <foreignObject width={'90%'} height={'400'} y={'40'} x={'5%'}>
+          <div style={{height:"200px"}} className="tw-flex tw-items-center tw-justify-center tw-w-full">
             {logos.map((item, key) => (
               <div
                 key={key}
                 className="tw-flex tw-items-center tw-justify-center "
               >
-                <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                  <img src={item} alt="" />
+                <div style={{width:`${item.width}px`,height:`${item.height}px`}} className="tw-w-20 tw-shrink-0 tw-mx-6">
+                  <img src={item.url} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
@@ -200,7 +200,7 @@ const CertificateContent = ({
           </Text>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={550} width={'60%'} height={400}>
+        <foreignObject x={'20%'} y={510} width={'60%'} height={400}>
           <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
             {signature.map((item, key) => (
               <div

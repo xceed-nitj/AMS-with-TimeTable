@@ -37,10 +37,20 @@ const CertificateSchema = new mongoose.Schema({
     type: Boolean,
     default:false,
   },
-  logos: {
-    type: Array,
-    default:[""],
-  },
+  logos: [{
+    url:{
+      type: String,
+      default:"",
+    },
+    height:{
+      type:Number,
+      default:80,
+    },
+    width:{
+      type:Number,
+      default:80,
+    }
+  }],
   header: [{
     header: {
       type: String,

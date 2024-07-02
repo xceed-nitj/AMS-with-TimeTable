@@ -28,7 +28,7 @@ const CertificateForm = () => {
   const toast = useToast();
   const [type, setType] = useState('');
   const [formData, setFormData] = useState({
-    logos: [""],
+    logos: [{ url: "", height: 80, width: 80 }],
     header: [{ header: "", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
     body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
     footer: { footer: "", },
@@ -55,9 +55,9 @@ const CertificateForm = () => {
   const eventId = parts[parts.length - 1];
 
   useEffect(() => {
-    const certType=formData.certiType;
+    const certType = formData.certiType;
     setFormData({
-      logos: [""],
+      logos: [{ url: "", height: 80, width: 80 }],
       header: [{ header: "", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
       body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       footer: { footer: "", },
@@ -110,6 +110,19 @@ const CertificateForm = () => {
                   url: element.url,
                 }
                 Signatures.push(sign)
+              });
+            }
+            //for logos
+            let Logos = []
+            if (logos[0].url) {
+              Logos = logos
+            } else {
+
+              logos.forEach(element => {
+                let str = ""
+                for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
+                let logo = { url: str, width: 80, height: 80 }
+                Logos.push(logo)
               });
             }
             //for header
@@ -171,7 +184,8 @@ const CertificateForm = () => {
             }
 
             // console.log(Title,Body,Footer,Header,Signatures)
-            setFormData({ title: Title, body: Body, certificateOf: CertificateOf, footer: Footer, header: Header, signatures: Signatures, certiType: certiType, logos: logos, templateId: templateId, verifiableLink: verifiableLink });
+            setFormData({ title: Title, body: Body, certificateOf: CertificateOf, footer: Footer, header: Header, signatures: Signatures, certiType: certiType, logos: Logos, templateId: templateId, verifiableLink: verifiableLink });
+            console.log(formData.logos)
           } else {
             console.error(
               'Error: Fetched data does not match the expected structure.'
@@ -314,11 +328,9 @@ const CertificateForm = () => {
                 [signatureField]: value,
               };
             }
-          }
-          else if (fieldName === 'logos') {
-            updatedField[index] = value;
           } else {
             const objectField = e.target.name.split('.')[1];
+            console.log(objectField, updatedField)
             updatedField[index] = {
               ...updatedField[index],
               [objectField]: (objectField == "fontSize") ? isNaN(parseInt(value)) ? 6 : parseInt(value) : value,
@@ -585,26 +597,49 @@ const CertificateForm = () => {
             <Text>Enter the link for the logos:</Text>
 
             {formData.logos.map((logo, index) => (
-              <HStack width='100%' key={index}>
-                <Input
-                  name="logos"
-                  value={logo}
-                  onChange={(e) => handleChange(e, 'logos', index)}
-                  placeholder="Logo"
-                  width="100%"
-                />
-                {index > 0 && (
-                  <IconButton
-                    icon={<CloseIcon />}
-                    onClick={() => handleDelete('logos', index)}
-                  />
-                )}
-                {index === formData.logos.length - 1 && (
-                  <IconButton
-                    icon={<AddIcon />}
-                    onClick={() => addField('logos')}
-                  />
-                )}
+              <HStack width='100%' key={index} border="none">
+                <Accordion border="none" width='100%' allowMultiple><AccordionItem border="none" width='100%'><HStack width='100%'>
+                  <Input
+                    name={`logos[${index}].url`}
+                    value={logo.url}
+                    onChange={(e) => handleChange(e, 'logos', index)}
+                    placeholder="Logo"
+                    width="100%"
+                  /><AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="black" height="30px" width="30px" justifyContent="center" /></AccordionButton>
+                  {index > 0 && (
+                    <IconButton
+                      icon={<CloseIcon />}
+                      onClick={() => handleDelete('logos', index)}
+                    />
+                  )}
+                  {index === formData.logos.length - 1 && (
+                    <IconButton
+                      icon={<AddIcon />}
+                      onClick={() => addField('logos')}
+                    />
+                  )}</HStack>
+                  <AccordionPanel> <HStack width="100%">
+                    <HStack width="40%"><Text>Height:</Text><input
+                      type="number"
+                      name={`logos[${index}].height`}
+                      value={logo.height}
+                      onChange={(e) => handleChange(e, 'logos', index)}
+                      placeholder="height" 
+                      style={{width:"40px",textAlign:"center"}}
+                      /></HStack>
+                      <HStack width="40%"><Text>Width:</Text><input 
+                      type="number"
+                      name={`logos[${index}].width`}
+                      value={logo.width}
+                      onChange={(e) => handleChange(e, 'logos', index)}
+                      placeholder="width"
+                      style={{width:"40px",textAlign:"center"}}
+                      /></HStack>
+                    </HStack>
+                    
+                  </AccordionPanel></AccordionItem></Accordion>
+
+
               </HStack>
             ))}
 
