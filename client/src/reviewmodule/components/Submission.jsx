@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useState, useEffect} from 'react';
 import axios from 'axios';
 import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
@@ -20,8 +20,76 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
   const apiUrl = getEnvironment();
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [paper, setPaper] = useRecoilState(paperState);
   const eventId = paper.eventId;
+  const [userId, setUserId] = useState('');
+  useEffect(() => {
+    const postItem = async () => {
+      if (currentIndex < paper.pseudo_authors.length) {
+        try {
+          const response = await axios.post(`${apiUrl}/reviewmodule/paper/addAuthor`,{
+            name: paper.pseudo_authors[currentIndex].name,
+            email: paper.pseudo_authors[currentIndex].email,
+            designation: paper.pseudo_authors[currentIndex].designation,
+            eventId: paper.eventId,
+          });
+          //console.log("userid:",response.data.updatedId);
+          paper.authors.push(response.data.updatedId);
+          paper.pseudo_authors[currentIndex].order=response.data.updatedId;
+          paper.pseudo_authors[currentIndex].institute=response.data.mail;
+          toast({
+            title: 'Upload successful.',
+            description: response.data.message || 'Paper has been uploaded.',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          });
+          console.log(`Posted item: ${paper.pseudo_authors[currentIndex]}`);
+          setCurrentIndex(prevIndex => prevIndex + 1);
+        } catch (error) {
+          console.error(`Error posting item: ${paper.pseudo_authors[currentIndex]}`, error);
+          console.error('Upload error:', error);
+          toast({
+            title: 'Upload failed.',
+            description: error.response?.data?.message || 'An error occurred during upload.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      }
+    };
+
+    postItem();
+    console.log(paper);
+  }, [currentIndex, paper.pseudo_authors]);
+  useEffect(() => {
+      const fetchUser = async () => {
+          try {
+              const User = await fetch(`${apiUrl}/user/getuser`, {
+                  method: "GET",
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+              });
+              const userdetails = await User.json();
+              const id = userdetails.user._id;
+              setUserId(id); // Set the userId from logged-in user
+          }catch (error) {
+              console.error('Error fetching User:', error);
+              toast({
+                  title: "Error",
+                  description: "Unable to fetch User",
+                  status: "error",
+                  duration: 5000,
+                  isClosable: true,
+              });
+          }
+      };
+      fetchUser();
+  }, [apiUrl]);
   const handleSubmit = async ()=>{
     var form_data = new FormData();
     for ( var key in paper ) {
@@ -36,10 +104,15 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
           for (var i = 0; i < paper[key].length; i++) {
             form_data.append('authors[]', paper[key][i]);
           }
+        }else if(key==="pseudo_authors"){
+          form_data.append('pseudo_authors', JSON.stringify(paper.pseudo_authors));
         }else{
           form_data.append(key, paper[key]);
         }
     }
+    console.log(userId);
+    form_data.append("user",userId);
+
     //console.log("paper details below=====>,");
     //console.log(paper);
     setIsLoading(true);

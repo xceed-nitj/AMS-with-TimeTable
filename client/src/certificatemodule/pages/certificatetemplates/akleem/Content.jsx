@@ -222,10 +222,23 @@ function Content() {
           setCertificateOf(certificateOf)
         }
 
-
-
         settitle(Title)
-        setLogos(data_one[0].logos);
+
+        //for logos
+        let Logos = data_one[0].logos
+        let logo=[]
+        if (Logos[0].url) {
+          logo = Logos
+        } else {
+
+          logos.forEach(element => {
+            let str = ""
+            for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
+            let logo1 = { url: str, width: 80, height: 80 }
+            logo.push(logo1)
+          });
+        }
+        setLogos(logo);
         // if(data_one[0].title){settitle(data_one[0].title)};
         const verifiablelink = data_one[0].verifiableLink.toString()
         // console.log(verifiableLink)
