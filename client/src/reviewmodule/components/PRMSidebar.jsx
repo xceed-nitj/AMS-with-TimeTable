@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, useBreakpointValue } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
 import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle, FaMailBulk } from 'react-icons/fa';
-import { MdEvent, MdAssignment, MdAssessment, MdEdit, MdFeedback, MdGavel, MdGrade, MdGroup, MdHelp, MdHistory } from 'react-icons/md';
+import { MdEvent, MdEventAvailable, MdEventNote, MdDeblur, MdAssignment, MdAssessment, MdGrade, MdTrackChanges } from 'react-icons/md';
+import { HiOutlineDocumentMagnifyingGlass } from "react-icons/hi2";
+import { RxBarChart } from "react-icons/rx";
 import getEnvironment from '../../getenvironment';
 import PRMDashboard from '../pages/prmdashboard';
 import SubmittedPapers from '../pages/SubmittedPapers';
@@ -51,8 +53,7 @@ const SideBarFinal = () => {
   ];
 
   const editorIcons = [
-    MdEvent, MdAssignment, MdAssessment, MdEdit, MdFeedback,
-    MdGavel, MdGrade, MdGroup, MdHelp, MdHistory
+    MdEvent, MdEventAvailable, MdEventNote, MdDeblur, MdAssignment, MdAssessment, MdGrade, MdTrackChanges, RxBarChart, HiOutlineDocumentMagnifyingGlass
   ];
 
   const getRandomIcon = () => {
