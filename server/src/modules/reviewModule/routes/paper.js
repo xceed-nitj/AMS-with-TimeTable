@@ -3,7 +3,6 @@ const { findAllPapers, addReviewer, findEventPaper, findPaper, updatePaper, remo
 const fileUploadMiddleware = require("../controller/uploadFileMiddleWare");
 const uploadPaper = require("../controller/uploadFile");
 const reupload = require("../controller/reupload");
-const protectRoute =require("../../usermanagement/privateroute")
 const router = express.Router();
 const path = require('path');
 
@@ -21,7 +20,7 @@ router.get("/getPaperDetail/:id",findPaperById);
 router.get("/reviewer/:id", findPaperByReviewer);//to find paper using UserID
 router.get("/author/:id", findPaperByAuthor);//to find paper using UserID
 router.get("/trackcount/:id",PaperCountByTrack);
-router.post("/addpaper/:id",protectRoute, fileUploadMiddleware, uploadPaper); // upload paper
+router.post("/addpaper/:id", fileUploadMiddleware, uploadPaper); // upload paper
 router.post('/addReviewer/:id', addReviewer);
 router.post('/addAuthor', addAuthor);
 router.post('/removeReviewer/:id', removeReviewer);
