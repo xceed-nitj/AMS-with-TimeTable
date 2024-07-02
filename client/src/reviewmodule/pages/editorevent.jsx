@@ -13,7 +13,8 @@ import {
   useToast,
   IconButton as Button1,
   Heading,
-  chakra
+  chakra,
+  Select
 } from "@chakra-ui/react";
 import Header from "../../components/header";
 
@@ -267,12 +268,15 @@ function EventForm() {
           </FormControl>
           <FormControl id="reviewTime" mb={4}>
             <FormLabel>Review Time</FormLabel>
-            <Input
-              type="text"
+            <Select
               name="reviewTime"
               value={formData.reviewTime}
               onChange={handleChange}
-            />
+            >
+              {[...Array(60).keys()].map(day => (
+                <option key={day + 1} value={day + 1}>{day + 1} </option>
+              ))}
+            </Select>
           </FormControl>
           <FormControl id="editorEmails" mb={4}>
             <HStack justifyContent="space-between">
