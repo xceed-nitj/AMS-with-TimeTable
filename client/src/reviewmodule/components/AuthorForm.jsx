@@ -36,18 +36,13 @@ export default function AuthorForm(props) {
     e.preventDefault();
     const apiUrl = getEnvironment();
     function dupliCheck(entry) {
-      for(let l = 0; l < paper.authors.length; l++){
+      for(let l = 0; l < paper.pseudo_authors.length; l++){
         if(entry == paper.pseudo_authors[l].order) return true
       }
       return false
     }
     //console.log(author);
-    var form_data = new FormData();
-    for ( var key in author ) {
-      //console.log(key,":",author[key]);
-      form_data.append(key, AuthorForm[key]);
-    }
-    if(!dupliCheck(author.order)){
+    /*if(!dupliCheck(author.order)){
       try {
         const response = await axios.post(`${apiUrl}/reviewmodule/paper/addAuthor`,{
           name: author.name,
@@ -77,15 +72,15 @@ export default function AuthorForm(props) {
       }
     }else{
       console.log("order is taken!");
-    }
+    }*/
 
     function PrevPaperFunc(prevPaper) { //it removes the entry that you are trying to edit
       if(!props.edit) return prevPaper
       else {
         let prevPaperEdited = JSON.parse(JSON.stringify(prevPaper)) // a method to make a deep copy
-        for(let ii = 0; ii < prevPaperEdited.authors.length; ii++)//remove the occurence of the object from the prevPapers 
-          if(prevPaperEdited.authors[ii]._id == props.edit._id) { //so that we can add it again
-            prevPaperEdited.authors.splice(ii,1)
+        for(let ii = 0; ii < prevPaperEdited.pseudo_authors.length; ii++)//remove the occurence of the object from the prevPapers 
+          if(prevPaperEdited.pseudo_authors[ii]._id == props.edit._id) { //so that we can add it again
+            prevPaperEdited.pseudo_authors.splice(ii,1)
             ii--}
         return prevPaperEdited
       }
@@ -97,10 +92,10 @@ export default function AuthorForm(props) {
       //console.log(authorId);
       //console.log('no obstacle encounterd',authorId[0]);
       if (!isFormValid) return;
-      setPaper(prevPaper => ({
+      /*setPaper(prevPaper => ({
         ...PrevPaperFunc(prevPaper),
         authors: [...PrevPaperFunc(prevPaper).authors, authorId[0]],
-      }));
+      }));*/
       setPaper(prevPaper => ({
         ...PrevPaperFunc(prevPaper),
         pseudo_authors: [...PrevPaperFunc(prevPaper).pseudo_authors, author],
