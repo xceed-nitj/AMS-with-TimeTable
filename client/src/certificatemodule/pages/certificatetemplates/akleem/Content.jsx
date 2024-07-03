@@ -16,7 +16,7 @@ function Content() {
     bold: "normal",
     italic: "normal",
     fontColor: "black"
-    
+
   });
   const currentURL = window.location.href;
   const parts = currentURL.split('/');
@@ -161,6 +161,11 @@ function Content() {
         let Signatures = [];
         if (signatures[0].name.name) {
           Signatures = signatures
+          if (!(signatures[0].url.url)) {
+            signatures.forEach((elem, index) => {
+              Signatures[index].url = { url: elem.url, size: 100 }
+            })
+          }
         } else {
           signatures.forEach(element => {
             let sign = {
@@ -189,8 +194,8 @@ function Content() {
         let Footer = {}
         if (Array.isArray(footer)) {
           Footer = { footer: "" }
-        }else{
-          Footer=footer
+        } else {
+          Footer = footer
         }
         setFooter(Footer)
         // for body
@@ -218,7 +223,7 @@ function Content() {
           Title = [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "sans-serif", bold: "normal", italic: "normal" }, { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal" }, { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal" }, { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal" }]
         }
         //for certificateOf
-        if(certificateOf){
+        if (certificateOf) {
           setCertificateOf(certificateOf)
         }
 
@@ -226,7 +231,7 @@ function Content() {
 
         //for logos
         let Logos = data_one[0].logos
-        let logo=[]
+        let logo = []
         if (Logos[0].url) {
           logo = Logos
         } else {
@@ -258,7 +263,7 @@ function Content() {
 
         // Now content_body has all the placeholders replaced with actual values from data_two
         const result = `${Body.body}`;
-        setContentBody({ body: result, italic: Body.italic, fontFamily: Body.fontFamily, fontSize: Body.fontSize, bold: Body.bold , fontColor:body.fontColor});
+        setContentBody({ body: result, italic: Body.italic, fontFamily: Body.fontFamily, fontSize: Body.fontSize, bold: Body.bold, fontColor: body.fontColor });
         // console.log(eventId, contentBody, certiType, title, verifiableLink, logos, signature, header, templateId)
         // Now content_body has all the placeholders replaced with actual values from data_two
       } catch (error) {

@@ -200,19 +200,20 @@ const CertificateContent = ({
           </Text>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={510} width={'60%'} height={400}>
-          <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
+        <foreignObject x={'20%'} y={435} width={'62%'} height={400}>
+          <div style={{height:"250px"}} className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
             {signature.map((item, key) => (
               <div
                 key={key}
-                className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2"
+                style={{height:"250px"}}
+                className="tw-flex tw-flex-col tw-items-center tw-justify-end tw-gap-2"
               >
-                <div className="tw-w-[100px]">
-                  <ProxifiedImage src={item.url} alt="" />
+                <div style={{width:`${item.url.size}px`}} className='tw-flex tw-flex-col tw-justify-end'>
+                  <ProxifiedImage src={item.url.url} alt="" />
                 </div>
                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} className="tw-text-black">{item.name.name}</Text>
-                <Text fontSize={`${item.position.fontSize}px`} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} color={item.position.fontColor} className="-tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
+                <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} >{item.name.name}</Text>
+                <Text fontSize={`${item.position.fontSize}px`} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} color={item.position.fontColor} className="-tw-mt-3">{item.position.position}</Text>
               </div>
             ))}
           </div>
