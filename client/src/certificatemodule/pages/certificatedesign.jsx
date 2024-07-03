@@ -380,13 +380,13 @@ const CertificateForm = () => {
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: "" },
+          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: {url:"",size:100} },
         ],
       }));
     } else if (fieldName === 'logos') {
       setFormData((prevData) => ({
         ...prevData,
-        [fieldName]: [...prevData[fieldName], ""],
+        [fieldName]: [...prevData[fieldName], {url:"",height:80,width:80}],
       }));
     } else {
       setFormData((prevData) => ({
