@@ -219,7 +219,7 @@ function Invitations() {
                     </Box>
                   </Td>
                 <Td colSpan={2}>
-                  {event.reviewer.status === 'Not Accepted' ? (
+                  {event.reviewer.status === 'Invited' ? (
                     <>
                       <Button
                         onClick={() => handleAccept(event._id, event.reviewer.user)}

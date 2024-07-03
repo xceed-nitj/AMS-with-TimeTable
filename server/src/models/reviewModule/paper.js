@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const User = require('./user.js');
+const User = require('../usermanagement/user.js');
 const Event = require('./event.js');
 
 const paperSchema = new mongoose.Schema({

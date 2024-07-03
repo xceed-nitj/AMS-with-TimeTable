@@ -13,7 +13,8 @@ import {
   useToast,
   IconButton as Button1,
   Heading,
-  chakra
+  chakra,
+  Select
 } from "@chakra-ui/react";
 import Header from "../../components/header";
 
@@ -59,7 +60,7 @@ function EventForm() {
             ...data,
             startDate: data.startDate ? data.startDate.split("T")[0] : "",
             endDate: data.endDate ? data.endDate.split("T")[0] : "",
-            paperSubmissionDate: data.paperSubmissionDate.toString().slice(0, 16),
+            paperSubmissionDate: data.paperSubmissionDate ? data.paperSubmissionDate.toString().slice(0, 16) : "",
             editorEmails: data.editor.map(editor => editor.email).flat()
           });
         }
@@ -267,12 +268,15 @@ function EventForm() {
           </FormControl>
           <FormControl id="reviewTime" mb={4}>
             <FormLabel>Review Time</FormLabel>
-            <Input
-              type="text"
+            <Select
               name="reviewTime"
               value={formData.reviewTime}
               onChange={handleChange}
-            />
+            >
+              {[...Array(60).keys()].map(day => (
+                <option key={day + 1} value={day + 1}>{day + 1} </option>
+              ))}
+            </Select>
           </FormControl>
           <FormControl id="editorEmails" mb={4}>
             <HStack justifyContent="space-between">

@@ -35,7 +35,7 @@ const CertificateForm = () => {
     signatures: [{
       name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-      url: "",
+      url: { url: "", size: 100 },
     }],
     certiType: "",
     templateId: "", //Template Design Number
@@ -64,7 +64,7 @@ const CertificateForm = () => {
       signatures: [{
         name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
         position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-        url: "",
+        url: { url: "", size: 100 },
       }],
       certiType: certType,
       templateId: "", //Template Design Number
@@ -97,17 +97,23 @@ const CertificateForm = () => {
             responseData.length > 0
           ) {
             let { certificateOf, title, signatures, header, footer, body, certiType, logos, templateId, verifiableLink } = responseData[0];
-            console.log(certificateOf)
+            // console.log(certificateOf)
             //condition for signatures
             let Signatures = [];
             if (signatures[0].name.name) {
               Signatures = signatures
+              if (!(signatures[0].url.url)) {
+                signatures.forEach((elem, index) => {
+                  Signatures[index].url = { url: elem.url, size: 100 }
+                })
+              }
+
             } else {
               signatures.forEach(element => {
                 let sign = {
                   name: { name: element.name, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
                   position: { position: element.position, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-                  url: element.url,
+                  url: { url: element.url, size: 100 },
                 }
                 Signatures.push(sign)
               });
@@ -315,7 +321,7 @@ const CertificateForm = () => {
           // For signatures, update the specific property of the signature object
           if (fieldName === 'signatures') {
             const signatureField = e.target.name.split('.')[1]; // Extract the property name (name, position, url)
-            if (signatureField == "name" || signatureField == "position") {
+            if (signatureField == "name" || signatureField == "position" || signatureField == "url") {
               const signField = e.target.name.split('.')[2];
               updatedField[index][signatureField] = {
                 ...updatedField[index][signatureField],
@@ -374,13 +380,13 @@ const CertificateForm = () => {
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: "" },
+          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: {url:"",size:100} },
         ],
       }));
     } else if (fieldName === 'logos') {
       setFormData((prevData) => ({
         ...prevData,
-        [fieldName]: [...prevData[fieldName], ""],
+        [fieldName]: [...prevData[fieldName], {url:"",height:80,width:80}],
       }));
     } else {
       setFormData((prevData) => ({
@@ -597,8 +603,8 @@ const CertificateForm = () => {
             <Text>Enter the link for the logos:</Text>
 
             {formData.logos.map((logo, index) => (
-              <HStack width='100%' key={index} border="none">
-                <Accordion border="none" width='100%' allowMultiple><AccordionItem border="none" width='100%'><HStack width='100%'>
+              <HStack width='100%' key={index}>
+                <Accordion width='100%' allowMultiple><AccordionItem border="none" width='100%'><HStack width='100%'>
                   <Input
                     name={`logos[${index}].url`}
                     value={logo.url}
@@ -618,25 +624,25 @@ const CertificateForm = () => {
                       onClick={() => addField('logos')}
                     />
                   )}</HStack>
-                  <AccordionPanel> <HStack width="100%">
+                  <AccordionPanel> <HStack border="none" width="100%">
                     <HStack width="40%"><Text>Height:</Text><input
                       type="number"
                       name={`logos[${index}].height`}
                       value={logo.height}
                       onChange={(e) => handleChange(e, 'logos', index)}
-                      placeholder="height" 
-                      style={{width:"40px",textAlign:"center"}}
-                      /></HStack>
-                      <HStack width="40%"><Text>Width:</Text><input 
+                      placeholder="height"
+                      style={{ width: "55px", textAlign: "center",border: "1px solid #e2e8f0",borderRadius:"2px" }}
+                    /></HStack>
+                    <HStack width="40%"><Text>Width:</Text><input
                       type="number"
                       name={`logos[${index}].width`}
                       value={logo.width}
                       onChange={(e) => handleChange(e, 'logos', index)}
                       placeholder="width"
-                      style={{width:"40px",textAlign:"center"}}
-                      /></HStack>
-                    </HStack>
-                    
+                      style={{ width: "55px", textAlign: "center" }}
+                    /></HStack>
+                  </HStack>
+
                   </AccordionPanel></AccordionItem></Accordion>
 
 
@@ -991,14 +997,27 @@ const CertificateForm = () => {
                     </HStack></AccordionPanel>
                   </AccordionItem>
                 </Accordion>
+                <Accordion width="100%" allowMultiple>
+                  <AccordionItem width="100%" border="none"><HStack width="100%">
+                    <Input
+                      name={`signatures[${index}].url.url`}
+                      value={signature.url.url}
+                      onChange={(e) => handleChange(e, 'signatures', index)}
+                      placeholder="URL"
+                    /><AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black"/></AccordionButton></HStack>
+                    <AccordionPanel>
+                      <HStack width="40%"><Text>Size:</Text>
+                      <Input
+                      name={`signatures[${index}].url.size`}
+                      value={signature.url.size}
+                      onChange={(e) => handleChange(e, 'signatures', index)}
+                      placeholder="Size"
+                      type="number">
+                    </Input></HStack>
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
 
-
-                <Input
-                  name={`signatures[${index}].url`}
-                  value={signature.url}
-                  onChange={(e) => handleChange(e, 'signatures', index)}
-                  placeholder="URL"
-                />
                 <HStack>{index > 0 && (
                   <IconButton
                     icon={<CloseIcon />}

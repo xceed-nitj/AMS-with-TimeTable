@@ -23,11 +23,14 @@ import {
   Td,
   TableCaption,
   Heading,
+  Textarea,
 } from "@chakra-ui/react";
 
 function EventPaper() {
   const [reviewers, setReviewers] = useState([]);
   const [papers, setPapers] = useState([]); // State to store papers
+  const [editorComments, setEditorComments] = useState({});
+const [selectedDecisions, setSelectedDecisions] = useState({});
   const apiUrl = getEnvironment();
   const toast = useToast();
   const navigate = useNavigate();
@@ -139,13 +142,13 @@ function EventPaper() {
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: error.response.data,
-        description: 'Check again',
+        title: 'Error removing reviewer',
+        description: error.response && error.response.data ? error.response.data.error : 'Unknown error occurred',
         status: 'error',
         duration: 6000,
         isClosable: true,
         position: 'bottom',
-      }); 
+      });
     }
   }
   const handlesubmit = async (paper_id,reviewer_email)=>{
@@ -178,15 +181,77 @@ function EventPaper() {
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: error.response.data,
-        description: 'Check again',
+        title: 'Error removing reviewer',
+        description: error.response && error.response.data ? error.response.data.error : 'Unknown error occurred',
         status: 'error',
         duration: 6000,
         isClosable: true,
         position: 'bottom',
-      }); 
+      });
+      
     }
   }
+  const handleEditorCommentsChange = (paperId, value) => {
+    setEditorComments((prevComments) => ({
+      ...prevComments,
+      [paperId]: value,
+    }));
+  };
+  const fetchReviewComments = async (eventId, paperId) => {
+    try {
+      const response = await axios.get(`${apiUrl}/reviewmodule/review/get/${eventId}/${paperId}`);
+      if (response.data && response.data.length > 0) {
+        return response.data[0].commentsAuthor;
+      }
+    } catch (error) {
+      console.error('Error fetching review comments:', error);
+      return null;
+    }
+  };
+  
+  const handleFinalDecisionChange = (paperId, value) => {
+    setSelectedDecisions((prevDecisions) => ({
+      ...prevDecisions,
+      [paperId]: value,
+    }));
+  };
+  
+  const handleFinalDecisionSubmit = async (paperId) => {
+    const decision = selectedDecisions[paperId];
+    const commentsEditor = editorComments[paperId] || "";
+    
+    // Fetch the commentsAuthor from the review data for the specific paper
+    const reviews = await fetchReviewComments(eventId, paperId);
+    const commentsAuthor = reviews ? reviews : "";
+    console.log(decision, commentsEditor, commentsAuthor);
+       
+    const url = `${apiUrl}/reviewmodule/paper/updateDecision/${eventId}/${paperId}`;
+  
+    try {
+      const response = await axios.patch(url, { decision, commentsEditor, commentsAuthor });
+      if (response.status === 200) {
+        toast({
+          title: 'Final decision updated successfully',
+          status: 'success',
+          duration: 6000,
+          isClosable: true,
+          position: 'bottom',
+        });
+      } else {
+        throw new Error(response.statusText);
+      }
+    } catch (error) {
+      console.error('Error updating final decision:', error);
+      toast({
+        title: 'Error updating final decision',
+        description: error.response && error.response.data ? error.response.data.error : 'Unknown error occurred',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+        position: 'bottom',
+      });
+    }
+  };
   return (
     <Container maxW="container.xl" p={4}>
       <Header title="Paper Details"></Header>
@@ -206,7 +271,8 @@ function EventPaper() {
               <Th>Status</Th>
               <Th>Review</Th>
               <Th>Reviewers</Th>
-
+              <Th>Editor Comments</Th>
+              <Th>Final Decision</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -273,6 +339,29 @@ function EventPaper() {
                     ))}
                   </ol>
                 </Td>
+                <Td>
+                <Textarea
+  value={editorComments[paper._id] || ""}
+  onChange={(e) => handleEditorCommentsChange(paper._id, e.target.value)}
+  placeholder="Enter editor comments"
+/>
+                  
+                </Td>
+                <Td>
+  <Select
+    placeholder="Select decision"
+    onChange={(e) => handleFinalDecisionChange(paper._id, e.target.value)}
+  >
+    <option value="Reject">Reject</option>
+    <option value="Accept">Accept</option>
+    <option value="Major Revision">Major Revision</option>
+    <option value="Minor Revision">Minor Revision</option>
+    <option value="Reject and Invited Resubmission">Reject and Invited Resubmission</option>
+  </Select>
+  <Button mt={2} colorScheme="blue" onClick={() => handleFinalDecisionSubmit(paper._id)}>
+    Make Decision
+  </Button>
+</Td>
               </Tr>
             ))}
           </Tbody>
