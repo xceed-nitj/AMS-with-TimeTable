@@ -69,7 +69,8 @@ const UserRegistration = () => {
       );
       const data = await response.json();
       if (response.ok) {
-        navigate('/prm/emailverification', { state: formValues});
+        localStorage.setItem('formValues', JSON.stringify(formValues));
+        window.location.href = `/prm/emailverification`;
       } else {
         toast({
           title: data.message,
