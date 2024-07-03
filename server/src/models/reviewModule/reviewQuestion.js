@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const User =require("./user");
+const User =require("../usermanagement/user");
 const Event =require("./event");
 const Paper=require("./paper");
 
