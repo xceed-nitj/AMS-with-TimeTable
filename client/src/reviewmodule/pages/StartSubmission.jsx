@@ -76,7 +76,7 @@ function StartSubmission() {
         const fetchTracks = async () => {
             try {
                 const response = await axios.get(`${apiUrl}/reviewmodule/event/getEvents/${eventId}`);
-                if(response) setTracksStatus(1);
+                if(response.data.tracks.length) setTracksStatus(1);
                 else setTracksStatus(2)
             } catch (error) {
                 console.error('Error fetching tracks:', error);
@@ -230,7 +230,7 @@ function StartSubmission() {
             </Flex>
             <br /><br />
             {
-                (confDetailsStatus&&(tracksStatus&&reviewQuestionsStatus)) ?
+                (confDetailsStatus==1&&(tracksStatus==1&&reviewQuestionsStatus==1)) ?
                 <Link
                     onClick={()=>updateStartSubmission(toast)}
                     className="tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center tw-m-auto"
