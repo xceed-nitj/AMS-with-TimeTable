@@ -59,7 +59,7 @@ function EventForm() {
             ...data,
             startDate: data.startDate ? data.startDate.split("T")[0] : "",
             endDate: data.endDate ? data.endDate.split("T")[0] : "",
-            paperSubmissionDate: data.paperSubmissionDate.toString().slice(0, 16),
+            paperSubmissionDate: data.paperSubmissionDate ? data.paperSubmissionDate.toString().slice(0, 16) : "",
             editorEmails: data.editor.map(editor => editor.email).flat()
           });
         }
