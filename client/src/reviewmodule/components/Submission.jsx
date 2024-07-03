@@ -39,8 +39,8 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
           paper.pseudo_authors[currentIndex].order=response.data.updatedId;
           paper.pseudo_authors[currentIndex].institute=response.data.mail;
           toast({
-            title: 'Upload successful.',
-            description: response.data.message || 'Paper has been uploaded.',
+            title: 'User added.',
+            description: response.data.message || 'User have been addded.',
             status: 'success',
             duration: 5000,
             isClosable: true,
@@ -51,8 +51,8 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
           console.error(`Error posting item: ${paper.pseudo_authors[currentIndex]}`, error);
           console.error('Upload error:', error);
           toast({
-            title: 'Upload failed.',
-            description: error.response?.data?.message || 'An error occurred during upload.',
+            title: 'Error Adding User.',
+            description: error.response?.data?.message || 'An error occurred during user verification.',
             status: 'error',
             duration: 5000,
             isClosable: true,
