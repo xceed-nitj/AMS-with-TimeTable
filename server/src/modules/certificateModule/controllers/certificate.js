@@ -26,6 +26,7 @@ class AddcertificateController {
               footer: newCertificate.footer,
               signatures: newCertificate.signatures,
               templateId: newCertificate.templateId,
+              certificateOf: newCertificate.certificateOf,
             },
           }
         );
@@ -44,6 +45,7 @@ class AddcertificateController {
           signatures: newCertificate.signatures,
           certiType: newCertificate.certiType,
           templateId: newCertificate.templateId,
+          certificateOf: newCertificate.certificateOf,
           eventId: eventId,
         });
 
