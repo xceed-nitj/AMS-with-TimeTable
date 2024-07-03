@@ -17,6 +17,7 @@ const Template13 = ({
     contentBody,
     certiType,
     title,
+    certificateOf,
     verifiableLink,
     logos,
     participantDetail,
@@ -817,88 +818,94 @@ const Template13 = ({
                 </g>
             </>
             <>
-                <foreignObject width={"95%"} height={"450"} y={"60"} x={"2%"}>
-                    <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
-                        {logos.map((item, key) => (
-                            <div key={key} className="tw-flex tw-items-center tw-justify-center ">
-                                <div className="tw-flex tw-items-center tw-justify-center tw-w-20 tw-shrink-0">
-                                    <img src={item} alt="" height="60px" width="60px" />
-                                </div>
-                                <div className="tw-text-center">
-                                    {key === num_left && (
-                                        <>
-                                            {title.map((item, key) => (
-                                                <Text key={key} fontSize={item.fontSize} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} className="tw-text-center">
-                                                    {item.name}
-                                                </Text>
-                                            ))
-                                            }
-                                            {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
-                                                डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
-                                            </p>
-                                            <p className="tw-font-nunito-bold tw-text-[12px]">
-                                                जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144011
-                                            </p>
-                                            <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
-                                                Dr. B R Ambedkar National Institute of Technology Jalandhar
-                                            </p>
-                                            <p className="tw-font-nunito-bold tw-text-[12px] ">
-                                                G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144011
-                                            </p> */}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </foreignObject>
+            <foreignObject width={'90%'} height={'400'} y={'10'} x={'5%'}>
+          <div style={{height:"200px"}} className="tw-flex tw-items-center tw-justify-center tw-w-full">
+            {logos.map((item, key) => (
+              <div
+                key={key}
+                className="tw-flex tw-items-center tw-justify-center "
+              >
+                <div style={{width:`${item.width}px`,height:`${item.height}px`}} className="tw-shrink-0 tw-mx-1">
+                  <img src={item.url} alt="" />
+                </div>
+                <div className="tw-flex tw-flex-col tw-h-96 tw-justify-center tw-text-center">
+                  {key === num_left && (
+                    <>
+                      {title.map((item, key) => (
+                        <Text fontSize={`${item.fontSize}px`} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} color={item.fontColor} key={key} className=" tw-text-center">
+                          {item.name}
+                        </Text>
+                      ))
+                      }
+                      {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
+                        डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
+                      </p>
+                      <p className="tw-font-nunito-bold tw-text-[12px]">
+                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144008
+                      </p>
+                      <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
+                        Dr. B R Ambedkar National Institute of Technology
+                        Jalandhar
+                      </p>
+                      <p className="tw-font-nunito-bold tw-text-[12px] ">
+                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-
+                        144008
+                      </p> */}
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </foreignObject>
 
-                <foreignObject x="7%" y="165" width="85%" height="160">
-                    <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
-                        {header.map((item, ind) => (
-                            <Text fontSize={item.fontSize} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} className=" tw-text-gray-700 tw-uppercase" key={ind}>{item.header}</Text>
-                        ))}
-                    </div>
-                </foreignObject>
+        <foreignObject x="0%" y="145.473" width="100%" height="100">
+          <div className="tw-text-center tw-flex-col tw-items-center tw-flex tw-gap-1 tw-justify-center">
+            {header.map((item, ind) => (
+              <Text width="80%"  fontSize={`${item.fontSize}px`} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} color={item.fontColor} className="tw-uppercase" key={ind} style={{display:"flex",flexDirection:"column",justifyContent:"center",height:"100px"}}>{item.header}</Text>
+            ))}
+          </div>
+        </foreignObject>
 
-                <text
-                    x="420"
-                    y="270"
-                    fill="#424847"
-                    fontFamily="AbhayaLibre-Regular"
-                    fontSize="39"
-                    textAnchor="middle"
-                    fontWeight="500"
-                >
-                    CERTIFICATE OF APPRECIATION
-                </text>
+        {/* certificateOf */}
+        <foreignObject  y="220.473" width="100%" height="200">
+          <Text  width="100%" fontSize={`${certificateOf.fontSize}px`} fontFamily={certificateOf.fontFamily} fontStyle={certificateOf.italic} fontWeight={certificateOf.bold} color={certificateOf.fontColor} className="tw-text-center tw-uppercase opacity-80">
+            <div width="90%" className="tw-text-center tw-uppercase">{certificateOf.certificateOf}</div>
+          </Text>
+        </foreignObject>
 
-                <foreignObject x="10%" y="295" width="80%" height="160">
-                    <Text fontSize={contentBody.fontSize} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} className="tw-text-center opacity-80">
-                        <div>{ReactHtmlParser(contentBody.body)}</div>
-                    </Text>
-                </foreignObject>
 
-                <foreignObject x={"16%"} y={410} width={"70%"} height={400}>
-                    <div className="tw-flex tw-items-center tw-justify-between tw-px-6 ">
-                        {signature.map((item, key) => (
-                            <div key={key} className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
-                                <div className="tw-w-[100px]">
-                                    <ProxifiedImage src={item.url} alt="" />
-                                </div>
-                                <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                                <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} className="tw-text-black">{item.name.name}</Text>
-                                <Text fontSize={item.position.fontSize} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} className="-tw-mt-3 tw-text-gray-900">{item.position.position}</Text>
-                            </div>
-                        ))}
-                    </div>
-                </foreignObject>
+        <foreignObject width="100%" y="280.473" height="160" >
+          <Text width="100%" fontSize={`${contentBody.fontSize}px`} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} color={contentBody.fontColor} className="tw-text-center opacity-80 tw-pr-16 tw-pl-16">
+                {ReactHtmlParser(contentBody.body)}
+          </Text>
+        </foreignObject>
 
-                {verifiableLink && <foreignObject x={"20%"} y={"90%"} width={"60%"} height={"100"}>
-                    <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
-                        {window.location.href}
-                    </div>
-                </foreignObject>}
+        <foreignObject x={'20%'} y={270} width={'62%'} height={400}>
+          <div style={{height:"250px"}} className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
+            {signature.map((item, key) => (
+              <div
+                key={key}
+                style={{height:"250px"}}
+                className="tw-flex tw-flex-col tw-items-center tw-justify-end tw-gap-2"
+              >
+                <div style={{width:`${item.url.size}px`}} className='tw-flex tw-flex-col tw-justify-end'>
+                  <ProxifiedImage src={item.url.url} alt="" />
+                </div>
+                <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
+                <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} >{item.name.name}</Text>
+                <Text fontSize={`${item.position.fontSize}px`} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} color={item.position.fontColor} className="-tw-mt-3">{item.position.position}</Text>
+              </div>
+            ))}
+          </div>
+        </foreignObject>
+        {verifiableLink &&
+          <foreignObject x={'0%'} y={'91%'} width={'100%'} height={'60'}>
+            <div className="tw-text-xs tw-text-center tw-text-gray-700 ">
+              {window.location.href}
+            </div>
+          </foreignObject>}
+          <foreignObject x={"0%"} y={'89%'} width={'100%'} height={'60'}><Text className="tw-text-xs tw-text-center tw-text-gray-900 ">Issued On: {footer.footer}</Text></foreignObject>
             </>
         </svg>
     );
