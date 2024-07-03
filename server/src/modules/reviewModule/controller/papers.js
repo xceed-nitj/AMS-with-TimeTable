@@ -346,6 +346,98 @@ const addAuthor = async (req, res) => {
     });
   }
 };
+const updateDecision = async (req, res) => {
+  const { eventId, paperId } = req.params;
+  const { decision, commentsEditor, commentsAuthor } = req.body;
+   console.log("decision is ",decision);
+   console.log("editor comment is ", commentsEditor);
+   console.log("comments Author  is ",commentsAuthor);
+  try {
+    // Find the paper
+    const paper = await Paper.findOne({ eventId, _id: paperId })
+    console.log("Paper detail is this ", paper);
+    if (!paper) {
+      return res.status(404).json({ error: 'Paper not found' });
+    }
+
+    paper.finalDecision = decision;
+
+    // Save editor comments to reviewers (assuming there's a mechanism to update reviewer comments as well)
+    // paper.reviewers.forEach(reviewer => {
+    //   reviewer.comment_editor = editorComments;
+    // });
+
+    await paper.save();
+ 
+    // Find all authors associated with the paper
+       // Find all authors associated with the paper
+       const authorIds = paper.authors.map(author => author._id);
+       console.log("Author id is:", authorIds);
+   
+       // Use $in to find authors whose role array contains 'Author'
+       const authors = await User.find({ _id: { $in: authorIds }, role: { $in: ['Author'] } });
+       console.log("Author is:", authors);
+   
+    if (!authors || authors.length === 0) {
+      return res.status(404).json({ error: 'Authors not found' });
+    }
+
+    // Extract emails of authors
+    const authorEmails = authors.map(author => author.email[0]);
+   console.log("Email is :",authorEmails)
+    // Send email to all authors
+    const emailContent = `
+      <p>Dear Author,</p>
+      <p>We are writing to inform you of the final decision regarding your paper submission.</p>
+      <p><strong>Decision:</strong> ${decision}</p>
+      <p><strong>Editor Comments:</strong> ${commentsEditor}</p>
+      <p><strong>Reviewer Comments:</strong> ${commentsAuthor}</p>
+      <p>Thank you for your submission.</p>
+      <p>Best regards,</p>
+      <p>The Xceed Team</p>
+    `;
+
+    await sendMail(authorEmails, 'Final Decision on Your Paper Submission', emailContent);
+
+    res.status(200).json({ message: 'Decision updated and email sent to the authors' });
+  } catch (error) {
+    console.error('Error updating decision:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+const addAuthorbyId = async (req, res) => {
+  const { paperId, authorId } = req.params;
+
+  try {
+    // Find the paper
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
+      return res.status(404).json({ error: 'Paper not found' });
+    }
+
+    // Find the author
+    const author = await User.findById(authorId);
+    if (!author) {
+      return res.status(404).json({ error: 'Author not found' });
+    }
+
+    // Check if the author is already in the authors list
+    if (paper.authors.includes(author._id)) {
+      return res.status(400).json({ error: 'Author already added to this paper' });
+    }
+
+    // Add the author to the paper's authors list
+    paper.authors.push(author._id);
+    await paper.save();
+
+    res.status(200).json({ message: 'Author added to the paper successfully' });
+  } catch (error) {
+    console.error('Error adding author to paper:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 
-module.exports = { findAllPapers, addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
+
+
+module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
