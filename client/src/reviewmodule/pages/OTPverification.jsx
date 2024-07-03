@@ -13,11 +13,14 @@ const OTPVerification = () => {
   const [message,setMessage] = useState('');
   const toast = useToast();
 
+  const storedFormValues = localStorage.getItem('formValues');
+  const formValues = JSON.parse(storedFormValues);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
       const response = await axios.post(`${apiUrl}/auth/verify`, {
-        email: location.state.email,
+        email: formValues.email,
         otp
       });
       console.log(response.status)
@@ -32,7 +35,7 @@ const OTPVerification = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#f7f9fc' }}>
       <div style={{ background: '#ffffff', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', padding: '40px', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
-      {message && <p style={{ color: 'green' }}>{message}</p>} OTP has been set to email id : {location.state.email}
+      {message && <p style={{ color: 'green' }}>{message}</p>} OTP has been set to email id : {formValues.email}
         <h2 style={{ marginBottom: '24px', color: '#333' }}>Verify OTP</h2>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
