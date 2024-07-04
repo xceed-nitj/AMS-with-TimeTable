@@ -22,6 +22,7 @@ import CertificateContent from './certificatetemplates/basic01';
 import SelectCertficate from './SelectCertficate';
 import { Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon } from '@chakra-ui/react';
 import { HexAlphaColorPicker } from "react-colorful";
+import Modal from "react-modal"
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
@@ -210,6 +211,35 @@ const CertificateForm = () => {
     }
   }, [apiUrl, eventId, formData.certiType]);
 
+
+  const handleFileChange = (e, fieldName, index) => {
+    const file = e.target.files[0]
+    console.log(file, fieldName, index)
+    setFormData((prevData) => {
+      const updatedField = [...prevData[fieldName]];
+      // For signatures, update the specific property of the signature object
+      const signatureField = "url"
+      if (fieldName === 'signatures') {
+
+        const signField = "url"
+        updatedField[index][signatureField] = {
+          ...updatedField[index][signatureField],
+          [signField]: file
+        }
+      } else {
+        updatedField[index] = {
+          ...updatedField[index],
+          [signatureField]: file,
+        }
+        console.log(updatedField)
+      }
+      return {
+        ...prevData,
+        [fieldName]: updatedField,
+      }
+    }
+    )
+  }
   const handleChangeStyle = (event, fieldName, index) => {
     if (event.target.checked) {
       const value = event.target.name.split(".").pop()
@@ -380,13 +410,13 @@ const CertificateForm = () => {
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: {url:"",size:100} },
+          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
         ],
       }));
     } else if (fieldName === 'logos') {
       setFormData((prevData) => ({
         ...prevData,
-        [fieldName]: [...prevData[fieldName], {url:"",height:80,width:80}],
+        [fieldName]: [...prevData[fieldName], { url: "", height: 80, width: 80 }],
       }));
     } else {
       setFormData((prevData) => ({
@@ -410,19 +440,24 @@ const CertificateForm = () => {
     e.preventDefault();
     console.log(formData)
     try {
+      const form = document.getElementById("form")
+      const formdata = new FormData(form)
+      console.log(formdata)
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/content/${eventId}`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          // headers: {
+          //   'Content-Type': 'multipart/form-data'
+          // },
+          
           credentials: 'include',
-          body: JSON.stringify(formData),
+          body: formdata,
         }
       );
 
       if (response.ok) {
+        console.log("resoponse okay")
         const responseData = await response.json();
         // console.log(responseData);
         toast({
@@ -439,6 +474,8 @@ const CertificateForm = () => {
       console.error('Error submitting form:', error);
     }
   };
+
+
   const fontsizeopt = []
   for (let i = 6; i <= 40; i = i + 2) {
     fontsizeopt.push(i)
@@ -446,6 +483,13 @@ const CertificateForm = () => {
   const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari"]
   // const fontColoropt = ["black", "red", "green", "yellow", "purple", "orange", "blue", "gold"]
 
+  const [modal1IsOpen, setModal1IsOpen] = useState(false);
+  const openModal1 = () => setModal1IsOpen(true);
+  const closeModal1 = () => setModal1IsOpen(false);
+
+  const [modal2IsOpen, setModal2IsOpen] = useState(false);
+  const openModal2 = () => setModal2IsOpen(true);
+  const closeModal2 = () => setModal2IsOpen(false);
   return (
     <Flex
       style={{
@@ -464,7 +508,7 @@ const CertificateForm = () => {
       >
         <Header title="Enter Certificate Details"></Header>
 
-        <form onSubmit={handleSubmit}>
+        <form id="form" onSubmit={handleSubmit} >
           <VStack spacing={4} align="start">
             <Text>Select Certificate Type:</Text>
             <Select
@@ -605,13 +649,47 @@ const CertificateForm = () => {
             {formData.logos.map((logo, index) => (
               <HStack width='100%' key={index}>
                 <Accordion width='100%' allowMultiple><AccordionItem border="none" width='100%'><HStack width='100%'>
+
                   <Input
                     name={`logos[${index}].url`}
                     value={logo.url}
                     onChange={(e) => handleChange(e, 'logos', index)}
                     placeholder="Logo"
                     width="100%"
-                  /><AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="black" height="30px" width="30px" justifyContent="center" /></AccordionButton>
+                  />
+                  <Input
+                    name={`logos[${index}].url`}
+                    onChange={(e) => handleFileChange(e, 'logos', index)}
+                    type='file'
+                    accept='image/*'
+                  />
+                  {/* <button style={{width:"100%"}} className='tw-text-black' onClick={openModal1}>Open Modal</button> */}
+                  {/* <Modal isOpen={modal1IsOpen} oncloseModal={closeModal1} className="tw-fixed tw-top-1/4 tw-left-1/4 tw-border-2 tw-border-black tw-h-1/2 tw-flex tw-flex-col tw-gap-4 tw-p-5 tw-rounded-md tw-z-10 tw-bg-slate-50 tw-justify-evenly">
+                  <Text className='tw-text-center tw-font-bold tw-mb-6 '>Logo Upload</Text>
+                  <HStack>
+                  <Text>Upload image: </Text>
+                  <input
+                    name={`logos[${index}].url`}
+                    onChange={(e) => handleFileChange(e, 'logos', index)}
+                    type='file'
+                    accept='image/*'
+                  /></HStack>
+                  <Text className='tw-text-center'>OR</Text>
+                  <HStack>
+                  <Text className='tw-text-center'>Link:</Text>
+                  <Input
+                    name={`logos[${index}].url`}
+                    value={logo.url}
+                    onChange={(e) => handleChange(e, 'logos', index)}
+                    placeholder="Logo"
+                    width="100%"
+                  /></HStack>
+                  
+                    <button className='tw-text-black tw-absolute tw-right-2 tw-top-1' onClick={closeModal1}><CloseIcon style={{height:"20px",width:"20px"}}/></button>
+                  </Modal> */}
+                  <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="black" height="30px" width="30px" justifyContent="center" /></AccordionButton>
+
+
                   {index > 0 && (
                     <IconButton
                       icon={<CloseIcon />}
@@ -631,7 +709,7 @@ const CertificateForm = () => {
                       value={logo.height}
                       onChange={(e) => handleChange(e, 'logos', index)}
                       placeholder="height"
-                      style={{ width: "55px", textAlign: "center",border: "1px solid #e2e8f0",borderRadius:"2px" }}
+                      style={{ width: "55px", textAlign: "center", border: "1px solid #e2e8f0", borderRadius: "2px" }}
                     /></HStack>
                     <HStack width="40%"><Text>Width:</Text><input
                       type="number"
@@ -708,7 +786,7 @@ const CertificateForm = () => {
                             })}
                           </Select>
                           <Input
-                            name={`header.fontColor`}
+                            name={`header[${index}].fontColor`}
                             value={header.fontColor}
                             onChange={(e) => handleChange(e, 'header', index)}
                             placeholder='Color eg. red'>
@@ -740,7 +818,7 @@ const CertificateForm = () => {
                 <VStack width="100%">
                   <HStack width="100%">
                     <Input
-                      name="certificateof.certificateOf"
+                      name="certificateOf.certificateOf"
                       value={formData.certificateOf.certificateOf}
                       onChange={(e) => handleChange(e, 'certificateOf', null)}
                       placeholder="Certificate Of Appreciation"
@@ -869,8 +947,6 @@ const CertificateForm = () => {
               </AccordionItem>
             </Accordion>
 
-
-            {/* Footer Fields */}
 
             <Text>Enter the link for signatures:</Text>
 
@@ -1004,16 +1080,47 @@ const CertificateForm = () => {
                       value={signature.url.url}
                       onChange={(e) => handleChange(e, 'signatures', index)}
                       placeholder="URL"
-                    /><AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black"/></AccordionButton></HStack>
+                    />
+                    <input
+                    name={`signatures[${index}].url.url`}
+                    onChange={(e) => handleFileChange(e, 'signatures', index)}
+                    type='file'
+                    accept='image/*'
+                  />
+                    {/* <button style={{width:"100%"}} className='tw-text-black' onClick={openModal2}>Open Modal</button> */}
+                  {/* <Modal id='signs' isOpen={modal2IsOpen} oncloseModal={closeModal2} className="tw-fixed tw-top-1/4 tw-left-1/4 tw-border-2 tw-border-black tw-h-1/2 tw-flex tw-flex-col tw-gap-4 tw-p-5 tw-rounded-md tw-z-10 tw-bg-slate-50 tw-justify-evenly">
+                  <Text className='tw-text-center tw-font-bold tw-mb-6 '>Signature Upload</Text>
+                  <HStack>
+                  <Text>Upload image: </Text>
+                  <input
+                    name={`signatures[${index}].url.url`}
+                    onChange={(e) => handleFileChange(e, 'signatures', index)}
+                    type='file'
+                    accept='image/*'
+                  /></HStack>
+                  <Text className='tw-text-center'>OR</Text>
+                  <HStack>
+                  <Text className='tw-text-center'>Link:</Text>
+                  <Input
+                    name={`signatures[${index}].url.url`}
+                    value={signature.url.url}
+                    onChange={(e) => handleChange(e, 'signatures', index)}
+                    placeholder="URL"
+                    width="100%"
+                  /></HStack>
+                  
+                    <button className='tw-text-black tw-absolute tw-right-2 tw-top-1' onClick={closeModal2}><CloseIcon style={{height:"20px",width:"20px"}}/></button>
+                  </Modal> */}
+                    <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
                     <AccordionPanel>
                       <HStack width="40%"><Text>Size:</Text>
-                      <Input
-                      name={`signatures[${index}].url.size`}
-                      value={signature.url.size}
-                      onChange={(e) => handleChange(e, 'signatures', index)}
-                      placeholder="Size"
-                      type="number">
-                    </Input></HStack>
+                        <Input
+                          name={`signatures[${index}].url.size`}
+                          value={signature.url.size}
+                          onChange={(e) => handleChange(e, 'signatures', index)}
+                          placeholder="Size"
+                          type="number">
+                        </Input></HStack>
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>

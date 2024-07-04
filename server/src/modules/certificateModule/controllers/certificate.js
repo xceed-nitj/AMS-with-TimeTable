@@ -3,7 +3,6 @@ const certificate = require("../../../models/certificateModule/certificate");
 
 class AddcertificateController {
   async addcertificate(eventId, newCertificate) {
-
     try {
       console.log(newCertificate)
       // Check if a certificate with the given event ID already exists
@@ -13,6 +12,7 @@ class AddcertificateController {
 
       if (existingCertificate) {
         // If exists, update the existing certificate
+        // console.log(newCertificate)
         const updatedCertificate = await certificate.updateOne(
           { eventId: eventId, certiType: newCertificate.certiType },
           {

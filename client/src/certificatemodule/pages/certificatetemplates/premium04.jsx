@@ -6,7 +6,7 @@ import getEnvironment from "../../../getenvironment";
 import ProxifiedImage from "../../components/ProxifiedImage";
 
 import QRCode from 'qrcode';
-import { Button,Text } from '@chakra-ui/react';
+import { Button,Img,Text } from '@chakra-ui/react';
 import jsPDF from 'jspdf';
 
 
@@ -826,7 +826,7 @@ const Template13 = ({
                 className="tw-flex tw-items-center tw-justify-center "
               >
                 <div style={{width:`${item.width}px`,height:`${item.height}px`}} className="tw-shrink-0 tw-mx-1">
-                  <img src={item.url} alt="" />
+                  <img src={typeof(item.url)=='object'?URL.createObjectURL(item.url):item.url} alt="" />
                 </div>
                 <div className="tw-flex tw-flex-col tw-h-96 tw-justify-center tw-text-center">
                   {key === num_left && (
@@ -875,8 +875,8 @@ const Template13 = ({
         </foreignObject>
 
 
-        <foreignObject width="100%" y="280.473" height="160" >
-          <Text width="100%" fontSize={`${contentBody.fontSize}px`} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} color={contentBody.fontColor} className="tw-text-center opacity-80 tw-pr-16 tw-pl-16">
+        <foreignObject x="5%" width="100%" y="280.473" height="160" >
+          <Text width="90%" fontSize={`${contentBody.fontSize}px`} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} color={contentBody.fontColor} className="tw-text-center opacity-80 tw-pr-16 tw-pl-16">
                 {ReactHtmlParser(contentBody.body)}
           </Text>
         </foreignObject>
@@ -890,7 +890,7 @@ const Template13 = ({
                 className="tw-flex tw-flex-col tw-items-center tw-justify-end tw-gap-2"
               >
                 <div style={{width:`${item.url.size}px`}} className='tw-flex tw-flex-col tw-justify-end'>
-                  <ProxifiedImage src={item.url.url} alt="" />
+                  <img src={typeof(item.url.url)=='object'? URL.createObjectURL(item.url.url):item.url.url} alt="" />
                 </div>
                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                 <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} >{item.name.name}</Text>
