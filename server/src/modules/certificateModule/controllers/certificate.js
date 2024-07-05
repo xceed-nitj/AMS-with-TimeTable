@@ -83,7 +83,7 @@ class AddcertificateController {
     }
     try {
       const data = await certificate.find({ eventId: id, certiType: type });
-      if (!data) throw new HttpException(400, "certificate does not exist");
+      if (!data || data.length == 0) throw new HttpException(400, "certificate does not exist");
       return data;
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");

@@ -96,7 +96,7 @@ const Template09 = ({
                                 className="tw-flex tw-items-center tw-justify-center "
                             >
                                 <div style={{ width: `${item.width}px`, height: `${item.height}px` }} className="tw-shrink-0 tw-mx-2">
-                                    <img src={item.url} alt="" />
+                                    <img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
                                 </div>
                                 <div className="tw-text-center">
                                     {key === num_left && (
@@ -107,20 +107,6 @@ const Template09 = ({
                                                 </Text>
                                             ))
                                             }
-                                            {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
-                        डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-[12px]">
-                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144008
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
-                        Dr. B R Ambedkar National Institute of Technology
-                        Jalandhar
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-[12px] ">
-                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-
-                        144008
-                      </p> */}
                                         </>
                                     )}
                                 </div>
@@ -140,7 +126,7 @@ const Template09 = ({
                 {/* certificateOf */}
                 <foreignObject y="235.473" width="100%" height="200">
                     <Text width="100%" fontSize={`${certificateOf.fontSize}px`} fontFamily={certificateOf.fontFamily} fontStyle={certificateOf.italic} fontWeight={certificateOf.bold} color={certificateOf.fontColor} className="tw-text-center tw-uppercase opacity-80">
-                        <div width="90%" className="tw-text-center tw-uppercase">{certificateOf.certificateOf}</div>
+                        {certificateOf.certificateOf}
                     </Text>
                 </foreignObject>
 
@@ -160,7 +146,7 @@ const Template09 = ({
                                 className="tw-flex tw-flex-col tw-items-center tw-justify-end tw-gap-2"
                             >
                                 <div style={{ width: `${item.url.size}px` }} className='tw-flex tw-flex-col tw-justify-end'>
-                                    <ProxifiedImage src={item.url.url} alt="" />
+                                    <img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} alt="" />
                                 </div>
                                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                                 <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} >{item.name.name}</Text>
