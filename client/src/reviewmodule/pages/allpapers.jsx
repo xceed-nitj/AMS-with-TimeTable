@@ -181,8 +181,7 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: 'Error removing reviewer',
-        description: error.response && error.response.data ? error.response.data.error : 'Unknown error occurred',
+        title: error.response && error.response.data ? error.response.data : 'Unknown error occurred',
         status: 'error',
         duration: 6000,
         isClosable: true,
