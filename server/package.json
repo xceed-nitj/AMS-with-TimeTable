@@ -8,7 +8,6 @@
     "start": "node src/index.js"
   },
   "dependencies": {
-    "@imgly/background-removal-node": "^1.4.5",
     "async-mutex": "^0.4.0",
     "axios": "^1.6.8",
     "bcryptjs": "^2.4.3",

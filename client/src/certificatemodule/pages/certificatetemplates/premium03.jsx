@@ -6,7 +6,7 @@ import getEnvironment from "../../../getenvironment";
 import ProxifiedImage from "../../components/ProxifiedImage";
 
 import QRCode from 'qrcode';
-import { Button, Text, Img } from '@chakra-ui/react';
+import { Button, Text } from '@chakra-ui/react';
 import jsPDF from 'jspdf';
 
 
@@ -7561,9 +7561,9 @@ const Template12 = ({
 
             </>
             <>
-                <foreignObject width={"95%"} height={"200"} y={"30"} x={"4%"}>
+            <foreignObject width={"95%"} height={"200"} y={"30"} x={"4%"}>
                     <div className="tw-flex tw-items-center tw-justify-between tw-w-full tw-px-4">
-                        <div style={{ width: "75%" }} className='tw-flex tw-flex-col tw-pr-2'>
+                        <div style={{width:"75%"}} className='tw-flex tw-flex-col tw-pr-2'>
                             <>
                                 {title.map((item, key) => (
                                     <Text fontSize={item.fontSize} key={key} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} color={item.fontColor} className="tw-text-center" >
@@ -7571,13 +7571,25 @@ const Template12 = ({
                                     </Text>
                                 ))
                                 }
+                                {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
+                                    डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
+                                </p>
+                                <p className="tw-font-nunito-bold tw-text-[12px] tw-text-center">
+                                    जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144011
+                                </p>
+                                <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold tw-text-center">
+                                    Dr. B R Ambedkar National Institute of Technology Jalandhar
+                                </p>
+                                <p className="tw-font-nunito-bold tw-text-[12px] tw-text-center">
+                                    G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-  144011
+                                </p> */}
                             </>
                         </div>
                         <div className='tw-flex tw-items-center tw-justify-center tw-flex-wrap tw-w-1/3 tw-gap-1'>
                             {logos.map((item, key) => (
                                 <div key={key} className="tw-flex tw-items-center tw-justify-center">
-                                    <div style={{ height: `${item.height}px`, width: `${item.width}px` }} className="tw-shrink-0 tw-mx-3">
-                                        <Img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
+                                    <div style={{height:`${item.height}px`,width:`${item.width}px`}} className="tw-shrink-0 tw-mx-3">
+                                        <img src={item.url} alt="" />
                                     </div>
                                 </div>
                             ))}
@@ -7594,8 +7606,8 @@ const Template12 = ({
                 </foreignObject>
 
                 <foreignObject x="4%" y="220" width="75%" height="90">
-                    <Text width="100%" fontSize={`${certificateOf.fontSize}px`} fontFamily={certificateOf.fontFamily} fontStyle={certificateOf.italic} fontWeight={certificateOf.bold} color={certificateOf.fontColor} className="tw-text-center tw-uppercase opacity-80">
-                        {certificateOf.certificateOf}
+                    <Text width="100%" fontSize={`${certificateOf.fontSize}px`} fontFamily={certificateOf.fontFamily} fontStyle={certificateOf.italic} fontWeight={certificateOf.bold} color={certificateOf.fontColor} className=" tw-uppercase opacity-80">
+                        <div width="90%" className="tw-text-center tw-uppercase">{certificateOf.certificateOf}</div>
                     </Text>
                 </foreignObject>
 
@@ -7615,7 +7627,7 @@ const Template12 = ({
                                 className="tw-flex tw-flex-col tw-items-center tw-justify-end tw-gap-2"
                             >
                                 <div style={{ width: `${item.url.size}px` }} className='tw-flex tw-flex-col tw-justify-end'>
-                                    <Img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} alt="" />
+                                    <ProxifiedImage src={item.url.url} alt="" />
                                 </div>
                                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                                 <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} >{item.name.name}</Text>
