@@ -151,7 +151,7 @@ const Template11 = ({
                                 className="tw-flex tw-flex-col tw-items-center tw-justify-end tw-gap-2"
                             >
                                 <div style={{ width: `${item.url.size}px` }} className='tw-flex tw-flex-col tw-justify-end'>
-                                    <img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} style={{filter: "contrast(1.5)"}} alt="" />
+                                    <img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} style={{filter: "contrast(1.3)"}} alt="" />
                                 </div>
                                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                                 <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} >{item.name.name}</Text>
