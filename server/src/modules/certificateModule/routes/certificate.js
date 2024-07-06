@@ -11,11 +11,10 @@ const {convertToObject} = require("../controllers/formDataToObject")
 certificateRouter.post("/content/:id", ecmadminRoute, LockStatus, upload.any(),async (req, res) => {
   try {
     console.log(req.files)
-    const body = await convertToObject(req.params.id, req.body, req.files)
+    const body = await convertToObject(req.params.id, req.body, req.files, req.url)
     const newcertificate = await certificateController.addcertificate(req.params.id, body);
     return res.status(200).json(newcertificate);
   } catch (e) {
-    console.log(e)
     return res
       
       .status(e?.status || 500)

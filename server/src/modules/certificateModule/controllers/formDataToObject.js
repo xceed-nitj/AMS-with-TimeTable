@@ -1,8 +1,7 @@
-const {removeImageBackground} = require("../helper/removebg")
-const getEnvironmentURL = require("../../../getEnvironmentURL")
-const apiURL = getEnvironmentURL()=="http://localhost:5173"?"http://localhost:8010":getEnvironmentURL()
+const getApiURL = require("../helper/getApiURL")
 
-const convertToObject = async (eventId, formData, files) => {
+const convertToObject = async (eventId, formData, files,url) => {
+    const apiURL = getApiURL(url)
     const form = {}
     try {
         // console.log(formData)
@@ -49,14 +48,10 @@ const convertToObject = async (eventId, formData, files) => {
         files?.forEach(file => {
             const field = file.fieldname.split("[")[0]
             const index = parseInt(file.fieldname.split("[")[1].split("]")[0])
-            if (field == "signatures") {form["signatures"][index]["url"]["url"] = file.path; console.log("signatures"); }
+            if (field == "signatures") {form["signatures"][index]["url"]["url"] = `${apiURL}/certificatemodule/images/${file.path}`; }
             if (field == "logos") { form["logos"][index]["url"] = `${apiURL}/certificatemodule/images/${file.path}` }
         });
 
-        for (let index = 0; index < form.signatures.length; index++) {
-            const imageDataURL = await removeImageBackground(form.signatures[index].url.url,eventId,"signatures",index,form.certiType)
-            form.signatures[index].url.url=imageDataURL
-        }
         return form
 
     } catch (error) {
