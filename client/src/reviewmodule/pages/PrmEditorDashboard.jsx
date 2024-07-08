@@ -20,7 +20,7 @@ const PrmEditorDashboard = () => {
   const [table, setTable] = useState([]);
   const [trackcount, setTrackCount] = useState([]);
   const [counts, setCounts] = useState({ Accepted: 0, Invited: 0, NotAccepted: 0 });
-  const [startSubmission, setStartSubmission] = useState(false)
+  const [startSubmission, setStartSubmission] = useState(true)
 
   const fetchEvent = async () => {
     try {

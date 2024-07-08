@@ -22,6 +22,8 @@ import CertificateContent from './certificatetemplates/basic01';
 import SelectCertficate from './SelectCertficate';
 import { Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon } from '@chakra-ui/react';
 import { HexAlphaColorPicker } from "react-colorful";
+import Modal from "react-modal"
+import { FaUpload } from "react-icons/fa";
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
@@ -29,16 +31,16 @@ const CertificateForm = () => {
   const [type, setType] = useState('');
   const [formData, setFormData] = useState({
     logos: [{ url: "", height: 80, width: 80 }],
-    header: [{ header: "", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
-    body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-    footer: { footer: "", },
+    header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
+    body: { body: " ", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+    footer: { footer: " ", },
     signatures: [{
-      name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-      position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+      name: { name: " ", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+      position: { position: " ", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       url: { url: "", size: 100 },
     }],
-    certiType: "",
-    templateId: "", //Template Design Number
+    certiType: " ",
+    templateId: " ", //Template Design Number
     title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "sans-serif", bold: "normal", italic: "normal", fontColor: "black" },
     { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" },
     { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" },
@@ -58,12 +60,12 @@ const CertificateForm = () => {
     const certType = formData.certiType;
     setFormData({
       logos: [{ url: "", height: 80, width: 80 }],
-      header: [{ header: "", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
-      body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+      header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
+      body: { body: " ", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       footer: { footer: "", },
       signatures: [{
-        name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-        position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+        name: { name: " ", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+        position: { position: " ", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
         url: { url: "", size: 100 },
       }],
       certiType: certType,
@@ -87,7 +89,6 @@ const CertificateForm = () => {
             credentials: 'include',
           }
         );
-
         if (response.ok) {
           const responseData = await response.json();
           console.log('response:', responseData);
@@ -198,7 +199,8 @@ const CertificateForm = () => {
             );
           }
         } else {
-          console.error('Error fetching form data:', response.statusText);
+          const responseData = await response.json();
+          console.error('Error fetching form data:', responseData.error);
         }
       } catch (error) {
         console.error('Error fetching form data:', error);
@@ -210,6 +212,33 @@ const CertificateForm = () => {
     }
   }, [apiUrl, eventId, formData.certiType]);
 
+
+  const handleFileChange = (e, fieldName, index) => {
+    const file = e.target.files[0]
+    setFormData((prevData) => {
+      const updatedField = [...prevData[fieldName]];
+      // For signatures, update the specific property of the signature object
+      const signatureField = "url"
+      if (fieldName === 'signatures') {
+
+        const signField = "url"
+        updatedField[index][signatureField] = {
+          ...updatedField[index][signatureField],
+          [signField]: file
+        }
+      } else {
+        updatedField[index] = {
+          ...updatedField[index],
+          [signatureField]: file,
+        }
+      }
+      return {
+        ...prevData,
+        [fieldName]: updatedField,
+      }
+    }
+    )
+  }
   const handleChangeStyle = (event, fieldName, index) => {
     if (event.target.checked) {
       const value = event.target.name.split(".").pop()
@@ -300,7 +329,6 @@ const CertificateForm = () => {
 
   };
   const handleChange = (e, fieldName, index) => {
-    console.log(formData)
     const { value } = e.target;
 
     if (fieldName === 'templateId') {
@@ -336,7 +364,6 @@ const CertificateForm = () => {
             }
           } else {
             const objectField = e.target.name.split('.')[1];
-            console.log(objectField, updatedField)
             updatedField[index] = {
               ...updatedField[index],
               [objectField]: (objectField == "fontSize") ? isNaN(parseInt(value)) ? 6 : parseInt(value) : value,
@@ -354,7 +381,6 @@ const CertificateForm = () => {
         const updatedField = prevData[fieldName];
         const objectField = e.target.name.split('.')[1];
         updatedField[objectField] = value;
-        console.log(updatedField, objectField, value)
         return {
           ...prevData,
           [fieldName]: updatedField
@@ -380,13 +406,13 @@ const CertificateForm = () => {
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: "" },
+          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
         ],
       }));
     } else if (fieldName === 'logos') {
       setFormData((prevData) => ({
         ...prevData,
-        [fieldName]: [...prevData[fieldName], ""],
+        [fieldName]: [...prevData[fieldName], { url: "", height: 80, width: 80 }],
       }));
     } else {
       setFormData((prevData) => ({
@@ -408,21 +434,24 @@ const CertificateForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData)
     try {
+      const form = document.getElementById("form")
+      const formdata = new FormData(form)
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/content/${eventId}`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          // headers: {
+          //   'Content-Type': 'multipart/form-data'
+          // },
+          
           credentials: 'include',
-          body: JSON.stringify(formData),
+          body: formdata,
         }
       );
 
       if (response.ok) {
+        console.log("resoponse okay")
         const responseData = await response.json();
         // console.log(responseData);
         toast({
@@ -439,6 +468,8 @@ const CertificateForm = () => {
       console.error('Error submitting form:', error);
     }
   };
+
+
   const fontsizeopt = []
   for (let i = 6; i <= 40; i = i + 2) {
     fontsizeopt.push(i)
@@ -446,6 +477,13 @@ const CertificateForm = () => {
   const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari"]
   // const fontColoropt = ["black", "red", "green", "yellow", "purple", "orange", "blue", "gold"]
 
+  const [modal1IsOpen, setModal1IsOpen] = useState(false);
+  const openModal1 = () => setModal1IsOpen(true);
+  const closeModal1 = () => setModal1IsOpen(false);
+
+  const [modal2IsOpen, setModal2IsOpen] = useState(false);
+  const openModal2 = () => setModal2IsOpen(true);
+  const closeModal2 = () => setModal2IsOpen(false);
   return (
     <Flex
       style={{
@@ -464,7 +502,7 @@ const CertificateForm = () => {
       >
         <Header title="Enter Certificate Details"></Header>
 
-        <form onSubmit={handleSubmit}>
+        <form id="form" onSubmit={handleSubmit} >
           <VStack spacing={4} align="start">
             <Text>Select Certificate Type:</Text>
             <Select
@@ -605,13 +643,26 @@ const CertificateForm = () => {
             {formData.logos.map((logo, index) => (
               <HStack width='100%' key={index}>
                 <Accordion width='100%' allowMultiple><AccordionItem border="none" width='100%'><HStack width='100%'>
+
                   <Input
                     name={`logos[${index}].url`}
                     value={logo.url}
                     onChange={(e) => handleChange(e, 'logos', index)}
                     placeholder="Logo"
                     width="100%"
-                  /><AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="black" height="30px" width="30px" justifyContent="center" /></AccordionButton>
+                  />
+                  <label style={{height:"30px", width:"30px"}} className="tw-flex tw-flex-col tw-justify-center tw-ml-2" htmlFor={`logo${index}`}><FaUpload style={{height:"25px", width:"25px"}} /></label>
+                  <Input
+                    id={`logo${index}`}
+                    name={`logos[${index}].url`}
+                    onChange={(e) => handleFileChange(e, 'logos', index)}
+                    type='file'
+                    accept='image/jpeg , image/png'
+                    style={{width:"0px",height:"0px",margin:"0px",padding:"0px"}}
+                  />
+                  <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="black" height="30px" width="30px" justifyContent="center" /></AccordionButton>
+
+
                   {index > 0 && (
                     <IconButton
                       icon={<CloseIcon />}
@@ -631,7 +682,7 @@ const CertificateForm = () => {
                       value={logo.height}
                       onChange={(e) => handleChange(e, 'logos', index)}
                       placeholder="height"
-                      style={{ width: "55px", textAlign: "center",border: "1px solid #e2e8f0",borderRadius:"2px" }}
+                      style={{ width: "55px", textAlign: "center", border: "1px solid #e2e8f0", borderRadius: "2px" }}
                     /></HStack>
                     <HStack width="40%"><Text>Width:</Text><input
                       type="number"
@@ -654,8 +705,8 @@ const CertificateForm = () => {
             <Text>Enter Department or Club data:</Text>
 
             {formData.header.map((header, index) => (
-              <HStack width="100%" >
-                <Accordion key={index} width="100%" allowMultiple>
+              <HStack width="100%" key={index} >
+                <Accordion width="100%" allowMultiple>
                   <AccordionItem border="none" alignItems="center" width="96%">
                     <HStack alignItems="center" width="100%">
                       <Input
@@ -708,7 +759,7 @@ const CertificateForm = () => {
                             })}
                           </Select>
                           <Input
-                            name={`header.fontColor`}
+                            name={`header[${index}].fontColor`}
                             value={header.fontColor}
                             onChange={(e) => handleChange(e, 'header', index)}
                             placeholder='Color eg. red'>
@@ -740,7 +791,7 @@ const CertificateForm = () => {
                 <VStack width="100%">
                   <HStack width="100%">
                     <Input
-                      name="certificateof.certificateOf"
+                      name="certificateOf.certificateOf"
                       value={formData.certificateOf.certificateOf}
                       onChange={(e) => handleChange(e, 'certificateOf', null)}
                       placeholder="Certificate Of Appreciation"
@@ -869,8 +920,6 @@ const CertificateForm = () => {
               </AccordionItem>
             </Accordion>
 
-
-            {/* Footer Fields */}
 
             <Text>Enter the link for signatures:</Text>
 
@@ -1004,16 +1053,27 @@ const CertificateForm = () => {
                       value={signature.url.url}
                       onChange={(e) => handleChange(e, 'signatures', index)}
                       placeholder="URL"
-                    /><AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black"/></AccordionButton></HStack>
+
+                    />
+                    <label style={{height:"30px", width:"30px"}} className="tw-flex tw-flex-col tw-justify-center tw-ml-2" htmlFor={`signature${index}`}><FaUpload style={{height:"25px", width:"25px"}} /></label>
+                    <input
+                    id={`signature${index}`}
+                    name={`signatures[${index}].url.url`}
+                    onChange={(e) => handleFileChange(e, 'signatures', index)}
+                    type='file'
+                    accept='image/jpeg , image/png'
+                    style={{width:"0px",height:"0px",margin:"0px",padding:"0px"}}
+                  />
+                    <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
                     <AccordionPanel>
                       <HStack width="40%"><Text>Size:</Text>
-                      <Input
-                      name={`signatures[${index}].url.size`}
-                      value={signature.url.size}
-                      onChange={(e) => handleChange(e, 'signatures', index)}
-                      placeholder="Size"
-                      type="number">
-                    </Input></HStack>
+                        <Input
+                          name={`signatures[${index}].url.size`}
+                          value={signature.url.size}
+                          onChange={(e) => handleChange(e, 'signatures', index)}
+                          placeholder="Size"
+                          type="number">
+                        </Input></HStack>
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>

@@ -111,6 +111,7 @@ import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import EditTemplate from './reviewmodule/pages/EditTemplate';
+import EditDefaultTemplate from './reviewmodule/pages/EditDefaultTemplate.jsx';
 import NirfRanking from './nirf/rankings';
 import AddPaper from './reviewmodule/pages/addpaper'
 
@@ -229,6 +230,7 @@ function App() {
     <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
+    <Route path="/prm/editdefaulttemplate" element={<EditDefaultTemplate/>}/>
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
     <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
     <Route path="/prm/:eventId/editor/startSubmission" element={<StartSubmission/>}/>
