@@ -18,6 +18,9 @@ const UserSchema = new Mongoose.Schema({
     required: true,
   }],
   area:[{type: String}],
+  isEmailVerified:{
+    type : Boolean,
+  }
 });
 const User = Mongoose.model("user", UserSchema);
 module.exports = User;
