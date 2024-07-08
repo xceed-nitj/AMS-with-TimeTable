@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import getEnvironment from "../../getenvironment";
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Box,
   Button,
@@ -69,6 +70,7 @@ const UserRegistration = () => {
       );
       const data = await response.json();
       if (response.ok) {
+        axios.post(`${apiUrl}/auth/verify`, {email : formValues.email});
         localStorage.setItem('formValues', JSON.stringify(formValues));
         window.location.href = `/prm/emailverification`;
       } else {

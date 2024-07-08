@@ -47,6 +47,7 @@ exports.register = async (req, res, next) => {
           email: email,
           password: hash,
           role:roles,
+          isEmailVerified:false,
         });
 
         // Generate a JWT token
@@ -65,7 +66,7 @@ exports.register = async (req, res, next) => {
           maxAge: maxAge * 1000,
         });
 
-        const otp = await sendOTP(email);
+        // const otp = await sendOTP(email);
         res.status(201).json({
           message: "User successfully created",
           user,
@@ -87,6 +88,8 @@ exports.register = async (req, res, next) => {
 
 //verifying otp entered
 exports.verification = async(req,res)=>{
+  const sendotp = await sendOTP(req.body.email);
+  console.log(sendotp)
   try {
     const {email,otp} = req.body;
     const validOTP = await OTP.findOne({ email, otp });
@@ -99,7 +102,14 @@ exports.verification = async(req,res)=>{
     }
 
     await OTP.deleteOne({ email, otp }); 
-
+    const update = {
+      $set: { isEmailVerified: true }
+    };
+    const user = await User.findOneAndUpdate(
+      {email: email}, 
+      update, 
+      { returnOriginal: false }
+    )
     res.status(200).json({
       success: true,
       message: "Email verified successfully",
