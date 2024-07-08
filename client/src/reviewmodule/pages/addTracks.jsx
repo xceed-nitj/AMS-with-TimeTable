@@ -30,7 +30,7 @@ import {
 } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/react";
 import { EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import {  Heading, chakra, Spinner } from '@chakra-ui/react';
+import { Heading, chakra, Spinner } from '@chakra-ui/react';
 
 function AddTrack() {
   const apiUrl = getEnvironment();
@@ -68,6 +68,18 @@ function AddTrack() {
         title: 'Track name is required',
         status: 'warning',
         duration: 6000,
+        isClosable: true,
+        position: 'bottom',
+      });
+      return;
+    }
+
+    if (tracks.includes(trackName.trim())) {
+      toast({
+        title: 'Track already exists',
+        description: 'Please enter a different track name',
+        status: 'error',
+        duration: 5000,
         isClosable: true,
         position: 'bottom',
       });
@@ -178,7 +190,7 @@ function AddTrack() {
 
   const HeaderAddTrack = ({ title }) => {
     const navigate = useNavigate();
-    
+
     return (
       <Heading mr='1' ml='1' display='flex' >
         <IconButton
@@ -203,7 +215,7 @@ function AddTrack() {
             />
           </chakra.svg>
         </IconButton>
-        <chakra.div marginInline='auto' color="white" fontSize='25px' mt='2' >
+        <chakra.div marginInline='auto' color="white" fontSize='25px' mt='2'>
           {title}
         </chakra.div>
       </Heading>
@@ -213,9 +225,9 @@ function AddTrack() {
   return (
     <Container maxWidth='100%' >
       <br />
-      <Box display="flex" justifyContent="center" mt={4} >
-      <Box  bg="black" p={0.2} width='80%'>
-          <HeaderAddTrack  color="white" textAlign="center" title="Add Track Details"/>
+      <Box display="flex" justifyContent="center" mt={4}>
+        <Box bg="black" p={0.2} width='80%'>
+          <HeaderAddTrack color="white" textAlign="center" title="Add Track Details" />
         </Box>
       </Box>
       <br />
@@ -234,10 +246,10 @@ function AddTrack() {
         <Box display="flex" justifyContent="center" pt='5'>
           {editIndex !== null ? (
             <>
-              <Button type="button" style={{width:'90px'}} colorScheme="blue" onClick={handleSaveEdit} leftIcon={<CheckIcon />} mr={2}>
+              <Button type="button" style={{ width: '90px' }} colorScheme="blue" onClick={handleSaveEdit} leftIcon={<CheckIcon />} mr={2}>
                 Save
               </Button>
-              <Button type="submit" style={{backgroundColor:'#CC0000',width:'90px'}} onClick={handleCancelEdit} leftIcon={<CloseIcon />}>
+              <Button type="submit" style={{ backgroundColor: '#CC0000', width: '90px' }} onClick={handleCancelEdit} leftIcon={<CloseIcon />}>
                 Cancel
               </Button>
             </>
@@ -251,8 +263,8 @@ function AddTrack() {
 
       <br />
 
-      <p style={{textAlign:'center',margin:'10px',fontWeight:'bold',fontSize:'28px'}}>Existing Tracks</p>
-      
+      <p style={{ textAlign: 'center', margin: '10px', fontWeight: 'bold', fontSize: '28px' }}>Existing Tracks</p>
+
       {tracks && (tracks.length > 0 ? (
         <>
           <Box display="flex" justifyContent="center" overflowX="auto">
@@ -265,21 +277,21 @@ function AddTrack() {
               </Thead>
               <Tbody>
                 {tracks.map((track, index) => (
-                  
+
                   <Tr key={index}>
                     <Td>
-                    <Box display="flex" justifyContent="center" alignItems="center">
-                      {index === editIndex ? (
-                      <Input
-                        value={trackName}
-                        onChange={handleTrackNameChange}
-                      />
-                    ) : (
-                      track
-                    )}
-                    </Box>
+                      <Box display="flex" justifyContent="center" alignItems="center">
+                        {index === editIndex ? (
+                          <Input
+                            value={trackName}
+                            onChange={handleTrackNameChange}
+                          />
+                        ) : (
+                          track
+                        )}
+                      </Box>
                     </Td>
-                    
+
                     <Td>
                       <Box display="flex" justifyContent="center" alignItems="center">
                         {index === editIndex ? (
@@ -304,7 +316,7 @@ function AddTrack() {
                               size="md"
                               width="100px"
                               colorScheme="blue"
-                              mr={2} 
+                              mr={2}
                             >
                               Edit
                             </Button>
@@ -327,7 +339,7 @@ function AddTrack() {
             </Table>
           </Box>
         </>
-      ):(
+      ) : (
         <Box mt={8} textAlign="center" fontSize="lg" fontWeight="bold">
           No tracks found...
         </Box>
@@ -335,10 +347,10 @@ function AddTrack() {
 
       {!tracks && (
         <Box mt={8} textAlign="center" fontSize="lg" fontWeight="bold">
-          <Spinner/>
+          <Spinner />
         </Box>
       )}
-      
+
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
         <ModalContent>

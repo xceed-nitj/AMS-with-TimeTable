@@ -22,8 +22,10 @@ exports.register = async (req, res, next) => {
   console.log(req);
 
   const existingUser = await User.findOne({email:email})
-  if(existingUser.name === email){
-    return res.status(400).json({message: "Try forgot password, User already exists"})
+  if(existingUser!==null){
+    if(existingUser.name === email){
+      return res.status(400).json({message: "Try forgot password, User already exists"})
+    }
   }
 
   if (!password || password.length < 6) {

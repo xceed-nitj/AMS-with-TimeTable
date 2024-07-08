@@ -16,6 +16,7 @@ const uploadPaper = async(req, res) => {
   console.log(check[0].institute);
   const event = await Event.findById(eventId);
   const deadline = event.paperSubmissionDate;
+  const mail_status=[];
   const today = new Date();
   const deadlineDate = new Date(deadline);
   if (today > deadlineDate) {
@@ -56,17 +57,8 @@ const uploadPaper = async(req, res) => {
         const to = authorEmails[0]; //Author is not linked with paper as of now so add your gmail to get email for testing purpose
         if (check[i].institute === false){
         const subject = "New Paper Uploaded";
-        const message = `A new paper titled "${title}" has been uploaded.<br>${event.templates.paperAssignment}`;
-        const attachments=[
-          {
-            //filename:"title.pdf",
-            //path:""
-          }
-        ];
-        await sendMail(to, subject, message);
-        }else{
-          const subject = "You have been added as an author and a New Paper is Uploaded";
-          const message = `A new paper titled "${title}" has been uploaded.<br> ${event.templates.paperAssignment}<br>Your password is 1234, please login to check.`;
+        try{
+          const message = `A new paper titled "${title}" has been uploaded.<br>${event.templates.paperAssignment}`;
           const attachments=[
             {
               //filename:"title.pdf",
@@ -74,11 +66,30 @@ const uploadPaper = async(req, res) => {
             }
           ];
           await sendMail(to, subject, message);
+          mail_status.push(true);
+        }catch(err){
+          mail_status.push(`false${err}`);
+        }
+        }else{
+          try{
+            const subject = "You have been added as an author and a New Paper is Uploaded";
+            const message = `A new paper titled "${title}" has been uploaded.<br> ${event.templates.paperAssignment}<br>Your password is 1234, please login to check.`;
+            const attachments=[
+              {
+                //filename:"title.pdf",
+                //path:""
+              }
+            ];
+            await sendMail(to, subject, message);
+            mail_status.push(true);
+          }catch(err){
+            mail_status.push(`false${err}`);
+          }
         }  
       }
 
       console.log("Paper saved successfully:", newPaper);
-      res.status(200).json({message: "Paper uploaded and saved successfully!", paperlink:`reviewmodule/uploads/${req.fileName}`,codelink:`reviewmodule/uploads/${req.codeName}`});
+      res.status(200).json({message: `Paper uploaded and saved successfully!Mail sent:${mail_status}`, paperlink:`reviewmodule/uploads/${req.fileName}`,codelink:`reviewmodule/uploads/${req.codeName}`});
     })
     .catch((error) => {
       console.error("Error saving paper:", error);

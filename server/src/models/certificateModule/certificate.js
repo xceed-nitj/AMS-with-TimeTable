@@ -9,7 +9,7 @@ const CertificateSchema = new mongoose.Schema({
     {
       name: {
         type: String,
-        default: "",
+        default: " ",
       },
       fontFamily: {
         type: String,
@@ -40,7 +40,7 @@ const CertificateSchema = new mongoose.Schema({
   logos: [{
     url: {
       type: String,
-      default: "",
+      default: " ",
     },
     height: {
       type: Number,
@@ -54,7 +54,7 @@ const CertificateSchema = new mongoose.Schema({
   header: [{
     header: {
       type: String,
-      default: "",
+      default: " ",
     },
     fontFamily: {
       type: String,
@@ -106,7 +106,7 @@ const CertificateSchema = new mongoose.Schema({
   body: {
     body: {
       type: String,
-      default: "",
+      default: " ",
     },
     fontFamily: {
       type: String,
@@ -132,7 +132,7 @@ const CertificateSchema = new mongoose.Schema({
   footer: {
     footer: {
       type: String,
-      default: "",
+      default: " ",
     },
   },
   signatures: [
@@ -140,7 +140,7 @@ const CertificateSchema = new mongoose.Schema({
       name: {
         name: {
           type: String,
-          default: "",
+          default: " ",
         },
         fontFamily: {
           type: String,
@@ -167,7 +167,7 @@ const CertificateSchema = new mongoose.Schema({
       position: {
         position: {
           type: String,
-          default: "",
+          default: " ",
         },
         fontFamily: {
           type: String,
@@ -194,7 +194,7 @@ const CertificateSchema = new mongoose.Schema({
       url: {
         url: {
           type: String,
-          default: "",
+          default: " ",
         },
         size:{
           type: Number,
