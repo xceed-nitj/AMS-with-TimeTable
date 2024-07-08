@@ -47,6 +47,7 @@ exports.register = async (req, res, next) => {
           email: email,
           password: hash,
           role:roles,
+          isEmailVerified:false,
         });
 
         // Generate a JWT token
