@@ -6,6 +6,7 @@ import Header from "../../components/header";
 import { useToast } from '@chakra-ui/react';
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
+  Flex,
   Text,
   Select,
   Menu,
@@ -207,6 +208,17 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       return null;
     }
   };
+  const fetchReviewDecision = async (eventId, paperId) => {
+    try {
+      const response = await axios.get(`${apiUrl}/reviewmodule/review/get/${eventId}/${paperId}`);
+      if (response.data && response.data.length > 0) {
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Error fetching review comments:', error);
+      return null;
+    }
+  };
   
   const handleFinalDecisionChange = (paperId, value) => {
     setSelectedDecisions((prevDecisions) => ({
@@ -251,27 +263,44 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       });
     }
   };
+
+  function ReviewerDecision(props) {
+    const [rf, setRF] = useState('Pending...')
+    useEffect(()=>{
+      const fn = async()=>{
+        const res = await fetchReviewDecision(eventId, props.paperId)
+        if(res) res.forEach(r=>{
+          if(r.reviewerId == props.reviewerId) setRF(r.decision)
+        })
+      }
+      fn()
+    })
+    return (
+      <span>{rf}</span>
+    )
+  }
+
   return (
     <Container maxW="container.xl" p={4}>
       <Header title="Paper Details"></Header>
       
       <Box boxShadow="md" p={6} rounded="md" bg="white">
-      <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button>
-        
+      {/* <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button> */}
+        <Box overflowX={'auto'}>
         <Table variant="Strip">
           <TableCaption>Papers for Event ID: {eventId}</TableCaption>
           <Thead>
             <Tr>
-            <Th>ID</Th>
-              <Th>Title</Th>
-              <Th>Authors</Th>
-              <Th>Paper</Th>
-              <Th>Version</Th>
-              <Th>Status</Th>
-              <Th>Review</Th>
-              <Th>Reviewers</Th>
-              <Th>Editor Comments</Th>
-              <Th>Final Decision</Th>
+              <Th textAlign={'center'}>ID</Th>
+              <Th textAlign={'center'}>Title</Th>
+              <Th textAlign={'center'}>Authors</Th>
+              <Th textAlign={'center'}>Paper</Th>
+              <Th textAlign={'center'}>Version</Th>
+              <Th textAlign={'center'}>Status</Th>
+              {/* <Th textAlign={'center'}>Review</Th> */}
+              <Th textAlign={'center'}>Reviewers</Th>
+              {/* <Th textAlign={'center'}>Editor Comments</Th> */}
+              <Th textAlign={'center'}>Final Decision and Comments</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -279,14 +308,17 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
               <Tr key={paper._id}>
                 <Td>{paper._id}</Td>
                 <Td>{paper.title}</Td>
-                <Td>{paper.authors}</Td>
+                <Td>{paper.authors.map((author, k)=>(<Text key={k}>{author}</Text>))}</Td>
                 <Td>
-                  <Link to={`/paper/details/${paper._id}`}>
+                  <Link style={{textDecoration:'underline', color: '#00acc1', textWrap:"nowrap"}} 
+                  to={window.location.pathname.split('editor/papers')[0]+paper._id+'/summary'}>
                     paper link
                   </Link>
                 </Td>
                 <Td>{paper.version}</Td>
                 <Td>{paper.status}</Td>
+                {/* <Td>
+                </Td> */}
                 <Td>
                   <Menu>
                     <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
@@ -301,70 +333,93 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
                       ))}
                     </MenuList>
                   </Menu>
-                </Td>
-                <Td>
-                  <ol>
-                    {paper.reviewers.map((r)=>(
-                        <li>
-                          <span>username:{r.username},</span><Button  onClick={()=>handledelete(paper._id,r.userId)}>Delete</Button>
+                    <Table>
+                      <Tr>
+                        <Th>Username</Th>
+                        <Th>Decision</Th>
+                        <Th>Due Date</Th>
+                        <Th>Completed On</Th>
+                        <Th>Comments</Th>
+                        {/* <Th>Actions</Th> */}
+                      </Tr>
+                    {paper.reviewers.map((r,kk)=>(
+                      <Tr key={kk}>
+                        <Td>
+                          <Text>{r.username}</Text>
+                          <Flex justifyContent={'center'}>
+                          <Button colorScheme="red" onClick={()=>handledelete(paper._id,r.userId)}>Delete</Button>
+                          </Flex>
+                        </Td>
+                        <Td>
+                          <Text mt={4}>
+                            <ReviewerDecision reviewerId={r.userId} paperId={paper._id} />
+                          </Text>
+                        </Td>
+                        <Td>
                           <Select
                             placeholder="Assign Due Date"
                             onChange={(e) => handleSelection(e.target.value,paper._id,r.userId)}
+                            width='100px'
                           >
-                            {day_count.map((day) => (
-                              <option key={day} value={day}>
+                            {day_count.map((day,k) => (
+                              <option key={k} value={day}>
                                 {day} {day === 1 ? 'day' : 'days'}
                               </option>
                             ))}
                           </Select>
                           {r.dueDate && (
                             <Text mt={4}>
-                                Due Date: {new Date(r.dueDate).toLocaleDateString()}
+                                Due Date : {new Date(r.dueDate).toLocaleDateString()}
                             </Text>
                           )}
                           {!r.dueDate && (
                             <Text mt={4}>
-                                Due Date: {"NO DUE DATE"}
+                              {"NO DUE DATE"}
                             </Text>
                           )}
+                        </Td>
+                        <Td>
                           {r.completedDate && (
                             <Text mt={4}>
-                                Completed On: {new Date(r.completedDate).toLocaleDateString()}
+                                {new Date(r.completedDate).toLocaleDateString()}
                             </Text>
                           )}
-                          <br></br>
-                          <span>userId:{r.userId}</span>
-                        </li>
+                        </Td>
+                        <Td> 
+                        <Link style={{textDecoration:'underline', color: '#00acc1', textWrap:"nowrap"}} 
+                        // "/prm/:eventId/:paperId/:userId/Review"
+                        to={window.location.pathname.split('editor/papers')[0]+paper._id+'/'+r.userId+'/Review'}>
+                          Comments
+                        </Link>
+                        </Td>
+                      </Tr>
                     ))}
-                  </ol>
+                    </Table>
                 </Td>
                 <Td>
-                <Textarea
-  value={editorComments[paper._id] || ""}
-  onChange={(e) => handleEditorCommentsChange(paper._id, e.target.value)}
-  placeholder="Enter editor comments"
-/>
-                  
+                  <Textarea
+                    value={editorComments[paper._id] || ""}
+                    onChange={(e) => handleEditorCommentsChange(paper._id, e.target.value)}
+                    placeholder="Enter editor comments"
+                  /><br /><br />
+                  <Select
+                    placeholder="Select decision"
+                    onChange={(e) => handleFinalDecisionChange(paper._id, e.target.value)}
+                  >
+                    <option value="Reject">Reject</option>
+                    <option value="Accept">Accept</option>
+                    <option value="Major Revision">Major Revision</option>
+                    <option value="Minor Revision">Minor Revision</option>
+                    <option value="Reject and Invited Resubmission">Reject and Invited Resubmission</option>
+                  </Select>
+                  <Button mt={2} colorScheme="blue" onClick={() => handleFinalDecisionSubmit(paper._id)}>
+                    Make Decision
+                  </Button>
                 </Td>
-                <Td>
-  <Select
-    placeholder="Select decision"
-    onChange={(e) => handleFinalDecisionChange(paper._id, e.target.value)}
-  >
-    <option value="Reject">Reject</option>
-    <option value="Accept">Accept</option>
-    <option value="Major Revision">Major Revision</option>
-    <option value="Minor Revision">Minor Revision</option>
-    <option value="Reject and Invited Resubmission">Reject and Invited Resubmission</option>
-  </Select>
-  <Button mt={2} colorScheme="blue" onClick={() => handleFinalDecisionSubmit(paper._id)}>
-    Make Decision
-  </Button>
-</Td>
               </Tr>
             ))}
           </Tbody>
-        </Table>
+        </Table></Box>
       </Box>
     </Container>
   );
