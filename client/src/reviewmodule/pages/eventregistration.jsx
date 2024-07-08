@@ -239,6 +239,14 @@ const PRMEventRegistration = () => {
         </Box>
         <br />
       </form>
+      <Box display="flex" justifyContent="space-between" mt="4">
+    <Button onClick={() => window.location.href = `${window.location.origin}/prm/DefaultQuestionHome`}>
+      Go to Default Question Home
+    </Button>
+    <Button onClick={() => window.location.href = `${window.location.origin}/prm/editdefaulttemplate`}>
+      Go to Edit Default Template
+    </Button>
+  </Box>
 
       <Table variant="simple">
         <Thead>
