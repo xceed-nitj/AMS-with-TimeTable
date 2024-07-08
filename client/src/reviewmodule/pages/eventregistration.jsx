@@ -252,6 +252,7 @@ const PRMEventRegistration = () => {
             <Tr key={event._id}>
               <Td>{event.name}</Td>
               <Td>{event.editor && event.editor.email && event.editor.email.length > 0 ? event.editor.email[0] : 'No editor assigned'}</Td>
+              <Td>{event.editor[0]?.email}</Td>
             </Tr>
           ))}
         </Tbody>
