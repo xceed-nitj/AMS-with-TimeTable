@@ -40,7 +40,7 @@ const CertificateSchema = new mongoose.Schema({
   logos: [{
     url: {
       type: String,
-      default: " ",
+      default: "",
     },
     height: {
       type: Number,
@@ -194,7 +194,7 @@ const CertificateSchema = new mongoose.Schema({
       url: {
         url: {
           type: String,
-          default: " ",
+          default: "",
         },
         size:{
           type: Number,
