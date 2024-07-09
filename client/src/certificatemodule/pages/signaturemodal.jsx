@@ -6,7 +6,7 @@ import { CloseIcon } from '@chakra-ui/icons';
 import { FaUpload } from "react-icons/fa";
 
 
-const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChange, signatures, signature, handleChange }) => {
+const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChange, signatures, signature, handleChange, selectedFiles }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('Uploaded');
     const [images, setImages] = useState([])

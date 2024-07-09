@@ -29,6 +29,7 @@ const CertificateForm = () => {
   const apiUrl = getEnvironment();
   const toast = useToast();
   const [type, setType] = useState('');
+  const [selectedFiles,setSelectedFiles] = useState([])
   const [formData, setFormData] = useState({
     logos: [{ url: "", height: 80, width: 80 }],
     header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
@@ -58,6 +59,7 @@ const CertificateForm = () => {
 
   useEffect(() => {
     const certType = formData.certiType;
+    setSelectedFiles([])
     setFormData({
       logos: [{ url: "", height: 80, width: 80 }],
       header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
@@ -220,7 +222,23 @@ const CertificateForm = () => {
       // For signatures, update the specific property of the signature object
       const signatureField = "url"
       if (fieldName === 'signatures') {
-
+        setSelectedFiles((prevFiles)=>{
+          const s = `signatures[${index}].url.url`
+          const obj = {[s]:file}
+          let alreadyExists = 0;
+          prevFiles.forEach((file,index)=>{
+            for(const key in file ){
+              if(key == s){ alreadyExists=index}
+            }
+          })
+          if(alreadyExists!==0){
+            const updated = [...prevFiles]
+            updated[alreadyExists] = obj
+            return updated
+          }
+          return [...prevFiles,obj]
+        })
+        console.log(selectedFiles)
         const signField = "url"
         updatedField[index][signatureField] = {
           ...updatedField[index][signatureField],
@@ -437,6 +455,7 @@ const CertificateForm = () => {
     try {
       const form = document.getElementById("form")
       const formdata = new FormData(form)
+      selectedFiles.forEach((file)=>{for(const key in file){formdata.append(key,file[key])}})
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/content/${eventId}`,
         {
@@ -1040,7 +1059,15 @@ const CertificateForm = () => {
                 </Accordion>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none"><HStack width="100%">
-                    <Text width="100%" className='tw-pl-3'>Upload Signature:</Text>
+                    <Input
+                      name={`signatures[${index}].url.url`}
+                      value={signature.url.url}
+                      onChange={(e) => handleChange(e, 'signatures', index)}
+                      placeholder="URL"
+                      width="0px"
+                      style={{display:"none"}}
+                    />
+                    <Text className='tw-w-full tw-pl-3'>Signature Upload: </Text>
                     <Signaturemodal
                       eventId={eventId}
                       formData = {formData}
