@@ -1040,25 +1040,17 @@ const CertificateForm = () => {
                 </Accordion>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none"><HStack width="100%">
-                    <Input
-                      name={`signatures[${index}].url.url`}
-                      value={signature.url.url}
-                      onChange={(e) => handleChange(e, 'signatures', index)}
-                      placeholder="URL"
-
-                    />
+                    <Text width="100%" className='tw-pl-3'>Upload Signature:</Text>
                     <Signaturemodal
                       eventId={eventId}
+                      formData = {formData}
+                      setFormData = {setFormData}
+                      index = {index}
+                      handleFileChange = {handleFileChange}
+                      signatures = {formData.signatures}
+                      signature={signature}
+                      handleChange = {handleChange}
                     />
-                    <label style={{height:"30px", width:"30px"}} className="tw-flex tw-flex-col tw-justify-center tw-ml-2" htmlFor={`signature${index}`}><FaUpload style={{height:"25px", width:"25px"}} /></label>
-                    <input
-                    id={`signature${index}`}
-                    name={`signatures[${index}].url.url`}
-                    onChange={(e) => handleFileChange(e, 'signatures', index)}
-                    type='file'
-                    accept='image/jpeg , image/png'
-                    style={{width:"0px",height:"0px",margin:"0px",padding:"0px"}}
-                  />
                     <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
                     <AccordionPanel>
                       <HStack width="40%"><Text>Size:</Text>
