@@ -22,8 +22,8 @@ import CertificateContent from './certificatetemplates/basic01';
 import SelectCertficate from './SelectCertficate';
 import { Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon } from '@chakra-ui/react';
 import { HexAlphaColorPicker } from "react-colorful";
-import Modal from "react-modal"
 import { FaUpload } from "react-icons/fa";
+import Signaturemodal from "./signaturemodal"
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
@@ -476,14 +476,6 @@ const CertificateForm = () => {
   }
   const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari"]
   // const fontColoropt = ["black", "red", "green", "yellow", "purple", "orange", "blue", "gold"]
-
-  const [modal1IsOpen, setModal1IsOpen] = useState(false);
-  const openModal1 = () => setModal1IsOpen(true);
-  const closeModal1 = () => setModal1IsOpen(false);
-
-  const [modal2IsOpen, setModal2IsOpen] = useState(false);
-  const openModal2 = () => setModal2IsOpen(true);
-  const closeModal2 = () => setModal2IsOpen(false);
   return (
     <Flex
       style={{
@@ -1054,6 +1046,9 @@ const CertificateForm = () => {
                       onChange={(e) => handleChange(e, 'signatures', index)}
                       placeholder="URL"
 
+                    />
+                    <Signaturemodal
+                      eventId={eventId}
                     />
                     <label style={{height:"30px", width:"30px"}} className="tw-flex tw-flex-col tw-justify-center tw-ml-2" htmlFor={`signature${index}`}><FaUpload style={{height:"25px", width:"25px"}} /></label>
                     <input
