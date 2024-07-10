@@ -46,28 +46,29 @@ const LoginForm = () => {
       })
 
       const responseData = await response.json()
-      console.log(responseData.user.isEmailVerified);
 
-      if(typeof responseData.user.isEmailVerified !== 'undefined'){
-        if(!responseData.user.isEmailVerified && responseData.user.role.includes('PRM')){
-          axios.post(`${apiUrl}/auth/verify`, {email : email});
+      if (typeof responseData.user.isEmailVerified !== 'undefined') {
+        if (!responseData.user.isEmailVerified && responseData.user.role.includes('PRM')) {
           localStorage.setItem('formValues', JSON.stringify(formValues));
           navigate('/prm/emailverification');
-        }else if (response.ok) {
-          setMessage(responseData.message)
-          window.location.href = '/userroles'
-        } else {
-          const errorData = await response.json()
-          setMessage(`Login failed: ${errorData.message}`)
+          await axios.post(`${apiUrl}/auth/verify`, { email });
+          return;
         }
-      }else{
-        if (response.ok) {
-          setMessage(responseData.message)
-          window.location.href = '/userroles'
-        } else {
-          const errorData = await response.json()
-          setMessage(`Login failed: ${errorData.message}`)
+      }
+
+      if (typeof responseData.user.isFirstLogin !== 'undefined') {
+        if (responseData.user.isFirstLogin && responseData.user.role.includes('PRM')) {
+          navigate('/prm/userdetails');
+          return;
         }
+      }
+
+      if (response.ok) {
+        setMessage(responseData.message);
+        window.location.href = '/userroles';
+      } else {
+        const errorData = await response.json();
+        setMessage(`Login failed: ${errorData.message}`);
       }
     } catch (error) {
       console.error('An error occurred', error)

@@ -48,6 +48,7 @@ exports.register = async (req, res, next) => {
           password: hash,
           role:roles,
           isEmailVerified:false,
+          isFirstLogin: false,
         });
 
         // Generate a JWT token
@@ -190,7 +191,8 @@ exports.login = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
+    const updatebody = req.body;
+    const { email, password } = req.body;
 
     // Verify if the email is present
     if (!email) {
@@ -205,21 +207,18 @@ exports.update = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update user details
-    if (password) {
-      // Update password if provided
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    updatebody.password = hashedPassword;
 
-    if (role) {
-      // Update role if provided
-      // Verify if the role is valid
-      user.role = role;
-    }
+
+    const newUser = await User.findOneAndUpdate(
+      {email: email},
+      updatebody,
+      { returnOriginal: false },
+    )
 
     // Save the updated user
-    await user.save();
+    await newUser.save();
 
     return res.status(201).json({ message: "Update successful", user });
   } catch (error) {

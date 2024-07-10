@@ -20,6 +20,9 @@ const UserSchema = new Mongoose.Schema({
   area:[{type: String}],
   isEmailVerified:{
     type : Boolean,
+  },
+  isFirstLogin:{
+    type : Boolean,
   }
 });
 const User = Mongoose.model("user", UserSchema);
