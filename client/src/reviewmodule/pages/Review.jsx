@@ -19,6 +19,8 @@ import { Flex, Text, chakra, Heading, IconButton,
 } from '@chakra-ui/react';
 import JoditEditor from 'jodit-react';
 import getEnvironment from '../../getenvironment';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const ReviewPage = () => {
   const apiUrl = getEnvironment();
@@ -89,6 +91,50 @@ const ReviewPage = () => {
     });
   };
 
+  const generatePDF = async () => {
+    const doc = new jsPDF();
+    
+    // Fetch necessary details
+    const eventResponse = await axios.get(`${apiUrl}/reviewmodule/event/${eventId}`);
+    const paperResponse = await axios.get(`${apiUrl}/reviewmodule/paper/getPaperDetail/${paperId}`);
+    const reviewerResponse = await axios.get(`${apiUrl}/reviewmodule/user/getUser/${userId}`);
+    
+    const eventName = eventResponse.data.name;
+    const paperTitle = paperResponse.data.title;
+    const reviewerName = reviewerResponse.data.name;
+    
+    // Add content to the PDF
+    doc.text(`Event name: ${eventName}`, 10, 10);
+    doc.text(`Paper title: ${paperTitle}`, 10, 20);
+    doc.text(`Paper ID: ${paperId}`, 10, 30);
+    doc.text(`Reviewer Name: ${reviewerName}`, 10, 40);
+    
+    const stripHTMLTags = (str) => {
+      const tmp = document.createElement('DIV');
+      tmp.innerHTML = str;
+      return tmp.textContent || tmp.innerText || '';
+    };
+
+    // Add review questions and answers
+    const reviewData = questions.map((question, index) => [
+      `Question ${index + 1}: ${stripHTMLTags(question.question)}`,
+      `Answer: ${answers[question._id] || ''}`
+    ]);
+    
+    doc.autoTable({
+      head: [['Question', 'Answer']],
+      body: reviewData,
+      startY: 50
+    });
+    
+    doc.text(`Author comments: ${commentsAuthor}`, 10, doc.autoTable.previous.finalY + 10);
+    doc.text(`Editor comments: ${commentsEditor}`, 10, doc.autoTable.previous.finalY + 20);
+    doc.text(`Submitted time: ${submittedTime}`, 10, doc.autoTable.previous.finalY + 30);
+    
+    // Save the PDF
+    doc.save('review.pdf');
+  };
+  
   const handleSubmit = () => {
     const reviewData = {
       eventId,
@@ -117,6 +163,7 @@ const ReviewPage = () => {
           duration: 5000,
           isClosable: true,
         });
+        generatePDF();
       })
       .catch(error => {
         console.error('Error submitting review:', error);
@@ -169,6 +216,13 @@ const ReviewPage = () => {
       <Box bg="black" p={0.2} width='100%' margin="auto">
         <HeaderReviewPage color="white" textAlign="center" title="Review Page" />
       </Box>
+      <Button
+  mt={4}
+  colorScheme="teal"
+  onClick={generatePDF}
+  isDisabled={!isSubmitted}>
+  Download PDF
+</Button>
       <br/>
       {isSubmitted && (
         <>
