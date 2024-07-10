@@ -47,6 +47,7 @@ function AddReviewer() {
     try {
       const addReviewerResponse = await axios.post(`${apiUrl}/reviewmodule/event/addReviewer/${eventId}`, { 
         email: reviewerEmail,
+        isFirstLogin : true,
         baseUrl
       });
 
