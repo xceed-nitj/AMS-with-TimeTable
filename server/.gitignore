@@ -5,4 +5,4 @@ yarn.lock
 .env
 
 uploads/
-
+.cache
