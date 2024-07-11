@@ -6,6 +6,7 @@ const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
 const {upload} = require("../helper/multer.middleware")
 const {convertToObject} = require("../controllers/formDataToObject")
+const {getImagesOfUserByEventId} =require("../controllers/signimagesofuser")
 
 // Route to create a new certificate
 certificateRouter.post("/content/:id", ecmadminRoute, LockStatus, upload.any(),async (req, res) => {
@@ -40,6 +41,19 @@ certificateRouter.get("/getcertificatedetails/:id/:type", async (req, res) => {
     const type = req.params?.type;
     const allCertificates = await certificateController.getcertificateByEventId(id, type);
     return res.status(200).json(allCertificates);
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+
+certificateRouter.get("/getcertificateimages/:id", async (req, res) => {
+  try {
+    const id = req.params?.id;
+    const allImages = await getImagesOfUserByEventId(id);
+    return res.status(200).json(allImages);
   } catch (e) {
     return res
       .status(e?.status || 500)

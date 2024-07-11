@@ -239,6 +239,14 @@ const PRMEventRegistration = () => {
         </Box>
         <br />
       </form>
+      <Box display="flex" justifyContent="space-between" mt="4">
+    <Button onClick={() => window.location.href = `${window.location.origin}/prm/DefaultQuestionHome`}>
+      Go to Default Question Home
+    </Button>
+    <Button onClick={() => window.location.href = `${window.location.origin}/prm/editdefaulttemplate`}>
+      Go to Edit Default Template
+    </Button>
+  </Box>
 
       <Table variant="simple">
         <Thead>
@@ -251,7 +259,7 @@ const PRMEventRegistration = () => {
           {events.map((event) => (
             <Tr key={event._id}>
               <Td>{event.name}</Td>
-              <Td>{event.editor && event.editor.email && event.editor.email.length > 0 ? event.editor.email[0] : 'No editor assigned'}</Td>
+              <Td>{event.editor[0]?.email}</Td>
             </Tr>
           ))}
         </Tbody>

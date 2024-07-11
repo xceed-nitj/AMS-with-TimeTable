@@ -282,7 +282,8 @@ const addReviewer = async (req, res) => {
           name: email,
           email: email,
           role: ["PRM"],
-          password: hash
+          password: hash,
+          isFirstLogin: true
         });
 
         await reviewer.save();  // Save the new reviewer to the database

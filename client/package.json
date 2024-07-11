@@ -34,6 +34,7 @@
     "html2pdf.js": "^0.10.1",
     "jodit-react": "^4.0.15",
     "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
     "lottie-react": "^2.4.0",
     "moment-timezone": "^0.5.45",
     "node": "^21.1.0",

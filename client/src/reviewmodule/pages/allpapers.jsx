@@ -6,6 +6,7 @@ import Header from "../../components/header";
 import { useToast } from '@chakra-ui/react';
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
+  Flex,
   Text,
   Select,
   Menu,
@@ -40,48 +41,47 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
   const [selectedDate, setSelectedDate] = useState(null);
   const day_count = Array.from({ length: 30 }, (_, i) => i + 1);
 
+  const fetchPapersById = async () => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/reviewmodule/paper/${eventId}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Fetched papers data:", data);
+        setPapers(data); // Set the fetched data to state
+      } else {
+        console.error("Error fetching papers:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching papers:", error);
+    }
+  };
+  const fetchReviewersById = async () => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/reviewmodule/event/getReviewerInEvent/${eventId}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const data2 = await response.json();
+        console.log("Fetched reviewer data:", data2);
+        setReviewers(data2); // Set the fetched data to state
+      } else {
+        console.error("Error fetching reviewers:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching reviewers:", error);
+    }
+  };
   useEffect(() => {
-    const fetchPapersById = async () => {
-      try {
-        const response = await fetch(
-          `${apiUrl}/api/v1/reviewmodule/paper/${eventId}`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Fetched papers data:", data);
-          setPapers(data); // Set the fetched data to state
-        } else {
-          console.error("Error fetching papers:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching papers:", error);
-      }
-    };
-    const fetchReviewersById = async () => {
-      try {
-        const response = await fetch(
-          `${apiUrl}/api/v1/reviewmodule/event/getReviewerInEvent/${eventId}`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-        if (response.ok) {
-          const data2 = await response.json();
-          console.log("Fetched reviewer data:", data2);
-          setReviewers(data2); // Set the fetched data to state
-        } else {
-          console.error("Error fetching reviewers:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching reviewers:", error);
-      }
-    };
-
     fetchPapersById();
     fetchReviewersById();
   }, [apiUrl, eventId]);
@@ -150,6 +150,7 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
         position: 'bottom',
       });
     }
+    fetchPapersById();
   }
   const handlesubmit = async (paper_id,reviewer_email)=>{
     console.log("function is called: ",paper_id,reviewer_email);
@@ -189,6 +190,7 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       });
       
     }
+    fetchPapersById();
   }
   const handleEditorCommentsChange = (paperId, value) => {
     setEditorComments((prevComments) => ({
@@ -201,6 +203,17 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       const response = await axios.get(`${apiUrl}/reviewmodule/review/get/${eventId}/${paperId}`);
       if (response.data && response.data.length > 0) {
         return response.data[0].commentsAuthor;
+      }
+    } catch (error) {
+      console.error('Error fetching review comments:', error);
+      return null;
+    }
+  };
+  const fetchReviewDecision = async (eventId, paperId) => {
+    try {
+      const response = await axios.get(`${apiUrl}/reviewmodule/review/get/${eventId}/${paperId}`);
+      if (response.data && response.data.length > 0) {
+        return response.data;
       }
     } catch (error) {
       console.error('Error fetching review comments:', error);
@@ -251,42 +264,54 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       });
     }
   };
+
+  function ReviewerDecision(props) {
+    const [rf, setRF] = useState('Pending...')
+    useEffect(()=>{
+      const fn = async()=>{
+        const res = await fetchReviewDecision(eventId, props.paperId)
+        if(res) res.forEach(r=>{
+          if(r.reviewerId == props.reviewerId) setRF(r.decision)
+        })
+      }
+      fn()
+    })
+    return (
+      <span>{rf}</span>
+    )
+  }
+
   return (
     <Container maxW="container.xl" p={4}>
       <Header title="Paper Details"></Header>
       
       <Box boxShadow="md" p={6} rounded="md" bg="white">
-      <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button>
-        
-        <Table variant="Strip">
+      {/* <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button> */}
+        <Box overflowX={'auto'}>
+        <Table variant="striped">
           <TableCaption>Papers for Event ID: {eventId}</TableCaption>
           <Thead>
             <Tr>
-            <Th>ID</Th>
-              <Th>Title</Th>
-              <Th>Authors</Th>
-              <Th>Paper</Th>
-              <Th>Version</Th>
-              <Th>Status</Th>
-              <Th>Review</Th>
-              <Th>Reviewers</Th>
-              <Th>Editor Comments</Th>
-              <Th>Final Decision</Th>
+              <Th textAlign={'center'}>ID</Th>
+              <Th textAlign={'center'}>Title</Th>
+              <Th textAlign={'center'}>Authors</Th>
+              <Th textAlign={'center'}>Version</Th>
+              <Th textAlign={'center'}>Reviewers</Th>
+              <Th textAlign={'center'}>Status</Th>
             </Tr>
           </Thead>
           <Tbody>
             {papers.map((paper) => (
               <Tr key={paper._id}>
-                <Td>{paper._id}</Td>
-                <Td>{paper.title}</Td>
-                <Td>{paper.authors}</Td>
+                <Td>{paper.paperId}</Td>
                 <Td>
-                  <Link to={`/paper/details/${paper._id}`}>
-                    paper link
+                  <Link style={{textDecoration:'underline', color: '#00acc1', textWrap:"nowrap"}} 
+                    to={window.location.pathname.split('editor/papers')[0]+paper._id+'/summary'}>
+                      {paper.title}
                   </Link>
                 </Td>
+                <Td>{paper.authors.map((author, k)=>(<Text key={k}>{author}</Text>))}</Td>
                 <Td>{paper.version}</Td>
-                <Td>{paper.status}</Td>
                 <Td>
                   <Menu>
                     <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
@@ -301,70 +326,96 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
                       ))}
                     </MenuList>
                   </Menu>
-                </Td>
-                <Td>
-                  <ol>
-                    {paper.reviewers.map((r)=>(
-                        <li>
-                          <span>username:{r.username},</span><Button  onClick={()=>handledelete(paper._id,r.userId)}>Delete</Button>
+                    <Table colorScheme="blue" variant={'striped'}>
+                      <Tr>
+                        <Th>Username</Th>
+                        <Th>Decision</Th>
+                        <Th>Due Date</Th>
+                        <Th>Completed On</Th>
+                        <Th>Comments</Th>
+                      </Tr>
+                    {paper.reviewers.map((r,kk)=>(
+                      <Tr key={kk}>
+                        <Td>
+                          <Text>{r.username}</Text>
+                          <Flex justifyContent={'center'}>
+                          <Link to={'/prm/'+r._id+'/profile'}>
+                            <Button colorScheme="blue">Profile</Button>
+                          </Link>
+                          <Button colorScheme="red" onClick={()=>handledelete(paper._id,r.userId)}>Delete</Button>
+                          </Flex>
+                        </Td>
+                        <Td>
+                          <Text mt={4}>
+                            <ReviewerDecision reviewerId={r.userId} paperId={paper._id} />
+                          </Text>
+                        </Td>
+                        <Td>
                           <Select
                             placeholder="Assign Due Date"
                             onChange={(e) => handleSelection(e.target.value,paper._id,r.userId)}
+                            width='100px'
                           >
-                            {day_count.map((day) => (
-                              <option key={day} value={day}>
+                            {day_count.map((day,k) => (
+                              <option key={k} value={day}>
                                 {day} {day === 1 ? 'day' : 'days'}
                               </option>
                             ))}
                           </Select>
                           {r.dueDate && (
                             <Text mt={4}>
-                                Due Date: {new Date(r.dueDate).toLocaleDateString()}
+                                {new Date(r.dueDate).toLocaleDateString()}
                             </Text>
                           )}
                           {!r.dueDate && (
                             <Text mt={4}>
-                                Due Date: {"NO DUE DATE"}
+                              {"NO DUE DATE"}
                             </Text>
                           )}
+                        </Td>
+                        <Td>
                           {r.completedDate && (
                             <Text mt={4}>
-                                Completed On: {new Date(r.completedDate).toLocaleDateString()}
+                                {new Date(r.completedDate).toLocaleDateString()}
                             </Text>
                           )}
-                          <br></br>
-                          <span>userId:{r.userId}</span>
-                        </li>
+                        </Td>
+                        <Td> 
+                        <Link style={{textDecoration:'underline', color: '#00acc1', textWrap:"nowrap"}} 
+                        to={window.location.pathname.split('editor/papers')[0]+paper._id+'/'+r.userId+'/Review'}>
+                          Comments
+                        </Link>
+                        </Td>
+                      </Tr>
                     ))}
-                  </ol>
+                    </Table>
                 </Td>
                 <Td>
-                <Textarea
-  value={editorComments[paper._id] || ""}
-  onChange={(e) => handleEditorCommentsChange(paper._id, e.target.value)}
-  placeholder="Enter editor comments"
-/>
-                  
+                  <Text style={{textWrap:'nowrap'}}><span style={{fontWeight:"600"}}>Status : </span>{paper.status}</Text>
+                  <br />
+                  <Textarea
+                    value={editorComments[paper._id] || ""}
+                    onChange={(e) => handleEditorCommentsChange(paper._id, e.target.value)}
+                    placeholder="Enter editor comments"
+                  /><br /><br />
+                  <Select
+                    placeholder="Select decision"
+                    onChange={(e) => handleFinalDecisionChange(paper._id, e.target.value)}
+                  >
+                    <option value="Reject">Reject</option>
+                    <option value="Accept">Accept</option>
+                    <option value="Major Revision">Major Revision</option>
+                    <option value="Minor Revision">Minor Revision</option>
+                    <option value="Reject and Invited Resubmission">Reject and Invited Resubmission</option>
+                  </Select>
+                  <Button mt={2} colorScheme="blue" onClick={() => handleFinalDecisionSubmit(paper._id)}>
+                    Make Decision
+                  </Button>
                 </Td>
-                <Td>
-  <Select
-    placeholder="Select decision"
-    onChange={(e) => handleFinalDecisionChange(paper._id, e.target.value)}
-  >
-    <option value="Reject">Reject</option>
-    <option value="Accept">Accept</option>
-    <option value="Major Revision">Major Revision</option>
-    <option value="Minor Revision">Minor Revision</option>
-    <option value="Reject and Invited Resubmission">Reject and Invited Resubmission</option>
-  </Select>
-  <Button mt={2} colorScheme="blue" onClick={() => handleFinalDecisionSubmit(paper._id)}>
-    Make Decision
-  </Button>
-</Td>
               </Tr>
             ))}
           </Tbody>
-        </Table>
+        </Table></Box>
       </Box>
     </Container>
   );
