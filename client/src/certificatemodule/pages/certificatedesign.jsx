@@ -594,10 +594,10 @@ const CertificateForm = () => {
                             placeholder='Color eg. red'>
                           </Input>
                           <HStack>
-                            <Checkbox name={`title[${index}].bold`} isChecked={title.bold == "bold" ? true : false} onChange={(e) => handleChangeStyle(e, 'title', index)}>
+                            <Checkbox name={`title[${index}].bold`} value={title.bold} isChecked={title.bold == "bold" ? true : false} onChange={(e) => handleChangeStyle(e, 'title', index)}>
                               Bold
                             </Checkbox>
-                            <Checkbox name={`title[${index}].italic`} isChecked={title.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'title', index)}>
+                            <Checkbox name={`title[${index}].italic`} value={title.italic} isChecked={title.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'title', index)}>
                               Italic
                             </Checkbox></HStack></VStack>
                         <HexAlphaColorPicker
@@ -776,10 +776,10 @@ const CertificateForm = () => {
                             placeholder='Color eg. red'>
                           </Input>
                           <HStack>
-                            <Checkbox name={`header[${index}].bold`} isChecked={header.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
+                            <Checkbox name={`header[${index}].bold`} value={header.bold} isChecked={header.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
                               Bold
                             </Checkbox>
-                            <Checkbox name={`header[${index}].italic`} isChecked={header.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
+                            <Checkbox name={`header[${index}].italic`} value={header.italic} isChecked={header.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
                               Italic
                             </Checkbox></HStack></VStack>
                         <HexAlphaColorPicker
@@ -843,10 +843,10 @@ const CertificateForm = () => {
                             onChange={(e) => handleChange(e, 'certificateOf', null)}
                             placeholder='Color eg. red'>
                           </Input>
-                          <HStack><Checkbox name={`certificateOf.bold`} isChecked={formData.certificateOf.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
+                          <HStack><Checkbox name={`certificateOf.bold`} value={formData.certificateOf.bold} isChecked={formData.certificateOf.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
                             Bold
                           </Checkbox>
-                            <Checkbox name={`certificateOf.italic`} isChecked={formData.certificateOf.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
+                            <Checkbox name={`certificateOf.italic`} value={formData.certificateOf.italic} isChecked={formData.certificateOf.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
                               Italic
                             </Checkbox></HStack>
                         </VStack>
@@ -910,10 +910,10 @@ const CertificateForm = () => {
                             onChange={(e) => handleChange(e, 'body', null)}
                             placeholder='Color eg. red'>
                           </Input>
-                          <HStack><Checkbox name={`body.bold`} isChecked={formData.body.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
+                          <HStack><Checkbox name={`body.bold`} value={formData.body.bold} isChecked={formData.body.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
                             Bold
                           </Checkbox>
-                            <Checkbox name={`body.italic`} isChecked={formData.body.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
+                            <Checkbox name={`body.italic`} value={formData.body.italic} isChecked={formData.body.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
                               Italic
                             </Checkbox></HStack>
                         </VStack>
@@ -980,10 +980,10 @@ const CertificateForm = () => {
                           onChange={(e) => handleChange(e, 'signatures', index)}
                           placeholder='Color eg. red'>
                         </Input>
-                        <HStack><Checkbox name={`signatures[${index}].name.bold`} isChecked={signature.name.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
+                        <HStack><Checkbox name={`signatures[${index}].name.bold`} value={signature.name.bold} isChecked={signature.name.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
                           Bold
                         </Checkbox>
-                          <Checkbox name={`signatures[${index}].name.italic`} isChecked={signature.name.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
+                          <Checkbox name={`signatures[${index}].name.italic`} value={signature.name.italic} isChecked={signature.name.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
                             Italic
                           </Checkbox>
                         </HStack>
@@ -1041,10 +1041,10 @@ const CertificateForm = () => {
                           onChange={(e) => handleChange(e, 'signatures', index)}
                           placeholder='Color eg. red'>
                         </Input>
-                        <HStack><Checkbox name={`signatures[${index}].position.bold`} isChecked={signature.position.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
+                        <HStack><Checkbox name={`signatures[${index}].position.bold`} value={signature.position.bold} isChecked={signature.position.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
                           Bold
                         </Checkbox>
-                          <Checkbox name={`signatures[${index}].position.italic`} isChecked={signature.position.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
+                          <Checkbox name={`signatures[${index}].position.italic`} value={signature.position.italic} isChecked={signature.position.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
                             Italic
                           </Checkbox>
                         </HStack>
