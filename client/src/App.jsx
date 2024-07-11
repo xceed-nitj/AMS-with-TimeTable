@@ -126,6 +126,8 @@ import PrmEdDashboard from './reviewmodule/pages/PrmEdDashboard';
 import Quizzing from './quizModule/student/quizzing/Quizzing';
 // import Instructions from './quizModule/student/Instructions';
 import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
+import UserManagement from './dashboard/userManagement';
+
 
 function App() {
   return (
@@ -149,6 +151,7 @@ function App() {
         <Route path="/register" element={<RegistrationForm />} />
         <Route path="/userroles" element={<AllocatedRolesPage />} />
         <Route path="/superadmin" element={<SuperAdminPage />} />
+        <Route path="/usermanagement" element={<UserManagement />} />
 
         <Route path="/tt">
           <Route path="dashboard" element={<CreateTimetable />} />

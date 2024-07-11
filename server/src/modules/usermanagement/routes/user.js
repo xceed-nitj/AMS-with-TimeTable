@@ -46,6 +46,22 @@ userRouter.get("/", verifyToken, async (req, res) => {
   }
 });
 
+userRouter.post("/assignrole", verifyToken, async (req, res) => {
+  try {
+    await UserController.assignRole(req, res);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+userRouter.post("/deleterole", verifyToken, async (req, res) => {
+  try {
+    await UserController.deleteRole(req, res);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
 userRouter.post("/logout", verifyToken, async (req, res) => {
   try {
     //   await UserController.logout(req.user); // Pass the user object from the request
