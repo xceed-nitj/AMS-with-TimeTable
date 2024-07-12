@@ -9,6 +9,7 @@ class AddEventController {
 
       
       const userId = data.user;
+      // console.log("User ID:", userId);
       if (userId) {
         const user = await User.findById(userId);
         if (user) {

@@ -127,6 +127,7 @@ import Quizzing from './quizModule/student/quizzing/Quizzing';
 // import Instructions from './quizModule/student/Instructions';
 import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
 import UserManagement from './dashboard/userManagement';
+import UserEventRegistration from './certificatemodule/pages/addevent';
 
 
 function App() {
@@ -214,6 +215,7 @@ function App() {
         <Route path="/cm/:eventid/addparticipant" element={<Participant />} />
         <Route path="/cm/c/:eventid/:participantid" element={<Template01 />} />
         <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03 />} />
+        <Route path='/cm/useraddevent' element={< UserEventRegistration/>} />
 
     {/* Review management routes*/}
     <Route path="/prm/login" element={<ReviewLogin/>} />
