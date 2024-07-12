@@ -34,7 +34,7 @@
     "nodemon": "^3.0.1",
     "otp-generator": "^4.0.1",
     "pdf-lib": "^1.17.1",
-    "puppeteer": "^22.12.1",
+    "puppeteer": "^22.13.0",
     "puppeteer-core": "^22.12.1",
     "qrcode": "^1.5.3",
     "xlsx": "^0.18.5"
