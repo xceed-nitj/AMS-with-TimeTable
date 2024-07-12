@@ -118,7 +118,7 @@ const ReviewPage = () => {
     // Add review questions and answers
     const reviewData = questions.map((question, index) => [
       `Question ${index + 1}: ${stripHTMLTags(question.question)}`,
-      `Answer: ${answers[question._id] || ''}`
+      `Answer: ${stripHTMLTags(answers[question._id]) || ''}`
     ]);
     
     doc.autoTable({
