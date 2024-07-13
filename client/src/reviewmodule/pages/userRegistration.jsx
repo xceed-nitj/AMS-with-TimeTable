@@ -76,7 +76,6 @@ const UserRegistration = () => {
       } else {
         toast({
           title: data.message,
-          description: "Please try again later",
           status: "error",
           duration: 6000,
           isClosable: true,

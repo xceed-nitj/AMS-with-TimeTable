@@ -23,8 +23,8 @@ exports.register = async (req, res, next) => {
 
   const existingUser = await User.findOne({email:email})
   if(existingUser!==null){
-    if(existingUser.name === email){
-      return res.status(400).json({message: "Try forgot password, User already exists"})
+    if(existingUser.email.includes(email)){
+      return res.status(400).json({message: "User already exists, use forgot password to reset your password"})
     }
   }
 
