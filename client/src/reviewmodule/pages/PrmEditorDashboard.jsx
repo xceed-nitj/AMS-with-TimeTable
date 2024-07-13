@@ -19,6 +19,7 @@ const PrmEditorDashboard = () => {
   const [event, setEvent] = useState(null);
   const [table, setTable] = useState([]);
   const [trackcount, setTrackCount] = useState([]);
+  const [paperStatus, setPaperStatus] = useState([]);
   const [counts, setCounts] = useState({ Accepted: 0, Invited: 0, NotAccepted: 0 });
   const [startSubmission, setStartSubmission] = useState(true)
 
@@ -103,7 +104,7 @@ const PrmEditorDashboard = () => {
   
       if(response.ok) {
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
         setTrackCount(data);
       } else {
         console.error("Failed to fetch reviewer details");
@@ -115,6 +116,31 @@ const PrmEditorDashboard = () => {
   useEffect(() => {
     console.log("Fetching Count with apiUrl:", apiUrl);
     fetchCount();
+  }, [apiUrl]);
+
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reviewmodule/paper/status/${eventId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if(response.ok) {
+        const data = await response.json();
+        setPaperStatus(data);
+      } else {
+        console.error("Failed to fetch reviewer details");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+  useEffect(() => {
+    console.log("Fetching Status with apiUrl:", apiUrl);
+    fetchStatus();
   }, [apiUrl]);
 
   const trackCountsArray = Object.values(trackcount);
@@ -136,9 +162,9 @@ const PrmEditorDashboard = () => {
         { name: 'Awaiting Reviews', value: 3000 },
     ];
     const data4 = [
-        { name: 'Accepted Papers', value: 400 },
-        { name: 'Rejected Papers', value: 300 },
-        { name: 'Pending Decision', value: 300 },
+        { name: 'Accepted Papers', value: paperStatus.accepted },
+        { name: 'Rejected Papers', value: paperStatus.rejected },
+        { name: 'Under Review', value: paperStatus.underreview },
     ];
 
     const COLORS = ['#00BFFF', '#00C49F', '#FFBB28', '#FF8042'];

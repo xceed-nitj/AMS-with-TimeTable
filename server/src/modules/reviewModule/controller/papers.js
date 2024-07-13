@@ -60,8 +60,33 @@ const PaperCountByTrack = async (req, res) => {
       });
     };
     countPapersByTrack(paper);
-    console.log(trackCounts);
+    // console.log(trackCounts);
     return res.status(200).send(trackCounts);
+  }
+};
+
+const PaperStatusCount = async (req, res) => {
+  let eventId = req.params.id;
+  const paper = await Paper.find({ eventId: eventId }).exec();
+
+  if (!paper) {
+    return res.status(401).json("Invalid paperId");
+  } else {
+    let accepted = 0;
+    let rejected = 0;
+    let underreview = 0;
+    paper.forEach(pap=> {
+      if(pap.status === "Accepted"){
+        accepted++;
+      }else if(pap.status === "Rejected"){
+        rejected++;
+      }else{
+        underreview++;
+      }
+    });
+    let status = {accepted,rejected,underreview};
+    // console.log(status)
+    return res.status(200).send(status);
   }
 };
 
@@ -441,4 +466,4 @@ const addAuthorbyId = async (req, res) => {
 
 
 
-module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
+module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack, PaperStatusCount};
