@@ -1,23 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  ChakraProvider,
-  Container,
-  Box,
-  VStack,
-  Spinner,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Button,
-  Select,
-  useToast,
-  Flex,
-  Text,
-  Link,
+  ChakraProvider, Container, Box, VStack, Spinner, Table, Thead, Tbody, Tr, Th, Td, Button, Select,
+  useToast, Flex, Text, Link, Center, Heading, chakra, IconButton, Modal, ModalOverlay, ModalBody, ModalContent, ModalHeader, 
+  ModalCloseButton, ModalFooter, useDisclosure
 } from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
@@ -94,9 +82,6 @@ const UserManagementPage = () => {
   };
 
   const handleDeleteRole = async (userId, role) => {
-    const confirmed = window.confirm(`Are you sure you want to delete the role "${role}" from this user?`);
-    if (!confirmed) return;
-
     try {
       console.log(`Deleting role ${role} from user ${userId}`);
       const response = await fetch(`${apiUrl}/user/getuser/deleterole`, {
@@ -118,25 +103,91 @@ const UserManagementPage = () => {
     setSelectedRoles({ ...selectedRoles, [userId]: role });
   };
 
-  if (isLoading) return <Spinner />;
+  const HeaderUserMan = ({ title }) => {
+    const navigate = useNavigate();
+    
+    return (
+      <Heading mr='1' ml='1' display='flex' >
+        <IconButton
+          mb='1'
+          variant='ghost'
+          onClick={() => navigate(-1)}
+          _hover={{ bgColor: 'transparent' }}
+        >
+          <chakra.svg
+            xmlns='http://www.w3.org/2000/svg'
+            fill='none'
+            viewBox='0 0 24 24'
+            strokeWidth={1.5}
+            stroke='white'
+            className='w-6 h-6'
+            _hover={{ stroke: '#00BFFF' }}
+          >
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              d='M11.25 9l-3 3m0 0l3 3m-3-3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+            />
+          </chakra.svg>
+        </IconButton>
+        <chakra.div marginInline='auto' color="white" fontSize='25px' mt='2' >
+          {title}
+        </chakra.div>
+      </Heading>
+    );
+};
+
+  function ConfirmationModal(props) {
+    const { isOpen, onOpen, onClose } = useDisclosure()
+    return (
+      <>
+      <Center border='1px solid red' borderRadius={'50%'}>
+      <CloseIcon color='red' fontSize={'medium'} padding='4px' onClick={onOpen}/>
+      </Center>
+      <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset='slideInBottom'>
+        <ModalOverlay/>
+        <ModalContent>
+          <ModalHeader backgroundColor={'black'} color='white' borderTopRadius={'5px'} textAlign={'center'}>Confirmation</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>
+              Are you sure you want to delete the role {props.role} from this user?
+            </Text>
+          </ModalBody>
+          <ModalFooter>
+            <Flex width='100%' alignItems={'center'} justifyContent={'space-evenly'}>
+              <Button colorScheme="blackAlpha" onClick={onClose}>Cancel</Button>
+              <Button colorScheme="red" onClick={()=>{props.deleteFn();onClose()}}>Delete</Button>
+            </Flex>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      </>
+    )
+  }
+
+  if (isLoading) return <Flex style={{height:'100%', width:'100%', alignItems:'center', justifyContent:'center'}}><br/><br /><Spinner /></Flex>;
 
   return (
     <ChakraProvider>
       <Container maxW="container.lg">
         <Box p={4}>
           <VStack spacing={4} align="center">
+            <Box bg="black" p={0.2} width='100%'>
+                <HeaderUserMan  color="white" textAlign="center" title="User Management"/>
+            </Box>
             <Flex justify="space-between" w="full">
-              <Text fontSize="2xl" fontWeight="bold">User Management</Text>
+              {/* <Text fontSize="2xl" fontWeight="bold">User Management</Text> */}
               <Link href="/register">
                 <Button colorScheme="teal" size="md">Create New User</Button>
               </Link>
             </Flex>
+            <Box maxW='95%' overflowX={'auto'}>
             <Table variant="simple" colorScheme="teal" size="md" borderColor="gray.200" borderWidth="1px">
               <Thead bg="gray.100">
                 <Tr>
                   <Th>Email</Th>
                   <Th>Roles</Th>
-                  <Th>Manage Roles</Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -144,16 +195,10 @@ const UserManagementPage = () => {
                   <Tr key={user._id} bg={index % 2 === 0 ? 'gray.50' : 'white'}>
                     <Td>{user.email.join(", ")}</Td>
                     <Td>
-                      {user.role.map((role, idx) => (
-                        <Flex key={idx} mb={2} justify="space-between" align="center">
-                          <Text>{role}</Text>
-                          <Button ml={2} colorScheme="red" size="xs" onClick={() => handleDeleteRole(user._id, role)}>Delete</Button>
-                        </Flex>
-                      ))}
-                    </Td>
-                    <Td>
-                      <Flex direction="column" align="flex-start">
+                      <Flex direction="row" align="center" justifyContent={'space-between'}>
                         <Select 
+                          width='50%'
+                          minWidth='150px'
                           value={selectedRoles[user._id] || ''} 
                           placeholder="Select role" 
                           onChange={(e) => handleRoleChange(user._id, e.target.value)}
@@ -168,13 +213,20 @@ const UserManagementPage = () => {
                           <option value="PRM">PRM</option>
                           <option value="FACULTY">Faculty</option>
                         </Select>
-                        <Button colorScheme="teal" size="sm" onClick={() => handleAssignRole(user._id)}>Assign Role</Button>
+                        <Button isDisabled={!selectedRoles[user._id]} colorScheme="blue" size="sm" onClick={() => handleAssignRole(user._id)}>Assign Role</Button>
                       </Flex>
+                      {user.role.map((role, idx) => (
+                        <Flex key={idx} mb={2} justify="space-between" align="center">
+                          <Text>{role}</Text>
+                          <ConfirmationModal role={role} deleteFn={()=>handleDeleteRole(user._id, role)} />
+                        </Flex>
+                      ))}
                     </Td>
                   </Tr>
                 ))}
               </Tbody>
             </Table>
+            </Box>
           </VStack>
         </Box>
       </Container>
