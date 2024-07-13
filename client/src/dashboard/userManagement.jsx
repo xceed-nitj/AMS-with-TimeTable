@@ -1,5 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { ChakraProvider, Container, Box, VStack, Spinner, Table, Thead, Tbody, Tr, Th, Td, Button, Select, useToast, Flex, Text } from "@chakra-ui/react";
+import {
+  ChakraProvider,
+  Container,
+  Box,
+  VStack,
+  Spinner,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Button,
+  Select,
+  useToast,
+  Flex,
+  Text,
+  Link,
+} from "@chakra-ui/react";
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
@@ -107,6 +125,12 @@ const UserManagementPage = () => {
       <Container maxW="container.lg">
         <Box p={4}>
           <VStack spacing={4} align="center">
+            <Flex justify="space-between" w="full">
+              <Text fontSize="2xl" fontWeight="bold">User Management</Text>
+              <Link href="/register">
+                <Button colorScheme="teal" size="md">Create New User</Button>
+              </Link>
+            </Flex>
             <Table variant="simple" colorScheme="teal" size="md" borderColor="gray.200" borderWidth="1px">
               <Thead bg="gray.100">
                 <Tr>
