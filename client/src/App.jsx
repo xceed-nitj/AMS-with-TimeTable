@@ -127,7 +127,7 @@ import Quizzing from './quizModule/student/quizzing/Quizzing';
 // import Instructions from './quizModule/student/Instructions';
 import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
 import UserManagement from './dashboard/userManagement';
-import UserEventRegistration from './certificatemodule/pages/addevent';
+import UserEventRegistration from './certificatemodule/pages/addEvent';
 
 
 function App() {
