@@ -91,7 +91,7 @@ const findPaperByAuthor = async (req, res) => {
   let id = req.params.id;
   try{
     const papers = await Paper.find({ 'authors': id })
-                        .select('_id eventId title')
+                        .select('_id eventId title status')
                         .exec();
     if (!papers.length) {
       return res.status(401).json("No papers found for this author");
@@ -110,7 +110,8 @@ const findPaperByAuthor = async (req, res) => {
       _id: paper._id,
       eventId: paper.eventId,
       eventName: eventMap[paper.eventId.toString()],
-      title: paper.title
+      title: paper.title,
+      status: paper.status
                               }));
     return res.status(200).send(papersWithEventNames);
   }catch(err){
