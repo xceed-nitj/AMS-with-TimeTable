@@ -31,7 +31,7 @@ const CertificateForm = () => {
   const [type, setType] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([])
   const [formData, setFormData] = useState({
-    logos: [{ url: "", height: 80, width: 80 }],
+    logos: [{ url: " ", height: 80, width: 80 }],
     header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
     body: { body: " ", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
     footer: { footer: " ", },
@@ -61,7 +61,7 @@ const CertificateForm = () => {
     const certType = formData.certiType;
     setSelectedFiles([])
     setFormData({
-      logos: [{ url: "", height: 80, width: 80 }],
+      logos: [{ url: " ", height: 80, width: 80 }],
       header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
       body: { body: " ", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       footer: { footer: "", },
@@ -486,13 +486,13 @@ const CertificateForm = () => {
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
+          { name: { name: " ", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: " ", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
         ],
       }));
     } else if (fieldName === 'logos') {
       setFormData((prevData) => ({
         ...prevData,
-        [fieldName]: [...prevData[fieldName], { url: "", height: 80, width: 80 }],
+        [fieldName]: [...prevData[fieldName], { url: " ", height: 80, width: 80 }],
       }));
     } else {
       setFormData((prevData) => ({
@@ -556,7 +556,6 @@ const CertificateForm = () => {
     fontsizeopt.push(i)
   }
   const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari","Ingrid Darling","Grey Qo","Kings","Ole","Rubik Maze","Rubik Burned","Rubik Marker Hatch","Rubik Microbe","Blaka Ink","Noto Serif Grantha","Rubik Spray Paint","Rubik Wet Paint","Finger Paint","Rubik Bubbles","Oleo Script","Neuton","Merienda","Concert One","Permanent Marker","Abril Fatface","Rowdies","Lobster","Pacifico","Anton SC","Ga Maamli","Libre Baskerville", "Libre Baskerville","Merriweather","Roboto Slab","Roboto","Oswald"]
-  // const fontColoropt = ["black", "red", "green", "yellow", "purple", "orange", "blue", "gold"]
   return (
     <Flex
       style={{
