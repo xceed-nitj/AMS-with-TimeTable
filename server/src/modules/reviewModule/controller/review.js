@@ -158,36 +158,76 @@ const submitReview = async (req, res) => {
         }
 
         // Ensure data property exists
-        const eventName = eventResponse.name || "N/A";
-        const paperTitle = paperResponse.title || "N/A";
-        const reviewerName = reviewerResponse.name || "N/A";
+       const eventName = eventResponse.name || "N/A";
+       const paperTitle = paperResponse.title || "N/A";
+     const reviewerName = reviewerResponse.name || "N/A";
+        const paperid=paperResponse.paperId;
         // console.log(reviewerResponse.email[0]);
         const reviewerEmail = reviewerResponse.email[0];//Asuuming 1st email is the primary email 
+        
 
-        doc.text(`Event name: ${eventName}`, 10, 10);
-        doc.text(`Paper title: ${paperTitle}`, 10, 20);
-        doc.text(`Paper ID: ${paperId}`, 10, 30);
-        doc.text(`Reviewer Name: ${reviewerName}`, 10, 40);
-         
+        // Split text to fit within the page width
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 10;
+        const maxTextWidth = pageWidth - 2 * margin;
+      
+        const eventNameLines = doc.splitTextToSize(`Event name: ${eventName}`, maxTextWidth);
+        const paperTitleLines = doc.splitTextToSize(`Paper title: ${paperTitle}`, maxTextWidth);
+        const reviewerNameLines = doc.splitTextToSize(`Reviewer Name: ${reviewerName}`, maxTextWidth);
+      
+        let currentY = 10;
+        eventNameLines.forEach(line => {
+          doc.text(line, margin, currentY);
+          currentY += 10;
+        });
+      
+        paperTitleLines.forEach(line => {
+          doc.text(line, margin, currentY);
+          currentY += 10;
+        });
+      
+        doc.text(`Paper ID: ${paperid}`, margin, currentY);
+        currentY += 10;
+      
+        reviewerNameLines.forEach(line => {
+          doc.text(line, margin, currentY);
+          currentY += 10;
+        });
+      
         const stripHTMLTags = (str) => {
-            return str.replace(/<\/?[^>]+(>|$)/g, "");
+          return str.replace(/<\/?[^>]+(>|$)/g, "");
         };
-
-      // Add review questions and answers
-      const reviewData = reviewAnswers.map((answer, index) => [
+      
+        // Add review questions and answers
+        const reviewData = reviewAnswers.map((answer, index) => [
           `Question ${index + 1}: ${stripHTMLTags(answer.question)}`,
           `Answer: ${stripHTMLTags(answer.answer) || ''}`
-      ]);
-
-      doc.autoTable({
+        ]);
+      
+        doc.autoTable({
           head: [['Question', 'Answer']],
           body: reviewData,
-          startY: 50
-      });
+          startY: currentY + 10
+        });
+      
+        currentY = doc.autoTable.previous.finalY + 10; // Update currentY after autoTable
 
-      doc.text(`Author comments: ${commentsAuthor}`, 10, doc.autoTable.previous.finalY + 10);
-      doc.text(`Editor comments: ${commentsEditor}`, 10, doc.autoTable.previous.finalY + 20);
-      doc.text(`Submitted time: ${completedDate.toLocaleString()}`, 10, doc.autoTable.previous.finalY + 30);
+  // Split author and editor comments to fit within the page width
+  const authorCommentsLines = doc.splitTextToSize(`Author comments: ${commentsAuthor}`, maxTextWidth);
+  const editorCommentsLines = doc.splitTextToSize(`Editor comments: ${commentsEditor}`, maxTextWidth);
+
+  authorCommentsLines.forEach(line => {
+    doc.text(line, margin, currentY);
+    currentY += 10;
+  });
+
+  editorCommentsLines.forEach(line => {
+    doc.text(line, margin, currentY);
+    currentY += 10;
+  });
+
+  doc.text(`Submitted time: ${completedDate.toLocaleString()}`, margin, currentY);
+      
 
       // Save the PDF to a buffer
       const pdfBuffer = doc.output('arraybuffer');
