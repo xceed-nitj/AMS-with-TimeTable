@@ -16,11 +16,18 @@ const getImagesOfUserByEventId = async (id) => {
             const certificates = await certificate.find({ eventId: eventIds[i] })
             certificates.forEach((cert) => {
                 cert.signatures.forEach(signt => {
-                    Signatures.push(signt)
+                    let count = 0;
+                    for(let i = 0; i < Signatures.length ; i++){
+                        if(signt.url.url === Signatures[i].url.url){
+                            count = 1; break;
+                        }
+                    }
+                    if(count === 0){Signatures.push(signt)}
                 });
             }
             )
         }
+        console.log(Signatures)
         return Signatures
     } catch (error) {
         throw new HttpException(500, error)
