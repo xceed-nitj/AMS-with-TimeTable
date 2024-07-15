@@ -1,4 +1,5 @@
 const Paper = require("../../../models/reviewModule/paper.js");
+const Reviews = require("../../../models/reviewModule/review.js");
 const express = require("express");
 const bodyParser = require("body-parser");
 const User = require("../../../models/usermanagement/user.js");
@@ -89,6 +90,48 @@ const PaperStatusCount = async (req, res) => {
     return res.status(200).send(status);
   }
 };
+
+const ReviewsStatusCount = async (req, res) => {
+  let eventId = req.params.id;
+  try {
+    const papers = await Paper.find({ eventId: eventId }).exec();
+    if (!papers || papers.length === 0) {
+      return res.status(404).json({ message: "No papers found for the given eventId" });
+    }
+
+    const paperIds = papers.map(paper => paper._id);
+    const reviews = await Reviews.find({ paperId: { $in: paperIds } }).exec();
+    let completed = 0;
+    let partial = 0;
+    let notReceived = 0;
+
+    const reviewCountMap = reviews.reduce((arr, review) => {
+      arr[review.paperId] = (arr[review.paperId] || 0) + 1;
+      return arr;
+    }, {});
+
+    papers.forEach(paper => {
+      const reviewCount = reviewCountMap[paper._id] || 0;
+      if (paper.reviewers.length !== 0) {
+        if(reviewCount===0){
+          notReceived++;
+        } else if (reviewCount === paper.reviewers.length) {
+          completed++;
+        } else {
+          partial++;
+        }
+      }
+    });
+
+    let status = { completed, partial, notReceived };
+    console.log(status)
+    return res.status(200).json(status);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 const findPaper = async (req, res) => {
   let id = req.params.id;
@@ -466,4 +509,4 @@ const addAuthorbyId = async (req, res) => {
 
 
 
-module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack, PaperStatusCount};
+module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack, PaperStatusCount,ReviewsStatusCount};

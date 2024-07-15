@@ -20,6 +20,7 @@ const PrmEditorDashboard = () => {
   const [table, setTable] = useState([]);
   const [trackcount, setTrackCount] = useState([]);
   const [paperStatus, setPaperStatus] = useState([]);
+  const [reviewStatus, setReviewStatus] = useState([]);
   const [counts, setCounts] = useState({ Accepted: 0, Invited: 0, NotAccepted: 0 });
   const [startSubmission, setStartSubmission] = useState(true)
 
@@ -143,6 +144,30 @@ const PrmEditorDashboard = () => {
     fetchStatus();
   }, [apiUrl]);
 
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reviewmodule/paper/trackreviews/${eventId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if(response.ok) {
+        const data = await response.json();
+        setReviewStatus(data);
+      } else {
+        console.error("Failed to fetch reviewer details");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+  useEffect(() => {
+    console.log("Fetching review status with apiUrl:", apiUrl);
+    fetchReviews();
+  }, [apiUrl]);
   const trackCountsArray = Object.values(trackcount);
 
     const data1 = trackCountsArray.map(item => ({
@@ -156,10 +181,10 @@ const PrmEditorDashboard = () => {
         { name: 'Reviewers Rejected', value: counts.NotAccepted },
     ];
     const data3 = [
-        { name: 'Reviewers Assigned', value: 1000 },
-        { name: 'Review Completed', value: 2000 },
-        { name: 'Partial Review Completed', value: 1500 },
-        { name: 'Awaiting Reviews', value: 3000 },
+        { name: 'Completed Reviews', value: reviewStatus.completed },
+        { name: 'Partially Completed Reviews', value: reviewStatus.partial },
+        { name: 'Not Received Any Reviews', value: reviewStatus.notReceived },
+        // { name: 'Awaiting Reviews', value: 3000 },
     ];
     const data4 = [
         { name: 'Accepted Papers', value: paperStatus.accepted },
