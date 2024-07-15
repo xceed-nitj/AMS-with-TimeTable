@@ -8,9 +8,9 @@ import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
   Flex,
   Text,
-  Select,
+  Select, HStack,
   Menu,
-  MenuButton,
+  MenuButton, FormControl, Input,
   MenuList,
   MenuItem,
   Button,
@@ -31,7 +31,10 @@ function EventPaper() {
   const [reviewers, setReviewers] = useState([]);
   const [papers, setPapers] = useState([]); // State to store papers
   const [editorComments, setEditorComments] = useState({});
-const [selectedDecisions, setSelectedDecisions] = useState({});
+  const [selectedDecisions, setSelectedDecisions] = useState({});
+  const [searchQuery2, setSearchQuery2] = useState()
+  const [authorDictionary,setAuthorDictionary] = useState()
+  console.log('authors are', authorDictionary)
   const apiUrl = getEnvironment();
   const toast = useToast();
   const navigate = useNavigate();
@@ -54,6 +57,7 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
         const data = await response.json();
         console.log("Fetched papers data:", data);
         setPapers(data); // Set the fetched data to state
+        fetchAuthorNames(data)
       } else {
         console.error("Error fetching papers:", response.statusText);
       }
@@ -81,6 +85,32 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       console.error("Error fetching reviewers:", error);
     }
   };
+
+  const fetchAuthorNames = async(dataset)=>{
+    let authorNames = {}
+    dataset.forEach(async(d)=>{
+      if(d.authors.length) d.authors.forEach(async(a)=>{
+        if((!authorNames.hasOwnProperty(a))){
+          const response = await axios.get(`${apiUrl}/reviewmodule/user/getUser/${a}`)
+          if(response.status==200 && response.data.name){
+            authorNames[a] = response.data.name
+            // console.log('update is', authorNames)
+            setAuthorDictionary(authorNames)
+          }
+        }
+      })
+    })
+    // setAuthorDictionary(authorNames)
+  }
+
+  // useEffect(()=>{
+  //   // const fn = async()=>{
+  //   //   await fetchAuthorNames(papers)
+  //   // }
+  //   // fn()
+  //   fetchAuthorNames(papers)
+  // },[])
+
   useEffect(() => {
     fetchPapersById();
     fetchReviewersById();
@@ -265,6 +295,35 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
     }
   };
 
+  function filterFn2(dataset) {
+    return !searchQuery2 ? dataset : dataset.filter((d)=>{
+      console.log('iteration is', d)
+      let query = searchQuery2.toLowerCase()
+      console.log('length of this is',
+        d.reviewers.filter(r=>{
+          console.log('checking', r)
+          return String(r.username).toLowerCase().includes(query)
+        }).length
+      )
+      return (
+        String(d.title).toLowerCase().includes(query) ||
+        String(d.status).toLowerCase().includes(query) ||
+        String(d.paperId).toLowerCase().includes(query) ||
+        (
+          d.reviewers.filter(r=>{
+            return String(r.username).toLowerCase().includes(query)
+          }).length
+        )
+        ||
+        (
+          d.authors.filter((aa)=>{
+            return String(authorDictionary[aa]).toLowerCase().includes(query)
+          }).length
+        )
+      )
+    })
+  }
+
   function ReviewerDecision(props) {
     const [rf, setRF] = useState('Pending...')
     useEffect(()=>{
@@ -280,15 +339,119 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       <span>{rf}</span>
     )
   }
+  
+  function ReviewerTable(props) {
+    const [searchQuery, setSearchQuery] = useState()
+    
+    function filterFn(dataset) {
+      return !searchQuery ? dataset: dataset.filter((d)=> d.toLowerCase().reviewer.email[0].includes(searchQuery.toLowerCase()))
+    }
 
-  return (
-    <Container maxW="container.xl" p={4}>
-      <Header title="Paper Details"></Header>
-      
-      <Box boxShadow="md" p={6} rounded="md" bg="white">
-      {/* <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button> */}
-        <Box overflowX={'auto'}>
-        <Table variant="striped">
+    return (
+      <>
+        <HStack justifyContent={'space-between'}>
+        <Menu>
+          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} colorScheme="blackAlpha">
+            Assign Reviewer
+          </MenuButton>
+          <MenuList>
+            {filterFn(reviewers).map((reviewer)=>(
+              //fixed the assign reviewer button for those users, not having a name value
+              <MenuItem  onClick={()=>handlesubmit(props.paper._id,reviewer.email[0])} minH='48px'>
+                <span>{reviewer.email[0]}</span>
+              </MenuItem>
+            ))}
+          </MenuList>
+        </Menu>
+        <FormControl width='50%'>
+          <Input
+          placeholder='search'
+          value={searchQuery}
+          onChange={(e)=>setSearchQuery(e.target.value)}
+          style={{textAlign:'center', border:'1px solid gray'}}
+          />
+        </FormControl>
+        </HStack>
+        <Table colorScheme="blue" variant={'striped'}>
+          <Tr>
+            <Th style={{textWrap: 'nowrap'}} >Username</Th>
+            <Th style={{textWrap: 'nowrap'}} >Decision</Th>
+            <Th style={{textWrap: 'nowrap'}} >Due Date</Th>
+            <Th style={{textWrap: 'nowrap'}} >Completed On</Th>
+            <Th style={{textWrap: 'nowrap'}} >Comments</Th>
+          </Tr>
+        {props.paper.reviewers.map((r,kk)=>(
+          <Tr key={kk}>
+            <Td>
+              <Text>{r.username}</Text>
+              <Flex justifyContent={'center'}>
+              <Link to={'/prm/'+r._id+'/profile'}>
+                <Button colorScheme="blue">Profile</Button>
+              </Link>
+              {
+                r.completedDate?'':
+              <Button colorScheme="red" onClick={()=>handledelete(props.paper._id,r.userId)}>Delete</Button>
+              }
+              </Flex>
+            </Td>
+            <Td>
+              <Text mt={4}>
+                <ReviewerDecision reviewerId={r.userId} paperId={props.paper._id} />
+              </Text>
+            </Td>
+            <Td>
+              <Select
+                placeholder="Assign Due Date"
+                onChange={(e) => handleSelection(e.target.value,props.paper._id,r.userId)}
+                width='100px'
+              >
+                {day_count.map((day,k) => (
+                  <option key={k} value={day}>
+                    {day} {day === 1 ? 'day' : 'days'}
+                  </option>
+                ))}
+              </Select>
+              {r.dueDate && (
+                <Text mt={4}>
+                    {new Date(r.dueDate).toLocaleDateString()}
+                </Text>
+              )}
+              {!r.dueDate && (
+                <Text mt={4}>
+                  {"NO DUE DATE"}
+                </Text>
+              )}
+            </Td>
+            <Td>
+              {r.completedDate ? (
+                <Text mt={4}>
+                    {new Date(r.completedDate).toLocaleDateString()}
+                </Text>
+              ):
+              <Text>Pending...</Text>}
+              
+            </Td>
+            <Td> 
+            {
+              r.completedDate?
+                <Link style={{textDecoration:'underline', color: '#00acc1', textWrap:"nowrap"}} 
+                to={window.location.pathname.split('editor/papers')[0]+props.paper._id+'/'+r.userId+'/Review'}>
+                  Comments
+                </Link>:
+                <Text style={{textWrap:'nowrap'}}>Pending...</Text>
+            }
+            </Td>
+          </Tr>
+        ))}
+        </Table>
+      </>
+    )
+  }
+
+  function MainTable(props) {
+    return (
+      <>
+       <Table variant="striped">
           <TableCaption>Papers for Event ID: {eventId}</TableCaption>
           <Thead>
             <Tr>
@@ -301,94 +464,19 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
             </Tr>
           </Thead>
           <Tbody>
-            {papers.map((paper) => (
+            {props.papers.map((paper) => (
               <Tr key={paper._id}>
                 <Td>{paper.paperId}</Td>
                 <Td>
-                  <Link style={{textDecoration:'underline', color: '#00acc1', textWrap:"nowrap"}} 
+                  <Link style={{textDecoration:'underline', color: '#00acc1'}} 
                     to={window.location.pathname.split('editor/papers')[0]+paper._id+'/summary'}>
                       {paper.title}
                   </Link>
                 </Td>
-                <Td>{paper.authors.map((author, k)=>(<Text key={k}>{author}</Text>))}</Td>
+                <Td>{paper.authors.map((author, k)=>(<Text key={k}>{props.authors?props.authors[author]:'Loading'}</Text>))}</Td>
                 <Td>{paper.version}</Td>
                 <Td>
-                  <Menu>
-                    <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                      Assign Reviewer
-                    </MenuButton>
-                    <MenuList>
-                      {reviewers.map((reviewer)=>(
-                        //fixed the assign reviewer button for those users, not having a name value
-                        <MenuItem  onClick={()=>handlesubmit(paper._id,reviewer.email[0])} minH='48px'>
-                          <span>{reviewer.email[0]}</span>
-                        </MenuItem>
-                      ))}
-                    </MenuList>
-                  </Menu>
-                    <Table colorScheme="blue" variant={'striped'}>
-                      <Tr>
-                        <Th>Username</Th>
-                        <Th>Decision</Th>
-                        <Th>Due Date</Th>
-                        <Th>Completed On</Th>
-                        <Th>Comments</Th>
-                      </Tr>
-                    {paper.reviewers.map((r,kk)=>(
-                      <Tr key={kk}>
-                        <Td>
-                          <Text>{r.username}</Text>
-                          <Flex justifyContent={'center'}>
-                          <Link to={'/prm/'+r._id+'/profile'}>
-                            <Button colorScheme="blue">Profile</Button>
-                          </Link>
-                          <Button colorScheme="red" onClick={()=>handledelete(paper._id,r.userId)}>Delete</Button>
-                          </Flex>
-                        </Td>
-                        <Td>
-                          <Text mt={4}>
-                            <ReviewerDecision reviewerId={r.userId} paperId={paper._id} />
-                          </Text>
-                        </Td>
-                        <Td>
-                          <Select
-                            placeholder="Assign Due Date"
-                            onChange={(e) => handleSelection(e.target.value,paper._id,r.userId)}
-                            width='100px'
-                          >
-                            {day_count.map((day,k) => (
-                              <option key={k} value={day}>
-                                {day} {day === 1 ? 'day' : 'days'}
-                              </option>
-                            ))}
-                          </Select>
-                          {r.dueDate && (
-                            <Text mt={4}>
-                                {new Date(r.dueDate).toLocaleDateString()}
-                            </Text>
-                          )}
-                          {!r.dueDate && (
-                            <Text mt={4}>
-                              {"NO DUE DATE"}
-                            </Text>
-                          )}
-                        </Td>
-                        <Td>
-                          {r.completedDate && (
-                            <Text mt={4}>
-                                {new Date(r.completedDate).toLocaleDateString()}
-                            </Text>
-                          )}
-                        </Td>
-                        <Td> 
-                        <Link style={{textDecoration:'underline', color: '#00acc1', textWrap:"nowrap"}} 
-                        to={window.location.pathname.split('editor/papers')[0]+paper._id+'/'+r.userId+'/Review'}>
-                          Comments
-                        </Link>
-                        </Td>
-                      </Tr>
-                    ))}
-                    </Table>
+                    <ReviewerTable paper={paper} />
                 </Td>
                 <Td>
                   <Text style={{textWrap:'nowrap'}}><span style={{fontWeight:"600"}}>Status : </span>{paper.status}</Text>
@@ -415,7 +503,30 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
               </Tr>
             ))}
           </Tbody>
-        </Table></Box>
+        </Table>
+      </>
+    )
+  }
+
+  return (
+    <Container maxW="container.xl" p={4}>
+      <Header title="Paper Details"></Header>
+      
+      <Box boxShadow="md" p={6} rounded="md" bg="white">
+      <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button>
+      <HStack style={{justifyContent:"center"}}>
+        <FormControl width='50%'>
+          <Input
+          placeholder='search'
+          value={searchQuery2}
+          onChange={(e)=>setSearchQuery2(e.target.value)}
+          style={{textAlign:'center', border:'1px solid gray'}}
+          />
+        </FormControl>
+      </HStack>
+        <Box overflowX={'auto'}>
+          <MainTable authors={authorDictionary} papers={filterFn2(papers)} />
+        </Box>
       </Box>
     </Container>
   );
