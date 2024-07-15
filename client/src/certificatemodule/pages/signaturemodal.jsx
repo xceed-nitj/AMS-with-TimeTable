@@ -5,12 +5,12 @@ import { Text, IconButton, Input, HStack } from '@chakra-ui/react';
 import { CloseIcon } from '@chakra-ui/icons';
 import { FaUpload } from "react-icons/fa";
 
-
 const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChange, signatures, signature, handleChange, selectedFiles }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('Uploaded');
     const [images, setImages] = useState([])
     const apiUrl = getEnvironment();
+
     useEffect(() => {
         const fetchdata = async () => {
             try {
@@ -106,7 +106,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                         {activeTab === 'Uploaded' && <div style={{ height: "500px" }} className='tw-flex tw-flex-col'>
                             <h1 className='tw-w-full tw-text-center tw-font-bold tw-align-middle tw-h-12 tw-pt-4'>Select From your Uploaded Images</h1>
                             <div style={{ height: "452px" }} className="uploadedImages tw-flex tw-gap-4 tw-flex-wrap tw-p-4 tw-overflow-y-scroll">
-                                {images.length==0?"You have no images uploaded":images.map((elem, index) => (
+                                {images.length == 0 ? "You have no images uploaded" : images.map((elem, index) => (
                                     <div onClick={(e) => { handleClick(e, index) }} key={`${index}`} style={{ height: "150px", width: "170px" }} className="tw-border-2 tw-border-zinc-300 tw-rounded-lg tw-object-contain tw-p-1 hover:tw-bg-slate-300 hover:tw-cursor-pointer" >
                                         <img src={`${elem.url.url}`}></img>
                                         <Text fontWeight="bold" color="black" fontSize="14px" className='tw-text-center'>{elem.name.name}</Text>
@@ -126,7 +126,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                                         onChange={(e) => handleFileChange(e, 'signatures', index)}
                                         type='file'
                                         accept='image/jpeg , image/png'
-                                        style={{ margin: "0px", padding: "0px", width:"200px" }}
+                                        style={{ margin: "0px", padding: "0px", width: "200px" }}
                                     /></HStack>
                                 <Text className='tw-w-full tw-text-center tw-align-middle'>OR</Text>
                                 <HStack width="100%" className='tw-flex tw-justify-center'>
