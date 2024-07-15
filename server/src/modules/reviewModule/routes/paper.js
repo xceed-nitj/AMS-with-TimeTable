@@ -1,5 +1,5 @@
 const express = require("express");
-const { findAllPapers,updateDecision,addAuthorbyId ,addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperById,findPaperByReviewer,findPaperByAuthor, addAuthor, PaperCountByTrack } = require("../controller/papers");
+const { findAllPapers,updateDecision,addAuthorbyId ,addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperById,findPaperByReviewer,findPaperByAuthor, addAuthor, PaperCountByTrack, dupliCheck } = require("../controller/papers");
 const fileUploadMiddleware = require("../controller/uploadFileMiddleWare");
 const uploadPaper = require("../controller/uploadFile");
 const reupload = require("../controller/reupload");
@@ -14,6 +14,7 @@ router.get("/reuploadpaper", (req, res) => {
 });
 
 router.get("/", findAllPapers);
+router.get("/duplicheck/:id",dupliCheck);//checking is same paper is being uploaded
 router.get("/:id", findEventPaper);
 router.get("/paper/:id", findEventPaper);// To find paper using paperId (not _id)
 router.get("/getPaperDetail/:id",findPaperById);

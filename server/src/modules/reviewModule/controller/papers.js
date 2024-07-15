@@ -438,7 +438,15 @@ const addAuthorbyId = async (req, res) => {
   }
 };
 
+const dupliCheck = async (req, res) => {
+  try {
+    const papers = await Paper.find({eventId:req.params.id}).select('title authors').exec();
+    res.send(papers);
+  } catch (error) {
+    console.error('Error fetching papers:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 
-
-module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
+module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack, dupliCheck};
