@@ -12,8 +12,8 @@ export default function Navbar() {
 
   const apiUrl = getEnvironment();
 
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,14 +72,17 @@ export default function Navbar() {
     }
   };
 
-  useEffect(() => {
-    const excludedRoutesLogin = ['/', '/login', '/classrooms', '/timetable'];
-    const isPublicPath = excludedRoutesLogin.includes(location.pathname) || location.pathname.startsWith('/services/');
-  
-    if (!isAuthenticated && !isPublicPath) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, location.pathname]);
+
+const publicPaths = ['/', '/login', '/classrooms', '/timetable'];
+
+useEffect(() => {
+  const isPublicPath = publicPaths.includes(location.pathname) || location.pathname.startsWith('/services/');
+
+  if (!isLoading && !isAuthenticated && !isPublicPath) {
+    navigate('/login');
+  }
+}, [isLoading, isAuthenticated, navigate, location.pathname]);
+
 
   const excludedRoutes = ['/login', '/cm/c'];
 
