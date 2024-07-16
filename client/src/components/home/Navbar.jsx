@@ -72,6 +72,15 @@ export default function Navbar() {
     }
   };
 
+  useEffect(() => {
+    const excludedRoutesLogin = ['/', '/login', '/classrooms', '/timetable'];
+    const isPublicPath = excludedRoutesLogin.includes(location.pathname) || location.pathname.startsWith('/services/');
+  
+    if (!isAuthenticated && !isPublicPath) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, location.pathname]);
+
   const excludedRoutes = ['/login', '/cm/c'];
 
   const isExcluded = excludedRoutes.some((route) =>
