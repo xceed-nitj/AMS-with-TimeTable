@@ -9,6 +9,7 @@ const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the s
 const getEnvironmentURL =require('../../../getEnvironmentURL.js')
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const ExcelJS = require('exceljs');
 const jwtSecret =
   "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
 
@@ -516,4 +517,40 @@ const dupliCheck = async (req, res) => {
   }
 };
 
-module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack, PaperStatusCount,ReviewsStatusCount,dupliCheck};
+const download = async (req, res) => {
+  try {
+    const data = await Paper.find().lean();
+    const {columnsToSend} = req.body;
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Data');
+    worksheet.columns = columnsToSend.map(col => ({
+      header: col.header,
+      key: col.key,
+      width: 30,
+    }));
+
+    data.forEach((item) => {
+      const row = {};
+      columnsToSend.forEach(col => {
+        if (col.key === 'reviewerEmails') {
+          row[col.key] = item.reviewers.map(reviewer => reviewer.username).join(', ');
+        }
+        else{
+          row[col.key] = item[col.key];
+        }
+      });
+      worksheet.addRow(row);
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    res.setHeader('Content-Disposition', 'attachment; filename="paper.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error generating spreadsheet', error);
+    res.status(500).send('Server Error');
+  }
+}
+
+module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack, PaperStatusCount,ReviewsStatusCount,dupliCheck,download};

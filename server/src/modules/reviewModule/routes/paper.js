@@ -1,5 +1,5 @@
 const express = require("express");
-const { findAllPapers,updateDecision,addAuthorbyId ,addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperById,findPaperByReviewer,findPaperByAuthor, addAuthor, PaperCountByTrack, PaperStatusCount, ReviewsStatusCount, dupliCheck } = require("../controller/papers");
+const { findAllPapers,updateDecision,addAuthorbyId ,addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperById,findPaperByReviewer,findPaperByAuthor, addAuthor, PaperCountByTrack, PaperStatusCount, ReviewsStatusCount, dupliCheck, download } = require("../controller/papers");
 const fileUploadMiddleware = require("../controller/uploadFileMiddleWare");
 const uploadPaper = require("../controller/uploadFile");
 const reupload = require("../controller/reupload");
@@ -23,6 +23,7 @@ router.get("/author/:id", findPaperByAuthor);//to find paper using UserID
 router.get("/trackcount/:id",PaperCountByTrack);
 router.get("/trackreviews/:id",ReviewsStatusCount);
 router.get("/status/:id",PaperStatusCount); //to count status of paper
+router.post("/downloadPaper",download);
 router.post("/addpaper/:id", fileUploadMiddleware, uploadPaper); // upload paper
 router.post('/addReviewer/:id', addReviewer);
 router.patch('/addAuthor/:paperId/:authorId', addAuthorbyId);
