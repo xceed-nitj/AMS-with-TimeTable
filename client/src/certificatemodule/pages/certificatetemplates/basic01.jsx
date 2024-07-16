@@ -138,14 +138,14 @@ const CertificateContent = ({
       </>
       <>
         <foreignObject width={'90%'} height={'400'} y={'40'} x={'5%'}>
-          <div style={{height:"200px"}} className="tw-flex tw-items-center tw-justify-center tw-w-full">
+          <div style={{ height: "200px" }} className="tw-flex tw-items-center tw-justify-center tw-w-full">
             {logos.map((item, key) => (
               <div
                 key={key}
                 className="tw-flex tw-items-center tw-justify-center "
               >
-                <div style={{width:`${item.width}px`,height:`${item.height}px`}} className="tw-w-20 tw-shrink-0 tw-mx-6">
-                  <img src={item.url} alt="" />
+                <div style={{ width: `${item.width}px`, height: `${item.height}px` }} className="tw-w-20 tw-shrink-0 tw-mx-6">
+                <img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
@@ -156,20 +156,6 @@ const CertificateContent = ({
                         </Text>
                       ))
                       }
-                      {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
-                        डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-[12px]">
-                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144008
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
-                        Dr. B R Ambedkar National Institute of Technology
-                        Jalandhar
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-[12px] ">
-                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-
-                        144008
-                      </p> */}
                     </>
                   )}
                 </div>
@@ -187,8 +173,8 @@ const CertificateContent = ({
         </foreignObject>
 
         {/* certificateOf */}
-        <foreignObject  y="295.473" width="100%" height="200">
-          <Text  width="100%" fontSize={`${certificateOf.fontSize}px`} fontFamily={certificateOf.fontFamily} fontStyle={certificateOf.italic} fontWeight={certificateOf.bold} color={certificateOf.fontColor} className="tw-text-center tw-uppercase opacity-80">
+        <foreignObject y="295.473" width="100%" height="200">
+          <Text width="100%" fontSize={`${certificateOf.fontSize}px`} fontFamily={certificateOf.fontFamily} fontStyle={certificateOf.italic} fontWeight={certificateOf.bold} color={certificateOf.fontColor} className="tw-text-center tw-uppercase opacity-80">
             <div width="90%" className="tw-text-center tw-uppercase">{certificateOf.certificateOf}</div>
           </Text>
         </foreignObject>
@@ -196,20 +182,20 @@ const CertificateContent = ({
 
         <foreignObject width="100%" x="11%" y="375.473" height="160">
           <Text width="77%" fontSize={`${contentBody.fontSize}px`} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} color={contentBody.fontColor} className="tw-text-center opacity-80">
-                {ReactHtmlParser(contentBody.body)}
+            {ReactHtmlParser(contentBody.body)}
           </Text>
         </foreignObject>
 
         <foreignObject x={'20%'} y={435} width={'62%'} height={400}>
-          <div style={{height:"250px"}} className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
+          <div style={{ height: "250px" }} className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
             {signature.map((item, key) => (
               <div
                 key={key}
-                style={{height:"250px"}}
+                style={{ height: "250px" }}
                 className="tw-flex tw-flex-col tw-items-center tw-justify-end tw-gap-2"
               >
-                <div style={{width:`${item.url.size}px`}} className='tw-flex tw-flex-col tw-justify-end'>
-                  <ProxifiedImage src={item.url.url} alt="" />
+                <div style={{ width: `${item.url.size}px` }} className='tw-flex tw-flex-col tw-justify-end'>
+                  <img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} alt="" />
                 </div>
                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                 <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} >{item.name.name}</Text>
@@ -224,7 +210,7 @@ const CertificateContent = ({
               {window.location.href}
             </div>
           </foreignObject>}
-          <foreignObject x={"0%"} y={'89%'} width={'100%'} height={'100'}><Text className="tw-text-sm tw-text-center tw-text-gray-700 ">Issued On: {footer.footer}</Text></foreignObject>
+        <foreignObject x={"0%"} y={'89%'} width={'100%'} height={'100'}><Text className="tw-text-sm tw-text-center tw-text-gray-700 ">Issued On: {footer.footer}</Text></foreignObject>
       </>
       );
     </svg>

@@ -10,8 +10,18 @@ async function getData(setPaperData){
     const apiUrl = getEnvironment();
     
     try {
+        const User = await fetch(`${apiUrl}/user/getuser`, {
+            method: "GET",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+        });
+        const userdetails = await User.json();
+        const id = userdetails.user._id;
+
         const response = await fetch(
-            `${apiUrl}/api/v1/reviewmodule/paper`,
+            `${apiUrl}/api/v1/reviewmodule/paper/author/${id}`,
             {
                 method:'GET',
                 credentials: 'include'

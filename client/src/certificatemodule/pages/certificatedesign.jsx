@@ -22,15 +22,16 @@ import CertificateContent from './certificatetemplates/basic01';
 import SelectCertficate from './SelectCertficate';
 import { Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon } from '@chakra-ui/react';
 import { HexAlphaColorPicker } from "react-colorful";
-import Modal from "react-modal"
 import { FaUpload } from "react-icons/fa";
+import Signaturemodal from "./signaturemodal"
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
   const toast = useToast();
   const [type, setType] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState([])
   const [formData, setFormData] = useState({
-    logos: [{ url: "", height: 80, width: 80 }],
+    logos: [{ url: " ", height: 80, width: 80 }],
     header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
     body: { body: " ", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
     footer: { footer: " ", },
@@ -41,8 +42,8 @@ const CertificateForm = () => {
     }],
     certiType: " ",
     templateId: " ", //Template Design Number
-    title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "sans-serif", bold: "normal", italic: "normal", fontColor: "black" },
-    { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" },
+    title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
+    { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
     { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" },
     { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }],
     verifiableLink: false,
@@ -58,8 +59,9 @@ const CertificateForm = () => {
 
   useEffect(() => {
     const certType = formData.certiType;
+    setSelectedFiles([])
     setFormData({
-      logos: [{ url: "", height: 80, width: 80 }],
+      logos: [{ url: " ", height: 80, width: 80 }],
       header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
       body: { body: " ", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       footer: { footer: "", },
@@ -70,8 +72,8 @@ const CertificateForm = () => {
       }],
       certiType: certType,
       templateId: "", //Template Design Number
-      title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "sans-serif", bold: "normal", italic: "normal", fontColor: "black" },
-      { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" },
+      title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
+      { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
       { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" },
       { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }],
       verifiableLink: false,
@@ -98,8 +100,6 @@ const CertificateForm = () => {
             responseData.length > 0
           ) {
             let { certificateOf, title, signatures, header, footer, body, certiType, logos, templateId, verifiableLink } = responseData[0];
-            // console.log(certificateOf)
-            //condition for signatures
             let Signatures = [];
             if (signatures[0].name.name) {
               Signatures = signatures
@@ -180,7 +180,7 @@ const CertificateForm = () => {
                 Title = title
               }
             } else {
-              Title = [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "sans-serif", bold: "normal", italic: "normal", fontColor: "black" }, { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }, { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }, { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }]
+              Title = [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" }, { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" }, { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }, { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }]
             }
             // console.log(verifiableLink)
             //for verifiableLink
@@ -220,7 +220,23 @@ const CertificateForm = () => {
       // For signatures, update the specific property of the signature object
       const signatureField = "url"
       if (fieldName === 'signatures') {
-
+        setSelectedFiles((prevFiles) => {
+          const s = `signatures[${index}].url.url`
+          const obj = { [s]: file }
+          let alreadyExists = 0;
+          prevFiles.forEach((file, index) => {
+            for (const key in file) {
+              if (key == s) { alreadyExists = index }
+            }
+          })
+          if (alreadyExists !== 0) {
+            const updated = [...prevFiles]
+            updated[alreadyExists] = obj
+            return updated
+          }
+          return [...prevFiles, obj]
+        })
+        console.log(selectedFiles)
         const signField = "url"
         updatedField[index][signatureField] = {
           ...updatedField[index][signatureField],
@@ -400,19 +416,83 @@ const CertificateForm = () => {
     const event = { target }
     handleChange(event, fieldName, index)
   }
+
+
+
+  const removeBackground = (image, e, fieldName, index) => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    canvas.width = image.width;
+    canvas.height = image.height;
+    context.drawImage(image, 0, 0);
+
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    // Simple background removal by setting white pixels to transparent
+    for (let i = 0; i < data.length; i += 4) {
+      const red = data[i];
+      const green = data[i + 1];
+      const blue = data[i + 2];
+      if (red > 200 && green > 200 && blue > 200) {
+        data[i + 3] = 0; // Set alpha to 0 (transparent)
+      }
+    }
+
+    context.putImageData(imageData, 0, 0);
+
+    const processedImage = new window.Image();
+    processedImage.src = canvas.toDataURL();
+    processedImage.onload = () => {
+      console.log("Image processed")
+    };
+
+    // Convert canvas content to Blob
+    canvas.toBlob(function (blob) {
+      // Create a File object from Blob
+      const result = new File([blob], 'processed-image.png', { type: 'image/png' });
+      const event = { target: { files: [result], name: e.target.name } }
+      handleFileChange(event, fieldName, index)
+    })
+  };
+
+  const bgremove = async (e, fieldName, index) => {
+    let file;
+    if (!(e.target.value == "[object File]")) {
+      const response = await fetch(`${apiUrl}/proxy-image?url=${e.target.value}`)
+      const b = await response.blob()
+      file = new File([b], "image/png")
+    } else {
+      file = formData.signatures[index].url.url
+    }
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = function () {
+      const img = new window.Image();
+      img.src = reader.result;
+      img.onload = () => {
+        removeBackground(img, e, fieldName, index);
+      };
+    };
+  }
+
+
+
+
   const addField = (fieldName) => {
     if (fieldName === 'signatures') {
       setFormData((prevData) => ({
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
+          { name: { name: " ", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: " ", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
         ],
       }));
     } else if (fieldName === 'logos') {
       setFormData((prevData) => ({
         ...prevData,
-        [fieldName]: [...prevData[fieldName], { url: "", height: 80, width: 80 }],
+        [fieldName]: [...prevData[fieldName], { url: " ", height: 80, width: 80 }],
       }));
     } else {
       setFormData((prevData) => ({
@@ -437,6 +517,7 @@ const CertificateForm = () => {
     try {
       const form = document.getElementById("form")
       const formdata = new FormData(form)
+      selectedFiles.forEach((file) => { for (const key in file) { formdata.append(key, file[key]) } })
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/content/${eventId}`,
         {
@@ -444,7 +525,7 @@ const CertificateForm = () => {
           // headers: {
           //   'Content-Type': 'multipart/form-data'
           // },
-          
+
           credentials: 'include',
           body: formdata,
         }
@@ -471,19 +552,10 @@ const CertificateForm = () => {
 
 
   const fontsizeopt = []
-  for (let i = 6; i <= 40; i = i + 2) {
+  for (let i = 6; i <= 60; i = i + 2) {
     fontsizeopt.push(i)
   }
-  const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari"]
-  // const fontColoropt = ["black", "red", "green", "yellow", "purple", "orange", "blue", "gold"]
-
-  const [modal1IsOpen, setModal1IsOpen] = useState(false);
-  const openModal1 = () => setModal1IsOpen(true);
-  const closeModal1 = () => setModal1IsOpen(false);
-
-  const [modal2IsOpen, setModal2IsOpen] = useState(false);
-  const openModal2 = () => setModal2IsOpen(true);
-  const closeModal2 = () => setModal2IsOpen(false);
+  const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari","Ingrid Darling","Grey Qo","Kings","Ole","Rubik Maze","Rubik Burned","Rubik Marker Hatch","Rubik Microbe","Blaka Ink","Noto Serif Grantha","Rubik Spray Paint","Rubik Wet Paint","Finger Paint","Rubik Bubbles","Oleo Script","Neuton","Merienda","Concert One","Permanent Marker","Abril Fatface","Rowdies","Lobster","Pacifico","Anton SC","Ga Maamli","Libre Baskerville", "Libre Baskerville","Merriweather","Roboto Slab","Roboto","Oswald"]
   return (
     <Flex
       style={{
@@ -583,10 +655,10 @@ const CertificateForm = () => {
                             placeholder='Color eg. red'>
                           </Input>
                           <HStack>
-                            <Checkbox name={`title[${index}].bold`} isChecked={title.bold == "bold" ? true : false} onChange={(e) => handleChangeStyle(e, 'title', index)}>
+                            <Checkbox name={`title[${index}].bold`} value={title.bold} isChecked={title.bold == "bold" ? true : false} onChange={(e) => handleChangeStyle(e, 'title', index)}>
                               Bold
                             </Checkbox>
-                            <Checkbox name={`title[${index}].italic`} isChecked={title.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'title', index)}>
+                            <Checkbox name={`title[${index}].italic`} value={title.italic} isChecked={title.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'title', index)}>
                               Italic
                             </Checkbox></HStack></VStack>
                         <HexAlphaColorPicker
@@ -651,14 +723,14 @@ const CertificateForm = () => {
                     placeholder="Logo"
                     width="100%"
                   />
-                  <label style={{height:"30px", width:"30px"}} className="tw-flex tw-flex-col tw-justify-center tw-ml-2" htmlFor={`logo${index}`}><FaUpload style={{height:"25px", width:"25px"}} /></label>
+                  <label style={{ height: "30px", width: "30px" }} className="tw-flex tw-flex-col tw-justify-center tw-ml-2" htmlFor={`logo${index}`}><FaUpload style={{ height: "25px", width: "25px" }} /></label>
                   <Input
                     id={`logo${index}`}
                     name={`logos[${index}].url`}
                     onChange={(e) => handleFileChange(e, 'logos', index)}
                     type='file'
                     accept='image/jpeg , image/png'
-                    style={{width:"0px",height:"0px",margin:"0px",padding:"0px"}}
+                    style={{ width: "0px", height: "0px", margin: "0px", padding: "0px" }}
                   />
                   <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="black" height="30px" width="30px" justifyContent="center" /></AccordionButton>
 
@@ -765,10 +837,10 @@ const CertificateForm = () => {
                             placeholder='Color eg. red'>
                           </Input>
                           <HStack>
-                            <Checkbox name={`header[${index}].bold`} isChecked={header.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
+                            <Checkbox name={`header[${index}].bold`} value={header.bold} isChecked={header.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
                               Bold
                             </Checkbox>
-                            <Checkbox name={`header[${index}].italic`} isChecked={header.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
+                            <Checkbox name={`header[${index}].italic`} value={header.italic} isChecked={header.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
                               Italic
                             </Checkbox></HStack></VStack>
                         <HexAlphaColorPicker
@@ -832,10 +904,10 @@ const CertificateForm = () => {
                             onChange={(e) => handleChange(e, 'certificateOf', null)}
                             placeholder='Color eg. red'>
                           </Input>
-                          <HStack><Checkbox name={`certificateOf.bold`} isChecked={formData.certificateOf.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
+                          <HStack><Checkbox name={`certificateOf.bold`} value={formData.certificateOf.bold} isChecked={formData.certificateOf.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
                             Bold
                           </Checkbox>
-                            <Checkbox name={`certificateOf.italic`} isChecked={formData.certificateOf.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
+                            <Checkbox name={`certificateOf.italic`} value={formData.certificateOf.italic} isChecked={formData.certificateOf.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
                               Italic
                             </Checkbox></HStack>
                         </VStack>
@@ -899,10 +971,10 @@ const CertificateForm = () => {
                             onChange={(e) => handleChange(e, 'body', null)}
                             placeholder='Color eg. red'>
                           </Input>
-                          <HStack><Checkbox name={`body.bold`} isChecked={formData.body.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
+                          <HStack><Checkbox name={`body.bold`} value={formData.body.bold} isChecked={formData.body.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
                             Bold
                           </Checkbox>
-                            <Checkbox name={`body.italic`} isChecked={formData.body.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
+                            <Checkbox name={`body.italic`} value={formData.body.italic} isChecked={formData.body.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
                               Italic
                             </Checkbox></HStack>
                         </VStack>
@@ -969,10 +1041,10 @@ const CertificateForm = () => {
                           onChange={(e) => handleChange(e, 'signatures', index)}
                           placeholder='Color eg. red'>
                         </Input>
-                        <HStack><Checkbox name={`signatures[${index}].name.bold`} isChecked={signature.name.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
+                        <HStack><Checkbox name={`signatures[${index}].name.bold`} value={signature.name.bold} isChecked={signature.name.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
                           Bold
                         </Checkbox>
-                          <Checkbox name={`signatures[${index}].name.italic`} isChecked={signature.name.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
+                          <Checkbox name={`signatures[${index}].name.italic`} value={signature.name.italic} isChecked={signature.name.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
                             Italic
                           </Checkbox>
                         </HStack>
@@ -1030,10 +1102,10 @@ const CertificateForm = () => {
                           onChange={(e) => handleChange(e, 'signatures', index)}
                           placeholder='Color eg. red'>
                         </Input>
-                        <HStack><Checkbox name={`signatures[${index}].position.bold`} isChecked={signature.position.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
+                        <HStack><Checkbox name={`signatures[${index}].position.bold`} value={signature.position.bold} isChecked={signature.position.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
                           Bold
                         </Checkbox>
-                          <Checkbox name={`signatures[${index}].position.italic`} isChecked={signature.position.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
+                          <Checkbox name={`signatures[${index}].position.italic`} value={signature.position.italic} isChecked={signature.position.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
                             Italic
                           </Checkbox>
                         </HStack>
@@ -1053,27 +1125,39 @@ const CertificateForm = () => {
                       value={signature.url.url}
                       onChange={(e) => handleChange(e, 'signatures', index)}
                       placeholder="URL"
-
+                      width="0px"
+                      style={{ display: "none" }}
                     />
-                    <label style={{height:"30px", width:"30px"}} className="tw-flex tw-flex-col tw-justify-center tw-ml-2" htmlFor={`signature${index}`}><FaUpload style={{height:"25px", width:"25px"}} /></label>
-                    <input
-                    id={`signature${index}`}
-                    name={`signatures[${index}].url.url`}
-                    onChange={(e) => handleFileChange(e, 'signatures', index)}
-                    type='file'
-                    accept='image/jpeg , image/png'
-                    style={{width:"0px",height:"0px",margin:"0px",padding:"0px"}}
-                  />
+                    <Text className='tw-w-full tw-pl-3'>Signature Upload: </Text>
+                    <Signaturemodal
+                      eventId={eventId}
+                      formData={formData}
+                      setFormData={setFormData}
+                      index={index}
+                      handleFileChange={handleFileChange}
+                      signatures={formData.signatures}
+                      signature={signature}
+                      handleChange={handleChange}
+                    />
                     <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
                     <AccordionPanel>
-                      <HStack width="40%"><Text>Size:</Text>
+                      <HStack width="100%"><Text>Size:</Text>
                         <Input
                           name={`signatures[${index}].url.size`}
                           value={signature.url.size}
                           onChange={(e) => handleChange(e, 'signatures', index)}
                           placeholder="Size"
                           type="number">
-                        </Input></HStack>
+                        </Input>
+                        <Button
+                          type="button"
+                          name={`signatures[${index}].url.url`}
+                          onClick={(e) => bgremove(e, 'signatures', index)}
+                          value={signature.url.url}
+                          style={{ color:'black' , width:"500px"}}
+                        >Remove Backgound</Button>
+
+                      </HStack>
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>

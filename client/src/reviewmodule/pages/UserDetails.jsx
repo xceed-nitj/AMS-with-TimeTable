@@ -29,6 +29,7 @@ const UserRegistration = () => {
     email: '',
     phone: '',
     password:'',
+    isFirstLogin : false,
   });
 
   const toast = useToast();
@@ -58,9 +59,9 @@ const UserRegistration = () => {
     try {
       console.log(formValues)
       const response = await fetch(
-        `${apiUrl}/auth/register`,
+        `${apiUrl}/auth/update`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json"
           },
@@ -70,12 +71,11 @@ const UserRegistration = () => {
       );
       const data = await response.json();
       if (response.ok) {
-        axios.post(`${apiUrl}/auth/verify`, {email : formValues.email});
-        localStorage.setItem('formValues', JSON.stringify(formValues));
-        window.location.href = `/prm/emailverification`;
+        window.location.href = `/prm/home`;
       } else {
         toast({
           title: data.message,
+          description: "Please try again later",
           status: "error",
           duration: 6000,
           isClosable: true,

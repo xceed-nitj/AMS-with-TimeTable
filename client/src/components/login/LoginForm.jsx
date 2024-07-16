@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useLocation, useNavigate } from "react-router-dom";
 import FormHeader from './FormHeader'
 import getEnvironment from '../../getenvironment'
+import axios from 'axios'
 import {
   Button,
   Input,
@@ -19,7 +20,9 @@ const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false)
   const apiUrl = getEnvironment()
   const navigate = useNavigate();
-
+  const [formValues, setFormValues] = useState({
+    email:''
+  });
 
   const handleForgotPassword = () => {
     // Navigate to the current URL with an additional path segment
@@ -29,7 +32,7 @@ const LoginForm = () => {
   const handleSubmit = async (e) => {
     setIsLoading(true)
     e.preventDefault()
-
+    formValues.email = email;
     const userData = { email, password }
 
     try {
@@ -42,13 +45,30 @@ const LoginForm = () => {
         credentials: 'include',
       })
 
+      const responseData = await response.json()
+
+      if (typeof responseData.user.isEmailVerified !== 'undefined') {
+        if (!responseData.user.isEmailVerified && responseData.user.role.includes('PRM')) {
+          localStorage.setItem('formValues', JSON.stringify(formValues));
+          navigate('/prm/emailverification');
+          await axios.post(`${apiUrl}/auth/verify`, { email });
+          return;
+        }
+      }
+
+      if (typeof responseData.user.isFirstLogin !== 'undefined') {
+        if (responseData.user.isFirstLogin && responseData.user.role.includes('PRM')) {
+          navigate('/prm/userdetails');
+          return;
+        }
+      }
+
       if (response.ok) {
-        const responseData = await response.json()
-        setMessage(responseData.message)
-        window.location.href = '/userroles'
+        setMessage(responseData.message);
+        window.location.href = '/userroles';
       } else {
-        const errorData = await response.json()
-        setMessage(`Login failed: ${errorData.message}`)
+        const errorData = await response.json();
+        setMessage(`Login failed: ${errorData.message}`);
       }
     } catch (error) {
       console.error('An error occurred', error)

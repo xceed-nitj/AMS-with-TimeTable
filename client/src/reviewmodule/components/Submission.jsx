@@ -24,6 +24,7 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
   const [paper, setPaper] = useRecoilState(paperState);
   const eventId = paper.eventId;
   const [userId, setUserId] = useState('');
+  const [papers, setPapers] = useState([]);
   useEffect(() => {
     const postItem = async () => {
       if (currentIndex < paper.pseudo_authors.length) {
@@ -90,80 +91,112 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
       };
       fetchUser();
   }, [apiUrl]);
+  useEffect(() => {
+    const fetchPapers = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/reviewmodule/paper/duplicheck/${paper.eventId}`);
+        setPapers(response.data);
+      } catch (error) {
+        console.error('Error fetching papers:', error);
+      }
+    };
+    fetchPapers();
+  }, []);
   const handleSubmit = async ()=>{
-    var form_data = new FormData();
-    for ( var key in paper ) {
-        //console.log(key,":",paper[key]);
-        if (key === "paperUploads"){
-          //console.log('file==>',paper[key][0].name);
-          form_data.append('pdfFile', paper[key][0], paper[key][0].name);
-        }else if(key === "codeUploads"){
-          //console.log('file==>',paper[key][0].name);
-          form_data.append('codeFile', paper[key][0], paper[key][0].name);
-        }else if(key==="authors") {
-          for (var i = 0; i < paper[key].length; i++) {
-            form_data.append('authors[]', paper[key][i]);
-          }
-        }else if(key==="pseudo_authors"){
-          form_data.append('pseudo_authors', JSON.stringify(paper.pseudo_authors));
-        }else{
-          form_data.append(key, paper[key]);
-        }
-    }
-    console.log(userId);
-    form_data.append("user",userId);
+    //console.log(papers);
+    const paperTitle = paper.title; // Replace with the actual title you're looking for
+    const authorsToMatch = paper.authors; // Add your list of authors here
 
-    //console.log("paper details below=====>,");
-    //console.log(paper);
-    setIsLoading(true);
-    try {
-      const response = await axios.post(`${apiUrl}/reviewmodule/paper/addpaper/${eventId}`, form_data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      const urlcode = await response.data.codelink;
-      const urlpaper = await response.data.paperlink;
-      console.log("url for paper: ",urlpaper,"\nurl for code: ", urlcode);
-      //console.log(response);
-      toast({
-        title: 'Upload successful.',
-        description: response.data.message || 'Paper has been uploaded.',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-      //this is the data of the file below 👇
-      //const show = await axios.get(`${apiUrl}/reviewmodule/${url}`);
-      /*await axios(`${apiUrl}/reviewmodule/uploads/${url}`, {
-        method: "GET",
-        responseType: "blob"
-        //Force to receive data in a Blob Format
-      })
-        .then(response => {
-          //Create a Blob from the PDF Stream
-          const file = new Blob([response.data], {
-            type: "application/pdf"
-          });
-          //Build a URL from the file
-          const fileURL = URL.createObjectURL(file);
-          //Open the URL on new Window
-          window.open(fileURL);
+    const matchingPapers = papers.filter(paper => paper.title === paperTitle);
+    console.log("Papers with matching title:", matchingPapers);
+
+    const papersWithMatchingAuthors = matchingPapers.filter(p => 
+      p.authors && p.authors.some(author => authorsToMatch.includes(author))
+    );
+    console.log(papersWithMatchingAuthors,paper["title"]);
+    if (papersWithMatchingAuthors.length===0){
+      var form_data = new FormData();
+      for ( var key in paper ) {
+          //console.log(key,":",paper[key]);
+          if (key === "paperUploads"){
+            //console.log('file==>',paper[key][0].name);
+            form_data.append('pdfFile', paper[key][0], paper[key][0].name);
+          }else if(key === "codeUploads"){
+            //console.log('file==>',paper[key][0].name);
+            form_data.append('codeFile', paper[key][0], paper[key][0].name);
+          }else if(key==="authors") {
+            for (var i = 0; i < paper[key].length; i++) {
+              form_data.append('authors[]', paper[key][i]);
+            }
+          }else if(key==="pseudo_authors"){
+            form_data.append('pseudo_authors', JSON.stringify(paper.pseudo_authors));
+          }else{
+            form_data.append(key, paper[key]);
+          }
+      }
+      console.log(userId);
+      form_data.append("user",userId);
+
+      //console.log("paper details below=====>,");
+      //console.log(paper);
+      setIsLoading(true);
+      try {
+        const response = await axios.post(`${apiUrl}/reviewmodule/paper/addpaper/${eventId}`, form_data, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const urlcode = await response.data.codelink;
+        const urlpaper = await response.data.paperlink;
+        console.log("url for paper: ",urlpaper,"\nurl for code: ", urlcode);
+        //console.log(response);
+        toast({
+          title: 'Upload successful.',
+          description: response.data.message || 'Paper has been uploaded.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+        //this is the data of the file below 👇
+        //const show = await axios.get(`${apiUrl}/reviewmodule/${url}`);
+        /*await axios(`${apiUrl}/reviewmodule/uploads/${url}`, {
+          method: "GET",
+          responseType: "blob"
+          //Force to receive data in a Blob Format
         })
-        .catch(error => {
-          console.log(error);
-        });*/
-    } catch (error) {
-      console.error('Upload error:', error);
+          .then(response => {
+            //Create a Blob from the PDF Stream
+            const file = new Blob([response.data], {
+              type: "application/pdf"
+            });
+            //Build a URL from the file
+            const fileURL = URL.createObjectURL(file);
+            //Open the URL on new Window
+            window.open(fileURL);
+          })
+          .catch(error => {
+            console.log(error);
+          });*/
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast({
+          title: 'Upload failed.',
+          description: error.response?.data?.message || 'An error occurred during upload.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }else{
       toast({
-        title: 'Upload failed.',
-        description: error.response?.data?.message || 'An error occurred during upload.',
+        title: 'Cannot Upload similar papers.',
+        description: "A paper with this title and author already exists",
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
-    } finally {
-      setIsLoading(false);
     }
   }
   const handleEditClick = (step) => {
