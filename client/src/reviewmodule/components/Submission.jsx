@@ -157,35 +157,30 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
           duration: 5000,
           isClosable: true,
         });
-        //this is the data of the file below 👇
-        //const show = await axios.get(`${apiUrl}/reviewmodule/${url}`);
-        /*await axios(`${apiUrl}/reviewmodule/uploads/${url}`, {
+        //this is the code to fetch the files
+        /*await axios(`${apiUrl}/reviewmodule/uploads/${urlpaper}`, {
           method: "GET",
           responseType: "blob"
-          //Force to receive data in a Blob Format
         })
           .then(response => {
-            //Create a Blob from the PDF Stream
             const file = new Blob([response.data], {
               type: "application/pdf"
             });
-            //Build a URL from the file
             const fileURL = URL.createObjectURL(file);
-            //Open the URL on new Window
             window.open(fileURL);
           })
           .catch(error => {
             console.log(error);
-          });*/
+          });
       } catch (error) {
         console.error('Upload error:', error);
         toast({
-          title: 'Upload failed.',
+          title: 'Failed to fetch the uploaded files',
           description: error.response?.data?.message || 'An error occurred during upload.',
           status: 'error',
           duration: 5000,
           isClosable: true,
-        });
+        });*/
       } finally {
         setIsLoading(false);
       }

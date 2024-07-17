@@ -58,13 +58,17 @@ function DynamicTable(props) {
                                     {
                                     event.startSubmission?
                                     (isSubmissionEnded(event.paperSubmissionDate) ? (
-                                        <span>Submission Ended</span>
+                                        <Link as={RouterLink} to={`/prm/end`} color="teal.500">
+                                            Submission Ended!
+                                        </Link>
                                     ) : (
                                         <Link as={RouterLink} to={`/prm/${event._id}/author/newpaper`} color="teal.500">
                                             Go to Event
                                         </Link>
                                     ))
-                                    :<span>Submission not yet started</span>
+                                    :<Link as={RouterLink} to={`/prm/end`} color="teal.500">
+                                    Submission not yet started
+                                </Link>
                                     }
                                 </Td>
                             </Tr>

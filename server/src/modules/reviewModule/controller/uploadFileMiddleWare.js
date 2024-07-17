@@ -1,11 +1,15 @@
 const multer = require('multer');
 const path = require("path");
 const fs = require('fs');  // Include the 'fs' module
-/*const storage = multer.diskStorage({
+
+const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const { eventId} = req.body;  // Extract eventId and userId from the request body
-    const userId = req.user.id;
+    const eventId = req.body.eventId;  // Extract eventId from the request body
+    const userId = req.user.id;//if error occurs replace it with req.body.user
     // Define the base path for event and user folders
+    if (!eventId || !userId) {
+      console.log("event id or user id is not valide");
+    }
     const eventFolder = path.join(__dirname, '/uploads', eventId, userId);
     const codeUploadPath = path.join(eventFolder, 'codeupload');
     const paperUploadPath = path.join(eventFolder, 'paperupload');
@@ -34,10 +38,9 @@ const fs = require('fs');  // Include the 'fs' module
     const newFileName = `${originalFileName}_${timestamp}${path.extname(file.originalname)}`;
     cb(null, newFileName);
   },
-});*/
+});
 
-//const upload = multer({storage: storage});
-const upload = multer();
+const upload = multer({ storage: storage });
 
 const fileUploadMiddleware = (req, res, next) => {
   upload.fields([
@@ -50,14 +53,14 @@ const fileUploadMiddleware = (req, res, next) => {
     if (!req.files || (!req.files.pdfFile && !req.files.codeFile)) {
       return res.status(400).send('No files uploaded.');
     }
-    console.log("user::",req.body.user);
+    console.log("user::", req.body.user);
 
     // Attach file information to the request object
     if (req.files.pdfFile) {
-      req.fileName = `${req.body.eventId}/${req.body.user}/paperupload/${req.files.pdfFile[0].originalname}`;
+      req.fileName = `${req.body.eventId}/${req.user.id}/paperupload/${req.files.pdfFile[0].filename}`;
     }
     if (req.files.codeFile) {
-      req.codeName = `${req.body.eventId}/${req.body.user}/codeupload/${req.files.codeFile[0].originalname}`;
+      req.codeName = `${req.body.eventId}/${req.user.id}/codeupload/${req.files.codeFile[0].filename}`;
     }
     req.track = req.body.tracks;
     req.title = req.body.title;

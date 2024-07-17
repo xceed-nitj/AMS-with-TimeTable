@@ -58,7 +58,13 @@ const uploadPaper = async(req, res) => {
         if (check[i].institute === false){
         const subject = "New Paper Uploaded";
         try{
-          const message = `A new paper titled "${title}" has been uploaded.<br>${event.templates.paperAssignment}`;
+          const auth_names = authors.map(item => item.name);
+          const message = `A new paper titled "${title}" has been uploaded.<br>${event.templates.paperAssignment}<br>
+            Paper Details:<br>
+            Id: ${newPaper._id}<br>
+            Title: ${title}<br>
+            Abstract: ${abstract}<br>
+            Authors: ${auth_names}<br>`;
           const attachments=[
             {
               //filename:"title.pdf",
@@ -72,8 +78,15 @@ const uploadPaper = async(req, res) => {
         }
         }else{
           try{
+            const auth_names = authors.map(item => item.name);
             const subject = "You have been added as an author and a New Paper is Uploaded";
-            const message = `A new paper titled "${title}" has been uploaded.<br> ${event.templates.paperAssignment}<br>Your password is 1234, please login to check.`;
+            const message = `A new paper titled "${title}" has been uploaded.<br> ${event.templates.paperAssignment}<br>Your password is 1234,<br>
+            Paper Details:<br>
+            Id: ${newPaper._id}<br>
+            Title: ${title}<br>
+            Abstract: ${abstract}<br>
+            Authors: ${auth_names}<br>
+             please login to check.`;
             const attachments=[
               {
                 //filename:"title.pdf",
