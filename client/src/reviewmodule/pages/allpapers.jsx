@@ -25,6 +25,14 @@ import {
   TableCaption,
   Heading,
   Textarea,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  Checkbox,
 } from "@chakra-ui/react";
 
 function EventPaper() {
@@ -43,6 +51,37 @@ function EventPaper() {
   const eventId = parts[parts.length - 3];
   const [selectedDate, setSelectedDate] = useState(null);
   const day_count = Array.from({ length: 30 }, (_, i) => i + 1);
+  const [showModal, setShowModal] = useState(false);
+  const columnsList = [
+    { header: 'ID', key: '_id', width: 30 },
+    { header: 'Title', key: 'title', width: 30 },
+    { header: 'Authors', key: 'authors', width: 30 },
+    { header: 'Reviewers', key: 'reviewerEmails', width: 30 },
+    { header: 'Status', key: 'status', width: 30 },
+  ];
+
+  const [selectedColumns, setSelectedColumns] = useState(columnsList.map(col => ({ ...col, included: true })));
+
+  const handleCheckboxChange = (index) => {
+    const newColumns = [...selectedColumns];
+    newColumns[index].included = !newColumns[index].included;
+    setSelectedColumns(newColumns);
+  };
+
+  const handleDownload = async (e) => {
+    try {
+      const columnsToSend = selectedColumns.filter(col => col.included)
+      console.log(columnsToSend)
+      const response = await axios.post(`${apiUrl}/reviewmodule/paper/downloadPaper`,{columnsToSend}, {
+        responseType: 'blob', // Important for binary data
+      });
+
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'papers.xlsx');
+    } catch (error) {
+      console.error('Error downloading the file', error);
+    }
+  };
 
   const fetchPapersById = async () => {
     try {
@@ -514,6 +553,31 @@ function EventPaper() {
       
       <Box boxShadow="md" p={6} rounded="md" bg="white">
       <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button>
+      <div>
+      <Button colorScheme="green" onClick={() => setShowModal(true)}>Download</Button>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Select Columns</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {selectedColumns.map((column, index) => (
+              <Checkbox
+                key={column.key}
+                isChecked={column.included}
+                onChange={() => handleCheckboxChange(index)}
+              >
+                {column.header}
+              </Checkbox>
+            ))}
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={handleDownload}>Download</Button>
+            <Button onClick={() => setShowModal(false)}>Cancel</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
       <HStack style={{justifyContent:"center"}}>
         <FormControl width='50%'>
           <Input
