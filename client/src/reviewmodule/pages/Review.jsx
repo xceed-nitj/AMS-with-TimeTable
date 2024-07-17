@@ -93,47 +93,127 @@ const ReviewPage = () => {
 
   const generatePDF = async () => {
     const doc = new jsPDF();
-    
+  
     // Fetch necessary details
-    const eventResponse = await axios.get(`${apiUrl}/reviewmodule/event/${eventId}`);
-    const paperResponse = await axios.get(`${apiUrl}/reviewmodule/paper/getPaperDetail/${paperId}`);
-    const reviewerResponse = await axios.get(`${apiUrl}/reviewmodule/user/getUser/${userId}`);
-    
+    const eventResponse = await axios.get(
+      `${apiUrl}/reviewmodule/event/${eventId}`
+    );
+    const paperResponse = await axios.get(
+      `${apiUrl}/reviewmodule/paper/getPaperDetail/${paperId}`
+    );
+    const reviewerResponse = await axios.get(
+      `${apiUrl}/reviewmodule/user/getUser/${userId}`
+    );
+  
     const eventName = eventResponse.data.name;
     const paperTitle = paperResponse.data.title;
     const reviewerName = reviewerResponse.data.name;
-    
-    // Add content to the PDF
-    doc.text(`Event name: ${eventName}`, 10, 10);
-    doc.text(`Paper title: ${paperTitle}`, 10, 20);
-    doc.text(`Paper ID: ${paperId}`, 10, 30);
-    doc.text(`Reviewer Name: ${reviewerName}`, 10, 40);
-    
+    const paperid = paperResponse.data.paperId;
+  
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const maxTextWidth = pageWidth - 2 * margin;
+  
+    const checkAddPage = () => {
+      if (currentY > pageHeight - margin) {
+        doc.addPage();
+        currentY = margin;
+      }
+    };
+  
+    const eventNameLines = doc.splitTextToSize(
+      `Event name: ${eventName}`,
+      maxTextWidth
+    );
+    const paperTitleLines = doc.splitTextToSize(
+      `Paper title: ${paperTitle}`,
+      maxTextWidth
+    );
+    const reviewerNameLines = doc.splitTextToSize(
+      `Reviewer Name: ${reviewerName}`,
+      maxTextWidth
+    );
+  
+    let currentY = margin;
+    eventNameLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    paperTitleLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    checkAddPage();
+    doc.text(`Paper ID: ${paperid}`, margin, currentY);
+    currentY += 10;
+  
+    reviewerNameLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
     const stripHTMLTags = (str) => {
       const tmp = document.createElement('DIV');
       tmp.innerHTML = str;
       return tmp.textContent || tmp.innerText || '';
     };
-
+  
     // Add review questions and answers
     const reviewData = questions.map((question, index) => [
       `Question ${index + 1}: ${stripHTMLTags(question.question)}`,
-      `Answer: ${stripHTMLTags(answers[question._id]) || ''}`
+      `Answer: ${stripHTMLTags(answers[question._id]) || ''}`,
     ]);
-    
+  
     doc.autoTable({
       head: [['Question', 'Answer']],
       body: reviewData,
-      startY: 50
+      startY: currentY + 10,
+      margin: { left: margin, right: margin },
+      styles: { cellPadding: 2, fontSize: 10 },
+      columnStyles: { 0: { cellWidth: 'wrap' }, 1: { cellWidth: 'auto' } },
+      didDrawPage: (data) => {
+        currentY = data.cursor.y;
+      }
     });
-    
-    doc.text(`Author comments: ${commentsAuthor}`, 10, doc.autoTable.previous.finalY + 10);
-    doc.text(`Editor comments: ${commentsEditor}`, 10, doc.autoTable.previous.finalY + 20);
-    doc.text(`Submitted time: ${submittedTime}`, 10, doc.autoTable.previous.finalY + 30);
-    
+  
+    currentY = doc.autoTable.previous.finalY + 10; // Update currentY after autoTable
+    checkAddPage();
+  
+    // Split author and editor comments to fit within the page width
+    const authorCommentsLines = doc.splitTextToSize(
+      `Author comments: ${commentsAuthor}`,
+      maxTextWidth
+    );
+    const editorCommentsLines = doc.splitTextToSize(
+      `Editor comments: ${commentsEditor}`,
+      maxTextWidth
+    );
+  
+    authorCommentsLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    editorCommentsLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    checkAddPage();
+    doc.text(`Submitted time: ${submittedTime}`, margin, currentY);
+  
     // Save the PDF
     doc.save('review.pdf');
   };
+  
   
   const handleSubmit = () => {
     const reviewData = {
