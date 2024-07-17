@@ -28,6 +28,7 @@
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
+    "jszip": "^3.10.1",
     "mongoose": "^7.6.11",
     "multer": "^1.4.5-lts.1",
     "node": "^21.1.0",

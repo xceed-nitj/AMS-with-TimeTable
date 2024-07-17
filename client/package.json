@@ -28,6 +28,7 @@
     "axios": "^1.6.3",
     "clsx": "^2.0.0",
     "eventsource": "^2.0.2",
+    "file-saver": "^2.0.5",
     "formik": "^2.4.6",
     "framer-motion": "^11.2.10",
     "html2canvas": "^1.4.1",
