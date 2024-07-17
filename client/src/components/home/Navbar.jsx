@@ -73,10 +73,10 @@ export default function Navbar() {
   };
 
 
-const publicPaths = ['/', '/login', '/classrooms', '/timetable'];
+const publicPaths = ['/', '/login', '/classrooms', '/timetable' ];
 
 useEffect(() => {
-  const isPublicPath = publicPaths.includes(location.pathname) || location.pathname.startsWith('/services/');
+  const isPublicPath = publicPaths.includes(location.pathname) || location.pathname.startsWith('/services/') || location.pathname.startsWith('/cm/c/')
 
   if (!isLoading && !isAuthenticated && !isPublicPath) {
     navigate('/login');
