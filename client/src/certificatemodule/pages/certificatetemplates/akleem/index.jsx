@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Bottom from './Bottom';
 import Content from './Content';
 import Top from './Top';
@@ -12,6 +12,10 @@ import getEnvironment from '../../../../getenvironment';
 function Template01() {
   const svgRef = useRef();
   const apiUrl = getEnvironment();
+  const [imageDownloading,setImageDownloading] = useState(false)
+  const [imageDownloaded,setImageDownloaded] = useState(false)
+  const [pdfDownloading,setpdfDownloading] = useState(false)
+  const [pdfDownloaded,setpdfDownloaded] = useState(false)
 
   useEffect(() => {
     const url = window.location.href; // Replace with your URL
@@ -61,33 +65,7 @@ function Template01() {
   //   input.style.height = 'auto';
   //   input.style.width = 'auto';
   // };
-  const handleDownloadImage = async () => {
-    try {
-      const response = await fetch(
-        `${apiUrl}/certificatemodule/certificate/download/image`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
 
-          credentials: 'include',
-          body: JSON.stringify({url: window.location.href }),
-        }
-      );
-      const data = await response.blob();
-      const blob = new Blob([data], { type: 'image/png' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'certificate.' + 'png';
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading:', error);
-      alert('An unexpected error occurred. Please try again later.');
-    }
-  };
   // const handleDownloadPDF = () => {
   //   // const input = document.getElementById('id-card');
   //   const input = document.getElementsByClassName('id-card-class');
@@ -117,8 +95,53 @@ function Template01() {
   //   input.style.height = 'auto';
   //   input.style.width = 'auto';
   // };
+
+
+  const handleDownloadImage = async () => {
+    try {
+      if(imageDownloaded){
+        const ans = confirm("you want to download again")
+        if(!ans){
+          return;
+        }
+      }
+      setImageDownloading(true)
+      const response = await fetch(
+        `${apiUrl}/certificatemodule/certificate/download/image`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          credentials: 'include',
+          body: JSON.stringify({url: window.location.href }),
+        }
+      );
+      const data = await response.blob();
+      const blob = new Blob([data], { type: 'image/png' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'certificate.' + 'png';
+      link.click();
+      URL.revokeObjectURL(url);
+      setImageDownloading(false)
+    } catch (error) {
+      console.error('Error downloading:', error);
+      alert('An unexpected error occurred while downloading image. Please try again later.');
+      setImageDownloading(false)
+    }
+  };
+  
   const handleDownloadPDF = async () => {
     try {
+      if(pdfDownloaded){
+        const ans = confirm("you want to download again")
+        if(!ans){
+          return;
+        }
+      }
       const response = await fetch(`${apiUrl}/certificatemodule/certificate/download/pdf`, {
         method: 'POST',
         headers: {
@@ -137,9 +160,16 @@ function Template01() {
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
+      setpdfDownloading(false)
     } catch (error) {
       console.error('Error downloading the PDF:', error);
+      alert('An unexpected error occurred while downloading pdf. Please try again later.');
+      setpdfDownloading(false)
     }
+  }
+  const handleClick = (type) => {
+    if(type == "image"){setImageDownloaded(true);handleDownloadImage()}
+    else if(type == "pdf"){setpdfDownloaded(true);handleDownloadPDF()}
   }
   return (
     <>
@@ -156,10 +186,10 @@ function Template01() {
           <Bottom />
         </svg>
       </div>
-      <Button onClick={handleDownloadImage} variant="solid" colorScheme="teal">
+      <Button disabled={imageDownloading} onClick={(e)=>{handleClick("image")}} variant="solid" colorScheme="teal">
         Download Image
       </Button>
-      <Button onClick={handleDownloadPDF} variant="outline" colorScheme="teal">
+      <Button disabled={pdfDownloading} onClick={(e)=>{handleClick("pdf")}} variant="outline" colorScheme="teal">
         Download PDF
       </Button>
     </>

@@ -8,6 +8,7 @@ const {upload} = require("../helper/multer.middleware")
 const {convertToObject} = require("../controllers/formDataToObject")
 const {getImagesOfUserByEventId} =require("../controllers/signimagesofuser")
 const { convertCertificateToImage, convertCertificateToPDF} = require("../controllers/convertCertificate")
+const { convertallCertificates} = require("../controllers/convertAllCertificates")
 
 // Route to create a new certificate
 certificateRouter.post("/content/:id", ecmadminRoute, LockStatus, upload.any(),async (req, res) => {
@@ -108,6 +109,7 @@ certificateRouter.delete("/:certificateId", ecmadminRoute, LockStatus, async (re
 // Route to download Certificate
 certificateRouter.post("/download/image",convertCertificateToImage);
 certificateRouter.post("/download/pdf",convertCertificateToPDF);
+certificateRouter.post("/downloadall",convertallCertificates);
 
 
 module.exports = certificateRouter;
