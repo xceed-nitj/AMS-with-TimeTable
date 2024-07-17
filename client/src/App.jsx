@@ -251,6 +251,12 @@ function App() {
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     <Route path="/prm/home" element={<HomePage/>}/>
     <Route path="/prm/register" element={<UserRegistration/>}/>
+    <Route path='/prm/end' element={<ErrorPage 
+                                      message='Paper Submission for this event has ended...' 
+                                      destination='/prm/home'
+                                      destinationName='Paper Review Manager Home'
+                                      animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
+                                      />}></Route>
     <Route path='/prm/*' element={<ErrorPage 
                                       message='The page you are looking for does not exist...' 
                                       destination='/prm/home'

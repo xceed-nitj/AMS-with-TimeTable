@@ -2,6 +2,7 @@ const express = require("express");
 const { findAllPapers,updateDecision,addAuthorbyId ,addReviewer, findEventPaper, findPaper, updatePaper, removeReviewer, findPaperById,findPaperByReviewer,findPaperByAuthor, addAuthor, PaperCountByTrack, dupliCheck } = require("../controller/papers");
 const fileUploadMiddleware = require("../controller/uploadFileMiddleWare");
 const uploadPaper = require("../controller/uploadFile");
+const privateroute = require("../../usermanagement/privateroute");
 const reupload = require("../controller/reupload");
 const router = express.Router();
 const path = require('path');
@@ -21,7 +22,7 @@ router.get("/getPaperDetail/:id",findPaperById);
 router.get("/reviewer/:id", findPaperByReviewer);//to find paper using UserID
 router.get("/author/:id", findPaperByAuthor);//to find paper using UserID
 router.get("/trackcount/:id",PaperCountByTrack);
-router.post("/addpaper/:id", fileUploadMiddleware, uploadPaper); // upload paper
+router.post("/addpaper/:id", privateroute, fileUploadMiddleware, uploadPaper); // upload paper
 router.post('/addReviewer/:id', addReviewer);
 router.patch('/addAuthor/:paperId/:authorId', addAuthorbyId);
 router.post('/addAuthor', addAuthor);
