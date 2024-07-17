@@ -538,7 +538,7 @@ function Participant() {
           },
 
           credentials: 'include',
-          body: JSON.stringify({eventID:eventId}),
+          body: JSON.stringify({eventID:eventId , type:downloadType}),
         }
       );
       const zipBlob = await response.blob();
