@@ -530,7 +530,7 @@ function Participant() {
     }
     try {
       const response = await fetch(
-        `${apiUrl}/certificatemodule/certificate/download/allImages`,
+        `${apiUrl}/certificatemodule/certificate/downloadall`,
         {
           method: 'POST',
           headers: {
@@ -543,7 +543,7 @@ function Participant() {
       );
       const zipBlob = await response.blob();
       console.log(zipBlob)
-      saveAs(zipBlob,"images.zip","application/zip")
+      saveAs(zipBlob,"certificates.zip","application/zip")
     } catch (error) {
       console.error('Error converting SVGs:', error);
     }
