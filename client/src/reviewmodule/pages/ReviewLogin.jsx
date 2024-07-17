@@ -1,23 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
+import { useLocation, useNavigate } from "react-router-dom";
+import getEnvironment from '../../getenvironment';
+import axios from 'axios';
 
 const ReviewLogin = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const apiUrl = getEnvironment()
+  const navigate = useNavigate();
+  const [formValues, setFormValues] = useState({
+    email:''
+  });
   const handleEmailChange = (event) => {
     setEmail(event.target.value);
+    setFormValues({ ...formValues, [event.target.id]: event.target.value });
   };
 
   const handlePasswordChange = (event) => {
     setPassword(event.target.value);
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    // Here you can implement your sign-in logic, e.g., sending the email and password to a server for authentication
-    console.log('Email:', email);
-    console.log('Password:', password);
-  };
+  const handleSubmit = async (e) => {
+    setIsLoading(true)
+    e.preventDefault()
+
+    const userData = { email, password }
+
+    try {
+      const response = await fetch(`${apiUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+        credentials: 'include',
+      })
+
+      const data = await response.json();
+      console.log(data)
+      if(!data.user.isEmailVerified){
+        axios.post(`${apiUrl}/auth/verify`, {email : email});
+        localStorage.setItem('formValues', JSON.stringify(formValues));
+        window.location.href = '/prm/emailverification'
+      }else if (response.ok) {
+        window.location.href = '/prm/home'
+      } else {
+        const errorData = await response.json()
+        setMessage(`Login failed: ${errorData.message}`)
+      }
+    } catch (error) {
+      console.error('An error occurred', error)
+      setMessage('An error occurred. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="tw-flex tw-items-center tw-justify-center tw-h-screen">

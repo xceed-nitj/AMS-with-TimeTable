@@ -23,8 +23,8 @@ exports.register = async (req, res, next) => {
 
   const existingUser = await User.findOne({email:email})
   if(existingUser!==null){
-    if(existingUser.name === email){
-      return res.status(400).json({message: "Try forgot password, User already exists"})
+    if(existingUser.email.includes(email)){
+      return res.status(400).json({message: "User already exists, use forgot password to reset your password"})
     }
   }
 
@@ -47,6 +47,8 @@ exports.register = async (req, res, next) => {
           email: email,
           password: hash,
           role:roles,
+          isEmailVerified:false,
+          isFirstLogin: false,
         });
 
         // Generate a JWT token
@@ -65,7 +67,7 @@ exports.register = async (req, res, next) => {
           maxAge: maxAge * 1000,
         });
 
-        const otp = await sendOTP(email);
+        // const otp = await sendOTP(email);
         res.status(201).json({
           message: "User successfully created",
           user,
@@ -87,6 +89,8 @@ exports.register = async (req, res, next) => {
 
 //verifying otp entered
 exports.verification = async(req,res)=>{
+  const sendotp = await sendOTP(req.body.email);
+  console.log(sendotp)
   try {
     const {email,otp} = req.body;
     const validOTP = await OTP.findOne({ email, otp });
@@ -99,7 +103,14 @@ exports.verification = async(req,res)=>{
     }
 
     await OTP.deleteOne({ email, otp }); 
-
+    const update = {
+      $set: { isEmailVerified: true }
+    };
+    const user = await User.findOneAndUpdate(
+      {email: email}, 
+      update, 
+      { returnOriginal: false }
+    )
     res.status(200).json({
       success: true,
       message: "Email verified successfully",
@@ -180,7 +191,8 @@ exports.login = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
+    const updatebody = req.body;
+    const { email, password } = req.body;
 
     // Verify if the email is present
     if (!email) {
@@ -195,21 +207,18 @@ exports.update = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update user details
-    if (password) {
-      // Update password if provided
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    updatebody.password = hashedPassword;
 
-    if (role) {
-      // Update role if provided
-      // Verify if the role is valid
-      user.role = role;
-    }
+
+    const newUser = await User.findOneAndUpdate(
+      {email: email},
+      updatebody,
+      { returnOriginal: false },
+    )
 
     // Save the updated user
-    await user.save();
+    await newUser.save();
 
     return res.status(201).json({ message: "Update successful", user });
   } catch (error) {

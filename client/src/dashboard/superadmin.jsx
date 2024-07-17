@@ -29,7 +29,7 @@ const SuperAdminPage = () => {
         </GridItem>
         <GridItem>
           <Box bg="teal.200" p={6} borderRadius="md" textAlign="center">
-            <Link as={RouterLink} to="/register" color="white" fontSize={{ base: "xl", md: "2xl" }}>User Management</Link>
+            <Link as={RouterLink} to="/usermanagement" color="white" fontSize={{ base: "xl", md: "2xl" }}>User Management</Link>
           </Box>
         </GridItem>
         <GridItem>

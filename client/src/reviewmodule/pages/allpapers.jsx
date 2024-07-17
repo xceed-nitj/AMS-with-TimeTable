@@ -6,10 +6,11 @@ import Header from "../../components/header";
 import { useToast } from '@chakra-ui/react';
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
+  Flex,
   Text,
-  Select,
+  Select, HStack,
   Menu,
-  MenuButton,
+  MenuButton, FormControl, Input,
   MenuList,
   MenuItem,
   Button,
@@ -30,7 +31,10 @@ function EventPaper() {
   const [reviewers, setReviewers] = useState([]);
   const [papers, setPapers] = useState([]); // State to store papers
   const [editorComments, setEditorComments] = useState({});
-const [selectedDecisions, setSelectedDecisions] = useState({});
+  const [selectedDecisions, setSelectedDecisions] = useState({});
+  const [searchQuery2, setSearchQuery2] = useState()
+  const [authorDictionary,setAuthorDictionary] = useState()
+  console.log('authors are', authorDictionary)
   const apiUrl = getEnvironment();
   const toast = useToast();
   const navigate = useNavigate();
@@ -40,48 +44,74 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
   const [selectedDate, setSelectedDate] = useState(null);
   const day_count = Array.from({ length: 30 }, (_, i) => i + 1);
 
-  useEffect(() => {
-    const fetchPapersById = async () => {
-      try {
-        const response = await fetch(
-          `${apiUrl}/api/v1/reviewmodule/paper/${eventId}`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Fetched papers data:", data);
-          setPapers(data); // Set the fetched data to state
-        } else {
-          console.error("Error fetching papers:", response.statusText);
+  const fetchPapersById = async () => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/reviewmodule/paper/${eventId}`,
+        {
+          method: "GET",
+          credentials: "include",
         }
-      } catch (error) {
-        console.error("Error fetching papers:", error);
+      );
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Fetched papers data:", data);
+        setPapers(data); // Set the fetched data to state
+        fetchAuthorNames(data)
+      } else {
+        console.error("Error fetching papers:", response.statusText);
       }
-    };
-    const fetchReviewersById = async () => {
-      try {
-        const response = await fetch(
-          `${apiUrl}/api/v1/reviewmodule/event/getReviewerInEvent/${eventId}`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-        if (response.ok) {
-          const data2 = await response.json();
-          console.log("Fetched reviewer data:", data2);
-          setReviewers(data2); // Set the fetched data to state
-        } else {
-          console.error("Error fetching reviewers:", response.statusText);
+    } catch (error) {
+      console.error("Error fetching papers:", error);
+    }
+  };
+  const fetchReviewersById = async () => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/reviewmodule/event/getReviewerInEvent/${eventId}`,
+        {
+          method: "GET",
+          credentials: "include",
         }
-      } catch (error) {
-        console.error("Error fetching reviewers:", error);
+      );
+      if (response.ok) {
+        const data2 = await response.json();
+        console.log("Fetched reviewer data:", data2);
+        setReviewers(data2); // Set the fetched data to state
+      } else {
+        console.error("Error fetching reviewers:", response.statusText);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching reviewers:", error);
+    }
+  };
 
+  const fetchAuthorNames = async(dataset)=>{
+    let authorNames = {}
+    dataset.forEach(async(d)=>{
+      if(d.authors.length) d.authors.forEach(async(a)=>{
+        if((!authorNames.hasOwnProperty(a))){
+          const response = await axios.get(`${apiUrl}/reviewmodule/user/getUser/${a}`)
+          if(response.status==200 && response.data.name){
+            authorNames[a] = response.data.name
+            // console.log('update is', authorNames)
+            setAuthorDictionary(authorNames)
+          }
+        }
+      })
+    })
+    // setAuthorDictionary(authorNames)
+  }
+
+  // useEffect(()=>{
+  //   // const fn = async()=>{
+  //   //   await fetchAuthorNames(papers)
+  //   // }
+  //   // fn()
+  //   fetchAuthorNames(papers)
+  // },[])
+
+  useEffect(() => {
     fetchPapersById();
     fetchReviewersById();
   }, [apiUrl, eventId]);
@@ -150,6 +180,7 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
         position: 'bottom',
       });
     }
+    fetchPapersById();
   }
   const handlesubmit = async (paper_id,reviewer_email)=>{
     console.log("function is called: ",paper_id,reviewer_email);
@@ -189,6 +220,7 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       });
       
     }
+    fetchPapersById();
   }
   const handleEditorCommentsChange = (paperId, value) => {
     setEditorComments((prevComments) => ({
@@ -201,6 +233,17 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       const response = await axios.get(`${apiUrl}/reviewmodule/review/get/${eventId}/${paperId}`);
       if (response.data && response.data.length > 0) {
         return response.data[0].commentsAuthor;
+      }
+    } catch (error) {
+      console.error('Error fetching review comments:', error);
+      return null;
+    }
+  };
+  const fetchReviewDecision = async (eventId, paperId) => {
+    try {
+      const response = await axios.get(`${apiUrl}/reviewmodule/review/get/${eventId}/${paperId}`);
+      if (response.data && response.data.length > 0) {
+        return response.data;
       }
     } catch (error) {
       console.error('Error fetching review comments:', error);
@@ -251,120 +294,239 @@ const [selectedDecisions, setSelectedDecisions] = useState({});
       });
     }
   };
+
+  function filterFn2(dataset) {
+    return !searchQuery2 ? dataset : dataset.filter((d)=>{
+      console.log('iteration is', d)
+      let query = searchQuery2.toLowerCase()
+      console.log('length of this is',
+        d.reviewers.filter(r=>{
+          console.log('checking', r)
+          return String(r.username).toLowerCase().includes(query)
+        }).length
+      )
+      return (
+        String(d.title).toLowerCase().includes(query) ||
+        String(d.status).toLowerCase().includes(query) ||
+        String(d.paperId).toLowerCase().includes(query) ||
+        (
+          d.reviewers.filter(r=>{
+            return String(r.username).toLowerCase().includes(query)
+          }).length
+        )
+        ||
+        (
+          d.authors.filter((aa)=>{
+            return String(authorDictionary[aa]).toLowerCase().includes(query)
+          }).length
+        )
+      )
+    })
+  }
+
+  function ReviewerDecision(props) {
+    const [rf, setRF] = useState('Pending...')
+    useEffect(()=>{
+      const fn = async()=>{
+        const res = await fetchReviewDecision(eventId, props.paperId)
+        if(res) res.forEach(r=>{
+          if(r.reviewerId == props.reviewerId) setRF(r.decision)
+        })
+      }
+      fn()
+    })
+    return (
+      <span>{rf}</span>
+    )
+  }
+  
+  function ReviewerTable(props) {
+    const [searchQuery, setSearchQuery] = useState()
+    
+    function filterFn(dataset) {
+      return !searchQuery ? dataset: dataset.filter((d)=> d.toLowerCase().reviewer.email[0].includes(searchQuery.toLowerCase()))
+    }
+
+    return (
+      <>
+        <HStack justifyContent={'space-between'}>
+        <Menu>
+          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} colorScheme="blackAlpha">
+            Assign Reviewer
+          </MenuButton>
+          <MenuList>
+            {filterFn(reviewers).map((reviewer)=>(
+              //fixed the assign reviewer button for those users, not having a name value
+              <MenuItem  onClick={()=>handlesubmit(props.paper._id,reviewer.email[0])} minH='48px'>
+                <span>{reviewer.email[0]}</span>
+              </MenuItem>
+            ))}
+          </MenuList>
+        </Menu>
+        <FormControl width='50%'>
+          <Input
+          placeholder='search'
+          value={searchQuery}
+          onChange={(e)=>setSearchQuery(e.target.value)}
+          style={{textAlign:'center', border:'1px solid gray'}}
+          />
+        </FormControl>
+        </HStack>
+        <Table colorScheme="blue" variant={'striped'}>
+          <Tr>
+            <Th style={{textWrap: 'nowrap'}} >Username</Th>
+            <Th style={{textWrap: 'nowrap'}} >Decision</Th>
+            <Th style={{textWrap: 'nowrap'}} >Due Date</Th>
+            <Th style={{textWrap: 'nowrap'}} >Completed On</Th>
+            <Th style={{textWrap: 'nowrap'}} >Comments</Th>
+          </Tr>
+        {props.paper.reviewers.map((r,kk)=>(
+          <Tr key={kk}>
+            <Td>
+              <Text>{r.username}</Text>
+              <Flex justifyContent={'center'}>
+              <Link to={'/prm/'+r._id+'/profile'}>
+                <Button colorScheme="blue">Profile</Button>
+              </Link>
+              {
+                r.completedDate?'':
+              <Button colorScheme="red" onClick={()=>handledelete(props.paper._id,r.userId)}>Delete</Button>
+              }
+              </Flex>
+            </Td>
+            <Td>
+              <Text mt={4}>
+                <ReviewerDecision reviewerId={r.userId} paperId={props.paper._id} />
+              </Text>
+            </Td>
+            <Td>
+              <Select
+                placeholder="Assign Due Date"
+                onChange={(e) => handleSelection(e.target.value,props.paper._id,r.userId)}
+                width='100px'
+              >
+                {day_count.map((day,k) => (
+                  <option key={k} value={day}>
+                    {day} {day === 1 ? 'day' : 'days'}
+                  </option>
+                ))}
+              </Select>
+              {r.dueDate && (
+                <Text mt={4}>
+                    {new Date(r.dueDate).toLocaleDateString()}
+                </Text>
+              )}
+              {!r.dueDate && (
+                <Text mt={4}>
+                  {"NO DUE DATE"}
+                </Text>
+              )}
+            </Td>
+            <Td>
+              {r.completedDate ? (
+                <Text mt={4}>
+                    {new Date(r.completedDate).toLocaleDateString()}
+                </Text>
+              ):
+              <Text>Pending...</Text>}
+              
+            </Td>
+            <Td> 
+            {
+              r.completedDate?
+                <Link style={{textDecoration:'underline', color: '#00acc1', textWrap:"nowrap"}} 
+                to={window.location.pathname.split('editor/papers')[0]+props.paper._id+'/'+r.userId+'/Review'}>
+                  Comments
+                </Link>:
+                <Text style={{textWrap:'nowrap'}}>Pending...</Text>
+            }
+            </Td>
+          </Tr>
+        ))}
+        </Table>
+      </>
+    )
+  }
+
+  function MainTable(props) {
+    return (
+      <>
+       <Table variant="striped">
+          <TableCaption>Papers for Event ID: {eventId}</TableCaption>
+          <Thead>
+            <Tr>
+              <Th textAlign={'center'}>ID</Th>
+              <Th textAlign={'center'}>Title</Th>
+              <Th textAlign={'center'}>Authors</Th>
+              <Th textAlign={'center'}>Version</Th>
+              <Th textAlign={'center'}>Reviewers</Th>
+              <Th textAlign={'center'}>Status</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {props.papers.map((paper) => (
+              <Tr key={paper._id}>
+                <Td>{paper.paperId}</Td>
+                <Td>
+                  <Link style={{textDecoration:'underline', color: '#00acc1'}} 
+                    to={window.location.pathname.split('editor/papers')[0]+paper._id+'/summary'}>
+                      {paper.title}
+                  </Link>
+                </Td>
+                <Td>{paper.authors.map((author, k)=>(<Text key={k}>{props.authors?props.authors[author]:'Loading'}</Text>))}</Td>
+                <Td>{paper.version}</Td>
+                <Td>
+                    <ReviewerTable paper={paper} />
+                </Td>
+                <Td>
+                  <Text style={{textWrap:'nowrap'}}><span style={{fontWeight:"600"}}>Status : </span>{paper.status}</Text>
+                  <br />
+                  <Textarea
+                    value={editorComments[paper._id] || ""}
+                    onChange={(e) => handleEditorCommentsChange(paper._id, e.target.value)}
+                    placeholder="Enter editor comments"
+                  /><br /><br />
+                  <Select
+                    placeholder="Select decision"
+                    onChange={(e) => handleFinalDecisionChange(paper._id, e.target.value)}
+                  >
+                    <option value="Reject">Reject</option>
+                    <option value="Accept">Accept</option>
+                    <option value="Major Revision">Major Revision</option>
+                    <option value="Minor Revision">Minor Revision</option>
+                    <option value="Reject and Invited Resubmission">Reject and Invited Resubmission</option>
+                  </Select>
+                  <Button mt={2} colorScheme="blue" onClick={() => handleFinalDecisionSubmit(paper._id)}>
+                    Make Decision
+                  </Button>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </>
+    )
+  }
+
   return (
     <Container maxW="container.xl" p={4}>
       <Header title="Paper Details"></Header>
       
       <Box boxShadow="md" p={6} rounded="md" bg="white">
       <Button width="230px" height="50px" colorScheme="red" onClick={() => navigate(`${location.pathname}/addpaper`)}>Add papers</Button>
-        
-        <Table variant="Strip">
-          <TableCaption>Papers for Event ID: {eventId}</TableCaption>
-          <Thead>
-            <Tr>
-            <Th>ID</Th>
-              <Th>Title</Th>
-              <Th>Authors</Th>
-              <Th>Paper</Th>
-              <Th>Version</Th>
-              <Th>Status</Th>
-              <Th>Review</Th>
-              <Th>Reviewers</Th>
-              <Th>Editor Comments</Th>
-              <Th>Final Decision</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {papers.map((paper) => (
-              <Tr key={paper._id}>
-                <Td>{paper._id}</Td>
-                <Td>{paper.title}</Td>
-                <Td>{paper.authors}</Td>
-                <Td>
-                  <Link to={`/paper/details/${paper._id}`}>
-                    paper link
-                  </Link>
-                </Td>
-                <Td>{paper.version}</Td>
-                <Td>{paper.status}</Td>
-                <Td>
-                  <Menu>
-                    <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                      Assign Reviewer
-                    </MenuButton>
-                    <MenuList>
-                      {reviewers.map((reviewer)=>(
-                        //fixed the assign reviewer button for those users, not having a name value
-                        <MenuItem  onClick={()=>handlesubmit(paper._id,reviewer.email[0])} minH='48px'>
-                          <span>{reviewer.email[0]}</span>
-                        </MenuItem>
-                      ))}
-                    </MenuList>
-                  </Menu>
-                </Td>
-                <Td>
-                  <ol>
-                    {paper.reviewers.map((r)=>(
-                        <li>
-                          <span>username:{r.username},</span><Button  onClick={()=>handledelete(paper._id,r.userId)}>Delete</Button>
-                          <Select
-                            placeholder="Assign Due Date"
-                            onChange={(e) => handleSelection(e.target.value,paper._id,r.userId)}
-                          >
-                            {day_count.map((day) => (
-                              <option key={day} value={day}>
-                                {day} {day === 1 ? 'day' : 'days'}
-                              </option>
-                            ))}
-                          </Select>
-                          {r.dueDate && (
-                            <Text mt={4}>
-                                Due Date: {new Date(r.dueDate).toLocaleDateString()}
-                            </Text>
-                          )}
-                          {!r.dueDate && (
-                            <Text mt={4}>
-                                Due Date: {"NO DUE DATE"}
-                            </Text>
-                          )}
-                          {r.completedDate && (
-                            <Text mt={4}>
-                                Completed On: {new Date(r.completedDate).toLocaleDateString()}
-                            </Text>
-                          )}
-                          <br></br>
-                          <span>userId:{r.userId}</span>
-                        </li>
-                    ))}
-                  </ol>
-                </Td>
-                <Td>
-                <Textarea
-  value={editorComments[paper._id] || ""}
-  onChange={(e) => handleEditorCommentsChange(paper._id, e.target.value)}
-  placeholder="Enter editor comments"
-/>
-                  
-                </Td>
-                <Td>
-  <Select
-    placeholder="Select decision"
-    onChange={(e) => handleFinalDecisionChange(paper._id, e.target.value)}
-  >
-    <option value="Reject">Reject</option>
-    <option value="Accept">Accept</option>
-    <option value="Major Revision">Major Revision</option>
-    <option value="Minor Revision">Minor Revision</option>
-    <option value="Reject and Invited Resubmission">Reject and Invited Resubmission</option>
-  </Select>
-  <Button mt={2} colorScheme="blue" onClick={() => handleFinalDecisionSubmit(paper._id)}>
-    Make Decision
-  </Button>
-</Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
+      <HStack style={{justifyContent:"center"}}>
+        <FormControl width='50%'>
+          <Input
+          placeholder='search'
+          value={searchQuery2}
+          onChange={(e)=>setSearchQuery2(e.target.value)}
+          style={{textAlign:'center', border:'1px solid gray'}}
+          />
+        </FormControl>
+      </HStack>
+        <Box overflowX={'auto'}>
+          <MainTable authors={authorDictionary} papers={filterFn2(papers)} />
+        </Box>
       </Box>
     </Container>
   );

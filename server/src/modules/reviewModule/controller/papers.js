@@ -1,4 +1,5 @@
 const Paper = require("../../../models/reviewModule/paper.js");
+const Reviews = require("../../../models/reviewModule/review.js");
 const express = require("express");
 const bodyParser = require("body-parser");
 const User = require("../../../models/usermanagement/user.js");
@@ -60,10 +61,77 @@ const PaperCountByTrack = async (req, res) => {
       });
     };
     countPapersByTrack(paper);
-    console.log(trackCounts);
+    // console.log(trackCounts);
     return res.status(200).send(trackCounts);
   }
 };
+
+const PaperStatusCount = async (req, res) => {
+  let eventId = req.params.id;
+  const paper = await Paper.find({ eventId: eventId }).exec();
+
+  if (!paper) {
+    return res.status(401).json("Invalid paperId");
+  } else {
+    let accepted = 0;
+    let rejected = 0;
+    let underreview = 0;
+    paper.forEach(pap=> {
+      if(pap.status === "Accepted"){
+        accepted++;
+      }else if(pap.status === "Rejected"){
+        rejected++;
+      }else{
+        underreview++;
+      }
+    });
+    let status = {accepted,rejected,underreview};
+    // console.log(status)
+    return res.status(200).send(status);
+  }
+};
+
+const ReviewsStatusCount = async (req, res) => {
+  let eventId = req.params.id;
+  try {
+    const papers = await Paper.find({ eventId: eventId }).exec();
+    if (!papers || papers.length === 0) {
+      return res.status(404).json({ message: "No papers found for the given eventId" });
+    }
+
+    const paperIds = papers.map(paper => paper._id);
+    const reviews = await Reviews.find({ paperId: { $in: paperIds } }).exec();
+    let completed = 0;
+    let partial = 0;
+    let notReceived = 0;
+
+    const reviewCountMap = reviews.reduce((arr, review) => {
+      arr[review.paperId] = (arr[review.paperId] || 0) + 1;
+      return arr;
+    }, {});
+
+    papers.forEach(paper => {
+      const reviewCount = reviewCountMap[paper._id] || 0;
+      if (paper.reviewers.length !== 0) {
+        if(reviewCount===0){
+          notReceived++;
+        } else if (reviewCount === paper.reviewers.length) {
+          completed++;
+        } else {
+          partial++;
+        }
+      }
+    });
+
+    let status = { completed, partial, notReceived };
+    console.log(status)
+    return res.status(200).json(status);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 const findPaper = async (req, res) => {
   let id = req.params.id;
@@ -91,7 +159,7 @@ const findPaperByAuthor = async (req, res) => {
   let id = req.params.id;
   try{
     const papers = await Paper.find({ 'authors': id })
-                        .select('_id eventId title')
+                        .select('_id eventId title status')
                         .exec();
     if (!papers.length) {
       return res.status(401).json("No papers found for this author");
@@ -110,7 +178,8 @@ const findPaperByAuthor = async (req, res) => {
       _id: paper._id,
       eventId: paper.eventId,
       eventName: eventMap[paper.eventId.toString()],
-      title: paper.title
+      title: paper.title,
+      status: paper.status
                               }));
     return res.status(200).send(papersWithEventNames);
   }catch(err){
@@ -437,7 +506,14 @@ const addAuthorbyId = async (req, res) => {
   }
 };
 
+const dupliCheck = async (req, res) => {
+  try {
+    const papers = await Paper.find({eventId:req.params.id}).select('title authors').exec();
+    res.send(papers);
+  } catch (error) {
+    console.error('Error fetching papers:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
-
-
-module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack};
+module.exports = { findAllPapers, updateDecision,addAuthorbyId,addReviewer, findEventPaper, findPaper , updatePaper, removeReviewer,findPaperById, findPaperByReviewer,findPaperByAuthor , addAuthor, PaperCountByTrack, PaperStatusCount,ReviewsStatusCount,dupliCheck};

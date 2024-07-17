@@ -89,6 +89,7 @@ import DefaultQuestionHome from './reviewmodule/pages/DefaultQuestionHome.jsx';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
 import UserRegistration from './reviewmodule/pages/userRegistration';
 import OTPverification from './reviewmodule/pages/OTPverification.jsx';
+import UserDetails from './reviewmodule/pages/UserDetails.jsx';
 
 // import HomePage from './reviewmodule/pages/Main';
 
@@ -125,6 +126,9 @@ import PrmEdDashboard from './reviewmodule/pages/PrmEdDashboard';
 import Quizzing from './quizModule/student/quizzing/Quizzing';
 // import Instructions from './quizModule/student/Instructions';
 import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
+import UserManagement from './dashboard/userManagement';
+import UserEventRegistration from './certificatemodule/pages/addEvent';
+
 
 function App() {
   return (
@@ -148,6 +152,7 @@ function App() {
         <Route path="/register" element={<RegistrationForm />} />
         <Route path="/userroles" element={<AllocatedRolesPage />} />
         <Route path="/superadmin" element={<SuperAdminPage />} />
+        <Route path="/usermanagement" element={<UserManagement />} />
 
         <Route path="/tt">
           <Route path="dashboard" element={<CreateTimetable />} />
@@ -210,6 +215,7 @@ function App() {
         <Route path="/cm/:eventid/addparticipant" element={<Participant />} />
         <Route path="/cm/c/:eventid/:participantid" element={<Template01 />} />
         <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03 />} />
+        <Route path='/cm/useraddevent' element={< UserEventRegistration/>} />
 
     {/* Review management routes*/}
     <Route path="/prm/login" element={<ReviewLogin/>} />
@@ -217,6 +223,7 @@ function App() {
     <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
     <Route path="/prm/emailverification" element={<OTPverification/>} />
+    <Route path="/prm/userdetails" element={<UserDetails/>} />
     {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
