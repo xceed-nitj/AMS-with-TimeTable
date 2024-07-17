@@ -9,7 +9,7 @@ const Participant = require('../../../models/certificateModule/participant');
 async function convertallCertificatesToImage(req, res) {
     // const { url } = req.body || {};
     const type = "image";
-    const eventID = "66938b189a2a42bb89e94769";
+    const {eventID} = req.body;
     const participantList = await Participant.find({ eventId: eventID })
     const zip = new JSZip();
     const imageFolder = zip.folder('images');
@@ -38,13 +38,17 @@ async function convertallCertificatesToImage(req, res) {
         }
     }
     await browser.close();
+    console.log(imageFolder)
     zip.generateAsync({ type: 'nodebuffer' }).then((content) => {
-        const filePath = path.join(__dirname, 'images.zip');
-        fs.writeFileSync(filePath, content);
-        res.download(filePath, 'images.zip', () => {
-            fs.unlinkSync(filePath);
+        res.set({
+          'Content-Disposition': 'attachment; filename="images.zip"',
+          'Content-Type': 'application/zip',
         });
-    });
+        res.send(content);
+      }).catch(err => {
+        console.error('Error generating zip:', err);
+        res.status(500).send('Error generating zip');
+      });
 }
 
 

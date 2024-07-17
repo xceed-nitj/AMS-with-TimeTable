@@ -3,6 +3,7 @@ import getEnvironment from "../../getenvironment";
 import FileDownloadButton from "../../filedownload/filedownload";
 import { Link as ChakraLink } from '@chakra-ui/react';
 import { useToast } from "@chakra-ui/react";
+import saveAs from 'file-saver';
 
 // import subjectFile from '../assets/subject_template';
 import {
@@ -16,6 +17,7 @@ import {
   UnorderedList,
   Text,
   Center,
+  HStack,
 } from "@chakra-ui/react";
 import {
   CustomTh,
@@ -54,6 +56,7 @@ function Participant() {
   const [duplicateEntryMessage, setDuplicateEntryMessage] = useState("");
   const [addduplicateEntryMessage, addsetDuplicateEntryMessage] = useState("");
   const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false);
+  const [downloadClicked,setDownloadClicked] = useState(false)
 
   const [editedData, setEditedData] = useState({
     name: "",
@@ -66,7 +69,7 @@ function Participant() {
     certiType: "",
     mailId: "",
     eventId: eventId,
-    isCertificateSent:false,
+    isCertificateSent: false,
   });
 
   const [editedSData, setEditedSData] = useState({
@@ -80,8 +83,10 @@ function Participant() {
     certiType: "",
     mailId: "",
     eventId: eventId,
-    isCertificateSent:false,
+    isCertificateSent: false,
   });
+
+  const [downloadType, setDownloadType] = useState(false)
 
   const apiUrl = getEnvironment();
 
@@ -252,7 +257,7 @@ function Participant() {
               certiType: "",
               mailId: "",
               eventId: eventId,
-              isCertificateSent:false,
+              isCertificateSent: false,
             });
           })
           .catch((error) => {
@@ -264,15 +269,15 @@ function Participant() {
   };
 
   const handleMailstatus = (RowId) => {
-    let data={};
+    let data = {};
     if (RowId) {
       console.log(RowId)
       const rowIndex = tableData.findIndex((row) => row._id === RowId);
       console.log(rowIndex)
 
       if (rowIndex !== -1) {
-       
-        data.isCertificateSent=true;
+
+        data.isCertificateSent = true;
         console.log('data to b sent', editedData)
         fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${RowId}`, {
 
@@ -430,7 +435,7 @@ function Participant() {
       certiType: "",
       mailId: "",
       eventId: eventId,
-      isCertificateSent:false,
+      isCertificateSent: false,
 
 
     });
@@ -447,41 +452,41 @@ function Participant() {
     //     `Duplicate entry for "${editedSData.name}" is detected. Kindly delete the entry.`
     //   );
     // } else {
-      fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${eventId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(editedSData),
-        credentials: "include",
+    fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${eventId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(editedSData),
+      credentials: "include",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Error: ${response.status} - ${response.statusText}`
+          );
+
+        }
+        return response.json();
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(
-              `Error: ${response.status} - ${response.statusText}`
-            );
+      .then((data) => {
 
-          }
-          return response.json();
-        })
-        .then((data) => {
-
-          console.log("Data saved successfully:", data);
-          toast({
-            title: 'Data Saved ',
-            description: 'Updated successfully.',
-            status: 'success',
-            duration: 3000,
-            isClosable: true,
-            // position:'middle',
-          });
-          fetchParticipantData();
-          handleCancelAddSubject();
-          addsetDuplicateEntryMessage("");
-        })
-        .catch((error) => {
-          console.error("Error:", error);
+        console.log("Data saved successfully:", data);
+        toast({
+          title: 'Data Saved ',
+          description: 'Updated successfully.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+          // position:'middle',
         });
+        fetchParticipantData();
+        handleCancelAddSubject();
+        addsetDuplicateEntryMessage("");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
     // }
   };
 
@@ -515,6 +520,34 @@ function Participant() {
       }
     }
   };
+
+  const handleChangeType = async (e) => setDownloadType(e.target.value);
+  const handleDownloadAll = async (e) => {
+    if(!downloadType){alert("choose a download type first"); return;}
+    if(downloadClicked){
+      const clicked = confirm("Do you want to download again"); 
+      if(!clicked){return;}
+    }
+    try {
+      const response = await fetch(
+        `${apiUrl}/certificatemodule/certificate/download/allImages`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          credentials: 'include',
+          body: JSON.stringify({eventID:eventId}),
+        }
+      );
+      const zipBlob = await response.blob();
+      console.log(zipBlob)
+      saveAs(zipBlob,"images.zip","application/zip")
+    } catch (error) {
+      console.error('Error converting SVGs:', error);
+    }
+  }
   return (
     <Container maxW='8xl'>
       {/* <Heading as="h1" size="xl" mt="6" mb="6">Add Subject</Heading> */}
@@ -723,9 +756,20 @@ function Participant() {
         )}
       </Box>
       {addduplicateEntryMessage && <p>{addduplicateEntryMessage}</p>}
-      <CustomBlueButton ml='0' width='350px' onClick={handleBatchMail}>
-        send Email to all Participants
-      </CustomBlueButton>
+      <HStack className="tw-flex tw-justify-between">
+        <div className="tw-flex tw-items-center tw-gap-3"><Text>Download all Certificates:</Text>
+          <Select width='350px' placeholder="Select Type" name="downloadType" onChange={e =>{setDownloadClicked(false);handleChangeType(e)}}>
+            <option value="image">Image</option>
+            <option value="pdf">PDF</option>
+          </Select>
+          {downloadType && <CustomBlueButton ml='0' width='350px' onClick={(e)=>{setDownloadClicked(true);handleDownloadAll();}}>
+            Download All Certificates
+          </CustomBlueButton>}
+        </div>
+        <CustomBlueButton ml='0' width='350px' onClick={handleBatchMail}>
+          send Email to all Participants
+        </CustomBlueButton>
+      </HStack>
 
       <TableContainer mt='2'>
         <Text as='b'>Table of Paticipant Data</Text>
@@ -917,11 +961,11 @@ function Participant() {
                   </Td>
                   <Td>
                     <Center>
-                    <Center>
-  {row.isCertificateSent ? "Sent" : "Not sent"}
-</Center>
+                      <Center>
+                        {row.isCertificateSent ? "Sent" : "Not sent"}
+                      </Center>
 
-                       </Center>
+                    </Center>
                   </Td>
 
                   <Td>
