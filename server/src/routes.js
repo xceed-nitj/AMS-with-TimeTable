@@ -36,4 +36,7 @@ v1router.use("/auth", usermanagementModule);
 const newusermanagementModule = require("./modules/usermanagement/routes/index");
 v1router.use("/user", newusermanagementModule);
 
+const platform = require("./platform/routes")
+v1router.use("/platform", platform);
+
 module.exports = v1router;
