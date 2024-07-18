@@ -563,6 +563,7 @@ const CertificateForm = () => {
         // overflowY: 'scroll',
         clipPath: 'content-box',
       }}
+      className='tw-flex tw-flex-col-reverse md:tw-flex-row'
     >
       <Container
         maxW="lg"
@@ -1204,7 +1205,7 @@ const CertificateForm = () => {
           </VStack>
         </form>
       </Container>
-      <Box flex="1" p="4">
+      <Box flex="1" p="4" style={{margin:"0px",padding:"0px"}}>
         <SelectCertficate
           eventId={eventId}
           templateId={formData.templateId}
