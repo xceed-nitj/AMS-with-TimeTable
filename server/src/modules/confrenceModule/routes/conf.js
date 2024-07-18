@@ -4,6 +4,7 @@ const protectRoute =require("../../usermanagement/privateroute")
 
 const router = express.Router();
 const confController = new ConfController();
+const { checkRole } = require("../../checkRole.middleware");
 
 
 // / GET endpoint--> all data conf id
@@ -45,7 +46,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', checkRole(['EO']) ,async (req, res) => {
     try {
         const confObj = req.body;
         await confController.addConf(confObj);
@@ -67,7 +68,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id',checkRole(['EO']), async (req, res) => {
     try {
         const id = req.params.id;
         await confController.deleteConf(id);

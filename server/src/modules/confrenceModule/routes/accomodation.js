@@ -2,6 +2,7 @@ const express = require("express");
 const Accomodation = require("../../../models/conferenceModule/accomodation");
 
 const AccomodationController = require("../crud/accomodation");
+const { checkRole } = require("../../checkRole.middleware");
 
 const accomodationController = new AccomodationController();
 const router = express.Router();
@@ -41,7 +42,7 @@ router.get("/conf/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", checkRole(['EO']),async (req, res) => {
   try {
     const newAccomodation = req.body;
     await accomodationController.addAccomodation(newAccomodation);
@@ -67,7 +68,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", checkRole(['EO']),async (req, res) => {
   try {
     const accomodationId = req.params.id;
     await accomodationController.deleteAccomodation(accomodationId);

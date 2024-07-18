@@ -3,6 +3,7 @@ const CommonTemplatesController = require("../crud/commontemplate"); // Change t
 
 const commontemplatesRouter = express.Router();
 const commontemplatesController = new CommonTemplatesController();
+const { checkRole } = require("../../checkRole.middleware");
 
 // GET /commontemplates/conference/:id
 commontemplatesRouter.get("/conference/:id", async (req, res) => {
@@ -35,7 +36,7 @@ commontemplatesRouter.get("/:id", async (req, res) => {
 });
 
 // POST /commontemplates
-commontemplatesRouter.post("/", async (req, res) => {
+commontemplatesRouter.post("/",checkRole(['EO']), async (req, res) => {
   try {
     await commontemplatesController.createCommonTemplate(req, res);
   } catch (error) {
@@ -55,7 +56,7 @@ commontemplatesRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /commontemplates/:id
-commontemplatesRouter.delete("/:id", async (req, res) => {
+commontemplatesRouter.delete("/:id",checkRole(['EO']), async (req, res) => {
   try {
     await commontemplatesController.deleteCommonTemplate(req, res);
   } catch (error) {
