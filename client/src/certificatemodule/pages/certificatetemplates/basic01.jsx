@@ -60,8 +60,10 @@ const CertificateContent = ({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="841.92"
-      height="595.499987"
+      style={{
+        width: window.outerWidth >= 768 ? "841.9" : window.outerWidth,
+        height: window.outerWidth >= 768 ? "595.5" : "auto"
+    }}
       viewBox="0 0 1122.52 793.7"
       id="svg"
       className="svg-img tw-object-contain"
@@ -145,7 +147,7 @@ const CertificateContent = ({
                 className="tw-flex tw-items-center tw-justify-center "
               >
                 <div style={{ width: `${item.width}px`, height: `${item.height}px` }} className="tw-w-20 tw-shrink-0 tw-mx-6">
-                <img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
+                  <img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (

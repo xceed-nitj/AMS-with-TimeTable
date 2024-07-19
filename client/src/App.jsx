@@ -81,6 +81,7 @@ import CreateUser from './reviewmodule/pages/CreateUser';
 import AddReviewer from './reviewmodule/pages/AddReviewer';
 import Review from './reviewmodule/pages/Review.jsx';
 import PaperSummary from './reviewmodule/pages/PaperSummary.jsx';
+import Forms from './reviewmodule/pages/Forms.jsx';
 import ReviewerQuestion from './reviewmodule/pages/ReviewQuestion';
 import DefaultQuestion from './reviewmodule/pages/DefaultQuestion.jsx';
 import ReviewerQuestionHome from './reviewmodule/pages/ReviewQuestionHome';
@@ -230,6 +231,7 @@ function App() {
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
     <Route path="/prm/:eventId/:paperId/:userId/Review" element={<Review/>}/>
     <Route path="/prm/:eventId/:paperId/summary" element={<PaperSummary/>}/>
+    <Route path="/prm/:eventId/:paperId/Forms" element={<Forms/>}/>
     <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
     <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
     <Route path="/prm/DefaultQuestion" element={<DefaultQuestion/>}/>
