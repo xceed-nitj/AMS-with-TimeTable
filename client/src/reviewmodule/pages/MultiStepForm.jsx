@@ -11,7 +11,7 @@ import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
 import getEnvironment from '../../getenvironment';
 
-import './revolveAnimation.css';
+import './revolveAnimation.css'
 
 function MultiStepForm({ isSidebarOpen }) {
   const [activeStep, setActiveStep] = useState(0); // State to manage active step index
@@ -19,38 +19,28 @@ function MultiStepForm({ isSidebarOpen }) {
   const [next, setNext] = useState(false); // State to manage Next button disable
   const apiUrl = getEnvironment();
 
-  const url = window.location.href;
-  const urlParts = url.split('/');
-  const value1 = urlParts[4];
-  const value2 = urlParts[5];
-
-  useEffect(() => {
-    setPaper((prevPaper) => ({
-      ...prevPaper,
-      eventId: value1,
-    }));
-  }, [value1, setPaper]);
+  var url = window.location.href;
+  var urlParts = url.split('/');
+  var value1 = urlParts[4];
+  var value2 = urlParts[5];
+  //console.log("values: ",value1,value2);
+  paper.eventId=value1;
 
   async function handleNext(data) {
     if (!data) {
       if (activeStep === steps.length - 1) return;
       // Check if at least one entry is required
       const isAtLeastOneEntryRequired = steps[activeStep].component.props.isAtLeastOneEntryRequired;
-      if (!isAtLeastOneEntryRequired) {
-        setActiveStep(activeStep + 1);
-        return;
-      }
+      if (!isAtLeastOneEntryRequired) return; // If not required, return without proceeding
+      setActiveStep(activeStep + 1);
     }
-
     const res = await fetch(`${apiUrl}/api/v1/reviewmodule/paper/${value2}`, {
       method: 'PATCH',
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ ...data, eventId: value1, paperId: value2 }),
     });
-
+    const dataa = await res.json();
+    //console.log("dataa: ",dataa);
     if (res.ok) {
       if (activeStep === steps.length - 1) return;
       setActiveStep(activeStep + 1);
@@ -86,6 +76,8 @@ function MultiStepForm({ isSidebarOpen }) {
   const containerStyle = {
     paddingTop: '35px',
     margin: 'auto',
+    // alignSelf: 'center',
+    // marginLeft: isSidebarOpen ? '0' : '0vw', // not sure about this
     width: isSidebarOpen ? '82vw' : '82vw',
     overflowX: 'hidden',
     zIndex: '9997',
@@ -95,12 +87,16 @@ function MultiStepForm({ isSidebarOpen }) {
 
   return (
     <div style={containerStyle}>
-      <Stepper size="md" index={activeStep} style={{ display: 'flex', flexWrap: 'wrap' }} colorScheme="green">
+      <Stepper size="md" index={activeStep}
+        style={{display:'flex', flexWrap: 'wrap'}}
+        colorScheme='green'
+       >
         {steps.map((step, index) => (
+          
           <Step
             key={index}
             cursor="pointer" // Add pointer cursor
-            style={{ padding: '1px' }}
+            style={{padding: '1px'}}
             onClick={() => setActiveStep(index)}
           >
             <StepStatus
@@ -115,28 +111,16 @@ function MultiStepForm({ isSidebarOpen }) {
                 </StepIndicator>
               }
               active={
-                <div
-                  style={{
-                    border: '2px solid #3182ce',
-                    borderRadius: '50px',
-                    padding: '5px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div className="revolveAnimation" style={{ zIndex: '60', position: 'absolute', height: '100%' }}>
-                    <div
-                      style={{
-                        border: '4px solid #3182ce',
-                        borderRadius: '50px',
-                        top: '0',
-                        transform: 'translateY(-20%)',
-                      }}
-                    ></div>
+                <div style={{border:'2px solid #3182ce', borderRadius:'50px', padding:'5px', 
+                display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <div className='revolveAnimation'
+                  style={{zIndex:'60', position:'absolute', height:'100%'}}>
+                    <div style={{border:'4px solid #3182ce', borderRadius:'50px', top:'0', transform:'translateY(-20%)'}}></div>
                   </div>
-                  <StepIndicator style={{ zIndex: '3', backgroundColor: '#3182ce', border: '2px solid #3182ce' }}>
-                    <Icon boxSize={iconSize} as={FaAngleRight} style={{ color: 'white' }} />
+                  <StepIndicator
+                    style={{zIndex:'3',backgroundColor: '#3182ce', border:'2px solid #3182ce'}}
+                  >
+                    <Icon boxSize={iconSize} as={FaAngleRight} style={{color: 'white'}}/>
                   </StepIndicator>
                 </div>
               }
@@ -148,7 +132,9 @@ function MultiStepForm({ isSidebarOpen }) {
           </Step>
         ))}
       </Stepper>
-      <Box mt={50}>{steps[activeStep].component}</Box>
+      <Box mt={50}>
+        {steps[activeStep].component}
+      </Box>
     </div>
   );
 }
