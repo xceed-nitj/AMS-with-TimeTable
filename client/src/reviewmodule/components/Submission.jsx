@@ -49,7 +49,7 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
           'Content-Type': 'multipart/form-data',
         },
       });
-      //console.log(response);
+      // console.log(response);
       toast({
         title: 'Upload successful.',
         description: response.data.message || 'Paper has been uploaded.',
