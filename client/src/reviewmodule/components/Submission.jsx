@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useState, useEffect} from 'react';
 import axios from 'axios';
 import { useRecoilState } from 'recoil';
 import { paperState } from '../state/atoms/paperState';
@@ -20,25 +20,46 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
   const apiUrl = getEnvironment();
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [paper, setPaper] = useRecoilState(paperState);
   const eventId = paper.eventId;
-  const handleSubmit = async ()=>{
-    var form_data = new FormData();
-    for ( var key in paper ) {
-        //console.log(key,":",paper[key]);
-        if (key === "paperUploads"){
-          //console.log('file==>',paper[key][0].name);
-          form_data.append('pdfFile', paper[key][0], paper[key][0].name);
-        }else if(key === "codeUploads"){
-          //console.log('file==>',paper[key][0].name);
-          form_data.append('codeFile', paper[key][0], paper[key][0].name);
-        }else if(key==="authors") {
-          for (var i = 0; i < paper[key].length; i++) {
-            form_data.append('authors[]', paper[key][i]);
-          }
-        }else{
-          form_data.append(key, paper[key]);
+  const [userId, setUserId] = useState('');
+  const [papers, setPapers] = useState([]);
+  useEffect(() => {
+    const postItem = async () => {
+      if (currentIndex < paper.pseudo_authors.length) {
+        try {
+          const response = await axios.post(`${apiUrl}/reviewmodule/paper/addAuthor`,{
+            name: paper.pseudo_authors[currentIndex].name,
+            email: paper.pseudo_authors[currentIndex].email,
+            designation: paper.pseudo_authors[currentIndex].designation,
+            eventId: paper.eventId,
+          });
+          //console.log("userid:",response.data.updatedId);
+          paper.authors.push(response.data.updatedId);
+          paper.pseudo_authors[currentIndex].order=response.data.updatedId;
+          paper.pseudo_authors[currentIndex].institute=response.data.mail;
+          toast({
+            title: 'User added.',
+            description: response.data.message || 'User have been addded.',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          });
+          console.log(`Posted item: ${paper.pseudo_authors[currentIndex]}`);
+          setCurrentIndex(prevIndex => prevIndex + 1);
+        } catch (error) {
+          console.error(`Error posting item: ${paper.pseudo_authors[currentIndex]}`, error);
+          console.error('Upload error:', error);
+          toast({
+            title: 'Error Adding User.',
+            description: error.response?.data?.message || 'An error occurred during user verification.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
         }
+<<<<<<< HEAD
     }
     //console.log("paper details below=====>,");
     //console.log(paper);
@@ -50,24 +71,141 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
         },
       });
       // console.log(response);
+=======
+      }
+    };
+
+    postItem();
+    console.log(paper);
+  }, [currentIndex, paper.pseudo_authors]);
+  useEffect(() => {
+      const fetchUser = async () => {
+          try {
+              const User = await fetch(`${apiUrl}/user/getuser`, {
+                  method: "GET",
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+              });
+              const userdetails = await User.json();
+              const id = userdetails.user._id;
+              setUserId(id); // Set the userId from logged-in user
+          }catch (error) {
+              console.error('Error fetching User:', error);
+              toast({
+                  title: "Error",
+                  description: "Unable to fetch User",
+                  status: "error",
+                  duration: 5000,
+                  isClosable: true,
+              });
+          }
+      };
+      fetchUser();
+  }, [apiUrl]);
+  useEffect(() => {
+    const fetchPapers = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/reviewmodule/paper/duplicheck/${paper.eventId}`);
+        setPapers(response.data);
+      } catch (error) {
+        console.error('Error fetching papers:', error);
+      }
+    };
+    fetchPapers();
+  }, []);
+  const handleSubmit = async ()=>{
+    //console.log(papers);
+    const paperTitle = paper.title; // Replace with the actual title you're looking for
+    const authorsToMatch = paper.authors; // Add your list of authors here
+
+    const matchingPapers = papers.filter(paper => paper.title === paperTitle);
+    console.log("Papers with matching title:", matchingPapers);
+
+    const papersWithMatchingAuthors = matchingPapers.filter(p => 
+      p.authors && p.authors.some(author => authorsToMatch.includes(author))
+    );
+    console.log(papersWithMatchingAuthors,paper["title"]);
+    if (papersWithMatchingAuthors.length===0){
+      var form_data = new FormData();
+      for ( var key in paper ) {
+          //console.log(key,":",paper[key]);
+          if (key === "paperUploads"){
+            //console.log('file==>',paper[key][0].name);
+            form_data.append('pdfFile', paper[key][0], paper[key][0].name);
+          }else if(key === "codeUploads"){
+            //console.log('file==>',paper[key][0].name);
+            form_data.append('codeFile', paper[key][0], paper[key][0].name);
+          }else if(key==="authors") {
+            for (var i = 0; i < paper[key].length; i++) {
+              form_data.append('authors[]', paper[key][i]);
+            }
+          }else if(key==="pseudo_authors"){
+            form_data.append('pseudo_authors', JSON.stringify(paper.pseudo_authors));
+          }else{
+            form_data.append(key, paper[key]);
+          }
+      }
+      console.log(userId);
+      form_data.append("user",userId);
+
+      //console.log("paper details below=====>,");
+      //console.log(paper);
+      setIsLoading(true);
+      try {
+        const response = await axios.post(`${apiUrl}/reviewmodule/paper/addpaper/${eventId}`, form_data, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const urlcode = await response.data.codelink;
+        const urlpaper = await response.data.paperlink;
+        console.log("url for paper: ",urlpaper,"\nurl for code: ", urlcode);
+        //console.log(response);
+        toast({
+          title: 'Upload successful.',
+          description: response.data.message || 'Paper has been uploaded.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+        //this is the code to fetch the files
+        /*await axios(`${apiUrl}/reviewmodule/uploads/${urlpaper}`, {
+          method: "GET",
+          responseType: "blob"
+        })
+          .then(response => {
+            const file = new Blob([response.data], {
+              type: "application/pdf"
+            });
+            const fileURL = URL.createObjectURL(file);
+            window.open(fileURL);
+          })
+          .catch(error => {
+            console.log(error);
+          });
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast({
+          title: 'Failed to fetch the uploaded files',
+          description: error.response?.data?.message || 'An error occurred during upload.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });*/
+      } finally {
+        setIsLoading(false);
+      }
+    }else{
+>>>>>>> 6b0abad1161620232ad9a6d03e902f1b02dd1fc2
       toast({
-        title: 'Upload successful.',
-        description: response.data.message || 'Paper has been uploaded.',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: 'Upload failed.',
-        description: error.response?.data?.message || 'An error occurred during upload.',
+        title: 'Cannot Upload similar papers.',
+        description: "A paper with this title and author already exists",
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
-    } finally {
-      setIsLoading(false);
     }
   }
   const handleEditClick = (step) => {

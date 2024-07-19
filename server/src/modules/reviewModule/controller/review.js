@@ -1,4 +1,11 @@
+const mongoose=require("mongoose");
 const Review = require("../../../models/reviewModule/review");
+const Paper = require("../../../models/reviewModule/paper");
+const User=require("../../../models/usermanagement/user");
+const Event=require("../../../models/reviewModule/event");
+const {sendMail} =require("../../mailerModule/mailer");
+const {jsPDF} = require("jspdf");
+require("jspdf-autotable");
 
 const addReview = async (req, res) => {
     const { paperId, eventId, reviewerId, reviewans, commentsAuthor, commentsEditor, decision } = req.body;
@@ -98,9 +105,24 @@ const deleteReview = async (req, res) => {
         res.status(500).json({ message: "Error deleting review", error });
     }
 };
+
 const submitReview = async (req, res) => {
     const { eventId, paperId, reviewerId, reviewAnswers, commentsAuthor, commentsEditor, decision } = req.body;
   
+    const completedDate = new Date();
+    const paper = await Paper.findOneAndUpdate({
+        _id: paperId,
+        'reviewers.userId': reviewerId
+    }, {
+        $set: {
+            'reviewers.$.completedDate': completedDate
+        }
+    }, {
+        new: true,
+        runValidators: true
+    });
+    await paper.save();
+
     try {
       const newReview = new Review({
         eventId,
@@ -113,6 +135,117 @@ const submitReview = async (req, res) => {
       });
   
       await newReview.save();
+
+      // Generate PDF
+      const doc = new jsPDF();
+        
+      const eventResponse = await Event.findById(eventId);
+        if (!eventResponse) {
+            console.log("Event Not Found");
+            return res.status(404).json({ message: "Event not found" });
+        }
+
+        const paperResponse = await Paper.findById(paperId);
+        if (!paperResponse) {
+            console.log("Paper Not Found");
+            return res.status(404).json({ message: "Paper not found" });
+        }
+
+        const reviewerResponse = await User.findById(reviewerId);
+        if (!reviewerResponse) {
+            console.log("Reviewer Not Found");
+            return res.status(404).json({ message: "Reviewer not found" });
+        }
+
+        // Ensure data property exists
+       const eventName = eventResponse.name || "N/A";
+       const paperTitle = paperResponse.title || "N/A";
+     const reviewerName = reviewerResponse.name || "N/A";
+        const paperid=paperResponse.paperId;
+        // console.log(reviewerResponse.email[0]);
+        const reviewerEmail = reviewerResponse.email[0];//Asuuming 1st email is the primary email 
+        
+
+        // Split text to fit within the page width
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 10;
+        const maxTextWidth = pageWidth - 2 * margin;
+      
+        const eventNameLines = doc.splitTextToSize(`Event name: ${eventName}`, maxTextWidth);
+        const paperTitleLines = doc.splitTextToSize(`Paper title: ${paperTitle}`, maxTextWidth);
+        const reviewerNameLines = doc.splitTextToSize(`Reviewer Name: ${reviewerName}`, maxTextWidth);
+      
+        let currentY = 10;
+        eventNameLines.forEach(line => {
+          doc.text(line, margin, currentY);
+          currentY += 10;
+        });
+      
+        paperTitleLines.forEach(line => {
+          doc.text(line, margin, currentY);
+          currentY += 10;
+        });
+      
+        doc.text(`Paper ID: ${paperid}`, margin, currentY);
+        currentY += 10;
+      
+        reviewerNameLines.forEach(line => {
+          doc.text(line, margin, currentY);
+          currentY += 10;
+        });
+      
+        const stripHTMLTags = (str) => {
+          return str.replace(/<\/?[^>]+(>|$)/g, "");
+        };
+      
+        // Add review questions and answers
+        const reviewData = reviewAnswers.map((answer, index) => [
+          `Question ${index + 1}: ${stripHTMLTags(answer.question)}`,
+          `Answer: ${stripHTMLTags(answer.answer) || ''}`
+        ]);
+      
+        doc.autoTable({
+          head: [['Question', 'Answer']],
+          body: reviewData,
+          startY: currentY + 10
+        });
+      
+        currentY = doc.autoTable.previous.finalY + 10; // Update currentY after autoTable
+
+  // Split author and editor comments to fit within the page width
+  const authorCommentsLines = doc.splitTextToSize(`Author comments: ${commentsAuthor}`, maxTextWidth);
+  const editorCommentsLines = doc.splitTextToSize(`Editor comments: ${commentsEditor}`, maxTextWidth);
+
+  authorCommentsLines.forEach(line => {
+    doc.text(line, margin, currentY);
+    currentY += 10;
+  });
+
+  editorCommentsLines.forEach(line => {
+    doc.text(line, margin, currentY);
+    currentY += 10;
+  });
+
+  doc.text(`Submitted time: ${completedDate.toLocaleString()}`, margin, currentY);
+      
+
+      // Save the PDF to a buffer
+      const pdfBuffer = doc.output('arraybuffer');
+
+      // Send email with PDF attachment
+      await sendMail(
+          reviewerEmail,
+          'Thank You for Submitting Review',
+          '<p>Thank You for Submitting Review</p>',
+          [
+              {
+                  filename: 'review.pdf',
+                  content: Buffer.from(pdfBuffer),
+                  contentType: 'application/pdf'
+              }
+          ]
+      );
+
   
       res.status(200).json({ message: "Review submitted successfully", review: newReview });
     } catch (error) {
@@ -139,13 +272,7 @@ const submitReview = async (req, res) => {
             {
                 return res.status(404).json({ message: 'Review not found' });
             }
-            //console.log(review.reviewAnswers);
-            const allReviewAnswers = review.map(review => review.reviewAnswers);
-            console.log(allReviewAnswers);
-            res.json(allReviewAnswers);
-            
-            
-
+        res.json(review);
     } catch(error)
     {
         res.status(500).json({message:'Server error',error});

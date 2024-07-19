@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const User = require("./user.js");
+const User = require("../usermanagement/user");
 
 const reviewerSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
@@ -35,11 +35,16 @@ const eventSchema = new mongoose.Schema({
     },
     reviewTime: {
         type: String,
+        default: "10"
     },
     instructions: {
         type: String
     },
     templates:templateSchema,
+    startSubmission: {
+        type: Boolean,
+        default: false
+    },
 },{timestamps: true});
 
 const Event = mongoose.model("PRS-Event", eventSchema);

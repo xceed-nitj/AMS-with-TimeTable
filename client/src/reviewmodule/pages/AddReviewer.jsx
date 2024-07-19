@@ -3,7 +3,7 @@ import { Container, Box, Input, Button , Table, Thead, Tbody, Tr, Th, Td,Text } 
 import { IconButton, Heading, chakra } from '@chakra-ui/react';
 import axios from 'axios';
 import getEnvironment from '../../getenvironment';
-import { useToast } from '@chakra-ui/react';
+import { useToast, Spinner } from '@chakra-ui/react';
 import Header from '../../components/header';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ function AddReviewer() {
   const { eventId } = useParams();
   const [reviewerEmail, setReviewerEmail] = useState('');
   const [reviewerPassword, setReviewerPassword] = useState('');
-  const [reviewers, setReviewers] = useState([]);
+  const [reviewers, setReviewers] = useState();
   const toast = useToast();
 
   useEffect(() => {
@@ -204,7 +204,7 @@ function AddReviewer() {
 
       <p style={{textAlign:'center',margin:'10px',fontWeight:'bold',fontSize:'24px'}}>Existing Reviewers</p>
 
-      {reviewers.length>0 && (
+      { reviewers && (reviewers.length>0 ? (
         <>
         <Box display="flex" justifyContent="center" mt={8}>
         <Box width="80%" overflowX="auto" >
@@ -243,14 +243,18 @@ function AddReviewer() {
       </Box>
     </Box>
         </>
-      )}
+      ):(
+        <Box mt={8} textAlign="center" fontSize="lg" fontWeight="bold">
+          No reviewers found...
+        </Box>
+      ))}
 
       
       {
-        reviewers.length===0 && (
+        !reviewers && (
           <>
             <Box mt={8} textAlign="center" fontSize="lg" fontWeight="bold">
-              Table is empty
+              <Spinner/>
             </Box>
           </>
         )

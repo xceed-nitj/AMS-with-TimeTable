@@ -12,8 +12,8 @@ export default function Navbar() {
 
   const apiUrl = getEnvironment();
 
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,6 +71,18 @@ export default function Navbar() {
       console.error('Error during logout:', error.message);
     }
   };
+
+
+const publicPaths = ['/', '/login', '/classrooms', '/timetable' ];
+
+useEffect(() => {
+  const isPublicPath = publicPaths.includes(location.pathname) || location.pathname.startsWith('/services/') || location.pathname.startsWith('/cm/c/')
+
+  if (!isLoading && !isAuthenticated && !isPublicPath) {
+    navigate('/login');
+  }
+}, [isLoading, isAuthenticated, navigate, location.pathname]);
+
 
   const excludedRoutes = ['/login', '/cm/c'];
 

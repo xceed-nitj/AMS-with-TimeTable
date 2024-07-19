@@ -1,15 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Bottom from './Bottom';
 import Content from './Content';
 import Top from './Top';
-import html2canvas from 'html2canvas';
-import downloadCertificatePdf from '../../certipdfdownload';
+// import html2canvas from 'html2canvas';
+// import downloadCertificatePdf from '../../certipdfdownload';
 import QRCode from 'qrcode';
 import { Button } from '@chakra-ui/react';
-import jsPDF from 'jspdf';
+// import jsPDF from 'jspdf';
+import getEnvironment from '../../../../getenvironment';
 
 function Template01() {
   const svgRef = useRef();
+  const apiUrl = getEnvironment();
+  const [imageDownloading,setImageDownloading] = useState(false)
+  const [imageDownloaded,setImageDownloaded] = useState(false)
+  const [pdfDownloading,setpdfDownloading] = useState(false)
+  const [pdfDownloaded,setpdfDownloaded] = useState(false)
 
   useEffect(() => {
     const url = window.location.href; // Replace with your URL
@@ -32,63 +38,139 @@ function Template01() {
     });
   }, []);
 
-  const handleDownloadImage = () => {
-    // const input = document.getElementById('id-card');
-    const input = document.getElementById('id-card-class');
-    console.log(input)
-    input.style.width = '841.92px';
-    input.style.height = '595.499987px';
-    html2canvas(input, {
-      logging: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      foreignObjectRendering: true,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: document.documentElement.offsetWidth,
-      windowHeight: document.documentElement.offsetHeight,
-    }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png');
+  // const handleDownloadImage = () => {
+  //   // const input = document.getElementById('id-card');
+  //   const input = document.getElementById('id-card-class');
+  //   console.log(input)
+  //   input.style.width = '841.92px';
+  //   input.style.height = '595.499987px';
+  //   html2canvas(input, {
+  //     logging: true,
+  //     allowTaint: true,
+  //     backgroundColor: '#ffffff',
+  //     useCORS: true,
+  //     foreignObjectRendering: true,
+  //     scrollX: 0,
+  //     scrollY: 0,
+  //     windowWidth: document.documentElement.offsetWidth,
+  //     windowHeight: document.documentElement.offsetHeight,
+  //   }).then((canvas) => {
+  //     const imgData = canvas.toDataURL('image/png');
+  //     const link = document.createElement('a');
+  //     link.href = imgData;
+
+  //     link.download = 'certificate-by-XCEED.png';
+  //     link.click();
+  //   });
+  //   input.style.height = 'auto';
+  //   input.style.width = 'auto';
+  // };
+
+  // const handleDownloadPDF = () => {
+  //   // const input = document.getElementById('id-card');
+  //   const input = document.getElementsByClassName('id-card-class');
+  //   input.style.width = '1754px';
+  //   input.style.height = '1240px';
+  //   html2canvas(input, {
+  //     logging: true,
+  //     allowTaint: true,
+  //     backgroundColor: '#ffffff',
+  //     useCORS: true,
+  //     foreignObjectRendering: true,
+  //     scrollX: 0,
+  //     scrollY: 0,
+  //     windowWidth: document.documentElement.offsetWidth,
+  //     windowHeight: document.documentElement.offsetHeight,
+  //   }).then((canvas) => {
+  //     const imgData = canvas.toDataURL('image/png');
+
+  //     const pdf = new jsPDF({
+  //       orientation: 'landscape',
+  //       unit: 'px',
+  //       format: [1754, 1240],
+  //     });
+  //     pdf.addImage(imgData, 'JPEG', 0, 0, 1754, 1240);
+  //     pdf.save('download.pdf');
+  //   });
+  //   input.style.height = 'auto';
+  //   input.style.width = 'auto';
+  // };
+
+
+  const handleDownloadImage = async () => {
+    try {
+      if(imageDownloaded){
+        const ans = confirm("you want to download again")
+        if(!ans){
+          return;
+        }
+      }
+      setImageDownloading(true)
+      const response = await fetch(
+        `${apiUrl}/certificatemodule/certificate/download/image`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          credentials: 'include',
+          body: JSON.stringify({url: window.location.href }),
+        }
+      );
+      const data = await response.blob();
+      const blob = new Blob([data], { type: 'image/png' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = imgData;
-
-      link.download = 'certificate-by-XCEED.png';
+      link.href = url;
+      link.download = 'certificate.' + 'png';
       link.click();
-    });
-    input.style.height = 'auto';
-    input.style.width = 'auto';
+      URL.revokeObjectURL(url);
+      setImageDownloading(false)
+    } catch (error) {
+      console.error('Error downloading:', error);
+      alert('An unexpected error occurred while downloading image. Please try again later.');
+      setImageDownloading(false)
+    }
   };
-  const handleDownloadPDF = () => {
-    // const input = document.getElementById('id-card');
-    const input = document.getElementsByClassName('id-card-class');
-    input.style.width = '1754px';
-    input.style.height = '1240px';
-    html2canvas(input, {
-      logging: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      foreignObjectRendering: true,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: document.documentElement.offsetWidth,
-      windowHeight: document.documentElement.offsetHeight,
-    }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png');
+  
+  const handleDownloadPDF = async () => {
+    try {
+      if(pdfDownloaded){
+        const ans = confirm("you want to download again")
+        if(!ans){
+          return;
+        }
+      }
+      const response = await fetch(`${apiUrl}/certificatemodule/certificate/download/pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
 
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'px',
-        format: [1754, 1240],
-      });
-      pdf.addImage(imgData, 'JPEG', 0, 0, 1754, 1240);
-      pdf.save('download.pdf');
-    });
-    input.style.height = 'auto';
-    input.style.width = 'auto';
-  };
-
+        credentials: 'include',
+        body: JSON.stringify({ url: window.location.href }),
+      }, { responseType: 'blob' });
+      const data = await response.blob();
+      const blob = new Blob([data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'certificate.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      setpdfDownloading(false)
+    } catch (error) {
+      console.error('Error downloading the PDF:', error);
+      alert('An unexpected error occurred while downloading pdf. Please try again later.');
+      setpdfDownloading(false)
+    }
+  }
+  const handleClick = (type) => {
+    if(type == "image"){setImageDownloaded(true);handleDownloadImage()}
+    else if(type == "pdf"){setpdfDownloaded(true);handleDownloadPDF()}
+  }
   return (
     <>
       <div id="id-card-class" >
@@ -104,10 +186,10 @@ function Template01() {
           <Bottom />
         </svg>
       </div>
-      <Button onClick={handleDownloadImage} variant="solid" colorScheme="teal">
+      <Button disabled={imageDownloading} onClick={(e)=>{handleClick("image")}} variant="solid" colorScheme="teal">
         Download Image
       </Button>
-      <Button onClick={downloadCertificatePdf} variant="outline" colorScheme="teal">
+      <Button disabled={pdfDownloading} onClick={(e)=>{handleClick("pdf")}} variant="outline" colorScheme="teal">
         Download PDF
       </Button>
     </>

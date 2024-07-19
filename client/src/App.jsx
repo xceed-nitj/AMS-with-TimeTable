@@ -80,11 +80,17 @@ import ReviewLogin from './reviewmodule/pages/ReviewLogin';
 import CreateUser from './reviewmodule/pages/CreateUser';
 import AddReviewer from './reviewmodule/pages/AddReviewer';
 import Review from './reviewmodule/pages/Review.jsx';
+import PaperSummary from './reviewmodule/pages/PaperSummary.jsx';
+import Forms from './reviewmodule/pages/Forms.jsx';
 import ReviewerQuestion from './reviewmodule/pages/ReviewQuestion';
 import DefaultQuestion from './reviewmodule/pages/DefaultQuestion.jsx';
 import ReviewerQuestionHome from './reviewmodule/pages/ReviewQuestionHome';
+import StartSubmission from './reviewmodule/pages/StartSubmission.jsx';
+import DefaultQuestionHome from './reviewmodule/pages/DefaultQuestionHome.jsx';
 import UpdateReviewerStatus from './reviewmodule/pages/UpdateReviewerStatus';
 import UserRegistration from './reviewmodule/pages/userRegistration';
+import OTPverification from './reviewmodule/pages/OTPverification.jsx';
+import UserDetails from './reviewmodule/pages/UserDetails.jsx';
 
 // import HomePage from './reviewmodule/pages/Main';
 
@@ -107,6 +113,7 @@ import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import EditTemplate from './reviewmodule/pages/EditTemplate';
+import EditDefaultTemplate from './reviewmodule/pages/EditDefaultTemplate.jsx';
 import NirfRanking from './nirf/rankings';
 import AddPaper from './reviewmodule/pages/addpaper'
 
@@ -120,6 +127,9 @@ import PrmEdDashboard from './reviewmodule/pages/PrmEdDashboard';
 import Quizzing from './quizModule/student/quizzing/Quizzing';
 // import Instructions from './quizModule/student/Instructions';
 import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
+import UserManagement from './dashboard/userManagement';
+import UserEventRegistration from './certificatemodule/pages/addEvent';
+
 
 function App() {
   return (
@@ -143,6 +153,7 @@ function App() {
         <Route path="/register" element={<RegistrationForm />} />
         <Route path="/userroles" element={<AllocatedRolesPage />} />
         <Route path="/superadmin" element={<SuperAdminPage />} />
+        <Route path="/usermanagement" element={<UserManagement />} />
 
         <Route path="/tt">
           <Route path="dashboard" element={<CreateTimetable />} />
@@ -205,25 +216,33 @@ function App() {
         <Route path="/cm/:eventid/addparticipant" element={<Participant />} />
         <Route path="/cm/c/:eventid/:participantid" element={<Template01 />} />
         <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03 />} />
+        <Route path='/cm/useraddevent' element={< UserEventRegistration/>} />
 
     {/* Review management routes*/}
     <Route path="/prm/login" element={<ReviewLogin/>} />
     <Route path="/prm/signup" element={<CreateUser/>} />
     <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
     <Route path="/prm/dashboard" element={<PRMDashboard/>} />
+    <Route path="/prm/emailverification" element={<OTPverification/>} />
+    <Route path="/prm/userdetails" element={<UserDetails/>} />
     {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
     <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
     <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
     <Route path="/prm/:eventId/:paperId/:userId/Review" element={<Review/>}/>
+    <Route path="/prm/:eventId/:paperId/summary" element={<PaperSummary/>}/>
+    <Route path="/prm/:eventId/:paperId/Forms" element={<Forms/>}/>
     <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
     <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
     <Route path="/prm/DefaultQuestion" element={<DefaultQuestion/>}/>
+    <Route path="/prm/DefaultQuestionHome" element={<DefaultQuestionHome/>}/>
     <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
     <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
     <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
+    <Route path="/prm/editdefaulttemplate" element={<EditDefaultTemplate/>}/>
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
     <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
+    <Route path="/prm/:eventId/editor/startSubmission" element={<StartSubmission/>}/>
 
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
@@ -234,6 +253,12 @@ function App() {
     <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
     <Route path="/prm/home" element={<HomePage/>}/>
     <Route path="/prm/register" element={<UserRegistration/>}/>
+    <Route path='/prm/end' element={<ErrorPage 
+                                      message='Paper Submission for this event has ended...' 
+                                      destination='/prm/home'
+                                      destinationName='Paper Review Manager Home'
+                                      animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
+                                      />}></Route>
     <Route path='/prm/*' element={<ErrorPage 
                                       message='The page you are looking for does not exist...' 
                                       destination='/prm/home'

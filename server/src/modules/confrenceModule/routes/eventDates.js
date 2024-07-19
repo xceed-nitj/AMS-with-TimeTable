@@ -3,6 +3,7 @@ const EventDateController = require("../crud/eventDate");
 
 const eventDateRouter = express.Router();
 const eventDateController = new EventDateController();
+const { checkRole } = require("../../checkRole.middleware");
 
 // GET /eventDates/conference/:id
 eventDateRouter.get("/conference/:id", async (req, res) => {
@@ -45,7 +46,7 @@ eventDateRouter.get("/:id", async (req, res) => {
 });
 
 // POST /eventDates
-eventDateRouter.post("/", async (req, res) => {
+eventDateRouter.post("/", checkRole(['EO']), async (req, res) => {
   try {
     const newEventDate = req.body;
     await eventDateController.createEventDate(newEventDate);
@@ -68,7 +69,7 @@ eventDateRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /eventDates/:id
-eventDateRouter.delete("/:id", async (req, res) => {
+eventDateRouter.delete("/:id", checkRole(['EO']), async (req, res) => {
   try {
     const id = req.params.id;
     await eventDateController.deleteEventDate(id);

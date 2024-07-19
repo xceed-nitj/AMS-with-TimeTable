@@ -44,7 +44,7 @@ const ViewQuestions = () => {
         duration: 5000,
         isClosable: true,
       });
-    }
+    } 
   };
 
   function DeleteQuestion(props) {

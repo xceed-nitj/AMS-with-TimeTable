@@ -5,6 +5,7 @@ const LocationController = require("../crud/location");
 
 const router = express.Router();
 const locationController = new LocationController();
+const { checkRole } = require("../../checkRole.middleware");
 
 router.get("/:confId", async (req, res) => {
   try {
@@ -24,7 +25,7 @@ router.get("/:confId", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/",checkRole(['EO']), async (req, res) => {
   try {
     const newLocation = req.body;
     if (!newLocation.confId) {
@@ -60,7 +61,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",checkRole(['EO']), async (req, res) => {
   try {
     const id = req.params.id;
     await locationController.deleteLocation(id);

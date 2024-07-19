@@ -19,6 +19,8 @@ import { Flex, Text, chakra, Heading, IconButton,
 } from '@chakra-ui/react';
 import JoditEditor from 'jodit-react';
 import getEnvironment from '../../getenvironment';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const ReviewPage = () => {
   const apiUrl = getEnvironment();
@@ -89,6 +91,130 @@ const ReviewPage = () => {
     });
   };
 
+  const generatePDF = async () => {
+    const doc = new jsPDF();
+  
+    // Fetch necessary details
+    const eventResponse = await axios.get(
+      `${apiUrl}/reviewmodule/event/${eventId}`
+    );
+    const paperResponse = await axios.get(
+      `${apiUrl}/reviewmodule/paper/getPaperDetail/${paperId}`
+    );
+    const reviewerResponse = await axios.get(
+      `${apiUrl}/reviewmodule/user/getUser/${userId}`
+    );
+  
+    const eventName = eventResponse.data.name;
+    const paperTitle = paperResponse.data.title;
+    const reviewerName = reviewerResponse.data.name;
+    const paperid = paperResponse.data.paperId;
+  
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const maxTextWidth = pageWidth - 2 * margin;
+  
+    const checkAddPage = () => {
+      if (currentY > pageHeight - margin) {
+        doc.addPage();
+        currentY = margin;
+      }
+    };
+  
+    const eventNameLines = doc.splitTextToSize(
+      `Event name: ${eventName}`,
+      maxTextWidth
+    );
+    const paperTitleLines = doc.splitTextToSize(
+      `Paper title: ${paperTitle}`,
+      maxTextWidth
+    );
+    const reviewerNameLines = doc.splitTextToSize(
+      `Reviewer Name: ${reviewerName}`,
+      maxTextWidth
+    );
+  
+    let currentY = margin;
+    eventNameLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    paperTitleLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    checkAddPage();
+    doc.text(`Paper ID: ${paperid}`, margin, currentY);
+    currentY += 10;
+  
+    reviewerNameLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    const stripHTMLTags = (str) => {
+      const tmp = document.createElement('DIV');
+      tmp.innerHTML = str;
+      return tmp.textContent || tmp.innerText || '';
+    };
+  
+    // Add review questions and answers
+    const reviewData = questions.map((question, index) => [
+      `Question ${index + 1}: ${stripHTMLTags(question.question)}`,
+      `Answer: ${stripHTMLTags(answers[question._id]) || ''}`,
+    ]);
+  
+    doc.autoTable({
+      head: [['Question', 'Answer']],
+      body: reviewData,
+      startY: currentY + 10,
+      margin: { left: margin, right: margin },
+      styles: { cellPadding: 2, fontSize: 10 },
+      columnStyles: { 0: { cellWidth: 'wrap' }, 1: { cellWidth: 'auto' } },
+      didDrawPage: (data) => {
+        currentY = data.cursor.y;
+      }
+    });
+  
+    currentY = doc.autoTable.previous.finalY + 10; // Update currentY after autoTable
+    checkAddPage();
+  
+    // Split author and editor comments to fit within the page width
+    const authorCommentsLines = doc.splitTextToSize(
+      `Author comments: ${commentsAuthor}`,
+      maxTextWidth
+    );
+    const editorCommentsLines = doc.splitTextToSize(
+      `Editor comments: ${commentsEditor}`,
+      maxTextWidth
+    );
+  
+    authorCommentsLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    editorCommentsLines.forEach((line) => {
+      checkAddPage();
+      doc.text(line, margin, currentY);
+      currentY += 10;
+    });
+  
+    checkAddPage();
+    doc.text(`Submitted time: ${submittedTime}`, margin, currentY);
+  
+    // Save the PDF
+    doc.save('review.pdf');
+  };
+  
+  
   const handleSubmit = () => {
     const reviewData = {
       eventId,
@@ -107,11 +233,6 @@ const ReviewPage = () => {
       decision,
     };
 
-    const updatedField = {
-      completedDate : new Date(),
-      reviewerId : userId
-    }
-    axios.patch(`${apiUrl}/reviewmodule/paper/updatereviewer/${paperId}`, updatedField)
     axios.post(`${apiUrl}/reviewmodule/review/save`, reviewData)
       .then(() => {
         setIsSubmitted(true);
@@ -122,6 +243,7 @@ const ReviewPage = () => {
           duration: 5000,
           isClosable: true,
         });
+        generatePDF();
       })
       .catch(error => {
         console.error('Error submitting review:', error);
@@ -174,6 +296,13 @@ const ReviewPage = () => {
       <Box bg="black" p={0.2} width='100%' margin="auto">
         <HeaderReviewPage color="white" textAlign="center" title="Review Page" />
       </Box>
+      <Button
+  mt={4}
+  colorScheme="teal"
+  onClick={generatePDF}
+  isDisabled={!isSubmitted}>
+  Download PDF
+</Button>
       <br/>
       {isSubmitted && (
         <>

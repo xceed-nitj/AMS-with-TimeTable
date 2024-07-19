@@ -12,12 +12,21 @@ const fs = require("fs");
 const ejs = require("ejs");
 // const mailSender = require("./mailsender");
 const path = require("path");
+const ejsTemplatePath = path.join(__dirname, "otpbody.ejs");
+const mailSender = require("../../mailsender");
 // const ejsTemplatePath = path.join(__dirname, "otpBody.ejs");
 dotenv.config();
 
 exports.register = async (req, res, next) => {
   const { email, password,roles } = req.body;
   console.log(req);
+
+  const existingUser = await User.findOne({email:email})
+  if(existingUser!==null){
+    if(existingUser.email.includes(email)){
+      return res.status(400).json({message: "User already exists, use forgot password to reset your password"})
+    }
+  }
 
   if (!password || password.length < 6) {
     return res.status(400).json({ message: "Password less than 6 characters" });
@@ -38,6 +47,8 @@ exports.register = async (req, res, next) => {
           email: email,
           password: hash,
           role:roles,
+          isEmailVerified:false,
+          isFirstLogin: false,
         });
 
         // Generate a JWT token
@@ -56,6 +67,7 @@ exports.register = async (req, res, next) => {
           maxAge: maxAge * 1000,
         });
 
+        // const otp = await sendOTP(email);
         res.status(201).json({
           message: "User successfully created",
           user,
@@ -74,6 +86,43 @@ exports.register = async (req, res, next) => {
     });
   }
 };
+
+//verifying otp entered
+exports.verification = async(req,res)=>{
+  const sendotp = await sendOTP(req.body.email);
+  console.log(sendotp)
+  try {
+    const {email,otp} = req.body;
+    const validOTP = await OTP.findOne({ email, otp });
+    console.log(validOTP);
+    if (!validOTP) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    await OTP.deleteOne({ email, otp }); 
+    const update = {
+      $set: { isEmailVerified: true }
+    };
+    const user = await User.findOneAndUpdate(
+      {email: email}, 
+      update, 
+      { returnOriginal: false }
+    )
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+    });
+  } catch (e) {
+    console.log("Error in verifying OTP ", e);
+    res.status(500).json({
+      success: false,
+      message: "Error in verifying OTP",
+    });
+  }
+}
 
 // login
 exports.login = async (req, res, next) => {
@@ -142,7 +191,8 @@ exports.login = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
+    const updatebody = req.body;
+    const { email, password } = req.body;
 
     // Verify if the email is present
     if (!email) {
@@ -157,26 +207,67 @@ exports.update = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update user details
-    if (password) {
-      // Update password if provided
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    updatebody.password = hashedPassword;
 
-    if (role) {
-      // Update role if provided
-      // Verify if the role is valid
-      user.role = role;
-    }
+
+    const newUser = await User.findOneAndUpdate(
+      {email: email},
+      updatebody,
+      { returnOriginal: false },
+    )
 
     // Save the updated user
-    await user.save();
+    await newUser.save();
 
     return res.status(201).json({ message: "Update successful", user });
   } catch (error) {
     return res
       .status(500)
       .json({ message: "An error occurred", error: error.message });
+  }
+};
+
+const sendOTP = async (email) => {
+  try {
+
+    let result = await OTP.findOne({ email });
+    var otp = null;
+    if (result) {
+      otp = result.otp;
+      console.log("OTP already exists:", otp);
+    } else {
+      otp = otpGenerator.generate(6, {
+        lowerCaseAlphabets: false,
+        upperCaseAlphabets: false,
+        specialChars: false,
+      });
+      await OTP.create({ email, otp });
+      console.log("New OTP generated:", otp);
+    }
+
+    console.log(otp);
+    const otpInfo = {
+      title: "Email verification for NITJ",
+      purpose:
+        "Thank you for registering with NITJ. To complete your registration, please use the following OTP (One-Time Password) to verify your account:",
+      OTP: otp,
+    };
+
+    const otpBody = fs.readFileSync(ejsTemplatePath, "utf-8");
+    const renderedHTML = ejs.render(otpBody, otpInfo);
+
+    // Add await here
+    await mailSender(email, "Sign Up verification", renderedHTML);
+    return {
+      success: true,
+      message: "OTP sent successfully",
+    };
+  } catch (e) {
+    console.log("Error in sending OTP ", e);
+    return {
+      success: false,
+      message: "Error in sending OTP",
+    };
   }
 };

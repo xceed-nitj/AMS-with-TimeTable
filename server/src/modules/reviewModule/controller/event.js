@@ -1,5 +1,5 @@
 const Event = require("../../../models/reviewModule/event.js");
-const User = require("../../../models/reviewModule/user.js")
+const User = require("../../../models/usermanagement/user.js")
 const XUser= require("../../../models/usermanagement/user.js")
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -9,7 +9,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const jwtSecret =
   "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
-
+const DefaultQuestion=require("../../../models/reviewModule/defaultQuestion.js");
+const ReviewQuestion=require("../../../models/reviewModule/reviewQuestion.js");
+const DefaultTemplate=require("../../../models/reviewModule/defaultTemplate.js")
 
 
 const app = express();
@@ -48,6 +50,35 @@ const addEvent = async (req, res) => {
     const editorEmails = event.editor.map(editor => editor.email);
     console.log("Editor Emails:", editorEmails);
     await sendMail(editorEmails, "Welcome to Review Management", `You have been added as editor for the conference "${name}"`);
+     
+    const defaultQuestions = await DefaultQuestion.find({});
+    
+    // Map default questions to include eventId and save in ReviewQuestion 
+    const reviewQuestions = defaultQuestions.map(question => ({
+      eventId: newEvent._id,
+      show: question.show,
+      type: question.type,
+      question: question.question,
+      options: question.options,
+      order: question.order,
+    }));
+    
+    await ReviewQuestion.insertMany(reviewQuestions);
+
+    const defaultTemplate = await DefaultTemplate.findOne({});
+    if (defaultTemplate) {
+      newEvent.templates = {
+        paperSubmission: defaultTemplate.paperSubmission,
+        reviewerInvitation: defaultTemplate.reviewerInvitation,
+        paperAssignment: defaultTemplate.paperAssignment,
+        reviewSubmission: defaultTemplate.reviewSubmission,
+        paperRevision: defaultTemplate.paperRevision,
+        signature: defaultTemplate.signature
+      };
+      await newEvent.save();
+    }
+
+
     res.status(200).send(newEvent);
 
   } catch (error) {
@@ -251,7 +282,8 @@ const addReviewer = async (req, res) => {
           name: email,
           email: email,
           role: ["PRM"],
-          password: hash
+          password: hash,
+          isFirstLogin: true
         });
 
         await reviewer.save();  // Save the new reviewer to the database
@@ -471,4 +503,62 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
+const updateStartSubmission = async (req, res) => {
+  const eventId = req.params.id;
+  const { startSubmission } = req.body;
+
+  if (typeof startSubmission !== 'boolean') {
+      return res.status(400).send('Invalid value for startSubmission');
+  }
+
+  try {
+      const event = await Event.findById(eventId);
+      if (!event) {
+          return res.status(404).send('Event not found');
+      }
+
+      event.startSubmission = startSubmission;
+      await event.save();
+
+      res.status(200).send(event);
+  } catch (error) {
+      res.status(500).send(error);
+  }
+};
+
+const addDefaultTemplatesToEvent = async (req, res) => {
+  const eventId = req.params.id;
+
+  try {
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
+
+    // Fetch the default templates
+    const defaultTemplate = await DefaultTemplate.findOne({});
+    if (!defaultTemplate) {
+      return res.status(404).json({ message: 'Default templates not found.' });
+    }
+
+    // Update the event with default templates
+    event.templates = {
+      paperSubmission: defaultTemplate.paperSubmission,
+      reviewerInvitation: defaultTemplate.reviewerInvitation,
+      paperAssignment: defaultTemplate.paperAssignment,
+      reviewSubmission: defaultTemplate.reviewSubmission,
+      paperRevision: defaultTemplate.paperRevision,
+      signature: defaultTemplate.signature
+    };
+    await event.save();
+
+    res.status(200).json({ message: 'Default templates added to event successfully.', event });
+  } catch (error) {
+    console.error('Error adding default templates to event:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+
+module.exports = { getEvents,addDefaultTemplatesToEvent,getEventsByUser,updateStartSubmission ,addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};

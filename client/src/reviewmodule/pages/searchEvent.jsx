@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Box, Table, Thead, Tbody, Tr, Th, Td, Link, Input, Button } from '@chakra-ui/react';
+import { Container, Box, Table, Thead, Tbody, Tr, Th, Td, Link, Input, Button, Spinner, Flex } from '@chakra-ui/react';
 import axios from 'axios';
 import { Link as RouterLink } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
@@ -34,6 +34,7 @@ function DynamicTable(props) {
     //     const dateObj = new Date(isoDate);
     //     return dateObj.toLocaleDateString(); // Format date according to locale
     // };
+    console.log('real',props.events)
     return(
         <>
         <div>
@@ -41,28 +42,34 @@ function DynamicTable(props) {
                 <Table variant="striped" mt={8}>
                     <Thead>
                         <Tr>
-                            <Th>Name</Th>
-                            <Th>Date</Th>
-                            <Th>Deadline</Th>
-                            <Th>Link</Th>
+                            <Th textAlign={'center'} >Name</Th>
+                            <Th textAlign={'center'} >Date</Th>
+                            <Th textAlign={'center'} >Deadline</Th>
+                            <Th textAlign={'center'} >Link</Th>
                         </Tr>
                     </Thead>
                     <Tbody>
                         {pageFilter(props.events).map((event) => (
                             <Tr key={event.id}>
                                 <Td>{event.name}</Td>
-                                {/* <Td>{formatDate(event.startDate)}</Td>
-                                <Td>{formatDate(event.paperSubmissionDate)}</Td> */}
                                 <Td>{new Date(event.startDate).toLocaleDateString()}</Td>
                                 <Td>{new Date(event.paperSubmissionDate).toLocaleDateString()}</Td>
                                 <Td>
-                                    {isSubmissionEnded(event.paperSubmissionDate) ? (
-                                        <span>Submission Ended</span>
+                                    {
+                                    event.startSubmission?
+                                    (isSubmissionEnded(event.paperSubmissionDate) ? (
+                                        <Link as={RouterLink} to={`/prm/end`} color="teal.500">
+                                            Submission Ended!
+                                        </Link>
                                     ) : (
                                         <Link as={RouterLink} to={`/prm/${event._id}/author/newpaper`} color="teal.500">
                                             Go to Event
                                         </Link>
-                                    )}
+                                    ))
+                                    :<Link as={RouterLink} to={`/prm/end`} color="teal.500">
+                                    Submission not yet started
+                                </Link>
+                                    }
                                 </Td>
                             </Tr>
                         ))}
@@ -86,7 +93,7 @@ function DynamicTable(props) {
 
 function SearchEvent() {
     const apiUrl = getEnvironment();
-    const [events, setEvents] = useState([]);
+    const [events, setEvents] = useState();
     const toast = useToast();
 
     let [searchQuery, setSearchQuery] = useState('')
@@ -131,11 +138,14 @@ function SearchEvent() {
                     value={searchQuery}
                     onChange={handleChange}
                 />
-                {!EventFilter(events).length ? (
-                    <p style={{color: 'slategrey', textAlign:'center'}}>No events found...</p>
+                {events ?( !EventFilter(events).length ? (
+                    <p style={{color: 'slategrey', textAlign:'center'}}><br/>No events found...</p>
                 ) : (
                     <DynamicTable events={EventFilter(events)} />
-                )}
+                )):(
+                <Flex height={'10vh'}>
+                    <Spinner margin='auto' />
+                </Flex>)}
             </Box>
         </Container>
     );

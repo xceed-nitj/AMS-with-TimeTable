@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import getEnvironment from "../../getenvironment";
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Box,
   Button,
@@ -9,9 +12,12 @@ import {
   Heading,
   Text,
   SimpleGrid,
+  useToast
 } from '@chakra-ui/react';
 
 const UserRegistration = () => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false)
   const [formValues, setFormValues] = useState({
     name: '',
     designation: '',
@@ -20,12 +26,15 @@ const UserRegistration = () => {
     city: '',
     state: '',
     pincode: '',
-    alternateEmail: '',
-    phone: ''
+    email: '',
+    phone: '',
+    password:'',
   });
 
+  const toast = useToast();
+  const apiUrl = getEnvironment();
   const [errors, setErrors] = useState({
-    alternateEmail: '',
+    email: '',
     phone: ''
   });
 
@@ -43,27 +52,49 @@ const UserRegistration = () => {
     return phoneRegex.test(phone);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    let valid = true;
-    let newErrors = { alternateEmail: '', phone: '' };
-
-    if (!validateEmail(formValues.alternateEmail)) {
-      valid = false;
-      newErrors.alternateEmail = 'Invalid email format';
-    }
-
-    if (!validatePhone(formValues.phone)) {
-      valid = false;
-      newErrors.phone = 'Phone number must be 10 digits';
-    }
-
-    setErrors(newErrors);
-
-    if (valid) {
-      // Handle form submission (e.g., send data to the server)
-      console.log('Form submitted:', formValues);
+    setIsLoading(true)
+    try {
+      console.log(formValues)
+      const response = await fetch(
+        `${apiUrl}/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({...formValues,roles:"PRM"}),
+        }
+      );
+      const data = await response.json();
+      if (response.ok) {
+        axios.post(`${apiUrl}/auth/verify`, {email : formValues.email});
+        localStorage.setItem('formValues', JSON.stringify(formValues));
+        window.location.href = `/prm/emailverification`;
+      } else {
+        toast({
+          title: data.message,
+          status: "error",
+          duration: 6000,
+          isClosable: true,
+          position: "bottom"
+        });
+      }
+      console.log(data);
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Error updating User data",
+        description: "Please try again later",
+        status: "error",
+        duration: 6000,
+        isClosable: true,
+        position: "bottom"
+      });
+    }finally {
+      setIsLoading(false)
     }
   };
 
@@ -137,11 +168,11 @@ const UserRegistration = () => {
             />
           </FormControl>
           
-          <FormControl id="alternateEmail" isRequired isInvalid={errors.alternateEmail}>
+          <FormControl id="email" isRequired isInvalid={errors.email}>
             <FormLabel>Alternate Email</FormLabel>
             <Input 
               type="email" 
-              value={formValues.alternateEmail} 
+              value={formValues.email} 
               onChange={handleChange} 
               errorBorderColor="red.500"
             />
@@ -158,8 +189,16 @@ const UserRegistration = () => {
             />
             {errors.phone && <Text color="red.500">{errors.phone}</Text>}
           </FormControl>
+          <FormControl id="password" isRequired>
+            <FormLabel>Password</FormLabel>
+            <Input 
+              type='password'
+              value={formValues.password} 
+              onChange={handleChange} 
+            />
+          </FormControl>
         </SimpleGrid>
-        <Button colorScheme="blue" type="submit">Register</Button>
+        <Button colorScheme="blue" type="submit" isLoading={isLoading}>Register</Button>
       </VStack>
     </Box>
   );

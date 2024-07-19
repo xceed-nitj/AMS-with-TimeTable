@@ -14,7 +14,7 @@ const {
 router.post('/add', addDefaultQuestion);
 router.get('/all',  getDefaultQuestions);
 router.get('/:id', getDefaultQuestionById);
-router.put('/:id', updateDefaultQuestion);
+router.patch('/:id', updateDefaultQuestion);
 router.delete('/:id', deleteDefaultQuestion);
 
 module.exports = router;

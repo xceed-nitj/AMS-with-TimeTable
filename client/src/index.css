@@ -1,5 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
 
+/* import fonts for certificate design */
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Cookie&family=Dancing+Script:wght@400..700&family=Euphoria+Script&family=Libre+Caslon+Display&family=Monoton&family=Noto+Serif+Devanagari:wght@100..900&family=Playwrite+DE+Grund:wght@100..400&family=Special+Elite&family=UnifrakturCook:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Anton+SC&family=Blaka+Ink&family=Concert+One&family=Finger+Paint&family=Ga+Maamli&family=Grey+Qo&family=Ingrid+Darling&family=Kings&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lobster&family=Merienda:wght@300..900&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&family=Neuton:ital,wght@0,200;0,300;0,400;0,700;0,800;1,400&family=Noto+Serif+Grantha&family=Ole&family=Oleo+Script:wght@400;700&family=Oswald:wght@200..700&family=Pacifico&family=Permanent+Marker&family=Roboto+Slab:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Rowdies:wght@300;400;700&family=Rubik+Bubbles&family=Rubik+Burned&family=Rubik+Marker+Hatch&family=Rubik+Maze&family=Rubik+Microbe&family=Rubik+Spray+Paint&family=Rubik+Wet+Paint&display=swap');
+
+
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

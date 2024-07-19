@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
-const User = require('./user.js');
+const User = require('../usermanagement/user.js');
 const Event = require('./event.js');
 
 const paperSchema = new mongoose.Schema({
 
-    paperId: { type: String,  required:true},                          
+    paperId: { type: Number,  required:true},                          
     eventId: { type: mongoose.Schema.Types.ObjectId, ref:'Event' },    
     authors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],  
     abstract: {type:String, authorAccess:true,},

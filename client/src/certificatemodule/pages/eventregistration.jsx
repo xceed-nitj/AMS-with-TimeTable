@@ -28,6 +28,7 @@ const EventRegistration = () => {
     name: '',
     user: '',
     ExpiryDate: '',
+    plan: 'basic', // default plan
   });
 
   useEffect(() => {
@@ -137,6 +138,18 @@ console.log(formData)
           />
         </FormControl>
 
+        <FormControl mb="4">
+          <FormLabel>Plan</FormLabel>
+          <Select
+            name="plan"
+            value={formData.plan}
+            onChange={handleChange}
+          >
+            <option value="basic">Basic</option>
+            <option value="premium">Premium</option>
+          </Select>
+        </FormControl>
+
         <Button type="submit">Submit</Button>
       </form>
 
@@ -146,6 +159,7 @@ console.log(formData)
             <Th>Event Name</Th>
             <Th>User</Th>
             <Th>Expiry Date</Th>
+            <Th>Plan</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -154,6 +168,7 @@ console.log(formData)
               <Td>{event.name}</Td>
               <Td>{event.user}</Td>
               <Td>{event.ExpiryDate}</Td>
+              <Td>{event.plan}</Td>
             </Tr>
           ))}
         </Tbody>

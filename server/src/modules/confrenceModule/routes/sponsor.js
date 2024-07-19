@@ -3,6 +3,7 @@ const SponsorsController = require("../crud/sponsors");
 
 const sponsorsRouter = express.Router();
 const sponsorsController = new SponsorsController();
+const { checkRole } = require("../../checkRole.middleware");
 
 // GET /sponsors/conference/:id
 sponsorsRouter.get("/conference/:id", async (req, res) => {
@@ -41,7 +42,7 @@ sponsorsRouter.get("/:id", async (req, res) => {
 });
 
 // POST /sponsors
-sponsorsRouter.post("/", async (req, res) => {
+sponsorsRouter.post("/",checkRole(['EO']), async (req, res) => {
   try {
     await sponsorsController.createSponsor(req, res);
   } catch (e) {
@@ -65,7 +66,7 @@ sponsorsRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /sponsors/:id
-sponsorsRouter.delete("/:id", async (req, res) => {
+sponsorsRouter.delete("/:id",checkRole(['EO']), async (req, res) => {
   try {
     await sponsorsController.deleteSponsor(req, res);
   } catch (e) {
