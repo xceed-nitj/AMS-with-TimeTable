@@ -70,7 +70,7 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
     '3:30 PM - 4:25 PM',
     '4:30 PM - 5:25 PM',
 ].map((period) => (
-                    <Th key={period} style={{textWrap:'wrap',backgroundColor:'#24304c', color:"white"}} align="center" height="50">
+                    <Th key={period} style={{textWrap:'nowrap',backgroundColor:'#24304c', color:"white", textAlign:"center"}} height="50">
                       <b>{period === '12:30 PM - 1:30 PM' ? '12:30 PM - 1:30 PM' : period}</b>
                     </Th>
                   ))}
@@ -95,9 +95,9 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
                               {slot.map((cell, cellIndex) => (
                                 <div style={{
                                   color:colorManager(cell.subject)}} key={cellIndex} className="cell-slot">
-                                  <p>{cell.subject}</p><br />
-                                  <p>{cell.room}</p><br />
-                                  <p>{cell.faculty}</p>
+                                  <p style={{textAlign:'center'}}>{cell.subject}</p><br />
+                                  <p style={{textAlign:'center'}}>{cell.room}</p><br />
+                                  <p style={{textAlign:'center'}}>{cell.faculty}</p>
                                 </div>
                               ))}
                             </div>
@@ -112,9 +112,9 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
                               {slot.map((cell, cellIndex) => (
                                 <div style={{
                                   color:colorManager(cell.subject)}} key={cellIndex} className="cell-slot">
-                                  <p>{cell.subject}</p>
-                                  <p>{cell.room}</p>
-                                  <p>{cell.faculty}</p>
+                                  <p style={{textAlign:'center'}}>{cell.subject}</p>
+                                  <p style={{textAlign:'center'}}>{cell.room}</p>
+                                  <p style={{textAlign:'center'}}>{cell.faculty}</p>
                                 </div>
                               ))}
                             </div>
