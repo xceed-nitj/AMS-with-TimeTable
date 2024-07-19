@@ -3,6 +3,7 @@ const ImagesController = require("../crud/images"); // Change to the appropriate
 
 const imagesRouter = express.Router();
 const imagesController = new ImagesController();
+const { checkRole } = require("../../checkRole.middleware");
 
 // GET /images/conference/:id
 imagesRouter.get("/conference/:id", async (req, res) => {
@@ -35,7 +36,7 @@ imagesRouter.get("/:id", async (req, res) => {
 });
 
 // POST /images
-imagesRouter.post("/", async (req, res) => {
+imagesRouter.post("/", checkRole(['EO']),async (req, res) => {
   try {
     await imagesController.createImage(req, res);
   } catch (error) {
@@ -55,7 +56,7 @@ imagesRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /images/:id
-imagesRouter.delete("/:id", async (req, res) => {
+imagesRouter.delete("/:id",checkRole(['EO']), async (req, res) => {
   try {
     await imagesController.deleteImage(req, res);
   } catch (error) {
