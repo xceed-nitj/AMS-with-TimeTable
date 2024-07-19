@@ -53,10 +53,10 @@ console.log(type)
               else if(type == 'room'){
                 foundSubject = subjectData.find(item => item.subName === subject && item.sem === room);
                 }
-              // else if(type == 'sem')
-              // {
-              // foundSubject = subjectData.find(item => item.subName === subject && item.sem === headTitle );
-              // }
+              else if(type == 'sem')
+              {
+              foundSubject = subjectData.find(item => item.subName === subject && item.sem === headTitle );
+              }
               // Initialize or update the subject entry in the summaryData
               if (foundSubject) {
                 if (!summaryData[subject]) {
