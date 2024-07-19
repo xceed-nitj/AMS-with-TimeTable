@@ -61,7 +61,7 @@ function PendingAssignment() {
             <Header title="Pending Paper List" />
 
             <Box maxW="xl" mx="auto" mt={10}>
-                <h1>Pending Papers</h1>
+                
                 <Table variant="simple" mt={8}>
                     <Thead>
                         <Tr>
