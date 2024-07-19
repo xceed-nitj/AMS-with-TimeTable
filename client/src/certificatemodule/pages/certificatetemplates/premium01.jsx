@@ -56,8 +56,10 @@ const CertificateContent = ({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="841.92"
-      height="595.499987"
+      style={{
+        width: window.outerWidth >= 768 ? "841.9" : window.outerWidth,
+        height: window.outerWidth >= 768 ? "595.5" : "auto"
+    }}
       viewBox="0 0 1124 800"
       id="svg"
       className="svg-img tw-object-contain"
