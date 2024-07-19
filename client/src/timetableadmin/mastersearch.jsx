@@ -561,7 +561,7 @@ useEffect(()=>
       <Box mb='5'>
         {selectedSemester ? (
           <Box>
-            <Text color="black" id="saveTime" mb="2.5" mt="2.5">
+            <Text color="green" style={{fontWeight:'700'}} id="saveTime" mb="2.5" mt="2.5">
               Last saved on: {lockedTime ? lockedTime : "Not saved yet"}
             </Text>
             <ViewTimetable timetableData={viewData} />
@@ -603,7 +603,7 @@ useEffect(()=>
             )}
       </Box>
       <Center my={4}>
-        <Text>(or)</Text>
+        <Text style={{fontWeight:'800', color:"#394870", fontSize:'large'}}>or</Text>
       </Center>
       {/* Faculty Dropdown */}
       <FormControl>
@@ -623,7 +623,7 @@ useEffect(()=>
       <Box mb='5'>
         {selectedFaculty ? (
           <Box>
-            <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+            <Text color="green" style={{fontWeight:'700'}} id="saveTime" mb='2.5' mt='2.5'>
               Last saved on:{" "}
               {facultyLockedTime ? facultyLockedTime : "Not saved yet"}
             </Text>
@@ -670,7 +670,7 @@ useEffect(()=>
           )}
       </Box>
       <Center my={4}>
-        <Text>(or)</Text>
+        <Text style={{fontWeight:'800', color:"#394870", fontSize:'large'}}>or</Text>
       </Center>
 
     <FormControl>
