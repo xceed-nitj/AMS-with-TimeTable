@@ -143,7 +143,7 @@ const CertificateContent = ({
                   }}
                   className="tw-w-20 tw-shrink-0 tw-mx-6"
                 >
-                  <img src={item.url} alt="" />
+                  <img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
@@ -248,7 +248,7 @@ const CertificateContent = ({
                   style={{ width: `${item.url.size}px` }}
                   className="tw-flex tw-flex-col tw-justify-end"
                 >
-                  <ProxifiedImage src={item.url.url} alt="" />
+                  <img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} alt="" />
                 </div>
                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                 <Text

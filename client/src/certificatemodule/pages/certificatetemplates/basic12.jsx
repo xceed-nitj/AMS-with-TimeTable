@@ -137,7 +137,7 @@ const CertificateContent = ({
                 className="tw-flex tw-items-center tw-justify-center "
               >
                 <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                  <img src={item} alt="" />
+                <img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
@@ -205,7 +205,7 @@ const CertificateContent = ({
                 className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2"
               >
                 <div className="tw-w-[100px]">
-                  <ProxifiedImage src={item.url} alt="" />
+                <img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} alt="" />
                 </div>
                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                 <Text fontSize={item.name.fontSize} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} className="tw-text-black">{item.name.name}</Text>
