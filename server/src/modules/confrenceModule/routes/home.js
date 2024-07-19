@@ -5,6 +5,7 @@ const HomeController = require("../crud/home");
 
 const router = express.Router();
 const homeController = new HomeController();
+const { checkRole } = require("../../checkRole.middleware");
 
 router.get("/", async (req, res) => {
   try {
@@ -42,7 +43,7 @@ router.get("/conf/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/",checkRole(['EO']), async (req, res) => {
   try {
     const newHome = req.body;
     await homeController.addHome(newHome);
@@ -68,7 +69,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",checkRole(['EO']), async (req, res) => {
   try {
     await homeController.deleteHome(req.params.id);
     res.status(200).json({ response: "Home Deleted Successfully" });

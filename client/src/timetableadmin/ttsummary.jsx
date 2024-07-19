@@ -16,7 +16,7 @@ import { Button } from "@chakra-ui/button";
 import PDFGenerator from '../filedownload/makepdf';
 
 
-const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData,notes,commonLoad }) => {
+const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData,notes,commonLoad, subjectColorsProp }) => {
 
   
 console.log('commonload data',commonLoad);
@@ -193,36 +193,36 @@ if (commonLoad) {
 // console.log('summary',  sortedSummaryEntries)
   return (
     <div>
-      <h2>Timetable Summary</h2>
+      <h2 style={{fontWeight:'700', fontSize:'large', padding:'10px'}}>Timetable Summary</h2>
       <TableContainer>
-      <table border="1" cellSpacing="0" align="center">
+      <Table border="1" cellSpacing="0" align="center" colorScheme='blackAlpha'>
         <thead>
-          <tr>
-          <th>Abbreviation</th>
-            <th>Subject Code</th>
-            <th>Subject Name</th>
-            <th>Subject Type</th>
-            <th>Hours</th>
-            {type !== 'faculty' && <th>Faculty Name</th>}
-            {type !== 'room' && <th>Room No</th>}
-            {type !=='sem' && <th>Semester</th>}
-          </tr>
+          <Tr>
+          <Th>Abbreviation</Th>
+            <Th>Subject Code</Th>
+            <Th>Subject Name</Th>
+            <Th>Subject Type</Th>
+            <Th>Hours</Th>
+            {type !== 'faculty' && <Th>Faculty Name</Th>}
+            {type !== 'room' && <Th>Room No</Th>}
+            {type !=='sem' && <Th>Semester</Th>}
+          </Tr>
         </thead>
         <tbody>
   {Object.keys(sortedSummaryEntries).map((subCode) => (
-    <tr key={subCode}>
-      <td>{sortedSummaryEntries[subCode].originalKeys.join(', ')}</td>
-      <td>{sortedSummaryEntries[subCode].subCode}</td>
-      <td>{sortedSummaryEntries[subCode].subjectFullName}</td>
-      <td>{sortedSummaryEntries[subCode].subType}</td>
-      <td>{sortedSummaryEntries[subCode].count}</td>
-      {type !== 'faculty' && <td>{sortedSummaryEntries[subCode].faculties.join(', ')}</td>}
-      {type !== 'room' && <td>{sortedSummaryEntries[subCode].rooms.join(', ')}</td>}
-      {type !== 'sem' && type !== 'room'?<td>{sortedSummaryEntries[subCode].faculties.join(', ')}</td>: type !== 'sem' && <td>{sortedSummaryEntries[subCode].rooms.join(', ')}</td>}
-    </tr>
+    <Tr color={subjectColorsProp[sortedSummaryEntries[subCode].subCode]} key={subCode}>
+      <Td>{sortedSummaryEntries[subCode].originalKeys.join(', ')}</Td>
+      <Td>{sortedSummaryEntries[subCode].subCode}</Td>
+      <Td>{sortedSummaryEntries[subCode].subjectFullName}</Td>
+      <Td>{sortedSummaryEntries[subCode].subType}</Td>
+      <Td>{sortedSummaryEntries[subCode].count}</Td>
+      {type !== 'faculty' && <Td>{sortedSummaryEntries[subCode].faculties.join(', ')}</Td>}
+      {type !== 'room' && <Td>{sortedSummaryEntries[subCode].rooms.join(', ')}</Td>}
+      {type !== 'sem' && type !== 'room'?<Td>{sortedSummaryEntries[subCode].faculties.join(', ')}</Td>: type !== 'sem' && <Td>{sortedSummaryEntries[subCode].rooms.join(', ')}</Td>}
+    </Tr>
   ))}
 </tbody>
-      </table>
+      </Table>
       </TableContainer>
 {time?<PDFGenerator timetableData={timetableData} summaryData={sortedSummaryEntries} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle} notes={notes}/>:null}
     </div>

@@ -3,6 +3,7 @@ const AwardsController = require("../crud/awards"); // Change to the appropriate
 
 const awardsRouter = express.Router();
 const awardsController = new AwardsController();
+const { checkRole } = require("../../checkRole.middleware");
 
 // GET /awards/conference/:id
 awardsRouter.get("/conference/:id", async (req, res) => {
@@ -35,7 +36,7 @@ awardsRouter.get("/:id", async (req, res) => {
 });
 
 // POST /awards
-awardsRouter.post("/", async (req, res) => {
+awardsRouter.post("/",checkRole(['EO']), async (req, res) => {
   try {
     await awardsController.createAward(req, res);
   } catch (error) {
@@ -55,7 +56,7 @@ awardsRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /awards/:id
-awardsRouter.delete("/:id", async (req, res) => {
+awardsRouter.delete("/:id", checkRole(['EO']),async (req, res) => {
   try {
     await awardsController.deleteAward(req, res);
   } catch (error) {

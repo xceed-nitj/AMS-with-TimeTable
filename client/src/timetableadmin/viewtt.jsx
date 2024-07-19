@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container } from "@chakra-ui/layout";
-import { Heading } from '@chakra-ui/react';
+import { color, Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
 import {
   Table,
@@ -18,10 +18,37 @@ import PDFGenerator from '../filedownload/makepdf';
 
 // ... (other imports)
 
-const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
+const ViewTimetable = ({ timetableData, tableSummary, headerDetails, setSubjectColorsProp }) => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   console.log('data sent to view', timetableData);
+
+  const colorList = [
+    'darkturquoise',
+    'black',
+    'green',
+    'red',
+    'brown',
+    'orange',
+    'navy',
+    'blue',
+    'purple',
+    'darkgolden',
+    'darkmagenta',
+    'gray'
+  ]
+  let colorDict = {}
+  function colorManager (val) {
+    function freshColor(){
+      return colorList.filter((c)=>!Object.values(colorDict).includes(c))[0]
+    }
+    if (!val) return
+    if(!{}.propertyIsEnumerable.call(colorDict, val)){
+      colorDict[val] = freshColor()
+      setSubjectColorsProp(colorDict)
+    }
+    return colorDict[val]
+  }
 
   return (
     <div>
@@ -30,12 +57,12 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
       ) : (
         <div id='timetable-summary'>
           <TableContainer>
-            <Table>
+            <Table variant={'striped'} colorScheme='blackAlpha'>
               <Thead>
                 <Tr>
-                  <CustomTh>Day/Period </CustomTh>
+                  <Th style={{backgroundColor:'#24304c', fontWeight:'900', fontSize:'small', color: 'white'}}>Day/Period </Th>
                   {[    '8:30 AM - 9:25 AM',
-    '9:30 AM - 10:25 AM',
+    ('9:30 AM - 10:25 AM'),
     '10:30 AM - 11:25 AM',
     '11:30 AM - 12:25 PM',
     '12:30 PM - 1:30 PM',
@@ -44,20 +71,22 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
     '3:30 PM - 4:25 PM',
     '4:30 PM - 5:25 PM',
 ].map((period) => (
-                    <th key={period} align="center" height="50">
+                    <Th key={period} style={{textWrap:'nowrap',backgroundColor:'#24304c', color:"white", textAlign:"center"}} height="50">
                       <b>{period === '12:30 PM - 1:30 PM' ? '12:30 PM - 1:30 PM' : period}</b>
-                    </th>
+                    </Th>
                   ))}
                 </Tr>
               </Thead>
               <Tbody>
                 {days.map((day) => (
-                  <tr key={day}>
-                    <td align="center" height="50">
+                  <Tr key={day}>
+                  <Td style={{backgroundColor:'#24304c', color:"white"}} align="center" height="50">
                       <b>{day}</b>
-                    </td>
+                    </Td>
                     {[1, 2, 3, 4, 'Lunch', 5, 6, 7, 8].map((period) => (
-                      <td key={period} align="center" height="50">
+                      <Td key={period} align="center" height="50" style={{
+                        backgroundColor:period=='Lunch'?'#DECA57cc' : '',
+                        color:period=='Lunch'?'rgba(0,0,0,0.7)':''}}>
                         {period === 'Lunch'  ? (
                            <div className="cell-container">
                            {/* Check if lunch data exists for the current day */}
@@ -65,10 +94,11 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
                              timetableData[day]['lunch'].map((slot, slotIndex) => (
                               <div key={slotIndex} className="cell-container">
                               {slot.map((cell, cellIndex) => (
-                                <div key={cellIndex} className="cell-slot">
-                                  <p>{cell.subject}</p>
-                                  <p>{cell.room}</p>
-                                  <p>{cell.faculty}</p>
+                                <div style={{
+                                  color:colorManager(cell.subject)}} key={cellIndex} className="cell-slot">
+                                  <p style={{textAlign:'center'}}>{cell.subject}</p><br />
+                                  <p style={{textAlign:'center'}}>{cell.room}</p><br />
+                                  <p style={{textAlign:'center'}}>{cell.faculty}</p>
                                 </div>
                               ))}
                             </div>
@@ -81,18 +111,19 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
                           timetableData[day][`period${period}`].map((slot, slotIndex) => (
                             <div key={slotIndex} className="cell-container">
                               {slot.map((cell, cellIndex) => (
-                                <div key={cellIndex} className="cell-slot">
-                                  <p>{cell.subject}</p>
-                                  <p>{cell.room}</p>
-                                  <p>{cell.faculty}</p>
+                                <div style={{
+                                  color:colorManager(cell.subject)}} key={cellIndex} className="cell-slot">
+                                  <p style={{textAlign:'center'}}>{cell.subject}</p>
+                                  <p style={{textAlign:'center'}}>{cell.room}</p>
+                                  <p style={{textAlign:'center'}}>{cell.faculty}</p>
                                 </div>
                               ))}
                             </div>
                           ))
                         )}
-                      </td>
+                      </Td>
                     ))}
-                  </tr>
+                  </Tr>
                 ))}
               </Tbody>
             </Table>

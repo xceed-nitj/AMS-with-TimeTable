@@ -1,32 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
 import JoditEditor from 'jodit-react';
 import axios from 'axios';
-import { useToast, FormControl, Input, Button, chakra, Heading, IconButton, Box, Text, Flex } from '@chakra-ui/react';
+import { useToast, FormLabel, FormControl, Input, Button, chakra, Heading, IconButton, Box, Text, Checkbox, Select } from '@chakra-ui/react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import './ReviewQuestion.css'; // Import the CSS file
 import getEnvironment from '../../getenvironment';
 
 const apiUrl = getEnvironment();
 
-const AddQuestion = () => {
+const Forms = () => {
   const editor = useRef(null);
   const [question, setQuestion] = useState('');
   const [type, setType] = useState('');
   const [options, setOptions] = useState(['']);
   const [order, setOrder] = useState('');
+  const [title, setTitle] = useState('');
+  const [section, setSection] = useState('');
+  const [accessRole, setAccessRole] = useState('');
+  const [show, setShow] = useState(false);
   const toast = useToast();
-  const { eventId } = useParams(); 
+  const { eventId, paperId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [edit, setEdit] = useState((searchParams.get('edit')) ? searchParams.get('edit') : false);
+  const [edit, setEdit] = useState((searchParams.get('edit')) ? searchParams.get('edit') : false); // this stores the id of question or false(new question)
 
-  if (edit) useEffect(() => { fetchSavedQuestion(edit) }, [edit]);
+  if (edit) useEffect(() => { fetchSavedQuestion(edit) }, [edit])
 
   const fetchSavedQuestion = async (qId) => {
     try {
-      const response = await axios.get(`${apiUrl}/api/v1/reviewmodule/reviewQuestion/${qId}`);
+      const response = await axios.get(`${apiUrl}/api/v1/reviewmodule/forms/${qId}`);
       setQuestions(response.data);
+      // setLoading(false);
     } catch (error) {
       console.error('Error fetching questions:', error);
+      // setLoading(false);
       toast({
         title: 'Error fetching questions',
         description: 'An error occurred while fetching the questions.',
@@ -38,10 +44,14 @@ const AddQuestion = () => {
   }
 
   const setQuestions = (qData) => {
-    setType(qData.type[0]);
-    setOrder(qData.order[0]);
-    setQuestion(qData.question[0]);
-    if (qData.options.length) setOptions(qData.options);
+    setType(qData.type[0])
+    setOrder(qData.order[0])
+    setQuestion(qData.question[0])
+    if (qData.options.length) setOptions(qData.options)
+    setTitle(qData.title)
+    setSection(qData.section)
+    setAccessRole(qData.accessRole)
+    setShow(qData.show)
   }
 
   const handleTypeChange = (e) => {
@@ -72,25 +82,33 @@ const AddQuestion = () => {
   const handleSubmit = async () => {
     const newQuestion = {
       eventId,
+      paperId,
       question: [question],
-      show: true,
+      show,
       type: [type],
       options: options.filter(option => option.trim() !== ''),
-      order: [parseInt(order, 10)]
+      order: [parseInt(order, 10)],
+      title,
+      section,
+      accessRole,
     };
 
     const editQuestion = {
       question: [question],
+      show,
       type: [type],
       options: options.filter(option => option.trim() !== ''),
-      order: [parseInt(order, 10)]
+      order: [parseInt(order, 10)],
+      title,
+      section,
+      accessRole,
     }
 
     try {
       if (edit) {
         await axios.patch(`${apiUrl}/reviewmodule/reviewQuestion/${edit}`, editQuestion);
       } else {
-        await axios.post(`${apiUrl}/reviewmodule/reviewQuestion/add`, newQuestion);
+        await axios.post(`${apiUrl}/reviewmodule/forms/`, newQuestion);
       }
       toast({
         title: 'Question saved.',
@@ -103,7 +121,11 @@ const AddQuestion = () => {
       setType('');
       setOptions(['']);
       setOrder('');
-      window.history.go(edit ? -2 : -1);
+      setTitle('');
+      setSection('');
+      setAccessRole('');
+      setShow(false);
+      window.history.go(edit ? -2 : -1); // i dont know how to navigate in the 'REACT-WAY', so sorry for this plain js code
     } catch (error) {
       toast({
         title: 'Error saving question.',
@@ -119,7 +141,7 @@ const AddQuestion = () => {
     const navigate = useNavigate();
 
     return (
-      <Heading mr='1' ml='1' display='flex'>
+      <Heading mr='1' ml='1' display='flex' >
         <IconButton
           mb='1'
           variant='ghost'
@@ -142,7 +164,7 @@ const AddQuestion = () => {
             />
           </chakra.svg>
         </IconButton>
-        <chakra.div marginInline='auto' color="white" fontSize='25px' mt='2'>
+        <chakra.div marginInline='auto' color="white" fontSize='25px' mt='2' >
           {title}
         </chakra.div>
       </Heading>
@@ -151,40 +173,11 @@ const AddQuestion = () => {
 
   return (
     <div className="add-question-page">
-      <Box bg="black" p={0.2} width='80%' marginX="auto">
+      <Box bg="black" p={0.2} width='80%'>
         <HeaderReviewQuestion color="white" textAlign="center" title={'Add Review Question' + (type ? ' - ' + type : '')} />
       </Box>
       <br />
       <FormControl onSubmit={handleSubmit} className="question-form">
-      <Flex direction={{ base: 'column', md: 'row' }} gap={10}>
-          <Box flex="1" width={{ base: '80vw', md: '70vw', lg:'50vw' }}>
-            <div className="form-group">
-              <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
-                <Text color="white" textAlign={'center'}>Type</Text>
-              </Box>
-              <select value={type} onChange={handleTypeChange} id='typeSelector'>
-                <option value="">Select Type</option>
-                <option value="Single Correct">Single Correct</option>
-                <option value="Multiple Correct">Multiple Correct</option>
-                <option value="Text">Text</option>
-              </select>
-            </div>
-          </Box>
-          <Box flex="1" width={{ base: '100%', md: '100%', lg:'100%' }}>
-            <div className="form-group">
-              <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
-                <Text color="white" textAlign={'center'}>Order</Text>
-              </Box>
-              <select value={order} onChange={(e) => setOrder(e.target.value)} id='orderSelector'>
-                <option value="">Select Order</option>
-                {Array.from({ length: 50 }, (_, i) => i + 1).map(number => (
-                  <option key={number} value={number}>{number}</option>
-                ))}
-              </select>
-            </div>
-          </Box>
-        </Flex>
-       
         <div className="form-group">
           <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
             <Text color="white" textAlign={'center'}>Question</Text>
@@ -194,6 +187,28 @@ const AddQuestion = () => {
             value={question}
             onChange={(newContent) => setQuestion(newContent)}
           />
+        </div>
+        <div className="form-group">
+          <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
+            <Text color="white" textAlign={'center'}>Type</Text>
+          </Box>
+          <select value={type} onChange={handleTypeChange} id='typeSelector'>
+            <option value="">Select Type</option>
+            <option value="Single Correct">Single Correct</option>
+            <option value="Multiple Correct">Multiple Correct</option>
+            <option value="Text">Text</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
+            <Text color="white" textAlign={'center'}>Order</Text>
+          </Box>
+          <select value={order} onChange={(e) => setOrder(e.target.value)} id='orderSelector'>
+            <option value="">Select Order</option>
+            {Array.from({ length: 50 }, (_, i) => i + 1).map(number => (
+              <option key={number} value={number}>{number}</option>
+            ))}
+          </select>
         </div>
         {(type === 'Single Correct' || type === 'Multiple Correct') && (
           <div className="form-group">
@@ -221,6 +236,44 @@ const AddQuestion = () => {
             <Button type="button" colorScheme='green' onClick={handleAddOption}>Add Option</Button>
           </div>
         )}
+        <div className="form-group">
+          <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
+            <Text color="white" textAlign={'center'}>Title</Text>
+          </Box>
+          <Input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+        <div className="form-group">
+          <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
+            <Text color="white" textAlign={'center'}>Section</Text>
+          </Box>
+          <Input
+            type="text"
+            value={section}
+            onChange={(e) => setSection(e.target.value)}
+          />
+        </div>
+        <div className="form-group">
+          <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
+            <Text color="white" textAlign={'center'}>Access Role</Text>
+          </Box>
+          <Input
+            type="text"
+            value={accessRole}
+            onChange={(e) => setAccessRole(e.target.value)}
+          />
+        </div>
+        <div className="form-group">
+          <Checkbox
+            isChecked={show}
+            onChange={(e) => setShow(e.target.checked)}
+          >
+            Show
+          </Checkbox>
+        </div>
         {edit ? (
           <Link
             onClick={handleSubmit}
@@ -237,10 +290,11 @@ const AddQuestion = () => {
               Save Question
             </Link>
           )
-        )}
+        )
+        }
       </FormControl>
     </div>
   );
 };
 
-export default AddQuestion;
+export default Forms;
