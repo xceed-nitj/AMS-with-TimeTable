@@ -59,19 +59,6 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
             isClosable: true,
           });
         }
-<<<<<<< HEAD
-    }
-    //console.log("paper details below=====>,");
-    //console.log(paper);
-    setIsLoading(true);
-    try {
-      const response = await axios.post(`${apiUrl}/reviewmodule/paper/addpaper/${eventId}`, form_data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      // console.log(response);
-=======
       }
     };
 
@@ -198,7 +185,6 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
         setIsLoading(false);
       }
     }else{
->>>>>>> 6b0abad1161620232ad9a6d03e902f1b02dd1fc2
       toast({
         title: 'Cannot Upload similar papers.',
         description: "A paper with this title and author already exists",
