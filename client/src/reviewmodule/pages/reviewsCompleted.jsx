@@ -6,13 +6,13 @@ import getEnvironment from '../../getenvironment';
 import Header from '../../components/header';
 import { useToast } from "@chakra-ui/react";
 
-
 function ReviewsCompleted() {
     const apiUrl = getEnvironment();
     const [Papers, setPapers] = useState([]);
     const [result, setResult] = useState([]);
     const [userId, setUserId] = useState('');
     const toast = useToast();
+
     useEffect(() => {
         const fetchPapers = async () => {
             try {
@@ -37,9 +37,11 @@ function ReviewsCompleted() {
                         }
                     }
                 }
+                // Sort the result by completedDate in descending order
+                result.sort((a, b) => new Date(b.reviewers.completedDate) - new Date(a.reviewers.completedDate));
                 setPapers(Papers);
                 setResult(result);
-            }catch (error) {
+            } catch (error) {
                 console.error('Error fetching Papers:', error);
                 toast({
                     title: "Error",
@@ -53,19 +55,15 @@ function ReviewsCompleted() {
         fetchPapers();
     }, [apiUrl, toast]);
 
-
     return (
-        <Container>
+        <Container maxW='3xl'>
             <Header title="Completed Review List" />
-
-            <Box maxW="xl" mx="auto" mt={10}>
-                <h1>Completed Reviews</h1>
+            <Box maxW='4xl' mx="auto" mt={10}>
                 <Table variant="simple" mt={8}>
                     <Thead>
                         <Tr>
                             <Th>Paper ID</Th>
                             <Th>Paper Title</Th>
-                            <Th>Abstract</Th>
                             <Th>Completed Date</Th> {/* New column for the link */}
                             <Th>Submitted Review</Th>
                         </Tr>
@@ -75,7 +73,6 @@ function ReviewsCompleted() {
                             <Tr key={paper._id}>
                                 <Td>{paper.paperId}</Td>
                                 <Td>{paper.title}</Td>
-                                <Td>{paper.abstract}</Td>
                                 <Td>{new Date(paper.reviewers.completedDate).toLocaleDateString()}</Td>
                                 <Td>
                                     <Link as={RouterLink} to={`/prm/${paper.eventId}/${paper._id}/${userId}/Review`} color="teal.500">
