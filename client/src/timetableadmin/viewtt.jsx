@@ -18,7 +18,7 @@ import PDFGenerator from '../filedownload/makepdf';
 
 // ... (other imports)
 
-const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
+const ViewTimetable = ({ timetableData, tableSummary, headerDetails, setSubjectColorsProp }) => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   console.log('data sent to view', timetableData);
@@ -45,6 +45,7 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
     if (!val) return
     if(!{}.propertyIsEnumerable.call(colorDict, val)){
       colorDict[val] = freshColor()
+      setSubjectColorsProp(colorDict)
     }
     return colorDict[val]
   }
