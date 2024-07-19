@@ -53,10 +53,10 @@ console.log(type)
               else if(type == 'room'){
                 foundSubject = subjectData.find(item => item.subName === subject && item.sem === room);
                 }
-              else if(type == 'sem')
-              {
-              foundSubject = subjectData.find(item => item.subName === subject && item.sem === headTitle );
-              }
+              // else if(type == 'sem')
+              // {
+              // foundSubject = subjectData.find(item => item.subName === subject && item.sem === headTitle );
+              // }
               // Initialize or update the subject entry in the summaryData
               if (foundSubject) {
                 if (!summaryData[subject]) {
@@ -193,20 +193,20 @@ if (commonLoad) {
 // console.log('summary',  sortedSummaryEntries)
   return (
     <div>
-      <h2>Timetable Summary</h2>
+      <h2 style={{fontWeight:'700', fontSize:'large', padding:'10px'}}>Timetable Summary</h2>
       <TableContainer>
-      <table border="1" cellSpacing="0" align="center">
+      <Table border="1" cellSpacing="0" align="center" colorScheme='blue'>
         <thead>
-          <tr>
-          <th>Abbreviation</th>
-            <th>Subject Code</th>
-            <th>Subject Name</th>
-            <th>Subject Type</th>
-            <th>Hours</th>
-            {type !== 'faculty' && <th>Faculty Name</th>}
-            {type !== 'room' && <th>Room No</th>}
-            {type !=='sem' && <th>Semester</th>}
-          </tr>
+          <Tr>
+          <Th>Abbreviation</Th>
+            <Th>Subject Code</Th>
+            <Th>Subject Name</Th>
+            <Th>Subject Type</Th>
+            <Th>Hours</Th>
+            {type !== 'faculty' && <Th>Faculty Name</Th>}
+            {type !== 'room' && <Th>Room No</Th>}
+            {type !=='sem' && <Th>Semester</Th>}
+          </Tr>
         </thead>
         <tbody>
   {Object.keys(sortedSummaryEntries).map((subCode) => (
@@ -222,7 +222,7 @@ if (commonLoad) {
     </tr>
   ))}
 </tbody>
-      </table>
+      </Table>
       </TableContainer>
 {time?<PDFGenerator timetableData={timetableData} summaryData={sortedSummaryEntries} type={type} ttdata={TTData} updatedTime={time} headTitle={headTitle} notes={notes}/>:null}
     </div>
