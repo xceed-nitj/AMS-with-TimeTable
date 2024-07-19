@@ -18,14 +18,14 @@ import PDFGenerator from '../filedownload/makepdf';
 
 // ... (other imports)
 
-const ViewTimetable = ({ timetableData, tableSummary, headerDetails, setSubjectColorsProp }) => {
+const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   console.log('data sent to view', timetableData);
 
   const colorList = [
     'darkturquoise',
-    'black',
+    'darkred',
     'green',
     'red',
     'brown',
@@ -35,7 +35,15 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails, setSubjectC
     'purple',
     'darkgolden',
     'darkmagenta',
-    'gray'
+    'darkseagreen', 
+    'teal',
+    'darkolivegreen',
+    'darkslateblue',
+    'saddlebrown',
+    'indigo',
+    'darkcyan',
+    'firebrick', 
+    'darkorchid'
   ]
   let colorDict = {}
   function colorManager (val) {
@@ -45,7 +53,6 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails, setSubjectC
     if (!val) return
     if(!{}.propertyIsEnumerable.call(colorDict, val)){
       colorDict[val] = freshColor()
-      setSubjectColorsProp(colorDict)
     }
     return colorDict[val]
   }

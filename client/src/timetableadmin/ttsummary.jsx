@@ -16,7 +16,7 @@ import { Button } from "@chakra-ui/button";
 import PDFGenerator from '../filedownload/makepdf';
 
 
-const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData,notes,commonLoad, subjectColorsProp }) => {
+const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData,notes,commonLoad }) => {
 
   
 console.log('commonload data',commonLoad);
@@ -210,7 +210,7 @@ if (commonLoad) {
         </thead>
         <tbody>
   {Object.keys(sortedSummaryEntries).map((subCode) => (
-    <Tr color={subjectColorsProp[sortedSummaryEntries[subCode].subCode]} key={subCode}>
+    <Tr key={subCode}>
       <Td>{sortedSummaryEntries[subCode].originalKeys.join(', ')}</Td>
       <Td>{sortedSummaryEntries[subCode].subCode}</Td>
       <Td>{sortedSummaryEntries[subCode].subjectFullName}</Td>
