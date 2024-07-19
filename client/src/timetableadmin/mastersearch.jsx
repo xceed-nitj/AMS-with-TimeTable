@@ -64,6 +64,8 @@ function MasterView() {
   const [selectedSession, setSelectedSession]=useState('');
   const [selectedDept, setSelectedDept]=useState('');
 
+  const [subjectColors, setSubjectColors] = useState({})
+
   const semesters = availableSems;
 
   useEffect(() => {
@@ -564,8 +566,9 @@ useEffect(()=>
             <Text color="green" style={{fontWeight:'700'}} id="saveTime" mb="2.5" mt="2.5">
               Last saved on: {lockedTime ? lockedTime : "Not saved yet"}
             </Text>
-            <ViewTimetable timetableData={viewData} />
+            <ViewTimetable setSubjectColorsProp={setSubjectColors} timetableData={viewData} />
             <TimetableSummary
+              subjectColorsProp = {subjectColors}
               timetableData={viewData}
               type={"sem"}
               code={currentCode}
