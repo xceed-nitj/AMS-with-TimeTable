@@ -3,6 +3,7 @@ const NavbarController = require("../crud/navbar");
 
 const router = express.Router();
 const Navbar = new NavbarController();
+const { checkRole } = require("../../checkRole.middleware");
 
 router.get("/", async (req, res) => {
   try {
@@ -42,7 +43,7 @@ router.get("/conf/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", checkRole(['EO']), async (req, res) => {
   try {
     const navbarItem = req.body;
     await Navbar.addNavbar(navbarItem);
@@ -72,7 +73,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", checkRole(['EO']), async (req, res) => {
   const { id } = req.params;
   try {
     await Navbar.deleteNavbar(id);

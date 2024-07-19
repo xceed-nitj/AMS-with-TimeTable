@@ -1,6 +1,7 @@
 const express = require("express");
 const { Router } = express;
 const ParticipantController = require("../crud/participant");
+const { checkRole } = require("../../checkRole.middleware");
 
 const participantController = new ParticipantController();
 const router = Router();
@@ -43,7 +44,7 @@ router.get("/conf/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/",checkRole(['EO']), async (req, res) => {
   try {
     const participantData = req.body;
     await participantController.addParticipant(participantData);
@@ -66,7 +67,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", checkRole(['EO']),async (req, res) => {
   try {
     await participantController.deleteParticipant(req.params.id);
     res.status(200).json({ success: "Participant Deleted Successfully" });
