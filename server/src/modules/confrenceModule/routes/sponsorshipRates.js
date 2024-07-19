@@ -2,6 +2,7 @@ const express = require("express");
 const SponsorshipRate = require("../../../models/conferenceModule/sponsorshipRates");
 
 const SponsorshipRateController = require("../crud/sponsorshipRates");
+const { checkRole } = require("../../checkRole.middleware");
 
 const sponsorshipRateController = new SponsorshipRateController();
 const router = express.Router();
@@ -41,7 +42,7 @@ router.get("/conf/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/",checkRole(['EO']), async (req, res) => {
   try {
     const newSponsorshipRate = req.body;
     await sponsorshipRateController.addSponsorshipRate(newSponsorshipRate);
@@ -67,7 +68,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",checkRole(['EO']), async (req, res) => {
   try {
     const sponsorshipRateId = req.params.id;
     await sponsorshipRateController.deleteSponsorshipRate(sponsorshipRateId);
