@@ -64,8 +64,10 @@ const CertificateContent = ({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="841.92"
-      height="595.499987"
+      style={{
+        width: window.outerWidth >= 768 ? "841.9" : window.outerWidth,
+        height: window.outerWidth >= 768 ? "595.5" : "auto"
+    }}
       viewBox="0 0 1122.52 793.7"
       id="svg"
       className="svg-img tw-object-contain"
@@ -1360,7 +1362,7 @@ const CertificateContent = ({
                   }}
                   className="tw-w-20 tw-shrink-0 tw-mx-6"
                 >
-                  <img src={item.url} alt="" />
+                  <img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
@@ -1465,7 +1467,7 @@ const CertificateContent = ({
                   style={{ width: `${item.url.size}px` }}
                   className="tw-flex tw-flex-col tw-justify-end"
                 >
-                  <ProxifiedImage src={item.url.url} alt="" />
+                  <img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} alt="" />
                 </div>
                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
                 <Text
