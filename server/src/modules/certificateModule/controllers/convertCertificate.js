@@ -15,7 +15,6 @@ async function convertCertificateToImage(req, res) {
         const originalHeight = 595;
 
         await page.goto(svgUrl, { waitUntil: 'networkidle0', timeout: 30000 });
-        await page.waitForSelector('.chakra-image');
         await page.setViewport({ width: originalWidth, height: originalHeight, deviceScaleFactor: 4 }); //enhance quality of image
 
 
@@ -45,7 +44,6 @@ async function convertCertificateToPDF(req, res) {
         const originalHeight = 595;
 
         await page.goto(svgUrl, { waitUntil: 'networkidle0', timeout: 30000 });
-        await page.waitForSelector('.chakra-image');
         await page.setViewport({ width: originalWidth, height: originalHeight, deviceScaleFactor: 4 }); //enhance quality of image
 
 
