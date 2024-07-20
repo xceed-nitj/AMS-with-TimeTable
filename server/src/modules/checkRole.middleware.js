@@ -5,7 +5,6 @@ const { addEvent } = require("../models/certificateModule/addevent");
 const checkRole = (requiredRoles, checkEvent = false) => {
   return async (req, res, next) => {
     const token = req.cookies.jwt;
-    console.log(token);
     if (!token) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -15,9 +14,6 @@ const checkRole = (requiredRoles, checkEvent = false) => {
       const decoded = jwt.verify(token, jwtSecret);
       const userId = decoded.id;
       const userRoles = decoded.role; // Extract the roles from the token
-
-      // console.log(userRoles);
-      
 
       // Check if the user has the 'superadmin' role and skip further checks if they do
       if (userRoles.includes('admin')) {
@@ -40,7 +36,7 @@ const checkRole = (requiredRoles, checkEvent = false) => {
           return res.status(404).json({ message: "Event not found" });
         }
 
-        const isAssignedToEvent = addEvent.user === userId;
+        const isAssignedToEvent = event.user === userId;
         if (!isAssignedToEvent) {
           return res.status(403).json({ message: "Forbidden" });
         }
@@ -50,7 +46,7 @@ const checkRole = (requiredRoles, checkEvent = false) => {
       req.user = { id: userId, roles: userRoles };
       next();
     } catch (err) {
-      return res.status(401).json({ message: "Unauthorizedddd" });
+      return res.status(401).json({ message: "Unauthorized" });
     }
   };
 };
