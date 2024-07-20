@@ -14,11 +14,8 @@ import {
   useToast,
   Select,
   Flex,
-  Checkbox,
-  Link,
-  Icon,
+  useBreakpointValue,
 } from '@chakra-ui/react';
-import { AtSignIcon, LockIcon } from '@chakra-ui/icons';
 
 const UserRegistration = () => {
   const navigate = useNavigate();
@@ -118,23 +115,27 @@ const UserRegistration = () => {
     }
   };
 
+  const showWelcomeSection = useBreakpointValue({ base: false, md: true });
+
   return (
     <Flex height="100vh">
-      <Box
-        flex="1"
-        bgGradient="linear(to-r, purple.900, blue.500)"
-        color="white"
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-        p={6}
-      >
-        <Heading as="h1" color="white" fontSize="7xl" mb={4}>
-          Welcome to XCEED
-        </Heading>
-      </Box>
-      <Box flex="1" display="flex" alignItems="center" justifyContent="center" bg="white" p={6}>
+      {showWelcomeSection && (
+        <Box
+          flex="1"
+          bgGradient="linear(to-r, purple.900, blue.500)"
+          color="white"
+          display="flex"
+          flexDirection="column"
+          justifyContent="center"
+          alignItems="center"
+          p={6}
+        >
+          <Heading as="h1" color="white" fontSize="7xl" mb={4}>
+            Welcome to XCEED
+          </Heading>
+        </Box>
+      )}
+      <Box flex={showWelcomeSection ? "1" : "1 0 100%"} display="flex" alignItems="center" justifyContent="center" bg="white" p={6}>
         <Box maxW="400px" width="100%">
           <Heading color="purple.600" textAlign="center" mb={6}>
             User Registration

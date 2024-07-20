@@ -46,6 +46,7 @@ const LoginForm = () => {
       })
 
       const responseData = await response.json()
+      console.log(responseData);
 
       if (typeof responseData.user.isEmailVerified !== 'undefined') {
         if (!responseData.user.isEmailVerified && responseData.user.role.includes('PRM')) {
