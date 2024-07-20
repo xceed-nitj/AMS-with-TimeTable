@@ -4,7 +4,7 @@ const QuizController = require('../controllers/quiz');
 const quizController = new QuizController();
 const { quizBelongsToUser } = require('../controllers/helper');
 // const facultyRoute = require("../../../usermanagement/facultyroute");
-const { checkRole } = require("../../checkRole.middleware");
+const { checkRole } = require("../../../checkRole.middleware");
 
 quizRouter.post("/",checkRole(['FACULTY']), async (req, res) => {
     try { 

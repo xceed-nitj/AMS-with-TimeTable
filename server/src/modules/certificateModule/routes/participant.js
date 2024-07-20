@@ -6,6 +6,7 @@ const multer = require('multer');
 const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
 const {totalCertificates} = require("../helper/countCertificates");
+const { checkRole } = require("../../checkRole.middleware");
 
 
 const storage = multer.memoryStorage({

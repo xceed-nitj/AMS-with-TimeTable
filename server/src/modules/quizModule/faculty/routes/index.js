@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 // const facultyRoute = require("../../../usermanagement/facultyroute");
-const { checkRole } = require("../../checkRole.middleware");
+const { checkRole } = require("../../../checkRole.middleware");
 
 // quiz
 router.use('/quiz', checkRole(['FACULTY']), require("./quiz"));
