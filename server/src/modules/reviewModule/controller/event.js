@@ -2,6 +2,7 @@ const Event = require("../../../models/reviewModule/event.js");
 const User = require("../../../models/usermanagement/user.js")
 const XUser= require("../../../models/usermanagement/user.js")
 const express = require("express");
+const mongoose = require('mongoose');
 const bodyParser = require("body-parser");
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
 const getEnvironmentURL =require('../../../getEnvironmentURL.js')
@@ -22,6 +23,39 @@ app.use(
 );
 app.use(bodyParser.json());
 
+const get_fields = async (req, res) => {
+  const { collectionName } = req.params;
+  
+  try {
+      const db = mongoose.connection.db;
+      
+      // Check if the collection exists
+      const collections = await db.listCollections({name: collectionName}).toArray();
+      if (collections.length === 0) {
+          return res.status(404).send('Collection not found');
+      }
+
+      const collection = db.collection(collectionName);
+
+      // Get a sample of documents
+      const sampleDocs = await collection.find({}).limit(100).toArray();
+
+      if (sampleDocs.length === 0) {
+          return res.status(404).send('No documents found in the collection');
+      }
+
+      // Extract all unique fields
+      const fields = new Set();
+      sampleDocs.forEach(doc => {
+          Object.keys(doc).forEach(key => fields.add(key));
+      });
+
+      res.json(Array.from(fields));
+  } catch (error) {
+      console.error("Error fetching fields:", error);
+      res.status(500).send('Internal Server Error');
+  }
+};
 const addEvent = async (req, res) => {
   const { name, editor} =
     req.body;
@@ -561,4 +595,4 @@ const addDefaultTemplatesToEvent = async (req, res) => {
 };
 
 
-module.exports = { getEvents,addDefaultTemplatesToEvent,getEventsByUser,updateStartSubmission ,addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
+module.exports = { get_fields,getEvents,addDefaultTemplatesToEvent,getEventsByUser,updateStartSubmission ,addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
