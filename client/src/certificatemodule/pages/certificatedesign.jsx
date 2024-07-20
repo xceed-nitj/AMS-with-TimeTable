@@ -518,6 +518,7 @@ const CertificateForm = () => {
       const form = document.getElementById("form")
       const formdata = new FormData(form)
       selectedFiles.forEach((file) => { for (const key in file) { formdata.append(key, file[key]) } })
+      formdata.append("url",window.location.origin)
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/content/${eventId}`,
         {

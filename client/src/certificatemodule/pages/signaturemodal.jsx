@@ -25,7 +25,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                 )
                 if (response.ok) {
                     const image = await response.json();
-                    console.log("image: ", image)
+                    // console.log("image: ", image)
                     let Image = image.map((elem) => {
                         // console.log(elem)
                         if (elem["url"]["url"] || elem["url"]["url"]=="" ) {
@@ -53,7 +53,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                             return item;
                         }
                     })
-                    console.log("Image: ", Image)
+                    // console.log("Image: ", Image)
                     const Images = [Image[0]];
                     for(let i = 1; i < Image.length; i++){
                         let count = 0;
@@ -64,7 +64,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                         });
                         if(count==0 && Image[i].url.url.trim()){Images.push(Image[i])}
                     }
-                    console.log("Images: ",Images)
+                    // console.log("Images: ",Images)
                     setImages(Images)
                 } else {
                     console.error(response.error)
