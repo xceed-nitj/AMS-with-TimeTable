@@ -3,7 +3,12 @@ const quizRouter = express.Router();
 const QuizController = require('../controllers/quiz');
 const quizController = new QuizController();
 const { quizBelongsToUser } = require('../controllers/helper');
+
+// const facultyRoute = require("../../../usermanagement/facultyroute");
+const { checkRole } = require("../../../checkRole.middleware");
+
 const facultyRoute = require("../../../usermanagement/facultyroute");
+
 
 quizRouter.post("/",facultyRoute, async (req, res) => {
     try { 
