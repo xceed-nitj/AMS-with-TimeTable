@@ -9,7 +9,6 @@ const {convertToObject} = require("../controllers/formDataToObject")
 const {getImagesOfUserByEventId} =require("../controllers/signimagesofuser")
 const { convertCertificateToImage, convertCertificateToPDF} = require("../controllers/convertCertificate")
 const { convertallCertificates} = require("../controllers/convertAllCertificates")
-const { checkRole } = require("../../checkRole.middleware");
 
 // Route to create a new certificate
 certificateRouter.post("/content/:id", ecmadminRoute, LockStatus, upload.any(),async (req, res) => {
