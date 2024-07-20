@@ -5,7 +5,7 @@ const { sendEmail } = require("../controllers/participantemail");
 const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const { checkRole } = require("../../checkRole.middleware");
 
-router.post("/send-emails/:eventId", checkRole(['CM']), async (req, res) => {
+router.post("/send-emails/:eventId", ecmadminRoute, async (req, res) => {
   const eventId = req.params.eventId;
   const referer = req.get('Referer');
     // Extract the host from the Referer URL
@@ -28,7 +28,7 @@ router.post("/send-emails/:eventId", checkRole(['CM']), async (req, res) => {
   }
 });
 
-router.post("/send-email/:participantId",checkRole(['CM']), async (req, res) => {
+router.post("/send-email/:participantId",ecmadminRoute, async (req, res) => {
   try {
     const participantId = req.params.participantId;
     const referer = req.get('Referer');

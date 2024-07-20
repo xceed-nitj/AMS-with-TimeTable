@@ -25,27 +25,47 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                 )
                 if (response.ok) {
                     const image = await response.json();
+                    // console.log("image: ", image)
                     let Image = image.map((elem) => {
                         // console.log(elem)
-                        if (elem["url"]["url"]) {
+                        if (elem["url"]["url"] || elem["url"]["url"]=="" ) {
                             return elem
-                        } else if (elem["name"]["name"]) {
+                        } else if (elem["name"]["name"] || elem["name"]["name"]=="") {
                             const item = {
                                 name: { name: elem.name.name, fontSize: elem.name.fontSize, fontFamily: elem.name.fontFamily, bold: elem.name.bold, italic: elem.name.italic, fontColor: elem.name.fontColor },
                                 position: { position: elem.position.position, fontSize: elem.position.fontSize, fontFamily: elem.position.fontFamily, bold: elem.position.bold, italic: elem.position.italic, fontColor: elem.position.fontColor },
-                                url: { url: elem.url, size: 100 }
+                                url: { url: elem.url || "", size: 100 }
                             }
                             return item;
-                        } else if (elem["url"]) {
+                        } else if (elem["url"] || elem["url"]=="") {
                             const item = {
                                 name: { name: elem.name, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
                                 position: { position: elem.position, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
                                 url: { url: elem.url, size: 100 }
                             }
                             return item;
+                        }else{
+                            const item = {
+                                name: { name: " ", fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+                                position: { position: " ", fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+                                url: { url: "", size: 100 }
+                            }
+                            return item;
                         }
                     })
-                    setImages(Image)
+                    // console.log("Image: ", Image)
+                    const Images = [Image[0]];
+                    for(let i = 1; i < Image.length; i++){
+                        let count = 0;
+                        Images.forEach(element => {
+                            if(element.url.url==Image[i].url.url){
+                                count = 1;
+                            }
+                        });
+                        if(count==0 && Image[i].url.url.trim()){Images.push(Image[i])}
+                    }
+                    // console.log("Images: ",Images)
+                    setImages(Images)
                 } else {
                     console.error(response.error)
                 }
@@ -108,7 +128,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                             <div style={{ height: "452px" }} className="uploadedImages tw-flex tw-gap-4 tw-flex-wrap tw-p-4 tw-overflow-y-scroll">
                                 {images.length == 0 ? "You have no images uploaded" : images.map((elem, index) => (
                                     <div onClick={(e) => { handleClick(e, index) }} key={`${index}`} style={{ height: "150px", width: "170px" }} className="tw-border-2 tw-border-zinc-300 tw-rounded-lg tw-object-contain tw-p-1 hover:tw-bg-slate-300 hover:tw-cursor-pointer" >
-                                        <img src={`${elem.url.url}`}></img>
+                                        <img src={elem.url?`${elem.url.url}`:" "}></img>
                                         <Text fontWeight="bold" color="black" fontSize="14px" className='tw-text-center'>{elem.name.name}</Text>
                                         <Text fontSize="10px" color="black" className='tw-text-center'>{elem.position.position}</Text>
                                     </div>

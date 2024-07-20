@@ -1,10 +1,10 @@
 const jwt = require("jsonwebtoken");
 const jwtSecret = "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
-const { addEvent } = require("../models/certificateModule/addevent");
 
-const checkRole = (requiredRoles, checkEvent = false) => {
-  return async (req, res, next) => {
+const checkRole = (roles) => {
+  return (req, res, next) => {
     const token = req.cookies.jwt;
+
     if (!token) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -12,8 +12,7 @@ const checkRole = (requiredRoles, checkEvent = false) => {
     try {
       // Verify the token
       const decoded = jwt.verify(token, jwtSecret);
-      const userId = decoded.id;
-      const userRoles = decoded.role; // Extract the roles from the token
+
 
       // Check if the user has the 'superadmin' role and skip further checks if they do
       if (userRoles.includes('admin')) {
@@ -21,11 +20,22 @@ const checkRole = (requiredRoles, checkEvent = false) => {
         return next();
       }
 
+      // The token is valid, and 'decoded' contains user information including roles
+      const userId = decoded.id;
+      const userRoles = decoded.roles; // Ensure roles are correctly decoded
+
+      // Attach the user details to the 'req' object
+      req.user = {
+        id: userId,
+        roles: userRoles,
+      };
+
+
       // Check if the user has the required role
-      const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
-      if (!hasRequiredRole) {
+      if (!roles.some(role => userRoles.includes(role))) {
         return res.status(403).json({ message: "Forbidden" });
       }
+
 
       // If event check is required, check if the user is assigned to the specific event
       if (checkEvent) {
@@ -44,6 +54,9 @@ const checkRole = (requiredRoles, checkEvent = false) => {
 
       // Attach the user details to the 'req' object
       req.user = { id: userId, roles: userRoles };
+
+      // Allow the request to proceed
+
       next();
     } catch (err) {
       return res.status(401).json({ message: "Unauthorized" });

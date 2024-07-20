@@ -3,10 +3,14 @@ const quizRouter = express.Router();
 const QuizController = require('../controllers/quiz');
 const quizController = new QuizController();
 const { quizBelongsToUser } = require('../controllers/helper');
+
 // const facultyRoute = require("../../../usermanagement/facultyroute");
 const { checkRole } = require("../../../checkRole.middleware");
 
-quizRouter.post("/",checkRole(['FACULTY']), async (req, res) => {
+const facultyRoute = require("../../../usermanagement/facultyroute");
+
+
+quizRouter.post("/",facultyRoute, async (req, res) => {
     try { 
         await quizController.createQuiz(req, res);
     } catch (e) {
@@ -15,7 +19,7 @@ quizRouter.post("/",checkRole(['FACULTY']), async (req, res) => {
 });
 
 
-quizRouter.get("/quizzes", checkRole(['FACULTY']), async (req, res) => {
+quizRouter.get("/quizzes", facultyRoute, async (req, res) => {
     try {
         await quizController.getAllQuiz(req, res);
     } catch (e) {
@@ -23,7 +27,7 @@ quizRouter.get("/quizzes", checkRole(['FACULTY']), async (req, res) => {
     }
 });
 
-quizRouter.get("/:code", checkRole(['FACULTY']), async (req, res) => {
+quizRouter.get("/:code", facultyRoute, async (req, res) => {
     try {
         await quizController.getQuizByCode(req, res);
     } catch (e) {
@@ -31,7 +35,7 @@ quizRouter.get("/:code", checkRole(['FACULTY']), async (req, res) => {
     }
 });
 
-quizRouter.put("/:code", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.put("/:code", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.editQuizByCode(req, res);
     } catch (e) {
@@ -39,7 +43,7 @@ quizRouter.put("/:code", checkRole(['FACULTY']), quizBelongsToUser, async (req, 
     }
 });
 
-quizRouter.delete("/:code", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.delete("/:code", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.deleteQuiz(req, res);
     } catch (e) {
@@ -49,7 +53,7 @@ quizRouter.delete("/:code", checkRole(['FACULTY']), quizBelongsToUser, async (re
 
 // Questions
 
-quizRouter.post("/:code/questions", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.post("/:code/questions", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.addQuizQuestion(req, res);
     } catch (e) {
@@ -57,7 +61,7 @@ quizRouter.post("/:code/questions", checkRole(['FACULTY']), quizBelongsToUser, a
     }
 });
 
-quizRouter.put("/:code/questions/:id", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.put("/:code/questions/:id", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.editQuizQuestion(req, res);
     } catch (e) {
@@ -65,7 +69,7 @@ quizRouter.put("/:code/questions/:id", checkRole(['FACULTY']), quizBelongsToUser
     }
 });
 
-quizRouter.get("/:code/questions", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.get("/:code/questions", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.getAllQuestion(req, res);
     } catch (e) {
@@ -73,7 +77,7 @@ quizRouter.get("/:code/questions", checkRole(['FACULTY']), quizBelongsToUser, as
     }
 });
 
-quizRouter.get("/:code/questions/:id", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.get("/:code/questions/:id", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.findQuestionById(req, res);
     } catch (e) {
@@ -81,7 +85,7 @@ quizRouter.get("/:code/questions/:id", checkRole(['FACULTY']), quizBelongsToUser
     }
 });
 
-quizRouter.delete("/:code/questions/:id", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.delete("/:code/questions/:id", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.deleteQuizQuestion(req, res);
     } catch (e) {
@@ -92,7 +96,7 @@ quizRouter.delete("/:code/questions/:id", checkRole(['FACULTY']), quizBelongsToU
 
 // testing pending 
 
-quizRouter.delete("/:code/response", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.delete("/:code/response", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.deleteQuizResponse(req, res);
     } catch (e) {
@@ -101,7 +105,7 @@ quizRouter.delete("/:code/response", checkRole(['FACULTY']), quizBelongsToUser, 
 });
 
 
-quizRouter.get("/:code/results/summary", checkRole(['FACULTY']), quizBelongsToUser, async (req, res) => {
+quizRouter.get("/:code/results/summary", facultyRoute, quizBelongsToUser, async (req, res) => {
     try {
         await quizController.studentResultSummary(req, res);
     } catch (e) {
