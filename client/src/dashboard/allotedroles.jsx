@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { ChakraProvider, Container, Box, Text, VStack, Spinner, Table, Thead, Tbody, Tr, Th, Td, Link as ChakraLink } from "@chakra-ui/react";
 import getEnvironment from '../getenvironment';
-
+import { Navigate, useNavigate } from 'react-router-dom';
 const apiUrl = getEnvironment();
 
 const AllocatedRolesPage = () => {
+  const navigate = useNavigate();
   const [allocatedRoles, setAllocatedRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState('');
@@ -26,7 +27,8 @@ const AllocatedRolesPage = () => {
 
         const userdetails = await response.json();
         console.log('Fetched user details:', userdetails); // Log the fetched data
-        setAllocatedRoles(userdetails.user.role.filter(role => role)); // Filter out empty roles
+        const excludedRoles = ["Reviewer", "Author"];
+        setAllocatedRoles(userdetails.user.role.filter(role => !excludedRoles.includes(role))); // Filter out empty roles
         setUser(userdetails.user);
       } catch (error) {
         console.error("Error fetching allocated roles:", error.message);
@@ -34,14 +36,36 @@ const AllocatedRolesPage = () => {
         setIsLoading(false);
       }
     };
-
     fetchAllocatedRoles();
   }, []);
 
   if (isLoading) {
     return <Spinner />;
   }
-
+  if (allocatedRoles.length===1){
+    switch (allocatedRoles[0]) {
+      case 'ITTC':
+        navigate('/tt/admin');
+      case 'DTTI':
+        navigate("/tt/dashboard");
+      case 'CM':
+        navigate("/cm/dashboard");
+      case 'admin':
+        navigate("/superadmin");
+      case 'EO':
+        navigate("/cf/dashboard");
+      case 'Editor':
+        navigate("/prm/dashboard");
+      case 'editor':
+        navigate("/prm/dashboard");
+      case 'PRM':
+        navigate("/prm/home");
+      case 'FACULTY':
+        navigate("/prm/home");
+      default:
+        return "some unknown role! If it is a new role, add it in the cases";
+    }
+  }
   return (
     <ChakraProvider>
       <Container maxW="container.lg">

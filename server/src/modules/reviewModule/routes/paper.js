@@ -6,7 +6,10 @@ const privateroute = require("../../usermanagement/privateroute");
 const reupload = require("../controller/reupload");
 const router = express.Router();
 const path = require('path');
+router.use(express.urlencoded({ extended: true }));
 
+// Parse JSON bodies (for API requests)
+router.use(express.json());
 router.get("/uploadpaper", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -24,7 +27,7 @@ router.get("/author/:id", findPaperByAuthor);//to find paper using UserID
 router.get("/trackcount/:id",PaperCountByTrack);
 router.get("/trackreviews/:id",ReviewsStatusCount);
 router.get("/status/:id",PaperStatusCount); //to count status of paper
-router.post("/addpaper/:id", privateroute, fileUploadMiddleware, uploadPaper); // upload paper
+router.post("/addpaper/:id", fileUploadMiddleware, uploadPaper); // upload paper
 router.post("/downloadPaper",download);
 router.post('/addReviewer/:id', addReviewer);
 router.patch('/addAuthor/:paperId/:authorId', addAuthorbyId);
