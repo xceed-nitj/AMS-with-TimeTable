@@ -12,7 +12,8 @@ import {
   Heading,
   Text,
   SimpleGrid,
-  useToast
+  useToast,
+  Select
 } from '@chakra-ui/react';
 
 const UserRegistration = () => {
@@ -30,6 +31,7 @@ const UserRegistration = () => {
     phone: '',
     password:'',
     isFirstLogin : false,
+    researchArea: '',
   });
 
   const toast = useToast();
@@ -132,6 +134,16 @@ const UserRegistration = () => {
             />
           </FormControl>
           
+          <FormControl id="researchArea" isRequired>
+            <FormLabel>Research Area</FormLabel>
+            <Select placeholder="Select research area" value={formValues.researchArea} onChange={handleChange}>
+              <option value="ECE">ECE</option>
+              <option value="CSE">CSE</option>
+              <option value="EE">EE</option>
+              <option value="ME">ME</option>
+            </Select>
+          </FormControl>
+
           <FormControl id="institute" isRequired>
             <FormLabel>Institute</FormLabel>
             <Input 

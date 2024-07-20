@@ -56,7 +56,7 @@ function Participant() {
   const [duplicateEntryMessage, setDuplicateEntryMessage] = useState("");
   const [addduplicateEntryMessage, addsetDuplicateEntryMessage] = useState("");
   const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false);
-  const [downloadClicked,setDownloadClicked] = useState(false)
+  const [downloadClicked, setDownloadClicked] = useState(false)
 
   const [editedData, setEditedData] = useState({
     name: "",
@@ -219,6 +219,18 @@ function Participant() {
       if (rowIndex !== -1) {
         const updatedData = [...tableData];
         updatedData[rowIndex] = editedData;
+        if (!editedData.name.trim()) {
+          alert("Name is required")
+          return;
+        }
+        if (!editedData.certiType.trim()) {
+          alert("Certificate type is required")
+          return;
+        }
+        if (!editedData.mailId.trim()) {
+          alert("E-mail is required")
+          return;
+        }
 
         fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${editRowId}`, {
 
@@ -278,7 +290,7 @@ function Participant() {
       if (rowIndex !== -1) {
 
         data.isCertificateSent = true;
-        console.log('data to b sent', editedData)
+        console.log('data to be sent', editedData)
         fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${RowId}`, {
 
           method: "PUT",
@@ -452,6 +464,18 @@ function Participant() {
     //     `Duplicate entry for "${editedSData.name}" is detected. Kindly delete the entry.`
     //   );
     // } else {
+    if (!editedSData.name.trim()) {
+      alert("Name is required")
+      return;
+    }
+    if (!editedSData.certiType.trim()) {
+      alert("Certificate type is required")
+      return;
+    }
+    if (!editedSData.mailId.trim()) {
+      alert("E-mail is required")
+      return;
+    }
     fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${eventId}`, {
       method: "POST",
       headers: {
@@ -523,10 +547,10 @@ function Participant() {
 
   const handleChangeType = async (e) => setDownloadType(e.target.value);
   const handleDownloadAll = async (e) => {
-    if(!downloadType){alert("choose a download type first"); return;}
-    if(downloadClicked){
-      const clicked = confirm("Do you want to download again"); 
-      if(!clicked){return;}
+    if (!downloadType) { alert("choose a download type first"); return; }
+    if (downloadClicked) {
+      const clicked = confirm("Do you want to download again");
+      if (!clicked) { return; }
     }
     try {
       const response = await fetch(
@@ -538,12 +562,12 @@ function Participant() {
           },
 
           credentials: 'include',
-          body: JSON.stringify({eventID:eventId , type:downloadType}),
+          body: JSON.stringify({ eventID: eventId, type: downloadType }),
         }
       );
       const zipBlob = await response.blob();
       console.log(zipBlob)
-      saveAs(zipBlob,"certificates.zip","application/zip")
+      saveAs(zipBlob, "certificates.zip", "application/zip")
     } catch (error) {
       console.error('Error converting SVGs:', error);
     }
@@ -723,17 +747,20 @@ function Participant() {
 
             <Box>
               <FormLabel>certificate Type: </FormLabel>
-              <Input
-                border="1px"
-                mb="4"
-                borderColor="gray.300"
-                // type="number" // Assuming it's a number
-                placeholder="certiType"
+
+              <Select
+                name="certiType"
                 value={editedSData.certiType}
                 onChange={(e) =>
                   setEditedSData({ ...editedSData, certiType: e.target.value })
                 }
-              />
+                placeholder="Select Certificate Type"
+              >
+                <option value="winner">Winner</option>
+                <option value="participant">Participant</option>
+                <option value="speaker">Speaker</option>
+                <option value="organizer">Organizer</option>
+              </Select>
 
             </Box>
 
@@ -758,11 +785,11 @@ function Participant() {
       {addduplicateEntryMessage && <p>{addduplicateEntryMessage}</p>}
       <HStack className="tw-flex tw-justify-between">
         <div className="tw-flex tw-items-center tw-gap-3"><Text>Download all Certificates:</Text>
-          <Select width='350px' placeholder="Select Type" name="downloadType" onChange={e =>{setDownloadClicked(false);handleChangeType(e)}}>
+          <Select width='350px' placeholder="Select Type" name="downloadType" onChange={e => { setDownloadClicked(false); handleChangeType(e) }}>
             <option value="image">Image</option>
             <option value="pdf">PDF</option>
           </Select>
-          {downloadType && <CustomBlueButton ml='0' width='350px' onClick={(e)=>{setDownloadClicked(true);handleDownloadAll();}}>
+          {downloadType && <CustomBlueButton ml='0' width='350px' onClick={(e) => { setDownloadClicked(true); handleDownloadAll(); }}>
             Download All Certificates
           </CustomBlueButton>}
         </div>
@@ -932,13 +959,19 @@ function Participant() {
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
-                        <Input
-                          type="text"
+                        <Select
+                          name="certiType"
                           value={editedData.certiType}
                           onChange={(e) =>
                             setEditedData({ ...editedData, certiType: e.target.value })
                           }
-                        />
+                          placeholder="Select Certificate Type"
+                        >
+                          <option value="winner">Winner</option>
+                          <option value="participant">Participant</option>
+                          <option value="speaker">Speaker</option>
+                          <option value="organizer">Organizer</option>
+                        </Select>
                       ) : (
                         row.certiType
                       )}
