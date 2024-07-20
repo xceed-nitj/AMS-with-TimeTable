@@ -2,6 +2,7 @@ const express = require("express");
 const userRouter = express.Router();
 const userController = require("../controllers/user");
 const UserController = new userController();
+const { checkRole } = require("../../checkRole.middleware");
 
 const jwt = require("jsonwebtoken");
 const jwtSecret =
@@ -36,7 +37,7 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-userRouter.get("/", verifyToken, async (req, res) => {
+userRouter.get("/", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.getUserDetails(req, res);
   } catch (e) {
@@ -46,7 +47,7 @@ userRouter.get("/", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.post("/assignrole", verifyToken, async (req, res) => {
+userRouter.post("/assignrole", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.assignRole(req, res);
   } catch (e) {
@@ -54,7 +55,7 @@ userRouter.post("/assignrole", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.post("/deleterole", verifyToken, async (req, res) => {
+userRouter.post("/deleterole", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.deleteRole(req, res);
   } catch (e) {
@@ -62,7 +63,7 @@ userRouter.post("/deleterole", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.post("/logout", verifyToken, async (req, res) => {
+userRouter.post("/logout", checkRole(['admin']), async (req, res) => {
   try {
     //   await UserController.logout(req.user); // Pass the user object from the request
     res.clearCookie("jwt");
@@ -73,7 +74,7 @@ userRouter.post("/logout", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.get("/all",verifyToken, async (req, res) => {
+userRouter.get("/all",checkRole(['admin']), async (req, res) => {
   try {
     await UserController.getAllUserDetails(req, res);
   } catch (e) {
