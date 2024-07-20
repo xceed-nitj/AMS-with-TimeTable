@@ -5,10 +5,9 @@ const addEventController = new AddEventController();
 const protectRoute = require("../../usermanagement/privateroute");
 const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
-const { checkRole } = require("../../checkRole.middleware");
 
 // Route to create a new event
-addEventRouter.post("/", checkRole(['CM']), async (req, res) => {
+addEventRouter.post("/", ecmadminRoute, async (req, res) => {
   try {
     const { user, ...eventData } = req.body; // extract userId from request body
 
@@ -54,7 +53,7 @@ addEventRouter.get("/", async (req, res) => {
 
 
 // Route to update a specific event by ID
-addEventRouter.put("/:eventId",checkRole(['CM'],true), async (req, res) => {
+addEventRouter.put("/:eventId",ecmadminRoute, async (req, res) => {
   try {
     const eventId = req.params?.eventId;
     const updatedEvent = req.body;
@@ -68,7 +67,7 @@ addEventRouter.put("/:eventId",checkRole(['CM'],true), async (req, res) => {
 });
 
 
-addEventRouter.get("/getevents", checkRole(['CM']), async (req, res) => {
+addEventRouter.get("/getevents", ecmadminRoute, async (req, res) => {
   try {
     const user = req?.user?.id;
     const allEvents = await addEventController.getEventByUser(user);
@@ -80,7 +79,7 @@ addEventRouter.get("/getevents", checkRole(['CM']), async (req, res) => {
   }
 });
 
-addEventRouter.post("/lock/:id", checkRole(['CM']), async (req, res) => {
+addEventRouter.post("/lock/:id", ecmadminRoute, async (req, res) => {
   try {
     const eventId = req.params.id;
     await addEventController.lockEvent(eventId);
