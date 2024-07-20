@@ -3,6 +3,14 @@ const XUser = require("../../../models/usermanagement/user.js"); // Importing th
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
 const Event  = require("../../../models/reviewModule/event.js");
 
+function replacePlaceholders(template, values) {
+  return template.replace(/{{(.*?)}}/g, (match, p1) => {
+      // Trim the placeholder name
+      const key = p1.trim();
+      // Return the value if it exists, otherwise return the placeholder as is
+      return values.hasOwnProperty(key) ? values[key] : match;
+  });
+}
 const uploadPaper = async(req, res) => {
   const fileName = req.fileName;
   const title = req.title;
@@ -59,19 +67,29 @@ const uploadPaper = async(req, res) => {
         const subject = "New Paper Uploaded";
         try{
           const auth_names = authors.map(item => item.name);
-          const message = `A new paper titled "${title}" has been uploaded.<br>${event.templates.paperAssignment}<br>
-            Paper Details:<br>
-            Id: ${newPaper._id}<br>
-            Title: ${title}<br>
-            Abstract: ${abstract}<br>
-            Authors: ${auth_names}<br>`;
-          const attachments=[
-            {
-              //filename:"title.pdf",
-              //path:""
-            }
-          ];
-          await sendMail(to, subject, message);
+          const recieved_message = `${event.templates.paperAssignment}`;
+            const values = {
+              paperId: count,
+              eventId:eventId,
+              title: title,
+              abstract: abstract,
+              uploadLink: fileName,
+              codeLink: codefile,
+              eventId:eventId,
+              authors: authors,
+              tracks:[track],
+              terms: terms,
+             // This value is not used in the template
+            };
+          
+          const result = replacePlaceholders(recieved_message, values);
+            const attachments=[
+              {
+                //filename:"title.pdf",
+                //path:""
+              }
+            ];
+            await sendMail(to, subject, result);
           mail_status.push(true);
         }catch(err){
           mail_status.push(`false${err}`);
@@ -80,20 +98,29 @@ const uploadPaper = async(req, res) => {
           try{
             const auth_names = authors.map(item => item.name);
             const subject = "You have been added as an author and a New Paper is Uploaded";
-            const message = `A new paper titled "${title}" has been uploaded.<br> ${event.templates.paperAssignment}<br>Your password is 1234,<br>
-            Paper Details:<br>
-            Id: ${newPaper._id}<br>
-            Title: ${title}<br>
-            Abstract: ${abstract}<br>
-            Authors: ${auth_names}<br>
-             please login to check.`;
+            const recieved_message = `${event.templates.paperAssignment}`;
+            const values = {
+              paperId: count,
+              eventId:eventId,
+              title: title,
+              abstract: abstract,
+              uploadLink: fileName,
+              codeLink: codefile,
+              eventId:eventId,
+              authors: authors,
+              tracks:[track],
+              terms: terms,
+             // This value is not used in the template
+            };
+          
+          const result = replacePlaceholders(recieved_message, values);
             const attachments=[
               {
                 //filename:"title.pdf",
                 //path:""
               }
             ];
-            await sendMail(to, subject, message);
+            await sendMail(to, subject, result);
             mail_status.push(true);
           }catch(err){
             mail_status.push(`false${err}`);

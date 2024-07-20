@@ -1,5 +1,5 @@
 const express = require('express');
-const {getEvents,addDefaultTemplatesToEvent ,getEventById,updateStartSubmission ,addEvent, updateEvent, updateEventTemplate,deleteEvent, addEditor, addReviewer,getAllReviewersInEvent ,getEventsByUser ,getEventIdByName,updateReviewerStatus,resendInvitation, findEventByReviewer} = require('../controller/event');
+const {get_fields,getEvents,addDefaultTemplatesToEvent ,getEventById,updateStartSubmission ,addEvent, updateEvent, updateEventTemplate,deleteEvent, addEditor, addReviewer,getAllReviewersInEvent ,getEventsByUser ,getEventIdByName,updateReviewerStatus,resendInvitation, findEventByReviewer} = require('../controller/event');
 const protectRoute =require("../../usermanagement/privateroute")
 const superAdminRoute=require("../../usermanagement/superadminroute")
 
@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/getAllEvents', getEvents);
 router.get('/getReviewerInEvent/:id',getAllReviewersInEvent);
 router.get('/getEvents/:id',getEventById);
-
+router.get('/getFields/:collectionName',get_fields);
 router.get('/geteventsbyuser',protectRoute, getEventsByUser);
 router.get('/:id', getEventById);
 router.get('/name/:name',getEventIdByName);
