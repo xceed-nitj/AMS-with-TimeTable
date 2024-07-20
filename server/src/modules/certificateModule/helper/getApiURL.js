@@ -13,7 +13,7 @@ function getApiURL(url) {
       return nitjServer;
     } else {
       // Default to localhost if no match is found
-      return localhostBackend;
+      return nitjServer;
     }
   }
   
