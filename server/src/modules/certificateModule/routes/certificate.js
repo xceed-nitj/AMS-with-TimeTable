@@ -13,8 +13,9 @@ const { convertallCertificates} = require("../controllers/convertAllCertificates
 // Route to create a new certificate
 certificateRouter.post("/content/:id", ecmadminRoute, LockStatus, upload.any(),async (req, res) => {
   try {
-    console.log(req.files)
-    const body = await convertToObject(req.params.id, req.body, req.files, req.baseURL)
+    const url = req.body.url;
+    // console.log(req.files)
+    const body = await convertToObject(req.params.id, req.body, req.files, url)
     const newcertificate = await certificateController.addcertificate(req.params.id, body);
     return res.status(200).json(newcertificate);
   } catch (e) {

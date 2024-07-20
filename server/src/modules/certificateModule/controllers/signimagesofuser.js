@@ -19,7 +19,7 @@ const getImagesOfUserByEventId = async (id) => {
             }
             )
         }
-        console.log(Signatures)
+        // console.log(Signatures)
         return Signatures
     } catch (error) {
         throw new HttpException(500, error)
