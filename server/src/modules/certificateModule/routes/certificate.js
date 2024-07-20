@@ -11,7 +11,7 @@ const { convertCertificateToImage, convertCertificateToPDF} = require("../contro
 const { convertallCertificates} = require("../controllers/convertAllCertificates")
 
 // Route to create a new certificate
-certificateRouter.post("/content/:id", ecmadminRoute, LockStatus, upload.any(),async (req, res) => {
+certificateRouter.post("/content/:id", checkRole(['CM']), LockStatus, upload.any(),async (req, res) => {
   try {
     console.log(req.files)
     const body = await convertToObject(req.params.id, req.body, req.files, req.baseURL)
@@ -78,7 +78,7 @@ certificateRouter.get("/:certificateId", async (req, res) => {
 });
 
 // Route to update a specific certificate by ID
-certificateRouter.put('/:certificateId', ecmadminRoute, LockStatus, async (req, res) => {
+certificateRouter.put('/:certificateId', checkRole(['CM']), LockStatus, async (req, res) => {
   try {
     const certificateId = req.params.certificateId;
     const updatedCertificate = req.body;
@@ -93,7 +93,7 @@ certificateRouter.put('/:certificateId', ecmadminRoute, LockStatus, async (req, 
 });
 
 // Route to delete a specific certificate by ID
-certificateRouter.delete("/:certificateId", ecmadminRoute, LockStatus, async (req, res) => {
+certificateRouter.delete("/:certificateId", checkRole(['CM']), LockStatus, async (req, res) => {
   try {
     const certificateId = req.params?.certificateId;
     await certificateController.deletecertificateById(certificateId);
