@@ -749,7 +749,7 @@ const CertificateForm = () => {
                     />
                   )}</HStack>
                   <AccordionPanel> <HStack border="none" width="100%">
-                    <HStack width="40%"><Text>Height:</Text><input
+                    <HStack width="60%"><Text>Vertical Position:</Text><input
                       type="number"
                       name={`logos[${index}].height`}
                       value={logo.height}
@@ -757,7 +757,7 @@ const CertificateForm = () => {
                       placeholder="height"
                       style={{ width: "55px", textAlign: "center", border: "1px solid #e2e8f0", borderRadius: "2px" }}
                     /></HStack>
-                    <HStack width="40%"><Text>Width:</Text><input
+                    <HStack width="40%"><Text>Size:</Text><input
                       type="number"
                       name={`logos[${index}].width`}
                       value={logo.width}
