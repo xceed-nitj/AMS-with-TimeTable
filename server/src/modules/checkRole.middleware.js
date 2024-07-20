@@ -16,7 +16,7 @@ const checkRole = (requiredRoles, checkEvent = false) => {
       const userId = decoded.id;
       const userRoles = decoded.role; // Extract the roles from the token
 
-      console.log(userRoles);
+      // console.log(userRoles);
       
 
       // Check if the user has the 'superadmin' role and skip further checks if they do
