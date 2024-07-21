@@ -550,9 +550,23 @@ const CertificateForm = () => {
         });
       } else {
         console.error('Error submitting form:', response.statusText);
+        toast({
+          title: 'Submission failed',
+          // description: response.statusText,
+          status:"error",
+          duration: 2000,
+          isClosable: true,
+        })
       }
     } catch (error) {
       console.error('Error submitting form:', error);
+      toast({
+        title: 'Submission failed',
+        // description: error,
+        status:"error",
+        duration: 2000,
+        isClosable: true,
+      })
     }
   };
 
