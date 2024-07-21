@@ -3,7 +3,6 @@ const router = express.Router();
 const { sendEmailsToParticipants } = require("../controllers/emails");
 const { sendEmail } = require("../controllers/participantemail");
 const ecmadminRoute = require("../../usermanagement/ecmadminroute");
-const { checkRole } = require("../../checkRole.middleware");
 
 router.post("/send-emails/:eventId", ecmadminRoute, async (req, res) => {
   const eventId = req.params.eventId;
