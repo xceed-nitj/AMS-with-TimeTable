@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import JoditEditor from 'jodit-react';
 import axios from 'axios';
 import { useToast, FormLabel, FormControl, Input, Button, chakra, Heading, IconButton, Box, Text, Checkbox, Select } from '@chakra-ui/react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import './ReviewQuestion.css'; // Import the CSS file
 import getEnvironment from '../../getenvironment';
 
@@ -27,7 +27,7 @@ const Forms = () => {
 
   const fetchSavedQuestion = async (qId) => {
     try {
-      const response = await axios.get(`${apiUrl}/api/v1/reviewmodule/forms/${qId}`);
+      const response = await axios.get(`${apiUrl}/reviewmodule/forms/${qId}`);
       setQuestions(response.data);
       // setLoading(false);
     } catch (error) {
@@ -125,7 +125,6 @@ const Forms = () => {
       setSection('');
       setAccessRole('');
       setShow(false);
-      window.history.go(edit ? -2 : -1); // i dont know how to navigate in the 'REACT-WAY', so sorry for this plain js code
     } catch (error) {
       toast({
         title: 'Error saving question.',
@@ -174,10 +173,11 @@ const Forms = () => {
   return (
     <div className="add-question-page">
       <Box bg="black" p={0.2} width='80%'>
-        <HeaderReviewQuestion color="white" textAlign="center" title={'Add Review Question' + (type ? ' - ' + type : '')} />
+        <HeaderReviewQuestion color="white" textAlign="center" title={'Fill the Form' + (type ? ' - ' + type : '')} />
       </Box>
       <br />
-      <FormControl onSubmit={handleSubmit} className="question-form">
+      <FormControl onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="question-form">
+
         <div className="form-group">
           <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
             <Text color="white" textAlign={'center'}>Question</Text>
@@ -275,23 +275,24 @@ const Forms = () => {
           </Checkbox>
         </div>
         {edit ? (
-          <Link
+          <Button
             onClick={handleSubmit}
+            colorScheme="cyan"
             className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
           >
             Update Question
-          </Link>
+          </Button>
         ) : (
           (!type) ? '' : (
-            <Link
+            <Button
               onClick={handleSubmit}
+              colorScheme="cyan"
               className="tw-m-auto tw-px-8 tw-text-white tw-bg-gradient-to-r tw-from-cyan-600 tw-to-cyan-500 hover:tw-bg-gradient-to-bl focus:tw-ring-4 focus:tw-outline-none focus:tw-ring-cyan-300 dark:focus:tw-ring-cyan-800 tw-font-bold tw-rounded-lg tw-text-sm tw-px-5 tw-py-2.5 tw-text-center"
             >
               Save Question
-            </Link>
+            </Button>
           )
-        )
-        }
+        )}
       </FormControl>
     </div>
   );
