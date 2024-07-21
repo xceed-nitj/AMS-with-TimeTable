@@ -2,16 +2,17 @@ const express = require("express");
 const certificateRouter = express.Router();
 const CertificateController = require("../controllers/certificate");
 const certificateController = new CertificateController();
-const ecmadminRoute = require("../../usermanagement/ecmadminroute");
+// const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
 const {upload} = require("../helper/multer.middleware")
 const {convertToObject} = require("../controllers/formDataToObject")
 const {getImagesOfUserByEventId} =require("../controllers/signimagesofuser")
 const { convertCertificateToImage, convertCertificateToPDF} = require("../controllers/convertCertificate")
 const { convertallCertificates} = require("../controllers/convertAllCertificates")
+const { checkRole } = require("../../checkRole.middleware");
 
 // Route to create a new certificate
-certificateRouter.post("/content/:id", ecmadminRoute, LockStatus, upload.any(),async (req, res) => {
+certificateRouter.post("/content/:id", checkRole(['CM']), LockStatus, upload.any(),async (req, res) => {
   try {
     const url = req.body.url;
     // console.log(req.files)
@@ -79,7 +80,7 @@ certificateRouter.get("/:certificateId", async (req, res) => {
 });
 
 // Route to update a specific certificate by ID
-certificateRouter.put('/:certificateId', ecmadminRoute, LockStatus, async (req, res) => {
+certificateRouter.put('/:certificateId', checkRole(['CM']), LockStatus, async (req, res) => {
   try {
     const certificateId = req.params.certificateId;
     const updatedCertificate = req.body;
@@ -94,7 +95,7 @@ certificateRouter.put('/:certificateId', ecmadminRoute, LockStatus, async (req, 
 });
 
 // Route to delete a specific certificate by ID
-certificateRouter.delete("/:certificateId", ecmadminRoute, LockStatus, async (req, res) => {
+certificateRouter.delete("/:certificateId", checkRole(['CM']), LockStatus, async (req, res) => {
   try {
     const certificateId = req.params?.certificateId;
     await certificateController.deletecertificateById(certificateId);
