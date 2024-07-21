@@ -1007,14 +1007,6 @@ const CertificateForm = () => {
               <VStack width="100%" key={index}>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none"><HStack width="100%">
-                    <Input
-                      name={`signatures[${index}].url.url`}
-                      value={signature.url.url}
-                      onChange={(e) => handleChange(e, 'signatures', index)}
-                      placeholder="URL"
-                      width="0px"
-                      style={{ display: "none" }}
-                    />
                     <Text className='tw-w-full tw-pl-3'>Choose existing with details or upload new image: </Text>
                     <Signaturemodal
                       eventId={eventId}
@@ -1156,16 +1148,7 @@ const CertificateForm = () => {
                       value={signature.url.url}
                       onChange={(e) => handleChange(e, 'signatures', index)}
                       placeholder="URL"
-                      width="0px"
-                      style={{ display: "none" }}
-                    />
-                    <Input
-                      name={`signatures[${index}].url.url`}
-                      value={signature.url.url}
-                      onChange={(e) => handleChange(e, 'signatures', index)}
-                      placeholder="URL"
                       width="100%"
-                      style={{ border: "2px solid black" }}
                     />
                     <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
                     <AccordionPanel>
