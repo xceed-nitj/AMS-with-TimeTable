@@ -459,12 +459,12 @@ const CertificateForm = () => {
 
   const bgremove = async (e, fieldName, index) => {
     let file;
-    if(e.target.value.includes("blob:")){
+    if (e.target.value.includes("blob:")) {
       const response = await fetch(`${e.target.value}`)
       const b = await response.blob()
       file = new File([b], "image/png")
       console.log(file)
-    }else if (!(e.target.value == "[object File]")) {
+    } else if (!(e.target.value == "[object File]")) {
       const response = await fetch(`${apiUrl}/proxy-image?url=${e.target.value}`)
       const b = await response.blob()
       file = new File([b], "image/png")
@@ -523,7 +523,7 @@ const CertificateForm = () => {
       const form = document.getElementById("form")
       const formdata = new FormData(form)
       selectedFiles.forEach((file) => { for (const key in file) { formdata.append(key, file[key]) } })
-      formdata.append("url",window.location.origin)
+      formdata.append("url", window.location.origin)
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/content/${eventId}`,
         {
@@ -561,7 +561,7 @@ const CertificateForm = () => {
   for (let i = 6; i <= 60; i = i + 2) {
     fontsizeopt.push(i)
   }
-  const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari","Ingrid Darling","Grey Qo","Kings","Ole","Rubik Maze","Rubik Burned","Rubik Marker Hatch","Rubik Microbe","Blaka Ink","Noto Serif Grantha","Rubik Spray Paint","Rubik Wet Paint","Finger Paint","Rubik Bubbles","Oleo Script","Neuton","Merienda","Concert One","Permanent Marker","Abril Fatface","Rowdies","Lobster","Pacifico","Anton SC","Ga Maamli","Libre Baskerville", "Libre Baskerville","Merriweather","Roboto Slab","Roboto","Oswald"]
+  const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari", "Ingrid Darling", "Grey Qo", "Kings", "Ole", "Rubik Maze", "Rubik Burned", "Rubik Marker Hatch", "Rubik Microbe", "Blaka Ink", "Noto Serif Grantha", "Rubik Spray Paint", "Rubik Wet Paint", "Finger Paint", "Rubik Bubbles", "Oleo Script", "Neuton", "Merienda", "Concert One", "Permanent Marker", "Abril Fatface", "Rowdies", "Lobster", "Pacifico", "Anton SC", "Ga Maamli", "Libre Baskerville", "Libre Baskerville", "Merriweather", "Roboto Slab", "Roboto", "Oswald"]
   return (
     <Flex
       style={{
@@ -1000,11 +1000,34 @@ const CertificateForm = () => {
             </Accordion>
 
 
-            <Text>Enter the link for signatures:</Text>
+            <Text>Signatures:</Text>
 
             {formData.signatures.map((signature, index) => (
 
               <VStack width="100%" key={index}>
+                <Accordion width="100%" allowMultiple>
+                  <AccordionItem width="100%" border="none"><HStack width="100%">
+                    <Input
+                      name={`signatures[${index}].url.url`}
+                      value={signature.url.url}
+                      onChange={(e) => handleChange(e, 'signatures', index)}
+                      placeholder="URL"
+                      width="0px"
+                      style={{ display: "none" }}
+                    />
+                    <Text className='tw-w-full tw-pl-3'>Choose existing with details or upload new image: </Text>
+                    <Signaturemodal
+                      eventId={eventId}
+                      formData={formData}
+                      setFormData={setFormData}
+                      index={index}
+                      handleFileChange={handleFileChange}
+                      signatures={formData.signatures}
+                      signature={signature}
+                      handleChange={handleChange}
+                    /></HStack>
+                  </AccordionItem>
+                </Accordion>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none">
                     <HStack width="100%">
@@ -1125,6 +1148,7 @@ const CertificateForm = () => {
                     </HStack></AccordionPanel>
                   </AccordionItem>
                 </Accordion>
+
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none"><HStack width="100%">
                     <Input
@@ -1135,16 +1159,13 @@ const CertificateForm = () => {
                       width="0px"
                       style={{ display: "none" }}
                     />
-                    <Text className='tw-w-full tw-pl-3'>Signature Upload: </Text>
-                    <Signaturemodal
-                      eventId={eventId}
-                      formData={formData}
-                      setFormData={setFormData}
-                      index={index}
-                      handleFileChange={handleFileChange}
-                      signatures={formData.signatures}
-                      signature={signature}
-                      handleChange={handleChange}
+                    <Input
+                      name={`signatures[${index}].url.url`}
+                      value={signature.url.url}
+                      onChange={(e) => handleChange(e, 'signatures', index)}
+                      placeholder="URL"
+                      width="100%"
+                      style={{ border: "2px solid black" }}
                     />
                     <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
                     <AccordionPanel>
@@ -1161,13 +1182,14 @@ const CertificateForm = () => {
                           name={`signatures[${index}].url.url`}
                           onClick={(e) => bgremove(e, 'signatures', index)}
                           value={signature.url.url}
-                          style={{ color:'black' , width:"500px"}}
+                          style={{ color: 'black', width: "500px" }}
                         >Remove Backgound</Button>
 
                       </HStack>
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
+
 
                 <HStack>{index > 0 && (
                   <IconButton
@@ -1211,7 +1233,7 @@ const CertificateForm = () => {
           </VStack>
         </form>
       </Container>
-      <Box flex="1" p="4" style={{margin:"0px",padding:"0px"}}>
+      <Box flex="1" p="4" style={{ margin: "0px", padding: "0px" }}>
         <SelectCertficate
           eventId={eventId}
           templateId={formData.templateId}
