@@ -2,6 +2,7 @@ const getApiURL = require("../helper/getApiURL")
 
 const convertToObject = async (eventId, formData, files,url) => {
     const apiURL = getApiURL(url)
+    console.log(apiURL)
     const form = {}
     try {
         // console.log(formData)
@@ -44,7 +45,7 @@ const convertToObject = async (eventId, formData, files,url) => {
             form["signatures"].push(Signature)
             i++;
         }
-        console.log(form)
+        // console.log(form)
         files?.forEach(file => {
             const field = file.fieldname.split("[")[0]
             const index = parseInt(file.fieldname.split("[")[1].split("]")[0])
