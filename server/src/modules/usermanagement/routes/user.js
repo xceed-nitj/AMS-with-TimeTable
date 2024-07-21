@@ -6,37 +6,11 @@ const UserController = new userController();
 const jwt = require("jsonwebtoken");
 const jwtSecret =
   "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
+  const { checkRole } = require("../../checkRole.middleware");
 
-// Middleware to verify the JWT token
-const verifyToken = (req, res, next) => {
-  const token = req.cookies.jwt;
-  // console.log(token)
 
-  if (!token) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
 
-  try {
-    // Verify the token
-    const decoded = jwt.verify(token, jwtSecret);
-
-    // The token is valid, and 'decoded' contains user information
-    const userId = decoded.id;
-
-    // Attach the user details to the 'req' object
-    req.user = {
-      id: userId,
-      // other user details...
-    };
-
-    // Allow the request to proceed
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-};
-
-userRouter.get("/", verifyToken, async (req, res) => {
+userRouter.get("/", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.getUserDetails(req, res);
   } catch (e) {
@@ -46,7 +20,7 @@ userRouter.get("/", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.post("/assignrole", verifyToken, async (req, res) => {
+userRouter.post("/assignrole", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.assignRole(req, res);
   } catch (e) {
@@ -54,7 +28,7 @@ userRouter.post("/assignrole", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.post("/deleterole", verifyToken, async (req, res) => {
+userRouter.post("/deleterole", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.deleteRole(req, res);
   } catch (e) {
@@ -62,7 +36,7 @@ userRouter.post("/deleterole", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.post("/logout", verifyToken, async (req, res) => {
+userRouter.post("/logout",  async (req, res) => {
   try {
     //   await UserController.logout(req.user); // Pass the user object from the request
     res.clearCookie("jwt");
@@ -73,7 +47,7 @@ userRouter.post("/logout", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.get("/all",verifyToken, async (req, res) => {
+userRouter.get("/all",checkRole(['admin']), async (req, res) => {
   try {
     await UserController.getAllUserDetails(req, res);
   } catch (e) {
