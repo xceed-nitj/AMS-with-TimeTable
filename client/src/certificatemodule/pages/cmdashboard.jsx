@@ -40,7 +40,7 @@ function CMDashboard() {
         }
       );
 
-       // console.log("Response status:", response.status);
+      // console.log("Response status:", response.status);
 
       if (response.ok) {
         const data = await response.json();
@@ -53,6 +53,9 @@ function CMDashboard() {
           // Check if all events are locked
           const allLocked = data.every((event) => event.lock);
           setAllEventsLocked(allLocked);
+        } else {
+          // If no events, allow adding a new one
+          setAllEventsLocked(true);
         }
       } else {
         console.error("Failed to fetch events");
@@ -127,7 +130,7 @@ function CMDashboard() {
         colorScheme="teal"
         onClick={handleAddEvent}
         mb={4}
-        isDisabled={!areAllEventsLocked} // Button is always visible but only enabled when all events are locked
+        isDisabled={!(table.length === 0 || areAllEventsLocked)} // Button is enabled when there are no events or all events are locked
         float="right"
       >
         Add New Event
