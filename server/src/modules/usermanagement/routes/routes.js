@@ -8,10 +8,11 @@ const {
 } = require("../controllers/usercontroller.js");
 const { forgotPassword } = require("../controllers/forgotpasswordroute.js");
 const { resetPassword } = require("../controllers/resetpasswordroute.js");
+const { checkRole} = require("../../checkRole.middleware.js")
 
 router.route("/login").post(login);
 router.route("/update").put(update);
-router.post("/register", register);
+router.post("/register", checkRole(['admin']) , register);
 router.post("/verify",verification)
 
 router.post("/forgot-password", forgotPassword);
