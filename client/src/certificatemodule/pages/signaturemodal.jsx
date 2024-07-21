@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import getEnvironment from '../../getenvironment';
 import Modal from 'react-modal';
-import { Text, IconButton, Input, HStack } from '@chakra-ui/react';
-import { CloseIcon } from '@chakra-ui/icons';
+import { Text, IconButton, Input, HStack, useToast } from '@chakra-ui/react';
+import { CloseIcon , CopyIcon } from '@chakra-ui/icons';
 import { FaUpload } from "react-icons/fa";
 
 const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChange, signatures, signature, handleChange, selectedFiles }) => {
@@ -10,6 +10,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
     const [activeTab, setActiveTab] = useState('Uploaded');
     const [images, setImages] = useState([])
     const apiUrl = getEnvironment();
+    const toast = useToast()
 
     useEffect(() => {
         const fetchdata = async () => {
@@ -76,7 +77,24 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
         }
         fetchdata()
     }, [])
-
+    
+    function copyToClipboard(e,text) {
+        
+        e.stopPropagation();
+        if (!navigator.clipboard) {
+          return Promise.reject('Clipboard API not supported');
+        }
+        e.target.parentElement.style.display = "none";
+        toast({
+            title: 'Link copied',
+            duration: 1000,
+            isClosable: true,
+          });
+        setTimeout(()=>{
+            e.target.parentElement.style.display = "block";
+        },1000)
+        return navigator.clipboard.writeText(text);
+      }
 
     const openModal = () => setIsOpen(true);
     const closeModal = () => setIsOpen(false);
@@ -128,7 +146,10 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                             <div style={{ height: "452px" }} className="uploadedImages tw-flex tw-gap-4 tw-flex-wrap tw-p-4 tw-overflow-y-scroll">
                                 {images.length == 0 ? "You have no images uploaded" : images.map((elem, index) => (
                                     <div onClick={(e) => { handleClick(e, index) }} key={`${index}`} style={{ height: "150px", width: "170px" }} className="tw-border-2 tw-border-zinc-300 tw-rounded-lg tw-object-contain tw-p-1 hover:tw-bg-slate-300 hover:tw-cursor-pointer" >
-                                        <img src={elem.url?`${elem.url.url}`:" "}></img>
+                                        <div className='tw-relative' 
+                                        onMouseEnter={e=>{const copy = e.target.parentElement.lastChild;copy.style.display = "block"}}
+                                        onMouseLeave={e=>{const copy = e.target.parentElement.lastChild;copy.style.display = "none"}}
+                                        ><img src={elem.url?`${elem.url.url}`:" "}></img><div className='tw-z-10 tw-absolute tw-bottom-0 tw-right-0 tw-flex tw-justify-center tw-items-center hover:tw-bg-slate-400 tw-p-1' style={{height:"28px",width:"28px", borderRadius:"50%",display:"none"}} ><CopyIcon style={{height:"18px",width:"18px",display:'flex',justifyContent:"center",alignItems:"center"}} onClick={(e)=>{copyToClipboard(e,elem.url.url)}}/></div></div>                                        
                                         <Text fontWeight="bold" color="black" fontSize="14px" className='tw-text-center'>{elem.name.name}</Text>
                                         <Text fontSize="10px" color="black" className='tw-text-center'>{elem.position.position}</Text>
                                     </div>
