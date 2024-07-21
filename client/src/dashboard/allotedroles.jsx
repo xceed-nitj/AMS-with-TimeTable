@@ -42,29 +42,34 @@ const AllocatedRolesPage = () => {
   if (isLoading) {
     return <Spinner />;
   }
-  if (allocatedRoles.length===1){
-    switch (allocatedRoles[0]) {
-      case 'ITTC':
-        navigate('/tt/admin');
-      case 'DTTI':
-        navigate("/tt/dashboard");
-      case 'CM':
-        navigate("/cm/dashboard");
-      case 'admin':
-        navigate("/superadmin");
-      case 'EO':
-        navigate("/cf/dashboard");
-      case 'Editor':
-        navigate("/prm/dashboard");
-      case 'editor':
-        navigate("/prm/dashboard");
-      case 'PRM':
-        navigate("/prm/home");
-      case 'FACULTY':
-        navigate("/prm/home");
-      default:
-        return "some unknown role! If it is a new role, add it in the cases";
-    }
+  if (allocatedRoles.length === 1) {
+  switch (allocatedRoles[0]) {
+    case 'ITTC':
+      navigate('/tt/admin');
+      break;
+    case 'DTTI':
+      navigate("/tt/dashboard");
+      break;
+    case 'CM':
+      navigate("/cm/dashboard");
+      break;
+    case 'admin':
+      navigate("/superadmin");
+      break;
+    case 'EO':
+      navigate("/cf/dashboard");
+      break;
+    case 'Editor':
+    case 'editor':
+      navigate("/prm/dashboard");
+      break;
+    case 'PRM':
+    case 'FACULTY':
+      navigate("/prm/home");
+      break;
+    default:
+      return "some unknown role! If it is a new role, add it in the cases";
+  }
   }
   return (
     <ChakraProvider>
