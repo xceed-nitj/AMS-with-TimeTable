@@ -240,12 +240,12 @@ const CertificateForm = () => {
         const signField = "url"
         updatedField[index][signatureField] = {
           ...updatedField[index][signatureField],
-          [signField]: file
+          [signField]: URL.createObjectURL(file)
         }
       } else {
         updatedField[index] = {
           ...updatedField[index],
-          [signatureField]: file,
+          [signatureField]: URL.createObjectURL(file),
         }
       }
       return {
@@ -459,7 +459,12 @@ const CertificateForm = () => {
 
   const bgremove = async (e, fieldName, index) => {
     let file;
-    if (!(e.target.value == "[object File]")) {
+    if(e.target.value.includes("blob:")){
+      const response = await fetch(`${e.target.value}`)
+      const b = await response.blob()
+      file = new File([b], "image/png")
+      console.log(file)
+    }else if (!(e.target.value == "[object File]")) {
       const response = await fetch(`${apiUrl}/proxy-image?url=${e.target.value}`)
       const b = await response.blob()
       file = new File([b], "image/png")
@@ -750,7 +755,7 @@ const CertificateForm = () => {
                     />
                   )}</HStack>
                   <AccordionPanel> <HStack border="none" width="100%">
-                    <HStack width="40%"><Text>Height:</Text><input
+                    <HStack width="60%"><Text>Vertical Position:</Text><input
                       type="number"
                       name={`logos[${index}].height`}
                       value={logo.height}
@@ -758,7 +763,7 @@ const CertificateForm = () => {
                       placeholder="height"
                       style={{ width: "55px", textAlign: "center", border: "1px solid #e2e8f0", borderRadius: "2px" }}
                     /></HStack>
-                    <HStack width="40%"><Text>Width:</Text><input
+                    <HStack width="40%"><Text>Size:</Text><input
                       type="number"
                       name={`logos[${index}].width`}
                       value={logo.width}
