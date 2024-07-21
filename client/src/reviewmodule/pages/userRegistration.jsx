@@ -118,7 +118,7 @@ const UserRegistration = () => {
   const showWelcomeSection = useBreakpointValue({ base: false, md: true });
 
   return (
-    <Flex height="100vh">
+    <Flex direction={{ base: 'column', md: 'row' }} minH="100vh">
       {showWelcomeSection && (
         <Box
           flex="1"
@@ -135,7 +135,7 @@ const UserRegistration = () => {
           </Heading>
         </Box>
       )}
-      <Box flex={showWelcomeSection ? "1" : "1 0 100%"} display="flex" alignItems="center" justifyContent="center" bg="white" p={6}>
+      <Box flex={showWelcomeSection ? "1" : "1 0 100%"} display="flex" alignItems="center" justifyContent="center" bg="white" p={6} overflowY="auto">
         <Box maxW="400px" width="100%">
           <Heading color="purple.600" textAlign="center" mb={6}>
             User Registration
