@@ -16,24 +16,24 @@ const RegistrationForm = () => {
   const apiUrl = getEnvironment();
 
   const handleInputChange = (e) => {
-  const { name, value } = e.target;
+    const { name, value } = e.target;
 
-  // If the input is a checkbox, handle it differently
-  if (e.target.type === 'checkbox') {
-    // If the checkbox is checked, add the role to the array; otherwise, remove it
-    setFormData((prevData) => ({
-      ...prevData,
-      roles: e.target.checked
-        ? [...prevData.roles, value]
-        : prevData.roles.filter((role) => role !== value),
-    }));
-  } else {
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  }
-};
+    // If the input is a checkbox, handle it differently
+    if (e.target.type === 'checkbox') {
+      // If the checkbox is checked, add the role to the array; otherwise, remove it
+      setFormData((prevData) => ({
+        ...prevData,
+        roles: e.target.checked
+          ? [...prevData.roles, value]
+          : prevData.roles.filter((role) => role !== value),
+      }));
+    } else {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
+  };
 
 
   const handleSubmit = async (e) => {
@@ -46,7 +46,7 @@ const RegistrationForm = () => {
       return;
     }
 
-    // Validation: Check if password is at least 6 characters
+     // Validation: Check if password is at least 6 characters
     if (formData.password.length < 6) {
       setError('Password should be a minimum of 6 characters.');
       setSuccess(''); // Clear success message on error
@@ -63,21 +63,19 @@ const RegistrationForm = () => {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || 'Network response was not ok');
-        setSuccess(''); // Clear success message on error
-        return;
-      }
-
-      setError(''); // Clear error on successful response
-
       const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Network response was not ok'); 
+         setSuccess('');  // Clear success message on error
+        return;
+      } 
+
+      setError('');  // Clear error on successful response
       setSuccess(data.message); // Set success message
-      // console.log('Response:', data);
     } catch (error) {
       setError('Error occurred while processing the request.');
-      setSuccess(''); // Clear success message on error
+      setSuccess('');  // Clear success message on error
       console.error('Error:', error);
     }
   };
