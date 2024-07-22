@@ -597,7 +597,7 @@ const CertificateForm = () => {
         // overflowY: 'scroll',
         clipPath: 'content-box',
       }}
-      className='tw-flex tw-flex-col-reverse md:tw-flex-row'
+      className='tw-flex tw-flex-col md:tw-flex-row'
     >
       <Container
         maxW="lg"
@@ -962,7 +962,7 @@ const CertificateForm = () => {
             {/* Body of the certificate */}
             <Accordion width="100%" allowMultiple>
               <AccordionItem width="100%" border="none">
-                <HStack width="100%" justifyContent="space-between"><Text>Body of the certificate <Button type='button' onClick={e => { document.getElementById("bodyVariables").style.display = document.getElementById("bodyVariables").style.display == "flex" ? "none" : "flex" }} className='tw-text-black tw-text-sm'>See variables </Button><InfoIcon color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} /></Text>
+                <HStack width="100%" justifyContent="space-between"><Text>Body of the certificate <Button type='button' onClick={e => { document.getElementById("bodyVariables").style.display = document.getElementById("bodyVariables").style.display == "flex" ? "none" : "flex" }} className='tw-text-black tw-text-sm'>See variables </Button>{window.outerWidth>768 && <InfoIcon color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} />}</Text>
                   <AccordionButton height="30px" width="30px" justifyContent="center">
                     <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
                   </AccordionButton></HStack>
@@ -1225,13 +1225,13 @@ const CertificateForm = () => {
 
                 <HStack>{index > 0 && (
                   <IconButton
-                    icon={<CloseIcon />}
+                    icon={<CloseIcon color="red" width="20px" height="20px" />}
                     onClick={() => handleDelete('signatures', index)}
                   />
                 )}
                   {index === formData.signatures.length - 1 && (
                     <IconButton
-                      icon={<AddIcon />}
+                      icon={<AddIcon color = "green" height="20px" width="20px" />}
                       onClick={() => addField('signatures')}
                     />
                   )}</HStack>

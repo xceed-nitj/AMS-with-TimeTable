@@ -112,7 +112,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
     return (
         <div>
             <button type='button' style={{ color: "black", height: "25px", width: "25px" }} onClick={openModal}><FaUpload style={{ height: "25px", width: "25px", color:"magenta" }} /></button>
-            <Modal style={{ height: "550px" }} className="tw-fixed tw-top-28 tw-left-60 tw-w-2/3 tw-border-black tw-border-2 tw-rounded-lg tw-bg-slate-200"
+            <Modal style={{ height: "550px" }} className="tw-fixed tw-top-24 tw-left-0 md:tw-top-28 md:tw-left-60 md:tw-w-2/3 tw-border-black tw-border-2 tw-rounded-lg tw-bg-slate-200"
                 isOpen={isOpen}
                 onRequestClose={closeModal}
                 ariaHideApp={false}
@@ -123,7 +123,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                 <IconButton
                     icon={<CloseIcon />}
                     className="tw-absolute tw-top-0 tw-right-0"
-                    style={{ position: "absolute", height: "38px" }}
+                    style={{ position: "absolute", height: "38px", }}
                     onClick={closeModal}
                 />
                 <div className="modal-content tw-pl-8">
