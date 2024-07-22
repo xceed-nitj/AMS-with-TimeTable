@@ -111,7 +111,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
     }
     return (
         <div>
-            <button type='button' style={{ color: "black", height: "25px", width: "25px" }} onClick={openModal}><FaUpload style={{ height: "25px", width: "25px" }} /></button>
+            <button type='button' style={{ color: "black", height: "25px", width: "25px" }} onClick={openModal}><FaUpload style={{ height: "25px", width: "25px", color:"magenta" }} /></button>
             <Modal style={{ height: "550px" }} className="tw-fixed tw-top-28 tw-left-60 tw-w-2/3 tw-border-black tw-border-2 tw-rounded-lg tw-bg-slate-200"
                 isOpen={isOpen}
                 onRequestClose={closeModal}
