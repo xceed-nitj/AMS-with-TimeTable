@@ -14,7 +14,7 @@ import {
   position,
   Checkbox
 } from '@chakra-ui/react';
-import { AddIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
+import { AddIcon, CloseIcon, EditIcon, InfoIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
 import Header from '../../components/header';
 import { useToast } from '@chakra-ui/react';
@@ -31,13 +31,13 @@ const CertificateForm = () => {
   const [type, setType] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([])
   const [formData, setFormData] = useState({
-    logos: [{ url: " ", height: 80, width: 80 }],
-    header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
-    body: { body: " ", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-    footer: { footer: " ", },
+    logos: [{ url: "", height: 80, width: 80 }],
+    header: [{ header: "", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
+    body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+    footer: { footer: "", },
     signatures: [{
-      name: { name: " ", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-      position: { position: " ", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+      name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+      position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       url: { url: "", size: 100 },
     }],
     certiType: " ",
@@ -61,13 +61,13 @@ const CertificateForm = () => {
     const certType = formData.certiType;
     setSelectedFiles([])
     setFormData({
-      logos: [{ url: " ", height: 80, width: 80 }],
-      header: [{ header: " ", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
-      body: { body: " ", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+      logos: [{ url: "", height: 80, width: 80 }],
+      header: [{ header: "", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
+      body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       footer: { footer: "", },
       signatures: [{
-        name: { name: " ", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-        position: { position: " ", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+        name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+        position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
         url: { url: "", size: 100 },
       }],
       certiType: certType,
@@ -101,7 +101,7 @@ const CertificateForm = () => {
           ) {
             let { certificateOf, title, signatures, header, footer, body, certiType, logos, templateId, verifiableLink } = responseData[0];
             let Signatures = [];
-            if (signatures[0].name.name) {
+            if (signatures[0].name.name || signatures[0].name.name=="") {
               Signatures = signatures
               if (!(signatures[0].url.url)) {
                 signatures.forEach((elem, index) => {
@@ -121,7 +121,7 @@ const CertificateForm = () => {
             }
             //for logos
             let Logos = []
-            if (logos[0].url) {
+            if (logos[0].url || logos[0].url=="") {
               Logos = logos
             } else {
 
@@ -134,7 +134,7 @@ const CertificateForm = () => {
             }
             //for header
             let Header = []
-            if (header[0].header) {
+            if (header[0].header || header[0].header=="") {
               Header = header
             } else {
               header.forEach(element => {
@@ -153,14 +153,14 @@ const CertificateForm = () => {
             }
             //for certificateOf
             let CertificateOf = {}
-            if (!certificateOf) {
+            if (!certificateOf || !(certificateOf == "")) {
               CertificateOf = formData.certificateOf
             } else {
               CertificateOf = certificateOf
             }
             // for body
             let Body = formData.body
-            if (body.body) {
+            if (body.body || body.body=="") {
               Body = body
             } else {
               Body.body = body
@@ -169,14 +169,14 @@ const CertificateForm = () => {
             //for title
             let Title = []
             if (title[0]) {
-              if (title[0][0]) {
+              if (title[0][0] || title[0][0]=="") {
                 title.forEach(element => {
                   let str = ""
                   for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
                   let obj = { name: str, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }
                   Title.push(obj)
                 });
-              } else if (title[0]["name"]) {
+              } else if (title[0]["name"] || title[0]["name"]=="") {
                 Title = title
               }
             } else {
@@ -491,13 +491,13 @@ const CertificateForm = () => {
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { name: { name: " ", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: " ", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
+          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
         ],
       }));
     } else if (fieldName === 'logos') {
       setFormData((prevData) => ({
         ...prevData,
-        [fieldName]: [...prevData[fieldName], { url: " ", height: 80, width: 80 }],
+        [fieldName]: [...prevData[fieldName], { url: "", height: 80, width: 80 }],
       }));
     } else {
       setFormData((prevData) => ({
@@ -517,6 +517,18 @@ const CertificateForm = () => {
     }));
   };
 
+  const copyVariable = (text) => {
+    if (!navigator.clipboard) {
+      return Promise.reject('Clipboard API not supported');
+    }
+    toast({
+      title: 'Variable copied',
+      status: "success",
+      duration: 1000,
+      isClosable: true,
+    });
+    return navigator.clipboard.writeText(text);
+  }
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -553,7 +565,7 @@ const CertificateForm = () => {
         toast({
           title: 'Submission failed',
           // description: response.statusText,
-          status:"error",
+          status: "error",
           duration: 2000,
           isClosable: true,
         })
@@ -563,7 +575,7 @@ const CertificateForm = () => {
       toast({
         title: 'Submission failed',
         // description: error,
-        status:"error",
+        status: "error",
         duration: 2000,
         isClosable: true,
       })
@@ -949,15 +961,28 @@ const CertificateForm = () => {
             {/* Body of the certificate */}
             <Accordion width="100%" allowMultiple>
               <AccordionItem width="100%" border="none">
-                <HStack width="100%" justifyContent="space-between"><Text>Enter the body of the certificate:</Text><AccordionButton height="30px" width="30px" justifyContent="center">
-                  <EditIcon height="30px" width="30px" justifyContent="center" color="black" />
-                </AccordionButton></HStack>
+                <HStack width="100%" justifyContent="space-between"><Text>Body of the certificate <Button type='button' onClick={e => {document.getElementById("bodyVariables").style.display=document.getElementById("bodyVariables").style.display=="none"?"flex":"none"}} className='tw-text-black tw-text-sm'>See variables </Button><InfoIcon height={"16px"} width={"16px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} /></Text>
+                  <AccordionButton height="30px" width="30px" justifyContent="center">
+                    <EditIcon height="30px" width="30px" justifyContent="center" color="black" />
+                  </AccordionButton></HStack>
+                <div id="bodyVariables" className=' tw-flex-col tw-justify-center tw-items-center tw-hidden'>
+                  <div id="bodyinfo" className='tw-hidden tw-p-2 m-3 tw-max-w-fit tw-bg-orange-100 tw-rounded-md'>click to copy variable</div>
+                  <ul className='tw-list-none tw-gap-1 tw-flex-wrap tw-flex'>
+                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>name</Button>
+                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>department</Button>
+                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>college</Button>
+                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>teamName</Button>
+                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>position</Button>
+                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>title1</Button>
+                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>title2</Button>
+                  </ul>
+                </div>
                 <VStack width="100%">
                   <Textarea
                     name="body.body"
                     value={formData.body.body}
                     onChange={(e) => handleChange(e, 'body', null)}
-                    placeholder="Body"
+                    placeholder="drag from bottom right corner to increase text area"
                     width='100%'
                   />
                   <AccordionPanel>
@@ -1021,7 +1046,7 @@ const CertificateForm = () => {
               <VStack width="100%" key={index}>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none"><HStack width="100%">
-                    <Text className='tw-w-full tw-pl-3'>Choose existing with details or upload new image: </Text>
+                    <Text className='tw-w-full'>Choose existing signature with details or upload new : </Text>
                     <Signaturemodal
                       eventId={eventId}
                       formData={formData}
@@ -1156,13 +1181,22 @@ const CertificateForm = () => {
                 </Accordion>
 
                 <Accordion width="100%" allowMultiple>
-                  <AccordionItem width="100%" border="none"><HStack width="100%">
+                  <AccordionItem width="100%" border="none" ><HStack width="100%">
                     <Input
                       name={`signatures[${index}].url.url`}
                       value={signature.url.url}
                       onChange={(e) => handleChange(e, 'signatures', index)}
                       placeholder="URL"
                       width="100%"
+                    />
+                    <label className='tw-flex tw-justify-center tw-items-center tw-ml-2 hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><FaUpload style={{ height: "25px", width: "25px" }} /></label>
+                    <input
+                      id={`signatures[${index}].url.url`}
+                      name={`signatures[${index}].url.url`}
+                      onChange={(e) => { handleFileChange(e, 'signatures', index); toast({ title: "Image uploaded", status: "success", duration: 2000, isClosable: true }) }}
+                      type='file'
+                      accept='image/jpeg , image/png'
+                      style={{ height: "0px", width: "0px" }}
                     />
                     <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
                     <AccordionPanel>

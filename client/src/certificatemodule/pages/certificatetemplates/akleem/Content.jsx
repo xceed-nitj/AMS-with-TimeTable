@@ -159,9 +159,9 @@ function Content() {
         const data_two = participantDetail; // Await the data_two promise
         let { title, certificateOf, signatures, header, footer, body, logos, templateId, verifiableLink } = data_one[0];
         let Signatures = [];
-        if (signatures[0].name.name) {
+        if (signatures[0].name.name || signatures[0].name.name=="") {
           Signatures = signatures
-          if (!(signatures[0].url.url)) {
+          if (!(signatures[0].url.url) || !((signatures[0].url.url)=="")) {
             signatures.forEach((elem, index) => {
               Signatures[index].url = { url: elem.url, size: 100 }
             })
@@ -179,7 +179,7 @@ function Content() {
         setSignatures(Signatures)
         //for header
         let Header = []
-        if (header[0].header) {
+        if (header[0].header || header[0].header=="") {
           Header = header
         } else {
           header.forEach(element => {
@@ -209,14 +209,14 @@ function Content() {
         //for Title
         let Title = []
         if (title[0]) {
-          if (title[0][0]) {
+          if (title[0][0] || title[0][0]=="") {
             title.forEach(element => {
               let str = ""
               for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
               let obj = { name: str, fontSize: 18, fontFamily: "", bold: "normal", italic: "normal" }
               Title.push(obj)
             });
-          } else if (title[0]["name"]) {
+          } else if (title[0]["name"] || title[0]["name"]=="") {
             Title = title
           }
         } else {
@@ -232,7 +232,7 @@ function Content() {
         //for logos
         let Logos = data_one[0].logos
         let logo = []
-        if (Logos[0].url) {
+        if (Logos[0].url || Logos[0].url=="") {
           logo = Logos
         } else {
 

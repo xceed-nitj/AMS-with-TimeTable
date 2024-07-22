@@ -63,6 +63,7 @@ function Participant() {
     department: "",
     college: "",
     types: "",
+    teamName:"",
     position: "",
     title1: "",
     title2: "",
@@ -77,6 +78,7 @@ function Participant() {
     department: "",
     college: "",
     types: "",
+    teamName:"",
     position: "",
     title1: "",
     title2: "",
@@ -264,6 +266,7 @@ function Participant() {
               college: "",
               types: "",
               position: "",
+              teamName:"",
               title1: "",
               title2: "",
               certiType: "",
@@ -442,6 +445,7 @@ function Participant() {
       college: "",
       types: "",
       position: "",
+      teamName:"",
       title1: "",
       title2: "",
       certiType: "",
@@ -683,6 +687,23 @@ function Participant() {
 
 
             <Box>
+              <FormLabel>Team Name:</FormLabel>
+              <Input
+                border="1px"
+                borderColor="gray.300"
+                mb="4"
+
+                type="text"
+                placeholder="Team Name"
+                value={editedSData.teamName}
+                onChange={(e) =>{ 
+                  setEditedSData({ ...editedSData, teamName: e.target.value })
+                }}
+              />
+            </Box>
+
+
+            <Box>
               <FormLabel>Position:</FormLabel>
               <Input
                 border="1px"
@@ -719,7 +740,7 @@ function Participant() {
                 border="1px"
                 mb="4"
                 borderColor="gray.300"
-                type="number" // Assuming it's a number
+                type="text"
                 placeholder="title2"
                 value={editedSData.title2}
                 onChange={(e) =>
@@ -814,6 +835,7 @@ function Participant() {
                 <Th><Center>Department</Center></Th>
                 <Th><Center>College</Center></Th>
                 <Th><Center>Type</Center></Th>
+                <Th><Center>Team Name</Center></Th>
                 <Th><Center>Position</Center></Th>
                 <Th><Center>Title-1</Center></Th>
                 <Th><Center>Title-2</Center></Th>
@@ -884,6 +906,7 @@ function Participant() {
                         <Input
                           type="text"
                           value={editedData.types}
+                          width="80px"
                           onChange={(e) =>
                             setEditedData({
                               ...editedData,
@@ -893,6 +916,24 @@ function Participant() {
                         />
                       ) : (
                         row.types
+                      )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.teamName}
+                          onChange={(e) =>
+                            setEditedData({
+                              ...editedData,
+                              teamName: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        row.teamName
                       )}
                     </Center>
                   </Td>
