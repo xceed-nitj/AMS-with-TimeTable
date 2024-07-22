@@ -30,24 +30,26 @@ const CertificateForm = () => {
   const toast = useToast();
   const [type, setType] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([])
+  const date = new Date()
+  const foot = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const [formData, setFormData] = useState({
     logos: [{ url: "", height: 80, width: 80 }],
-    header: [{ header: "", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
+    header: [{ header: "", fontSize: 22, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }],
     body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-    footer: { footer: "", },
+    footer: { footer: foot, },
     signatures: [{
       name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
       url: { url: "", size: 100 },
     }],
     certiType: " ",
-    templateId: " ", //Template Design Number
-    title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
+    templateId: "0", //Template Design Number
+    title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "bold", italic: "normal", fontColor: "black" },
     { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
-    { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" },
+    { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "bold", italic: "normal", fontColor: "black" },
     { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }],
     verifiableLink: false,
-    certificateOf: { certificateOf: "CERTIFICATE OF APPRECIATION", fontSize: 32, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }
+    certificateOf: { certificateOf: "CERTIFICATE OF APPRECIATION", fontSize: 32, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }
   });
 
 
@@ -62,22 +64,22 @@ const CertificateForm = () => {
     setSelectedFiles([])
     setFormData({
       logos: [{ url: "", height: 80, width: 80 }],
-      header: [{ header: "", fontSize: 22, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }],
+      header: [{ header: "", fontSize: 22, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }],
       body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-      footer: { footer: "", },
+      footer: { footer: foot, },
       signatures: [{
         name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
         position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
         url: { url: "", size: 100 },
       }],
       certiType: certType,
-      templateId: "", //Template Design Number
-      title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
+      templateId: "0", //Template Design Number
+      title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "bold", italic: "normal", fontColor: "black" },
       { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
-      { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" },
+      { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "bold", italic: "normal", fontColor: "black" },
       { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }],
       verifiableLink: false,
-      certificateOf: { certificateOf: "CERTIFICATE OF APPRECIATION", fontSize: 32, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }
+      certificateOf: { certificateOf: "CERTIFICATE OF APPRECIATION", fontSize: 32, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }
     })
     const fetchData = async () => {
       try {
@@ -101,7 +103,7 @@ const CertificateForm = () => {
           ) {
             let { certificateOf, title, signatures, header, footer, body, certiType, logos, templateId, verifiableLink } = responseData[0];
             let Signatures = [];
-            if (signatures[0].name.name || signatures[0].name.name=="") {
+            if (signatures[0].name.name || signatures[0].name.name == "") {
               Signatures = signatures
               if (!(signatures[0].url.url)) {
                 signatures.forEach((elem, index) => {
@@ -121,7 +123,7 @@ const CertificateForm = () => {
             }
             //for logos
             let Logos = []
-            if (logos[0].url || logos[0].url=="") {
+            if (logos[0].url || logos[0].url == "") {
               Logos = logos
             } else {
 
@@ -134,7 +136,7 @@ const CertificateForm = () => {
             }
             //for header
             let Header = []
-            if (header[0].header || header[0].header=="") {
+            if (header[0].header || header[0].header == "") {
               Header = header
             } else {
               header.forEach(element => {
@@ -160,7 +162,7 @@ const CertificateForm = () => {
             }
             // for body
             let Body = formData.body
-            if (body.body || body.body=="") {
+            if (body.body || body.body == "") {
               Body = body
             } else {
               Body.body = body
@@ -169,14 +171,14 @@ const CertificateForm = () => {
             //for title
             let Title = []
             if (title[0]) {
-              if (title[0][0] || title[0][0]=="") {
+              if (title[0][0] || title[0][0] == "") {
                 title.forEach(element => {
                   let str = ""
                   for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
                   let obj = { name: str, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }
                   Title.push(obj)
                 });
-              } else if (title[0]["name"] || title[0]["name"]=="") {
+              } else if (title[0]["name"] || title[0]["name"] == "") {
                 Title = title
               }
             } else {
@@ -638,19 +640,18 @@ const CertificateForm = () => {
                         placeholder="Title"
                         width="100%"
                       />
-                      <AccordionButton height="30px" width="30px" justifyContent="center">
-                        <EditIcon color="black" height="30px" width="30px" justifyContent="center" />
+                      <AccordionButton height="25px" width="25px" justifyContent="center">
+                        <EditIcon color="blue" height="25px" width="25px" justifyContent="center" />
                       </AccordionButton>
                       {index > 0 && (
                         <IconButton
-                          width="30px"
-                          icon={<CloseIcon />}
+                          icon={<CloseIcon color = "red" height="20px" width="20px" />}
                           onClick={() => handleDelete('title', index)}
                         />
                       )}
                       {index === formData.title.length - 1 && (
                         <IconButton
-                          icon={<AddIcon />}
+                          icon={<AddIcon color = "green" height="20px" width="20px" />}
                           onClick={() => addField('title')}
                         />
                       )}
@@ -756,7 +757,7 @@ const CertificateForm = () => {
                     placeholder="Logo"
                     width="100%"
                   />
-                  <label style={{ height: "30px", width: "30px" }} className="tw-flex tw-flex-col tw-justify-center tw-ml-2" htmlFor={`logo${index}`}><FaUpload style={{ height: "25px", width: "25px" }} /></label>
+                  <label style={{ height: "30px", width: "30px" }} className="tw-flex tw-flex-col tw-justify-center tw-ml-2 hover:tw-cursor-pointer" htmlFor={`logo${index}`}><FaUpload style={{ height: "25px", width: "25px", color:"purple"}} /></label>
                   <Input
                     id={`logo${index}`}
                     name={`logos[${index}].url`}
@@ -765,18 +766,18 @@ const CertificateForm = () => {
                     accept='image/jpeg , image/png'
                     style={{ width: "0px", height: "0px", margin: "0px", padding: "0px" }}
                   />
-                  <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="black" height="30px" width="30px" justifyContent="center" /></AccordionButton>
+                  <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="blue" height="25px" width="25px" justifyContent="center" /></AccordionButton>
 
 
                   {index > 0 && (
                     <IconButton
-                      icon={<CloseIcon />}
+                      icon={<CloseIcon color="red" width="20px" height="20px"/>}
                       onClick={() => handleDelete('logos', index)}
                     />
                   )}
                   {index === formData.logos.length - 1 && (
                     <IconButton
-                      icon={<AddIcon />}
+                      icon={<AddIcon color="green" width="20px" height="20px" />}
                       onClick={() => addField('logos')}
                     />
                   )}</HStack>
@@ -822,17 +823,17 @@ const CertificateForm = () => {
                         width="100%"
                       />
                       <AccordionButton height="30px" width="30px" justifyContent="center">
-                        <EditIcon color="black" height="30px" width="30px" justifyContent="center" />
+                        <EditIcon color="blue" height="25px" width="25px" justifyContent="center" />
                       </AccordionButton>
                       {index > 0 && (
                         <IconButton
-                          icon={<CloseIcon />}
+                          icon={<CloseIcon color="red" width="20px" height="20px" />}
                           onClick={() => handleDelete('header', index)}
                         />
                       )}
                       {index === formData.header.length - 1 && (
                         <IconButton
-                          icon={<AddIcon />}
+                          icon={<AddIcon color="green" width="20px" height="20px" />}
                           onClick={() => addField('header')}
                         />
                       )}
@@ -903,7 +904,7 @@ const CertificateForm = () => {
                       width='100%'
                     />
                     <AccordionButton height="30px" width="30px" justifyContent="center">
-                      <EditIcon height="30px" width="30px" justifyContent="center" color="black" />
+                      <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
                     </AccordionButton></HStack>
                   <AccordionPanel>
                     <VStack width='100%'>
@@ -961,9 +962,9 @@ const CertificateForm = () => {
             {/* Body of the certificate */}
             <Accordion width="100%" allowMultiple>
               <AccordionItem width="100%" border="none">
-                <HStack width="100%" justifyContent="space-between"><Text>Body of the certificate <Button type='button' onClick={e => {document.getElementById("bodyVariables").style.display=document.getElementById("bodyVariables").style.display=="none"?"flex":"none"}} className='tw-text-black tw-text-sm'>See variables </Button><InfoIcon height={"16px"} width={"16px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} /></Text>
+                <HStack width="100%" justifyContent="space-between"><Text>Body of the certificate <Button type='button' onClick={e => { document.getElementById("bodyVariables").style.display = document.getElementById("bodyVariables").style.display == "flex" ? "none" : "flex" }} className='tw-text-black tw-text-sm'>See variables </Button><InfoIcon color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} /></Text>
                   <AccordionButton height="30px" width="30px" justifyContent="center">
-                    <EditIcon height="30px" width="30px" justifyContent="center" color="black" />
+                    <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
                   </AccordionButton></HStack>
                 <div id="bodyVariables" className=' tw-flex-col tw-justify-center tw-items-center tw-hidden'>
                   <div id="bodyinfo" className='tw-hidden tw-p-2 m-3 tw-max-w-fit tw-bg-orange-100 tw-rounded-md'>click to copy variable</div>
@@ -1046,7 +1047,7 @@ const CertificateForm = () => {
               <VStack width="100%" key={index}>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none"><HStack width="100%">
-                    <Text className='tw-w-full'>Choose existing signature with details or upload new : </Text>
+                    <Text className='tw-w-full'>Choose an existing signature with details: </Text>
                     <Signaturemodal
                       eventId={eventId}
                       formData={formData}
@@ -1070,7 +1071,7 @@ const CertificateForm = () => {
                       />
 
                       <AccordionButton height="30px" width="30px" justifyContent="center">
-                        <EditIcon height="30px" width="30px" justifyContent="center" color="black" />
+                        <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
                       </AccordionButton>
                     </HStack>
                     <AccordionPanel><HStack width="100%">
@@ -1131,7 +1132,7 @@ const CertificateForm = () => {
                       />
 
                       <AccordionButton height="30px" width="30px" justifyContent="center">
-                        <EditIcon height="30px" width="30px" justifyContent="center" color="black" />
+                        <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
                       </AccordionButton>
                     </HStack>
                     <AccordionPanel><HStack width="100%">
@@ -1189,7 +1190,7 @@ const CertificateForm = () => {
                       placeholder="URL"
                       width="100%"
                     />
-                    <label className='tw-flex tw-justify-center tw-items-center tw-ml-2 hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><FaUpload style={{ height: "25px", width: "25px" }} /></label>
+                    <label className='tw-flex tw-justify-center tw-items-center tw-ml-2 hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><FaUpload style={{ height: "25px", width: "25px", color:'purple'}} /></label>
                     <input
                       id={`signatures[${index}].url.url`}
                       name={`signatures[${index}].url.url`}
@@ -1198,7 +1199,7 @@ const CertificateForm = () => {
                       accept='image/jpeg , image/png'
                       style={{ height: "0px", width: "0px" }}
                     />
-                    <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
+                    <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="25px" width="25px" justifyContent="center" color="blue" /></AccordionButton></HStack>
                     <AccordionPanel>
                       <HStack width="100%"><Text>Size:</Text>
                         <Input
