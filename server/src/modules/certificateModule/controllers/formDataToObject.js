@@ -29,14 +29,14 @@ const convertToObject = async (eventId, formData, files,url) => {
         }
         i = 0
         form["logos"] = []
-        while (formData[`logos[${i}].url`]) {
+        while (formData[`logos[${i}].url`] || formData[`logos[${i}].url`]=="") {
             let Logo = { "url": formData[`logos[${i}].url`], "height": (formData[`logos[${i}].height`] == "" ? 70 : formData[`logos[${i}].height`]), "width": (formData[`logos[${i}].width`] == "" ? 70 : formData[`logos[${i}].width`]) }
             form["logos"].push(Logo)
             i++;
         }
         i = 0
         form["signatures"] = []
-        while (formData[`signatures[${i}].name.name`] || formData[`signatures[${i}].position.position`] || formData[`signatures[${i}].url.url`]) {
+        while (formData[`signatures[${i}].name.name`] || formData[`signatures[${i}].position.position`] || formData[`signatures[${i}].url.url`] || formData[`signatures[${i}].name.name`]=="" || formData[`signatures[${i}].position.position`]=="" || formData[`signatures[${i}].url.url`]=="") {
             let Signature = {
                 "name": { "name": formData[`signatures[${i}].name.name`], "fontSize": (formData[`signatures[${i}].name.fontSize`] == "" ? 12 : formData[`signatures[${i}].name.fontSize`]), "fontFamily": formData[`signatures[${i}].name.fontFamily`], "bold": formData[`signatures[${i}].name.bold`], "italic": formData[`signatures[${i}].name.italic`], "fontColor": formData[`signatures[${i}].name.fontColor`] },
                 "position": { "position": formData[`signatures[${i}].position.position`], "fontSize": (formData[`signatures[${i}].position.fontSize`] == "" ?10 : formData[`signatures[${i}].position.fontSize`]), "fontFamily": formData[`signatures[${i}].position.fontFamily`], "bold": formData[`signatures[${i}].position.bold`], "italic": formData[`signatures[${i}].position.italic`], "fontColor": formData[`signatures[${i}].position.fontColor`] },
