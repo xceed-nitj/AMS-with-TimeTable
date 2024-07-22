@@ -14,6 +14,7 @@ const { checkRole } = require("../../checkRole.middleware");
 // Route to create a new certificate
 certificateRouter.post("/content/:id", checkRole(['CM']), LockStatus, upload.any(),async (req, res) => {
   try {
+    console.log(req.body)
     const url = req.body.url;
     // console.log(req.files)
     const body = await convertToObject(req.params.id, req.body, req.files, url)
