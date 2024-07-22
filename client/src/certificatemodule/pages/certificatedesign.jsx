@@ -553,7 +553,7 @@ const CertificateForm = () => {
         toast({
           title: 'Submission failed',
           // description: response.statusText,
-          status:"error",
+          status: "error",
           duration: 2000,
           isClosable: true,
         })
@@ -563,7 +563,7 @@ const CertificateForm = () => {
       toast({
         title: 'Submission failed',
         // description: error,
-        status:"error",
+        status: "error",
         duration: 2000,
         isClosable: true,
       })
@@ -957,7 +957,7 @@ const CertificateForm = () => {
                     name="body.body"
                     value={formData.body.body}
                     onChange={(e) => handleChange(e, 'body', null)}
-                    placeholder="Body"
+                    placeholder="drag from bottom right corner to increase text area"
                     width='100%'
                   />
                   <AccordionPanel>
@@ -1021,7 +1021,7 @@ const CertificateForm = () => {
               <VStack width="100%" key={index}>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none"><HStack width="100%">
-                    <Text className='tw-w-full tw-pl-3'>Choose existing with details or upload new image: </Text>
+                    <Text className='tw-w-full'>Choose existing signature with details or upload new : </Text>
                     <Signaturemodal
                       eventId={eventId}
                       formData={formData}
@@ -1156,13 +1156,22 @@ const CertificateForm = () => {
                 </Accordion>
 
                 <Accordion width="100%" allowMultiple>
-                  <AccordionItem width="100%" border="none"><HStack width="100%">
+                  <AccordionItem width="100%" border="none" ><HStack width="100%">
                     <Input
                       name={`signatures[${index}].url.url`}
                       value={signature.url.url}
                       onChange={(e) => handleChange(e, 'signatures', index)}
                       placeholder="URL"
                       width="100%"
+                    />
+                    <label className='tw-flex tw-justify-center tw-items-center tw-ml-2 hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><FaUpload style={{ height: "25px", width: "25px" }} /></label>
+                    <input
+                      id={`signatures[${index}].url.url`}
+                      name={`signatures[${index}].url.url`}
+                      onChange={(e) => { handleFileChange(e, 'signatures', index); toast({ title: "Image uploaded", status: "success", duration: 2000, isClosable: true }) }}
+                      type='file'
+                      accept='image/jpeg , image/png'
+                      style={{ height: "0px", width: "0px" }}
                     />
                     <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="30px" width="30px" justifyContent="center" color="black" /></AccordionButton></HStack>
                     <AccordionPanel>
