@@ -41,6 +41,7 @@ class AddparticipantController {
         department: newparticipant.department,
         college: newparticipant.college,
         types: newparticipant.types,
+        teamName: newparticipant.teamName,
         position: newparticipant.position,
         title1: newparticipant.title1,
         title2: newparticipant.title2,
