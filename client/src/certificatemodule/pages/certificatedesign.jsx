@@ -40,39 +40,39 @@ const CertificateForm = () => {
   const [formData, setFormData] = useState({
     title: '',
     templateId: null,
-    logos: [{ url: ' ', height: 80, width: 80 }],
+    logos: [{ url: '', height: 80, width: 80 }],
     header: [
       {
-        header: ' ',
+        header: '',
         fontSize: 22,
         fontFamily: '',
-        bold: 'normal',
+        bold: 'bold',
         italic: 'normal',
         fontColor: 'black',
       },
     ],
     body: {
-      body: ' ',
+      body: '',
       fontSize: 16,
       fontFamily: '',
       bold: 'normal',
       italic: 'normal',
       fontColor: 'black',
     },
-    footer: { footer: ' ' },
+    footer: { footer: '' },
     signatures: [
       {
         name: {
-          name: ' ',
-          fontSize: 12,
+          name: '',
+          fontSize: 14,
           fontFamily: '',
           bold: 'normal',
           italic: 'normal',
           fontColor: 'black',
         },
         position: {
-          position: ' ',
-          fontSize: 10,
+          position: '',
+          fontSize: 12,
           fontFamily: '',
           bold: 'normal',
           italic: 'normal',
@@ -81,20 +81,20 @@ const CertificateForm = () => {
         url: { url: '', size: 100 },
       },
     ],
-    certiType: ' ',
-    templateId: ' ', //Template Design Number
+    certiType: '',
+    templateId: '0', //Template Design Number
     title: [
       {
         name: 'डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर',
         fontSize: 20,
         fontFamily: 'Noto Serif Devanagari',
-        bold: 'normal',
+        bold: 'bold',
         italic: 'normal',
         fontColor: 'black',
       },
       {
         name: 'जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008',
-        fontSize: 14,
+        fontSize: 16,
         fontFamily: 'Noto Serif Devanagari',
         bold: 'normal',
         italic: 'normal',
@@ -102,15 +102,15 @@ const CertificateForm = () => {
       },
       {
         name: 'Dr B R Ambedkar National Institute of Technology Jalandhar',
-        fontSize: 19,
+        fontSize: 20,
         fontFamily: 'serif',
-        bold: 'normal',
+        bold: 'bold',
         italic: 'normal',
         fontColor: 'black',
       },
       {
         name: 'G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008',
-        fontSize: 14,
+        fontSize: 16,
         fontFamily: 'serif',
         bold: 'normal',
         italic: 'normal',
@@ -122,7 +122,7 @@ const CertificateForm = () => {
       certificateOf: 'CERTIFICATE OF APPRECIATION',
       fontSize: 32,
       fontFamily: '',
-      bold: 'normal',
+      bold: 'bold',
       italic: 'normal',
       fontColor: 'black',
     },
@@ -138,19 +138,19 @@ const CertificateForm = () => {
     const certType = formData.certiType;
     setSelectedFiles([]);
     setFormData({
-      logos: [{ url: ' ', height: 80, width: 80 }],
+      logos: [{ url: '', height: 80, width: 80 }],
       header: [
         {
-          header: ' ',
+          header: '',
           fontSize: 22,
           fontFamily: '',
-          bold: 'normal',
+          bold: 'bold',
           italic: 'normal',
           fontColor: 'black',
         },
       ],
       body: {
-        body: ' ',
+        body: '',
         fontSize: 16,
         fontFamily: '',
         bold: 'normal',
@@ -161,7 +161,7 @@ const CertificateForm = () => {
       signatures: [
         {
           name: {
-            name: ' ',
+            name: '',
             fontSize: 12,
             fontFamily: '',
             bold: 'normal',
@@ -169,7 +169,7 @@ const CertificateForm = () => {
             fontColor: 'black',
           },
           position: {
-            position: ' ',
+            position: '',
             fontSize: 10,
             fontFamily: '',
             bold: 'normal',
@@ -186,7 +186,7 @@ const CertificateForm = () => {
           name: 'डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर',
           fontSize: 20,
           fontFamily: 'Noto Serif Devanagari',
-          bold: 'normal',
+          bold: 'bold',
           italic: 'normal',
           fontColor: 'black',
         },
@@ -202,7 +202,7 @@ const CertificateForm = () => {
           name: 'Dr B R Ambedkar National Institute of Technology Jalandhar',
           fontSize: 19,
           fontFamily: 'serif',
-          bold: 'normal',
+          bold: 'bold',
           italic: 'normal',
           fontColor: 'black',
         },
@@ -220,7 +220,7 @@ const CertificateForm = () => {
         certificateOf: 'CERTIFICATE OF APPRECIATION',
         fontSize: 32,
         fontFamily: '',
-        bold: 'normal',
+        bold: 'bold',
         italic: 'normal',
         fontColor: 'black',
       },
@@ -258,9 +258,9 @@ const CertificateForm = () => {
               verifiableLink,
             } = responseData[0];
             let Signatures = [];
-            if (signatures[0].name.name) {
+            if (signatures[0].name.name || signatures[0].name.name == "") {
               Signatures = signatures;
-              if (!signatures[0].url.url) {
+              if (!signatures[0].url.url || !(signatures[0].url.url == "")) {
                 signatures.forEach((elem, index) => {
                   Signatures[index].url = { url: elem.url, size: 100 };
                 });
@@ -291,7 +291,7 @@ const CertificateForm = () => {
             }
             //for logos
             let Logos = [];
-            if (logos[0].url) {
+            if (logos[0].url || logos[0].url == "") {
               Logos = logos;
             } else {
               logos.forEach((element) => {
@@ -305,7 +305,7 @@ const CertificateForm = () => {
             }
             //for header
             let Header = [];
-            if (header[0].header) {
+            if (header[0].header || header[0].header == "") {
               Header = header;
             } else {
               header.forEach((element) => {
@@ -333,14 +333,14 @@ const CertificateForm = () => {
             }
             //for certificateOf
             let CertificateOf = {};
-            if (!certificateOf) {
+            if (!certificateOf || !(certificateOf == "")) {
               CertificateOf = formData.certificateOf;
             } else {
               CertificateOf = certificateOf;
             }
             // for body
             let Body = formData.body;
-            if (body.body) {
+            if (body.body || body.body == "") {
               Body = body;
             } else {
               Body.body = body;
@@ -348,8 +348,8 @@ const CertificateForm = () => {
             // console.log(title)
             //for title
             let Title = [];
-            if (title[0]) {
-              if (title[0][0]) {
+            if (title[0] || title[0] == "") {
+              if (title[0][0] || title[0][0] == "") {
                 title.forEach((element) => {
                   let str = '';
                   for (let key in element) {
@@ -367,7 +367,7 @@ const CertificateForm = () => {
                   };
                   Title.push(obj);
                 });
-              } else if (title[0]['name']) {
+              } else if (title[0]['name'] || title[0]['name'] == "") {
                 Title = title;
               }
             } else {
@@ -767,14 +767,14 @@ const CertificateForm = () => {
           ...prevData[fieldName],
           {
             name: {
-              name: ' ',
+              name: '',
               fontSize: '',
               fontFamily: '',
               bold: 'normal',
               italic: 'normal',
             },
             position: {
-              position: ' ',
+              position: '',
               fontSize: '',
               fontFamily: '',
               bold: 'normal',
@@ -789,7 +789,7 @@ const CertificateForm = () => {
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { url: ' ', height: 80, width: 80 },
+          { url: '', height: 80, width: 80 },
         ],
       }));
     } else {
@@ -958,8 +958,6 @@ const CertificateForm = () => {
               : formData.title.map((title, index) => (
                 <HStack key={index} alignItems="flex-start" width="100%">
                   <Accordion width="100%" allowMultiple>
-                    {' '}
-                    {/* Allow multiple items to be expanded simultaneously (optional) */}
                     <AccordionItem
                       border="none"
                       alignItems="center"
@@ -1202,21 +1200,21 @@ const CertificateForm = () => {
                         justifyContent="center"
                       >
                         <EditIcon
-                          color="black"
-                          height="30px"
-                          width="30px"
+                          color="blue"
+                          height="25px"
+                          width="25px"
                           justifyContent="center"
                         />
                       </AccordionButton>
                       {index > 0 && (
                         <IconButton
-                          icon={<CloseIcon />}
+                          icon={<CloseIcon color="red" width="20px" height="20px" />}
                           onClick={() => handleDelete('header', index)}
                         />
                       )}
                       {index === formData.header.length - 1 && (
                         <IconButton
-                          icon={<AddIcon />}
+                          icon={<AddIcon color="green" height="20px" width="20px" />}
                           onClick={() => addField('header')}
                         />
                       )}
@@ -1323,10 +1321,10 @@ const CertificateForm = () => {
                       justifyContent="center"
                     >
                       <EditIcon
-                        height="30px"
-                        width="30px"
+                        color="blue"
+                        height="25px"
+                        width="25px"
                         justifyContent="center"
-                        color="black"
                       />
                     </AccordionButton>
                   </HStack>
@@ -1521,10 +1519,22 @@ const CertificateForm = () => {
               </AccordionItem>
             </Accordion>
 
-            <Text>Enter the link for signatures:</Text>
+            <Text>signatures:</Text>
 
             {formData.signatures.map((signature, index) => (
               <VStack width="100%" key={index}>
+                <HStack><Text>Use existing signature with details </Text>
+                  <Signaturemodal
+                    eventId={eventId}
+                    formData={formData}
+                    setFormData={setFormData}
+                    index={index}
+                    handleFileChange={handleFileChange}
+                    signatures={formData.signatures}
+                    signature={signature}
+                    handleChange={handleChange}
+                    selectedFiles={selectedFiles} />
+                </HStack>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none">
                     <HStack width="100%">
@@ -1541,10 +1551,10 @@ const CertificateForm = () => {
                         justifyContent="center"
                       >
                         <EditIcon
-                          height="30px"
-                          width="30px"
+                          color="blue"
+                          height="25px"
+                          width="25px"
                           justifyContent="center"
-                          color="black"
                         />
                       </AccordionButton>
                     </HStack>
@@ -1647,10 +1657,10 @@ const CertificateForm = () => {
                         justifyContent="center"
                       >
                         <EditIcon
-                          height="30px"
-                          width="30px"
+                          color="blue"
+                          height="25px"
+                          width="25px"
                           justifyContent="center"
-                          color="black"
                         />
                       </AccordionButton>
                     </HStack>
@@ -1783,7 +1793,7 @@ const CertificateForm = () => {
                 <HStack>
                   {index > 0 && (
                     <IconButton
-                      icon={<CloseIcon />}
+                      icon={<CloseIcon color="red" width="20px" height="20px" />}
                       onClick={() => handleDelete('signatures', index)}
                     />
                   )}
