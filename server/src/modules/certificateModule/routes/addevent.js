@@ -26,6 +26,20 @@ addEventRouter.post("/", checkRole(['CM','admin']), async (req, res) => {
   }
 });
 
+// Route for assigning an event to a specific user
+addEventRouter.post('/assignEvent/:userId', checkRole(['admin']), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const eventData = req.body;
+
+    const newEvent = await addEventController.assignEventToUser(eventData, userId);
+
+    return res.status(201).json({ message: "Event assigned successfully", event: newEvent });
+  } catch (e) {
+    return res.status(e?.status || 500).json({ message: e?.message || "Internal Server Error" });
+  }
+});
+
 
 // Route to get all events
 addEventRouter.get("/", async (req, res) => {
@@ -80,6 +94,20 @@ addEventRouter.get("/getevents", checkRole(['CM','admin']), async (req, res) => 
   }
 });
 
+addEventRouter.get("/getevents/:userId", checkRole(['admin']), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(userId);
+    const allEvents = await addEventController.getEventByUser(userId);
+    return res.status(200).json(allEvents);
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+
 addEventRouter.post("/lock/:id", checkRole(['CM','admin'],true), async (req, res) => {
   try {
     const eventId = req.params.id;
@@ -91,6 +119,32 @@ addEventRouter.post("/lock/:id", checkRole(['CM','admin'],true), async (req, res
       .json({ error: e?.message || "Internal Server Error" });
   }
 });
+
+addEventRouter.post("/unlock/:id", checkRole(['admin']), async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    await addEventController.unlockEvent(eventId);
+    return res.status(200).json({message:'Unlock succesful'});
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+addEventRouter.delete("/delete/:id", checkRole(['admin']), async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    await addEventController.deleteEventById(eventId);
+    return res.status(200).json({message:'deleted succesfully'});
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+
 
 
 module.exports = addEventRouter;
