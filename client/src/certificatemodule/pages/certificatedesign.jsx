@@ -36,28 +36,96 @@ const CertificateForm = () => {
   const apiUrl = getEnvironment();
   const toast = useToast();
   const [type, setType] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState([])
-  const date = new Date()
-  const foot = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [formData, setFormData] = useState({
-    logos: [{ url: "", height: 80, width: 80 }],
-    header: [{ header: "", fontSize: 22, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }],
-    body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-    footer: { footer: foot, },
-    signatures: [{
-      name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-      position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-      url: { url: "", size: 100 },
-    }],
-    certiType: " ",
-    templateId: "0", //Template Design Number
-    title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "bold", italic: "normal", fontColor: "black" },
-    { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
-    { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "bold", italic: "normal", fontColor: "black" },
-    { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }],
+    title: '',
+    templateId: null,
+    logos: [{ url: ' ', height: 80, width: 80 }],
+    header: [
+      {
+        header: ' ',
+        fontSize: 22,
+        fontFamily: '',
+        bold: 'normal',
+        italic: 'normal',
+        fontColor: 'black',
+      },
+    ],
+    body: {
+      body: ' ',
+      fontSize: 16,
+      fontFamily: '',
+      bold: 'normal',
+      italic: 'normal',
+      fontColor: 'black',
+    },
+    footer: { footer: ' ' },
+    signatures: [
+      {
+        name: {
+          name: ' ',
+          fontSize: 12,
+          fontFamily: '',
+          bold: 'normal',
+          italic: 'normal',
+          fontColor: 'black',
+        },
+        position: {
+          position: ' ',
+          fontSize: 10,
+          fontFamily: '',
+          bold: 'normal',
+          italic: 'normal',
+          fontColor: 'black',
+        },
+        url: { url: '', size: 100 },
+      },
+    ],
+    certiType: ' ',
+    templateId: ' ', //Template Design Number
+    title: [
+      {
+        name: 'डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर',
+        fontSize: 20,
+        fontFamily: 'Noto Serif Devanagari',
+        bold: 'normal',
+        italic: 'normal',
+        fontColor: 'black',
+      },
+      {
+        name: 'जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008',
+        fontSize: 14,
+        fontFamily: 'Noto Serif Devanagari',
+        bold: 'normal',
+        italic: 'normal',
+        fontColor: 'black',
+      },
+      {
+        name: 'Dr B R Ambedkar National Institute of Technology Jalandhar',
+        fontSize: 19,
+        fontFamily: 'serif',
+        bold: 'normal',
+        italic: 'normal',
+        fontColor: 'black',
+      },
+      {
+        name: 'G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008',
+        fontSize: 14,
+        fontFamily: 'serif',
+        bold: 'normal',
+        italic: 'normal',
+        fontColor: 'black',
+      },
+    ],
     verifiableLink: false,
-    certificateOf: { certificateOf: "CERTIFICATE OF APPRECIATION", fontSize: 32, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }
-
+    certificateOf: {
+      certificateOf: 'CERTIFICATE OF APPRECIATION',
+      fontSize: 32,
+      fontFamily: '',
+      bold: 'normal',
+      italic: 'normal',
+      fontColor: 'black',
+    },
   });
 
   // console.log(formData.templateId);
@@ -70,25 +138,93 @@ const CertificateForm = () => {
     const certType = formData.certiType;
     setSelectedFiles([]);
     setFormData({
-      logos: [{ url: "", height: 80, width: 80 }],
-      header: [{ header: "", fontSize: 22, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }],
-      body: { body: "", fontSize: 16, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-      footer: { footer: foot, },
-      signatures: [{
-        name: { name: "", fontSize: 12, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-        position: { position: "", fontSize: 10, fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-        url: { url: "", size: 100 },
-      }],
+      logos: [{ url: ' ', height: 80, width: 80 }],
+      header: [
+        {
+          header: ' ',
+          fontSize: 22,
+          fontFamily: '',
+          bold: 'normal',
+          italic: 'normal',
+          fontColor: 'black',
+        },
+      ],
+      body: {
+        body: ' ',
+        fontSize: 16,
+        fontFamily: '',
+        bold: 'normal',
+        italic: 'normal',
+        fontColor: 'black',
+      },
+      footer: { footer: '' },
+      signatures: [
+        {
+          name: {
+            name: ' ',
+            fontSize: 12,
+            fontFamily: '',
+            bold: 'normal',
+            italic: 'normal',
+            fontColor: 'black',
+          },
+          position: {
+            position: ' ',
+            fontSize: 10,
+            fontFamily: '',
+            bold: 'normal',
+            italic: 'normal',
+            fontColor: 'black',
+          },
+          url: { url: '', size: 100 },
+        },
+      ],
       certiType: certType,
-      templateId: "0", //Template Design Number
-      title: [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "bold", italic: "normal", fontColor: "black" },
-      { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" },
-      { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "bold", italic: "normal", fontColor: "black" },
-      { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }],
+      templateId: '', //Template Design Number
+      title: [
+        {
+          name: 'डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर',
+          fontSize: 20,
+          fontFamily: 'Noto Serif Devanagari',
+          bold: 'normal',
+          italic: 'normal',
+          fontColor: 'black',
+        },
+        {
+          name: 'जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008',
+          fontSize: 14,
+          fontFamily: 'Noto Serif Devanagari',
+          bold: 'normal',
+          italic: 'normal',
+          fontColor: 'black',
+        },
+        {
+          name: 'Dr B R Ambedkar National Institute of Technology Jalandhar',
+          fontSize: 19,
+          fontFamily: 'serif',
+          bold: 'normal',
+          italic: 'normal',
+          fontColor: 'black',
+        },
+        {
+          name: 'G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008',
+          fontSize: 14,
+          fontFamily: 'serif',
+          bold: 'normal',
+          italic: 'normal',
+          fontColor: 'black',
+        },
+      ],
       verifiableLink: false,
-      certificateOf: { certificateOf: "CERTIFICATE OF APPRECIATION", fontSize: 32, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }
-    })
-
+      certificateOf: {
+        certificateOf: 'CERTIFICATE OF APPRECIATION',
+        fontSize: 32,
+        fontFamily: '',
+        bold: 'normal',
+        italic: 'normal',
+        fontColor: 'black',
+      },
+    });
     const fetchData = async () => {
       try {
         const response = await fetch(
@@ -122,10 +258,9 @@ const CertificateForm = () => {
               verifiableLink,
             } = responseData[0];
             let Signatures = [];
-
-            if (signatures[0].name.name || signatures[0].name.name == "") {
-              Signatures = signatures
-              if (!(signatures[0].url.url)) {
+            if (signatures[0].name.name) {
+              Signatures = signatures;
+              if (!signatures[0].url.url) {
                 signatures.forEach((elem, index) => {
                   Signatures[index].url = { url: elem.url, size: 100 };
                 });
@@ -155,10 +290,9 @@ const CertificateForm = () => {
               });
             }
             //for logos
-
-            let Logos = []
-            if (logos[0].url || logos[0].url == "") {
-              Logos = logos
+            let Logos = [];
+            if (logos[0].url) {
+              Logos = logos;
             } else {
               logos.forEach((element) => {
                 let str = '';
@@ -170,9 +304,9 @@ const CertificateForm = () => {
               });
             }
             //for header
-            let Header = []
-            if (header[0].header || header[0].header == "") {
-              Header = header
+            let Header = [];
+            if (header[0].header) {
+              Header = header;
             } else {
               header.forEach((element) => {
                 let str = '';
@@ -205,9 +339,9 @@ const CertificateForm = () => {
               CertificateOf = certificateOf;
             }
             // for body
-            let Body = formData.body
-            if (body.body || body.body == "") {
-              Body = body
+            let Body = formData.body;
+            if (body.body) {
+              Body = body;
             } else {
               Body.body = body;
             }
@@ -215,15 +349,26 @@ const CertificateForm = () => {
             //for title
             let Title = [];
             if (title[0]) {
-              if (title[0][0] || title[0][0] == "") {
-                title.forEach(element => {
-                  let str = ""
-                  for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
-                  let obj = { name: str, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }
-                  Title.push(obj)
+              if (title[0][0]) {
+                title.forEach((element) => {
+                  let str = '';
+                  for (let key in element) {
+                    parseInt(key) || key == '0'
+                      ? (str = str + element[key])
+                      : '';
+                  }
+                  let obj = {
+                    name: str,
+                    fontSize: '',
+                    fontFamily: '',
+                    bold: 'normal',
+                    italic: 'normal',
+                    fontColor: 'black',
+                  };
+                  Title.push(obj);
                 });
-              } else if (title[0]["name"] || title[0]["name"] == "") {
-                Title = title
+              } else if (title[0]['name']) {
+                Title = title;
               }
             } else {
               Title = [
@@ -778,7 +923,7 @@ const CertificateForm = () => {
         // overflowY: 'scroll',
         clipPath: 'content-box',
       }}
-      className='tw-flex tw-flex-col md:tw-flex-row'
+      className="tw-flex tw-flex-col-reverse md:tw-flex-row"
     >
       <Container
         maxW="lg"
@@ -1051,18 +1196,27 @@ const CertificateForm = () => {
                         placeholder="Header"
                         width="100%"
                       />
-                      <AccordionButton height="30px" width="30px" justifyContent="center">
-                        <EditIcon color="blue" height="25px" width="25px" justifyContent="center" />
+                      <AccordionButton
+                        height="30px"
+                        width="30px"
+                        justifyContent="center"
+                      >
+                        <EditIcon
+                          color="black"
+                          height="30px"
+                          width="30px"
+                          justifyContent="center"
+                        />
                       </AccordionButton>
                       {index > 0 && (
                         <IconButton
-                          icon={<CloseIcon color="red" width="20px" height="20px" />}
+                          icon={<CloseIcon />}
                           onClick={() => handleDelete('header', index)}
                         />
                       )}
                       {index === formData.header.length - 1 && (
                         <IconButton
-                          icon={<AddIcon color="green" width="20px" height="20px" />}
+                          icon={<AddIcon />}
                           onClick={() => addField('header')}
                         />
                       )}
@@ -1163,9 +1317,19 @@ const CertificateForm = () => {
                       placeholder="Certificate Of Appreciation"
                       width="100%"
                     />
-                    <AccordionButton height="30px" width="30px" justifyContent="center">
-                      <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
-                    </AccordionButton></HStack>
+                    <AccordionButton
+                      height="30px"
+                      width="30px"
+                      justifyContent="center"
+                    >
+                      <EditIcon
+                        height="30px"
+                        width="30px"
+                        justifyContent="center"
+                        color="black"
+                      />
+                    </AccordionButton>
+                  </HStack>
                   <AccordionPanel>
                     <VStack width="100%">
                       <HStack>
@@ -1362,22 +1526,6 @@ const CertificateForm = () => {
             {formData.signatures.map((signature, index) => (
               <VStack width="100%" key={index}>
                 <Accordion width="100%" allowMultiple>
-                  <AccordionItem width="100%" border="none"><HStack width="100%">
-                    <Text className='tw-w-full'>Choose an existing signature with details: </Text>
-                    <Signaturemodal
-                      eventId={eventId}
-                      formData={formData}
-                      setFormData={setFormData}
-                      index={index}
-                      handleFileChange={handleFileChange}
-                      signatures={formData.signatures}
-                      signature={signature}
-                      handleChange={handleChange}
-                    /></HStack>
-                  </AccordionItem>
-                </Accordion>
-                <Accordion width="100%" allowMultiple>
-
                   <AccordionItem width="100%" border="none">
                     <HStack width="100%">
                       <Input
@@ -1387,9 +1535,17 @@ const CertificateForm = () => {
                         placeholder="Name"
                       />
 
-                      <AccordionButton height="30px" width="30px" justifyContent="center">
-                        <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
-
+                      <AccordionButton
+                        height="30px"
+                        width="30px"
+                        justifyContent="center"
+                      >
+                        <EditIcon
+                          height="30px"
+                          width="30px"
+                          justifyContent="center"
+                          color="black"
+                        />
                       </AccordionButton>
                     </HStack>
                     <AccordionPanel>
@@ -1485,9 +1641,17 @@ const CertificateForm = () => {
                         placeholder="Position"
                       />
 
-                      <AccordionButton height="30px" width="30px" justifyContent="center">
-                        <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
-
+                      <AccordionButton
+                        height="30px"
+                        width="30px"
+                        justifyContent="center"
+                      >
+                        <EditIcon
+                          height="30px"
+                          width="30px"
+                          justifyContent="center"
+                          color="black"
+                        />
                       </AccordionButton>
                     </HStack>
                     <AccordionPanel>
@@ -1616,14 +1780,13 @@ const CertificateForm = () => {
                   </AccordionItem>
                 </Accordion>
 
-
-                <HStack>{index > 0 && (
-                  <IconButton
-                    icon={<CloseIcon color="red" width="20px" height="20px" />}
-                    onClick={() => handleDelete('signatures', index)}
-                  />
-                )}
-
+                <HStack>
+                  {index > 0 && (
+                    <IconButton
+                      icon={<CloseIcon />}
+                      onClick={() => handleDelete('signatures', index)}
+                    />
+                  )}
                   {index === formData.signatures.length - 1 && (
                     <IconButton
                       icon={<AddIcon color="green" height="20px" width="20px" />}
