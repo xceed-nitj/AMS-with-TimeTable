@@ -947,7 +947,7 @@ const CertificateForm = () => {
             <Box>
               <Text>Select Certificate Template Design:</Text>
               <Box overflowX="auto" whiteSpace="nowrap" padding="10px 0">
-                <HStack maxW={450} spacing={4} overflow={'scroll-x'}>
+                <HStack maxW={450} spacing={4} overflow={'scroll'}>
                   {templateOptions.map((template) => (
                     <Box
                       key={template.id}
