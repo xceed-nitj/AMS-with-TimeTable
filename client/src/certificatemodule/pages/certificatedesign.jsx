@@ -923,7 +923,7 @@ const CertificateForm = () => {
         // overflowY: 'scroll',
         clipPath: 'content-box',
       }}
-      className="tw-flex tw-flex-col-reverse md:tw-flex-row"
+      className="tw-flex tw-flex-col md:tw-flex-row"
     >
       <Container
         maxW="lg"
