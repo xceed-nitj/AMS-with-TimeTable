@@ -1523,7 +1523,7 @@ const CertificateForm = () => {
 
             {formData.signatures.map((signature, index) => (
               <VStack width="100%" key={index}>
-                <HStack><Text>Use existing signature with details </Text>
+                <HStack width="100%" justifyContent="space-between"><Text>Use existing signature with details </Text>
                   <Signaturemodal
                     eventId={eventId}
                     formData={formData}
