@@ -7,7 +7,6 @@ class AddEventController {
     try {
       await addEvent.create(data);
 
-      
       const userId = data.user;
       // console.log("User ID:", userId);
       if (userId) {
@@ -15,8 +14,8 @@ class AddEventController {
         if (user) {
           // Check if user has 'CM' role
           if (!user.role.includes('CM')) {
-            user.role.push('CM'); // Add 'CM' role
-            await user.save(); // Save the updated user
+            user.role.push('CM'); 
+            await user.save(); 
           }
         } else {
           throw new HttpException(404, "User not found");
@@ -24,6 +23,26 @@ class AddEventController {
       } else {
         throw new HttpException(400, "User ID not provided");
       }
+    } catch (e) {
+      throw new HttpException(500, e);
+    }
+  }
+
+  async assignEventToUser(data, userId) {
+    try {
+      const newEvent = await addEvent.create({ ...data, user: userId });
+
+      const user = await User.findById(userId);
+      if (user) {
+        if (!user.role.includes('CM')) {
+          user.role.push('CM');
+          await user.save();
+        }
+      } else {
+        throw new HttpException(404, "User not found");
+      }
+
+      return newEvent;
     } catch (e) {
       throw new HttpException(500, e);
     }
@@ -39,6 +58,18 @@ class AddEventController {
       throw new HttpException(500, e);
     }
   }
+
+  async unlockEvent(id) {
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    try {
+      await addEvent.findByIdAndUpdate(id, {lock:false});
+    } catch (e) {
+      throw new HttpException(500, e);
+    }
+  }
+
   async getAllEvents() {
     try {
       const eventList = await addEvent.find();
@@ -88,7 +119,6 @@ class AddEventController {
       throw new HttpException(400, "Invalid User");
     }
     try {
-      console.log(user)
       const data = await addEvent.find({ user: user });
       if (!data) throw new HttpException(400, "Event does not exist");
       return data;
@@ -96,6 +126,8 @@ class AddEventController {
       throw new HttpException(500, e);
     }
   }
+
+
 
 
 }

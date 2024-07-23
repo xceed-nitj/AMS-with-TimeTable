@@ -49,7 +49,7 @@ import CertificateForm from './certificatemodule/pages/certificatedesign';
 // import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
 import ServicePage from './pages/Service';
 import Participant from './certificatemodule/pages/participantdataupload';
-
+import UserEvents from './certificatemodule/pages/UserEvents'
 
 import EODashboard from './conferencemodule/layout/eodashboard';
 import HomeConf from './conferencemodule/Tabs/HomeConf';
@@ -218,6 +218,7 @@ function App() {
         <Route path="/cm/c/:eventid/:participantid" element={<Template01 />} />
         <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03 />} />
         <Route path='/cm/useraddevent' element={< UserEventRegistration/>} />
+        <Route path="/cm/userevents/:userId" element={<UserEvents/>} />
 
     {/* Review management routes*/}
     <Route path="/prm/login" element={<ReviewLogin/>} />

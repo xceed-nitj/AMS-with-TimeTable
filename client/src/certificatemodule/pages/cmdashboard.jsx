@@ -40,8 +40,6 @@ function CMDashboard() {
         }
       );
 
-      // console.log("Response status:", response.status);
-
       if (response.ok) {
         const data = await response.json();
         setTable(data);
@@ -64,6 +62,7 @@ function CMDashboard() {
       console.error("Error:", error);
     }
   };
+
   const lockEvent = async (id) => {
     try {
       const confirmed = window.confirm('Sure? You wont be able to edit any content once locked!');
@@ -72,6 +71,7 @@ function CMDashboard() {
           // If the user cancels, do nothing
         return;
       }
+
       const response = await fetch(`${apiUrl}/certificatemodule/addevent/lock/${id}`, {
           method: 'POST',
           headers: {
@@ -83,16 +83,26 @@ function CMDashboard() {
       );
 
       if (response.ok) {
-        setEventLocked(true);
-        toast({
-          title: 'Event Locked',
-          description: 'The event has been locked successfully.',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-          position: 'middle',
-        });
-        fetchEvents(); // Fetch events again to update the state
+        // Find the index of the event to lock
+        const eventIndex = table.findIndex(event => event._id === id);
+        if (eventIndex !== -1) {
+          const updatedTable = [...table];
+          updatedTable[eventIndex].lock = true;
+          setTable(updatedTable);
+
+          // Update the state for whether all events are locked
+          const allLocked = updatedTable.every(event => event.lock);
+          setAllEventsLocked(allLocked);
+
+          toast({
+            title: 'Event Locked',
+            description: 'The event has been locked successfully.',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+            position: 'middle',
+          });
+        }
       } else {
         console.error('Failed to lock the event');
       }
