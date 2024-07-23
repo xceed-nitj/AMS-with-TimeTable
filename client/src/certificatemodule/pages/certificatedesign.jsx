@@ -180,7 +180,7 @@ const CertificateForm = () => {
         },
       ],
       certiType: certType,
-      templateId: '', //Template Design Number
+      templateId: '0', //Template Design Number
       title: [
         {
           name: 'डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर',
@@ -847,9 +847,21 @@ const CertificateForm = () => {
         });
       } else {
         console.error('Error submitting form:', response.statusText);
+        toast({
+          title: 'Submission Failed',
+          status: 'error',
+          duration: 2000,
+          isClosable: true,
+        });
       }
     } catch (error) {
       console.error('Error submitting form:', error);
+      toast({
+        title: 'Submission Failed',
+        status: 'error',
+        duration: 2000,
+        isClosable: true,
+      });
     }
   };
 
