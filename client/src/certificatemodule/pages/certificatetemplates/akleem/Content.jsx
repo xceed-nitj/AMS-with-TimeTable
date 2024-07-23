@@ -18,6 +18,9 @@ function Content() {
     fontColor: "black"
 
   });
+  const date = new Date();
+  const a = date.getMonth()>9?"":0
+  const defaultDate = `${date.getFullYear()}-${a}${date.getMonth()+1}-${date.getDate()}`
   const currentURL = window.location.href;
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 2];
@@ -27,7 +30,7 @@ function Content() {
       name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर",
       fontSize: 20,
       fontFamily: "Noto Serif Devanagari",
-      bold: "normal",
+      bold: "bold",
       italic: "normal",
       fontColor: "black"
     },
@@ -43,7 +46,7 @@ function Content() {
       name: "Dr B R Ambedkar National Institute of Technology Jalandhar",
       fontSize: 19,
       fontFamily: "serif",
-      bold: "normal",
+      bold: "bold",
       italic: "normal",
       fontColor: "black"
     },
@@ -86,18 +89,18 @@ function Content() {
       header: "",
       fontSize: 20,
       fontFamily: "",
-      bold: "normal",
+      bold: "bold",
       italic: "normal",
       fontColor: "black"
     }
   ]);
   const [templateId, setTemplateId] = useState("0")
-  const [footer, setFooter] = useState({ footer: "" })
+  const [footer, setFooter] = useState({ footer: defaultDate })
   const [certificateOf, setCertificateOf] = useState({
     certificateOf: "CERTIFICATE OF APPRECIATION",
     fontSize: 30,
     fontFamily: "",
-    bold: "normal",
+    bold: "bold",
     italic: "normal",
     fontColor: "black"
   })
@@ -185,7 +188,7 @@ function Content() {
           header.forEach(element => {
             let str = ""
             for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
-            let head = { header: str, fontSize: 20, fontFamily: "", bold: "normal", italic: "normal" }
+            let head = { header: str, fontSize: 20, fontFamily: "", bold: "bold", italic: "normal" }
             Header.push(head)
           });
         }
@@ -193,7 +196,7 @@ function Content() {
         // for footer
         let Footer = {}
         if (Array.isArray(footer)) {
-          Footer = { footer: "" }
+          Footer = { footer: defaultDate }
         } else {
           Footer = footer
         }
@@ -220,7 +223,7 @@ function Content() {
             Title = title
           }
         } else {
-          Title = [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal" }, { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal" }, { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal" }, { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal" }]
+          Title = [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "bold", italic: "normal" }, { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal" }, { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "bold", italic: "normal" }, { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal" }]
         }
         //for certificateOf
         if (certificateOf) {

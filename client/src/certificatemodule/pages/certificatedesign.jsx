@@ -37,6 +37,9 @@ const CertificateForm = () => {
   const toast = useToast();
   const [type, setType] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const date = new Date();
+  const a = date.getMonth()>9?"":0
+  const defaultDate = `${date.getFullYear()}-${a}${date.getMonth()+1}-${date.getDate()}`
   const [formData, setFormData] = useState({
     title: '',
     templateId: null,
@@ -59,7 +62,7 @@ const CertificateForm = () => {
       italic: 'normal',
       fontColor: 'black',
     },
-    footer: { footer: '' },
+    footer: { footer: defaultDate },
     signatures: [
       {
         name: {
@@ -157,7 +160,7 @@ const CertificateForm = () => {
         italic: 'normal',
         fontColor: 'black',
       },
-      footer: { footer: '' },
+      footer: { footer: defaultDate },
       signatures: [
         {
           name: {
