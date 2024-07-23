@@ -12,18 +12,25 @@ import {
   Container,
   Select,
   position,
-  Checkbox
+  Checkbox,
+  Image,
 } from '@chakra-ui/react';
-import { AddIcon, CloseIcon, EditIcon, InfoIcon } from '@chakra-ui/icons';
+import { AddIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
 import Header from '../../components/header';
 import { useToast } from '@chakra-ui/react';
 import CertificateContent from './certificatetemplates/basic01';
 import SelectCertficate from './SelectCertficate';
-import { Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon } from '@chakra-ui/react';
-import { HexAlphaColorPicker } from "react-colorful";
-import { FaUpload } from "react-icons/fa";
-import Signaturemodal from "./signaturemodal"
+import {
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+} from '@chakra-ui/react';
+import { HexAlphaColorPicker } from 'react-colorful';
+import { FaUpload } from 'react-icons/fa';
+import Signaturemodal from './signaturemodal';
 
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
@@ -50,8 +57,8 @@ const CertificateForm = () => {
     { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }],
     verifiableLink: false,
     certificateOf: { certificateOf: "CERTIFICATE OF APPRECIATION", fontSize: 32, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }
-  });
 
+  });
 
   // console.log(formData.templateId);
 
@@ -61,7 +68,7 @@ const CertificateForm = () => {
 
   useEffect(() => {
     const certType = formData.certiType;
-    setSelectedFiles([])
+    setSelectedFiles([]);
     setFormData({
       logos: [{ url: "", height: 80, width: 80 }],
       header: [{ header: "", fontSize: 22, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }],
@@ -81,6 +88,7 @@ const CertificateForm = () => {
       verifiableLink: false,
       certificateOf: { certificateOf: "CERTIFICATE OF APPRECIATION", fontSize: 32, fontFamily: "", bold: "bold", italic: "normal", fontColor: "black" }
     })
+
     const fetchData = async () => {
       try {
         const response = await fetch(
@@ -101,37 +109,64 @@ const CertificateForm = () => {
             Array.isArray(responseData) &&
             responseData.length > 0
           ) {
-            let { certificateOf, title, signatures, header, footer, body, certiType, logos, templateId, verifiableLink } = responseData[0];
+            let {
+              certificateOf,
+              title,
+              signatures,
+              header,
+              footer,
+              body,
+              certiType,
+              logos,
+              templateId,
+              verifiableLink,
+            } = responseData[0];
             let Signatures = [];
+
             if (signatures[0].name.name || signatures[0].name.name == "") {
               Signatures = signatures
               if (!(signatures[0].url.url)) {
                 signatures.forEach((elem, index) => {
-                  Signatures[index].url = { url: elem.url, size: 100 }
-                })
+                  Signatures[index].url = { url: elem.url, size: 100 };
+                });
               }
-
             } else {
-              signatures.forEach(element => {
+              signatures.forEach((element) => {
                 let sign = {
-                  name: { name: element.name, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
-                  position: { position: element.position, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" },
+                  name: {
+                    name: element.name,
+                    fontSize: '',
+                    fontFamily: '',
+                    bold: 'normal',
+                    italic: 'normal',
+                    fontColor: 'black',
+                  },
+                  position: {
+                    position: element.position,
+                    fontSize: '',
+                    fontFamily: '',
+                    bold: 'normal',
+                    italic: 'normal',
+                    fontColor: 'black',
+                  },
                   url: { url: element.url, size: 100 },
-                }
-                Signatures.push(sign)
+                };
+                Signatures.push(sign);
               });
             }
             //for logos
+
             let Logos = []
             if (logos[0].url || logos[0].url == "") {
               Logos = logos
             } else {
-
-              logos.forEach(element => {
-                let str = ""
-                for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
-                let logo = { url: str, width: 80, height: 80 }
-                Logos.push(logo)
+              logos.forEach((element) => {
+                let str = '';
+                for (let key in element) {
+                  parseInt(key) || key == '0' ? (str = str + element[key]) : '';
+                }
+                let logo = { url: str, width: 80, height: 80 };
+                Logos.push(logo);
               });
             }
             //for header
@@ -139,37 +174,46 @@ const CertificateForm = () => {
             if (header[0].header || header[0].header == "") {
               Header = header
             } else {
-              header.forEach(element => {
-                let str = ""
-                for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
-                let head = { header: str, fontSize: "", fontFamily: "", bold: "normal", italic: "normal", fontColor: "black" }
-                Header.push(head)
+              header.forEach((element) => {
+                let str = '';
+                for (let key in element) {
+                  parseInt(key) || key == '0' ? (str = str + element[key]) : '';
+                }
+                let head = {
+                  header: str,
+                  fontSize: '',
+                  fontFamily: '',
+                  bold: 'normal',
+                  italic: 'normal',
+                  fontColor: 'black',
+                };
+                Header.push(head);
               });
             }
             // for footer
-            let Footer = {}
+            let Footer = {};
             if (Array.isArray(footer)) {
-              Footer = formData.footer
+              Footer = formData.footer;
             } else {
-              Footer = footer
+              Footer = footer;
             }
             //for certificateOf
-            let CertificateOf = {}
-            if (!certificateOf || !(certificateOf == "")) {
-              CertificateOf = formData.certificateOf
+            let CertificateOf = {};
+            if (!certificateOf) {
+              CertificateOf = formData.certificateOf;
             } else {
-              CertificateOf = certificateOf
+              CertificateOf = certificateOf;
             }
             // for body
             let Body = formData.body
             if (body.body || body.body == "") {
               Body = body
             } else {
-              Body.body = body
+              Body.body = body;
             }
             // console.log(title)
             //for title
-            let Title = []
+            let Title = [];
             if (title[0]) {
               if (title[0][0] || title[0][0] == "") {
                 title.forEach(element => {
@@ -182,19 +226,63 @@ const CertificateForm = () => {
                 Title = title
               }
             } else {
-              Title = [{ name: "डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर", fontSize: 20, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" }, { name: "जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008", fontSize: 14, fontFamily: "Noto Serif Devanagari", bold: "normal", italic: "normal", fontColor: "black" }, { name: "Dr B R Ambedkar National Institute of Technology Jalandhar", fontSize: 19, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }, { name: "G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008", fontSize: 14, fontFamily: "serif", bold: "normal", italic: "normal", fontColor: "black" }]
+              Title = [
+                {
+                  name: 'डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर',
+                  fontSize: 20,
+                  fontFamily: 'Noto Serif Devanagari',
+                  bold: 'normal',
+                  italic: 'normal',
+                  fontColor: 'black',
+                },
+                {
+                  name: 'जी.टी. रोड, अमृतसर बाईपास, जालंधर, पंजाब, भारत-144008',
+                  fontSize: 14,
+                  fontFamily: 'Noto Serif Devanagari',
+                  bold: 'normal',
+                  italic: 'normal',
+                  fontColor: 'black',
+                },
+                {
+                  name: 'Dr B R Ambedkar National Institute of Technology Jalandhar',
+                  fontSize: 19,
+                  fontFamily: 'serif',
+                  bold: 'normal',
+                  italic: 'normal',
+                  fontColor: 'black',
+                },
+                {
+                  name: 'G.T Road, Amritsar Bypass, Jalandhar, Punjab, India-144008',
+                  fontSize: 14,
+                  fontFamily: 'serif',
+                  bold: 'normal',
+                  italic: 'normal',
+                  fontColor: 'black',
+                },
+              ];
             }
             // console.log(verifiableLink)
             //for verifiableLink
             if (verifiableLink === true) {
-              verifiableLink = true
+              verifiableLink = true;
             } else {
-              verifiableLink = false
+              verifiableLink = false;
             }
 
             // console.log(Title,Body,Footer,Header,Signatures)
-            setFormData({ title: Title, body: Body, certificateOf: CertificateOf, footer: Footer, header: Header, signatures: Signatures, certiType: certiType, logos: Logos, templateId: templateId, verifiableLink: verifiableLink });
-            console.log(formData.logos)
+            setFormData({
+              title: Title,
+              body: Body,
+              certificateOf: CertificateOf,
+              footer: Footer,
+              header: Header,
+              signatures: Signatures,
+              certiType: certiType,
+              logos: Logos,
+              templateId: templateId,
+              verifiableLink: verifiableLink,
+            });
+            console.log(formData.logos);
           } else {
             console.error(
               'Error: Fetched data does not match the expected structure.'
@@ -214,78 +302,78 @@ const CertificateForm = () => {
     }
   }, [apiUrl, eventId, formData.certiType]);
 
-
   const handleFileChange = (e, fieldName, index) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     setFormData((prevData) => {
       const updatedField = [...prevData[fieldName]];
       // For signatures, update the specific property of the signature object
-      const signatureField = "url"
+      const signatureField = 'url';
       if (fieldName === 'signatures') {
         setSelectedFiles((prevFiles) => {
-          const s = `signatures[${index}].url.url`
-          const obj = { [s]: file }
+          const s = `signatures[${index}].url.url`;
+          const obj = { [s]: file };
           let alreadyExists = 0;
           prevFiles.forEach((file, index) => {
             for (const key in file) {
-              if (key == s) { alreadyExists = index }
+              if (key == s) {
+                alreadyExists = index;
+              }
             }
-          })
+          });
           if (alreadyExists !== 0) {
-            const updated = [...prevFiles]
-            updated[alreadyExists] = obj
-            return updated
+            const updated = [...prevFiles];
+            updated[alreadyExists] = obj;
+            return updated;
           }
-          return [...prevFiles, obj]
-        })
-        console.log(selectedFiles)
-        const signField = "url"
+          return [...prevFiles, obj];
+        });
+        console.log(selectedFiles);
+        const signField = 'url';
         updatedField[index][signatureField] = {
           ...updatedField[index][signatureField],
-          [signField]: URL.createObjectURL(file)
-        }
+          [signField]: URL.createObjectURL(file),
+        };
       } else {
         updatedField[index] = {
           ...updatedField[index],
           [signatureField]: URL.createObjectURL(file),
-        }
+        };
       }
       return {
         ...prevData,
         [fieldName]: updatedField,
-      }
-    }
-    )
-  }
+      };
+    });
+  };
   const handleChangeStyle = (event, fieldName, index) => {
     if (event.target.checked) {
-      const value = event.target.name.split(".").pop()
+      const value = event.target.name.split('.').pop();
       if (fieldName === 'signatures') {
         setFormData((prevData) => {
           const updatedField = [...prevData[fieldName]];
           const signatureField = event.target.name.split('.')[1];
-          if (signatureField == "name" || signatureField == "position") {
+          if (signatureField == 'name' || signatureField == 'position') {
             const signField = event.target.name.split('.')[2];
             updatedField[index][signatureField] = {
               ...updatedField[index][signatureField],
-              [signField]: value
-            }
+              [signField]: value,
+            };
           }
           return {
             ...prevData,
             [fieldName]: updatedField,
           };
         });
-      } else if (fieldName === "body" || fieldName === "certificateOf") {
+      } else if (fieldName === 'body' || fieldName === 'certificateOf') {
         setFormData((prevData) => {
           const updatedField = prevData[fieldName];
           const objectField = event.target.name.split('.')[1];
           updatedField[objectField] = value;
           return {
             ...prevData,
-            [fieldName]: updatedField
-          }
-        })
+            [fieldName]: updatedField,
+          };
+        });
       } else {
         setFormData((prevData) => {
           const updatedField = [...prevData[fieldName]];
@@ -293,41 +381,41 @@ const CertificateForm = () => {
           updatedField[index] = {
             ...updatedField[index],
             [objectField]: value,
-          }
+          };
           return {
             ...prevData,
             [fieldName]: updatedField,
-          }
-        })
+          };
+        });
       }
     } else {
-      const value = "normal"
+      const value = 'normal';
       if (fieldName === 'signatures') {
         setFormData((prevData) => {
           const updatedField = [...prevData[fieldName]];
           const signatureField = event.target.name.split('.')[1];
-          if (signatureField == "name" || signatureField == "position") {
+          if (signatureField == 'name' || signatureField == 'position') {
             const signField = event.target.name.split('.')[2];
             updatedField[index][signatureField] = {
               ...updatedField[index][signatureField],
-              [signField]: value
-            }
+              [signField]: value,
+            };
           }
           return {
             ...prevData,
             [fieldName]: updatedField,
           };
         });
-      } else if (fieldName === "body" || fieldName === "certificateOf") {
+      } else if (fieldName === 'body' || fieldName === 'certificateOf') {
         setFormData((prevData) => {
           const updatedField = prevData[fieldName];
           const objectField = event.target.name.split('.')[1];
           updatedField[objectField] = value;
           return {
             ...prevData,
-            [fieldName]: updatedField
-          }
-        })
+            [fieldName]: updatedField,
+          };
+        });
       } else {
         setFormData((prevData) => {
           const updatedField = [...prevData[fieldName]];
@@ -335,16 +423,45 @@ const CertificateForm = () => {
           updatedField[index] = {
             ...updatedField[index],
             [objectField]: value,
-          }
+          };
           return {
             ...prevData,
             [fieldName]: updatedField,
-          }
-        })
+          };
+        });
       }
-
     }
-
+  };
+  const templateOptions = [
+    { id: 0, label: 'Basic 1', imageUrl: '/templatebg/basic01.png' },
+    { id: 1, label: 'Basic 2', imageUrl: '/templatebg/basic02.png' },
+    { id: 2, label: 'Basic 3', imageUrl: '/templatebg/basic03.png' },
+    { id: 3, label: 'Basic 4', imageUrl: '/templatebg/basic04.png' },
+    { id: 4, label: 'Basic 5', imageUrl: '/templatebg/basic05.png' },
+    { id: 5, label: 'Basic 6', imageUrl: '/templatebg/basic06.png' },
+    { id: 6, label: 'Basic 7', imageUrl: '/templatebg/basic07.png' },
+    { id: 7, label: 'Basic 8', imageUrl: '/templatebg/basic08.png' },
+    { id: 8, label: 'Basic 9', imageUrl: '/templatebg/basic09.png' },
+    { id: 13, label: 'Basic 10', imageUrl: '/templatebg/basic10.png' },
+    { id: 16, label: 'Basic 11', imageUrl: '/templatebg/basic11.png' },
+    { id: 17, label: 'Basic 12', imageUrl: '/templatebg/basic12.png' },
+    { id: 18, label: 'Basic 13', imageUrl: '/templatebg/basic13.png' },
+    { id: 19, label: 'Basic 14', imageUrl: '/templatebg/basic14.png' },
+    { id: 20, label: 'Basic 15', imageUrl: '/templatebg/basic15.png' },
+    { id: 21, label: 'Basic 16', imageUrl: '/templatebg/basic16.png' },
+    { id: 9, label: 'Premium 1', imageUrl: '/templatebg/premium01.png' },
+    { id: 10, label: 'Premium 2', imageUrl: '/templatebg/premium02.png' },
+    { id: 11, label: 'Premium 3', imageUrl: '/templatebg/premium03.png' },
+    { id: 12, label: 'Premium 4', imageUrl: '/templatebg/premium04.png' },
+    { id: 14, label: 'Premium 5', imageUrl: '/templatebg/premium05.png' },
+    { id: 15, label: 'Premium 6', imageUrl: '/templatebg/premium06.png' },
+    { id: 22, label: 'Premium 7', imageUrl: '/templatebg/premium07.png' },
+  ];
+  const handleTemplateSelect = (id) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      templateId: id,
+    }));
   };
   const handleChange = (e, fieldName, index) => {
     const { value } = e.target;
@@ -367,14 +484,17 @@ const CertificateForm = () => {
           // For signatures, update the specific property of the signature object
           if (fieldName === 'signatures') {
             const signatureField = e.target.name.split('.')[1]; // Extract the property name (name, position, url)
-            if (signatureField == "name" || signatureField == "position" || signatureField == "url") {
+            if (
+              signatureField == 'name' ||
+              signatureField == 'position' ||
+              signatureField == 'url'
+            ) {
               const signField = e.target.name.split('.')[2];
               updatedField[index][signatureField] = {
                 ...updatedField[index][signatureField],
-                [signField]: value
-              }
-            }
-            else {
+                [signField]: value,
+              };
+            } else {
               updatedField[index] = {
                 ...updatedField[index],
                 [signatureField]: value,
@@ -384,8 +504,13 @@ const CertificateForm = () => {
             const objectField = e.target.name.split('.')[1];
             updatedField[index] = {
               ...updatedField[index],
-              [objectField]: (objectField == "fontSize") ? isNaN(parseInt(value)) ? 6 : parseInt(value) : value,
-            }
+              [objectField]:
+                objectField == 'fontSize'
+                  ? isNaN(parseInt(value))
+                    ? 6
+                    : parseInt(value)
+                  : value,
+            };
           }
         }
 
@@ -394,17 +519,20 @@ const CertificateForm = () => {
           [fieldName]: updatedField,
         };
       });
-    } else if (fieldName === "body" || fieldName === 'footer' || fieldName === 'certificateOf') {
+    } else if (
+      fieldName === 'body' ||
+      fieldName === 'footer' ||
+      fieldName === 'certificateOf'
+    ) {
       setFormData((prevData) => {
         const updatedField = prevData[fieldName];
         const objectField = e.target.name.split('.')[1];
         updatedField[objectField] = value;
         return {
           ...prevData,
-          [fieldName]: updatedField
-        }
-
-      })
+          [fieldName]: updatedField,
+        };
+      });
     } else if (fieldName === 'certiType' || fieldName === 'verifiableLink') {
       setFormData((prevData) => ({
         ...prevData,
@@ -414,12 +542,10 @@ const CertificateForm = () => {
   };
 
   const handleChangec = (e, fieldName, name, index) => {
-    const target = { name: name, value: e }
-    const event = { target }
-    handleChange(event, fieldName, index)
-  }
-
-
+    const target = { name: name, value: e };
+    const event = { target };
+    handleChange(event, fieldName, index);
+  };
 
   const removeBackground = (image, e, fieldName, index) => {
     const canvas = document.createElement('canvas');
@@ -447,31 +573,35 @@ const CertificateForm = () => {
     const processedImage = new window.Image();
     processedImage.src = canvas.toDataURL();
     processedImage.onload = () => {
-      console.log("Image processed")
+      console.log('Image processed');
     };
 
     // Convert canvas content to Blob
     canvas.toBlob(function (blob) {
       // Create a File object from Blob
-      const result = new File([blob], 'processed-image.png', { type: 'image/png' });
-      const event = { target: { files: [result], name: e.target.name } }
-      handleFileChange(event, fieldName, index)
-    })
+      const result = new File([blob], 'processed-image.png', {
+        type: 'image/png',
+      });
+      const event = { target: { files: [result], name: e.target.name } };
+      handleFileChange(event, fieldName, index);
+    });
   };
 
   const bgremove = async (e, fieldName, index) => {
     let file;
-    if (e.target.value.includes("blob:")) {
-      const response = await fetch(`${e.target.value}`)
-      const b = await response.blob()
-      file = new File([b], "image/png")
-      console.log(file)
-    } else if (!(e.target.value == "[object File]")) {
-      const response = await fetch(`${apiUrl}/proxy-image?url=${e.target.value}`)
-      const b = await response.blob()
-      file = new File([b], "image/png")
+    if (e.target.value.includes('blob:')) {
+      const response = await fetch(`${e.target.value}`);
+      const b = await response.blob();
+      file = new File([b], 'image/png');
+      console.log(file);
+    } else if (!(e.target.value == '[object File]')) {
+      const response = await fetch(
+        `${apiUrl}/proxy-image?url=${e.target.value}`
+      );
+      const b = await response.blob();
+      file = new File([b], 'image/png');
     } else {
-      file = formData.signatures[index].url.url
+      file = formData.signatures[index].url.url;
     }
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -482,10 +612,7 @@ const CertificateForm = () => {
         removeBackground(img, e, fieldName, index);
       };
     };
-  }
-
-
-
+  };
 
   const addField = (fieldName) => {
     if (fieldName === 'signatures') {
@@ -493,13 +620,32 @@ const CertificateForm = () => {
         ...prevData,
         [fieldName]: [
           ...prevData[fieldName],
-          { name: { name: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, position: { position: "", fontSize: "", fontFamily: "", bold: "normal", italic: "normal" }, url: { url: "", size: 100 } },
+          {
+            name: {
+              name: ' ',
+              fontSize: '',
+              fontFamily: '',
+              bold: 'normal',
+              italic: 'normal',
+            },
+            position: {
+              position: ' ',
+              fontSize: '',
+              fontFamily: '',
+              bold: 'normal',
+              italic: 'normal',
+            },
+            url: { url: '', size: 100 },
+          },
         ],
       }));
     } else if (fieldName === 'logos') {
       setFormData((prevData) => ({
         ...prevData,
-        [fieldName]: [...prevData[fieldName], { url: "", height: 80, width: 80 }],
+        [fieldName]: [
+          ...prevData[fieldName],
+          { url: ' ', height: 80, width: 80 },
+        ],
       }));
     } else {
       setFormData((prevData) => ({
@@ -519,25 +665,17 @@ const CertificateForm = () => {
     }));
   };
 
-  const copyVariable = (text) => {
-    if (!navigator.clipboard) {
-      return Promise.reject('Clipboard API not supported');
-    }
-    toast({
-      title: 'Variable copied',
-      status: "success",
-      duration: 1000,
-      isClosable: true,
-    });
-    return navigator.clipboard.writeText(text);
-  }
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const form = document.getElementById("form")
-      const formdata = new FormData(form)
-      selectedFiles.forEach((file) => { for (const key in file) { formdata.append(key, file[key]) } })
-      formdata.append("url", window.location.origin)
+      const form = document.getElementById('form');
+      const formdata = new FormData(form);
+      selectedFiles.forEach((file) => {
+        for (const key in file) {
+          formdata.append(key, file[key]);
+        }
+      });
+      formdata.append('url', window.location.origin);
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/content/${eventId}`,
         {
@@ -552,7 +690,7 @@ const CertificateForm = () => {
       );
 
       if (response.ok) {
-        console.log("resoponse okay")
+        console.log('resoponse okay');
         const responseData = await response.json();
         // console.log(responseData);
         toast({
@@ -564,32 +702,61 @@ const CertificateForm = () => {
         });
       } else {
         console.error('Error submitting form:', response.statusText);
-        toast({
-          title: 'Submission failed',
-          // description: response.statusText,
-          status: "error",
-          duration: 2000,
-          isClosable: true,
-        })
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast({
-        title: 'Submission failed',
-        // description: error,
-        status: "error",
-        duration: 2000,
-        isClosable: true,
-      })
     }
   };
 
-
-  const fontsizeopt = []
+  const fontsizeopt = [];
   for (let i = 6; i <= 60; i = i + 2) {
-    fontsizeopt.push(i)
+    fontsizeopt.push(i);
   }
-  const fontStyleopt = ["Playfair Display", "Euphoria Script", "Cookie", "UnifrakturCook", "Allura", "Alex Brush", "Libre Caslon Display", "Special Elite", "Monoton", "Dancing Script", "Playwrite DE Grund", "Noto Serif Devanagari", "Ingrid Darling", "Grey Qo", "Kings", "Ole", "Rubik Maze", "Rubik Burned", "Rubik Marker Hatch", "Rubik Microbe", "Blaka Ink", "Noto Serif Grantha", "Rubik Spray Paint", "Rubik Wet Paint", "Finger Paint", "Rubik Bubbles", "Oleo Script", "Neuton", "Merienda", "Concert One", "Permanent Marker", "Abril Fatface", "Rowdies", "Lobster", "Pacifico", "Anton SC", "Ga Maamli", "Libre Baskerville", "Libre Baskerville", "Merriweather", "Roboto Slab", "Roboto", "Oswald"]
+  const fontStyleopt = [
+    'Playfair Display',
+    'Euphoria Script',
+    'Cookie',
+    'UnifrakturCook',
+    'Allura',
+    'Alex Brush',
+    'Libre Caslon Display',
+    'Special Elite',
+    'Monoton',
+    'Dancing Script',
+    'Playwrite DE Grund',
+    'Noto Serif Devanagari',
+    'Ingrid Darling',
+    'Grey Qo',
+    'Kings',
+    'Ole',
+    'Rubik Maze',
+    'Rubik Burned',
+    'Rubik Marker Hatch',
+    'Rubik Microbe',
+    'Blaka Ink',
+    'Noto Serif Grantha',
+    'Rubik Spray Paint',
+    'Rubik Wet Paint',
+    'Finger Paint',
+    'Rubik Bubbles',
+    'Oleo Script',
+    'Neuton',
+    'Merienda',
+    'Concert One',
+    'Permanent Marker',
+    'Abril Fatface',
+    'Rowdies',
+    'Lobster',
+    'Pacifico',
+    'Anton SC',
+    'Ga Maamli',
+    'Libre Baskerville',
+    'Libre Baskerville',
+    'Merriweather',
+    'Roboto Slab',
+    'Roboto',
+    'Oswald',
+  ];
   return (
     <Flex
       style={{
@@ -609,7 +776,7 @@ const CertificateForm = () => {
       >
         <Header title="Enter Certificate Details"></Header>
 
-        <form id="form" onSubmit={handleSubmit} >
+        <form id="form" onSubmit={handleSubmit}>
           <VStack spacing={4} align="start">
             <Text>Select Certificate Type:</Text>
             <Select
@@ -624,90 +791,241 @@ const CertificateForm = () => {
               <option value="organizer">Organizer</option>
             </Select>
 
-
             {/* Title Fields */}
             <Text>Enter the name of Institute</Text>
 
-            {formData.title.length == 0 ? formData.title = [''] : formData.title.map((title, index) => (
-              <HStack key={index} alignItems="flex-start" width="100%">
-                <Accordion width="100%" allowMultiple> {/* Allow multiple items to be expanded simultaneously (optional) */}
-                  <AccordionItem border="none" alignItems="center" width="96%">
-                    <HStack alignItems="center" width="100%">
+            {formData.title.length == 0
+              ? (formData.title = [''])
+              : formData.title.map((title, index) => (
+                  <HStack key={index} alignItems="flex-start" width="100%">
+                    <Accordion width="100%" allowMultiple>
+                      {' '}
+                      {/* Allow multiple items to be expanded simultaneously (optional) */}
+                      <AccordionItem
+                        border="none"
+                        alignItems="center"
+                        width="96%"
+                      >
+                        <HStack alignItems="center" width="100%">
+                          <Input
+                            name={`title[${index}].name`}
+                            value={title.name}
+                            onChange={(e) => handleChange(e, 'title', index)}
+                            placeholder="Title"
+                            width="100%"
+                          />
+                          <AccordionButton
+                            height="30px"
+                            width="30px"
+                            justifyContent="center"
+                          >
+                            <EditIcon
+                              color="black"
+                              height="30px"
+                              width="30px"
+                              justifyContent="center"
+                            />
+                          </AccordionButton>
+                          {index > 0 && (
+                            <IconButton
+                              width="30px"
+                              icon={<CloseIcon />}
+                              onClick={() => handleDelete('title', index)}
+                            />
+                          )}
+                          {index === formData.title.length - 1 && (
+                            <IconButton
+                              icon={<AddIcon />}
+                              onClick={() => addField('title')}
+                            />
+                          )}
+                        </HStack>
+                        <AccordionPanel width="100%" position="relative">
+                          <HStack spacing={'8'}>
+                            <VStack>
+                              <Select
+                                name={`title[${index}].fontSize`}
+                                value={title.fontSize}
+                                onChange={(e) =>
+                                  handleChange(e, 'title', index)
+                                }
+                                placeholder="Size"
+                                // width="30%"
+                              >
+                                {fontsizeopt.map((item, key) => {
+                                  return (
+                                    <option key={key} value={`${item}`}>
+                                      {item}
+                                    </option>
+                                  );
+                                })}
+                              </Select>
+                              <Select
+                                name={`title[${index}].fontFamily`}
+                                value={title.fontFamily}
+                                onChange={(e) =>
+                                  handleChange(e, 'title', index)
+                                }
+                                placeholder="Style"
+                                // width="29%"
+                              >
+                                {fontStyleopt.map((item, key) => {
+                                  return (
+                                    <option key={key} value={`${item}`}>
+                                      {item}
+                                    </option>
+                                  );
+                                })}
+                              </Select>
+                              <Input
+                                name={`title[${index}].fontColor`}
+                                value={title.fontColor}
+                                onChange={(e) =>
+                                  handleChange(e, 'title', index)
+                                }
+                                placeholder="Color eg. red"
+                              ></Input>
+                              <HStack>
+                                <Checkbox
+                                  name={`title[${index}].bold`}
+                                  value={title.bold}
+                                  isChecked={
+                                    title.bold == 'bold' ? true : false
+                                  }
+                                  onChange={(e) =>
+                                    handleChangeStyle(e, 'title', index)
+                                  }
+                                >
+                                  Bold
+                                </Checkbox>
+                                <Checkbox
+                                  name={`title[${index}].italic`}
+                                  value={title.italic}
+                                  isChecked={title.italic == 'italic'}
+                                  onChange={(e) =>
+                                    handleChangeStyle(e, 'title', index)
+                                  }
+                                >
+                                  Italic
+                                </Checkbox>
+                              </HStack>
+                            </VStack>
+                            <HexAlphaColorPicker
+                              name={`title[${index}].fontColor`}
+                              value={title.fontColor}
+                              onChange={(e) =>
+                                handleChangec(
+                                  e,
+                                  'title',
+                                  `title[${index}].fontColor`,
+                                  index
+                                )
+                              }
+                            />
+                          </HStack>
+                        </AccordionPanel>
+                      </AccordionItem>
+                    </Accordion>
+                  </HStack>
+                ))}
+
+            {/* Template Selection */}
+            <Box>
+              <Text>Select Certificate Template Design:</Text>
+              <Box overflowX="auto" whiteSpace="nowrap" padding="10px 0">
+                <HStack maxW={450} spacing={4} overflow={'scroll'}>
+                  {templateOptions.map((template) => (
+                    <Box
+                      key={template.id}
+                      onClick={() => handleTemplateSelect(template.id)}
+                      border={
+                        formData.templateId === template.id
+                          ? '2px solid blue'
+                          : '2px solid transparent'
+                      }
+                      borderRadius="md"
+                      cursor="pointer"
+                      padding="2px"
+                    >
+                      <Image src={template.imageUrl} alt={template.label} />
+                      <Text w={150} fontSize="sm" textAlign="center">
+                        {template.label}
+                      </Text>
+                    </Box>
+                  ))}
+                </HStack>
+              </Box>
+            </Box>
+
+            {/* Logos Fields */}
+            <Text>Enter the link for the logos:</Text>
+
+            {formData.logos.map((logo, index) => (
+              <HStack width="100%" key={index}>
+                <Accordion width="100%" allowMultiple>
+                  <AccordionItem border="none" width="100%">
+                    <HStack width="100%">
                       <Input
-                        name={`title[${index}].name`}
-                        value={title.name}
-                        onChange={(e) => handleChange(e, 'title', index)}
-                        placeholder="Title"
+                        name={`logos[${index}].url`}
+                        value={logo.url}
+                        onChange={(e) => handleChange(e, 'logos', index)}
+                        placeholder="Logo"
                         width="100%"
                       />
                       <AccordionButton height="25px" width="25px" justifyContent="center">
                         <EditIcon color="blue" height="25px" width="25px" justifyContent="center" />
+
                       </AccordionButton>
+
                       {index > 0 && (
                         <IconButton
                           icon={<CloseIcon color = "red" height="20px" width="20px" />}
                           onClick={() => handleDelete('title', index)}
                         />
                       )}
-                      {index === formData.title.length - 1 && (
+                      {index === formData.logos.length - 1 && (
                         <IconButton
                           icon={<AddIcon color = "green" height="20px" width="20px" />}
                           onClick={() => addField('title')}
                         />
                       )}
                     </HStack>
-                    <AccordionPanel width="100%" position="relative">
-                      <HStack spacing={"8"}>
-                        <VStack>
-                          <Select
-                            name={`title[${index}].fontSize`}
-                            value={title.fontSize}
-                            onChange={(e) => handleChange(e, 'title', index)}
-                            placeholder="Size"
-                          // width="30%"
-                          >
-                            {fontsizeopt.map((item, key) => {
-                              return <option key={key} value={`${item}`}>{item}</option>
-                            })}
-
-                          </Select>
-                          <Select
-                            name={`title[${index}].fontFamily`}
-                            value={title.fontFamily}
-                            onChange={(e) => handleChange(e, 'title', index)}
-                            placeholder="Style"
-                          // width="29%"
-                          >
-                            {fontStyleopt.map((item, key) => {
-                              return <option key={key} value={`${item}`}>{item}</option>
-                            })}
-                          </Select>
-                          <Input
-                            name={`title[${index}].fontColor`}
-                            value={title.fontColor}
-                            onChange={(e) => handleChange(e, 'title', index)}
-                            placeholder='Color eg. red'>
-                          </Input>
-                          <HStack>
-                            <Checkbox name={`title[${index}].bold`} value={title.bold} isChecked={title.bold == "bold" ? true : false} onChange={(e) => handleChangeStyle(e, 'title', index)}>
-                              Bold
-                            </Checkbox>
-                            <Checkbox name={`title[${index}].italic`} value={title.italic} isChecked={title.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'title', index)}>
-                              Italic
-                            </Checkbox></HStack></VStack>
-                        <HexAlphaColorPicker
-                          name={`title[${index}].fontColor`}
-                          value={title.fontColor}
-                          onChange={(e) => handleChangec(e, 'title', `title[${index}].fontColor`, index)}
-                        />
+                    <AccordionPanel>
+                      {' '}
+                      <HStack border="none" width="100%">
+                        <HStack width="60%">
+                          <Text>Vertical Position:</Text>
+                          <input
+                            type="number"
+                            name={`logos[${index}].height`}
+                            value={logo.height}
+                            onChange={(e) => handleChange(e, 'logos', index)}
+                            placeholder="height"
+                            style={{
+                              width: '55px',
+                              textAlign: 'center',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '2px',
+                            }}
+                          />
+                        </HStack>
+                        <HStack width="40%">
+                          <Text>Size:</Text>
+                          <input
+                            type="number"
+                            name={`logos[${index}].width`}
+                            value={logo.width}
+                            onChange={(e) => handleChange(e, 'logos', index)}
+                            placeholder="width"
+                            style={{ width: '55px', textAlign: 'center' }}
+                          />
+                        </HStack>
                       </HStack>
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
               </HStack>
             ))}
-
-
 
             <Text>Select Certificate Template Design:</Text>
             <Select
@@ -806,12 +1124,11 @@ const CertificateForm = () => {
               </HStack>
             ))}
 
-
             {/* Header Fields */}
             <Text>Enter Department or Club data:</Text>
 
             {formData.header.map((header, index) => (
-              <HStack width="100%" key={index} >
+              <HStack width="100%" key={index}>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem border="none" alignItems="center" width="96%">
                     <HStack alignItems="center" width="100%">
@@ -839,48 +1156,78 @@ const CertificateForm = () => {
                       )}
                     </HStack>
                     <AccordionPanel width="100%">
-                      <HStack spacing={"8"}>
+                      <HStack spacing={'8'}>
                         <VStack>
                           <Select
                             name={`header[${index}].fontSize`}
                             value={header.fontSize}
                             onChange={(e) => handleChange(e, 'header', index)}
                             placeholder="Size"
-                          // width="30%"
+                            // width="30%"
                           >
                             {fontsizeopt.map((item, key) => {
-                              return <option key={key} value={`${item}`}>{item}</option>
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
                             })}
-
                           </Select>
                           <Select
                             name={`header[${index}].fontFamily`}
                             value={header.fontFamily}
                             onChange={(e) => handleChange(e, 'header', index)}
                             placeholder="Style"
-                          // width="29%"
+                            // width="29%"
                           >
                             {fontStyleopt.map((item, key) => {
-                              return <option key={key} value={`${item}`}>{item}</option>
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
                             })}
                           </Select>
                           <Input
                             name={`header[${index}].fontColor`}
                             value={header.fontColor}
                             onChange={(e) => handleChange(e, 'header', index)}
-                            placeholder='Color eg. red'>
-                          </Input>
+                            placeholder="Color eg. red"
+                          ></Input>
                           <HStack>
-                            <Checkbox name={`header[${index}].bold`} value={header.bold} isChecked={header.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
+                            <Checkbox
+                              name={`header[${index}].bold`}
+                              value={header.bold}
+                              isChecked={header.bold == 'bold'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'header', index)
+                              }
+                            >
                               Bold
                             </Checkbox>
-                            <Checkbox name={`header[${index}].italic`} value={header.italic} isChecked={header.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'header', index)}>
+                            <Checkbox
+                              name={`header[${index}].italic`}
+                              value={header.italic}
+                              isChecked={header.italic == 'italic'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'header', index)
+                              }
+                            >
                               Italic
-                            </Checkbox></HStack></VStack>
+                            </Checkbox>
+                          </HStack>
+                        </VStack>
                         <HexAlphaColorPicker
                           name={`header[${index}].fontColor`}
                           value={header.fontColor}
-                          onChange={(e) => handleChangec(e, 'header', `header.fontColor`, index)}
+                          onChange={(e) =>
+                            handleChangec(
+                              e,
+                              'header',
+                              `header.fontColor`,
+                              index
+                            )
+                          }
                         />
                       </HStack>
                     </AccordionPanel>
@@ -889,11 +1236,12 @@ const CertificateForm = () => {
               </HStack>
             ))}
 
-
             {/* certificateOf */}
             <Accordion width="100%" allowMultiple>
               <AccordionItem width="100%" border="none">
-                <HStack width="100%" justifyContent="space-between"><Text>Certificate:</Text></HStack>
+                <HStack width="100%" justifyContent="space-between">
+                  <Text>Certificate:</Text>
+                </HStack>
                 <VStack width="100%">
                   <HStack width="100%">
                     <Input
@@ -901,61 +1249,96 @@ const CertificateForm = () => {
                       value={formData.certificateOf.certificateOf}
                       onChange={(e) => handleChange(e, 'certificateOf', null)}
                       placeholder="Certificate Of Appreciation"
-                      width='100%'
+                      width="100%"
                     />
                     <AccordionButton height="30px" width="30px" justifyContent="center">
                       <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
                     </AccordionButton></HStack>
                   <AccordionPanel>
-                    <VStack width='100%'>
-
+                    <VStack width="100%">
                       <HStack>
                         <VStack>
                           <Select
                             name={`certificateOf.fontSize`}
                             value={formData.certificateOf.fontSize}
-                            onChange={(e) => handleChange(e, 'certificateOf', null)}
+                            onChange={(e) =>
+                              handleChange(e, 'certificateOf', null)
+                            }
                             placeholder="Size"
                           >
                             {fontsizeopt.map((item, key) => {
-                              return <option key={key} value={`${item}`}>{item}</option>
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
                             })}
-
                           </Select>
                           <Select
                             name={`certificateOf.fontFamily`}
                             value={formData.certificateOf.fontFamily}
-                            onChange={(e) => handleChange(e, 'certificateOf', null)}
+                            onChange={(e) =>
+                              handleChange(e, 'certificateOf', null)
+                            }
                             placeholder="Style"
                           >
                             {fontStyleopt.map((item, key) => {
-                              return <option key={key} value={`${item}`}>{item}</option>
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
                             })}
                           </Select>
                           <Input
                             name={`certificateOf.fontColor`}
                             value={formData.certificateOf.fontColor}
-                            onChange={(e) => handleChange(e, 'certificateOf', null)}
-                            placeholder='Color eg. red'>
-                          </Input>
-                          <HStack><Checkbox name={`certificateOf.bold`} value={formData.certificateOf.bold} isChecked={formData.certificateOf.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
-                            Bold
-                          </Checkbox>
-                            <Checkbox name={`certificateOf.italic`} value={formData.certificateOf.italic} isChecked={formData.certificateOf.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'certificateOf', null)}>
+                            onChange={(e) =>
+                              handleChange(e, 'certificateOf', null)
+                            }
+                            placeholder="Color eg. red"
+                          ></Input>
+                          <HStack>
+                            <Checkbox
+                              name={`certificateOf.bold`}
+                              value={formData.certificateOf.bold}
+                              isChecked={formData.certificateOf.bold == 'bold'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'certificateOf', null)
+                              }
+                            >
+                              Bold
+                            </Checkbox>
+                            <Checkbox
+                              name={`certificateOf.italic`}
+                              value={formData.certificateOf.italic}
+                              isChecked={
+                                formData.certificateOf.italic == 'italic'
+                              }
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'certificateOf', null)
+                              }
+                            >
                               Italic
-                            </Checkbox></HStack>
+                            </Checkbox>
+                          </HStack>
                         </VStack>
                         <HexAlphaColorPicker
                           name={`certificateOf.fontColor`}
                           value={formData.certificateOf.fontColor}
-                          onChange={(e) => handleChangec(e, 'certificateOf', `certificateOf.fontColor`, null)}
+                          onChange={(e) =>
+                            handleChangec(
+                              e,
+                              'certificateOf',
+                              `certificateOf.fontColor`,
+                              null
+                            )
+                          }
                         />
                       </HStack>
-
                     </VStack>
                   </AccordionPanel>
                 </VStack>
-
               </AccordionItem>
             </Accordion>
 
@@ -978,17 +1361,17 @@ const CertificateForm = () => {
                     <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>title2</Button>
                   </ul>
                 </div>
+
                 <VStack width="100%">
                   <Textarea
                     name="body.body"
                     value={formData.body.body}
                     onChange={(e) => handleChange(e, 'body', null)}
-                    placeholder="drag from bottom right corner to increase text area"
-                    width='100%'
+                    placeholder="Body"
+                    width="100%"
                   />
                   <AccordionPanel>
-                    <VStack width='100%'>
-
+                    <VStack width="100%">
                       <HStack>
                         <VStack>
                           <Select
@@ -998,9 +1381,12 @@ const CertificateForm = () => {
                             placeholder="Size"
                           >
                             {fontsizeopt.map((item, key) => {
-                              return <option key={key} value={`${item}`}>{item}</option>
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
                             })}
-
                           </Select>
                           <Select
                             name={`body.fontFamily`}
@@ -1009,41 +1395,59 @@ const CertificateForm = () => {
                             placeholder="Style"
                           >
                             {fontStyleopt.map((item, key) => {
-                              return <option key={key} value={`${item}`}>{item}</option>
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
                             })}
                           </Select>
                           <Input
                             name={`body.fontColor`}
                             value={formData.body.fontColor}
                             onChange={(e) => handleChange(e, 'body', null)}
-                            placeholder='Color eg. red'>
-                          </Input>
-                          <HStack><Checkbox name={`body.bold`} value={formData.body.bold} isChecked={formData.body.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
-                            Bold
-                          </Checkbox>
-                            <Checkbox name={`body.italic`} value={formData.body.italic} isChecked={formData.body.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'body', null)}>
+                            placeholder="Color eg. red"
+                          ></Input>
+                          <HStack>
+                            <Checkbox
+                              name={`body.bold`}
+                              value={formData.body.bold}
+                              isChecked={formData.body.bold == 'bold'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'body', null)
+                              }
+                            >
+                              Bold
+                            </Checkbox>
+                            <Checkbox
+                              name={`body.italic`}
+                              value={formData.body.italic}
+                              isChecked={formData.body.italic == 'italic'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'body', null)
+                              }
+                            >
                               Italic
-                            </Checkbox></HStack>
+                            </Checkbox>
+                          </HStack>
                         </VStack>
                         <HexAlphaColorPicker
                           name={`body.fontColor`}
                           value={formData.body.fontColor}
-                          onChange={(e) => handleChangec(e, 'body', `body.fontColor`, null)}
+                          onChange={(e) =>
+                            handleChangec(e, 'body', `body.fontColor`, null)
+                          }
                         />
                       </HStack>
-
                     </VStack>
                   </AccordionPanel>
                 </VStack>
-
               </AccordionItem>
             </Accordion>
 
-
-            <Text>Signatures:</Text>
+            <Text>Enter the link for signatures:</Text>
 
             {formData.signatures.map((signature, index) => (
-
               <VStack width="100%" key={index}>
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none"><HStack width="100%">
@@ -1061,6 +1465,7 @@ const CertificateForm = () => {
                   </AccordionItem>
                 </Accordion>
                 <Accordion width="100%" allowMultiple>
+
                   <AccordionItem width="100%" border="none">
                     <HStack width="100%">
                       <Input
@@ -1072,54 +1477,91 @@ const CertificateForm = () => {
 
                       <AccordionButton height="30px" width="30px" justifyContent="center">
                         <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
+
                       </AccordionButton>
                     </HStack>
-                    <AccordionPanel><HStack width="100%">
-                      <VStack>
-                        <Select
-                          name={`signatures[${index}].name.fontSize`}
-                          value={signature.name.fontSize}
-                          onChange={(e) => handleChange(e, 'signatures', index)}
-                          placeholder="Size"
-                        >
-                          {fontsizeopt.map((item, key) => {
-                            return <option key={key} value={`${item}`}>{item}</option>
-                          })}
-
-                        </Select>
-                        <Select
-                          name={`signatures[${index}].name.fontFamily`}
-                          value={signature.name.fontFamily}
-                          onChange={(e) => handleChange(e, 'signatures', index)}
-                          placeholder="Style"
-                        >
-                          {fontStyleopt.map((item, key) => {
-                            return <option key={key} value={`${item}`}>{item}</option>
-                          })}
-                        </Select>
-                        <Input
+                    <AccordionPanel>
+                      <HStack width="100%">
+                        <VStack>
+                          <Select
+                            name={`signatures[${index}].name.fontSize`}
+                            value={signature.name.fontSize}
+                            onChange={(e) =>
+                              handleChange(e, 'signatures', index)
+                            }
+                            placeholder="Size"
+                          >
+                            {fontsizeopt.map((item, key) => {
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
+                            })}
+                          </Select>
+                          <Select
+                            name={`signatures[${index}].name.fontFamily`}
+                            value={signature.name.fontFamily}
+                            onChange={(e) =>
+                              handleChange(e, 'signatures', index)
+                            }
+                            placeholder="Style"
+                          >
+                            {fontStyleopt.map((item, key) => {
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
+                            })}
+                          </Select>
+                          <Input
+                            name={`signatures[${index}].name.fontColor`}
+                            value={signature.name.fontColor}
+                            onChange={(e) =>
+                              handleChange(e, 'signatures', index)
+                            }
+                            placeholder="Color eg. red"
+                          ></Input>
+                          <HStack>
+                            <Checkbox
+                              name={`signatures[${index}].name.bold`}
+                              value={signature.name.bold}
+                              isChecked={signature.name.bold == 'bold'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'signatures', index)
+                              }
+                            >
+                              Bold
+                            </Checkbox>
+                            <Checkbox
+                              name={`signatures[${index}].name.italic`}
+                              value={signature.name.italic}
+                              isChecked={signature.name.italic == 'italic'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'signatures', index)
+                              }
+                            >
+                              Italic
+                            </Checkbox>
+                          </HStack>
+                        </VStack>
+                        <HexAlphaColorPicker
                           name={`signatures[${index}].name.fontColor`}
                           value={signature.name.fontColor}
-                          onChange={(e) => handleChange(e, 'signatures', index)}
-                          placeholder='Color eg. red'>
-                        </Input>
-                        <HStack><Checkbox name={`signatures[${index}].name.bold`} value={signature.name.bold} isChecked={signature.name.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
-                          Bold
-                        </Checkbox>
-                          <Checkbox name={`signatures[${index}].name.italic`} value={signature.name.italic} isChecked={signature.name.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
-                            Italic
-                          </Checkbox>
-                        </HStack>
-                      </VStack>
-                      <HexAlphaColorPicker
-                        name={`signatures[${index}].name.fontColor`}
-                        value={signature.name.fontColor}
-                        onChange={(e) => handleChangec(e, 'signatures', `signatures[${index}].name.fontColor`, index)}
-                      />
-                    </HStack></AccordionPanel>
+                          onChange={(e) =>
+                            handleChangec(
+                              e,
+                              'signatures',
+                              `signatures[${index}].name.fontColor`,
+                              index
+                            )
+                          }
+                        />
+                      </HStack>
+                    </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
-
 
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none">
@@ -1133,54 +1575,91 @@ const CertificateForm = () => {
 
                       <AccordionButton height="30px" width="30px" justifyContent="center">
                         <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
+
                       </AccordionButton>
                     </HStack>
-                    <AccordionPanel><HStack width="100%">
-                      <VStack>
-                        <Select
-                          name={`signatures[${index}].position.fontSize`}
-                          value={signature.position.fontSize}
-                          onChange={(e) => handleChange(e, 'signatures', index)}
-                          placeholder="Size"
-                        >
-                          {fontsizeopt.map((item, key) => {
-                            return <option key={key} value={`${item}`}>{item}</option>
-                          })}
-
-                        </Select>
-                        <Select
-                          name={`signatures[${index}].position.fontFamily`}
-                          value={signature.position.fontFamily}
-                          onChange={(e) => handleChange(e, 'signatures', index)}
-                          placeholder="Style"
-                        >
-                          {fontStyleopt.map((item, key) => {
-                            return <option key={key} value={`${item}`}>{item}</option>
-                          })}
-                        </Select>
-                        <Input
+                    <AccordionPanel>
+                      <HStack width="100%">
+                        <VStack>
+                          <Select
+                            name={`signatures[${index}].position.fontSize`}
+                            value={signature.position.fontSize}
+                            onChange={(e) =>
+                              handleChange(e, 'signatures', index)
+                            }
+                            placeholder="Size"
+                          >
+                            {fontsizeopt.map((item, key) => {
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
+                            })}
+                          </Select>
+                          <Select
+                            name={`signatures[${index}].position.fontFamily`}
+                            value={signature.position.fontFamily}
+                            onChange={(e) =>
+                              handleChange(e, 'signatures', index)
+                            }
+                            placeholder="Style"
+                          >
+                            {fontStyleopt.map((item, key) => {
+                              return (
+                                <option key={key} value={`${item}`}>
+                                  {item}
+                                </option>
+                              );
+                            })}
+                          </Select>
+                          <Input
+                            name={`signatures[${index}].position.fontColor`}
+                            value={signature.position.fontColor}
+                            onChange={(e) =>
+                              handleChange(e, 'signatures', index)
+                            }
+                            placeholder="Color eg. red"
+                          ></Input>
+                          <HStack>
+                            <Checkbox
+                              name={`signatures[${index}].position.bold`}
+                              value={signature.position.bold}
+                              isChecked={signature.position.bold == 'bold'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'signatures', index)
+                              }
+                            >
+                              Bold
+                            </Checkbox>
+                            <Checkbox
+                              name={`signatures[${index}].position.italic`}
+                              value={signature.position.italic}
+                              isChecked={signature.position.italic == 'italic'}
+                              onChange={(e) =>
+                                handleChangeStyle(e, 'signatures', index)
+                              }
+                            >
+                              Italic
+                            </Checkbox>
+                          </HStack>
+                        </VStack>
+                        <HexAlphaColorPicker
                           name={`signatures[${index}].position.fontColor`}
                           value={signature.position.fontColor}
-                          onChange={(e) => handleChange(e, 'signatures', index)}
-                          placeholder='Color eg. red'>
-                        </Input>
-                        <HStack><Checkbox name={`signatures[${index}].position.bold`} value={signature.position.bold} isChecked={signature.position.bold == "bold"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
-                          Bold
-                        </Checkbox>
-                          <Checkbox name={`signatures[${index}].position.italic`} value={signature.position.italic} isChecked={signature.position.italic == "italic"} onChange={(e) => handleChangeStyle(e, 'signatures', index)}>
-                            Italic
-                          </Checkbox>
-                        </HStack>
-                      </VStack>
-                      <HexAlphaColorPicker
-                        name={`signatures[${index}].position.fontColor`}
-                        value={signature.position.fontColor}
-                        onChange={(e) => handleChangec(e, 'signatures', `signatures[${index}].position.fontColor`, index)}
-                      />
-                    </HStack></AccordionPanel>
+                          onChange={(e) =>
+                            handleChangec(
+                              e,
+                              'signatures',
+                              `signatures[${index}].position.fontColor`,
+                              index
+                            )
+                          }
+                        />
+                      </HStack>
+                    </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
-
                 <Accordion width="100%" allowMultiple>
                   <AccordionItem width="100%" border="none" ><HStack width="100%">
                     <Input
@@ -1200,23 +1679,26 @@ const CertificateForm = () => {
                       style={{ height: "0px", width: "0px" }}
                     />
                     <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="25px" width="25px" justifyContent="center" color="blue" /></AccordionButton></HStack>
+
                     <AccordionPanel>
-                      <HStack width="100%"><Text>Size:</Text>
+                      <HStack width="100%">
+                        <Text>Size:</Text>
                         <Input
                           name={`signatures[${index}].url.size`}
                           value={signature.url.size}
                           onChange={(e) => handleChange(e, 'signatures', index)}
                           placeholder="Size"
-                          type="number">
-                        </Input>
+                          type="number"
+                        ></Input>
                         <Button
                           type="button"
                           name={`signatures[${index}].url.url`}
                           onClick={(e) => bgremove(e, 'signatures', index)}
                           value={signature.url.url}
-                          style={{ color: 'black', width: "500px" }}
-                        >Remove Backgound</Button>
-
+                          style={{ color: 'black', width: '500px' }}
+                        >
+                          Remove Backgound
+                        </Button>
                       </HStack>
                     </AccordionPanel>
                   </AccordionItem>
@@ -1229,12 +1711,14 @@ const CertificateForm = () => {
                     onClick={() => handleDelete('signatures', index)}
                   />
                 )}
+
                   {index === formData.signatures.length - 1 && (
                     <IconButton
                       icon={<AddIcon color = "green" height="20px" width="20px" />}
                       onClick={() => addField('signatures')}
                     />
-                  )}</HStack>
+                  )}
+                </HStack>
               </VStack>
             ))}
 
@@ -1244,7 +1728,7 @@ const CertificateForm = () => {
               name="verifiableLink"
               value={formData.verifiableLink}
               onChange={(e) => handleChange(e, 'verifiableLink', null)}
-            // placeholder="Select Required or not"
+              // placeholder="Select Required or not"
             >
               <option value={true}>Required</option>
               <option value={false}>Not Required</option>
@@ -1265,7 +1749,7 @@ const CertificateForm = () => {
           </VStack>
         </form>
       </Container>
-      <Box flex="1" p="4" style={{ margin: "0px", padding: "0px" }}>
+      <Box flex="1" p="4" style={{ margin: '0px', padding: '0px' }}>
         <SelectCertficate
           eventId={eventId}
           templateId={formData.templateId}
