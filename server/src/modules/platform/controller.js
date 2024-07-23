@@ -1,4 +1,4 @@
-const Platform = require("../models/platform");
+const Platform = require("../../models/platform");
 
 const addPlatform = async (req, res) => {
   const {roles,exemptedLinks,researchArea} = req.body;
