@@ -111,25 +111,52 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
     }
     return (
         <div>
-            <button type='button' style={{ color: "black", height: "25px", width: "25px" }} onClick={openModal}><FaUpload style={{ height: "25px", width: "25px", color:"magenta" }} /></button>
-            <Modal style={{ height: "550px" }} className="tw-fixed tw-top-24 tw-left-0 md:tw-top-28 md:tw-left-60 md:tw-w-2/3 tw-border-black tw-border-2 tw-rounded-lg tw-bg-slate-200"
+            <button type='button' style={{ color: "black", height: "25px", width: "25px" }} onClick={openModal}><FaUpload style={{ height: "25px", width: "25px" }} /></button>
+            <Modal style={{ height: "550px" }} className="tw-fixed tw-top-28 tw-left-60 tw-w-2/3 tw-border-black tw-border-2 tw-rounded-lg tw-bg-slate-200"
                 isOpen={isOpen}
                 onRequestClose={closeModal}
                 ariaHideApp={false}
             >
                 <ul style={{ background: "#111827" }} className="nav nav-tabs tw-relative tw-top-0 tw-left-0 tw-list-none tw-flex tw-items-center tw-m-0 tw-p-1 tw-gap-2 tw-h-12">
-                <h1 className='tw-w-full tw-text-center tw-text-white tw-font-bold tw-align-middle tw-h-12 tw-pt-4'>Select From your Uploaded Signatures </h1>
+                <h1 className='tw-w-full tw-text-center tw-text-white tw-font-bold tw-align-middle tw-h-12 tw-pt-4'>Select From your Uploaded Signatures Or Add New</h1>
                 </ul>
                 <IconButton
                     icon={<CloseIcon />}
                     className="tw-absolute tw-top-0 tw-right-0"
-                    style={{ position: "absolute", height: "38px", }}
+                    style={{ position: "absolute", height: "38px" }}
                     onClick={closeModal}
                 />
                 <div className="modal-content tw-pl-8">
                     <div>
                         <div style={{ height: "500px" }} className='tw-flex tw-flex-col'>
                             <div style={{ height: "495px" }} className="uploadedImages tw-flex tw-gap-4 tw-flex-wrap tw-p-4 tw-overflow-y-scroll">
+                                <div style={{ height: "150px", width: "170px" }} className="tw-border-2 tw-border-zinc-300 tw-rounded-lg tw-object-contain tw-p-1 tw-flex tw-flex-col tw-justify-between tw-items-center" >
+                                    <label className='tw-flex tw-justify-center tw-items-center tw-p-1 tw-border-2 tw-border-zinc-300 tw-border-dashed hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><AddIcon style={{ height: "50px", width: "145px", display: 'flex', justifyContent: "center", alignItems: "center" }} /></label>
+                                    <input
+                                        id={`signatures[${index}].url.url`}
+                                        name={`signatures[${index}].url.url`}
+                                        onChange={(e) => {handleFileChange(e, 'signatures', index);toast({title:"Image uploaded",status:"success",duration:2000,isClosable:true})}}
+                                        type='file'
+                                        accept='image/jpeg , image/png'
+                                        style={{ height:"0px",width:"0px" }}
+                                    />
+                                    <div>
+                                    <Input
+                                        name={`signatures[${index}].name.name`}
+                                        value={signature.name.name}
+                                        onChange={(e) => handleChange(e, 'signatures', index)}
+                                        placeholder="Name"
+                                        width="100%"
+                                    />
+                                    <Input
+                                        name={`signatures[${index}].position.position`}
+                                        value={signature.position.position}
+                                        onChange={(e) => handleChange(e, 'signatures', index)}
+                                        placeholder="Designation"
+                                        width="100%"
+                                    />
+                                    </div>
+                                </div>
                                 {images.length == 0 ? "You have no images uploaded" : images.map((elem, index) => (
                                     <div onClick={(e) => { handleClick(e, index) }} key={`${index}`} style={{ height: "150px", width: "170px" }} className="tw-border-2 tw-border-zinc-300 tw-rounded-lg tw-object-contain tw-p-1 hover:tw-bg-slate-300 hover:tw-cursor-pointer" >
                                         <div className='tw-relative'
