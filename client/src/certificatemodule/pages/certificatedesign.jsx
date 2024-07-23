@@ -947,7 +947,7 @@ const CertificateForm = () => {
             <Box>
               <Text>Select Certificate Template Design:</Text>
               <Box overflowX="auto" whiteSpace="nowrap" padding="10px 0">
-                <HStack maxW={450} spacing={4} overflow={'scroll'}>
+                <HStack maxW={450} spacing={4} overflow={'scroll-x'}>
                   {templateOptions.map((template) => (
                     <Box
                       key={template.id}
@@ -970,108 +970,6 @@ const CertificateForm = () => {
                 </HStack>
               </Box>
             </Box>
-
-            {/* Logos Fields */}
-            <Text>Enter the link for the logos:</Text>
-
-            {formData.logos.map((logo, index) => (
-              <HStack width="100%" key={index}>
-                <Accordion width="100%" allowMultiple>
-                  <AccordionItem border="none" width="100%">
-                    <HStack width="100%">
-                      <Input
-                        name={`logos[${index}].url`}
-                        value={logo.url}
-                        onChange={(e) => handleChange(e, 'logos', index)}
-                        placeholder="Logo"
-                        width="100%"
-                      />
-                      <AccordionButton height="25px" width="25px" justifyContent="center">
-                        <EditIcon color="blue" height="25px" width="25px" justifyContent="center" />
-
-                      </AccordionButton>
-
-                      {index > 0 && (
-                        <IconButton
-                          icon={<CloseIcon color="red" height="20px" width="20px" />}
-                          onClick={() => handleDelete('title', index)}
-                        />
-                      )}
-                      {index === formData.logos.length - 1 && (
-                        <IconButton
-                          icon={<AddIcon color="green" height="20px" width="20px" />}
-                          onClick={() => addField('title')}
-                        />
-                      )}
-                    </HStack>
-                    <AccordionPanel>
-                      {' '}
-                      <HStack border="none" width="100%">
-                        <HStack width="60%">
-                          <Text>Vertical Position:</Text>
-                          <input
-                            type="number"
-                            name={`logos[${index}].height`}
-                            value={logo.height}
-                            onChange={(e) => handleChange(e, 'logos', index)}
-                            placeholder="height"
-                            style={{
-                              width: '55px',
-                              textAlign: 'center',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '2px',
-                            }}
-                          />
-                        </HStack>
-                        <HStack width="40%">
-                          <Text>Size:</Text>
-                          <input
-                            type="number"
-                            name={`logos[${index}].width`}
-                            value={logo.width}
-                            onChange={(e) => handleChange(e, 'logos', index)}
-                            placeholder="width"
-                            style={{ width: '55px', textAlign: 'center' }}
-                          />
-                        </HStack>
-                      </HStack>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
-              </HStack>
-            ))}
-
-            <Text>Select Certificate Template Design:</Text>
-            <Select
-              name="templateId"
-              value={formData.templateId}
-              onChange={(e) => handleChange(e, 'templateId', null)}
-              placeholder="Select Certificate Template Design"
-            >
-              <option value="0">Basic 1</option>
-              <option value="1">Basic 2</option>
-              <option value="2">Basic 3</option>
-              <option value="3">Basic 4</option>
-              <option value="4">Basic 5</option>
-              <option value="5">Basic 6</option>
-              <option value="6">Basic 7</option>
-              <option value="7">Basic 8</option>
-              <option value="8">Basic 9</option>
-              <option value="13">Basic 10</option>
-              <option value="16">Basic 11</option>
-              <option value="17">Basic 12</option>
-              <option value="18">Basic 13</option>
-              <option value="19">Basic 14</option>
-              <option value="20">Basic 15</option>
-              <option value="21">Basic 16</option>
-              <option value="9">Premium 1</option>
-              <option value="10">Premium 2</option>
-              <option value="11">Premium 3</option>
-              <option value="12">Premium 4</option>
-              <option value="14">Premium 5</option>
-              <option value="15">Premium 6</option>
-              <option value="22">Premium 7</option>
-            </Select>
 
 
 
@@ -1381,7 +1279,7 @@ const CertificateForm = () => {
                     name="body.body"
                     value={formData.body.body}
                     onChange={(e) => handleChange(e, 'body', null)}
-                    placeholder="Body"
+                    placeholder="Drag from bottom right corner to increase the text area"
                     width="100%"
                   />
                   <AccordionPanel>
