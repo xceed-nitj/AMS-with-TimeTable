@@ -54,10 +54,32 @@ const deleteForm = async (req, res) => {
     }
 };
 
+const getFormsByEventId = async (req, res) => {
+    try {
+      const { eventId } = req.params;
+      
+      // Query the database to find forms for the specific event
+      const forms = await Form.find({ eventId });
+  
+      if (forms.length > 0) {
+        // Sort questions by order
+        forms.sort((a, b) => a.order - b.order);
+        res.status(200).json(forms);
+      } else {
+        res.status(404).json({ message: 'No forms found for this event.' });
+      }
+    } catch (error) {
+      console.error('Error fetching forms:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };
+  
+
 module.exports = {
     createForm,
     getAllForms,
     getFormById,
     updateForm,
-    deleteForm
+    deleteForm,
+    getFormsByEventId,
 };

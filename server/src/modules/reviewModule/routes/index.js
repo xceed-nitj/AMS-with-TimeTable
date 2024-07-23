@@ -31,4 +31,5 @@ router.use('/defaultQuestion',require('./defaultQuestion.js'));
 router.use('/defaulttemplate',require('./defaultTemplate.js'));
 router.use('/uploads',require('./upload.js'));//to get files
 router.use('/forms',require('./forms.js'));
+router.use('/formAnswers',require('./formAnwers.js'));
 module.exports = router;
