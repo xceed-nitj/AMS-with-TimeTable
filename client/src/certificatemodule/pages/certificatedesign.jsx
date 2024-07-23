@@ -590,13 +590,10 @@ const CertificateForm = () => {
     { id: 6, label: 'Basic 7', imageUrl: '/templatebg/basic07.png' },
     { id: 7, label: 'Basic 8', imageUrl: '/templatebg/basic08.png' },
     { id: 8, label: 'Basic 9', imageUrl: '/templatebg/basic09.png' },
-    { id: 13, label: 'Basic 10', imageUrl: '/templatebg/basic10.png' },
-    { id: 16, label: 'Basic 11', imageUrl: '/templatebg/basic11.png' },
-    { id: 17, label: 'Basic 12', imageUrl: '/templatebg/basic12.png' },
-    { id: 18, label: 'Basic 13', imageUrl: '/templatebg/basic13.png' },
-    { id: 19, label: 'Basic 14', imageUrl: '/templatebg/basic14.png' },
-    { id: 20, label: 'Basic 15', imageUrl: '/templatebg/basic15.png' },
-    { id: 21, label: 'Basic 16', imageUrl: '/templatebg/basic16.png' },
+    { id: 16, label: 'Basic 10', imageUrl: '/templatebg/basic11.png' },
+    { id: 18, label: 'Basic 11', imageUrl: '/templatebg/basic13.png' },
+    { id: 19, label: 'Basic 12', imageUrl: '/templatebg/basic14.png' },
+    { id: 20, label: 'Basic 13', imageUrl: '/templatebg/basic15.png' },
     { id: 9, label: 'Premium 1', imageUrl: '/templatebg/premium01.png' },
     { id: 10, label: 'Premium 2', imageUrl: '/templatebg/premium02.png' },
     { id: 11, label: 'Premium 3', imageUrl: '/templatebg/premium03.png' },
@@ -604,6 +601,9 @@ const CertificateForm = () => {
     { id: 14, label: 'Premium 5', imageUrl: '/templatebg/premium05.png' },
     { id: 15, label: 'Premium 6', imageUrl: '/templatebg/premium06.png' },
     { id: 22, label: 'Premium 7', imageUrl: '/templatebg/premium07.png' },
+    { id: 13, label: 'Premium 8', imageUrl: '/templatebg/basic10.png' },
+    { id: 17, label: 'Premium 9', imageUrl: '/templatebg/basic12.png' },
+    { id: 21, label: 'Premium 10', imageUrl: '/templatebg/basic16.png' },
   ];
   const handleTemplateSelect = (id) => {
     setFormData((prevState) => ({
@@ -952,7 +952,7 @@ const CertificateForm = () => {
 
         <form id="form" onSubmit={handleSubmit}>
           <VStack spacing={4} align="start">
-            <Text>Select Certificate Type:</Text>
+            <Text className='tw-font-bold'>Select Certificate Type:</Text>
             <Select
               name="certiType"
               value={formData.certiType}
@@ -966,7 +966,7 @@ const CertificateForm = () => {
             </Select>
 
             {/* Title Fields */}
-            <Text>Enter the name of Institute</Text>
+            <Text className='tw-font-bold'>Enter the name of Institute</Text>
 
             {formData.title.length == 0
               ? (formData.title = [''])
@@ -1103,7 +1103,7 @@ const CertificateForm = () => {
 
             {/* Template Selection */}
             <Box>
-              <Text>Select Certificate Template Design:</Text>
+              <Text className='tw-font-bold'>Select Certificate Template Design:</Text>
               <Box overflowX="auto" whiteSpace="nowrap" padding="10px 0">
                 <HStack maxW={450} spacing={4} overflow={'scroll'}>
                   {templateOptions.map((template) => (
@@ -1132,7 +1132,7 @@ const CertificateForm = () => {
 
 
             {/* Logos Fields */}
-            <Text>Enter the link for the logos:</Text>
+            <Text className='tw-font-bold'>Enter the link for the logos:</Text>
 
             {formData.logos.map((logo, index) => (
               <HStack width='100%' key={index}>
@@ -1195,7 +1195,7 @@ const CertificateForm = () => {
             ))}
 
             {/* Header Fields */}
-            <Text>Enter Department or Club data:</Text>
+            <Text className='tw-font-bold'>Enter Department or Club data:</Text>
 
             {formData.header.map((header, index) => (
               <HStack width="100%" key={index}>
@@ -1319,7 +1319,7 @@ const CertificateForm = () => {
             <Accordion width="100%" allowMultiple>
               <AccordionItem width="100%" border="none">
                 <HStack width="100%" justifyContent="space-between">
-                  <Text>Certificate:</Text>
+                  <Text className='tw-font-bold'>Certificate:</Text>
                 </HStack>
                 <VStack width="100%">
                   <HStack width="100%">
@@ -1434,7 +1434,7 @@ const CertificateForm = () => {
             {/* Body of the certificate */}
             <Accordion width="100%" allowMultiple>
               <AccordionItem width="100%" border="none">
-                <HStack width="100%" justifyContent="space-between"><Text>Body of the certificate <Button type='button' onClick={e => { document.getElementById("bodyVariables").style.display = document.getElementById("bodyVariables").style.display == "flex" ? "none" : "flex" }} className='tw-text-black tw-text-sm'>See variables </Button>{window.outerWidth > 768 && <InfoIcon color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} />}</Text>
+                <HStack width="100%" justifyContent="space-between"><Text className='tw-font-bold'>Body of the certificate <Button type='button' onClick={e => { document.getElementById("bodyVariables").style.display = document.getElementById("bodyVariables").style.display == "flex" ? "none" : "flex" }} className='tw-text-black tw-text-sm'>See variables </Button>{window.outerWidth > 768 && <InfoIcon color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} />}</Text>
                   <AccordionButton height="30px" width="30px" justifyContent="center">
                     <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
                   </AccordionButton></HStack>
@@ -1534,7 +1534,7 @@ const CertificateForm = () => {
               </AccordionItem>
             </Accordion>
 
-            <Text>signatures:</Text>
+            <Text className='tw-font-bold'>Signatures:</Text>
 
             {formData.signatures.map((signature, index) => (
               <VStack width="100%" key={index}>
@@ -1823,7 +1823,7 @@ const CertificateForm = () => {
             ))}
 
             {/* Verifible link */}
-            <Text>QR code with verifiable link:</Text>
+            <Text className='tw-font-bold'>QR code with verifiable link:</Text>
             <Select
               name="verifiableLink"
               value={formData.verifiableLink}
@@ -1834,7 +1834,7 @@ const CertificateForm = () => {
               <option value={false}>Not Required</option>
             </Select>
             <HStack width="100%">
-              <Text width="40%">Date of issue:</Text>
+              <Text className='tw-font-bold' width="40%">Date of issue:</Text>
               <Input
                 type="date"
                 name="footer.footer"
