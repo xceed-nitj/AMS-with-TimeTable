@@ -15,7 +15,7 @@ import {
   Checkbox,
   Image,
 } from '@chakra-ui/react';
-import { AddIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
+import { AddIcon, CloseIcon, EditIcon, InfoIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
 import Header from '../../components/header';
 import { useToast } from '@chakra-ui/react';
@@ -183,7 +183,7 @@ const CertificateForm = () => {
                   header: str,
                   fontSize: '',
                   fontFamily: '',
-                  bold: 'normal',
+                  bold: 'bold',
                   italic: 'normal',
                   fontColor: 'black',
                 };
@@ -231,7 +231,7 @@ const CertificateForm = () => {
                   name: 'डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर',
                   fontSize: 20,
                   fontFamily: 'Noto Serif Devanagari',
-                  bold: 'normal',
+                  bold: 'bold',
                   italic: 'normal',
                   fontColor: 'black',
                 },
@@ -247,7 +247,7 @@ const CertificateForm = () => {
                   name: 'Dr B R Ambedkar National Institute of Technology Jalandhar',
                   fontSize: 19,
                   fontFamily: 'serif',
-                  bold: 'normal',
+                  bold: 'bold',
                   italic: 'normal',
                   fontColor: 'black',
                 },
@@ -708,6 +708,20 @@ const CertificateForm = () => {
     }
   };
 
+  function copyVariable(text) {
+
+    if (!navigator.clipboard) {
+      return Promise.reject('Clipboard API not supported');
+    }
+    toast({
+      title: 'Variable copied',
+      status: "success",
+      duration: 1000,
+      isClosable: true,
+    });
+    return navigator.clipboard.writeText(text);
+  }
+
   const fontsizeopt = [];
   for (let i = 6; i <= 60; i = i + 2) {
     fontsizeopt.push(i);
@@ -797,137 +811,137 @@ const CertificateForm = () => {
             {formData.title.length == 0
               ? (formData.title = [''])
               : formData.title.map((title, index) => (
-                  <HStack key={index} alignItems="flex-start" width="100%">
-                    <Accordion width="100%" allowMultiple>
-                      {' '}
-                      {/* Allow multiple items to be expanded simultaneously (optional) */}
-                      <AccordionItem
-                        border="none"
-                        alignItems="center"
-                        width="96%"
-                      >
-                        <HStack alignItems="center" width="100%">
-                          <Input
-                            name={`title[${index}].name`}
-                            value={title.name}
-                            onChange={(e) => handleChange(e, 'title', index)}
-                            placeholder="Title"
-                            width="100%"
-                          />
-                          <AccordionButton
-                            height="30px"
-                            width="30px"
+                <HStack key={index} alignItems="flex-start" width="100%">
+                  <Accordion width="100%" allowMultiple>
+                    {' '}
+                    {/* Allow multiple items to be expanded simultaneously (optional) */}
+                    <AccordionItem
+                      border="none"
+                      alignItems="center"
+                      width="96%"
+                    >
+                      <HStack alignItems="center" width="100%">
+                        <Input
+                          name={`title[${index}].name`}
+                          value={title.name}
+                          onChange={(e) => handleChange(e, 'title', index)}
+                          placeholder="Title"
+                          width="100%"
+                        />
+                        <AccordionButton
+                          height="30px"
+                          width="30px"
+                          justifyContent="center"
+                        >
+                          <EditIcon
+                            color="blue"
+                            height="25px"
+                            width="25px"
                             justifyContent="center"
-                          >
-                            <EditIcon
-                              color="black"
-                              height="30px"
-                              width="30px"
-                              justifyContent="center"
-                            />
-                          </AccordionButton>
-                          {index > 0 && (
-                            <IconButton
-                              width="30px"
-                              icon={<CloseIcon />}
-                              onClick={() => handleDelete('title', index)}
-                            />
-                          )}
-                          {index === formData.title.length - 1 && (
-                            <IconButton
-                              icon={<AddIcon />}
-                              onClick={() => addField('title')}
-                            />
-                          )}
-                        </HStack>
-                        <AccordionPanel width="100%" position="relative">
-                          <HStack spacing={'8'}>
-                            <VStack>
-                              <Select
-                                name={`title[${index}].fontSize`}
-                                value={title.fontSize}
-                                onChange={(e) =>
-                                  handleChange(e, 'title', index)
-                                }
-                                placeholder="Size"
-                                // width="30%"
-                              >
-                                {fontsizeopt.map((item, key) => {
-                                  return (
-                                    <option key={key} value={`${item}`}>
-                                      {item}
-                                    </option>
-                                  );
-                                })}
-                              </Select>
-                              <Select
-                                name={`title[${index}].fontFamily`}
-                                value={title.fontFamily}
-                                onChange={(e) =>
-                                  handleChange(e, 'title', index)
-                                }
-                                placeholder="Style"
-                                // width="29%"
-                              >
-                                {fontStyleopt.map((item, key) => {
-                                  return (
-                                    <option key={key} value={`${item}`}>
-                                      {item}
-                                    </option>
-                                  );
-                                })}
-                              </Select>
-                              <Input
-                                name={`title[${index}].fontColor`}
-                                value={title.fontColor}
-                                onChange={(e) =>
-                                  handleChange(e, 'title', index)
-                                }
-                                placeholder="Color eg. red"
-                              ></Input>
-                              <HStack>
-                                <Checkbox
-                                  name={`title[${index}].bold`}
-                                  value={title.bold}
-                                  isChecked={
-                                    title.bold == 'bold' ? true : false
-                                  }
-                                  onChange={(e) =>
-                                    handleChangeStyle(e, 'title', index)
-                                  }
-                                >
-                                  Bold
-                                </Checkbox>
-                                <Checkbox
-                                  name={`title[${index}].italic`}
-                                  value={title.italic}
-                                  isChecked={title.italic == 'italic'}
-                                  onChange={(e) =>
-                                    handleChangeStyle(e, 'title', index)
-                                  }
-                                >
-                                  Italic
-                                </Checkbox>
-                              </HStack>
-                            </VStack>
-                            <HexAlphaColorPicker
+                          />
+                        </AccordionButton>
+                        {index > 0 && (
+                          <IconButton
+                            width="30px"
+                            icon={<CloseIcon color="red" width="20px" height="20px" />}
+                            onClick={() => handleDelete('title', index)}
+                          />
+                        )}
+                        {index === formData.title.length - 1 && (
+                          <IconButton
+                            icon={<AddIcon color="green" width="20px" height="20px" />}
+                            onClick={() => addField('title')}
+                          />
+                        )}
+                      </HStack>
+                      <AccordionPanel width="100%" position="relative">
+                        <HStack spacing={'8'}>
+                          <VStack>
+                            <Select
+                              name={`title[${index}].fontSize`}
+                              value={title.fontSize}
+                              onChange={(e) =>
+                                handleChange(e, 'title', index)
+                              }
+                              placeholder="Size"
+                            // width="30%"
+                            >
+                              {fontsizeopt.map((item, key) => {
+                                return (
+                                  <option key={key} value={`${item}`}>
+                                    {item}
+                                  </option>
+                                );
+                              })}
+                            </Select>
+                            <Select
+                              name={`title[${index}].fontFamily`}
+                              value={title.fontFamily}
+                              onChange={(e) =>
+                                handleChange(e, 'title', index)
+                              }
+                              placeholder="Style"
+                            // width="29%"
+                            >
+                              {fontStyleopt.map((item, key) => {
+                                return (
+                                  <option key={key} value={`${item}`}>
+                                    {item}
+                                  </option>
+                                );
+                              })}
+                            </Select>
+                            <Input
                               name={`title[${index}].fontColor`}
                               value={title.fontColor}
                               onChange={(e) =>
-                                handleChangec(
-                                  e,
-                                  'title',
-                                  `title[${index}].fontColor`,
-                                  index
-                                )
+                                handleChange(e, 'title', index)
                               }
-                            />
-                          </HStack>
-                        </AccordionPanel>
-                      </AccordionItem>
-                    </Accordion>
-                  </HStack>
-                ))}
+                              placeholder="Color eg. red"
+                            ></Input>
+                            <HStack>
+                              <Checkbox
+                                name={`title[${index}].bold`}
+                                value={title.bold}
+                                isChecked={
+                                  title.bold == 'bold' ? true : false
+                                }
+                                onChange={(e) =>
+                                  handleChangeStyle(e, 'title', index)
+                                }
+                              >
+                                Bold
+                              </Checkbox>
+                              <Checkbox
+                                name={`title[${index}].italic`}
+                                value={title.italic}
+                                isChecked={title.italic == 'italic'}
+                                onChange={(e) =>
+                                  handleChangeStyle(e, 'title', index)
+                                }
+                              >
+                                Italic
+                              </Checkbox>
+                            </HStack>
+                          </VStack>
+                          <HexAlphaColorPicker
+                            name={`title[${index}].fontColor`}
+                            value={title.fontColor}
+                            onChange={(e) =>
+                              handleChangec(
+                                e,
+                                'title',
+                                `title[${index}].fontColor`,
+                                index
+                              )
+                            }
+                          />
+                        </HStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                </HStack>
+              ))}
 
             {/* Template Selection */}
             <Box>
@@ -979,13 +993,13 @@ const CertificateForm = () => {
 
                       {index > 0 && (
                         <IconButton
-                          icon={<CloseIcon color = "red" height="20px" width="20px" />}
+                          icon={<CloseIcon color="red" height="20px" width="20px" />}
                           onClick={() => handleDelete('title', index)}
                         />
                       )}
                       {index === formData.logos.length - 1 && (
                         <IconButton
-                          icon={<AddIcon color = "green" height="20px" width="20px" />}
+                          icon={<AddIcon color="green" height="20px" width="20px" />}
                           onClick={() => addField('title')}
                         />
                       )}
@@ -1075,7 +1089,7 @@ const CertificateForm = () => {
                     placeholder="Logo"
                     width="100%"
                   />
-                  <label style={{ height: "30px", width: "30px" }} className="tw-flex tw-flex-col tw-justify-center tw-ml-2 hover:tw-cursor-pointer" htmlFor={`logo${index}`}><FaUpload style={{ height: "25px", width: "25px", color:"purple"}} /></label>
+                  <label style={{ height: "30px", width: "30px" }} className="tw-flex tw-flex-col tw-justify-center tw-ml-2 hover:tw-cursor-pointer" htmlFor={`logo${index}`}><FaUpload style={{ height: "25px", width: "25px", color: "purple" }} /></label>
                   <Input
                     id={`logo${index}`}
                     name={`logos[${index}].url`}
@@ -1089,7 +1103,7 @@ const CertificateForm = () => {
 
                   {index > 0 && (
                     <IconButton
-                      icon={<CloseIcon color="red" width="20px" height="20px"/>}
+                      icon={<CloseIcon color="red" width="20px" height="20px" />}
                       onClick={() => handleDelete('logos', index)}
                     />
                   )}
@@ -1163,7 +1177,7 @@ const CertificateForm = () => {
                             value={header.fontSize}
                             onChange={(e) => handleChange(e, 'header', index)}
                             placeholder="Size"
-                            // width="30%"
+                          // width="30%"
                           >
                             {fontsizeopt.map((item, key) => {
                               return (
@@ -1178,7 +1192,7 @@ const CertificateForm = () => {
                             value={header.fontFamily}
                             onChange={(e) => handleChange(e, 'header', index)}
                             placeholder="Style"
-                            // width="29%"
+                          // width="29%"
                           >
                             {fontStyleopt.map((item, key) => {
                               return (
@@ -1345,7 +1359,7 @@ const CertificateForm = () => {
             {/* Body of the certificate */}
             <Accordion width="100%" allowMultiple>
               <AccordionItem width="100%" border="none">
-                <HStack width="100%" justifyContent="space-between"><Text>Body of the certificate <Button type='button' onClick={e => { document.getElementById("bodyVariables").style.display = document.getElementById("bodyVariables").style.display == "flex" ? "none" : "flex" }} className='tw-text-black tw-text-sm'>See variables </Button>{window.outerWidth>768 && <InfoIcon color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} />}</Text>
+                <HStack width="100%" justifyContent="space-between"><Text>Body of the certificate <Button type='button' onClick={e => { document.getElementById("bodyVariables").style.display = document.getElementById("bodyVariables").style.display == "flex" ? "none" : "flex" }} className='tw-text-black tw-text-sm'>See variables </Button>{window.outerWidth > 768 && <InfoIcon color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} />}</Text>
                   <AccordionButton height="30px" width="30px" justifyContent="center">
                     <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
                   </AccordionButton></HStack>
@@ -1669,7 +1683,7 @@ const CertificateForm = () => {
                       placeholder="URL"
                       width="100%"
                     />
-                    <label className='tw-flex tw-justify-center tw-items-center tw-ml-2 hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><FaUpload style={{ height: "25px", width: "25px", color:'purple'}} /></label>
+                    <label className='tw-flex tw-justify-center tw-items-center tw-ml-2 hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><FaUpload style={{ height: "25px", width: "25px", color: 'purple' }} /></label>
                     <input
                       id={`signatures[${index}].url.url`}
                       name={`signatures[${index}].url.url`}
@@ -1714,7 +1728,7 @@ const CertificateForm = () => {
 
                   {index === formData.signatures.length - 1 && (
                     <IconButton
-                      icon={<AddIcon color = "green" height="20px" width="20px" />}
+                      icon={<AddIcon color="green" height="20px" width="20px" />}
                       onClick={() => addField('signatures')}
                     />
                   )}
@@ -1728,7 +1742,7 @@ const CertificateForm = () => {
               name="verifiableLink"
               value={formData.verifiableLink}
               onChange={(e) => handleChange(e, 'verifiableLink', null)}
-              // placeholder="Select Required or not"
+            // placeholder="Select Required or not"
             >
               <option value={true}>Required</option>
               <option value={false}>Not Required</option>
