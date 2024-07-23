@@ -260,7 +260,7 @@ const CertificateForm = () => {
             let Signatures = [];
             if (signatures[0].name.name || signatures[0].name.name == "") {
               Signatures = signatures;
-              if (!signatures[0].url.url || !(signatures[0].url.url == "")) {
+              if (!signatures[0].url.url) {
                 signatures.forEach((elem, index) => {
                   Signatures[index].url = { url: elem.url, size: 100 };
                 });
