@@ -133,12 +133,13 @@ import UserEventRegistration from './certificatemodule/pages/addEvent';
 
 
 function App() {
+  
   return (
     <Router>
       {/* <div className="app"> */}
 
       {/* <h1>XCEED-Timetable Module</h1>  */}
-      <Navbar />
+       <Navbar />
 
       <Routes>
         {/* Landing Page */}
