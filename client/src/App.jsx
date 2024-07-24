@@ -131,6 +131,7 @@ import QuizFeedback from './quizModule/student/quizFeedback/QuizFeedback';
 import UserManagement from './dashboard/userManagement';
 import UserEventRegistration from './certificatemodule/pages/addEvent';
 
+import Form from './platform/Form.jsx';
 
 function App() {
   return (
@@ -324,6 +325,8 @@ function App() {
                     destinationName='Home' 
                     animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
                     />}></Route>
+
+        <Route path="/platform" element={<><Form/></>}/>
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
