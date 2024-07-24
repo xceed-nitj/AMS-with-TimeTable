@@ -37,8 +37,8 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
           });
           //console.log("userid:",response.data.updatedId);
           paper.authors.push(response.data.updatedId);
-          paper.pseudo_authors[currentIndex].order=response.data.updatedId;
-          paper.pseudo_authors[currentIndex].institute=response.data.mail;
+          paper.pseudo_authors[currentIndex].existing_id=response.data.updatedId;
+          paper.pseudo_authors[currentIndex].isNew=response.data.mail;
           toast({
             title: 'User added.',
             description: response.data.message || 'User have been addded.',
