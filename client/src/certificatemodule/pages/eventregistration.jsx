@@ -6,6 +6,7 @@ import {
   FormControl,
   FormLabel,
   Input,
+  Select,
   Table,
   Thead,
   Tbody,
@@ -20,11 +21,11 @@ import {
   ModalBody,
   ModalCloseButton,
   Flex,
+  Box,
 } from '@chakra-ui/react';
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
 import Header from "../../components/header";
-import Select from 'react-select';
 
 const EventRegistration = () => {
   const toast = useToast();
@@ -61,10 +62,6 @@ const EventRegistration = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
-  };
-
-  const handleUserChange = (selectedOption) => {
-    setSelectedUser(selectedOption.value);
   };
 
   const handleSubmit = async (e) => {
@@ -138,11 +135,6 @@ const EventRegistration = () => {
     navigate(`/cm/userevents/${userId}`);
   };
 
-  const userOptions = users.map((user) => ({
-    value: user._id,
-    label: user.email,
-  }));
-
   return (
     <Container maxW="lg">
       <Header title="Add Event for Certificate Module" />
@@ -188,10 +180,16 @@ const EventRegistration = () => {
                   <FormLabel>User</FormLabel>
                   <Select
                     name="user"
-                    options={userOptions}
-                    onChange={handleUserChange}
-                    placeholder="Select or search for user email"
-                  />
+                    value={formData.user}
+                    onChange={handleChange}
+                    placeholder="Select user email"
+                  >
+                    {users.map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.email}
+                      </option>
+                    ))}
+                  </Select>
                 </FormControl>
               )}
 
