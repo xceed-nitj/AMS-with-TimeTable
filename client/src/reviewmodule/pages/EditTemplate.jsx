@@ -21,6 +21,7 @@ function EditTemplate() {
     });
 
     const [fields, setFields] = useState([]);
+    const [event_fields,setEventFields] = useState({})
     const [selectedTab, setSelectedTab] = useState(0);
 
     const collectionNames = ['prs-papers', 'users', 'prs-papers', 'prs-reviews', 'prs-papers', 'prs-papers'];
@@ -31,6 +32,7 @@ function EditTemplate() {
                 const response = await axios.get(`${apiUrl}/reviewmodule/event/getEvents/${eventId}`);
                 if (response.data.templates) {
                     setTemplate(response.data.templates);
+                    setEventFields(response.data || {});
                 } else {
                     console.log("Not able to do Get Request");
                 }
@@ -59,7 +61,18 @@ function EditTemplate() {
 
         fetchFields();
     }, [selectedTab]);
-
+    const insertEventField = (field) => {
+        setTemplate(prevTemplate => {
+            const currentContent = prevTemplate[Object.keys(template)[selectedTab]];
+            const trimmedContent = currentContent.trim();
+            const fieldToInsert = event_fields[field];
+            const updatedContent = trimmedContent + (trimmedContent ? ' ' : '') + fieldToInsert;
+            return {
+                ...prevTemplate,
+                [Object.keys(template)[selectedTab]]: updatedContent
+            };
+        });
+    };
     const handleSave = async (templateType, newContent) => {
         try {
             const updatedTemplates = {
@@ -199,6 +212,16 @@ function EditTemplate() {
                                         </Button>
                                     ))}
                                 </Box>
+                                <br/>
+                                <p>Event Fields</p>
+                                <Box>
+                                    {Object.keys(event_fields).map((field, idx) => (
+                                        <Button key={idx} onClick={() => insertEventField(field)} m={1}>
+                                            {field}
+                                        </Button>
+                                    ))}
+                                </Box>
+                                <br/>
                                 <JoditEditor
                                     value={template[templateType]}
                                     onChange={newContent => setTemplate(prevTemplate => ({
