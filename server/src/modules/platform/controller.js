@@ -1,4 +1,4 @@
-const Platform = require("../models/platform");
+const Platform = require("../../models/platform");
 
 const addPlatform = async (req, res) => {
   const {roles,exemptedLinks,researchArea} = req.body;
@@ -9,7 +9,7 @@ const addPlatform = async (req, res) => {
   });
   newPlatform
     .save()
-    .then((newPlatform) => res.status(200).send("Platform saved"))
+    .then((newPlatform) => res.status(200).send(newPlatform))
     .catch((err) => res.status(500).send(err));
 }
 
@@ -23,6 +23,16 @@ const getPlatform = async (req, res) => {
     }
 };
 
+const getPlatformById = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const platform = await Platform.find({_id : id});
+    res.status(200).json(platform);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
 const updatePlatform = async (req, res) => {
     const id = req.params.id;
     if (!id) res.send("Id not found");
@@ -30,7 +40,7 @@ const updatePlatform = async (req, res) => {
     const updateField = req.body;
   
     try {
-      const platform = await Platform.findByIdAndUpdate(id, updateField, { new: true, runValidators: true });
+      const platform = await Platform.findByIdAndUpdate({_id:id}, updateField, { new: true, runValidators: true });
       if (!platform) {
         return res.status(404).send({ error: 'User not found' });
       }
@@ -52,5 +62,5 @@ const deletePlatform = async (req, res) => {
     }
 };
 
-module.exports = {addPlatform,getPlatform,updatePlatform,deletePlatform};
+module.exports = {addPlatform,getPlatform,getPlatformById,updatePlatform,deletePlatform};
 
