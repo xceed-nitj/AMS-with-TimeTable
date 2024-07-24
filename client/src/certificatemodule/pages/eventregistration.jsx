@@ -20,6 +20,8 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
+  Flex,
+  Box,
 } from '@chakra-ui/react';
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
@@ -30,12 +32,14 @@ const EventRegistration = () => {
   const apiUrl = getEnvironment();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [cmUsers, setCmUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     ExpiryDate: '',
     plan: 'basic', // default plan
+    user: '', // manually entered user
   });
 
   useEffect(() => {
@@ -43,8 +47,9 @@ const EventRegistration = () => {
       try {
         const response = await fetch(`${apiUrl}/user/getuser/all`, { credentials: 'include' });
         const data = await response.json();
+        setUsers(data.user); // Set all users to the state
         const cmUsers = data.user.filter(user => user.role.includes('CM'));
-        setUsers(cmUsers);
+        setCmUsers(cmUsers); // Set CM users to the state
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -61,8 +66,9 @@ const EventRegistration = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const userId = selectedUser || formData.user;
     try {
-      const response = await fetch(`${apiUrl}/certificatemodule/addevent/assignEvent/${selectedUser}`, {
+      const response = await fetch(`${apiUrl}/certificatemodule/addevent/assignEvent/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,6 +91,7 @@ const EventRegistration = () => {
           name: '',
           ExpiryDate: '',
           plan: 'basic',
+          user: '',
         });
       } else {
         const errorData = await response.json();
@@ -114,6 +121,11 @@ const EventRegistration = () => {
     setIsModalOpen(true);
   };
 
+  const handleOpenModalForNewUser = () => {
+    setSelectedUser(null);
+    setIsModalOpen(true);
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedUser(null);
@@ -125,7 +137,13 @@ const EventRegistration = () => {
 
   return (
     <Container maxW="lg">
-      <Header title="Add Event for Certificate Module"></Header>
+      <Header title="Add Event for Certificate Module" />
+
+      <Flex justify="flex-end" mb="4">
+        <Button onClick={handleOpenModalForNewUser} colorScheme="teal">
+          Assign Event
+        </Button>
+      </Flex>
 
       <Table variant="simple" mt="6">
         <Thead>
@@ -136,7 +154,7 @@ const EventRegistration = () => {
           </Tr>
         </Thead>
         <Tbody>
-          {users.map((user) => (
+          {cmUsers.map((user) => (
             <Tr key={user._id}>
               <Td>{user.email}</Td>
               <Td>
@@ -157,6 +175,24 @@ const EventRegistration = () => {
           <ModalCloseButton />
           <ModalBody>
             <form onSubmit={handleSubmit}>
+              {!selectedUser && (
+                <FormControl mb="4">
+                  <FormLabel>User</FormLabel>
+                  <Select
+                    name="user"
+                    value={formData.user}
+                    onChange={handleChange}
+                    placeholder="Select user email"
+                  >
+                    {users.map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.email}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+
               <FormControl mb="4">
                 <FormLabel>Event Name</FormLabel>
                 <Input
