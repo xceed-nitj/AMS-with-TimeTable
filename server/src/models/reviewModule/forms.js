@@ -12,7 +12,7 @@ const formSchema = new mongoose.Schema({
     order: [{ type: Number }],
     title: { type: String, required: true },
     section: { type: String, required: true },
-    paperId: { type: mongoose.Schema.Types.ObjectId, ref: 'Paper', required: true },
+    
     accessRole: { type: String, required: true }
 }, { timestamps: true });
 

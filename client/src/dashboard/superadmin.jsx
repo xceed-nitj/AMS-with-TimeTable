@@ -14,7 +14,7 @@ const SuperAdminPage = () => {
         </GridItem>
         <GridItem>
           <Box bg="green.200" p={6} borderRadius="md" textAlign="center">
-            <Link as={RouterLink} to="/em/addevent" color="white" fontSize={{ base: "xl", md: "2xl" }}>Certificate Management Admin</Link>
+            <Link as={RouterLink} to="/cm/addevent" color="white" fontSize={{ base: "xl", md: "2xl" }}>Certificate Management Admin</Link>
           </Box>
         </GridItem>
         <GridItem>

@@ -18,6 +18,9 @@ function Content() {
     fontColor: "black"
 
   });
+  const date = new Date();
+  const a = date.getMonth()>9?"":0
+  const defaultDate = `${date.getFullYear()}-${a}${date.getMonth()+1}-${date.getDate()}`
   const currentURL = window.location.href;
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 2];
@@ -86,13 +89,13 @@ function Content() {
       header: "",
       fontSize: 20,
       fontFamily: "",
-      bold: "normal",
+      bold: "bold",
       italic: "normal",
       fontColor: "black"
     }
   ]);
   const [templateId, setTemplateId] = useState("0")
-  const [footer, setFooter] = useState({ footer: "" })
+  const [footer, setFooter] = useState({ footer: defaultDate })
   const [certificateOf, setCertificateOf] = useState({
     certificateOf: "CERTIFICATE OF APPRECIATION",
     fontSize: 30,
@@ -103,8 +106,7 @@ function Content() {
   })
 
   // const [footer, setFooter] = useState([]);
-  const date = new Date()
-  const foot = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+
 
   useEffect(() => {
     const fetchCertiType = async () => {
@@ -162,7 +164,7 @@ function Content() {
         let Signatures = [];
         if (signatures[0].name.name || signatures[0].name.name=="") {
           Signatures = signatures
-          if (!(signatures[0].url.url) || !((signatures[0].url.url)=="")) {
+          if (!(signatures[0].url.url)) {
             signatures.forEach((elem, index) => {
               Signatures[index].url = { url: elem.url, size: 100 }
             })
@@ -194,7 +196,7 @@ function Content() {
         // for footer
         let Footer = {}
         if (Array.isArray(footer)) {
-          Footer = { footer: foot }
+          Footer = { footer: defaultDate }
         } else {
           Footer = footer
         }
@@ -214,7 +216,7 @@ function Content() {
             title.forEach(element => {
               let str = ""
               for (let key in element) { parseInt(key) || (key == "0") ? str = str + element[key] : "" }
-              let obj = { name: str, fontSize: 18, fontFamily: "", bold: "bold", italic: "normal" }
+              let obj = { name: str, fontSize: 18, fontFamily: "", bold: "normal", italic: "normal" }
               Title.push(obj)
             });
           } else if (title[0]["name"] || title[0]["name"]=="") {
