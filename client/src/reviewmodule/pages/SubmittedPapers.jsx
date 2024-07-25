@@ -1,4 +1,4 @@
-import { Container, Box, Input, Table, Thead, Tbody, Tr, Th, Td, Button, Text } from '@chakra-ui/react'
+import { Container, Box, Input, Table, Thead, Tbody, Tr, Th, Td, Button, Text, Spinner, Center } from '@chakra-ui/react'
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
@@ -45,7 +45,7 @@ function DynamicTable(props) {
     const pageItems = 4 // max number of items in a page
     const numberOfPages = Math.floor(props.papers.length/pageItems) + (props.papers.length%pageItems ? 1 : 0) // it gives total number of possible pages
 
-    let itemsInPage = (pageno) => (pageno === numberOfPages)? (props.papers.length % pageItems) : pageItems // it gives number of items in current page
+    let itemsInPage = (pageno) => (pageno === numberOfPages)? (props.papers.length+1 % pageItems) : pageItems // it gives number of items in current page
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -122,10 +122,7 @@ function SubmittedPapers() {
     const handleChange = (e)=> setSearchQuery(e.target.value)
 
     useEffect(()=>{
-        const useGetData = async () => {
-            await getData(setPaperData)
-        }
-        useGetData()
+        getData(setPaperData)
     },[])
 
     function PaperFilter(papers) {
@@ -155,7 +152,9 @@ function SubmittedPapers() {
                             <p style={{color: 'slategrey', textAlign:'center'}}><br/>No papers found...</p>
                         )
                     ): (
-                        <p style={{color: 'slategrey', textAlign:'center'}}><br/>Loading...</p>
+                        <>
+                        <br /><br /><Center><Spinner/></Center>
+                        </>
                     )
                 }
             </Box>
