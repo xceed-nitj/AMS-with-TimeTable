@@ -12,7 +12,7 @@ function DynamicTable(props) {
     const pageItems = 5 // max number of items in a page
     const numberOfPages = Math.floor(props.events.length/pageItems) + (props.events.length%pageItems ? 1 : 0) // it gives total number of possible pages
 
-    let itemsInPage = (pageno) => (pageno === numberOfPages)? (props.events.length % pageItems) : pageItems // it gives number of items in current page
+    let itemsInPage = (pageno) => (pageno === numberOfPages)? (props.events.length+1 % pageItems) : pageItems // it gives number of items in current page
 
     function pageFilter(events) {
         let pageEvents = []
