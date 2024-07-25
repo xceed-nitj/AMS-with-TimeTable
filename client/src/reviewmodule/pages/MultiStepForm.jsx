@@ -30,6 +30,45 @@ function MultiStepForm({ isSidebarOpen }) {
       eventId: value1,
     }));
   }, [value1, setPaper]);
+  useEffect(() => {
+    const fetchPaperData = async () => {
+      const searchParams = new URLSearchParams(location.search);
+      const existing_paper = searchParams.get('pid');
+      console.log("existing: ", existing_paper);
+      if (existing_paper) {
+        try {
+          const response = await fetch(
+            `${apiUrl}/api/v1/reviewmodule/paper/getPaperDetail/${existing_paper}`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+          if (response.ok) {
+            const fetchedData = await response.json();
+            
+            // Update only the fields that exist in the current paper state
+            const updatedPaper = Object.keys(paper).reduce((acc, key) => {
+              acc[key] = fetchedData.hasOwnProperty(key) ? fetchedData[key] : paper[key];
+              return acc;
+            }, {});
+            setPaper(updatedPaper);
+            setPaper((prevPaper) => ({
+              ...prevPaper,
+              pid: existing_paper,
+            }));
+
+          } else {
+            console.error("Error fetching papers:", response.statusText);
+          }
+        } catch (error) {
+          console.error("Error fetching papers:", error);
+        }
+      }
+    };
+  
+    fetchPaperData();
+  }, [location.search, apiUrl, setPaper, paper]);
 
   async function handleNext(data) {
     if (!data) {
