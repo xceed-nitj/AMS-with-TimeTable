@@ -55,7 +55,7 @@ const uploadPaper = async(req, res) => {
     .then(async () => {
       // Fetch email addresses of authors from User model based on their IDs
       for (let i=0;i<check.length;i++){
-        const authorIds = check[i].order;
+        const authorIds = check[i].existing_id;
         console.log(authorIds);
         const authors = await XUser.find({_id:authorIds});
         const authorEmails = authors.map(author => author.email);
@@ -63,7 +63,7 @@ const uploadPaper = async(req, res) => {
 
         // Send email notification to author(s)
         const to = authorEmails[0]; //Author is not linked with paper as of now so add your gmail to get email for testing purpose
-        if (check[i].institute === false){
+        if (check[i].isNew === false){
         const subject = "New Paper Uploaded";
         try{
           const auth_names = authors.map(item => item.name);
