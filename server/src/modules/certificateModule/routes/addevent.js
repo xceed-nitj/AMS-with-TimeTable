@@ -6,6 +6,7 @@ const protectRoute = require("../../usermanagement/privateroute");
 // const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
 const { checkRole } = require("../../checkRole.middleware");
+const { issuedCertificates, totalCertificates } = require("../helper/countCertificates");
 
 // Route to create a new event
 addEventRouter.post("/", checkRole(['CM','admin']), async (req, res) => {
@@ -73,6 +74,20 @@ addEventRouter.get("/getevents", checkRole(['CM','admin']), async (req, res) => 
     const user = req?.user?.id;
     const allEvents = await addEventController.getEventByUser(user);
     return res.status(200).json(allEvents);
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+
+addEventRouter.get("/getCertificateCount/:eventid", checkRole(['CM','admin']), async (req, res) => {
+  try {
+    const eventId = req?.params?.eventid;
+    const issuedCount = await issuedCertificates(eventId)
+    const totalCount = await totalCertificates(eventId)
+    return res.status(200).json({issuedCount,totalCount});
   } catch (e) {
     return res
       .status(e?.status || 500)

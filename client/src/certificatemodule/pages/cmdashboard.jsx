@@ -32,12 +32,12 @@ function CMDashboard() {
   const fetchEvents = async () => {
     try {
       const response = await fetch(`${apiUrl}/certificatemodule/addevent/getevents`, {
-          method: "GET",
-          headers: {
+        method: "GET",
+        headers: {
           "Content-Type": "application/json",
-          },
-          credentials: "include",
-        }
+        },
+        credentials: "include",
+      }
       );
 
       // console.log("Response status:", response.status);
@@ -45,6 +45,23 @@ function CMDashboard() {
       if (response.ok) {
         const data = await response.json();
         setTable(data);
+        try {
+          for (let i = 0; i < data.length; i++) {
+            const response = await fetch(`${apiUrl}/certificatemodule/addevent/getCertificateCount/${data[i]._id}`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            })
+            const {issuedCount,totalCount} = await response.json();
+            data[i].totalCertificates = totalCount;
+            data[i].certificatesIssued = issuedCount;
+            setTable(data)
+          }
+        } catch (error) {
+
+        }
 
         if (data.length > 0) {
           const lastEventLocked = data[data.length - 1].lock;
@@ -69,17 +86,17 @@ function CMDashboard() {
       const confirmed = window.confirm('Sure? You wont be able to edit any content once locked!');
 
       if (!confirmed) {
-          // If the user cancels, do nothing
+        // If the user cancels, do nothing
         return;
       }
       const response = await fetch(`${apiUrl}/certificatemodule/addevent/lock/${id}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ lock: true }),
-        }
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ lock: true }),
+      }
       );
 
       if (response.ok) {
