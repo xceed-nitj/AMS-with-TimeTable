@@ -5,7 +5,7 @@ import { Heading, chakra, IconButton, Box, Container, Textarea, Text,
 } from '@chakra-ui/react'
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 import axios from 'axios';
 import getEnvironment from '../../getenvironment';
@@ -217,13 +217,13 @@ function ReviewModal(props) {
 }
 
 function PaperSummary() {
+    const apiUrl = getEnvironment();
 
     let [paperData, setPaperData] = useState()
     let [reviewerComments, setReviewerComments] = useState()
     let [dateSubmitted, setDateSubmitted] = useState()
     let [screenWidth, setScreenWidth] = useState(window.innerWidth)
     console.log(paperData)
-    console.log('reviewer comments are',reviewerComments)
     setInterval(()=>{if(screenWidth != window.innerWidth) setScreenWidth(window.innerWidth)},500)
         
     useEffect(()=> {wrapper(setPaperData)},[])
@@ -324,8 +324,12 @@ function PaperSummary() {
                     <Flex alignItems={'center'} justifyContent={'space-between'}>
                         <h2 style={{fontWeight:'700'}} >Attatchments</h2>
                         <div>
+                            <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/`+paperData.codeLink[0]}>
                             <Button style={{float:'right'}} colorScheme='blue'>View Code</Button>
+                            </Link>
+                            <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/`+paperData.uploadLink[0]}>
                             <Button style={{float:'right'}} colorScheme='blue'>View Paper</Button>
+                            </Link>
                         </div>
                     </Flex>
                 </div>
