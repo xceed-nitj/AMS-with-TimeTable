@@ -11,6 +11,9 @@ async function convertCertificateToImage(req, res) {
     let data;
     try {
         // Original viewport size
+        page.on('requestfailed', (request) => {
+            throw new HttpException(404,`'Network request failed: '${request.url()}`);
+        });
         const originalWidth = 841;
         const originalHeight = 595;
 
@@ -50,7 +53,7 @@ async function convertCertificateToPDF(req, res) {
 
         data = await page.screenshot({ type: 'png', });
     } catch (error) {
-        console.error('Error:', error);
+        console.log('Error:', error);
         res.status(500).send('Error generating certificate.');
     }
 
@@ -77,10 +80,10 @@ async function convertCertificateToPDF(req, res) {
         res.setHeader('Content-Disposition', 'attachment; filename=image.pdf');
         res.send(Buffer.from(pdfBytes));
     } catch (error) {
-        console.error('Error:', error.message);
+        console.log('Error:', error.message);
         res.status(500).send('Error generating PDF.');
     }
 }
 
 
-module.exports = { convertCertificateToImage , convertCertificateToPDF }
+module.exports = { convertCertificateToImage, convertCertificateToPDF }
