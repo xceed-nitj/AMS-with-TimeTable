@@ -74,6 +74,20 @@ const getFormsByEventId = async (req, res) => {
     }
   };
   
+  const getFormByEventIdAndFormId = async (req, res) => {
+    try {
+        const { eventId, formId } = req.params;
+        const form = await Form.findOne({ _id: formId, eventId });
+
+        if (!form) {
+            return res.status(404).json({ message: 'Form not found' });
+        }
+
+        res.status(200).json(form);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching form', error });
+    }
+};
 
 module.exports = {
     createForm,
@@ -82,4 +96,5 @@ module.exports = {
     updateForm,
     deleteForm,
     getFormsByEventId,
+    getFormByEventIdAndFormId,
 };
