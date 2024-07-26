@@ -295,6 +295,18 @@ const PrmEditorDashboard = () => {
                         >
                             Communication Templates
                         </Button>
+                        <Button
+                            width="100%"
+                            height="50px"
+                            bgGradient="linear(to-r, purple.600, purple.500)"
+                            color="white"
+                            _hover={{ bgGradient: "linear(to-r, orange.500, orange.400)" }}
+                            onClick={()=> navigate(`${location.pathname}/forms`)}
+                            leftIcon={<Icon as={FiCheckCircle} color="white" />}
+                            whiteSpace="normal" // Ensure text wraps within the button
+                        >
+                            Forms
+                        </Button>
                         {/* <Button
                             width='100%'
                             height="50px"

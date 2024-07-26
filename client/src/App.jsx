@@ -132,6 +132,7 @@ import UserManagement from './dashboard/userManagement';
 import UserEventRegistration from './certificatemodule/pages/addEvent';
 
 import Form from './platform/Form.jsx';
+import AllForms from './reviewmodule/pages/AllForms.jsx';
 
 function App() {
   
@@ -248,7 +249,7 @@ function App() {
     <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
     <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
     <Route path="/prm/:eventId/editor/startSubmission" element={<StartSubmission/>}/>
-
+    <Route path="/prm/:eventId/editor/forms" element={<AllForms/>}/>
     <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
     <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
     <Route path="/prm/:eventId/ed" element={<PrmEdDashboard/>} /> 
