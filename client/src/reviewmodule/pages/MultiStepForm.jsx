@@ -64,11 +64,25 @@ function MultiStepForm({ isSidebarOpen }) {
         } catch (error) {
           console.error("Error fetching papers:", error);
         }
+      }else{
+        setPaper((prevPaper) => ({
+          ...prevPaper,
+          pid: '',
+          eventId: value1,
+          authors: [],
+          pseudo_authors: [],
+          title: '',
+          tracks:[],
+          abstract: '',
+          codeUploads: [],
+          paperUploads: [],
+          terms: false,
+        }));
       }
     };
   
     fetchPaperData();
-  }, [location.search, apiUrl, setPaper, paper]);
+  }, []);
 
   async function handleNext(data) {
     if (!data) {
