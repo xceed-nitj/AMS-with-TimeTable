@@ -116,7 +116,12 @@ certificateRouter.post("/download/image", upload.fields(
     maxCount: 1,
   }]
 ), convertCertificateToImage);
-certificateRouter.post("/download/pdf", convertCertificateToPDF);
+certificateRouter.post("/download/pdf", upload.fields(
+  [{
+    name: "certificate",
+    maxCount: 1,
+  }]
+), convertCertificateToPDF);
 certificateRouter.post("/downloadall", convertallCertificates);
 
 
