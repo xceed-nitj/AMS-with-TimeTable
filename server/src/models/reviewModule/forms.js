@@ -12,7 +12,8 @@ const formSchema = new mongoose.Schema({
     order: [{ type: Number }],
     title: { type: String, required: true },
     section: { type: String, required: true },
-    
+    sharedWith: [{ type: String }], // Added field
+    deadline: { type: Date },
     accessRole: { type: String, required: true }
 }, { timestamps: true });
 
