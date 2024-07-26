@@ -12,6 +12,8 @@ function replacePlaceholders(template, values) {
   });
 }
 const uploadPaper = async(req, res) => {
+  const submissionstatus = "Submitted";
+  const id = req.id;
   const fileName = req.fileName;
   const title = req.title;
   const abstract = req.abstract;
@@ -21,7 +23,7 @@ const uploadPaper = async(req, res) => {
   const track=req.track;
   const codefile = req.codeName;
   const check = req.ps;
-  console.log(check[0].institute);
+  console.log(reviewers);
   const event = await Event.findById(eventId);
   const deadline = event.paperSubmissionDate;
   const mail_status=[];
@@ -34,7 +36,31 @@ const uploadPaper = async(req, res) => {
   if (!fileName) {
     return res.status(400).send("File name is missing in the request.");
   }
-
+  if (id !== '') {
+    try {
+      const paper = await Paper.findById(id);
+      if (paper) {
+        paper.uploadLink = fileName;
+        paper.codeLink = codefile;
+        paper.version = paper.version + 1;
+        await paper.save();
+        const sub=`Paper titled ${title} has been modified`;
+        const body=`Paper titled ${title} has been modified<br/>
+        <a href='http://nitjtt.netlify.app/prm/${eventId}/${id}/summary'>Click here to view</a>`;
+        for (let i=0;i<paper.reviewers.length;i++){
+          console.log(paper.reviewers[i].username);
+          sendMail(paper.reviewers[i].username,sub,body);
+        }
+        console.log("Paper updated successfully:", paper);
+        return res.status(200).json({ message: "Paper updated successfully", paperlink: `reviewmodule/uploads/${fileName}`, codelink: `reviewmodule/uploads/${codefile}` });
+      } else {
+        return res.status(404).send("Paper not found");
+      }
+    } catch (error) {
+      console.error("Error updating paper:", error);
+      return res.status(500).send("Error updating paper");
+    }
+  }
   const papers = await Paper.find({"eventId" : eventId});
   const count = papers.length+1;
   const newPaper = new Paper({
@@ -46,8 +72,10 @@ const uploadPaper = async(req, res) => {
     codeLink: codefile,
     eventId:eventId,
     authors: authors,
+    pseudo_authors:check,
     tracks:[track],
     terms: terms,
+    submissionStatus:submissionstatus,
   });
 
   newPaper

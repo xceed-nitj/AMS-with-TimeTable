@@ -114,7 +114,7 @@ function Submission({ activeStep, setActiveStep, handlePrevious }) {
       p.authors && p.authors.some(author => authorsToMatch.includes(author))
     );
     console.log(papersWithMatchingAuthors,paper["title"]);
-    if (papersWithMatchingAuthors.length===0){
+    if (papersWithMatchingAuthors.length===0 || paper.pid!==''){
       var form_data = new FormData();
       for ( var key in paper ) {
           //console.log(key,":",paper[key]);

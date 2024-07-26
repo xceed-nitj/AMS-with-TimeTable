@@ -92,6 +92,9 @@ function DynamicTable(props) {
                                 <Td>
                                     <Link style={{textDecoration:'underline', color:'#009688'}} to={`/prm/${paper.eventId}/${paper._id}/summary`}>
                                         View Paper
+                                    </Link><br/>
+                                    <Link style={{textDecoration:'underline', color:'#009688'}} to={`/prm/${paper.eventId}/author/newpaper?pid=${paper._id}`}>
+                                        Modify Paper
                                     </Link>
                                 </Td>   
                             </Tr>

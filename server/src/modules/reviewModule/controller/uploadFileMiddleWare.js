@@ -26,7 +26,7 @@ const fileUploadMiddleware = (req, res, next) => {
       return res.status(400).send('Invalid event ID or user ID.');
     }
 
-    const eventFolder = path.join(__dirname, '/uploads', eventId, userId);
+    const eventFolder = path.join(__dirname, '../../../../uploads/reviewModule', eventId, userId);
     const codeUploadPath = path.join(eventFolder, 'codeupload');
     const paperUploadPath = path.join(eventFolder, 'paperupload');
 
@@ -57,7 +57,7 @@ const fileUploadMiddleware = (req, res, next) => {
       const fileName = saveFile(req.files.codeFile[0], codeUploadPath);
       req.codeName = `${eventId}/${userId}/codeupload/${fileName}`;
     }
-
+    req.id = req.body.pid;
     req.track = req.body.tracks;
     req.title = req.body.title;
     req.abstract = req.body.abstract;
