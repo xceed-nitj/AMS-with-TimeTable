@@ -346,10 +346,10 @@ function PaperSummary() {
                         <Flex alignItems={'center'} direction={'column'} justifyContent={'space-between'}>
                             {/* <h2 style={{fontWeight:'700'}} >ATTACHMENTS</h2> */}
                             <Flex direction={'row'}>
-                                <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/`+paperData.codeLink[k]}>
+                                <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.codeLink[k]}>
                                     <Button style={{float:'right'}} colorScheme='blue'>View Code</Button>
                                 </Link>
-                                <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/`+paperData.uploadLink[k]}>
+                                <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.uploadLink[k]}>
                                     <Button style={{float:'right'}} colorScheme='blue'>View Paper</Button>
                                 </Link>
                             </Flex>

@@ -23,7 +23,6 @@ const uploadPaper = async(req, res) => {
   const track=req.track;
   const codefile = req.codeName;
   const check = req.ps;
-  console.log(reviewers);
   const event = await Event.findById(eventId);
   const deadline = event.paperSubmissionDate;
   const mail_status=[];
