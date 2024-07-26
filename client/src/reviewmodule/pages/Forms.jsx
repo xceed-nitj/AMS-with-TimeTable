@@ -18,6 +18,8 @@ const Forms = () => {
   const [section, setSection] = useState('');
   const [accessRole, setAccessRole] = useState('');
   const [show, setShow] = useState(false);
+  const [sharedWith, setSharedWith] = useState(['']);
+  const [deadline, setDeadline] = useState('');
   const toast = useToast();
   const { eventId } = useParams(); // Removed paperId from useParams
   const [searchParams] = useSearchParams();
@@ -64,6 +66,21 @@ const Forms = () => {
     setOptions(updatedOptions);
   };
 
+  const handleSharedWithChange = (index, newValue) => {
+    const updatedSharedWith = sharedWith.map((email, i) => (i === index ? newValue : email));
+    setSharedWith(updatedSharedWith);
+};
+
+const handleAddSharedWith = () => {
+    setSharedWith([...sharedWith, '']);
+};
+
+const handleRemoveSharedWith = (index) => {
+    const updatedSharedWith = sharedWith.filter((_, i) => i !== index);
+    setSharedWith(updatedSharedWith);
+};
+
+
   const handleAddOption = () => {
     setOptions([...options, '']);
   };
@@ -90,9 +107,11 @@ const Forms = () => {
       title,
       section,
       accessRole,
-    };
-
-    const editQuestion = {
+      sharedWith: sharedWith.filter(email => email.trim() !== ''),
+      deadline,
+  };
+  
+  const editQuestion = {
       question: [question],
       show,
       type: [type],
@@ -101,39 +120,63 @@ const Forms = () => {
       title,
       section,
       accessRole,
+      sharedWith: sharedWith.filter(email => email.trim() !== ''),
+      deadline,
+  };
+  
+
+  try {
+    if (edit) {
+      const response = await axios.patch(`${apiUrl}/reviewmodule/reviewQuestion/${edit}`, editQuestion);
+      if (response.status === 200 || response.status === 201) {
+        toast({
+          title: 'Question saved.',
+          description: 'Your question has been saved successfully.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        throw new Error('Failed to update question');
+      }
+    } else {
+      const response = await axios.post(`${apiUrl}/reviewmodule/forms/`, newQuestion);
+      if (response.status === 200 || response.status === 201) {
+        toast({
+          title: 'Question saved.',
+          description: 'Your question has been saved successfully.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        throw new Error('Failed to save new question');
+      }
     }
 
-    try {
-      if (edit) {
-        await axios.patch(`${apiUrl}/reviewmodule/reviewQuestion/${edit}`, editQuestion);
-      } else {
-        await axios.post(`${apiUrl}/reviewmodule/forms/`, newQuestion);
-      }
-      toast({
-        title: 'Question saved.',
-        description: 'Your question has been saved successfully.',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-      setQuestion('');
-      setType('');
-      setOptions(['']);
-      setOrder('');
-      setTitle('');
-      setSection('');
-      setAccessRole('');
-      setShow(false);
-    } catch (error) {
-      toast({
-        title: 'Error saving question.',
-        description: 'An error occurred while saving your question.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
+    // Reset form fields
+    setQuestion('');
+    setType('');
+    setOptions(['']);
+    setOrder('');
+    setTitle('');
+    setSection('');
+    setAccessRole('');
+    setSharedWith(['']);
+    setDeadline('');
+    setShow(false);
+
+  } catch (error) {
+    console.error('Error saving question:', error);
+    toast({
+      title: 'Error saving question.',
+      description: 'An error occurred while saving your question.',
+      status: 'error',
+      duration: 5000,
+      isClosable: true,
+    });
+  }
+};
 
   const HeaderReviewQuestion = ({ title }) => {
     const navigate = useNavigate();
@@ -273,6 +316,41 @@ const Forms = () => {
             <option value="Author">Author</option>
           </Select>
         </div>
+        <div className="form-group">
+    <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
+        <Text color="white" textAlign={'center'}>Share With (Emails)</Text>
+    </Box>
+    {sharedWith.map((email, index) => (
+        <div key={index} className="shared-with">
+            <Input
+                type="email"
+                value={email}
+                onChange={(e) => handleSharedWithChange(index, e.target.value)}
+                onKeyPress={handleKeyPress}
+            />
+            {sharedWith.length > 1 && (
+                <Button type="button" onClick={() => handleRemoveSharedWith(index)}>
+                    Remove
+                </Button>
+            )}
+        </div>
+    ))}
+    <Button type="button" onClick={handleAddSharedWith}>
+        Add Email
+    </Button>
+</div>
+<div className="form-group">
+    <Box bg={'#48835d'} style={{ fontWeight: '500', opacity: '100%', borderTopLeftRadius: '5px', borderTopRightRadius: '5px' }} p={2}>
+        <Text color="white" textAlign={'center'}>Deadline</Text>
+    </Box>
+    <Input
+        type="datetime-local"
+        value={deadline}
+        onChange={(e) => setDeadline(e.target.value)}
+        onKeyPress={handleKeyPress}
+    />
+</div>
+
         <div className="form-group">
           <Checkbox isChecked={show} onChange={(e) => setShow(e.target.checked)}>Show</Checkbox>
         </div>
