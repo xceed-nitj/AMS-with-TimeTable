@@ -274,6 +274,6 @@ exports.otp = async (req,res) => {
   const email = req.body.email;
   const otp = await sendOTP(email);
   res.status(201).json({
-    message: "User successfully created",
+    message: "OTP sent successfully",
   });
 }
