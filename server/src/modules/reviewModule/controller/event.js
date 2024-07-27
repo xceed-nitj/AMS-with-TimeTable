@@ -1,6 +1,7 @@
 const Event = require("../../../models/reviewModule/event.js");
 const User = require("../../../models/usermanagement/user.js")
 const XUser= require("../../../models/usermanagement/user.js")
+const Form = require("../../../models/reviewModule/forms.js");
 const express = require("express");
 const mongoose = require('mongoose');
 const bodyParser = require("body-parser");
@@ -594,5 +595,15 @@ const addDefaultTemplatesToEvent = async (req, res) => {
   }
 };
 
+const getformsByEventId = async(req,res) => {
+  const eventId = req.params.id;
 
-module.exports = { get_fields,getEvents,addDefaultTemplatesToEvent,getEventsByUser,updateStartSubmission ,addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
+  const forms = await Form.find({eventId : eventId});
+  if(forms.length > 0) {
+    return res.status(200).json({forms});
+  }else{
+    return res.status(404).json({ message: 'No forms found for this event.' });
+  }
+}
+
+module.exports = { get_fields,getEvents,addDefaultTemplatesToEvent,getEventsByUser,updateStartSubmission ,addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer, getformsByEventId};

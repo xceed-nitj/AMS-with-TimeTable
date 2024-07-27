@@ -51,8 +51,8 @@ const LoginForm = () => {
       if (typeof responseData.user.isEmailVerified !== 'undefined') {
         if (!responseData.user.isEmailVerified && responseData.user.role.includes('PRM')) {
           localStorage.setItem('formValues', JSON.stringify(formValues));
+          await axios.post(`${apiUrl}/auth/otp`, { email });
           navigate('/prm/emailverification');
-          await axios.post(`${apiUrl}/auth/verify`, { email });
           return;
         }
       }
