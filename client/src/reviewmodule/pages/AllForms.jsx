@@ -15,8 +15,10 @@ function ManageForms() {
     const fetchForms = async () => {
       try {
         const response = await fetch(`${apiUrl}/reviewmodule/event/forms/${eventId}`);
-        const data = await response.json();
-        setForms(data.forms);
+        if(response.status===200){
+          const data = await response.json();
+          setForms(data.forms);
+        }
       } catch (error) {
         console.error('Error fetching forms:', error);
         setError('Failed to load forms. Please try again later.');
