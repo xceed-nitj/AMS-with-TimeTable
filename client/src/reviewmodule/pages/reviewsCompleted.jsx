@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Box, Table, Thead, Tbody, Tr, Th, Td, Link } from '@chakra-ui/react';
+import { Container, Box, Table, Thead, Tbody, Tr, Th, Td, Link,  Button,Text, Heading,IconButton,chakra } from '@chakra-ui/react';
 import axios from 'axios';
 import { Link as RouterLink } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
 import Header from '../../components/header';
 import { useToast } from "@chakra-ui/react";
+
 
 function ReviewsCompleted() {
     const apiUrl = getEnvironment();
@@ -54,16 +55,53 @@ function ReviewsCompleted() {
         };
         fetchPapers();
     }, [apiUrl, toast]);
+    const HeaderInvitations = ({ title }) => (
+        <Heading mr='1' ml='1' display='flex'>
+          <IconButton
+            mb='1'
+            variant='ghost'
+            onClick={() => navigate(-1)}
+            _hover={{ bgColor: 'transparent' }}
+          >
+            <chakra.svg
+              xmlns='http://www.w3.org/2000/svg'
+              fill='none'
+              viewBox='0 0 24 24'
+              strokeWidth={1.5}
+              stroke='white'
+              className='w-6 h-6'
+              _hover={{ stroke: '#00BFFF' }}
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                d='M11.25 9l-3 3m0 0l3 3m-3-3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+              />
+            </chakra.svg>
+          </IconButton>
+          <chakra.div marginInline='auto' color="white" fontSize='25px' mt='2'>
+            {title}
+          </chakra.div>
+        </Heading>
+    );
 
     return (
-        <Container maxW='3xl'>
-            <Header title="Completed Review List" />
-            <Box maxW='4xl' mx="auto" mt={10}>
+        <Container maxWidth="100%">
+        <br />
+        <Box display="flex" justifyContent="center" mt={4}>
+            <Box bg="black" p={0.2} width="80%">
+            <HeaderInvitations title="Completed Review List" />
+            </Box>
+        </Box>
+        <br />
+
+        <Box maxW="80%" mx="auto" mt={10}>
+        
                 <Table variant="simple" mt={8}>
                     <Thead>
                         <Tr>
                             <Th>Paper ID</Th>
-                            <Th>Paper Title</Th>
+                            <Th w="40%">Paper Title</Th>
                             <Th>Completed Date</Th> {/* New column for the link */}
                             <Th>Submitted Review</Th>
                         </Tr>
