@@ -67,7 +67,7 @@ exports.register = async (req, res, next) => {
           maxAge: maxAge * 1000,
         });
 
-        // const otp = await sendOTP(email);
+        const otp = await sendOTP(email);
         res.status(201).json({
           message: "User successfully created",
           user,
@@ -89,8 +89,6 @@ exports.register = async (req, res, next) => {
 
 //verifying otp entered
 exports.verification = async(req,res)=>{
-  const sendotp = await sendOTP(req.body.email);
-  console.log(sendotp)
   try {
     const {email,otp} = req.body;
     const validOTP = await OTP.findOne({ email, otp });
@@ -271,3 +269,11 @@ const sendOTP = async (email) => {
     };
   }
 };
+
+exports.otp = async (req,res) => {
+  const email = req.body.email;
+  const otp = await sendOTP(email);
+  res.status(201).json({
+    message: "OTP sent successfully",
+  });
+}
