@@ -5,17 +5,17 @@ import Top from './Top';
 // import html2canvas from 'html2canvas';
 // import downloadCertificatePdf from '../../certipdfdownload';
 import QRCode from 'qrcode';
-import { Button } from '@chakra-ui/react';
+import { Button, Spinner } from '@chakra-ui/react';
 // import jsPDF from 'jspdf';
 import getEnvironment from '../../../../getenvironment';
 
 function Template01() {
   const svgRef = useRef();
   const apiUrl = getEnvironment();
-  const [imageDownloading,setImageDownloading] = useState(false)
-  const [imageDownloaded,setImageDownloaded] = useState(false)
-  const [pdfDownloading,setpdfDownloading] = useState(false)
-  const [pdfDownloaded,setpdfDownloaded] = useState(false)
+  const [imageDownloading, setImageDownloading] = useState(false)
+  const [imageDownloaded, setImageDownloaded] = useState(false)
+  const [pdfDownloading, setpdfDownloading] = useState(false)
+  const [pdfDownloaded, setpdfDownloaded] = useState(false)
 
   useEffect(() => {
     const url = window.location.href; // Replace with your URL
@@ -38,10 +38,57 @@ function Template01() {
     });
   }, []);
 
-  // const handleDownloadImage = () => {
+  async function fetchImageToDataURL(imageUrl,url) {
+    try {
+      const response = await fetch(imageUrl);
+      // console.log(response)
+      if (response.ok) {
+        const blob = await response.blob();
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend
+            = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } else {
+        return url
+      }
+    } catch (error) {
+      return url;
+    }
+  }
+  async function saveDOMToHtmlFile(domElement) {
+    try {
+      const images = domElement.getElementsByTagName("img")
+      // console.log(images)
+      for (let i = 0; i < images.length; i++) {
+        if (images[i].src) {
+          const response = await fetchImageToDataURL(`${apiUrl}/proxy-image/?url=${images[i].src}`,images[i].src)
+          // console.log(response);
+          if (response && !(response == "error")) {
+            console.log(images[i].src)
+            const dataUrl = await response;
+            images[i].src = dataUrl;
+            // console.log(dataUrl);
+          } else {
+            images[i].remove()
+          }
+        } else {
+          images[i].remove()
+        }
+      }
+    } catch (error) {
+      console.error(error)
+    }
+    const htmlString = domElement.outerHTML;
+    const blob = new Blob([htmlString], { type: 'text/html' });
+    const file = new File([blob], "Certificate", { type: "text/html" });
+    return file;
+  }
+  // const handleDownloadImage = async () => {
   //   // const input = document.getElementById('id-card');
-  //   const input = document.getElementById('id-card-class');
-  //   console.log(input)
+  //   // console.log(input)
   //   input.style.width = '841.92px';
   //   input.style.height = '595.499987px';
   //   html2canvas(input, {
@@ -99,23 +146,25 @@ function Template01() {
 
   const handleDownloadImage = async () => {
     try {
-      if(imageDownloaded){
+      if (imageDownloaded) {
         const ans = confirm("you want to download again")
-        if(!ans){
+        if (!ans) {
           return;
         }
       }
       setImageDownloading(true)
+      const html = document.getElementsByTagName("html")[0].cloneNode("html")
+      const file = await saveDOMToHtmlFile(html)
+      // console.log(file)
+      console.log(html)
+      let formData = new FormData()
+      formData.append("certificate", file)
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/download/image`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-
           credentials: 'include',
-          body: JSON.stringify({url: window.location.href }),
+          body: formData,
         }
       );
       const data = await response.blob();
@@ -133,24 +182,31 @@ function Template01() {
       setImageDownloading(false)
     }
   };
-  
+
   const handleDownloadPDF = async () => {
     try {
-      if(pdfDownloaded){
+      if (pdfDownloaded) {
         const ans = confirm("you want to download again")
-        if(!ans){
+        if (!ans) {
           return;
         }
       }
-      const response = await fetch(`${apiUrl}/certificatemodule/certificate/download/pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      setpdfDownloading(true)
+      const html = document.getElementsByTagName("html")[0].cloneNode("html")
+      // console.log(html)
+      const file = await saveDOMToHtmlFile(html)
+      // console.log(file)
+      let formData = new FormData()
+      formData.append("certificate", file)
+      const response = await fetch(
+        `${apiUrl}/certificatemodule/certificate/download/pdf`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
         },
-
-        credentials: 'include',
-        body: JSON.stringify({ url: window.location.href }),
-      }, { responseType: 'blob' });
+        { responseType: 'blob' }
+      );
       const data = await response.blob();
       const blob = new Blob([data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
@@ -168,8 +224,8 @@ function Template01() {
     }
   }
   const handleClick = (type) => {
-    if(type == "image"){setImageDownloaded(true);handleDownloadImage()}
-    else if(type == "pdf"){setpdfDownloaded(true);handleDownloadPDF()}
+    if (type == "image") { setImageDownloaded(true); handleDownloadImage() }
+    else if (type == "pdf") { setpdfDownloaded(true); handleDownloadPDF() }
   }
   return (
     <>
@@ -186,12 +242,13 @@ function Template01() {
           <Bottom />
         </svg>
       </div>
-      <Button disabled={imageDownloading} onClick={(e)=>{handleClick("image")}} variant="solid" colorScheme="teal">
-        Download Image
-      </Button>
-      <Button disabled={pdfDownloading} onClick={(e)=>{handleClick("pdf")}} variant="outline" colorScheme="teal">
-        Download PDF
-      </Button>
+      <div className="tw-flex tw-items-center">
+        {imageDownloading ? <p>Downloading <Spinner /></p> : <Button disabled={imageDownloading} onClick={(e) => { handleClick("image") }} variant="solid" colorScheme="teal">
+          Download Image
+        </Button>}
+        {pdfDownloading ? <p>Downloading <Spinner /></p> : <Button disabled={pdfDownloading} onClick={(e) => { handleClick("pdf") }} variant="outline" colorScheme="teal">
+          Download PDF
+        </Button>}</div>
     </>
   );
 }

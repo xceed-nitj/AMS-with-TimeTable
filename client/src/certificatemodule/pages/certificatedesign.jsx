@@ -41,7 +41,6 @@ const CertificateForm = () => {
   const a = date.getMonth()>9?"":0
   const defaultDate = `${date.getFullYear()}-${a}${date.getMonth()+1}-${date.getDate()}`
   const [formData, setFormData] = useState({
-    title: '',
     templateId: null,
     logos: [{ url: '', height: 80, width: 80 }],
     header: [

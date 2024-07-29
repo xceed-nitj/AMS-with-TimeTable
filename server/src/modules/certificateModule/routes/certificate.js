@@ -4,15 +4,15 @@ const CertificateController = require("../controllers/certificate");
 const certificateController = new CertificateController();
 // const ecmadminRoute = require("../../usermanagement/ecmadminroute");
 const LockStatus = require("../helper/lockstatus");
-const {upload} = require("../helper/multer.middleware")
-const {convertToObject} = require("../controllers/formDataToObject")
-const {getImagesOfUserByEventId} =require("../controllers/signimagesofuser")
-const { convertCertificateToImage, convertCertificateToPDF} = require("../controllers/convertCertificate")
-const { convertallCertificates} = require("../controllers/convertAllCertificates")
+const { upload } = require("../helper/multer.middleware")
+const { convertToObject } = require("../controllers/formDataToObject")
+const { getImagesOfUserByEventId } = require("../controllers/signimagesofuser")
+const { convertCertificateToImage, convertCertificateToPDF } = require("../controllers/convertCertificate")
+const { convertallCertificates } = require("../controllers/convertAllCertificates")
 const { checkRole } = require("../../checkRole.middleware");
 
 // Route to create a new certificate
-certificateRouter.post("/content/:id", checkRole(['CM']), LockStatus, upload.any(),async (req, res) => {
+certificateRouter.post("/content/:id", checkRole(['CM']), LockStatus, upload.any(), async (req, res) => {
   try {
     console.log(req.body)
     const url = req.body.url;
@@ -22,7 +22,7 @@ certificateRouter.post("/content/:id", checkRole(['CM']), LockStatus, upload.any
     return res.status(200).json(newcertificate);
   } catch (e) {
     return res
-      
+
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
   }
@@ -110,9 +110,19 @@ certificateRouter.delete("/:certificateId", checkRole(['CM']), LockStatus, async
 });
 
 // Route to download Certificate
-certificateRouter.post("/download/image",convertCertificateToImage);
-certificateRouter.post("/download/pdf",convertCertificateToPDF);
-certificateRouter.post("/downloadall",convertallCertificates);
+certificateRouter.post("/download/image", upload.fields(
+  [{
+    name: "certificate",
+    maxCount: 1,
+  }]
+), convertCertificateToImage);
+certificateRouter.post("/download/pdf", upload.fields(
+  [{
+    name: "certificate",
+    maxCount: 1,
+  }]
+), convertCertificateToPDF);
+certificateRouter.post("/downloadall", convertallCertificates);
 
 
 module.exports = certificateRouter;

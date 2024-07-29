@@ -5,12 +5,15 @@ const storage = multer.diskStorage({
     cb(null, "./uploads/certificateModuleImages");
   },
   filename: function (req, file, cb) {
-    const eventId = req.params.id
-    const certiType = req.body.certiType
-    cb(null,`${eventId}-${certiType}-${file.fieldname}.png`);
+    const userId = req?.user?.id
+    if (userId) {
+      const uniqueSuffix = Date.now()
+      cb(null, `${userId}-${file.fieldname}-${uniqueSuffix}.png`);
+    }else{
+      cb(null, `${file.originalname}.html`);
+    }
   },
 });
-
 const upload = multer({ storage: storage });
 module.exports = {
   upload,
