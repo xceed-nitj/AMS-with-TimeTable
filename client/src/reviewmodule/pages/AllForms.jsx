@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Box, Table, Thead, Tbody, Tr, Th, Td, Spinner, Text, IconButton, chakra } from '@chakra-ui/react';
+import { Container, Box, Table, Thead, Tbody, Tr, Th, Td, Spinner, Text, IconButton, chakra, Button } from '@chakra-ui/react';
 import getEnvironment from '../../getenvironment';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -66,6 +66,7 @@ function ManageForms() {
       <br />
       <br />
 
+      <Button width="230px" height="50px" marginLeft="120px"colorScheme="red" onClick={() => navigate(`/prm/${eventId}/forms`)}>Add Form</Button>
       {loading ? (
         <Box mt={8} textAlign="center" fontSize="lg" fontWeight="bold">
           <Spinner />
