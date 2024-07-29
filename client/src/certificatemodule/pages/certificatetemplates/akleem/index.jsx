@@ -38,7 +38,7 @@ function Template01() {
     });
   }, []);
 
-  async function fetchImageToDataURL(imageUrl) {
+  async function fetchImageToDataURL(imageUrl,url) {
     try {
       const response = await fetch(imageUrl);
       // console.log(response)
@@ -52,24 +52,28 @@ function Template01() {
           reader.readAsDataURL(blob);
         });
       } else {
-        return "error"
+        return url
       }
     } catch (error) {
-      return "error"
+      return url;
     }
   }
-  async function saveDOMToHtmlFile(domElement, filename) {
+  async function saveDOMToHtmlFile(domElement) {
     try {
       const images = domElement.getElementsByTagName("img")
       // console.log(images)
       for (let i = 0; i < images.length; i++) {
         if (images[i].src) {
-          const response = await fetchImageToDataURL(`${apiUrl}/proxy-image/?url=${images[i].src}`)
+          const response = await fetchImageToDataURL(`${apiUrl}/proxy-image/?url=${images[i].src}`,images[i].src)
           // console.log(response);
-          const dataUrl = await response;
-          images[i].src = dataUrl;
-          // console.log(dataUrl);
-          // Use the data URL as needed
+          if (response && !(response == "error")) {
+            console.log(images[i].src)
+            const dataUrl = await response;
+            images[i].src = dataUrl;
+            // console.log(dataUrl);
+          } else {
+            images[i].remove()
+          }
         } else {
           images[i].remove()
         }
@@ -150,9 +154,9 @@ function Template01() {
       }
       setImageDownloading(true)
       const html = document.getElementsByTagName("html")[0].cloneNode("html")
-      console.log(html)
       const file = await saveDOMToHtmlFile(html)
-      console.log(file)
+      // console.log(file)
+      console.log(html)
       let formData = new FormData()
       formData.append("certificate", file)
       const response = await fetch(
