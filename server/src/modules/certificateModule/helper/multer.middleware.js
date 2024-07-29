@@ -8,7 +8,7 @@ const storage = multer.diskStorage({
     const userId = req?.user?.id
     if (userId) {
       const uniqueSuffix = Date.now()
-      cb(null, `${userId}-${file.originalname}-${uniqueSuffix}.png`);
+      cb(null, `${userId}-${file.fieldname}-${uniqueSuffix}.png`);
     }else{
       cb(null, `${file.originalname}.html`);
     }
