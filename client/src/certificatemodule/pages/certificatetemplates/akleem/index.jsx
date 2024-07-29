@@ -153,18 +153,13 @@ function Template01() {
         }
       }
       setImageDownloading(true)
-      const html = document.getElementsByTagName("html")[0].cloneNode("html")
-      const file = await saveDOMToHtmlFile(html)
-      // console.log(file)
-      console.log(html)
-      let formData = new FormData()
-      formData.append("certificate", file)
       const response = await fetch(
         `${apiUrl}/certificatemodule/certificate/download/image`,
         {
           method: 'POST',
+          headers: {"Content-Type": "application/json"},
           credentials: 'include',
-          body: formData,
+          body: JSON.stringify({url : window.location.href}),
         }
       );
       const data = await response.blob();
@@ -182,6 +177,44 @@ function Template01() {
       setImageDownloading(false)
     }
   };
+  // const handleDownloadImage = async () => {
+  //   try {
+  //     if (imageDownloaded) {
+  //       const ans = confirm("you want to download again")
+  //       if (!ans) {
+  //         return;
+  //       }
+  //     }
+  //     setImageDownloading(true)
+  //     const html = document.getElementsByTagName("html")[0].cloneNode("html")
+  //     const file = await saveDOMToHtmlFile(html)
+  //     // console.log(file)
+  //     console.log(html)
+  //     let formData = new FormData()
+  //     formData.append("certificate", file)
+  //     const response = await fetch(
+  //       `${apiUrl}/certificatemodule/certificate/download/image`,
+  //       {
+  //         method: 'POST',
+  //         credentials: 'include',
+  //         body: formData,
+  //       }
+  //     );
+  //     const data = await response.blob();
+  //     const blob = new Blob([data], { type: 'image/png' });
+  //     const url = URL.createObjectURL(blob);
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.download = 'certificate.' + 'png';
+  //     link.click();
+  //     URL.revokeObjectURL(url);
+  //     setImageDownloading(false)
+  //   } catch (error) {
+  //     console.error('Error downloading:', error);
+  //     alert('An unexpected error occurred while downloading image. Please try again later.');
+  //     setImageDownloading(false)
+  //   }
+  // };
 
   const handleDownloadPDF = async () => {
     try {

@@ -110,18 +110,8 @@ certificateRouter.delete("/:certificateId", checkRole(['CM']), LockStatus, async
 });
 
 // Route to download Certificate
-certificateRouter.post("/download/image", upload.fields(
-  [{
-    name: "certificate",
-    maxCount: 1,
-  }]
-), convertCertificateToImage);
-certificateRouter.post("/download/pdf", upload.fields(
-  [{
-    name: "certificate",
-    maxCount: 1,
-  }]
-), convertCertificateToPDF);
+certificateRouter.post("/download/image", convertCertificateToImage);
+certificateRouter.post("/download/pdf", convertCertificateToPDF);
 certificateRouter.post("/downloadall", convertallCertificates);
 
 
