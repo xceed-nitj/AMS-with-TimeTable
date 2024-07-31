@@ -1,8 +1,6 @@
 import pdfMakeInitializer from './pdfMakeInitializer';
 // Import other dependencies
-import * as pdfMake from 'pdfmake/build/pdfmake';
-import * as vfs_fonts from 'pdfmake/build/vfs_fonts';
-pdfMake.vfs = vfs_fonts.pdfMake.vfs;
+
 
 pdfMakeInitializer(); 
 
