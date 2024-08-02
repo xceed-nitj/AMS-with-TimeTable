@@ -332,7 +332,7 @@ const PrmEditorDashboard = () => {
                     >
                         <GridItem colSpan={[1, 1, 1, 1]}>
                             <Box
-                                height={calculateHeight(data1.length)}
+                                height={calculateHeight(data2.length)}
                                 bg="gray.800"
                                 borderRadius="lg"
                                 p={4}
