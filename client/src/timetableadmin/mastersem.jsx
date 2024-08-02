@@ -30,6 +30,7 @@ function MasterSemester() {
     type: "",
     dept: "",
     degree: "",
+    year:"",
   });
   const [editSemesterId, setEditSemesterId] = useState(null);
   const [isAddSemesterFormVisible, setIsAddSemesterFormVisible] =
@@ -58,6 +59,7 @@ function MasterSemester() {
       type: "",
       dept: "",
       degree: "",
+      year:"",
     });
     setIsAddSemesterFormVisible(true);
   };
@@ -128,6 +130,7 @@ function MasterSemester() {
               type: "",
               dept: "",
               degree: "",
+              year:"",
             });
           })
           .catch((error) => {
@@ -266,6 +269,19 @@ function MasterSemester() {
                 }
               />
             </Box>
+            <Box mt="3">
+              <FormLabel>Year:</FormLabel>
+              <Input
+                type="text"
+                value={editedSemester.year}
+                onChange={(e) =>
+                  setEditedSemester({
+                    ...editedSemester,
+                    year: e.target.value,
+                  })
+                }
+              />
+            </Box>
             <Box display="flex" justifyContent="space-between">
               <CustomBlueButton ml="0" onClick={handleSaveNewSemester}>
                 Save New Semester
@@ -294,6 +310,8 @@ function MasterSemester() {
               <Th><Center>Type</Center></Th>
               <Th><Center>Department</Center></Th>
               <Th><Center>Degree</Center></Th>
+              <Th><Center>Year</Center></Th>
+
               <Th><Center>Action</Center></Th>
             </Tr>
           </Thead>
@@ -366,6 +384,24 @@ function MasterSemester() {
                       />
                     ) : (
                       semester.degree
+                    )}
+                </Center>
+                </Td>
+                <Td><Center>
+                  
+                    {editSemesterId === semester._id ? (
+                      <input
+                        type="text"
+                        value={editedSemester.year}
+                        onChange={(e) =>
+                          setEditedSemester({
+                            ...editedSemester,
+                            year: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      semester.year
                     )}
                 </Center>
                 </Td>
