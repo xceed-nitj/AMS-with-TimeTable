@@ -93,7 +93,7 @@ const MasterDataTable = () => {
 
   const filterOptions = useMemo(() => {
     return columns.reduce((acc, column) => {
-      acc[column] = Array.from(new Set(data.map(item => item[column]))).filter(Boolean);
+      acc[column] = Array.from(new Set(data.map(item => item[column])).filter(Boolean));
       return acc;
     }, {});
   }, [data, columns]);
@@ -163,7 +163,9 @@ const MasterDataTable = () => {
                 {filteredData.map((item) => (
                   <Tr key={item._id}>
                     {columns.map((column) => (
-                      <Td key={column}>{item[column] !== undefined ? item[column].toString() : ''}</Td>
+                      <Td key={column}>
+                        {item[column] !== undefined && item[column] !== null ? item[column].toString() : ''}
+                      </Td>
                     ))}
                   </Tr>
                 ))}
