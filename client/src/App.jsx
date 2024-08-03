@@ -38,6 +38,7 @@ import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 import ImportForm from './timetableadmin/importCentralRoom'
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
+import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
@@ -168,6 +169,7 @@ function App() {
           <Route path="mastersem" element={<MasterSem />} />
           <Route path="masterdelete" element={<MasterDelete />} />
           <Route path="viewmrooms" element={<ViewMRooms />} />
+          <Route path="masterdata" element={<MasterDataTable />} />
           
         </Route>
 
@@ -239,7 +241,7 @@ function App() {
     <Route path="/prm/:eventId/:paperId/summary" element={<PaperSummary/>}/>
     <Route path="/prm/:eventId/:paperId/reviews" element={<Reviews/>}/>
     <Route path="/prm/:eventId/Forms" element={<Forms/>}/>
-    <Route path="/prm/:eventId/:formId/:userId/FormAnswers" element={<FormAnswers/>}/>
+    <Route path="/prm/:eventId/:formId/FormAnswers" element={<FormAnswers/>}/>
     <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
     <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
     <Route path="/prm/DefaultQuestion" element={<DefaultQuestion/>}/>

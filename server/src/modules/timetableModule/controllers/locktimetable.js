@@ -1,6 +1,8 @@
 const ClassTable = require("../../../models/classtimetable");
 const LockSem = require("../../../models/locksem");
 
+
+
 const HttpException = require("../../../models/http-exception");
 
 const LockTimeTabledto = require("../dto/locktimetable");
@@ -13,6 +15,9 @@ const ClassTimeTableDto = new ClassTimeTabledto();
 
 const NoteController=require("./noteprofile")
 const Notecontroller= new NoteController();
+
+const MasterclasstableController=require("./masterclasstable")
+const MasterClassTableController= new MasterclasstableController();
 
 const getIndianTime=require("../helper/getIndianTime") 
 
@@ -30,7 +35,6 @@ class LockTimeTableController {
       
             // Check if data with the specified code, day, and slot exists in 'lock classtable'
             const existingData = await LockSem.findOne({ code, day, slot, sem });
-      
             if (existingData) {
               // If data with the code, day, and slot exists, update the existing data
               existingData.slotData = slotData;
@@ -55,7 +59,7 @@ class LockTimeTableController {
       const formattedtime= getIndianTime(timenow);
       // console.log(formattedtime)
       res.status(200).json({ message: 'Data Locked successfully!', updatedTime: formattedtime});
-      
+      await MasterClassTableController.createMasterTable(req.body);
         } catch (err) {
           res.status(500).json({ error: 'An error occurred' });
         }

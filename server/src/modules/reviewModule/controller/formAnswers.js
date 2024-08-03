@@ -96,22 +96,18 @@ const deleteFormAnswerById = async (req, res) => {
 };
 
 const getFormAnswerByEventUserFormId = async (req, res) => {
-    try {
-      const { eventId, formId, userId } = req.params;
-      
-      // Query the database to find the form answer
-      const formAnswers = await FormAnswer.find({ eventId, formId, userId });
-  
-      if (formAnswers.length > 0) {
-        res.status(200).json(formAnswers);
-      } else {
-        res.status(404).json({ message: 'Form not found for this user.' });
-      }
-    } catch (error) {
-      console.error('Error fetching form answer:', error);
-      res.status(500).json({ message: 'Server error' });
+  const { eventId, userId, formId } = req.params;
+
+  try {
+    const formAnswer = await FormAnswer.findOne({ eventId, userId, formId });
+    if (formAnswer) {
+      return res.status(200).json({ submitted: true });
     }
-  };
+    return res.status(200).json({ submitted: false });
+  } catch (error) {
+    return res.status(500).json({ error: 'An error occurred while checking the form submission.' });
+  }
+};
   
 
 module.exports = {
