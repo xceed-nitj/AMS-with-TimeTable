@@ -93,7 +93,8 @@ const MasterDataTable = () => {
 
   const filterOptions = useMemo(() => {
     return columns.reduce((acc, column) => {
-      acc[column] = Array.from(new Set(data.map(item => item[column])).filter(Boolean));
+      const columnValues = data.map(item => item[column]).filter(value => value !== undefined && value !== null);
+      acc[column] = Array.from(new Set(columnValues)).filter(Boolean);
       return acc;
     }, {});
   }, [data, columns]);
@@ -150,7 +151,7 @@ const MasterDataTable = () => {
                           value={filters[column] || ''}
                         >
                           <option value="">All</option>
-                          {filterOptions[column].map((value) => (
+                          {filterOptions[column] && filterOptions[column].map((value) => (
                             <option key={value} value={value}>{value}</option>
                           ))}
                         </Select>
