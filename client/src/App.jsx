@@ -133,6 +133,7 @@ import UserEventRegistration from './certificatemodule/pages/addEvent';
 
 import Form from './platform/Form.jsx';
 import AllForms from './reviewmodule/pages/AllForms.jsx';
+import Reviews from './reviewmodule/pages/Reviews.jsx';
 
 function App() {
   
@@ -236,6 +237,7 @@ function App() {
     <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
     <Route path="/prm/:eventId/:paperId/:userId/Review" element={<Review/>}/>
     <Route path="/prm/:eventId/:paperId/summary" element={<PaperSummary/>}/>
+    <Route path="/prm/:eventId/:paperId/reviews" element={<Reviews/>}/>
     <Route path="/prm/:eventId/Forms" element={<Forms/>}/>
     <Route path="/prm/:eventId/:formId/:userId/FormAnswers" element={<FormAnswers/>}/>
     <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
