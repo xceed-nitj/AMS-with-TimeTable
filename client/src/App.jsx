@@ -38,6 +38,7 @@ import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 import ImportForm from './timetableadmin/importCentralRoom'
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
+import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
@@ -213,6 +214,7 @@ function App() {
           path="/tt/:generatedLink/generatepdf/mergepdf"
           element={<MergePDFComponent />}
         />
+        <Route path="/tt/:generatedLink/generatepdf/loadallocation" element={<Departmentloadallocation />} />
 
         <Route path="/cm/addevent" element={<EventRegistration />} />
         <Route path="/cm/dashboard" element={<CMDashboard />} />
