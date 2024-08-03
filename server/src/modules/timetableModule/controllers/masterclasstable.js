@@ -1,0 +1,168 @@
+const HttpException = require("../../../models/http-exception");
+const MasterClassTable = require("../../../models/masterclasstable");
+const ClassTable = require("../../../models/classtimetable");
+const SubjectTable = require('../../../models/subject');
+const SemTable = require("../../../models/addsem");
+
+class MasterclasstableController {
+  async createMasterTable(newData) {
+    try {
+
+      const { code } = newData;
+      // Fetch data from 'class table' based on the code
+      const classTableData = await ClassTable.find({ code });
+      // console.log(classTableData)
+      for (const dataItem of classTableData) {
+        const { code, day, slot, slotData, sem } = dataItem;
+        for (const slotDataItem of slotData) {
+          const subject = slotDataItem.subject;
+          const subDetails = await SubjectTable.findOne({code,sem, subName:subject})
+          const semDetails = await SemTable.findOne({code,sem})
+        
+          // Check if data with the specified code, day, and slot exists in 'lock classtable'
+        const existingData = await MasterClassTable.findOne({ code, day, slot, sem, subject });
+        if (existingData) {
+          // If data with the code, day, and slot exists, update the existing data
+          existingData.code=code;
+          existingData.day=day;
+          existingData.slot=slot;
+          existingData.sem=sem;
+          existingData.subject=slotDataItem.subject;
+          existingData.faculty=slotDataItem.faculty;
+          existingData.room=slotDataItem.room;
+          existingData.subjectCode=subDetails?.subCode ?? '';
+          existingData.subjectFullName=subDetails?.subjectFullName??'';
+          existingData.subjectType=subDetails?.type??'';
+          existingData.subjectDept=subDetails?.dept?? '';
+          existingData.degree=subDetails?.degree??'';
+          existingData.subjectCredit=subDetails?.credits??'';
+          existingData.offeringDept=subDetails?.dept??'';
+
+
+
+
+          await existingData.save();
+        } else {
+          // If data with the code, day, and slot doesn't exist, insert new data
+          // console.log(dataItem)
+                       await MasterClassTable.create({
+                        day: dataItem.day,
+                        slot: dataItem.slot,
+                        slotData: dataItem.slotData,
+                        sem: dataItem.sem,
+                        code: dataItem.code,
+                        subject:slotDataItem.subject,
+                        faculty:slotDataItem.faculty,
+                        room:slotDataItem.room,
+                        subjectCode:subDetails?.subCode,
+                        subjectFullName:subDetails?.subjectFullName,
+                        subjectType:subDetails?.type,
+                        subjectDept:subDetails?.dept,
+                        degree:subDetails?.degree,
+                        subjectCredit:subDetails?.credits,
+                        offeringDept:subDetails?.dept,
+                       }
+                        
+                        );
+        }
+      }
+      }
+  // const timenow=Date.now();
+  // console.log(timenow)
+  // const formattedtime= getIndianTime(timenow);
+  // console.log(formattedtime)
+  // res.status(200).json({ message: 'Data Locked successfully!', updatedTime: formattedtime});
+
+      // const createdSemester = await MasterClassTable.create(newCompletedData);
+      // res.json(createdSemester);
+      // return;
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  // async getSemester(req, res) {
+  //   try {
+  //     const semesterList = await Mastersem.find();
+  //     res.json(semesterList);
+  //     return;
+  //   } catch (error) {
+  //     console.error(error);
+  //     res.status(500).json({ error: "Internal server error" });
+  //   }
+  // }
+
+  // async getSemesterById(id) {
+  //   if (!id) {
+  //     throw new HttpException(400, "Invalid Id");
+  //   }
+  //   try {
+  //     const data = await Mastersem.findById(id);
+  //     if (!data) throw new HttpException(400, "Data does not exist");
+  //     return data;
+  //   } catch (e) {
+  //     throw new HttpException(500, e.message || "Internal Server Error");
+  //   }
+  // }
+
+  // async getSemesterByDepartment(department) {
+  //   if (!department) {
+  //     throw new HttpException(400, "Invalid Department");
+  //   }
+  //   try {
+  //     const data = await Mastersem.find({ dept: department });
+  //     if (!data) throw new HttpException(400, "No semester data found in this department");
+  //     return data;
+  //   } catch (e) {
+  //     throw new HttpException(500, e.message || "Internal Server Error");
+  //   }
+  // }
+
+  // async updateSemester(id, updatedSemester) {
+  //   if (!id) {
+  //     throw new HttpException(400, "Invalid Id");
+  //   }
+  //   try {
+  //     await Mastersem.findByIdAndUpdate(id, updatedSemester);
+  //   } catch (e) {
+  //     throw new HttpException(500, e.message || "Internal Server Error");
+  //   }
+  // }
+
+  // async deleteSemester(id) {
+  //   if (!id) {
+  //     throw new HttpException(400, "Invalid Id");
+  //   }
+  //   try {
+  //     await Mastersem.findByIdAndDelete(id);
+  //   } catch (e) {
+  //     throw new HttpException(500, e.message || "Internal Server Error");
+  //   }
+  // }
+
+  // async getDepartments() {
+  //   try {
+  //     const uniqueDepartments = await Mastersem.distinct('dept');
+      
+  //     return uniqueDepartments;
+  //   } catch (error) {
+  //     throw error; 
+  //   }
+  // }
+
+  // async getSemDetails(sem) {
+  //   try {
+  //     const semdetails = await Mastersem.find({sem});
+      
+  //     return semdetails;
+  //   } catch (error) {
+  //     throw error; 
+  //   }
+  // }
+
+
+
+}
+
+module.exports = MasterclasstableController;

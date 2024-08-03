@@ -1,5 +1,6 @@
 const ClassTable = require("../../../models/classtimetable");
 const LockSem = require("../../../models/locksem");
+const TimeTable = require("../../../models/timetable");
 
 const HttpException = require("../../../models/http-exception");
 
@@ -347,6 +348,7 @@ async deletelunchslot(req, res) {
       throw new Error("Failed to delete by code");
     }
   }
+
 
 
 }
