@@ -19,6 +19,9 @@ const mastersemSchema = new mongoose.Schema({
     type: String,
     required:true,
   }, 
+  year: {
+    type: String
+  }, 
 });
 
 
