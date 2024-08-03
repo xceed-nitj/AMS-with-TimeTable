@@ -237,7 +237,7 @@ function App() {
     <Route path="/prm/:eventId/:paperId/:userId/Review" element={<Review/>}/>
     <Route path="/prm/:eventId/:paperId/summary" element={<PaperSummary/>}/>
     <Route path="/prm/:eventId/Forms" element={<Forms/>}/>
-    <Route path="/prm/:eventId/:formId/:userId/FormAnswers" element={<FormAnswers/>}/>
+    <Route path="/prm/:eventId/:formId/FormAnswers" element={<FormAnswers/>}/>
     <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
     <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
     <Route path="/prm/DefaultQuestion" element={<DefaultQuestion/>}/>
