@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, TableContainer, Spinner, Alert, AlertIcon, Container, FormControl, FormLabel, Select, Button, Input, VStack, Text } from '@chakra-ui/react';
 import { Helmet } from 'react-helmet-async';
-import getEnvironment from '../getEnvironment';
+import getEnvironment from '../getenvironment';
 import Header from '../components/Header';
 
 const MasterDataTable = () => {
