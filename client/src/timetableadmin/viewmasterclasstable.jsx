@@ -1,6 +1,10 @@
 // src/DataTable.js
 import React, { useEffect, useState, useMemo } from 'react';
-import { Box, Table, Thead, Tbody, Tr, Th, Td, TableContainer, Spinner, Alert, AlertIcon, Container, FormControl, FormLabel, Select, Button, Input, VStack, Text } from '@chakra-ui/react';
+import { Box, Table, Thead, Tbody, HStack, Tr, Th, Td, TableContainer, Spinner, Alert, 
+  AlertIcon, Container, FormControl, FormLabel, Select, Button, Input,
+  VStack, Text, Center } from '@chakra-ui/react';
+import { FaMinus, FaPlus } from 'react-icons/fa';
+import {Parser} from '@json2csv/plainjs'
 import { Helmet } from 'react-helmet-async';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
@@ -78,8 +82,42 @@ const MasterDataTable = () => {
     "sem", "code", "mergedClass"
   ];
 
+  const [hiddenColumns, setHiddenColumns] = useState([])
+  function filterUniqueObjects(objects) { //GPT wrote this function :??
+    const seen = new Set();
+    return objects.filter(obj => {
+        const key = JSON.stringify({
+            code: obj.code,
+            day: obj.day,
+            degree: obj.degree,
+            faculty: obj.faculty,
+            mergedClass: obj.mergedClass,
+            offeringDept: obj.offeringDept,
+            room: obj.room,
+            sem: obj.sem,
+            session: obj.session,
+            slot: obj.slot,
+            subject: obj.subject,
+            subjectCode: obj.subjectCode,
+            subjectCredit: obj.subjectCredit,
+            subjectDept: obj.subjectDept,
+            subjectFullName: obj.subjectFullName,
+            subjectType: obj.subjectType,
+            updated_at: obj.updated_at,
+            year: obj.year
+        });
+
+        if (seen.has(key)) {
+            return false;
+        } else {
+            seen.add(key);
+            return true;
+        }
+    });
+}
+
   const filteredData = useMemo(() => {
-    return data.filter(item =>
+    return filterUniqueObjects(data.filter(item =>
       Object.entries(filters).every(([key, value]) => {
         const itemValue = item[key];
         return !value || (itemValue && itemValue.toString().toLowerCase() === value.toLowerCase());
@@ -88,8 +126,9 @@ const MasterDataTable = () => {
         const itemValue = item[key];
         return !term || (itemValue && itemValue.toString().toLowerCase().includes(term.toLowerCase()));
       })
-    );
+    ))
   }, [data, filters, searchTerms]);
+  console.log('filter is', filteredData)
 
   const filterOptions = useMemo(() => {
     return columns.reduce((acc, column) => {
@@ -112,6 +151,35 @@ const MasterDataTable = () => {
     );
   }
 
+  function downloadCSV(){
+    let csvData = []
+    for(let u in filteredData){
+      let templist = []
+      for(let k in filteredData[u])
+        if(!hiddenColumns.includes(k)&&columns.includes(k))
+          templist[k] = filteredData[u][k]
+      csvData.push(templist)
+    }
+    const downloadCSV = () => {
+      const parser = new Parser({ 
+        fields: columns.filter(c=>!hiddenColumns.includes(c))})
+      const csv = parser.parse(csvData);
+  
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'Timetable-XCEED.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    };
+    downloadCSV()
+  }
+
   return (
     <>
       <Helmet>
@@ -129,16 +197,37 @@ const MasterDataTable = () => {
             ))}
           </Select>
         </FormControl>
-        <Button onClick={clearFilters} mb={4}>Clear Filters</Button>
+        <HStack>
+          <Button onClick={clearFilters} mb={4}>Clear Filters</Button>
+          {
+            !hiddenColumns.length?'': 
+            <Button onClick={()=>setHiddenColumns([])} mb={4}>Show All Columns</Button>
+          }
+        </HStack>
+        <Center><Button colorScheme='green' onClick={downloadCSV}>DOWNLOAD</Button></Center>
         <Box p={4}>
           <TableContainer>
             <Table variant="striped" colorScheme="teal">
               <Thead>
                 <Tr>
-                  {columns.map((column) => (
+                  {columns.filter(c=>!hiddenColumns.includes(c)).map((column) => (
                     <Th key={column}>
                       <VStack align="stretch" spacing={2}>
-                        <Text fontWeight="bold" fontSize="sm">{column.charAt(0).toUpperCase() + column.slice(1)}</Text>
+                        <HStack justifyContent={'space-between'}>
+                          <Text fontWeight="bold" fontSize="sm">{column.charAt(0).toUpperCase() + column.slice(1)}</Text>
+                          {
+                            (hiddenColumns.includes(column))?'':
+                            <Box aspectRatio={'1/1'} padding={'2px'} 
+                            borderRadius={'50%'} color={'red'}
+                            border='2px solid red' cursor={'pointer'}
+                            onClick={()=>{
+                              setHiddenColumns([...hiddenColumns, column])
+                            }}
+                            >
+                            <FaMinus/></Box>
+                          }
+
+                        </HStack>
                         <Input
                           placeholder={`Search ${column}`}
                           size="sm"
@@ -163,7 +252,7 @@ const MasterDataTable = () => {
               <Tbody>
                 {filteredData.map((item) => (
                   <Tr key={item._id}>
-                    {columns.map((column) => (
+                    {columns.filter(c=>!hiddenColumns.includes(c)).map((column) => (
                       <Td key={column}>
                         {item[column] !== undefined && item[column] !== null ? item[column].toString() : ''}
                       </Td>
