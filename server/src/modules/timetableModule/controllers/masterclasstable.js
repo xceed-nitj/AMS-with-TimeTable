@@ -114,12 +114,28 @@ class MasterclasstableController {
   //   }
   // }
 
-  async getMasterTableByDepartment(department) {
+  async getMasterTableBySession(req,res) {
+    const session = req.params.session;
+    if (!session) {
+      throw new HttpException(400, "Invalid Session");
+    }
+    try {
+      const data = await MasterClassTable.find({session });
+      if (!data) throw new HttpException(400, "No semester data found in this department");
+      res.json(data);
+      return;
+    } catch (e) {
+      throw new HttpException(500, e.message || "Internal Server Error");
+    }
+  }
+
+
+  async getMasterTableByDepartment(session, department) {
     if (!department) {
       throw new HttpException(400, "Invalid Department");
     }
     try {
-      const data = await MasterClassTable.find({ offeringDept: department });
+      const data = await MasterClassTable.find({ offeringDept: department, session });
       if (!data) throw new HttpException(400, "No semester data found in this department");
       return data;
     } catch (e) {

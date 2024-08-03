@@ -38,6 +38,7 @@ import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 import ImportForm from './timetableadmin/importCentralRoom'
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
+import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
@@ -167,6 +168,7 @@ function App() {
           <Route path="mastersem" element={<MasterSem />} />
           <Route path="masterdelete" element={<MasterDelete />} />
           <Route path="viewmrooms" element={<ViewMRooms />} />
+          <Route path="masterdata" element={<MasterDataTable />} />
           
         </Route>
 
