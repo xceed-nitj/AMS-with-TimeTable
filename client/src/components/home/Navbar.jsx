@@ -73,7 +73,7 @@ export default function Navbar() {
   };
 
 
-const publicPaths = ['/', '/login', '/classrooms', '/timetable','/prm/register','/prm/emailverification'  ];
+const publicPaths = ['/', '/login', '/classrooms', '/timetable','/tt/masterdata','/prm/register','/prm/emailverification'  ];
 
 useEffect(() => {
   const isPublicPath = publicPaths.includes(location.pathname) || location.pathname.startsWith('/services/') || location.pathname.startsWith('/cm/c/')
