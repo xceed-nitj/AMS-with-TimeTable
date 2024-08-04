@@ -3,8 +3,6 @@ const TimetableEntry = require('../../../models/subject');
 const HttpException = require("../../../models/http-exception");
 const TimeTabledto = require("../dto/timetable");
 const TimeTableDto = new TimeTabledto();
-
-
 const TableController = require("../controllers/timetableprofile");
 const tableController = new TableController();
 

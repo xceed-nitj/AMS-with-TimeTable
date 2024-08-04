@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const {getFormsByEventId,createForm,getAllForms,getFormById,updateForm,deleteForm} = require('../controller/forms');
+const {getFormByEventIdAndFormId,getFormsByEventId,createForm,getAllForms,getFormById,updateForm,deleteForm} = require('../controller/forms');
 
 // Create a new form
 router.post("/", createForm);
 
 // Get all forms
 router.get("/", getAllForms);
-router.get('/:eventId', getFormsByEventId);
-
+router.get('/event/:eventId', getFormsByEventId);
+router.get('/:eventId/:formId',getFormByEventIdAndFormId);
 // Get a form by ID
 router.get("/:id", getFormById);
 

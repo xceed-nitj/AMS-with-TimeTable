@@ -1,28 +1,34 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const { PDFDocument } = require('pdf-lib');
+const HttpException = require("../../../models/http-exception");
+const path = require('path');
 
 
 async function convertCertificateToImage(req, res) {
-    const { url } = req.body || {};
-    const svgUrl = url;
+
+    const {url} =  req.body
+    console.log(url)
+    if (!url) {
+        throw new HttpException(404, "Url not found")
+    }
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     let data;
     try {
         // Original viewport size
-        page.on('requestfailed', (request) => {
-            throw new HttpException(404,`'Network request failed: '${request.url()}`);
-        });
         const originalWidth = 841;
         const originalHeight = 595;
 
-        await page.goto(svgUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
         await page.setViewport({ width: originalWidth, height: originalHeight, deviceScaleFactor: 4 }); //enhance quality of image
 
 
 
         data = await page.screenshot({ type: 'png', });
+        if (data) {
+            fs.unlink(url, err => console.log(err))
+        }
         await browser.close();
 
         res.setHeader('Content-Type', 'image/png');
@@ -36,8 +42,11 @@ async function convertCertificateToImage(req, res) {
 
 
 async function convertCertificateToPDF(req, res) {
-    const { url } = req.body || {};
-    const svgUrl = url;
+    const {url} =  req.body
+    console.log(url)
+    if (!url) {
+        throw new HttpException(404, "file not recieved")
+    }
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     let data;
@@ -46,12 +55,15 @@ async function convertCertificateToPDF(req, res) {
         const originalWidth = 841;
         const originalHeight = 595;
 
-        await page.goto(svgUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
         await page.setViewport({ width: originalWidth, height: originalHeight, deviceScaleFactor: 4 }); //enhance quality of image
 
 
 
         data = await page.screenshot({ type: 'png', });
+        if (data) {
+            fs.unlink(url, err => console.log(err))
+        }
     } catch (error) {
         console.log('Error:', error);
         res.status(500).send('Error generating certificate.');

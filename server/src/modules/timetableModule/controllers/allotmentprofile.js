@@ -77,12 +77,28 @@ class AllotmentController {
 
       async getSessions() {
         try {
+          // Step 1: Get distinct sessions
           const uniqueSessions = await AddAllotment.distinct('session');
-          return uniqueSessions;
+          
+          if (uniqueSessions.length === 0) {
+            return [];
+          }
+      
+          // Step 2: Fetch sessions with their creation times
+          const sessionsWithCreationTimes = await AddAllotment.find(
+            { session: { $in: uniqueSessions } },
+            { session: 1, created_at: 1 }
+          ).sort({ created_at: -1 }); // Step 3: Sort by creation time in descending order
+      
+          // Extract unique sessions in sorted order
+          const sortedSessions = sessionsWithCreationTimes.map(doc => doc.session);
+      
+          return sortedSessions;
         } catch (error) {
-          throw error; 
+          throw error;
         }
       }
+      
 
       async getAllotmentById(id) {
         if (!id) {

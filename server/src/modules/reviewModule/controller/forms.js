@@ -56,24 +56,36 @@ const deleteForm = async (req, res) => {
 
 const getFormsByEventId = async (req, res) => {
     try {
-      const { eventId } = req.params;
-      
-      // Query the database to find forms for the specific event
-      const forms = await Form.find({ eventId });
-  
-      if (forms.length > 0) {
-        // Sort questions by order
-        forms.sort((a, b) => a.order - b.order);
-        res.status(200).json(forms);
-      } else {
-        res.status(404).json({ message: 'No forms found for this event.' });
-      }
+        const { eventId } = req.params;
+        const forms = await Form.find({ eventId });
+
+        if (forms.length > 0) {
+            // Sort questions by order
+            forms.forEach(form => form.questions.sort((a, b) => a.order - b.order));
+            res.status(200).json(forms);
+        } else {
+            res.status(404).json({ message: 'No forms found for this event.' });
+        }
     } catch (error) {
-      console.error('Error fetching forms:', error);
-      res.status(500).json({ message: 'Server error' });
+        console.error('Error fetching forms:', error);
+        res.status(500).json({ message: 'Server error' });
     }
-  };
-  
+};
+
+const getFormByEventIdAndFormId = async (req, res) => {
+    try {
+        const { eventId, formId } = req.params;
+        const form = await Form.findOne({ _id: formId, eventId });
+
+        if (!form) {
+            return res.status(404).json({ message: 'Form not found' });
+        }
+
+        res.status(200).json(form);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching form', error });
+    }
+};
 
 module.exports = {
     createForm,
@@ -82,4 +94,5 @@ module.exports = {
     updateForm,
     deleteForm,
     getFormsByEventId,
+    getFormByEventIdAndFormId,
 };

@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Box, Table, Thead, Tbody, HStack, Tr, Th, Td, TableContainer, Spinner, Alert, 
   AlertIcon, Container, FormControl, FormLabel, Select, Button, Input,
   VStack, Text, Center, Spacer } from '@chakra-ui/react';
-import { FaMinus } from 'react-icons/fa';
+import { FaMinus, FaPlus } from 'react-icons/fa';
 import { Parser } from '@json2csv/plainjs';
 import { Helmet } from 'react-helmet-async';
 import getEnvironment from '../getenvironment';
@@ -12,7 +12,7 @@ import {
   CustomBlueButton,
 } from "../styles/customStyles";
 
-const MasterLoadDataTable = () => {
+const MasterDataTable = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -81,6 +81,8 @@ const MasterLoadDataTable = () => {
   };
 
   const columns = [
+    { label: "Day", key: "day" },
+    { label: "Slot", key: "slot" },
     { label: "Subject Full Name", key: "subjectFullName" },
     { label: "Faculty", key: "faculty" },
     { label: "Offering Dept", key: "offeringDept" },
@@ -93,14 +95,16 @@ const MasterLoadDataTable = () => {
     { label: "Subject Code", key: "subjectCode" },
     { label: "Subject", key: "subject" },
     { label: "Subject Credit", key: "subjectCredit" },
-    { label: "Load", key: "count" },
+    // { label: "Code", key: "code" },
+    // { label: "Merged Class", key: "mergedClass" }
   ];
 
-  function filterUniqueObjects(objects) {
+  function filterUniqueObjects(objects) { //GPT wrote this function :??
     const seen = new Set();
     return objects.filter(obj => {
       const key = JSON.stringify({
         code: obj.code,
+        day: obj.day,
         degree: obj.degree,
         faculty: obj.faculty,
         mergedClass: obj.mergedClass,
@@ -108,6 +112,7 @@ const MasterLoadDataTable = () => {
         room: obj.room,
         sem: obj.sem,
         session: obj.session,
+        slot: obj.slot,
         subject: obj.subject,
         subjectCode: obj.subjectCode,
         subjectCredit: obj.subjectCredit,
@@ -127,44 +132,8 @@ const MasterLoadDataTable = () => {
     });
   }
 
-  const mergeAndFilterData = (data) => {
-    const mergedData = {};
-    data.forEach(item => {
-      const key = item.subjectFullName;
-      if (!mergedData[key]) {
-        mergedData[key] = { 
-          ...item, 
-          count: 1, 
-          faculty: [item.faculty],
-          offeringDept: [item.offeringDept],
-          room: [item.room],
-        };
-        delete mergedData[key].day;
-        delete mergedData[key].slot;
-      } else {
-        mergedData[key].count += 1;
-        if (!mergedData[key].faculty.includes(item.faculty)) {
-          mergedData[key].faculty.push(item.faculty);
-        }
-        if (!mergedData[key].offeringDept.includes(item.offeringDept)) {
-          mergedData[key].offeringDept.push(item.offeringDept);
-        }
-        if (!mergedData[key].room.includes(item.room)) {
-          mergedData[key].room.push(item.room);
-        }
-      }
-    });
-
-    return Object.values(mergedData).map(item => ({
-      ...item,
-      faculty: item.faculty.sort().join(', '),
-      offeringDept: item.offeringDept.join(', '),
-      room: item.room.join(', '),
-    }));
-  };
-
   const filteredData = useMemo(() => {
-    const filtered = filterUniqueObjects(data.filter(item =>
+    return filterUniqueObjects(data.filter(item =>
       item.subject && item.faculty &&
       Object.entries(filters).every(([key, value]) => {
         const itemValue = item[key];
@@ -175,16 +144,15 @@ const MasterLoadDataTable = () => {
         return !term || (itemValue && itemValue.toString().toLowerCase().includes(term.toLowerCase()));
       })
     ));
-    return mergeAndFilterData(filtered);
   }, [data, filters, searchTerms]);
 
   const filterOptions = useMemo(() => {
     return columns.reduce((acc, { key }) => {
-      const columnValues = filteredData.map(item => item[key]).filter(value => value !== undefined && value !== null);
+      const columnValues = data.map(item => item[key]).filter(value => value !== undefined && value !== null);
       acc[key] = Array.from(new Set(columnValues)).filter(Boolean).sort((a, b) => a.toString().localeCompare(b.toString()));
       return acc;
     }, {});
-  }, [filteredData, columns]);
+  }, [data, columns]);
   
   if (loading) {
     return <Spinner size="xl" />;
@@ -275,6 +243,7 @@ const MasterLoadDataTable = () => {
                                 <FaMinus />
                               </Box>
                           }
+
                         </HStack>
                         <Input
                           placeholder={`Search ${label}`}
@@ -316,4 +285,4 @@ const MasterLoadDataTable = () => {
   );
 };
 
-export default MasterLoadDataTable;
+export default MasterDataTable;
