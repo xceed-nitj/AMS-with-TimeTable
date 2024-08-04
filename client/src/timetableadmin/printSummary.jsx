@@ -1583,6 +1583,12 @@ const PrintSummary = () => {
         </Link>
         
 
+        <Link to={`${currentPath}/loadallocation`}>
+          <Button colorScheme="orange">
+            Click here to Navigate to Department Load Allocation Page
+          </Button>
+        </Link>
+
 
 
       </Container>
