@@ -1508,13 +1508,18 @@ const PrintSummary = () => {
           colorScheme="teal"
           variant="solid"
         >
-          Download Department Load Allocation
+          Download Department Load Allocation (in PDF)
         </Button>
         <Link to={`/tt/masterload`}>
           <Button colorScheme="purple">
-            Download department load (without project load)
+            Click here to navigate to department load without project load (Format-1) 
           </Button>
 
+        </Link>
+        <Link to={`${currentPath}/loadallocation`}>
+          <Button colorScheme="purple">
+            Click here to Navigate to department load (Format-2)
+          </Button>
         </Link>
 
         {/* Render the messages again for the second button */}
@@ -1583,11 +1588,7 @@ const PrintSummary = () => {
         </Link>
         
 
-        <Link to={`${currentPath}/loadallocation`}>
-          <Button colorScheme="orange">
-            Click here to Navigate to Department Load Allocation Page
-          </Button>
-        </Link>
+        
 
 
 

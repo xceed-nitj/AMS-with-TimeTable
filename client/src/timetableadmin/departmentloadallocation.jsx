@@ -885,7 +885,7 @@ const Departmentloadallocation = () => {
   return (
     <div className='tw-p-2'>
       <h1 className='tw-m-1 tw-p-2 tw-font-jakarta tw-text-2xl tw-font-extrabold tw-text-slate-800'>Department Load Allocation</h1>
-      <div className='tw-w-full tw-flex tw-justify-center'><Button onClick={(e)=>{downloadCSV()}}>download CSV</Button></div>
+      <div className='tw-w-full tw-flex tw-justify-center'><Button onClick={(e)=>{downloadCSV()}}>Download CSV</Button></div>
       <Table colorScheme='black'>
         <Tbody>
           <Tr>
@@ -927,7 +927,7 @@ const Departmentloadallocation = () => {
             <Th>Total Hours</Th>
           </Tr>
 
-          {((sem != "All" || code != "All" || name != "All" || typ != "All") && !table.length && <Tr><Td className='tw-text-center' colSpan={8}>No Data</Td></Tr>) || (sem == "All" && code == "All" && name == "All" && typ == "All" && !table.length && <Tr><Td colSpan={8}>Please wait patiently while we fecth data for you<Spinner /></Td></Tr>)}
+          {((sem != "All" || code != "All" || name != "All" || typ != "All") && !table.length && <Tr><Td className='tw-text-center' colSpan={8}>No Data</Td></Tr>) || (sem == "All" && code == "All" && name == "All" && typ == "All" && !table.length && <Tr><Td colSpan={8}>Fetching data..<Spinner /></Td></Tr>)}
           {table.map((row,i) => (
             returnValue(row.summaryData)?.map((elem, index) => (
               <Tr key={index} bgColor={i%2==0?"paleGreen":"lightCyan"}>
