@@ -21,7 +21,7 @@ class MasterclasstableController {
           const subject = slotDataItem.subject;
           const faculty =slotDataItem.faculty;
           const subDetails = await SubjectTable.findOne({code,sem, subName:subject})
-          const semDetails = await SemTable.findOne({code,sem})
+          const semDetails = await SemTable.findOne({sem})
           const codeDetails = await TimeTable.findOne({code})
           const facultyDetails = await Faculty.findOne({name:faculty})
         

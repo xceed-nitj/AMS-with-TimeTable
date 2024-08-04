@@ -89,13 +89,12 @@ const MasterDataTable = () => {
     { label: "Room", key: "room" },
     { label: "Subject Type", key: "subjectType" },
     { label: "Subject Dept", key: "subjectDept" },
-
     { label: "Sem", key: "sem" },
+    { label: "Year", key: "year" },
+    { label: "Degree", key: "degree" },
     { label: "Subject Code", key: "subjectCode" },
     { label: "Subject", key: "subject" },
-    { label: "Degree", key: "degree" },
     { label: "Subject Credit", key: "subjectCredit" },
-
     // { label: "Code", key: "code" },
     // { label: "Merged Class", key: "mergedClass" }
   ];
@@ -150,11 +149,11 @@ const MasterDataTable = () => {
   const filterOptions = useMemo(() => {
     return columns.reduce((acc, { key }) => {
       const columnValues = data.map(item => item[key]).filter(value => value !== undefined && value !== null);
-      acc[key] = Array.from(new Set(columnValues)).filter(Boolean);
+      acc[key] = Array.from(new Set(columnValues)).filter(Boolean).sort((a, b) => a.toString().localeCompare(b.toString()));
       return acc;
     }, {});
   }, [data, columns]);
-
+  
   if (loading) {
     return <Spinner size="xl" />;
   }
