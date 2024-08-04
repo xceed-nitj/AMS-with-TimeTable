@@ -2,7 +2,7 @@ const HttpException = require("../../../models/http-exception");
 const MasterClassTable = require("../../../models/masterclasstable");
 const ClassTable = require("../../../models/classtimetable");
 const SubjectTable = require('../../../models/subject');
-const SemTable = require("../../../models/addsem");
+const SemTable = require("../../../models/mastersem");
 const TimeTable = require("../../../models/timetable");
 const Faculty = require("../../../models/faculty");
 
