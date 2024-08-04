@@ -1,8 +1,7 @@
 import { Heading, chakra, IconButton, Box, Container, Textarea, Text, 
     Button, RadioGroup, FormControl, Flex, Checkbox, Stack, Radio,
     useDisclosure, Modal, ModalOverlay, ModalBody, ModalContent, ModalHeader, ModalCloseButton,
-    Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon,
-    Center
+    Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, useToast,Center
 } from '@chakra-ui/react'
 
 import { useState, useEffect } from 'react';
@@ -51,7 +50,7 @@ const getStatusColor = (status) => {
 
 function PaperSummary() {
     const apiUrl = getEnvironment();
-
+    const toast = useToast();
     let [paperData, setPaperData] = useState()
     let [dateSubmitted, setDateSubmitted] = useState()
     let [screenWidth, setScreenWidth] = useState(window.innerWidth)
@@ -65,7 +64,36 @@ function PaperSummary() {
             setDateSubmitted(d)
         }
     },[paperData])
-
+    const deleteFile = async (version) => {
+        console.log(`Deleting ${version}`);
+            try {
+                const response = await fetch(
+                `${apiUrl}/api/v1/reviewmodule/uploads/delete/`+version,
+                {
+                    method: "GET",
+                    credentials: "include",
+                }
+                );
+                const toastStatus = response.ok ? 'success' : 'error';
+                const toastDescription = response.ok ? 'File Deleted Successfully.' : 'Unable to delete the file.';
+        
+                toast({
+                    title: toastStatus === 'success' ? 'File Deleted.' : 'Error.',
+                    description: toastDescription,
+                    status: toastStatus,
+                    duration: 5000,
+                    isClosable: true,
+                });
+            } catch (error) {
+                toast({
+                    title: 'Error.',
+                    description: error.message || 'An unexpected error occurred.',
+                    status: 'error',
+                    duration: 5000,
+                    isClosable: true,
+                });
+            }
+    };
     const HeaderPaperSummary = ({ title }) => {
         const navigate = useNavigate();
         
@@ -208,12 +236,17 @@ function PaperSummary() {
                         <Flex alignItems={'center'} direction={'column'} justifyContent={'space-between'}>
                             {/* <h2 style={{fontWeight:'700'}} >ATTACHMENTS</h2> */}
                             <Flex direction={'row'}>
-                                <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.codeLink[k]}>
+                                <Link target="_blank" to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.codeLink[k]}>
                                     <Button style={{float:'right'}} colorScheme='blue'>View Code</Button>
                                 </Link>
-                                <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.uploadLink[k]}>
+                                <Link target="_blank" to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.uploadLink[k]}>
                                     <Button style={{float:'right'}} colorScheme='blue'>View Paper</Button>
                                 </Link>
+                            </Flex>
+                            {/* Added Delete Buttons */}
+                            <Flex direction={'row'} mt={2}>
+                                <Button colorScheme='red' onClick={() => deleteFile(paperData.codeLink[k])}>Delete Code</Button>
+                                <Button colorScheme='red' onClick={() => deleteFile(paperData.uploadLink[k])}>Delete Paper</Button>
                             </Flex>
                         </Flex>
                         </Flex>
