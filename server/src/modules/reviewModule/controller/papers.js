@@ -20,7 +20,14 @@ app.use(
   })
 );
 app.use(bodyParser.json());
-
+function replacePlaceholders(template, values) {
+  return template.replace(/{{(.*?)}}/g, (match, p1) => {
+      // Trim the placeholder name
+      const key = p1.trim();
+      // Return the value if it exists, otherwise return the placeholder as is
+      return values.hasOwnProperty(key) ? values[key] : match;
+  });
+}
 const findAllPapers = async (req, res) => {
   const papers = await Paper.find({});
   if (!papers) {
@@ -301,6 +308,7 @@ const addReviewer = async (req, res) => {
     // Add reviewer to the paper
     const eventId=paper.eventId;
     const event = await Event.findById(eventId);
+    const eventName=event.name;
     const currentDate = new Date();
     const daysToAdd = event.reviewTime;
     const days = parseInt(daysToAdd, 10);
@@ -311,17 +319,32 @@ const addReviewer = async (req, res) => {
     const reviewerInvitationTemplate=event.templates.paperAssignment;
     const signature=event.templates.signature;
     const viewLink = `${baseUrl}/prm/${eventId}/editor/papers`; // Use the base URL
-
+    const values = {
+      paperId: paperId,
+      eventId:eventName,
+      title: paper.title,
+      abstract: paper.abstract,
+      uploadLink: paper.uploadLink,
+      codeLink: paper.codeLink,
+      eventId: paper.eventId,
+      authors: paper.authors,
+      tracks:paper.tracks,
+      terms: paper.terms,
+     // This value is not used in the template
+    };
+    
+    const result = replacePlaceholders(reviewerInvitationTemplate, values);
+    console.log(result);
     // Send the reviewer invitation email
     await sendMail(
-      email,
-      `You have been added as a reviewer to the paper with title: ${paper.title}`,
-      ` ${reviewerInvitationTemplate} <br>
+      email,`You have been added as a reviewer to the paper with title: ${paper.title}`,
+      ` ${result} <br>
       Please click <a href="${viewLink}">here</a> to view the papers <br>
       ${signature}
       `
 
     );
+    console.log("email sent");
     res.status(200).send('Reviewer added to the paper successfully');
   } catch (error) {
     console.error('Error adding reviewer:', error);
@@ -343,7 +366,6 @@ const removeReviewer = async (req,res)=>{
 
     // Filter out the reviewer with the given userId
     paper.reviewers = paper.reviewers.filter(reviewer => String(reviewer.userId) !== userId);
-
     // Save the updated paper document
     await paper.save();
     console.log(`Reviewer with userId ${userId} removed successfully from paper ${paperid}`);
