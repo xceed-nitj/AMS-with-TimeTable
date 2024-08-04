@@ -98,7 +98,7 @@ const MasterLoadDataTable = () => {
 
   const mergeAndFilterData = (data) => {
     const groupedData = data.reduce((acc, item) => {
-      const key = `${item.subjectCode}-${item.subjectFullName}-${item.faculty}`; // Unique key based on subjectCode and subjectFullName
+      const key = `${item.subjectCode}-${item.subjectFullName}-${item.faculty}-${item.sem}-${item.subjectType}`; // Unique key based on subjectCode and subjectFullName
       if (!acc[key]) {
         acc[key] = { ...item, count: 1 }; // Initialize with count 1
         delete acc[key].day; // Remove fields not needed in the merged result
