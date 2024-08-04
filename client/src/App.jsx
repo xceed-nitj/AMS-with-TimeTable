@@ -39,6 +39,7 @@ import ImportForm from './timetableadmin/importCentralRoom'
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
 import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
+import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
@@ -211,6 +212,7 @@ function App() {
         <Route path="/tt/admin/view" element={<View />} />
         <Route path="/tt/admin/instituteload" element={<InstituteLoad />} />
         <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} />
+        <Route path="/tt/masterload" element={<MasterLoadDataTable />} />
 
         <Route
           path="/tt/:generatedLink/generatepdf/mergepdf"
