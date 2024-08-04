@@ -2,8 +2,9 @@ const HttpException = require("../../../models/http-exception");
 const MasterClassTable = require("../../../models/masterclasstable");
 const ClassTable = require("../../../models/classtimetable");
 const SubjectTable = require('../../../models/subject');
-const SemTable = require("../../../models/addsem");
+const SemTable = require("../../../models/mastersem");
 const TimeTable = require("../../../models/timetable");
+const Faculty = require("../../../models/faculty");
 
 
 class MasterclasstableController {
@@ -18,9 +19,11 @@ class MasterclasstableController {
         const { code, day, slot, slotData, sem } = dataItem;
         for (const slotDataItem of slotData) {
           const subject = slotDataItem.subject;
+          const faculty =slotDataItem.faculty;
           const subDetails = await SubjectTable.findOne({code,sem, subName:subject})
-          const semDetails = await SemTable.findOne({code,sem})
+          const semDetails = await SemTable.findOne({sem})
           const codeDetails = await TimeTable.findOne({code})
+          const facultyDetails = await Faculty.findOne({name:faculty})
         
           // Check if data with the specified code, day, and slot exists in 'lock classtable'
         const existingData = await MasterClassTable.findOne({ code, day, slot, sem, subject });
@@ -36,10 +39,10 @@ class MasterclasstableController {
           existingData.subjectCode=subDetails?.subCode ?? '';
           existingData.subjectFullName=subDetails?.subjectFullName??'';
           existingData.subjectType=subDetails?.type??'';
-          existingData.subjectDept=subDetails?.dept?? '';
-          existingData.degree=subDetails?.degree??'';
+          existingData.subjectDept=codeDetails?.dept?? '';
+          existingData.degree=semDetails?.degree??'';
           existingData.subjectCredit=subDetails?.credits??'';
-          existingData.offeringDept=subDetails?.dept??'';
+          existingData.offeringDept=facultyDetails?.dept??'';
           existingData.year=semDetails?.year??'';
           existingData.session=codeDetails?.session??'';
 
@@ -63,10 +66,10 @@ class MasterclasstableController {
                         subjectCode:subDetails?.subCode,
                         subjectFullName:subDetails?.subjectFullName,
                         subjectType:subDetails?.type,
-                        subjectDept:subDetails?.dept,
-                        degree:subDetails?.degree,
+                        subjectDept:codeDetails?.dept,
+                        degree:semDetails?.degree,
                         subjectCredit:subDetails?.credits,
-                        offeringDept:subDetails?.dept,
+                        offeringDept:facultyDetails?.dept,
                         year:semDetails?.year??'',
                         session:codeDetails?.session??''          
                       }

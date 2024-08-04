@@ -1510,7 +1510,12 @@ const PrintSummary = () => {
         >
           Download Department Load Allocation
         </Button>
+        <Link to={`/tt/masterload`}>
+          <Button colorScheme="purple">
+            Download department load (without project load)
+          </Button>
 
+        </Link>
 
         {/* Render the messages again for the second button */}
         <div className="message">
@@ -1576,6 +1581,7 @@ const PrintSummary = () => {
           </Button>
 
         </Link>
+        
 
         <Link to={`${currentPath}/loadallocation`}>
           <Button colorScheme="orange">
