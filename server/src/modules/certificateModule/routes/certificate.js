@@ -141,30 +141,34 @@ certificateRouter.get("/logos/:userId",checkRole(['admin']), async (req, res) =>
 // Route to delete a signature across all certificates
 certificateRouter.delete("/signatures/:userId", checkRole(['admin']), async (req, res) => {
   try {
-      const userId = req.params.userId;
-      const { signatureUrl } = req.body; // Expecting the URL in the body
-      const response = await userEventService.deleteSignature(userId, signatureUrl);
-      return res.status(200).json(response);
+    const userId = req.params.userId;
+    const { signatureUrl } = req.body; // Expecting the URL in the body
+    const response = await userEventService.deleteSignature(userId, signatureUrl);
+    return res.status(200).json(response); // Updated to use res.status
   } catch (e) {
-      return res
-          .status(e?.status || 500)
-          .json({ error: e?.message || "Internal Server Error" });
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
   }
 });
+
 
 // Route to delete a logo across all certificates
 certificateRouter.delete("/logos/:userId", checkRole(['admin']), async (req, res) => {
   try {
-      const userId = req.params.userId;
-      const { logoUrl } = req.body; // Expecting the URL in the body
-      const response = await userEventService.deleteLogo(userId, logoUrl);
-      return res.status(200).json(response);
+    const userId = req.params.userId;
+    // console.log(userId)
+    // console.log(req.body)
+    const { logoUrl } = req.body; // Expecting the URL in the body
+    const response = await userEventService.deleteLogo(userId, logoUrl);
+    return res.status(200).json(response); // Update this line
   } catch (e) {
-      return res
-          .status(e?.status || 500)
-          .json({ error: e?.message || "Internal Server Error" });
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
   }
 });
+
 
 
 // Route to download Certificate

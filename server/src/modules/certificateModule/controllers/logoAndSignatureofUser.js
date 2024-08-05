@@ -73,20 +73,23 @@ class UserEventService {
             const events = await this.getUserEvents(userId);
             const eventIds = events.map(event => event._id);
     
+            // console.log(`Deleting signature: ${signatureUrl} for user: ${userId}`); // Log details
+    
             for (const eventId of eventIds) {
                 await certificate.updateMany(
                     { eventId },
-                    { $pull: { signatures: { 'url.url': signatureUrl } } } // Note the 'url.url' path
+                    { $pull: { signatures: { url: signatureUrl } } } // Correct path to 'url'
                 );
             }
     
             return { message: "Signature deleted successfully from all certificates." };
         } catch (error) {
+            // console.error(`Error deleting signature for user: ${userId} - ${error.message}`); // Log error details
             throw new HttpException(500, error.message || "Error deleting signature.");
         }
     }
     
-
+    
     async deleteLogo(userId, logoUrl) {
         if (!userId) {
             throw new HttpException(400, "Invalid User ID");
