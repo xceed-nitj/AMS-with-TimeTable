@@ -64,7 +64,7 @@ const session = ttdata[0].session;
       if (period === 5) {
         cellData = timetableData[day]['lunch'];
         console.log(cellData)
-        if(!cellData || cellData.length==0)
+        if(!cellData || cellData.length==0 || cellData[0].length==0 || !cellData[0])
         {      
         console.log(cellData)
         // cellData='Lunch'

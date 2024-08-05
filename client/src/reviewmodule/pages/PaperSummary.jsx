@@ -1,7 +1,7 @@
 import { Heading, chakra, IconButton, Box, Container, Textarea, Text, 
     Button, RadioGroup, FormControl, Flex, Checkbox, Stack, Radio,
     useDisclosure, Modal, ModalOverlay, ModalBody, ModalContent, ModalHeader, ModalCloseButton,
-    Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon
+    Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, useToast,Center
 } from '@chakra-ui/react'
 
 import { useState, useEffect } from 'react';
@@ -33,28 +33,6 @@ async function fetchPaperInfo() {
     }
 }
 
-// async function fetchReviewerComments() {
-//     const apiUrl = getEnvironment();
-//     const currentURL = window.location.pathname;
-//     const parts = currentURL.split("/");
-//     const paperId = parts[3];
-
-//     try {
-//         const response = await fetch(
-//             `${apiUrl}/api/v1/reviewmodule/review/get/${parts[2]}/${parts[3]}`,
-//             {
-//                 method:'GET',
-//                 credentials: 'include'
-//             }
-//         )
-//         if (response.status!=200) return false
-//         const data = await response.json();
-//         if(data) return data
-//         else return false
-
-//     } catch (e) { console.log(e) ;return false}
-// }
-
 const wrapper = async (setPaperData) => setPaperData(await fetchPaperInfo()) //wrapper functions help run async functions with useEffect
 
 const getStatusColor = (status) => {
@@ -70,136 +48,12 @@ const getStatusColor = (status) => {
     }
 };
 
-
-// function QuestionCards(props) {
-
-//     const [answers, setAnswers] = useState(props.answers)
-
-//     return (
-//         <>
-//             {props.questions.map((question, index) => (
-//                 <Box borderWidth="1px" width={'100%'} borderRadius="lg" p={4} mb={4} bg="white" margin={'50px 0 50px 0 '} boxShadow="none" _hover={{ boxShadow: 'lg' }} key={question._id}>
-
-//                 <Flex>
-//                     <Flex style={{boxSizing:'border-box', width: '100%'}}>
-//                     <Text color="white" fontSize="sm" ml={2} bg='yellow.400' p='1.5' borderRadius="md">
-//                     Type: {question.type[0]}
-//                     </Text>
-//                     </Flex>
-//                     <span style={{ fontWeight: 'bold', textWrap:'nowrap' }}>Question {index + 1}</span>
-//                     <Flex style={{boxSizing:'border-box', width: '100%'}}></Flex>
-//                 </Flex>
-//                 {/* <FormLabel><span dangerouslySetInnerHTML={{__html:question.question}} /></FormLabel> */}
-//                 <span style={{ fontWeight: 'bold', padding:'5px' }} dangerouslySetInnerHTML={{ __html: question.question }} />
-
-//                 <FormControl as="fieldset">
-//                     {question.type.includes('Text') ? (
-//                     <>
-//                     <Textarea isDisabled>{(answers[question._id])?answers[question._id].replace(/<\/?p>/g, ''):''}</Textarea>
-//                     </>
-//                     ) : question.type.includes("Multiple Correct") ? (
-//                     <Stack direction="column">
-//                         {question.options.map((option, idx) => (
-//                         <Checkbox
-//                             key={idx}
-//                             isChecked={answers[question._id]?.includes(option) || false}
-//                             isDisabled={true}
-//                         >
-//                             {option}
-//                         </Checkbox>
-//                         ))}
-//                     </Stack>
-//                     ) : question.type.includes("Single Correct") ? (
-//                     <RadioGroup
-//                         value={answers[question._id] || ''}
-//                         isDisabled={true}
-//                     >
-//                         <Stack direction="column">
-//                         {question.options.map((option, idx) => (
-//                             <Radio key={idx} value={option}>
-//                             {option}
-//                             </Radio>
-//                         ))}
-//                         </Stack>
-//                     </RadioGroup>
-//                     ) : null}
-//                 </FormControl>
-//                 </Box>
-//             ))}
-//         </>
-//     )
-// }
-
-// function Questions(props){
-
-//     const [questions, setQuestions] = useState()
-//     const [answers, setAnswers] = useState()
-
-//     let sortedQuestions = []
-//     useEffect(()=>{
-//         const apiUrl = getEnvironment();
-
-//         axios.get(`${apiUrl}/reviewmodule/reviewQuestion/get/${window.location.pathname.split('/')[2]}`)
-//         .then(response => {
-//             sortedQuestions = response.data.sort((a, b) => a.order - b.order);
-//             setQuestions(sortedQuestions); console.log('questions after sorting are', sortedQuestions)
-//             if(props.answers && sortedQuestions){
-//                 let submittedAnswers = {};
-//                 sortedQuestions.forEach(question => {
-//                     props.answers.forEach(qna=>{
-//                     if(qna.questionId == question._id) submittedAnswers[question._id] = qna.answer
-//                     })
-//                 });
-//                 console.log("final form of answers is", submittedAnswers)
-//                 setAnswers(submittedAnswers)
-//             }
-//         })
-//         .catch(error => console.error('Error fetching questions:', error));
-//     },[])
-
-//     return (
-//         <>
-//         <br />
-//         <Heading textAlign={'center'}>QUESTIONS</Heading>
-//         {!questions?'':
-//         <QuestionCards questions={questions} answers={answers}/>
-//         }
-//         </>
-//     )
-// }
-
-// function ReviewModal(props) {
-//     const { isOpen, onOpen, onClose } = useDisclosure()
-
-//     return (
-//         <>
-//             <Flex width='100%' flexDirection={'column'} alignContent='center' gap='10px'>
-//                 <Button onClick={onOpen}>Reviewer {props.num+1}</Button>
-//             </Flex>
-//             <Modal isOpen={isOpen} onClose={onClose} isCentered>
-//                 <ModalOverlay />
-//                 <ModalContent minWidth='80vw' maxWidth='80vw' minHeight='75vh' maxHeight='75vh'>
-//                 <ModalHeader textAlign={'center'}>Reviewer {props.num+1} Feedback</ModalHeader>
-//                 <ModalCloseButton color={'black'} />
-//                 <ModalBody overflowY={"auto"} >
-//                     <Text><span style={{fontWeight:'500'}}>Decision : </span> {props.review.decision}</Text>
-//                     <Text><span style={{fontWeight:'500'}}>Comment : </span> {props.review.commentsAuthor}</Text>
-//                     <Text></Text>
-//                     <Questions answers = {props.review.reviewAnswers} />
-//                 </ModalBody>
-//                 </ModalContent>
-//             </Modal>
-//         </>
-//     )
-// }
-
 function PaperSummary() {
     const apiUrl = getEnvironment();
-
+    const toast = useToast();
     let [paperData, setPaperData] = useState()
     let [dateSubmitted, setDateSubmitted] = useState()
     let [screenWidth, setScreenWidth] = useState(window.innerWidth)
-    console.log(paperData)
     setInterval(()=>{if(screenWidth != window.innerWidth) setScreenWidth(window.innerWidth)},500)
         
     useEffect(()=> {wrapper(setPaperData)},[])
@@ -210,7 +64,36 @@ function PaperSummary() {
             setDateSubmitted(d)
         }
     },[paperData])
-
+    const deleteFile = async (version) => {
+        console.log(`Deleting ${version}`);
+            try {
+                const response = await fetch(
+                `${apiUrl}/api/v1/reviewmodule/uploads/delete/`+version,
+                {
+                    method: "GET",
+                    credentials: "include",
+                }
+                );
+                const toastStatus = response.ok ? 'success' : 'error';
+                const toastDescription = response.ok ? 'File Deleted Successfully.' : 'Unable to delete the file.';
+        
+                toast({
+                    title: toastStatus === 'success' ? 'File Deleted.' : 'Error.',
+                    description: toastDescription,
+                    status: toastStatus,
+                    duration: 5000,
+                    isClosable: true,
+                });
+            } catch (error) {
+                toast({
+                    title: 'Error.',
+                    description: error.message || 'An unexpected error occurred.',
+                    status: 'error',
+                    duration: 5000,
+                    isClosable: true,
+                });
+            }
+    };
     const HeaderPaperSummary = ({ title }) => {
         const navigate = useNavigate();
         
@@ -260,6 +143,12 @@ function PaperSummary() {
         return (
             <>{authorName}</>
         )
+    }
+
+    const reviewLinkMaker = (currlink)=>{
+        let newLink = JSON.parse(JSON.stringify(currlink.split('/')))
+        newLink.pop(); newLink.push('reviews')
+        return newLink.join('/')
     }
 
     return (
@@ -321,22 +210,23 @@ function PaperSummary() {
                         <Text style={{textAlign:'center'}} color="white">{paperData && paperData.status}</Text>
                     </Box>
                 </Flex>
-                {/* <Heading>Reviewers</Heading>
-                <Box style={{border:'1px solid #f4f4f4', width:'95%', padding: '5px',margin: '10px', borderRadius:'10px',
-                    backgroundColor:"white", height:'35vh', overflowY:'auto'}}>
-                    <Flex flexDirection={'column'} alignContent={'center'}>
-                        {reviewerComments?(reviewerComments.map((review, key)=>(
-                            <>
-                                <ReviewModal key={key} num={key} review={review} />
-                                {console.log('key is',key)}
-                            </>
-                        ))):''}
-                    </Flex>
-                </Box> */}
             </div>
             <br />
-            <Flex style={{flexDirection:'column', width:'100%'}}>
-                <h2 style={{fontWeight:'700'}} >Files Uploaded</h2>
+            {
+                !paperData?'':
+                (paperData.status==='Completed'?(
+                    <Center>
+                        <Text style={{fontWeight:'700',}}>
+                            View Paper Reviews :
+                        </Text>
+                        <Link to = {reviewLinkMaker(location.pathname)}>
+                            <Button colorScheme='blue' >Reviews</Button>
+                        </Link>
+                    </Center>
+                ):'')
+            }
+            <Flex style={{flexDirection:'column', width:'100%', padding:'15px'}}>
+                <h2 style={{fontWeight:'700', padding:'15px'}} >Files Uploaded</h2>
                 {
                     paperData && [...paperData.codeLink.keys()].map((k,ey)=>(
                         <Flex justifyContent={'space-between'}
@@ -346,12 +236,17 @@ function PaperSummary() {
                         <Flex alignItems={'center'} direction={'column'} justifyContent={'space-between'}>
                             {/* <h2 style={{fontWeight:'700'}} >ATTACHMENTS</h2> */}
                             <Flex direction={'row'}>
-                                <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.codeLink[k]}>
+                                <Link target="_blank" to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.codeLink[k]}>
                                     <Button style={{float:'right'}} colorScheme='blue'>View Code</Button>
                                 </Link>
-                                <Link to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.uploadLink[k]}>
+                                <Link target="_blank" to={paperData&&`${apiUrl}/api/v1/reviewmodule/uploads/`+paperData.uploadLink[k]}>
                                     <Button style={{float:'right'}} colorScheme='blue'>View Paper</Button>
                                 </Link>
+                            </Flex>
+                            {/* Added Delete Buttons */}
+                            <Flex direction={'row'} mt={2}>
+                                <Button colorScheme='red' onClick={() => deleteFile(paperData.codeLink[k])}>Delete Code</Button>
+                                <Button colorScheme='red' onClick={() => deleteFile(paperData.uploadLink[k])}>Delete Paper</Button>
                             </Flex>
                         </Flex>
                         </Flex>

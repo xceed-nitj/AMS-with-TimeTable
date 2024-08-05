@@ -185,15 +185,27 @@ class TableController {
 
   async getAllSessAndDept() {
     try {
-      const uniqueSessions = await TimeTable.distinct('session');
+      // Step 1: Get distinct sessions with their creation times
+      const sessionsWithCreationTimes = await TimeTable.find(
+        {},
+        { session: 1, created_at: 1 }
+      ).sort({ created_at: -1 });
+  
+      // Extract unique sessions and sort them by creation time
+      const uniqueSessions = [...new Set(sessionsWithCreationTimes.map(doc => doc.session))];
+      
+      // Step 2: Get distinct departments
       const uniqueDept = await TimeTable.distinct('dept');
-
-      return {uniqueSessions, uniqueDept};
+      
+      // Step 3: Sort departments alphabetically
+      uniqueDept.sort((a, b) => a.localeCompare(b));
+  
+      return { uniqueSessions, uniqueDept };
     } catch (error) {
-      throw error; 
+      throw error;
     }
   }
-
+  
   async getCodeOfDept(dept, session) {
     try {
       const code= await TimeTable.findOne({dept, session});

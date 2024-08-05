@@ -20,6 +20,7 @@
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.1.1",
+    "@json2csv/plainjs": "^7.0.6",
     "@mui/material": "^5.15.15",
     "@react-pdf/renderer": "^3.1.14",
     "@rive-app/react-canvas": "^4.5.4",

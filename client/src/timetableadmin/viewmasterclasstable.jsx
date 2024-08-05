@@ -1,9 +1,8 @@
-// src/DataTable.js
 import React, { useEffect, useState, useMemo } from 'react';
 import { Box, Table, Thead, Tbody, HStack, Tr, Th, Td, TableContainer, Spinner, Alert, 
   AlertIcon, Container, FormControl, FormLabel, Select, Button, Input,
   VStack, Text, Center, Spacer } from '@chakra-ui/react';
-import { FaMinus } from 'react-icons/fa';
+import { FaMinus, FaPlus } from 'react-icons/fa';
 import { Parser } from '@json2csv/plainjs';
 import { Helmet } from 'react-helmet-async';
 import getEnvironment from '../getenvironment';
@@ -12,7 +11,7 @@ import {
   CustomBlueButton,
 } from "../styles/customStyles";
 
-const MasterLoadDataTable = () => {
+const MasterDataTable = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -23,6 +22,26 @@ const MasterLoadDataTable = () => {
   const [hiddenColumns, setHiddenColumns] = useState([]);
 
   const apiUrl = getEnvironment();
+
+  const slotTimeMapping = {
+    period1: "8.30 AM - 9:25 AM",
+    period2: "9.30 AM - 10:25 AM",
+    period3: "10.30 AM - 11:25 AM",
+    period4: "11.30 AM - 12:25 PM",
+    period5: "1.30 PM - 2:25 PM",
+    period6: "2.30 PM - 3:25 PM",
+    period7: "3.30 PM - 4:25 PM",
+    period8: "4.30 PM - 5:25 PM",
+  };
+
+  const getTimeFromSlot = (slot) => slotTimeMapping[slot] || slot;
+  const getSlotFromTime = (time) => {
+    for (const [key, value] of Object.entries(slotTimeMapping)) {
+      if (value === time) return key;
+    }
+    return time;
+  };
+  const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -64,7 +83,7 @@ const MasterLoadDataTable = () => {
   const handleFilterChange = (column, value) => {
     setFilters(prevFilters => ({
       ...prevFilters,
-      [column]: value
+      [column]: column === 'slot' ? getSlotFromTime(value) : value
     }));
   };
 
@@ -81,6 +100,8 @@ const MasterLoadDataTable = () => {
   };
 
   const columns = [
+    { label: "Day", key: "day" },
+    { label: "Slot", key: "slot" },
     { label: "Subject Full Name", key: "subjectFullName" },
     { label: "Faculty", key: "faculty" },
     { label: "Offering Dept", key: "offeringDept" },
@@ -93,14 +114,14 @@ const MasterLoadDataTable = () => {
     { label: "Subject Code", key: "subjectCode" },
     { label: "Subject", key: "subject" },
     { label: "Subject Credit", key: "subjectCredit" },
-    { label: "Load", key: "count" },
   ];
 
-  function filterUniqueObjects(objects) {
+  function filterUniqueObjects(objects) { 
     const seen = new Set();
     return objects.filter(obj => {
       const key = JSON.stringify({
         code: obj.code,
+        day: obj.day,
         degree: obj.degree,
         faculty: obj.faculty,
         mergedClass: obj.mergedClass,
@@ -108,6 +129,7 @@ const MasterLoadDataTable = () => {
         room: obj.room,
         sem: obj.sem,
         session: obj.session,
+        slot: obj.slot,
         subject: obj.subject,
         subjectCode: obj.subjectCode,
         subjectCredit: obj.subjectCredit,
@@ -127,47 +149,14 @@ const MasterLoadDataTable = () => {
     });
   }
 
-  const mergeAndFilterData = (data) => {
-    const mergedData = {};
-    data.forEach(item => {
-      const key = item.subjectFullName;
-      if (!mergedData[key]) {
-        mergedData[key] = { 
-          ...item, 
-          count: 1, 
-          faculty: [item.faculty],
-          offeringDept: [item.offeringDept],
-          room: [item.room],
-        };
-        delete mergedData[key].day;
-        delete mergedData[key].slot;
-      } else {
-        mergedData[key].count += 1;
-        if (!mergedData[key].faculty.includes(item.faculty)) {
-          mergedData[key].faculty.push(item.faculty);
-        }
-        if (!mergedData[key].offeringDept.includes(item.offeringDept)) {
-          mergedData[key].offeringDept.push(item.offeringDept);
-        }
-        if (!mergedData[key].room.includes(item.room)) {
-          mergedData[key].room.push(item.room);
-        }
-      }
-    });
-
-    return Object.values(mergedData).map(item => ({
-      ...item,
-      faculty: item.faculty.sort().join(', '),
-      offeringDept: item.offeringDept.join(', '),
-      room: item.room.join(', '),
-    }));
-  };
-
   const filteredData = useMemo(() => {
-    const filtered = filterUniqueObjects(data.filter(item =>
+    return filterUniqueObjects(data.filter(item =>
       item.subject && item.faculty &&
       Object.entries(filters).every(([key, value]) => {
         const itemValue = item[key];
+        if (key === 'slot') {
+          return !value || (itemValue && itemValue === value);
+        }
         return !value || (itemValue && itemValue.toString().toLowerCase() === value.toLowerCase());
       }) &&
       Object.entries(searchTerms).every(([key, term]) => {
@@ -175,17 +164,23 @@ const MasterLoadDataTable = () => {
         return !term || (itemValue && itemValue.toString().toLowerCase().includes(term.toLowerCase()));
       })
     ));
-    return mergeAndFilterData(filtered);
   }, [data, filters, searchTerms]);
 
   const filterOptions = useMemo(() => {
     return columns.reduce((acc, { key }) => {
-      const columnValues = filteredData.map(item => item[key]).filter(value => value !== undefined && value !== null);
-      acc[key] = Array.from(new Set(columnValues)).filter(Boolean).sort((a, b) => a.toString().localeCompare(b.toString()));
+      const columnValues = data.map(item => item[key]).filter(value => value !== undefined && value !== null);
+      acc[key] = Array.from(new Set(columnValues)).filter(Boolean);
+      if (key === 'slot') {
+        acc[key] = acc[key].sort((a, b) => a.localeCompare(b));
+      } else if (key === 'day') {
+        acc[key] = acc[key].sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+      } else {
+        acc[key] = acc[key].sort((a, b) => a.toString().localeCompare(b.toString()));
+      }
       return acc;
     }, {});
-  }, [filteredData, columns]);
-  
+  }, [data, columns]);
+
   if (loading) {
     return <Spinner size="xl" />;
   }
@@ -204,7 +199,7 @@ const MasterLoadDataTable = () => {
     const csvData = filteredData.map(item => {
       const filteredItem = {};
       visibleColumns.forEach(({ key }) => {
-        filteredItem[key] = item[key];
+        filteredItem[key] = key === 'slot' ? getTimeFromSlot(item[key]) : item[key];
       });
       return filteredItem;
     });
@@ -283,15 +278,20 @@ const MasterLoadDataTable = () => {
                           onChange={(e) => handleSearchChange(key, e.target.value)}
                         />
                         <Select
-                          size="sm"
-                          onChange={(e) => handleFilterChange(key, e.target.value)}
-                          value={filters[key] || ''}
-                        >
-                          <option value="">All</option>
-                          {filterOptions[key] && filterOptions[key].map((value) => (
-                            <option key={value} value={value}>{value}</option>
-                          ))}
-                        </Select>
+  size="sm"
+  onChange={(e) => handleFilterChange(key, e.target.value)}
+  value={key === 'slot' ? getTimeFromSlot(filters[key] || '') : (filters[key] || '')}
+>
+  <option value="">All</option>
+  {filterOptions[key] && filterOptions[key].map((value) => (
+    <option 
+      key={value} 
+      value={key === 'slot' ? getTimeFromSlot(value) : value}
+    >
+      {key === 'slot' ? getTimeFromSlot(value) : value}
+    </option>
+  ))}
+</Select>
                       </VStack>
                     </Th>
                   ))}
@@ -302,7 +302,7 @@ const MasterLoadDataTable = () => {
                   <Tr key={index}>
                     {columns.filter(c => !hiddenColumns.includes(c.key)).map(({ key }) => (
                       <Td key={key}>
-                        {item[key] !== undefined && item[key] !== null ? item[key].toString() : ''}
+                        {key === 'slot' ? getTimeFromSlot(item[key]) : item[key]}
                       </Td>
                     ))}
                   </Tr>
@@ -316,4 +316,4 @@ const MasterLoadDataTable = () => {
   );
 };
 
-export default MasterLoadDataTable;
+export default MasterDataTable;
