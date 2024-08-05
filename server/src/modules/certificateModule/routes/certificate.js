@@ -10,6 +10,8 @@ const { getImagesOfUserByEventId } = require("../controllers/signimagesofuser")
 const { convertCertificateToImage, convertCertificateToPDF } = require("../controllers/convertCertificate")
 const { convertallCertificates } = require("../controllers/convertAllCertificates")
 const { checkRole } = require("../../checkRole.middleware");
+const UserEventService = require("../controllers/logoAndSignatureofUser");
+const userEventService = new UserEventService();
 
 // Route to create a new certificate
 certificateRouter.post("/content/:id", checkRole(['CM']), LockStatus, upload.any(), async (req, res) => {
@@ -108,6 +110,66 @@ certificateRouter.delete("/:certificateId", checkRole(['CM']), LockStatus, async
       .json({ error: e?.message || "Internal Server Error" });
   }
 });
+
+
+// Route to get unique signatures of a user by event ID
+certificateRouter.get("/signatures/:userId",checkRole(['admin']), async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const signatures = await userEventService.getUniqueSignatures(userId);
+    return res.status(200).json(signatures);
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+// Route to get unique logos of a user by event ID
+certificateRouter.get("/logos/:userId",checkRole(['admin']), async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const logos = await userEventService.getUniqueLogos(userId);
+    return res.status(200).json(logos);
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+// Route to delete a signature across all certificates
+certificateRouter.delete("/signatures/:userId", checkRole(['admin']), async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { signatureUrl } = req.body; // Expecting the URL in the body
+    const response = await userEventService.deleteSignature(userId, signatureUrl);
+    return res.status(200).json(response); // Updated to use res.status
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+
+// Route to delete a logo across all certificates
+certificateRouter.delete("/logos/:userId", checkRole(['admin']), async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    // console.log(userId)
+    // console.log(req.body)
+    const { logoUrl } = req.body; // Expecting the URL in the body
+    const response = await userEventService.deleteLogo(userId, logoUrl);
+    return res.status(200).json(response); // Update this line
+  } catch (e) {
+    return res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+
 
 // Route to download Certificate
 certificateRouter.post("/download/image", convertCertificateToImage);

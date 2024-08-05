@@ -21,7 +21,6 @@ import {
   ModalBody,
   ModalCloseButton,
   Flex,
-  Box,
 } from '@chakra-ui/react';
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
@@ -135,6 +134,14 @@ const EventRegistration = () => {
     navigate(`/cm/userevents/${userId}`);
   };
 
+  const handleViewUserLogos = (userId) => {
+    navigate(`/cm/userimages/logos/${userId}`);
+  };
+
+  const handleViewUserSignatures = (userId) => {
+    navigate(`/cm/userimages/signatures/${userId}`);
+  };
+
   return (
     <Container maxW="lg">
       <Header title="Add Event for Certificate Module" />
@@ -145,28 +152,38 @@ const EventRegistration = () => {
         </Button>
       </Flex>
 
-      <Table variant="simple" mt="6">
-        <Thead>
-          <Tr>
-            <Th>Email</Th>
-            <Th>Actions</Th>
-            <Th>All Events</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {cmUsers.map((user) => (
-            <Tr key={user._id}>
-              <Td>{user.email}</Td>
-              <Td>
-                <Button onClick={() => handleOpenModal(user._id)}>Assign Event</Button>
-              </Td>
-              <Td>
-                <Button onClick={() => handleViewEvents(user._id)}>All Events</Button>
-              </Td>
+      <Flex justify="center">
+        <Table variant="simple" mt="6">
+          <Thead>
+            <Tr>
+              <Th>Email</Th>
+              <Th>View Logos</Th>
+              <Th>View Signatures</Th>
+              <Th>All Events</Th>
+              <Th>Actions</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+          </Thead>
+          <Tbody>
+            {cmUsers.map((user) => (
+              <Tr key={user._id}>
+                <Td>{user.email}</Td>
+                <Td>
+                  <Button onClick={() => handleViewUserLogos(user._id)}>View Logos</Button>
+                </Td>
+                <Td>
+                  <Button onClick={() => handleViewUserSignatures(user._id)}>View Signatures</Button>
+                </Td>
+                <Td>
+                  <Button onClick={() => handleViewEvents(user._id)}>All Events</Button>
+                </Td>
+                <Td>
+                  <Button onClick={() => handleOpenModal(user._id)}>Assign Event</Button>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Flex>
 
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <ModalOverlay />
