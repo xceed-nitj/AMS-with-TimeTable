@@ -237,7 +237,7 @@ const MasterDataTable = () => {
             ))}
           </Select>
         </FormControl>
-        <HStack>
+        <HStack flexWrap={'wrap'}>
           <CustomBlueButton onClick={clearFilters} mb={4}>Clear Filters</CustomBlueButton>
           {
             !hiddenColumns.length ? '' :
@@ -249,8 +249,8 @@ const MasterDataTable = () => {
           </Center>
         </HStack>
         <Box p={4}>
-          <TableContainer>
-            <Table variant="striped" colorScheme="teal">
+          <TableContainer style={{transform:'rotateX(180deg)'}}>
+            <Table style={{transform:'rotateX(-180deg)'}} variant="striped" colorScheme="teal">
               <Thead>
                 <Tr>
                   {columns.filter(c => !hiddenColumns.includes(c.key)).map(({ label, key }) => (
