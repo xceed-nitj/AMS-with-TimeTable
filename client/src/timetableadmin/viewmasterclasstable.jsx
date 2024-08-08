@@ -20,7 +20,9 @@ const MasterDataTable = () => {
   const [filters, setFilters] = useState({});
   const [searchTerms, setSearchTerms] = useState({});
   const [hiddenColumns, setHiddenColumns] = useState([]);
-
+  const [refresh, setRefresh] = useState(false)
+  if(refresh===true) {setRefresh(filters); setFilters({})} // this makes the filters take effect when columns are hidden, pls dont judge
+  else if(refresh!==false) {setFilters(refresh); setRefresh(false)} // this is just a workaround
   const apiUrl = getEnvironment();
 
   const slotTimeMapping = {
@@ -116,30 +118,29 @@ const MasterDataTable = () => {
     { label: "Subject Credit", key: "subjectCredit" },
   ];
 
-  function filterUniqueObjects(objects) { 
+  function filterUniqueObjects(objects) {
     const seen = new Set();
     return objects.filter(obj => {
       const key = JSON.stringify({
-        code: obj.code,
-        day: obj.day,
-        degree: obj.degree,
-        faculty: obj.faculty,
-        mergedClass: obj.mergedClass,
-        offeringDept: obj.offeringDept,
-        room: obj.room,
-        sem: obj.sem,
-        session: obj.session,
-        slot: obj.slot,
-        subject: obj.subject,
-        subjectCode: obj.subjectCode,
-        subjectCredit: obj.subjectCredit,
-        subjectDept: obj.subjectDept,
-        subjectFullName: obj.subjectFullName,
-        subjectType: obj.subjectType,
-        updated_at: obj.updated_at,
-        year: obj.year
+        // code: obj.code,
+        day: (hiddenColumns.includes('day'))?'reserve':obj.day,
+        degree: (hiddenColumns.includes('degree'))?'reserve':obj.degree,
+        faculty: (hiddenColumns.includes('faculty'))?'reserve':obj.faculty,
+        // mergedClass: (hiddenColumns.includes(''))?'reserve':obj.mergedClass,
+        offeringDept: (hiddenColumns.includes('offeringDept'))?'reserve':obj.offeringDept,
+        room: (hiddenColumns.includes('room'))?'reserve':obj.room,
+        sem: (hiddenColumns.includes('sem'))?'reserve':obj.sem,
+        // session: (hiddenColumns.includes('session'))?'reserve':obj.session,
+        slot: (hiddenColumns.includes('slot'))?'reserve':obj.slot,
+        subject: (hiddenColumns.includes('subject'))?'reserve':obj.subject,
+        subjectCode: (hiddenColumns.includes('subjectCode'))?'reserve':obj.subjectCode,
+        subjectCredit: (hiddenColumns.includes('subjectCredit'))?'reserve':obj.subjectCredit,
+        subjectDept: (hiddenColumns.includes('subjectDept'))?'reserve':obj.subjectDept,
+        subjectFullName: (hiddenColumns.includes('subjectFullName'))?'reserve':obj.subjectFullName,
+        subjectType: (hiddenColumns.includes('subjectType'))?'reserve':obj.subjectType,
+        // updated_at: obj.updated_at,/
+        year: (hiddenColumns.includes('year'))?'reserve':obj.year
       });
-
       if (seen.has(key)) {
         return false;
       } else {
@@ -241,7 +242,7 @@ const MasterDataTable = () => {
           <CustomBlueButton onClick={clearFilters} mb={4}>Clear Filters</CustomBlueButton>
           {
             !hiddenColumns.length ? '' :
-              <CustomBlueButton onClick={() => setHiddenColumns([])} mb={4}>Show All Columns</CustomBlueButton>
+              <CustomBlueButton onClick={() => {setHiddenColumns([]); setRefresh(true)}} mb={4}>Show All Columns</CustomBlueButton>
           }
           <Spacer />
           <Center>
@@ -264,7 +265,8 @@ const MasterDataTable = () => {
                                 borderRadius={'50%'} color={'red'}
                                 border='2px solid red' cursor={'pointer'}
                                 onClick={() => {
-                                  setHiddenColumns([...hiddenColumns, key])
+                                  setHiddenColumns([...hiddenColumns, key]);
+                                  setRefresh(true)
                                 }}
                               >
                                 <FaMinus />
@@ -300,7 +302,7 @@ const MasterDataTable = () => {
               <Tbody>
                 {filteredData.map((item, index) => (
                   <Tr key={index}>
-                    {columns.filter(c => !hiddenColumns.includes(c.key)).map(({ key }) => (
+                    {!refresh&& columns.filter((e)=>{return hiddenColumns||true}).filter(c => !hiddenColumns.includes(c.key)).map(({ key }) => (
                       <Td key={key}>
                         {key === 'slot' ? getTimeFromSlot(item[key]) : item[key]}
                       </Td>
