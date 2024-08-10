@@ -17,8 +17,27 @@ export default function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [routes,setExcludedRoutes] = useState([]);
 
   useEffect(() => {
+    const platform = async() => {
+      try{
+        const response = await fetch(`${apiUrl}/platform/getplatform`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if(response.status === 200){
+          const data = await response.json();
+          setExcludedRoutes(data[0].exemptedLinks);
+        }
+      }catch(err){
+        return new Error(err.message);
+      }
+    }
     const getUserDetails = async () => {
       try {
         const response = await fetch(`${apiUrl}/user/getuser/`, {
@@ -53,7 +72,11 @@ export default function Navbar() {
       }
     };
 
-    fetchUserDetails();
+    const fetchData = async () => {
+      await platform(); 
+      await fetchUserDetails();
+    };
+    fetchData();
   }, [apiUrl]);
 
   const handleLogout = async () => {
@@ -72,8 +95,7 @@ export default function Navbar() {
     }
   };
 
-
-const publicPaths = ['/', '/login', '/classrooms', '/timetable','/tt/masterdata','/prm/register','/prm/emailverification'  ];
+const publicPaths = routes;
 
 useEffect(() => {
   const isPublicPath = publicPaths.includes(location.pathname) || location.pathname.startsWith('/services/') || location.pathname.startsWith('/cm/c/')
