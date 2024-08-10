@@ -805,7 +805,7 @@ function Participant() {
       </Box>
       {addduplicateEntryMessage && <p>{addduplicateEntryMessage}</p>}
       <HStack className="tw-flex tw-justify-between">
-        <div className="tw-flex tw-items-center tw-gap-3"><Text>Download all Certificates:</Text>
+        {/* <div className="tw-flex tw-items-center tw-gap-3"><Text>Download all Certificates:</Text>
           <Select width='350px' placeholder="Select Type" name="downloadType" onChange={e => { setDownloadClicked(false); handleChangeType(e) }}>
             <option value="image">Image</option>
             <option value="pdf">PDF</option>
@@ -813,7 +813,7 @@ function Participant() {
           {downloadType && <CustomBlueButton ml='0' width='350px' onClick={(e) => { setDownloadClicked(true); handleDownloadAll(); }}>
             Download All Certificates
           </CustomBlueButton>}
-        </div>
+        </div> */}
         <CustomBlueButton ml='0' width='350px' onClick={handleBatchMail}>
           send Email to all Participants
         </CustomBlueButton>
