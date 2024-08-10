@@ -272,8 +272,52 @@ function Content() {
       } catch (error) {
         console.error('Error fetching data:', error);
       }
+      async function fetchImageToDataURL(imageUrl) {
+        try {
+          const response = await fetch(imageUrl);
+          // console.log(response)
+          if (response.ok) {
+            const blob = await response.blob();
+            return await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend
+                = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } else {
+            return "error"
+          }
+        } catch (error) {
+          return "error";
+        }
+      }
+      async function fetchImages() {
+        const input = document.getElementById('id-card-class').firstElementChild;
+        const images = input.getElementsByTagName("img")
+        console.log(images)
+        for (let i = 0; i < images.length; i++) {
+          if (images[i].src) {
+            const response = await fetchImageToDataURL(`${apiUrl}/proxy-image/?url=${images[i].src}`)
+            // console.log(response);
+            if (response && !(response == "error")) {
+              console.log(images[i].src)
+              const dataUrl = await response;
+              images[i].src = dataUrl;
+              // console.log(dataUrl);
+            } else {
+              images[i].remove()
+            }
+          } else {
+            images[i].remove()
+          }
+        }  
+      }
+      await fetchImages();
     };
     fetchData();
+    
+    
   }, [participantId, certiType, participantDetail, eventId]); // Empty dependency array to execute the effect only once
 
   return (
