@@ -109,6 +109,69 @@ function FirstYearLoad() {
     }
   };
 
+  const handleLockTT = async () => {
+
+    const isConfirmed = window.confirm('Are you sure you want to lock the timetable?');
+
+    if (isConfirmed) {
+    // Mark the function as async
+    setMessage("Data is being saved....");
+    // await handleSubmit();
+    // console.log('Data is getting Locked');
+    setMessage("Data saved. Commencing lock");
+    setMessage("Data is being locked");
+    const Url = `${apiUrl}/timetablemodule/lock/locktt`;
+    const code = firstYearCode;
+    const sem = selectedSemester;
+    try {
+      const response = await fetch(Url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code }),
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('response from backend for lock',data);
+        // console.log(data.updatedTime);
+        setMessage("");
+        toast({
+          title: 'Timetable Locked',
+          status: 'success',
+          duration: 6000,
+          isClosable: true,
+          position: 'top', 
+        });    
+        // setLockedTime(data.updatedTime);
+      } else {
+        console.error(
+          "Failed to send data to the backend. HTTP status:",
+          response.status
+        );
+      }
+    } catch (error) {
+      console.error("Error sending data to the backend:", error);
+    } 
+  } else {
+    toast({
+      title: 'Timetable Lock Failed',
+      description: 'An error occurred while attempting to lock the timetable.',
+      status: 'error',
+      duration: 6000,
+      isClosable: true,
+      position: 'top', 
+    });
+    
+
+  }
+
+
+  };
+
+
   const fetchFirstYearSubjects = async (currentCode, currentDepartment) => {
     try {
       const response = await fetch(
@@ -416,6 +479,11 @@ function FirstYearLoad() {
       <Button m="1 auto" colorScheme="teal" onClick={handleAddFirstYearFaculty}>
             Add First Year Faculty
           </Button>
+        
+          <Button m="1" ml="auto" colorScheme="orange" onClick={handleLockTT}>
+            Lock First Year Time Table
+          </Button>
+  
           <Portal>
         <Box
           bg={showMessage && message ? "rgba(255, 100, 0, 0.9)" : 0} // Brighter yellow with some transparency
