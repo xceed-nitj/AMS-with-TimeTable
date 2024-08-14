@@ -46,16 +46,12 @@ const convertToObject = async (eventId, formData, files, url) => {
             i++;
         }
         // console.log(form)
-        let maxIndex = 0;
-        form.signatures.forEach(elem => maxIndex++)
         files?.forEach(file => {
             const field = file.fieldname.split("[")[0]
             const index = parseInt(file.fieldname.split("[")[1].split("]")[0])
-            if (index < maxIndex) {
-                console.log(index, form["signatures"][index]["url"]["url"])
-                if (field == "signatures") { form["signatures"][index]["url"]["url"] = `${apiURL}/certificatemodule/images/${file.path}`; }
-                if (field == "logos") { form["logos"][index]["url"] = `${apiURL}/certificatemodule/images/${file.path}` }
-            }
+            console.log(index, field)
+            if (field == "signatures") { form["signatures"][index]["url"]["url"] = `${apiURL}/certificatemodule/images/${file.path}`; }
+            if (field == "logos") { form["logos"][index]["url"] = `${apiURL}/certificatemodule/images/${file.path}` }
         });
 
         return form

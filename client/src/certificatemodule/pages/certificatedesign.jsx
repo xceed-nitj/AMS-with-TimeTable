@@ -38,8 +38,8 @@ const CertificateForm = () => {
   const [type, setType] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const date = new Date();
-  const a = date.getMonth()>9?"":0
-  const defaultDate = `${date.getFullYear()}-${a}${date.getMonth()+1}-${date.getDate()}`
+  const a = date.getMonth() > 9 ? "" : 0
+  const defaultDate = `${date.getFullYear()}-${a}${date.getMonth() + 1}-${date.getDate()}`
   const [formData, setFormData] = useState({
     templateId: null,
     logos: [{ url: '', height: 80, width: 80 }],
@@ -886,50 +886,57 @@ const CertificateForm = () => {
     fontsizeopt.push(i);
   }
   const fontStyleopt = [
-    'Playfair Display',
-    'Euphoria Script',
-    'Cookie',
-    'UnifrakturCook',
-    'Allura',
-    'Alex Brush',
-    'Libre Caslon Display',
-    'Special Elite',
-    'Monoton',
-    'Dancing Script',
-    'Playwrite DE Grund',
-    'Noto Serif Devanagari',
-    'Ingrid Darling',
-    'Grey Qo',
-    'Kings',
-    'Ole',
-    'Rubik Maze',
-    'Rubik Burned',
-    'Rubik Marker Hatch',
-    'Rubik Microbe',
-    'Blaka Ink',
-    'Noto Serif Grantha',
-    'Rubik Spray Paint',
-    'Rubik Wet Paint',
-    'Finger Paint',
-    'Rubik Bubbles',
-    'Oleo Script',
-    'Neuton',
-    'Merienda',
-    'Concert One',
-    'Permanent Marker',
-    'Abril Fatface',
-    'Rowdies',
-    'Lobster',
-    'Pacifico',
-    'Anton SC',
-    'Ga Maamli',
-    'Libre Baskerville',
-    'Libre Baskerville',
-    'Merriweather',
-    'Roboto Slab',
-    'Roboto',
-    'Oswald',
+    'fantasy',
+    "monospace",
+    "sans-serif",
+    'serif',
+    'cursive',
   ];
+  // const fontStyleopt = [
+  //   'Playfair Display',
+  //   'Euphoria Script',
+  //   'Cookie',
+  //   'UnifrakturCook',
+  //   'Allura',
+  //   'Alex Brush',
+  //   'Libre Caslon Display',
+  //   'Special Elite',
+  //   'Monoton',
+  //   'Dancing Script',
+  //   'Playwrite DE Grund',
+  //   'Noto Serif Devanagari',
+  //   'Ingrid Darling',
+  //   'Grey Qo',
+  //   'Kings',
+  //   'Ole',
+  //   'Rubik Maze',
+  //   'Rubik Burned',
+  //   'Rubik Marker Hatch',
+  //   'Rubik Microbe',
+  //   'Blaka Ink',
+  //   'Noto Serif Grantha',
+  //   'Rubik Spray Paint',
+  //   'Rubik Wet Paint',
+  //   'Finger Paint',
+  //   'Rubik Bubbles',
+  //   'Oleo Script',
+  //   'Neuton',
+  //   'Merienda',
+  //   'Concert One',
+  //   'Permanent Marker',
+  //   'Abril Fatface',
+  //   'Rowdies',
+  //   'Lobster',
+  //   'Pacifico',
+  //   'Anton SC',
+  //   'Ga Maamli',
+  //   'Libre Baskerville',
+  //   'Libre Baskerville',
+  //   'Merriweather',
+  //   'Roboto Slab',
+  //   'Roboto',
+  //   'Oswald',
+  // ];
   return (
     <Flex
       style={{
@@ -1127,11 +1134,16 @@ const CertificateForm = () => {
                 </HStack>
               </Box>
             </Box>
-
+            <Input
+              name={`templateId`}
+              value={formData.templateId}
+              // width="0px"
+              display="none"
+            />
 
 
             {/* Logos Fields */}
-            <Text className='tw-font-bold'>Enter the link for the logos:</Text>
+            <Text className='tw-font-bold'>Logos:</Text>
 
             {formData.logos.map((logo, index) => (
               <HStack width='100%' key={index}>
@@ -1142,8 +1154,12 @@ const CertificateForm = () => {
                     value={logo.url}
                     onChange={(e) => handleChange(e, 'logos', index)}
                     placeholder="Logo"
-                    width="100%"
+                    display="none"
                   />
+                  <Text
+                    width="100%">
+                    Upload Logo image (jpg/png):
+                  </Text>
                   <label style={{ height: "30px", width: "30px" }} className="tw-flex tw-flex-col tw-justify-center tw-ml-2 hover:tw-cursor-pointer" htmlFor={`logo${index}`}><FaUpload style={{ height: "25px", width: "25px", color: "purple" }} /></label>
                   <Input
                     id={`logo${index}`}
@@ -1767,8 +1783,10 @@ const CertificateForm = () => {
                       value={signature.url.url}
                       onChange={(e) => handleChange(e, 'signatures', index)}
                       placeholder="URL"
-                      width="100%"
+                      display="none"
                     />
+                    <Text
+                    width="100%">Upload Signature image (jpg/png): </Text>
                     <label className='tw-flex tw-justify-center tw-items-center tw-ml-2 hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><FaUpload style={{ height: "25px", width: "25px", color: 'purple' }} /></label>
                     <input
                       id={`signatures[${index}].url.url`}
@@ -1797,9 +1815,11 @@ const CertificateForm = () => {
                           value={signature.url.url}
                           style={{ color: 'black', width: '500px' }}
                         >
-                          Remove Backgound
+                          Remove Backgound {window.outerWidth > 768 && <InfoIcon marginX="4px" color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('signInfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('signInfo').style.display = "block"} />}
                         </Button>
+                        
                       </HStack>
+                      <Text background="lightcyan" borderRadius="10%" display="none" id='signInfo'>Use white background only</Text>
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
