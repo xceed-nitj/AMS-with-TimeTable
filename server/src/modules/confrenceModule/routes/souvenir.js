@@ -2,6 +2,7 @@ const express = require("express");
 const Souvenir = require("../../../models/conferenceModule/souvenir");
 
 const SouvenirController = require("../crud/souvenir");
+const { checkRole } = require("../../checkRole.middleware");
 
 const souvenirController = new SouvenirController();
 const router = express.Router();
@@ -41,7 +42,7 @@ router.get("/conf/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/",checkRole(['EO']), async (req, res) => {
   try {
     const newSouvenir = req.body;
     await souvenirController.addSouvenir(newSouvenir);
@@ -67,7 +68,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",checkRole(['EO']), async (req, res) => {
   try {
     const souvenirId = req.params.id;
     await souvenirController.deleteSouvenir(souvenirId);

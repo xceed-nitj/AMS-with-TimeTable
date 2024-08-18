@@ -3,6 +3,7 @@ const SpeakersController = require("../crud/speakers");
 
 const speakersRouter = express.Router();
 const speakersController = new SpeakersController();
+const { checkRole } = require("../../checkRole.middleware");
 
 // GET /speakers/conference/:id
 speakersRouter.get("/conference/:id", async (req, res) => {
@@ -35,7 +36,7 @@ speakersRouter.get("/:id", async (req, res) => {
 });
 
 // POST /speakers
-speakersRouter.post("/", async (req, res) => {
+speakersRouter.post("/",checkRole(['EO']), async (req, res) => {
   try {
     await speakersController.createSpeaker(req, res);
   } catch (error) {
@@ -55,7 +56,7 @@ speakersRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /speakers/:id
-speakersRouter.delete("/:id", async (req, res) => {
+speakersRouter.delete("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await speakersController.deleteSpeaker(req, res);
   } catch (error) {

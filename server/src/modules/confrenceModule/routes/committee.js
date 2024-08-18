@@ -3,6 +3,7 @@ const CommitteesController = require("../crud/committees");
 
 const committeesRouter = express.Router();
 const committeesController = new CommitteesController();
+const { checkRole } = require("../../checkRole.middleware");
 
 // GET /committees/conference/:id
 committeesRouter.get("/", async (req, res) => {
@@ -55,7 +56,7 @@ committeesRouter.get("/:id", async (req, res) => {
 });
 
 // POST /committees
-committeesRouter.post("/", async (req, res) => {
+committeesRouter.post("/", checkRole(['EO']), async (req, res) => {
   try {
     const newCommittee = req.body;
     await committeesController.createCommittee(newCommittee);
@@ -82,7 +83,7 @@ committeesRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /committees/:id
-committeesRouter.delete("/:id", async (req, res) => {
+committeesRouter.delete("/:id", checkRole(['EO']), async (req, res) => {
   try {
     const id = req.params.id;
     await committeesController.deleteCommittee(id);

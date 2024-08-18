@@ -2,13 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, VStack, Text, Collapse, IconButton, Flex, Icon, useBreakpointValue } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon, HamburgerIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
-import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle, FaMailBulk, FaMailchimp } from 'react-icons/fa';
+import { FaHome, FaFileAlt, FaTasks, FaPaperPlane, FaPlus, FaClock, FaCheckCircle, FaMailBulk } from 'react-icons/fa';
+import { MdEvent, MdEventAvailable, MdEventNote, MdDeblur, MdAssignment, MdAssessment, MdGrade, MdTrackChanges } from 'react-icons/md';
+import { HiOutlineDocumentMagnifyingGlass } from "react-icons/hi2";
+import { RxBarChart } from "react-icons/rx";
 import getEnvironment from '../../getenvironment';
 import PRMDashboard from '../pages/prmdashboard';
+import SubmittedPapers from '../pages/SubmittedPapers';
 import SearchEvent from '../pages/searchEvent';
 import CompletedAssignment from '../pages/completedPaper'
 import PendingAssignment from '../pages/pendingAssignment'
 import Invitations from '../pages/Invitations'
+import ReviewsCompleted from '../pages/reviewsCompleted';
 
 const SideBarFinal = () => {
   const navigate = useNavigate();
@@ -17,6 +22,7 @@ const SideBarFinal = () => {
   const isLargeScreen = useBreakpointValue({ base: false, md: true });
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const [editorData, setEditorData] = useState([]);
+  const [editorIconsMap, setEditorIconsMap] = useState({});
   const [activeTab, setActiveTab] = useState('Home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(isLargeScreen);
 
@@ -34,9 +40,9 @@ const SideBarFinal = () => {
       label: 'Reviewer',
       icon: FaTasks,
       submenu: [
+        { label: 'Invitation', icon: FaMailBulk },
         { label: 'Pending assignment', icon: FaClock },
-        { label: 'Completed', icon: FaCheckCircle },
-        { label: 'Invitation', icon: FaMailBulk},
+        { label: 'Completed Reviews', icon: FaCheckCircle }
       ]
     },
     {
@@ -45,6 +51,15 @@ const SideBarFinal = () => {
       submenu: [] // Editor submenu will be populated dynamically
     }
   ];
+
+  const editorIcons = [
+    MdEvent, MdEventAvailable, MdEventNote, MdDeblur, MdAssignment, MdAssessment, MdGrade, MdTrackChanges, RxBarChart, HiOutlineDocumentMagnifyingGlass
+  ];
+
+  const getRandomIcon = () => {
+    const randomIndex = Math.floor(Math.random() * editorIcons.length);
+    return editorIcons[randomIndex];
+  };
 
   useEffect(() => {
     const fetchEditorData = async () => {
@@ -56,10 +71,23 @@ const SideBarFinal = () => {
           },
           credentials: "include",
         });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
         const data = await response.json();
+
         setEditorData(data);
+
+        const newIconsMap = {};
+        data.forEach(item => {
+          newIconsMap[item.name] = getRandomIcon();
+        });
+        setEditorIconsMap(newIconsMap);
       } catch (error) {
         console.error('Error fetching editor data:', error);
+        setEditorData([]);
       }
     };
 
@@ -101,16 +129,16 @@ const SideBarFinal = () => {
       content = <SearchEvent />;
       break;
     case 'Submitted Papers':
-      content = <Text>Submitted Papers Page</Text>;
+      content = <SubmittedPapers />;
+      break;
+    case 'Invitation':
+      content = <Invitations />;
       break;
     case 'Pending assignment':
       content = <PendingAssignment />;
       break;
-    case 'Completed':
-      content = <CompletedAssignment />;
-      break;
-    case 'Invitation':
-      content = <Invitations />;
+    case 'Completed Reviews':
+      content = <ReviewsCompleted />;
       break;
     case 'Event Dashboard':
       content = <PRMDashboard />;
@@ -193,23 +221,26 @@ const SideBarFinal = () => {
                   <Collapse in={openSubmenu === tab.label} animateOpacity>
                     <VStack pl={4} align="stretch">
                       {tab.label === 'Editor' ? (
-                        editorData.map((item, subIndex) => (
-                          <Box
-                            key={subIndex}
-                            p={2}
-                            borderRadius="md"
-                            cursor="pointer"
-                            bg={activeTab === item.name ? activeBg : 'transparent'}
-                            color={activeTab === item.name ? activeColor : textColor}
-                            _hover={{ bg: hoverBg, color: hoverColor }}
-                            onClick={() => handleSubmenuClick(tab.label, item.name)}
-                            display="flex"
-                            alignItems="center"
-                          >
-                            <Icon as={EditIcon} />
-                            <Text ml={2}>{item.name}</Text>
-                          </Box>
-                        ))
+                        editorData.map((item, subIndex) => {
+                          const IconComponent = editorIconsMap[item.name] || getRandomIcon();
+                          return (
+                            <Box
+                              key={subIndex}
+                              p={2}
+                              borderRadius="md"
+                              cursor="pointer"
+                              bg={activeTab === item.name ? activeBg : 'transparent'}
+                              color={activeTab === item.name ? activeColor : textColor}
+                              _hover={{ bg: hoverBg, color: hoverColor }}
+                              onClick={() => handleSubmenuClick(tab.label, item.name)}
+                              display="flex"
+                              alignItems="center"
+                            >
+                              <Icon as={IconComponent} />
+                              <Text ml={2}>{item.name}</Text>
+                            </Box>
+                          );
+                        })
                       ) : (
                         tab.submenu.map((subTab, subIndex) => (
                           <Box

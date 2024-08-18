@@ -1,18 +1,26 @@
 const mongoose = require('mongoose');
-const User = require('./user.js');
+const User = require('../usermanagement/user.js');
 const Event = require('./event.js');
 
 const paperSchema = new mongoose.Schema({
 
-    paperId: { type: String,  required:true},                          
+    paperId: { type: Number,  required:true},                          
     eventId: { type: mongoose.Schema.Types.ObjectId, ref:'Event' },    
     authors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],  
+    pseudo_authors: {
+        type: Array,
+        default: []
+    },
     abstract: {type:String, authorAccess:true,},
     tracks:[{type: String}],
     title: {type:String, authorAccess:true,},
     uploadLink: [{type:String, authorAccess:true,}],
     codeLink: [{type:String, authorAccess:true,}],
     version:{type: Number, default: 1,},
+    submissionStatus:{
+        type: String,
+        default: "Submitted"
+    },
     createdAt: {type:Date, },
     updatedAt: {type:Date, },
     ResubmissionDate: {type:Date, editorAccess:true,},

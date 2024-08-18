@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { commonFields, updateTimestamps } = require("../commonFields");
+const { type } = require("os");
 const participantTypes = ["participation", "prize"];
 const organiserTypes = ["department", "club", "center"];
 
@@ -18,6 +19,9 @@ const ParticipantSchema = new mongoose.Schema({
     type: String,
   },
   certiType: {
+    type: String,
+  },
+  types:{
     type: String,
   },
   teamName: {

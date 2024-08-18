@@ -9,33 +9,35 @@ import {
   Th,
   Td,
   Button,
-  Link,
+  Text,
+  Heading,
+  IconButton,
+  chakra,
+  useToast,
 } from '@chakra-ui/react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
-import Header from '../../components/header';
-import { useToast } from '@chakra-ui/react';
 
 function Invitations() {
   const apiUrl = getEnvironment();
   const [events, setEvents] = useState([]);
-  const [reviewers,setReviewer] = useState([]);
   const toast = useToast();
+  const navigate = useNavigate();
 
   const fetchEvents = async () => {
     try {
-
-      const User = await fetch(`${apiUrl}/user/getuser`, {
+      const userResponse = await fetch(`${apiUrl}/user/getuser`, {
         method: "GET",
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
       });
-      const userdetails = await User.json();
-      const id = userdetails.user._id;
+      const userDetails = await userResponse.json();
+      const userId = userDetails.user._id;
 
-      const response = await fetch(`${apiUrl}/reviewmodule/event/geteventsbyreviewer/${id}`, {
+      const response = await fetch(`${apiUrl}/reviewmodule/event/geteventsbyreviewer/${userId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -45,17 +47,11 @@ function Invitations() {
 
       if (response.ok) {
         const data = await response.json();
-        for(let i=0; i<data.length; i++) {
-          let n = data[i].reviewer.length;
-          for(let j=0;j<n;j++){
-            if(data[i].reviewer[j].user === id){
-              data[i].reviewer = data[i].reviewer[j];
-              break;
-            }
-          }
-        }
-        console.log(data);
-        setEvents(data);
+        const processedData = data.map(event => {
+          const reviewer = event.reviewer.find(r => r.user === userId);
+          return { ...event, reviewer };
+        });
+        setEvents(processedData);
       } else {
         console.error("Failed to fetch Invitations");
       }
@@ -63,16 +59,15 @@ function Invitations() {
       console.error("Error:", error);
     }
   };
+
   useEffect(() => {
-    console.log("Fetching events with apiUrl:", apiUrl);
     fetchEvents();
-  }, [apiUrl]);
+  }, []);
 
-  const handleAccept = async (eventId,userId)=>{
-    try{
-      const res = await axios.post(`${apiUrl}/reviewmodule/event/updateReviewerStatus/${eventId}/${userId}`,{status : 'Accepted'});
-      if(res){
-        console.log("Action performed successfully");
+  const handleAccept = async (eventId, userId) => {
+    try {
+      const res = await axios.post(`${apiUrl}/reviewmodule/event/updateReviewerStatus/${eventId}/${userId}`, { status: 'Accepted' });
+      if (res.status === 200) {
         toast({
           title: 'Accepted successfully',
           status: 'success',
@@ -80,10 +75,10 @@ function Invitations() {
           isClosable: true,
           position: 'bottom',
         });
-        window.location.reload();
+        fetchEvents();
       } else {
         toast({
-          title: 'Error accepting Invitation as api path is wrong',
+          title: 'Error accepting Invitation',
           description: 'Please try again later',
           status: 'error',
           duration: 6000,
@@ -94,32 +89,31 @@ function Invitations() {
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: error.response.data,
-        description: 'Check again',
+        title: 'Error',
+        description: error.response?.data || 'Check again',
         status: 'error',
         duration: 6000,
         isClosable: true,
         position: 'bottom',
-      }); 
+      });
     }
-  }
+  };
 
-  const handleReject = async (eventId,userId)=>{
-    try{
-      const res = await axios.post(`${apiUrl}/reviewmodule/event/updateReviewerStatus/${eventId}/${userId}`,{status : 'Not Accepted'});
-      if(res){
-        console.log("Action performed successfully");
+  const handleReject = async (eventId, userId) => {
+    try {
+      const res = await axios.post(`${apiUrl}/reviewmodule/event/updateReviewerStatus/${eventId}/${userId}`, { status: 'Not Accepted' });
+      if (res.status === 200) {
         toast({
-          title: 'Accepted successfully',
+          title: 'Rejected successfully',
           status: 'success',
           duration: 6000,
           isClosable: true,
           position: 'bottom',
         });
-        window.location.reload();
+        fetchEvents();
       } else {
         toast({
-          title: 'Error accepting Invitation as api path is wrong',
+          title: 'Error rejecting Invitation',
           description: 'Please try again later',
           status: 'error',
           duration: 6000,
@@ -130,22 +124,83 @@ function Invitations() {
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: error.response.data,
-        description: 'Check again',
+        title: 'Error',
+        description: error.response?.data || 'Check again',
         status: 'error',
         duration: 6000,
         isClosable: true,
         position: 'bottom',
-      }); 
+      });
     }
-  }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Accepted':
+        return 'green.400';
+      case 'Invited':
+        return 'yellow.400';
+      case 'Not Accepted':
+        return 'red.400';
+      default:
+        return 'gray.200';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'Accepted':
+        return 'Accepted';
+      case 'Invited':
+        return 'Invited';
+      case 'Not Accepted':
+        return 'Not Accepted';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  const HeaderInvitations = ({ title }) => (
+    <Heading mr='1' ml='1' display='flex'>
+      <IconButton
+        mb='1'
+        variant='ghost'
+        onClick={() => navigate(-1)}
+        _hover={{ bgColor: 'transparent' }}
+      >
+        <chakra.svg
+          xmlns='http://www.w3.org/2000/svg'
+          fill='none'
+          viewBox='0 0 24 24'
+          strokeWidth={1.5}
+          stroke='white'
+          className='w-6 h-6'
+          _hover={{ stroke: '#00BFFF' }}
+        >
+          <path
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            d='M11.25 9l-3 3m0 0l3 3m-3-3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+          />
+        </chakra.svg>
+      </IconButton>
+      <chakra.div marginInline='auto' color="white" fontSize='25px' mt='2'>
+        {title}
+      </chakra.div>
+    </Heading>
+  );
 
   return (
-    <Container>
-      <Header title="Invitations List" />
+    <Container maxWidth="100%">
+      <br />
+      <Box display="flex" justifyContent="center" mt={4}>
+        <Box bg="black" p={0.2} width='80%'>
+          <HeaderInvitations title="Invitations" />
+        </Box>
+      </Box>
+      <br />
 
-      <Box maxW="xl" mx="auto" mt={10}>
-        <h1>Invitations</h1>
+      <Box maxW="80%" mx="auto" mt={10}>
         <Table variant="simple" mt={8}>
           <Thead>
             <Tr>
@@ -156,15 +211,34 @@ function Invitations() {
           </Thead>
           <Tbody>
             {events.map((event) => (
-              <Tr>
+              <Tr key={event._id}>
                 <Td>{event.name}</Td>
-                <Td>{event.reviewer.status}</Td>
-                {(event.reviewer.status !== 'Accepted' && event.reviewer.status!=='Not Accepted') && (
-                  <>
-                    <Td><Button  onClick={()=>handleAccept(event._id,event.reviewer.user)}>Accept</Button></Td>
-                    <Td><Button  onClick={()=>handleReject(event._id,event.reviewer.user)}>Reject</Button></Td>
-                  </>
-                )}
+                <Td textAlign="center">
+                    <Box bg={getStatusColor(event.reviewer.status)} p={2} borderRadius="md">
+                      <Text color="white">{getStatusText(event.reviewer.status)}</Text>
+                    </Box>
+                  </Td>
+                <Td colSpan={2}>
+                  {event.reviewer.status === 'Invited' ? (
+                    <>
+                      <Button
+                        onClick={() => handleAccept(event._id, event.reviewer.user)}
+                        colorScheme="green"
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        onClick={() => handleReject(event._id, event.reviewer.user)}
+                        colorScheme="red"
+                        ml={2}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  ) : (
+                    <Text>No action required</Text>
+                  )}
+                </Td>
               </Tr>
             ))}
           </Tbody>

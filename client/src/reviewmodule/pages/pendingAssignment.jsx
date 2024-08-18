@@ -30,8 +30,12 @@ function PendingAssignment() {
                 const Papers = response.data;
                 let pendingPaper = [];
                 for (let i = 0; i < Papers.length; i++) {
-                    if (Papers[i].status === 'Under Review') {
-                        pendingPaper.push(Papers[i]);
+                    if(Papers[i].status==='Under Review'){
+                        for(let j=0;j<Papers[i].reviewers.length;j++){
+                            if(Papers[i].reviewers[j].userId === id && !Papers[i].reviewers[j].completedDate){
+                                pendingPaper.push(Papers[i]);
+                            }
+                        }
                     }
                 }
 
@@ -57,7 +61,7 @@ function PendingAssignment() {
             <Header title="Pending Paper List" />
 
             <Box maxW="xl" mx="auto" mt={10}>
-                <h1>Pending Papers</h1>
+                
                 <Table variant="simple" mt={8}>
                     <Thead>
                         <Tr>
@@ -69,12 +73,12 @@ function PendingAssignment() {
                     </Thead>
                     <Tbody>
                         {pending.map((paper) => (
-                            <Tr key={paper.paperId}>
+                            <Tr key={paper._id}>
                                 <Td>{paper.paperId}</Td>
                                 <Td>{paper.title}</Td>
                                 <Td>{paper.abstract}</Td>
                                 <Td>
-                                    <Link as={RouterLink} to={`/prm/${paper.eventId}/${paper.paperId}/${userId}/Review`} color="teal.500">
+                                    <Link as={RouterLink} to={`/prm/${paper.eventId}/${paper._id}/${userId}/Review`} color="teal.500">
                                         Answer
                                     </Link>
                                 </Td>

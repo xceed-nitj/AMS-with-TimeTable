@@ -3,6 +3,7 @@ const ContactUsController = require("../crud/contactUs"); // Change to the appro
 
 const contactUsRouter = express.Router();
 const contactUsController = new ContactUsController();
+const { checkRole } = require("../../checkRole.middleware");
 
 // GET /contact-us/conference/:id
 contactUsRouter.get("/conference/:id", async (req, res) => {

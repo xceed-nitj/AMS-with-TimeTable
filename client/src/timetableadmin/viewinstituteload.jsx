@@ -1,517 +1,319 @@
-import React, { useState, useEffect } from "react";
-// import jsPDF from "jspdf";
-import { useNavigate, useLocation, Form } from "react-router-dom";
-import getEnvironment from "../getenvironment";
-import ViewTimetable from "./viewtt";
-import TimetableSummary from "./ttsummary";
-import "./Timetable.css";
-import Papa from 'papaparse';
-// import { saveAs } from 'file-saver';
-
-import {   Container } from "@chakra-ui/layout";
-import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
+// src/DataTable.js
+import React, { useEffect, useState, useMemo } from 'react';
+import { Box, Table, Thead, Tbody, HStack, Tr, Th, Td, TableContainer, Spinner, Alert, 
+  AlertIcon, Container, FormControl, FormLabel, Select, Button, Input,
+  VStack, Text, Center, Spacer } from '@chakra-ui/react';
+import { FaMinus } from 'react-icons/fa';
+import { Parser } from '@json2csv/plainjs';
+import { Helmet } from 'react-helmet-async';
+import getEnvironment from '../getenvironment';
+import Header from '../components/header';
 import {
-  CustomTh,
-  CustomLink,
   CustomBlueButton,
-  CustomPlusButton,
-  CustomDeleteButton,
 } from "../styles/customStyles";
 
-  import { Box,   useToast,Text, Portal, ChakraProvider } from "@chakra-ui/react";
-
-
-import {
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/table";
-import { Button } from "@chakra-ui/button";
-import Header from "../components/header";
-
-// import PDFViewTimetable from '../filedownload/chakrapdf'
-
-function ViewInstituteLoad() {
-  // const [viewData, setViewData] = useState({});
-  const [viewFacultyData, setViewFacultyData] = useState({});
-  // const [viewRoomData, setViewRoomData] = useState({});
-  // const [semNotes, setSemNotes] = useState([]);
-  // const [facultyNotes, setFacultyNotes] = useState([]);
-  // const [roomNotes, setRoomNotes] = useState([]);
-  const [selectedSemester, setSelectedSemester] = useState("");
-  const [loadFaculty, setLoadFaculty] = useState({});
-  const [selectedRoom, setSelectedRoom] = useState("");
-  const [commonLoad, setCommonLoad]=useState();
-  const [currentDept, setCurrentDept]=useState();
+const MasterLoadDataTable = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [allSessions, setAllSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState('');
+  const [filters, setFilters] = useState({});
+  const [searchTerms, setSearchTerms] = useState({});
+  const [hiddenColumns, setHiddenColumns] = useState([]);
 
   const apiUrl = getEnvironment();
-  const toast = useToast();
-  // const navigate = useNavigate();
-  // const currentURL = window.location.pathname;
-  // const parts = currentURL.split("/");
-  // const currentCode = parts[parts.length - 2];
-  const [excludeTheory, setExcludeTheory] = useState(false);
-
-  const [availableSems, setAvailableSems] = useState([]);
-  const [availableRooms, setAvailableRooms] = useState([]);
-  const [availableFaculties, setAvailableFaculties] = useState([]);
-  const [facultyHoursCount, setFacultyHoursCount] = useState({});
-
-
-  // const [lockedTime, setLockedTime] = useState();
-  // const [facultyLockedTime, setFacultyLockedTime] = useState();
-  // const [roomlockedTime, setRoomLockedTime] = useState();
-
-  const [allsessions, setAllSessions]=useState([]);
-  const [availableDepts, setAvailableDepts] = useState([]);
-  const [availableLoad, setAvailableLoad] = useState({});
-  const [selectedSession, setSelectedSession]=useState('');
-  const [selectedDept, setSelectedDept]=useState('');
-  const [facultyDesignation, setFacultyDesignation]=useState({});
-  const [loading, setLoading] = useState(false);
-
-  const semesters = availableSems;
 
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/timetable/sess/allsessanddept`,
-          { credentials: "include" }
-        );
+        const response = await fetch(`${apiUrl}/timetablemodule/timetable/sess/allsessanddept`, { credentials: 'include' });
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-  
         const data = await response.json();
-        // console.log('session data',data)
-        const { uniqueSessions, uniqueDept } = data;
-  
+        const { uniqueSessions } = data;
         setAllSessions(uniqueSessions);
-        setAvailableDepts(uniqueDept);
-  
-        console.log('Received session data:', uniqueSessions);
-        console.log('Received department data:', uniqueDept);
       } catch (error) {
-        console.error("Error fetching existing timetable data:", error);
+        console.error('Error fetching session and department data:', error);
       }
     };
-  
     fetchSessions();
-
-  }, []); // Empty dependency array means this effect runs once on mount
-  
-  const handleCalculateLoad = () => {
-    setLoading(true); 
-    // Make a request to your backend with the entered session value
-    fetch(`${apiUrl}/timetablemodule/instituteLoad/${selectedSession}`)
-      .then(response => response.json())
-      .then(data => {
-        // Handle the data in your frontend (e.g., update UI)
-        // console.log(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching institute load details:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch institute load details",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      });
-  };
+  }, [apiUrl]);
 
   useEffect(() => {
-    const fetchDepartmentFacultyData = async (selectedSession,selectedDept) => {
+    const fetchData = async () => {
+      if (!selectedSession) return;
+      setLoading(true);
       try {
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/instituteLoad/${selectedSession}/${selectedDept}`,
-          { credentials: "include" }
-        );
+        const response = await fetch(`${apiUrl}/timetablemodule/mastertable/session/${selectedSession}`, { credentials: 'include' });
         if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          throw new Error('Network response was not ok');
         }
-  
-        const data = await response.json();
-  
-        console.log('load data', data);
-        const calculatedLoad = calculateFacultyWiseLoad(data);
-        console.log('calculated load',calculatedLoad)
-        const desig = fetchFacultyDesignation(data);
-
-    
-    setAvailableLoad(calculatedLoad)
-    setFacultyDesignation(desig)
+        const fetchedData = await response.json();
+        setData(fetchedData);
       } catch (error) {
-        console.error("Error fetching existing timetable data:", error);
+        setError(error);
+      } finally {
+        setLoading(false);
       }
     };
-  
-    fetchDepartmentFacultyData(selectedSession,selectedDept);
+    fetchData();
+  }, [apiUrl, selectedSession]);
 
-  }, [selectedDept]); // Empty dependency array means this effect runs once on mount
-
-
-  function fetchFacultyDesignation(data) {
-    // const facultyWiseLoad = {};
-    const facultyDesignation={}
-  
-    data.forEach((faculty) => {
-      const { name, designation} = faculty;
-      facultyDesignation[name]=designation ||{};
-    // console.log('Faculty Wise Load:', facultyWiseLoad);
-    });
-    return facultyDesignation;
-  }
-
-  // function calculateFacultyWiseLoad(data) {
-  //   const facultyWiseLoad = {};
-  //   // const facultyDesignation={}
-  
-  //   data.forEach((faculty) => {
-  //     const { name, sem, type, load , designation} = faculty;
-  //     // facultyDesignation[name]=designation ||{};
-
-  //     facultyWiseLoad[name] = facultyWiseLoad[name] || {};
-  //     // facultyWiseLoad[designation] = facultyWiseLoad[designation] || {};
-  
-  //     sem.forEach((s, index) => {
-  //       const t = type[index];
-  //       const l = load[index];
-  
-  //       console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
-  
-  //       facultyWiseLoad[name][s] = facultyWiseLoad[name][s] || {};
-  //       facultyWiseLoad[name][s][t] = (facultyWiseLoad[name][s][t] || 0) + l;
-  //     });
-  //   });
-  
-  //   // console.log('Faculty Wise Load:', facultyWiseLoad);
-  //   return facultyWiseLoad;
-  // }
-  function calculateFacultyWiseLoad(data) {
-  const facultyWiseLoad = {};
-
-  data.forEach((faculty) => {
-    const { name, sem, type, load, designation } = faculty;
-
-    facultyWiseLoad[name] = facultyWiseLoad[name] || {};
-
-    sem.forEach((s, index) => {
-      // Ensure that type[index] is a string before applying trim()
-      // const t = (typeof type[index] === 'string' ? type[index] : '').trim().toLowerCase();
-      const t = type[index] ? String(type[index]).trim().toLowerCase() : '';
-
-      const l = load[index];
-
-      console.log(`Processing faculty ${name}, semester ${s}, type ${t}, load ${l}`);
-
-      facultyWiseLoad[name][s] = facultyWiseLoad[name][s] || {};
-      facultyWiseLoad[name][s][t] = (facultyWiseLoad[name][s][t] || 0) + l;
-    });
-  });
-
-  return facultyWiseLoad;
-}
-
-
-  const Usemesters = [...new Set(Object.keys(availableLoad).flatMap(faculty => Object.keys(availableLoad[faculty])))];
-  const types = ['theory', 'laboratory', 'tutorial'];
-  
-  // Generate a set of unique columns based on available data
-  const uniqueColumns = new Set();
-  Object.keys(availableLoad).forEach((faculty) => {
-    Usemesters.forEach((semester) => {
-      types.forEach((type) => {
-        uniqueColumns.add(`${faculty}-${semester}-${type}`);
-      });
-    });
-  });
-   const totalLoads = {}; 
-
-
-   const [csvData, setCsvData] = useState("");
-
-   // ... (existing code)
-
-   const handleDownloadCSV = () => {
-    const csvData = convertToCSV();
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-
-    link.href = URL.createObjectURL(blob);
-    link.download = "table_data.csv";
-    link.style.display = "none";
-
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
+  const handleFilterChange = (column, value) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      [column]: value
+    }));
   };
 
- // ... (existing code)
+  const handleSearchChange = (column, value) => {
+    setSearchTerms(prevTerms => ({
+      ...prevTerms,
+      [column]: value
+    }));
+  };
 
- const convertToCSV = () => {
-  let csvContent = `Session: ${selectedSession}, Department: ${selectedDept}\n`;
-  csvContent += "Faculty,Designation"; // Include Designation in the header
+  const clearFilters = () => {
+    setFilters({});
+    setSearchTerms({});
+  };
 
-  Usemesters.forEach((semester) => {
-    types.forEach((type) => {
-      if (type.toLowerCase() === 'theory') {
-        csvContent += `,${semester}-${type}`;
+  const columns = [
+    { label: "Subject Full Name", key: "subjectFullName" },
+    { label: "Faculty", key: "faculty" },
+    { label: "Offering Dept", key: "offeringDept" },
+    { label: "Room", key: "room" },
+    { label: "Subject Type", key: "subjectType" },
+    { label: "Subject Dept", key: "subjectDept" },
+    { label: "Sem", key: "sem" },
+    { label: "Year", key: "year" },
+    { label: "Degree", key: "degree" },
+    { label: "Subject Code", key: "subjectCode" },
+    { label: "Subject", key: "subject" },
+    { label: "Subject Credit", key: "subjectCredit" },
+    { label: "Load", key: "count" },
+  ];
+
+  function filterUniqueObjects(objects) {
+    const seen = new Set();
+    return objects.filter(obj => {
+      const key = JSON.stringify({
+        code: obj.code,
+        degree: obj.degree,
+        faculty: obj.faculty,
+        mergedClass: obj.mergedClass,
+        offeringDept: obj.offeringDept,
+        room: obj.room,
+        sem: obj.sem,
+        session: obj.session,
+        subject: obj.subject,
+        subjectCode: obj.subjectCode,
+        subjectCredit: obj.subjectCredit,
+        subjectDept: obj.subjectDept,
+        subjectFullName: obj.subjectFullName,
+        subjectType: obj.subjectType,
+        updated_at: obj.updated_at,
+        year: obj.year
+      });
+
+      if (seen.has(key)) {
+        return false;
+      } else {
+        seen.add(key);
+        return true;
       }
     });
-  });
+  }
 
-  csvContent += ",Total Theory Load,Tutorial+Lab Load,Total Faculty Load\n";
-
-  Object.keys(availableLoad).forEach((faculty) => {
-    csvContent += `${faculty},${facultyDesignation[faculty]}`; // Include Designation in the row
-
-    let totalTheoryLoad = 0;
-
-    Usemesters.forEach((semester) => {
-      types.forEach((type) => {
-        if (type.toLowerCase() === 'theory') {
-          const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
-          const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
-          csvContent += `,${adjustedLoadValue}`;
-          totalTheoryLoad += adjustedLoadValue;
+  const mergeAndFilterData = (data) => {
+    const mergedData = {};
+    data.forEach(item => {
+      const key = item.subjectFullName;
+      if (!mergedData[key]) {
+        mergedData[key] = { 
+          ...item, 
+          count: 1, 
+          faculty: [item.faculty],
+          offeringDept: [item.offeringDept],
+          room: [item.room],
+        };
+        delete mergedData[key].day;
+        delete mergedData[key].slot;
+      } else {
+        mergedData[key].count += 1;
+        if (!mergedData[key].faculty.includes(item.faculty)) {
+          mergedData[key].faculty.push(item.faculty);
         }
-      });
+        if (!mergedData[key].offeringDept.includes(item.offeringDept)) {
+          mergedData[key].offeringDept.push(item.offeringDept);
+        }
+        if (!mergedData[key].room.includes(item.room)) {
+          mergedData[key].room.push(item.room);
+        }
+      }
     });
 
+    return Object.values(mergedData).map(item => ({
+      ...item,
+      faculty: item.faculty.sort().join(', '),
+      offeringDept: item.offeringDept.join(', '),
+      room: item.room.join(', '),
+    }));
+  };
 
-    
-    const tutorialLabLoad = Object.keys(availableLoad[faculty] || {}).map((semester) => {
-      const tutorialLoad = availableLoad[faculty][semester]['tutorial'] || 0;
-      const laboratoryLoad = availableLoad[faculty][semester]['laboratory'] || 0;
-      return tutorialLoad + laboratoryLoad;
-    }).reduce((sum, value) => sum + value, 0);
+  const filteredData = useMemo(() => {
+    const filtered = filterUniqueObjects(data.filter(item =>
+      item.subject && item.faculty &&
+      Object.entries(filters).every(([key, value]) => {
+        const itemValue = item[key];
+        return !value || (itemValue && itemValue.toString().toLowerCase() === value.toLowerCase());
+      }) &&
+      Object.entries(searchTerms).every(([key, term]) => {
+        const itemValue = item[key];
+        return !term || (itemValue && itemValue.toString().toLowerCase().includes(term.toLowerCase()));
+      })
+    ));
+    return mergeAndFilterData(filtered);
+  }, [data, filters, searchTerms]);
 
-    const totalLoad = totalLoads[faculty] || 0;
+  const filterOptions = useMemo(() => {
+    return columns.reduce((acc, { key }) => {
+      const columnValues = filteredData.map(item => item[key]).filter(value => value !== undefined && value !== null);
+      acc[key] = Array.from(new Set(columnValues)).filter(Boolean).sort((a, b) => a.toString().localeCompare(b.toString()));
+      return acc;
+    }, {});
+  }, [filteredData, columns]);
+  
+  if (loading) {
+    return <Spinner size="xl" />;
+  }
 
-    csvContent += `,${totalTheoryLoad},${tutorialLabLoad},${totalLoad}\n`;
-  });
+  if (error) {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        {error.message}
+      </Alert>
+    );
+  }
 
-  return csvContent;
+  const downloadCSV = () => {
+    const visibleColumns = columns.filter(c => !hiddenColumns.includes(c.key));
+    const csvData = filteredData.map(item => {
+      const filteredItem = {};
+      visibleColumns.forEach(({ key }) => {
+        filteredItem[key] = item[key];
+      });
+      return filteredItem;
+    });
+
+    const parser = new Parser({ fields: visibleColumns.map(c => c.key) });
+    const csv = parser.parse(csvData);
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'Timetable-XCEED.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>Master search Time Table | XCEED NITJ</title>
+        <meta name="description" content="NITJ's official time table search engine for all semesters and courses" />
+      </Helmet>
+      <Container maxW="7xl">
+        <Header title="Timetable Master Search" />
+        <FormControl id="session" my={4}>
+          <FormLabel fontWeight="bold">Select Session:</FormLabel>
+          <Select value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)} isRequired>
+            <option value="">Select Session</option>
+            {allSessions.map((session, index) => (
+              <option key={index} value={session}>{session}</option>
+            ))}
+          </Select>
+        </FormControl>
+        <HStack>
+          <CustomBlueButton onClick={clearFilters} mb={4}>Clear Filters</CustomBlueButton>
+          {
+            !hiddenColumns.length ? '' :
+              <CustomBlueButton onClick={() => setHiddenColumns([])} mb={4}>Show All Columns</CustomBlueButton>
+          }
+          <Spacer />
+          <Center>
+            <Button colorScheme='green' onClick={downloadCSV}>Download in CSV</Button>
+          </Center>
+        </HStack>
+        <Box p={4}>
+          <TableContainer>
+            <Table variant="striped" colorScheme="teal">
+              <Thead>
+                <Tr>
+                  {columns.filter(c => !hiddenColumns.includes(c.key)).map(({ label, key }) => (
+                    <Th key={key}>
+                      <VStack align="stretch" spacing={2}>
+                        <HStack justifyContent={'space-between'}>
+                          <Text fontWeight="bold" fontSize="sm" color="blueviolet">{label}</Text>
+                          {
+                            (hiddenColumns.includes(key)) ? '' :
+                              <Box aspectRatio={'1/1'} padding={'2px'}
+                                borderRadius={'50%'} color={'red'}
+                                border='2px solid red' cursor={'pointer'}
+                                onClick={() => {
+                                  setHiddenColumns([...hiddenColumns, key])
+                                }}
+                              >
+                                <FaMinus />
+                              </Box>
+                          }
+                        </HStack>
+                        <Input
+                          placeholder={`Search ${label}`}
+                          size="sm"
+                          value={searchTerms[key] || ''}
+                          onChange={(e) => handleSearchChange(key, e.target.value)}
+                        />
+                        <Select
+                          size="sm"
+                          onChange={(e) => handleFilterChange(key, e.target.value)}
+                          value={filters[key] || ''}
+                        >
+                          <option value="">All</option>
+                          {filterOptions[key] && filterOptions[key].map((value) => (
+                            <option key={value} value={value}>{value}</option>
+                          ))}
+                        </Select>
+                      </VStack>
+                    </Th>
+                  ))}
+                </Tr>
+              </Thead>
+              <Tbody>
+                {filteredData.map((item, index) => (
+                  <Tr key={index}>
+                    {columns.filter(c => !hiddenColumns.includes(c.key)).map(({ key }) => (
+                      <Td key={key}>
+                        {item[key] !== undefined && item[key] !== null ? item[key].toString() : ''}
+                      </Td>
+                    ))}
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </TableContainer>
+        </Box>
+      </Container>
+    </>
+  );
 };
 
-// ... (existing code)
-
-  
-
-   return (
-    <Container maxW="6xl">
-      {/* <Header title="Load Distribution "></Header> */}
-      {/* <Text>Perform load calculation first. It will take approximately 15 min and then go for department load calculation</Text>
-      <FormLabel fontWeight="bold">Select Session to calculate load:</FormLabel>
-      <Select
-        value={selectedSession}
-        onChange={(e) => setSelectedSession(e.target.value)}
-      >
-        <option value="">Select Session</option>
-        {allsessions.map((session, index) => (
-          <option key={index} value={session}>
-            {session}
-          </option>
-        ))}
-      </Select>
-      <Button colorScheme="blue" onClick={handleCalculateLoad} isLoading={loading}>
-        Calculate Load
-      </Button> */}
-      <Header title="Departmentwise load distribution"></Header>
-
-      {/* <FormLabel fontWeight="bold">Select Session:</FormLabel> */}
-      <Select
-        value={selectedSession}
-        onChange={(e) => setSelectedSession(e.target.value)}
-      >
-        <option value="">Select Session</option>
-        {allsessions.map((session, index) => (
-          <option key={index} value={session}>
-            {session}
-          </option>
-        ))}
-      </Select>
-      <Select
-        value={selectedDept}
-        onChange={(e) => setSelectedDept(e.target.value)}
-      >
-        <option value="">Select Department</option>
-        {availableDepts.map((dept, index) => (
-          <option key={index} value={dept}>
-            {dept}
-          </option>
-        ))}
-      </Select>
-      
-      <>
-
-
- 
-     
-<TableContainer>  
-{Usemesters.length > 0 && (
-        <table>
-        <thead>
-  <tr>
-  <th rowSpan="2">Faculty</th>
-  <th rowSpan="2">Designation</th>
-    {Usemesters
-      .sort((a, b) => {
-        const getTypeOrder = (type) => {
-          const typeOrder = {
-            'b.tech': 0,
-            'm.tech': 1,
-            'b.sc':2,
-            'm.sc':3,
-            'b.sc-b.ed':4,
-            'ph.d':5,
-            'mba':6
-            // Add conditions for other program types if needed
-          };
-          return typeOrder[type.toLowerCase()];
-        };
-
-        const typeOrderA = getTypeOrder(a.split('-')[0]);
-        const typeOrderB = getTypeOrder(b.split('-')[0]);
-
-        // First, arrange by program type
-        if (typeOrderA !== typeOrderB) {
-          return typeOrderA - typeOrderB;
-        }
-
-        // If the program types are the same, arrange by semester number
-        const numberA = parseInt(a.split('-')[1]);
-        const numberB = parseInt(b.split('-')[1]);
-
-        return numberA - numberB;
-      })
-      .map((semester) => (
-        <React.Fragment key={`header-${semester}`}>
-          <th colSpan={types.length}>{semester}</th>
-        </React.Fragment>
-      ))}
-  <th rowSpan="2">Theory Load</th>
-
-    <th rowSpan="2">Tutorial+Lab Load</th>
-    {/* <th rowSpan="2">Project Load</th> */}
-    <th rowSpan="2">Total Faculty Load </th>
-  </tr>
-  <tr>
-    {[...Usemesters].map((semester) =>
-  types.map((type) => {
-    // Only render headers for 'Theory' if excludeTheory is false
-    if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
-      return (
-        <th key={`header-${semester}-${type}`}>{`${type}`}</th>
-      );
-    }
-    return null;
-  })
-)}
-  </tr>
-</thead>
-
-
-<tbody>
-  {Object.keys(availableLoad).map((faculty) => (
-    <tr key={faculty}>
-      <td>{faculty}</td>
-      <td>{facultyDesignation[faculty]}</td>
-      {[...Usemesters].map((semester) =>
-        types.map((type) => {
-          if (!excludeTheory || (excludeTheory && type.toLowerCase() === 'theory')) {
-            const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
-            const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
-
-            totalLoads[faculty] = totalLoads[faculty] || 0;
-            totalLoads[faculty] += adjustedLoadValue;
-
-            return (
-              <td key={`${faculty}-${semester}-${type}`}>
-                {adjustedLoadValue}
-              </td>
-            );
-          }
-          return null;
-        })
-      )}
-{/* <td key={`${faculty}-total-theory-load`}>
-  {
-    [ ...Usemesters ].map((semester) =>
-      types.reduce((sum, type) => {
-        if (type.toLowerCase() === 'theory') {
-          const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
-          const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
-          return sum + adjustedLoadValue;
-        }
-        return sum; // Ignore non-'theory' types
-      }, 0)
-    )
-  }
-</td> */}
-<td key={`${faculty}-total-theory-load`}>
-  {Usemesters.map((semester) => {
-    const totalTheoryLoad = types.reduce((sum, type) => {
-      if (type.toLowerCase() === 'theory') {
-        const loadValue = availableLoad[faculty]?.[semester]?.[type] || 0;
-        const adjustedLoadValue = excludeTheory && type.toLowerCase() === 'theory' ? 0 : loadValue;
-        return sum + adjustedLoadValue;
-      }
-      return sum; // Ignore non-'theory' types
-    }, 0);
-
-    return totalTheoryLoad;
-  }).reduce((sum, value) => sum + value, 0)}
-</td>
-
-      {/* Sum of 'Tutorial', 'Laboratory', and 'Project' for each faculty */}
-      <td key={`${faculty}-tutorial-laboratory-project-sum`}>
-        {Object.keys(availableLoad[faculty] || {}).map((semester) => {
-          const tutorialLoad = availableLoad[faculty][semester]['tutorial'] || 0;
-          const laboratoryLoad = availableLoad[faculty][semester]['laboratory'] || 0;
-          // const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
-
-          return tutorialLoad + laboratoryLoad ;
-        }).reduce((sum, value) => sum + value, 0)}
-      </td>
-      {/* Separate column for 'Project' load */}
-      {/* <td key={`${faculty}-project-sum`}>
-        {Object.keys(availableLoad[faculty] || {}).map((semester) => {
-          const projectLoad = availableLoad[faculty][semester]['Project'] || 0;
-          return projectLoad;
-        }).reduce((sum, value) => sum + value, 0)}
-      </td>
-  */}
-      {/* Total load for each faculty */}
-      <td>{totalLoads[faculty]}</td>
-    </tr>
-  ))}
-</tbody>
-
-<Button colorScheme="blue"  onClick={handleDownloadCSV}>
-        Download Load Distribution in CSV
-      </Button>
-        </table>
-        
-)}
-        </TableContainer>
-      </>
-     
-    </Container>
-  
-  );
-  
-  
-}
-
-export default ViewInstituteLoad;
-
+export default MasterLoadDataTable;

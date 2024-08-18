@@ -4,6 +4,7 @@ const Event = require("../../../models/conferenceModule/event");
 const EventController = require("../crud/events");
 
 const eventController = new EventController();
+const { checkRole } = require("../../checkRole.middleware");
 const router = express.Router();
 
 router.get("/", async (req, res) => {
@@ -41,7 +42,7 @@ router.get("/conf/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/",checkRole(['EO']), async (req, res) => {
   try {
     const newEvent = req.body;
     await eventController.addEvent(newEvent);
@@ -67,7 +68,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",checkRole(['EO']), async (req, res) => {
   try {
     const eventId = req.params.id;
     await eventController.deleteEvent(eventId);

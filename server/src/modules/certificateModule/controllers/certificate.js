@@ -3,7 +3,6 @@ const certificate = require("../../../models/certificateModule/certificate");
 
 class AddcertificateController {
   async addcertificate(eventId, newCertificate) {
-
     try {
       console.log(newCertificate)
       // Check if a certificate with the given event ID already exists
@@ -13,6 +12,7 @@ class AddcertificateController {
 
       if (existingCertificate) {
         // If exists, update the existing certificate
+        // console.log(newCertificate)
         const updatedCertificate = await certificate.updateOne(
           { eventId: eventId, certiType: newCertificate.certiType },
           {
@@ -26,6 +26,7 @@ class AddcertificateController {
               footer: newCertificate.footer,
               signatures: newCertificate.signatures,
               templateId: newCertificate.templateId,
+              certificateOf: newCertificate.certificateOf,
             },
           }
         );
@@ -44,6 +45,7 @@ class AddcertificateController {
           signatures: newCertificate.signatures,
           certiType: newCertificate.certiType,
           templateId: newCertificate.templateId,
+          certificateOf: newCertificate.certificateOf,
           eventId: eventId,
         });
 
@@ -81,7 +83,7 @@ class AddcertificateController {
     }
     try {
       const data = await certificate.find({ eventId: id, certiType: type });
-      if (!data) throw new HttpException(400, "certificate does not exist");
+      if (!data || data.length == 0) throw new HttpException(400, "certificate does not exist");
       return data;
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");

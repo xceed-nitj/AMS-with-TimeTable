@@ -1,18 +1,18 @@
 const mongoose = require("mongoose");
-const User = require("../../../models/reviewModule/user.js");
+const User = require("../../../models/usermanagement/user.js");
 
 const addUser = async (req, res) => {
-  const { name, Dept, Designation, College, Period, profession, email, role, password, area } =
+  const { name,  profession, email, role, password, area } =
     req.body;
 
   const newUser = new User({
     name: name,
-    experience: {
-      Dept: Dept,
-      Designation: Designation,
-      College: College,
-      Period: Period,
-    },
+    // experience: {
+    //   Dept: Dept,
+    //   Designation: Designation,
+    //   College: College,
+    //   Period: Period,
+    // },
     profession: profession,
     email: email,
     role:role,
@@ -49,6 +49,27 @@ const getUserbyId=async(req,res)=>{
         res.status(500).send("Internal server error", error);
     }
 };
+
+const getUserbyEmail = async (req,res) => {
+    const filter = req.query.filter || "";
+    try {
+        const users = await User.find({
+            $or: [{
+                email : {
+                    "$regex":filter,
+                    "$options": "i"
+                }
+            }]
+        })
+        if (users.length === 0) {
+            return res.status(404).send("No users found");
+        }
+        const userEmails = users.map(user => user.email).flat();
+        res.status(200).json(userEmails);
+    } catch(e) {
+        res.status(500).send("Internal server error",e);
+    }
+}
 
 const deleteUser = async (req, res) => {
     const _id = req.params.id;
@@ -122,4 +143,4 @@ const addUserEmail = async (req, res) => {
 
 
 
-module.exports = {addUser,  getUsers, deleteUser, updateUser, addUserEmail ,getUserbyId};
+module.exports = {addUser,  getUsers, deleteUser, updateUser, addUserEmail ,getUserbyId ,getUserbyEmail};

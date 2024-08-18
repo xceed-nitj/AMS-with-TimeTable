@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const User =require("./user");
+const User =require("../usermanagement/user");
 const Event =require("./event");
 const Paper=require("./paper");
 
@@ -13,6 +13,6 @@ const reviewQuestionSchema = new mongoose.Schema({
     order: [{type:Number}]
 },{timestamps: true});
 
-const ReviewQuestion = mongoose.model("ReviewQuestion", reviewQuestionSchema);
+const ReviewQuestion = mongoose.model("PRS-ReviewQuestion", reviewQuestionSchema);
 
 module.exports = ReviewQuestion;

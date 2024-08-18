@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { commonFields, updateTimestamps } = require('../commonFields');
+const { type } = require("os");
 const participantTypes = ["internal", "external"];
 const organiserTypes = ["department", "club", "center"];
 
@@ -27,10 +28,23 @@ const addEventSchema = new mongoose.Schema({
   eventType:{
     type: String,
   },
+  totalCertificates:{
+    type:Number,
+    default:0,
+  },
+  certificatesIssued:{
+    type:Number,
+    default:0,
+  },
   lock:{
     type: Boolean,
     default:false,
-  }
+  },
+  plan: {
+    type: String,
+    enum: ["basic", "premium"],
+    default: "basic",
+  },
 });
 
 addEventSchema.add(commonFields);

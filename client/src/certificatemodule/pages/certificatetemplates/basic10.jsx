@@ -5,6 +5,7 @@ import ReactHtmlParser from 'react-html-parser';
 // import getEnvironment from "../../../../getenvironment";
 import ProxifiedImage from '../../components/ProxifiedImage';
 import QRCode from 'qrcode';
+import { Button,Text } from '@chakra-ui/react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -15,6 +16,7 @@ const CertificateContent = ({
   contentBody,
   certiType,
   title,
+  certificateOf,
   verifiableLink,
   logos,
   participantDetail,
@@ -22,6 +24,7 @@ const CertificateContent = ({
   header,
   footer,
 }) => {
+  verifiableLink=(verifiableLink=="true")
   var num_logos = logos.length;
   var num_left = 0;
   if (num_logos % 2 === 0) {
@@ -48,6 +51,7 @@ const CertificateContent = ({
       image.setAttribute('height', '100');
       image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
       image.classList.add("qrcode");
+      image.classList.add("qrcode");
       
       svg.appendChild(image);
       if(!verifiableLink){document.querySelectorAll(".qrcode").forEach((elem)=>{elem.remove()})}
@@ -57,8 +61,10 @@ const CertificateContent = ({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="841.92"
-      height="595.499987"
+      style={{
+        width: window.outerWidth >= 768 ? "841.9" : window.outerWidth,
+        height: window.outerWidth >= 768 ? "595.5" : "auto"
+    }}
       viewBox="0 0 1122.52 793.7"
       id="svg"
       className="svg-img tw-object-contain"
@@ -133,40 +139,25 @@ const CertificateContent = ({
       </defs>
       </>
       <>
-        <foreignObject width={'90%'} height={'400'} y={'80'} x={'5%'}>
-          <div className="tw-flex tw-items-center tw-justify-center tw-w-full">
+        <foreignObject width={'90%'} height={'400'} y={'40'} x={'5%'}>
+          <div style={{ height: "200px" }} className="tw-flex tw-items-center tw-justify-center tw-w-full">
             {logos.map((item, key) => (
               <div
                 key={key}
                 className="tw-flex tw-items-center tw-justify-center "
               >
-                <div className="tw-w-20 tw-shrink-0 tw-mx-6">
-                  <img src={item} alt="" />
+                <div style={{ width: `${item.width}px`, height: `${item.height}px` }} className="tw-w-20 tw-shrink-0 tw-mx-6">
+                  <img src={item.url == '[object File]' ? URL.createObjectURL(item.url) : item.url} alt="" />
                 </div>
                 <div className="tw-text-center">
                   {key === num_left && (
                     <>
-                     {title.map((item, key) => (
-                                    <p key={key} className="tw-font-nunito-bold tw-text-xl tw-font-medium tw-text-center">
-                                        {item}
-                                    </p>
-                                )
-                              )
-                     }
-                      {/* <p className="tw-font-nunito-bold tw-text-xl tw-font-medium">
-                        डॉ. बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-[12px]">
-                        जी.टी. रोड, अमृतसर बाईपास, जालंधर (पंजाब), भारत- 144008
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-xl tw-font-semibold">
-                        Dr. B R Ambedkar National Institute of Technology
-                        Jalandhar
-                      </p>
-                      <p className="tw-font-nunito-bold tw-text-[12px] ">
-                        G.T. Road, Amritsar Byepass, Jalandhar (Punjab), India-
-                        144008
-                      </p> */}
+                      {title.map((item, key) => (
+                        <Text fontSize={`${item.fontSize}px`} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} color={item.fontColor} key={key} className=" tw-text-center">
+                          {item.name}
+                        </Text>
+                      ))
+                      }
                     </>
                   )}
                 </div>
@@ -175,65 +166,53 @@ const CertificateContent = ({
           </div>
         </foreignObject>
 
-        <foreignObject x="10%" y="200.473" width="85%" height="160">
-          <div className="tw-mt-8 tw-text-center tw-flex-col tw-flex tw-gap-1">
+        <foreignObject x="0%" y="190.473" width="100%" height="200">
+          <div className="tw-mt-8 tw-text-center tw-flex-col tw-items-center tw-flex tw-gap-1 tw-justify-center">
             {header.map((item, ind) => (
-              <h1
-                className="tw-text-xl tw-font-semibold tw-text-gray-700 tw-uppercase"
-                key={ind}
-              >
-                {item}
-              </h1>
+              <Text width="70%" fontSize={`${item.fontSize}px`} fontFamily={item.fontFamily} fontStyle={item.italic} fontWeight={item.bold} color={item.fontColor} className="tw-uppercase" key={ind}>{item.header}</Text>
             ))}
           </div>
         </foreignObject>
 
-        <text
-          x="561.26"
-          y="340.473"
-          fill="#424847"
-          fontFamily="AbhayaLibre-Regular"
-          fontSize="40.707"
-          textAnchor="middle"
-          fontWeight="550"
-        >
-          CERTIFICATE OF APPRECIATION
-        </text>
-
-        <foreignObject x="12.5%" y="370.473" width="75%" height="160">
-          <p className="font-serif text-xl opacity-80">
-            <div>{ReactHtmlParser(contentBody)}</div>
-          </p>
+        {/* certificateOf */}
+        <foreignObject y="295.473" width="100%" height="200">
+          <Text width="100%" fontSize={`${certificateOf.fontSize}px`} fontFamily={certificateOf.fontFamily} fontStyle={certificateOf.italic} fontWeight={certificateOf.bold} color={certificateOf.fontColor} className="tw-text-center tw-uppercase opacity-80">
+            <div width="90%" className="tw-text-center tw-uppercase">{certificateOf.certificateOf}</div>
+          </Text>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={515} width={'60%'} height={400}>
-          <div className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
+
+        <foreignObject width="100%" x="11%" y="375.473" height="160">
+          <Text width="77%" fontSize={`${contentBody.fontSize}px`} fontFamily={contentBody.fontFamily} fontStyle={contentBody.italic} fontWeight={contentBody.bold} color={contentBody.fontColor} className="tw-text-center opacity-80">
+            {ReactHtmlParser(contentBody.body)}
+          </Text>
+        </foreignObject>
+
+        <foreignObject x={'20%'} y={435} width={'62%'} height={400}>
+          <div style={{ height: "250px" }} className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
             {signature.map((item, key) => (
               <div
                 key={key}
-                className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2"
+                style={{ height: "250px" }}
+                className="tw-flex tw-flex-col tw-items-center tw-justify-end tw-gap-2"
               >
-                <div className="tw-w-[100px]">
-                  <ProxifiedImage src={item.url} alt="" />
+                <div style={{ width: `${item.url.size}px` }} className='tw-flex tw-flex-col tw-justify-end'>
+                  <img src={item.url.url == '[object File]' ? URL.createObjectURL(item.url.url) : item.url.url} alt="" />
                 </div>
                 <div className="tw-bg-gray-500 tw-rounded-xl tw-p-[1px] tw-w-[100px] tw-h-[1px]" />
-                <p className="tw-text-black tw-text-[15px] tw-font-semibold">
-                  {item.name}
-                </p>
-                <p className="tw-text-[13px] -tw-mt-3 tw-text-gray-900">
-                  {item.position}
-                </p>
+                <Text fontSize={`${item.name.fontSize}px`} fontFamily={item.name.fontFamily} fontStyle={item.name.italic} fontWeight={item.name.bold} color={item.name.fontColor} >{item.name.name}</Text>
+                <Text fontSize={`${item.position.fontSize}px`} fontFamily={item.position.fontFamily} fontStyle={item.position.italic} fontWeight={item.position.bold} color={item.position.fontColor} className="-tw-mt-3">{item.position.position}</Text>
               </div>
             ))}
           </div>
         </foreignObject>
-
         {verifiableLink &&
-          <foreignObject x={'20%'} y={'90%'} width={'60%'} height={'100'}>
+          <foreignObject x={'0%'} y={'91%'} width={'100%'} height={'100'}>
             <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
               {window.location.href}
             </div>
           </foreignObject>}
+        <foreignObject x={"0%"} y={'89%'} width={'100%'} height={'100'}><Text className="tw-text-sm tw-text-center tw-text-gray-700 ">Issued On: {footer.footer}</Text></foreignObject>
       </>
       );
     </svg>

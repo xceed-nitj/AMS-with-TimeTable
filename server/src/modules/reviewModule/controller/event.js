@@ -1,7 +1,9 @@
 const Event = require("../../../models/reviewModule/event.js");
-const User = require("../../../models/reviewModule/user.js")
+const User = require("../../../models/usermanagement/user.js")
 const XUser= require("../../../models/usermanagement/user.js")
+const Form = require("../../../models/reviewModule/forms.js");
 const express = require("express");
+const mongoose = require('mongoose');
 const bodyParser = require("body-parser");
 const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the sendMail function
 const getEnvironmentURL =require('../../../getEnvironmentURL.js')
@@ -9,7 +11,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const jwtSecret =
   "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
-
+const DefaultQuestion=require("../../../models/reviewModule/defaultQuestion.js");
+const ReviewQuestion=require("../../../models/reviewModule/reviewQuestion.js");
+const DefaultTemplate=require("../../../models/reviewModule/defaultTemplate.js")
 
 
 const app = express();
@@ -20,6 +24,39 @@ app.use(
 );
 app.use(bodyParser.json());
 
+const get_fields = async (req, res) => {
+  const { collectionName } = req.params;
+  
+  try {
+      const db = mongoose.connection.db;
+      
+      // Check if the collection exists
+      const collections = await db.listCollections({name: collectionName}).toArray();
+      if (collections.length === 0) {
+          return res.status(404).send('Collection not found');
+      }
+
+      const collection = db.collection(collectionName);
+
+      // Get a sample of documents
+      const sampleDocs = await collection.find({}).limit(100).toArray();
+
+      if (sampleDocs.length === 0) {
+          return res.status(404).send('No documents found in the collection');
+      }
+
+      // Extract all unique fields
+      const fields = new Set();
+      sampleDocs.forEach(doc => {
+          Object.keys(doc).forEach(key => fields.add(key));
+      });
+
+      res.json(Array.from(fields));
+  } catch (error) {
+      console.error("Error fetching fields:", error);
+      res.status(500).send('Internal Server Error');
+  }
+};
 const addEvent = async (req, res) => {
   const { name, editor} =
     req.body;
@@ -48,6 +85,35 @@ const addEvent = async (req, res) => {
     const editorEmails = event.editor.map(editor => editor.email);
     console.log("Editor Emails:", editorEmails);
     await sendMail(editorEmails, "Welcome to Review Management", `You have been added as editor for the conference "${name}"`);
+     
+    const defaultQuestions = await DefaultQuestion.find({});
+    
+    // Map default questions to include eventId and save in ReviewQuestion 
+    const reviewQuestions = defaultQuestions.map(question => ({
+      eventId: newEvent._id,
+      show: question.show,
+      type: question.type,
+      question: question.question,
+      options: question.options,
+      order: question.order,
+    }));
+    
+    await ReviewQuestion.insertMany(reviewQuestions);
+
+    const defaultTemplate = await DefaultTemplate.findOne({});
+    if (defaultTemplate) {
+      newEvent.templates = {
+        paperSubmission: defaultTemplate.paperSubmission,
+        reviewerInvitation: defaultTemplate.reviewerInvitation,
+        paperAssignment: defaultTemplate.paperAssignment,
+        reviewSubmission: defaultTemplate.reviewSubmission,
+        paperRevision: defaultTemplate.paperRevision,
+        signature: defaultTemplate.signature
+      };
+      await newEvent.save();
+    }
+
+
     res.status(200).send(newEvent);
 
   } catch (error) {
@@ -251,7 +317,8 @@ const addReviewer = async (req, res) => {
           name: email,
           email: email,
           role: ["PRM"],
-          password: hash
+          password: hash,
+          isFirstLogin: true
         });
 
         await reviewer.save();  // Save the new reviewer to the database
@@ -471,4 +538,72 @@ const updateReviewerStatus = async (req, res) => {
   }
 };
 
-module.exports = { getEvents,getEventsByUser, addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer};
+const updateStartSubmission = async (req, res) => {
+  const eventId = req.params.id;
+  const { startSubmission } = req.body;
+
+  if (typeof startSubmission !== 'boolean') {
+      return res.status(400).send('Invalid value for startSubmission');
+  }
+
+  try {
+      const event = await Event.findById(eventId);
+      if (!event) {
+          return res.status(404).send('Event not found');
+      }
+
+      event.startSubmission = startSubmission;
+      await event.save();
+
+      res.status(200).send(event);
+  } catch (error) {
+      res.status(500).send(error);
+  }
+};
+
+const addDefaultTemplatesToEvent = async (req, res) => {
+  const eventId = req.params.id;
+
+  try {
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
+
+    // Fetch the default templates
+    const defaultTemplate = await DefaultTemplate.findOne({});
+    if (!defaultTemplate) {
+      return res.status(404).json({ message: 'Default templates not found.' });
+    }
+
+    // Update the event with default templates
+    event.templates = {
+      paperSubmission: defaultTemplate.paperSubmission,
+      reviewerInvitation: defaultTemplate.reviewerInvitation,
+      paperAssignment: defaultTemplate.paperAssignment,
+      reviewSubmission: defaultTemplate.reviewSubmission,
+      paperRevision: defaultTemplate.paperRevision,
+      signature: defaultTemplate.signature
+    };
+    await event.save();
+
+    res.status(200).json({ message: 'Default templates added to event successfully.', event });
+  } catch (error) {
+    console.error('Error adding default templates to event:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+const getformsByEventId = async(req,res) => {
+  const eventId = req.params.id;
+
+  const forms = await Form.find({eventId : eventId});
+  if(forms.length > 0) {
+    return res.status(200).json({forms});
+  }else{
+    return res.status(404).json({ message: 'No forms found for this event.' });
+  }
+}
+
+module.exports = { get_fields,getEvents,addDefaultTemplatesToEvent,getEventsByUser,updateStartSubmission ,addEvent, getEventById, deleteEvent, updateEvent, updateEventTemplate,getAllReviewersInEvent , addEditor,addReviewer, getEventIdByName ,updateReviewerStatus , resendInvitation, findEventByReviewer, getformsByEventId};

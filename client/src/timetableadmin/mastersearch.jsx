@@ -14,7 +14,7 @@ import {
   CustomPlusButton,
   CustomDeleteButton,
 } from "../styles/customStyles";
-import { Box, Text, HStack, Center, Portal, ChakraProvider } from "@chakra-ui/react";
+import { Box, Text, HStack, Center, Portal, ChakraProvider, Spacer } from "@chakra-ui/react";
 
 import {
   Table,
@@ -492,8 +492,15 @@ useEffect(()=>
       <Header title="View TimeTable "></Header>
       <HStack>
     {/* Empty spacer to push the button to the right */}
-    <Box flex="1" />
-    
+    {/* <Box flex="" /> */}
+    <Link
+    to='/tt/masterdata'
+    >
+    <Button colorScheme="purple" style={{ marginRight: 'auto' }}>
+        Slot wise master search
+      </Button>
+    </Link>
+    <Spacer/>
     <Link
     to='/classrooms'
     >
@@ -561,7 +568,7 @@ useEffect(()=>
       <Box mb='5'>
         {selectedSemester ? (
           <Box>
-            <Text color="black" id="saveTime" mb="2.5" mt="2.5">
+            <Text color="green" style={{fontWeight:'700'}} id="saveTime" mb="2.5" mt="2.5">
               Last saved on: {lockedTime ? lockedTime : "Not saved yet"}
             </Text>
             <ViewTimetable timetableData={viewData} />
@@ -603,7 +610,7 @@ useEffect(()=>
             )}
       </Box>
       <Center my={4}>
-        <Text>(or)</Text>
+        <Text style={{fontWeight:'800', color:"#394870", fontSize:'large'}}>or</Text>
       </Center>
       {/* Faculty Dropdown */}
       <FormControl>
@@ -623,7 +630,7 @@ useEffect(()=>
       <Box mb='5'>
         {selectedFaculty ? (
           <Box>
-            <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+            <Text color="green" style={{fontWeight:'700'}} id="saveTime" mb='2.5' mt='2.5'>
               Last saved on:{" "}
               {facultyLockedTime ? facultyLockedTime : "Not saved yet"}
             </Text>
@@ -670,7 +677,7 @@ useEffect(()=>
           )}
       </Box>
       <Center my={4}>
-        <Text>(or)</Text>
+        <Text style={{fontWeight:'800', color:"#394870", fontSize:'large'}}>or</Text>
       </Center>
 
     <FormControl>

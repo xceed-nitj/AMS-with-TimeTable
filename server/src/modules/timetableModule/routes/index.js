@@ -18,6 +18,7 @@ router.use('/lockfaculty', protectRoute,require("./lockfaculty"));
 router.use('/note', require("./note")); 
 router.use('/commonLoad', require("./commonLoad")); 
 router.use('/instituteLoad', require("./instituteLoad")); 
+router.use('/mastertable', require("./masterclasstable")); 
 
 module.exports = router;
 

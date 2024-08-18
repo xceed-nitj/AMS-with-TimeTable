@@ -3,6 +3,7 @@ import getEnvironment from "../../getenvironment";
 import FileDownloadButton from "../../filedownload/filedownload";
 import { Link as ChakraLink } from '@chakra-ui/react';
 import { useToast } from "@chakra-ui/react";
+import saveAs from 'file-saver';
 
 // import subjectFile from '../assets/subject_template';
 import {
@@ -16,6 +17,7 @@ import {
   UnorderedList,
   Text,
   Center,
+  HStack,
 } from "@chakra-ui/react";
 import {
   CustomTh,
@@ -54,19 +56,21 @@ function Participant() {
   const [duplicateEntryMessage, setDuplicateEntryMessage] = useState("");
   const [addduplicateEntryMessage, addsetDuplicateEntryMessage] = useState("");
   const [isAddSubjectFormVisible, setIsAddSubjectFormVisible] = useState(false);
+  const [downloadClicked, setDownloadClicked] = useState(false)
 
   const [editedData, setEditedData] = useState({
     name: "",
     department: "",
     college: "",
     types: "",
+    teamName:"",
     position: "",
     title1: "",
     title2: "",
     certiType: "",
     mailId: "",
     eventId: eventId,
-    isCertificateSent:false,
+    isCertificateSent: false,
   });
 
   const [editedSData, setEditedSData] = useState({
@@ -74,14 +78,17 @@ function Participant() {
     department: "",
     college: "",
     types: "",
+    teamName:"",
     position: "",
     title1: "",
     title2: "",
     certiType: "",
     mailId: "",
     eventId: eventId,
-    isCertificateSent:false,
+    isCertificateSent: false,
   });
+
+  const [downloadType, setDownloadType] = useState(false)
 
   const apiUrl = getEnvironment();
 
@@ -214,6 +221,18 @@ function Participant() {
       if (rowIndex !== -1) {
         const updatedData = [...tableData];
         updatedData[rowIndex] = editedData;
+        if (!editedData.name.trim()) {
+          alert("Name is required")
+          return;
+        }
+        if (!editedData.certiType.trim()) {
+          alert("Certificate type is required")
+          return;
+        }
+        if (!editedData.mailId.trim()) {
+          alert("E-mail is required")
+          return;
+        }
 
         fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${editRowId}`, {
 
@@ -247,12 +266,13 @@ function Participant() {
               college: "",
               types: "",
               position: "",
+              teamName:"",
               title1: "",
               title2: "",
               certiType: "",
               mailId: "",
               eventId: eventId,
-              isCertificateSent:false,
+              isCertificateSent: false,
             });
           })
           .catch((error) => {
@@ -264,16 +284,16 @@ function Participant() {
   };
 
   const handleMailstatus = (RowId) => {
-    let data={};
+    let data = {};
     if (RowId) {
       console.log(RowId)
       const rowIndex = tableData.findIndex((row) => row._id === RowId);
       console.log(rowIndex)
 
       if (rowIndex !== -1) {
-       
-        data.isCertificateSent=true;
-        console.log('dat to b sent', editedData)
+
+        data.isCertificateSent = true;
+        console.log('data to be sent', editedData)
         fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${RowId}`, {
 
           method: "PUT",
@@ -425,12 +445,13 @@ function Participant() {
       college: "",
       types: "",
       position: "",
+      teamName:"",
       title1: "",
       title2: "",
       certiType: "",
       mailId: "",
       eventId: eventId,
-      isCertificateSent:false,
+      isCertificateSent: false,
 
 
     });
@@ -447,41 +468,53 @@ function Participant() {
     //     `Duplicate entry for "${editedSData.name}" is detected. Kindly delete the entry.`
     //   );
     // } else {
-      fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${eventId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(editedSData),
-        credentials: "include",
+    if (!editedSData.name.trim()) {
+      alert("Name is required")
+      return;
+    }
+    if (!editedSData.certiType.trim()) {
+      alert("Certificate type is required")
+      return;
+    }
+    if (!editedSData.mailId.trim()) {
+      alert("E-mail is required")
+      return;
+    }
+    fetch(`${apiUrl}/certificatemodule/participant/addparticipant/${eventId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(editedSData),
+      credentials: "include",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Error: ${response.status} - ${response.statusText}`
+          );
+
+        }
+        return response.json();
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(
-              `Error: ${response.status} - ${response.statusText}`
-            );
+      .then((data) => {
 
-          }
-          return response.json();
-        })
-        .then((data) => {
-
-          console.log("Data saved successfully:", data);
-          toast({
-            title: 'Data Saved ',
-            description: 'Updated successfully.',
-            status: 'success',
-            duration: 3000,
-            isClosable: true,
-            // position:'middle',
-          });
-          fetchParticipantData();
-          handleCancelAddSubject();
-          addsetDuplicateEntryMessage("");
-        })
-        .catch((error) => {
-          console.error("Error:", error);
+        console.log("Data saved successfully:", data);
+        toast({
+          title: 'Data Saved ',
+          description: 'Updated successfully.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+          // position:'middle',
         });
+        fetchParticipantData();
+        handleCancelAddSubject();
+        addsetDuplicateEntryMessage("");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
     // }
   };
 
@@ -515,6 +548,34 @@ function Participant() {
       }
     }
   };
+
+  const handleChangeType = async (e) => setDownloadType(e.target.value);
+  const handleDownloadAll = async (e) => {
+    if (!downloadType) { alert("choose a download type first"); return; }
+    if (downloadClicked) {
+      const clicked = confirm("Do you want to download again");
+      if (!clicked) { return; }
+    }
+    try {
+      const response = await fetch(
+        `${apiUrl}/certificatemodule/certificate/downloadall`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          credentials: 'include',
+          body: JSON.stringify({ eventID: eventId, type: downloadType }),
+        }
+      );
+      const zipBlob = await response.blob();
+      console.log(zipBlob)
+      saveAs(zipBlob, "certificates.zip", "application/zip")
+    } catch (error) {
+      console.error('Error converting SVGs:', error);
+    }
+  }
   return (
     <Container maxW='8xl'>
       {/* <Heading as="h1" size="xl" mt="6" mb="6">Add Subject</Heading> */}
@@ -626,6 +687,23 @@ function Participant() {
 
 
             <Box>
+              <FormLabel>Team Name:</FormLabel>
+              <Input
+                border="1px"
+                borderColor="gray.300"
+                mb="4"
+
+                type="text"
+                placeholder="Team Name"
+                value={editedSData.teamName}
+                onChange={(e) =>{ 
+                  setEditedSData({ ...editedSData, teamName: e.target.value })
+                }}
+              />
+            </Box>
+
+
+            <Box>
               <FormLabel>Position:</FormLabel>
               <Input
                 border="1px"
@@ -662,7 +740,7 @@ function Participant() {
                 border="1px"
                 mb="4"
                 borderColor="gray.300"
-                type="number" // Assuming it's a number
+                type="text"
                 placeholder="title2"
                 value={editedSData.title2}
                 onChange={(e) =>
@@ -690,17 +768,20 @@ function Participant() {
 
             <Box>
               <FormLabel>certificate Type: </FormLabel>
-              <Input
-                border="1px"
-                mb="4"
-                borderColor="gray.300"
-                // type="number" // Assuming it's a number
-                placeholder="certiType"
+
+              <Select
+                name="certiType"
                 value={editedSData.certiType}
                 onChange={(e) =>
                   setEditedSData({ ...editedSData, certiType: e.target.value })
                 }
-              />
+                placeholder="Select Certificate Type"
+              >
+                <option value="winner">Winner</option>
+                <option value="participant">Participant</option>
+                <option value="speaker">Speaker</option>
+                <option value="organizer">Organizer</option>
+              </Select>
 
             </Box>
 
@@ -723,9 +804,20 @@ function Participant() {
         )}
       </Box>
       {addduplicateEntryMessage && <p>{addduplicateEntryMessage}</p>}
-      <CustomBlueButton ml='0' width='350px' onClick={handleBatchMail}>
-        send Email to all Participants
-      </CustomBlueButton>
+      <HStack className="tw-flex tw-justify-between">
+        {/* <div className="tw-flex tw-items-center tw-gap-3"><Text>Download all Certificates:</Text>
+          <Select width='350px' placeholder="Select Type" name="downloadType" onChange={e => { setDownloadClicked(false); handleChangeType(e) }}>
+            <option value="image">Image</option>
+            <option value="pdf">PDF</option>
+          </Select>
+          {downloadType && <CustomBlueButton ml='0' width='350px' onClick={(e) => { setDownloadClicked(true); handleDownloadAll(); }}>
+            Download All Certificates
+          </CustomBlueButton>}
+        </div> */}
+        <CustomBlueButton ml='0' width='350px' onClick={handleBatchMail}>
+          send Email to all Participants
+        </CustomBlueButton>
+      </HStack>
 
       <TableContainer mt='2'>
         <Text as='b'>Table of Paticipant Data</Text>
@@ -743,6 +835,7 @@ function Participant() {
                 <Th><Center>Department</Center></Th>
                 <Th><Center>College</Center></Th>
                 <Th><Center>Type</Center></Th>
+                <Th><Center>Team Name</Center></Th>
                 <Th><Center>Position</Center></Th>
                 <Th><Center>Title-1</Center></Th>
                 <Th><Center>Title-2</Center></Th>
@@ -813,6 +906,7 @@ function Participant() {
                         <Input
                           type="text"
                           value={editedData.types}
+                          width="80px"
                           onChange={(e) =>
                             setEditedData({
                               ...editedData,
@@ -822,6 +916,24 @@ function Participant() {
                         />
                       ) : (
                         row.types
+                      )}
+                    </Center>
+                  </Td>
+                  <Td>
+                    <Center>
+                      {editRowId === row._id ? (
+                        <Input
+                          type="text"
+                          value={editedData.teamName}
+                          onChange={(e) =>
+                            setEditedData({
+                              ...editedData,
+                              teamName: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        row.teamName
                       )}
                     </Center>
                   </Td>
@@ -888,13 +1000,19 @@ function Participant() {
                   <Td>
                     <Center>
                       {editRowId === row._id ? (
-                        <Input
-                          type="text"
+                        <Select
+                          name="certiType"
                           value={editedData.certiType}
                           onChange={(e) =>
                             setEditedData({ ...editedData, certiType: e.target.value })
                           }
-                        />
+                          placeholder="Select Certificate Type"
+                        >
+                          <option value="winner">Winner</option>
+                          <option value="participant">Participant</option>
+                          <option value="speaker">Speaker</option>
+                          <option value="organizer">Organizer</option>
+                        </Select>
                       ) : (
                         row.certiType
                       )}
@@ -917,11 +1035,11 @@ function Participant() {
                   </Td>
                   <Td>
                     <Center>
-                    <Center>
-  {row.isCertificateSent ? "Sent" : "Not sent"}
-</Center>
+                      <Center>
+                        {row.isCertificateSent ? "Sent" : "Not sent"}
+                      </Center>
 
-                       </Center>
+                    </Center>
                   </Td>
 
                   <Td>

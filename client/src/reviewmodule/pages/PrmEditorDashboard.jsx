@@ -8,7 +8,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { Container } from "@chakra-ui/layout";
 import Header from "../../components/header";
-import { FaInfoCircle, FaFileAlt, FaUserFriends, FaChartPie, FaEnvelope } from 'react-icons/fa';
+import { FaInfoCircle, FaFileAlt, FaUserFriends, FaChartPie, FaEnvelope, FaPlay, FaBullseye } from 'react-icons/fa';
 import { FiCheckCircle } from 'react-icons/fi'
 
 const PrmEditorDashboard = () => {
@@ -19,7 +19,10 @@ const PrmEditorDashboard = () => {
   const [event, setEvent] = useState(null);
   const [table, setTable] = useState([]);
   const [trackcount, setTrackCount] = useState([]);
+  const [paperStatus, setPaperStatus] = useState([]);
+  const [reviewStatus, setReviewStatus] = useState([]);
   const [counts, setCounts] = useState({ Accepted: 0, Invited: 0, NotAccepted: 0 });
+  const [startSubmission, setStartSubmission] = useState(true)
 
   const fetchEvent = async () => {
     try {
@@ -33,8 +36,9 @@ const PrmEditorDashboard = () => {
   
       if (response.ok) {
         const event = await response.json();
-        console.log(event.name)
+        console.log(event)
         setEvent(event.name);
+        if(event.startSubmission) setStartSubmission(true)
       } else {
         console.error("Failed to fetch event");
       }
@@ -101,7 +105,7 @@ const PrmEditorDashboard = () => {
   
       if(response.ok) {
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
         setTrackCount(data);
       } else {
         console.error("Failed to fetch reviewer details");
@@ -115,6 +119,55 @@ const PrmEditorDashboard = () => {
     fetchCount();
   }, [apiUrl]);
 
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reviewmodule/paper/status/${eventId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if(response.ok) {
+        const data = await response.json();
+        setPaperStatus(data);
+      } else {
+        console.error("Failed to fetch reviewer details");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+  useEffect(() => {
+    console.log("Fetching Status with apiUrl:", apiUrl);
+    fetchStatus();
+  }, [apiUrl]);
+
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reviewmodule/paper/trackreviews/${eventId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if(response.ok) {
+        const data = await response.json();
+        setReviewStatus(data);
+      } else {
+        console.error("Failed to fetch reviewer details");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+  useEffect(() => {
+    console.log("Fetching review status with apiUrl:", apiUrl);
+    fetchReviews();
+  }, [apiUrl]);
   const trackCountsArray = Object.values(trackcount);
 
     const data1 = trackCountsArray.map(item => ({
@@ -128,15 +181,15 @@ const PrmEditorDashboard = () => {
         { name: 'Reviewers Rejected', value: counts.NotAccepted },
     ];
     const data3 = [
-        { name: 'Reviewers Assigned', value: 1000 },
-        { name: 'Review Completed', value: 2000 },
-        { name: 'Partial Review Completed', value: 1500 },
-        { name: 'Awaiting Reviews', value: 3000 },
+        { name: 'Completed Reviews', value: reviewStatus.completed },
+        { name: 'Partially Completed Reviews', value: reviewStatus.partial },
+        { name: 'Not Received Any Reviews', value: reviewStatus.notReceived },
+        // { name: 'Awaiting Reviews', value: 3000 },
     ];
     const data4 = [
-        { name: 'Accepted Papers', value: 400 },
-        { name: 'Rejected Papers', value: 300 },
-        { name: 'Pending Decision', value: 300 },
+        { name: 'Accepted Papers', value: paperStatus.accepted },
+        { name: 'Rejected Papers', value: paperStatus.rejected },
+        { name: 'Under Review', value: paperStatus.underreview },
     ];
 
     const COLORS = ['#00BFFF', '#00C49F', '#FFBB28', '#FF8042'];
@@ -167,7 +220,7 @@ const PrmEditorDashboard = () => {
                         gap={6}
                         mb={8}
                     >
-                        <Button
+                        {/* <Button
                             width="100%"
                             height="50px"
                             bgGradient="linear(to-r, cyan.600, cyan.500)"
@@ -190,8 +243,21 @@ const PrmEditorDashboard = () => {
                             whiteSpace="normal" // Ensure text wraps within the button
                         >
                             Add Tracks
+                        </Button> */}
+                        <Button
+                            width="100%"
+                            height="50px"
+                            bgGradient="linear(to-r, yellow.600, yellow.500)"
+                            color="white"
+                            _hover={{ bgGradient: "linear(to-r, yellow.500, yellow.400)" }}
+                            onClick={() => navigate(`${location.pathname}/startSubmission`)}
+                            leftIcon={<Icon as={FaBullseye} color="white" />}
+                            whiteSpace="normal" // Ensure text wraps within the button
+                        >
+                            Start Submission
                         </Button>
                         <Button
+                            isDisabled = {!startSubmission}
                             width="100%"
                             height="50px"
                             bgGradient="linear(to-r, red.600, red.500)"
@@ -204,6 +270,7 @@ const PrmEditorDashboard = () => {
                             Paper Details
                         </Button>
                         <Button
+                            isDisabled = {!startSubmission}
                             width="100%"
                             height="50px"
                             bgGradient="linear(to-r, blue.600, blue.500)"
@@ -216,6 +283,7 @@ const PrmEditorDashboard = () => {
                             Invite Reviewer
                         </Button>
                         <Button
+                            isDisabled = {!startSubmission}
                             width='100%'
                             height="50px"
                             bgGradient="linear(to-r, green.600, green.500)"
@@ -228,6 +296,18 @@ const PrmEditorDashboard = () => {
                             Communication Templates
                         </Button>
                         <Button
+                            width="100%"
+                            height="50px"
+                            bgGradient="linear(to-r, purple.600, purple.500)"
+                            color="white"
+                            _hover={{ bgGradient: "linear(to-r, orange.500, orange.400)" }}
+                            onClick={()=> navigate(`${location.pathname}/forms`)}
+                            leftIcon={<Icon as={FiCheckCircle} color="white" />}
+                            whiteSpace="normal" // Ensure text wraps within the button
+                        >
+                            Forms
+                        </Button>
+                        {/* <Button
                             width='100%'
                             height="50px"
                             bgGradient="linear(to-r, purple.600, purple.500)"
@@ -238,17 +318,21 @@ const PrmEditorDashboard = () => {
                             whiteSpace="normal" // Ensure text wraps within the button
                         >
                             Review Questions
-                        </Button>
+                        </Button> */}
                         
 
                     </Grid>
+                    {
+                        !startSubmission &&
+                        <Text style={{color: 'gray', textAlign:'center', paddingBottom:'30px'}} >Start submission to enable other options...</Text>
+                    }
                     <Grid
                         templateColumns={['1fr', '1fr', 'repeat(2, 1fr)', 'repeat(4, 1fr)']}
                         gap={6}
                     >
                         <GridItem colSpan={[1, 1, 1, 1]}>
                             <Box
-                                height={calculateHeight(data1.length)}
+                                height={calculateHeight(data2.length)}
                                 bg="gray.800"
                                 borderRadius="lg"
                                 p={4}

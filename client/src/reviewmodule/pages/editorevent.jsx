@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom"; // Import Link
+import { useNavigate } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
 import {
   Container,
@@ -7,11 +7,15 @@ import {
   Input,
   Button,
   VStack,
-  Textarea,
+  HStack,
+  FormControl,
+  FormLabel,
+  useToast,
+  IconButton as Button1,
+  Heading,
+  chakra,
+  Select
 } from "@chakra-ui/react";
-import { FormControl, FormLabel} from "@chakra-ui/react";
-import { IconButton as Button1, Heading, chakra } from '@chakra-ui/react';
-import { useToast } from "@chakra-ui/react";
 import Header from "../../components/header";
 
 function EventForm() {
@@ -21,34 +25,20 @@ function EventForm() {
     endDate: "",
     paperSubmissionDate: "",
     reviewTime: "",
-    // instructions: "",
+    editorEmails: []
   });
 
   const toast = useToast();
   const apiUrl = getEnvironment();
 
-  const formatDate = (date) => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    let month = "" + (d.getMonth() + 1);
-    let day = "" + d.getDate();
-
-    if (month.length < 2) month = "0" + month;
-    if (day.length < 2) day = "0" + day;
-
-    return [year, month, day].join("-");
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let formattedValue = value;
-    
     setFormData((prevData) => ({
       ...prevData,
-      [name]: formattedValue,
+      [name]: value
     }));
   };
-  
+
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
   const parts = currentURL.split("/");
@@ -61,23 +51,19 @@ function EventForm() {
           `${apiUrl}/api/v1/reviewmodule/event/${eventId}`,
           {
             method: "GET",
-            credentials: "include",
+            credentials: "include"
           }
         );
-        if(response.ok)
-        {
-        const data = await response.json();
-        console.log(data)
-        setFormData({
-          ...data,
-          // Extracting date part only
-          startDate: data.startDate ? data.startDate.split("T")[0] : "",
-          endDate: data.endDate ? data.endDate.split("T")[0] : "",
-          paperSubmissionDate: data.paperSubmissionDate
-            ? data.paperSubmissionDate.split("T")[0]
-            : "",
-        });
-      }
+        if (response.ok) {
+          const data = await response.json();
+          setFormData({
+            ...data,
+            startDate: data.startDate ? data.startDate.split("T")[0] : "",
+            endDate: data.endDate ? data.endDate.split("T")[0] : "",
+            paperSubmissionDate: data.paperSubmissionDate ? data.paperSubmissionDate.toString().slice(0, 16) : "",
+            editorEmails: data.editor.map(editor => editor.email).flat()
+          });
+        }
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -85,18 +71,56 @@ function EventForm() {
     fetchEventById();
   }, [apiUrl, eventId]);
 
+  const validateDates = () => {
+    const now = new Date();
+    const startDate = new Date(formData.startDate);
+    const endDate = new Date(formData.endDate);
+    const paperSubmissionDate = new Date(formData.paperSubmissionDate);
+
+    if (endDate <= startDate) {
+      toast({
+        title: "Invalid end date",
+        description: "End date should be after the start date!",
+        status: "error",
+        duration: 6000,
+        isClosable: true,
+        position: "bottom"
+      });
+      return false;
+    }
+
+    if (paperSubmissionDate <= now) {
+      toast({
+        title: "Invalid submission date",
+        description: "Submission date should be a future date",
+        status: "error",
+        duration: 6000,
+        isClosable: true,
+        position: "bottom"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateDates()) return;
+
     try {
+      const formdate = new Date(formData.paperSubmissionDate);
+      const finalDate = new Date(formdate.getTime() - formdate.getTimezoneOffset() * 60000).toISOString();
       const response = await fetch(
         `${apiUrl}/api/v1/reviewmodule/event/${eventId}`,
         {
           method: "PATCH",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
           credentials: "include",
-          body: JSON.stringify(formData),
+          body: JSON.stringify({...formData,paperSubmissionDate: finalDate}),
         }
       );
       const data = await response.json();
@@ -106,62 +130,60 @@ function EventForm() {
           status: "success",
           duration: 6000,
           isClosable: true,
-          position: "bottom",
+          position: "bottom"
         });
       } else {
-        // Handle non-OK response
         toast({
           title: "Error updating conference data",
           description: "Please try again later",
           status: "error",
           duration: 6000,
           isClosable: true,
-          position: "bottom",
+          position: "bottom"
         });
       }
       console.log(data);
     } catch (error) {
       console.error("Error:", error);
-      // Handle fetch error
       toast({
         title: "Error updating conference data",
         description: "Please try again later",
         status: "error",
         duration: 6000,
         isClosable: true,
-        position: "bottom",
+        position: "bottom"
       });
     }
   };
 
   const HeaderEditorPage = ({ title }) => {
     const navigate = useNavigate();
-    
+
     return (
-      <Heading display='flex' >
+      <Heading display="flex">
         <Button1
-        mb='1'
-          variant='ghost'
+          mb="1"
+          variant="ghost"
           onClick={() => navigate(-1)}
-          _hover={{ bgColor: 'transparent' }}
+          _hover={{ bgColor: "transparent" }}
         >
           <chakra.svg
-            xmlns='http://www.w3.org/2000/svg'
-            fill='none'
-            viewBox='0 0 24 24'
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
             strokeWidth={1.5}
-            stroke='white'
-            className='w-6 h-6'
-            _hover={{ stroke: '#00BFFF' }}
+            stroke="white"
+            className="w-6 h-6"
+            _hover={{ stroke: "#00BFFF" }}
           >
             <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              d='M11.25 9l-3 3m0 0l3 3m-3-3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M11.25 9l-3 3m0 0l3 3m-3-3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </chakra.svg>
         </Button1>
-        <chakra.div marginInline='auto' color="white" fontSize='30px' mt='2' >
+        <chakra.div marginInline="auto" color="white" fontSize="30px" mt="2">
           {title}
         </chakra.div>
       </Heading>
@@ -169,16 +191,42 @@ function EventForm() {
   };
 
   const clearAllInputs = () => {
-    const inputs = document.querySelectorAll('input');
-    inputs.forEach(input => {
-      input.value = '';
+    setFormData({
+      name: "",
+      startDate: "",
+      endDate: "",
+      paperSubmissionDate: "",
+      reviewTime: "",
+      editorEmails: []
+    });
+  };
+
+  const handleAddEditor = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      editorEmails: [...prevData.editorEmails, ""]
+    }));
+  };
+
+  const handleDeleteEditor = (index) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      editorEmails: prevData.editorEmails.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleEditorEmailChange = (index, value) => {
+    setFormData((prevData) => {
+      const newEditorEmails = [...prevData.editorEmails];
+      newEditorEmails[index] = value;
+      return { ...prevData, editorEmails: newEditorEmails };
     });
   };
 
   return (
-    <Container maxWidth={{ base: "100%", md: "md" }} p={5} mx="auto" bg="white" >
-      <Box bg="black" p={0.01} borderTopRadius="md" >
-        <HeaderEditorPage  color="white" textAlign="center" title="Add conference details"/>
+    <Container maxWidth={{ base: "100%", md: "80%" }} p={5} mx="auto" bg="white">
+      <Box bg="black" p={0.01} borderTopRadius="md">
+        <HeaderEditorPage color="white" textAlign="center" title="Add conference details" />
       </Box>
       <Box bg="white" p={8} borderBottomRadius="md">
         <form onSubmit={handleSubmit}>
@@ -187,67 +235,82 @@ function EventForm() {
             <Input
               type="text"
               name="name"
-                value={formData.name}
-                onChange={handleChange}
-              />
-            </FormControl>
-            <FormControl id="startDate" mb={4}>
-              <FormLabel>Start Date of the conference</FormLabel>
-              <Input
-                type="date"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleChange}
-              />
-            </FormControl>
-            <FormControl id="endDate" mb={4}>
-              <FormLabel >End Date of the conference</FormLabel>
-              <Input
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleChange}
-              />
-            </FormControl>
-            <FormControl id="paperSubmissionDate" mb={4}>
-              <FormLabel>Paper Submission Deadline</FormLabel>
-              <Input
-                type="date"
-                name="paperSubmissionDate"
-                value={formData.paperSubmissionDate}
-                onChange={handleChange}
-              />
-            </FormControl>
-            <FormControl id="reviewTime" mb={4}>
-              <FormLabel>Review Time</FormLabel>
-              <Input
-                type="text"
-                name="reviewTime"
-                value={formData.reviewTime}
-                onChange={handleChange}
-              />
-            </FormControl>          
-            <FormControl id="name" mb={4}>
+              value={formData.name}
+              onChange={handleChange}
+            />
+          </FormControl>
+          <FormControl id="startDate" mb={4}>
+            <FormLabel>Start Date of the conference</FormLabel>
+            <Input
+              type="date"
+              name="startDate"
+              value={formData.startDate}
+              onChange={handleChange}
+            />
+          </FormControl>
+          <FormControl id="endDate" mb={4}>
+            <FormLabel>End Date of the conference</FormLabel>
+            <Input
+              type="date"
+              name="endDate"
+              value={formData.endDate}
+              onChange={handleChange}
+            />
+          </FormControl>
+          <FormControl id="paperSubmissionDate" mb={4}>
+            <FormLabel>Paper Submission Deadline</FormLabel>
+            <Input
+              type="datetime-local"
+              name="paperSubmissionDate"
+              value={formData.paperSubmissionDate}
+              onChange={handleChange}
+            />
+          </FormControl>
+          <FormControl id="reviewTime" mb={4}>
+            <FormLabel>Review Time</FormLabel>
+            <Select
+              name="reviewTime"
+              value={formData.reviewTime}
+              onChange={handleChange}
+            >
+              {[...Array(60).keys()].map(day => (
+                <option key={day + 1} value={day + 1}>{day + 1} </option>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl id="editorEmails" mb={4}>
+            <HStack justifyContent="space-between">
               <FormLabel>List of Editors</FormLabel>
-              <Input
-                type="text"
-                name="name"
-                value={formData.editor}
-                onChange={handleChange}
-              />
-            </FormControl>
-
-            <Box display="flex" justifyContent="center" p={4}>
-              <Button type="submit" size='lg' style={{backgroundColor:'green',width:'100px'}}>
-                Save
+              <Button colorScheme="blue" size="sm" onClick={handleAddEditor}>
+                Add Editor
               </Button>
-              <Button onClick={clearAllInputs} type="submit" size='lg' style={{ backgroundColor: '#CC0000',width:'100px' }}>
-                Cancel
-              </Button>
-            </Box>
-          </form>
-        </Box>
-      </Container>
+            </HStack>
+            <VStack align="stretch">
+              {formData.editorEmails.map((email, index) => (
+                <HStack key={index} p={2} border="1px" borderRadius="md">
+                  <Input
+                    flex="1"
+                    value={email}
+                    onChange={(e) => handleEditorEmailChange(index, e.target.value)}
+                    placeholder="Editor Email"
+                  />
+                  {formData.editorEmails.length > 1 && (
+                    <Button size="sm" colorScheme="red" onClick={() => handleDeleteEditor(index)}>
+                      Delete
+                    </Button>
+                  )}
+                </HStack>
+              ))}
+            </VStack>
+          </FormControl>
+          <Box display="flex" justifyContent="center" p={4}>
+            <Button type="submit" size="lg" style={{ backgroundColor: 'green', width: '100px' }}>
+              Save
+            </Button>
+          </Box>
+        </form>
+      </Box>
+    </Container>
   );
 }
 
