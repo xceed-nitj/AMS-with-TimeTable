@@ -215,9 +215,9 @@ const CommonTemplate = () => {
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
                                     <Tr key={item._id}>
-                                        <Td><Center>{item.pageTitle}</Center></Td>
-                                        <Td><Center>{item.description}</Center></Td>
-                                        <Td><Center>{item.feature ? "Yes":"No"}</Center></Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.pageTitle}</Td>
+                                        <Td sx={{ maxWidth: '300px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.description}</Td>
+                                        <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.feature ? "Yes":"No"}</Td>
 
 
                                         <Td position={'sticky'} right={'0'}><Center>

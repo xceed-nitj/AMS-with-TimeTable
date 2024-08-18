@@ -10,7 +10,7 @@ class CommitteesController {
     }
     try {
       // Find committees with a specific ConfId using the Mongoose model
-      const committees = await Committee.find({ ConfId: id });  
+      const committees = await Committee.find({ confId: id });  
       console.log('comittees',committees);
       if (!committees) throw new HttpException(400, "data does not exists");
 
@@ -107,26 +107,26 @@ class CommitteesController {
 
 module.exports = CommitteesController;
 
-function isValidCommittees(committees) {
-  return (
-    committees &&
-    typeof committees === "object" &&
-    typeof committees.id === "string" &&
-    typeof committees.ConfId === "string" &&
-    typeof committees.Type === "string" &&
-    (typeof committees.Subtype === "string" ||
-      committees.Subtype === null ||
-      committees.Subtype === undefined) &&
-    typeof committees.Name === "string" &&
-    typeof committees.Designation === "string" &&
-    typeof committees.Institute === "string" &&
-    typeof committees.ProfileLink === "string" &&
-    (typeof committees.ImgLink === "string" ||
-      committees.ImgLink === null ||
-      committees.ImgLink === undefined) &&
-    typeof committees.sequence === "number" &&
-    typeof committees.feature === "boolean" &&
-    committees.createdAt instanceof Date &&
-    committees.updatedAt instanceof Date
-  );
-}
+// function isValidCommittees(committees) {
+//   return (
+//     committees &&
+//     typeof committees === "object" &&
+//     typeof committees.id === "string" &&
+//     typeof committees.ConfId === "string" &&
+//     typeof committees.Type === "string" &&
+//     (typeof committees.Subtype === "string" ||
+//       committees.Subtype === null ||
+//       committees.Subtype === undefined) &&
+//     typeof committees.Name === "string" &&
+//     typeof committees.Designation === "string" &&
+//     typeof committees.Institute === "string" &&
+//     typeof committees.ProfileLink === "string" &&
+//     (typeof committees.ImgLink === "string" ||
+//       committees.ImgLink === null ||
+//       committees.ImgLink === undefined) &&
+//     typeof committees.sequence === "number" &&
+//     typeof committees.feature === "boolean" &&
+//     committees.createdAt instanceof Date &&
+//     committees.updatedAt instanceof Date
+//   );
+// }

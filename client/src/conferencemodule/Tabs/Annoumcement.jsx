@@ -8,9 +8,10 @@ import {
     FormControl, FormLabel, Center, Heading,
     Input, Button, Select
 } from '@chakra-ui/react';
+import JoditEditor from 'jodit-react';
+
 import { CustomTh } from '../utils/customStyles';
 import { Table, TableContainer, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/table";
-import JoditEditor from 'jodit-react';
 
 const Announcement = () => {
     const params = useParams();

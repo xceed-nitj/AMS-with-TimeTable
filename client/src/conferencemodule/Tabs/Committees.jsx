@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useRef} from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/layout";
+import JoditEditor from 'jodit-react';
+
 import {
     FormControl, FormErrorMessage, FormLabel, Center, Heading,
     Input, Button, Select
@@ -20,20 +22,17 @@ import {
 } from "@chakra-ui/table";
 const Committees = () => {
     const params = useParams();
+    const ref = useRef(null);
+
 const IdConf = params.confid;
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [deleteItemId, setDeleteItemId] = useState(null);  const apiUrl = getEnvironment();
 
 
     const initialData = {
-        "ConfId": IdConf,
-        "Type": "",
-        "Subtype": "",
-        "Name": "",
-        "Designation": "",
-        "Institute": "",
-        "ProfileLink": "",
-        "ImgLink": "",
+        "confId": IdConf,
+        "type": "",
+        "description": "",
         "sequence": "",
         "feature": true
     };
@@ -44,7 +43,7 @@ const IdConf = params.confid;
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    const { ConfId, Type, Subtype, Name, Designation, Institute, ProfileLink, ImgLink, sequence, feature } = formData;
+    const { confId, type, description, sequence, feature } = formData;
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "sequence") {
@@ -95,7 +94,12 @@ const IdConf = params.confid;
             })
             .catch(err => console.log(err));
     };
-
+    const handleEditorChange = (value) => {
+        setFormData({
+            ...formData,
+            description: value,
+        });
+    };
     const handleDelete = (deleteID) => {
         setDeleteItemId(deleteID);
         setShowDeleteConfirmation(true);
@@ -154,84 +158,24 @@ const IdConf = params.confid;
                     <FormLabel >Type of the Committee :</FormLabel>
                     <Input
                         type="text"
-                        name="Type"
-                        value={Type}
+                        name="type"
+                        value={type}
                         onChange={handleChange}
-                        placeholder="Type"
-                        mb='2.5'
-                    />
-                </FormControl>
-                <FormControl isRequired>
-
-                    <FormLabel>Subtype of Committee:</FormLabel>
-                    <Input
-
-                        type="text"
-                        name="Subtype"
-                        value={Subtype}
-                        onChange={handleChange}
-                        placeholder="Subtype"
-                        mb='2.5'
-                    />
-
-                </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Name of the Committee :</FormLabel>
-                    <Input
-                        type="text"
-                        name="Name"
-                        value={Name}
-                        onChange={handleChange}
-                        placeholder="Name"
+                        placeholder="type"
                         mb='2.5'
                     />
                 </FormControl>
                 <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Designation of the Committee :</FormLabel>
-                    <Input
-                        type="text"
-                        name="Designation"
-                        value={Designation}
-                        onChange={handleChange}
-                        placeholder="Designation"
-                        mb='2.5'
+                    <FormLabel >Description :</FormLabel>
+                    <JoditEditor
+                        ref={ref}
+                        value={description}
+                        name="description"
+                        onBlur={handleEditorChange}
+                        classname='tw-mb-5'
                     />
                 </FormControl>
-
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Image Link of the Committee :</FormLabel>
-                    <Input
-                        type="text"
-                        name="ImgLink"
-                        value={ImgLink}
-                        onChange={handleChange}
-                        placeholder="ImageLink"
-                        mb='2.5'
-                    />
-                </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Institute:</FormLabel>
-                    <Input
-                        type="text"
-                        name="Institute"
-                        value={Institute}
-                        onChange={handleChange}
-                        placeholder="Institute"
-                        mb='2.5'
-                    />
-                </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Profile Link :</FormLabel>
-                    <Input
-                        type="text"
-                        name="ProfileLink"
-                        value={ProfileLink}
-                        onChange={handleChange}
-                        placeholder="ProfileLink"
-                        mb='2.5'
-                    />
-                </FormControl>
-                
+                    
                 
                 <FormControl isRequired={true}  >
 
@@ -278,27 +222,24 @@ const IdConf = params.confid;
                             <Thead>
                                 <Tr>
                                 <CustomTh> Type</CustomTh>
-                                <CustomTh> Subtype</CustomTh>
-
-                                    <CustomTh> Name</CustomTh>
-                                    <CustomTh>Designation</CustomTh>
-                                    <CustomTh>Institute</CustomTh>
+                                
+                                    <CustomTh>Description</CustomTh>
                                     <CustomTh>Sequence</CustomTh>
+                                    <CustomTh>Featured</CustomTh>
 
                                     <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
                                 </Tr>
                             </Thead>
                             <Tbody>
                                 {data.length > 0 ? (data.map((item) => (
-                                    <Tr key={item._id}>                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Type}</Td>
-                                    <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Subtype}</Td>
+                                    <Tr key={item._id}>                                        
+                                    <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.type}</Td>
 
 
 
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Name}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Designation}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.Institute}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.description}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.feature?"Yes":"No"}</Center></Td>
 
                                         <Td position={'sticky'} right={'0'}><Center>
                                             <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
@@ -311,7 +252,7 @@ const IdConf = params.confid;
                                     </Tr>))) :
                                     (
                                         <Tr>
-                                            <Td colSpan="7" className="tw-p-1 tw-text-center">
+                                            <Td colSpan="5" className="tw-p-1 tw-text-center">
                                                 <Center>No data available</Center></Td>
                                         </Tr>
                                     )

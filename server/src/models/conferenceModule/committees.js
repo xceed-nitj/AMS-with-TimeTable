@@ -2,29 +2,14 @@ const mongoose = require("mongoose");
 
 // Define your Mongoose schema based on the interface
 const committeeSchema = new mongoose.Schema({
-  ConfId: {
+  confId: {
     type: String,
     required: true,
   },
-  Type: {
+  type: {
     type: String,
   },
-  Subtype: {
-    type: String,
-  },
-  Name: {
-    type: String,
-  },
-  Designation: {
-    type: String,
-  },
-  Institute: {
-    type: String,
-  },
-  ProfileLink: {
-    type: String,
-  },
-  ImgLink: {
+  description: {
     type: String,
   },
   sequence: {
