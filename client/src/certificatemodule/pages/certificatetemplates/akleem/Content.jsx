@@ -179,6 +179,11 @@ function Content() {
             Signatures.push(sign)
           });
         }
+        for(let i=0; i<Signatures.length;i++){
+          console.log(Signatures)
+          Signatures[i].url.url=await fetchImageToDataURL(Signatures[i].url.url)
+          console.log(Signatures[i].url.url)
+        }
         setSignatures(Signatures)
         //for header
         let Header = []
@@ -246,6 +251,11 @@ function Content() {
             logo.push(logo1)
           });
         }
+        console.log(logo)
+          for(let i = 0; i<logo.length;i++){
+            logo[i].url= await fetchImageToDataURL(logo[i].url)
+            console.log(logo[i].url)
+          }
         setLogos(logo);
         // if(data_one[0].title){settitle(data_one[0].title)};
         const verifiablelink = data_one[0].verifiableLink.toString()
@@ -275,7 +285,7 @@ function Content() {
       async function fetchImageToDataURL(imageUrl) {
         try {
           const response = await fetch(imageUrl);
-          // console.log(response)
+          console.log(response)
           if (response.ok) {
             const blob = await response.blob();
             return await new Promise((resolve, reject) => {
@@ -286,34 +296,34 @@ function Content() {
               reader.readAsDataURL(blob);
             });
           } else {
-            return "error"
+            return ""
           }
         } catch (error) {
           return "error";
         }
       }
-      async function fetchImages() {
-        const input = document.getElementById('id-card-class').firstElementChild;
-        const images = input.getElementsByTagName("img")
-        console.log(images)
-        for (let i = 0; i < images.length; i++) {
-          if (images[i].src) {
-            const response = await fetchImageToDataURL(`${apiUrl}/proxy-image/?url=${images[i].src}`)
-            // console.log(response);
-            if (response && !(response == "error")) {
-              console.log(images[i].src)
-              const dataUrl = await response;
-              images[i].src = dataUrl;
-              // console.log(dataUrl);
-            } else {
-              images[i].remove()
-            }
-          } else {
-            images[i].remove()
-          }
-        }  
-      }
-      await fetchImages();
+      // async function fetchImages() {
+      //   const input = document.getElementById('id-card-class').firstElementChild;
+      //   const images = input.getElementsByTagName("img")
+      //   console.log(images)
+      //   for (let i = 0; i < images.length; i++) {
+      //     if (images[i].src) {
+      //       const response = await fetchImageToDataURL(`${apiUrl}/proxy-image/?url=${images[i].src}`)
+      //       // console.log(response);
+      //       if (response && !(response == "error")) {
+      //         console.log(images[i].src)
+      //         const dataUrl = await response;
+      //         images[i].src = dataUrl;
+      //         // console.log(dataUrl);
+      //       } else {
+      //         images[i].remove()
+      //       }
+      //     } else {
+      //       images[i].remove()
+      //     }
+      //   }  
+      // }
+      // await fetchImages();
     };
     fetchData();
     
