@@ -34,7 +34,7 @@ const SuperAdminPage = () => {
         </GridItem>
         <GridItem>
           <Box bg="pink.200" p={6} borderRadius="md" textAlign="center">
-            <Link as={RouterLink} to="/logs" color="white" fontSize={{ base: "xl", md: "2xl" }}>Logs</Link>
+            <Link as={RouterLink} to="/platform" color="white" fontSize={{ base: "xl", md: "2xl" }}>Logs</Link>
           </Box>
         </GridItem>
       </Grid>

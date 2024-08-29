@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useToast, Box, Button, Checkbox, FormControl, FormLabel, Heading, Stack, Table, Thead, Tbody, Tr, Th, Td } from "@chakra-ui/react";
-import getEnvironment from "../getenvironment"; 
+import { useToast, Box, Button, Checkbox, FormControl, FormLabel, Heading, Stack, Table, Thead, Tbody, Tr, Th, Td, Textarea } from "@chakra-ui/react";
+import getEnvironment from "../getenvironment";
 
 const FormComponent = () => {
-  const [roles, setRoles] = useState([]);
-  const [exemptedLinks, setExemptedLinks] = useState([]);
-  const [researchArea, setResearchArea] = useState([]);
+  const [roles, setRoles] = useState(['PRM', 'Admin', 'Editor', 'SuperAdmin']); // Default values
+  const [exemptedLinks, setExemptedLinks] = useState(['login', 'register', 'verify']); // Default values
+  const [researchArea, setResearchArea] = useState(['ECE', 'IT', 'EE', 'ME']); // Default values
+  const [selectedRoles, setSelectedRoles] = useState([]);
+  const [selectedExemptedLinks, setSelectedExemptedLinks] = useState([]);
+  const [selectedResearchArea, setSelectedResearchArea] = useState([]);
   const [data, setData] = useState([]);
+  const [newRole, setNewRole] = useState('');
+  const [newExemptedLink, setNewExemptedLink] = useState('');
+  const [newResearchArea, setNewResearchArea] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
   const toast = useToast();
   const apiUrl = getEnvironment();
-
-  const rolesOptions = ["PRM", "Admin", "Editor", "SuperAdmin"];
-  const exemptedLinksOptions = ["login", "register", "verify"];
-  const researchAreaOptions = ["ECE", "IT", "EE", "ME"];
 
   useEffect(() => {
     fetchData();
@@ -25,6 +27,12 @@ const FormComponent = () => {
     try {
       const response = await axios.get(`${apiUrl}/platform/getplatform`);
       setData(response.data);
+      console.log(response.data);
+      if (response.data.length > 0) {
+        setRoles((prevRoles) => [...new Set([...prevRoles, ...(response.data[0].roles || [])])]);
+        setExemptedLinks((prevLinks) => [...new Set([...prevLinks, ...(response.data[0].exemptedLinks || [])])]);
+        setResearchArea((prevAreas) => [...new Set([...prevAreas, ...(response.data[0].researchArea || [])])]);
+      }
     } catch (error) {
       toast({
         title: "Failed to fetch data",
@@ -35,8 +43,50 @@ const FormComponent = () => {
     }
   };
 
-  const handleAdd = async () => {
-    if (!roles.length || !exemptedLinks.length || !researchArea.length) {
+  const handleAddRole = () => {
+    if (!newRole) {
+      toast({
+        title: "Role cannot be empty",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
+    }
+    setRoles((prevRoles) => [...new Set([...prevRoles, newRole])]);
+    setNewRole('');
+  };
+
+  const handleAddExemptedLink = () => {
+    if (!newExemptedLink) {
+      toast({
+        title: "Exempted Link cannot be empty",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
+    }
+    setExemptedLinks((prevLinks) => [...new Set([...prevLinks, newExemptedLink])]);
+    setNewExemptedLink('');
+  };
+
+  const handleAddResearchArea = () => {
+    if (!newResearchArea) {
+      toast({
+        title: "Research Area cannot be empty",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
+    }
+    setResearchArea((prevAreas) => [...new Set([...prevAreas, newResearchArea])]);
+    setNewResearchArea('');
+  };
+
+  const handleCreatePlatform = async () => {
+    if (!selectedRoles.length || !selectedExemptedLinks.length || !selectedResearchArea.length) {
       toast({
         title: "All fields are required",
         status: "error",
@@ -48,24 +98,23 @@ const FormComponent = () => {
 
     try {
       const response = await axios.post(`${apiUrl}/platform/add`, {
-        roles,
-        exemptedLinks,
-        researchArea,
+        roles: selectedRoles,
+        exemptedLinks: selectedExemptedLinks,
+        researchArea: selectedResearchArea,
       });
-      console.log(response);
       setData((prevData) => [...prevData, response.data]);
-      setRoles([]);
-      setExemptedLinks([]);
-      setResearchArea([]);
+      setSelectedRoles([]);
+      setSelectedExemptedLinks([]);
+      setSelectedResearchArea([]);
       toast({
-        title: "Data added successfully",
+        title: "Platform created successfully",
         status: "success",
         duration: 2000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: "Failed to add data",
+        title: "Failed to create platform",
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -77,10 +126,9 @@ const FormComponent = () => {
     try {
       const response = await axios.get(`${apiUrl}/platform/get/${id}`);
       const item = response.data;
-      console.log(item[0]);
-      setRoles(item[0].roles || []);
-      setExemptedLinks(item[0].exemptedLinks || []);
-      setResearchArea(item[0].researchArea || []);
+      setSelectedRoles(item[0].roles || []);
+      setSelectedExemptedLinks(item[0].exemptedLinks || []);
+      setSelectedResearchArea(item[0].researchArea || []);
       setIsEditing(true);
       setCurrentId(id);
     } catch (error) {
@@ -98,18 +146,18 @@ const FormComponent = () => {
 
     try {
       const response = await axios.patch(`${apiUrl}/platform/update/${currentId}`, {
-        roles,
-        exemptedLinks,
-        researchArea,
+        roles: selectedRoles,
+        exemptedLinks: selectedExemptedLinks,
+        researchArea: selectedResearchArea,
       });
       setData((prevData) =>
         prevData.map((item) =>
           item._id === currentId ? response.data : item
         )
       );
-      setRoles([]);
-      setExemptedLinks([]);
-      setResearchArea([]);
+      setSelectedRoles([]);
+      setSelectedExemptedLinks([]);
+      setSelectedResearchArea([]);
       setIsEditing(false);
       setCurrentId(null);
       toast({
@@ -154,70 +202,92 @@ const FormComponent = () => {
       <FormControl id="roles" mb={4}>
         <FormLabel>Roles</FormLabel>
         <Stack spacing={2}>
-          {rolesOptions.map((role) => (
+          {roles.map((role) => (
             <Checkbox
               key={role}
-              isChecked={roles.includes(role)}
+              isChecked={selectedRoles.includes(role)}
               onChange={(e) => {
                 const updatedRoles = e.target.checked
-                  ? [...roles, role]
-                  : roles.filter((r) => r !== role);
-                setRoles(updatedRoles);
+                  ? [...selectedRoles, role]
+                  : selectedRoles.filter((r) => r !== role);
+                setSelectedRoles(updatedRoles);
               }}
             >
               {role}
             </Checkbox>
           ))}
+          <Textarea
+            width="30%"
+            placeholder="Add new role"
+            value={newRole}
+            onChange={(e) => setNewRole(e.target.value)}
+          />
+          <Button onClick={handleAddRole} width="10%" colorScheme="green">Add Role</Button>
         </Stack>
       </FormControl>
       <FormControl id="exemptedLinks" mb={4}>
         <FormLabel>Exempted Links</FormLabel>
         <Stack spacing={2}>
-          {exemptedLinksOptions.map((link) => (
+          {exemptedLinks.map((link) => (
             <Checkbox
               key={link}
-              isChecked={exemptedLinks.includes(link)}
+              isChecked={selectedExemptedLinks.includes(link)}
               onChange={(e) => {
                 const updatedLinks = e.target.checked
-                  ? [...exemptedLinks, link]
-                  : exemptedLinks.filter((l) => l !== link);
-                setExemptedLinks(updatedLinks);
+                  ? [...selectedExemptedLinks, link]
+                  : selectedExemptedLinks.filter((l) => l !== link);
+                setSelectedExemptedLinks(updatedLinks);
               }}
             >
               {link}
             </Checkbox>
           ))}
+          <Textarea
+            width="30%"
+            placeholder="Add new exempted link"
+            value={newExemptedLink}
+            onChange={(e) => setNewExemptedLink(e.target.value)}
+          />
+          <Button onClick={handleAddExemptedLink} width='20%' colorScheme="green">Add Exempted Link</Button>
         </Stack>
       </FormControl>
       <FormControl id="researchArea" mb={4}>
         <FormLabel>Research Area</FormLabel>
         <Stack spacing={2}>
-          {researchAreaOptions.map((area) => (
+          {researchArea.map((area) => (
             <Checkbox
               key={area}
-              isChecked={researchArea.includes(area)}
+              isChecked={selectedResearchArea.includes(area)}
               onChange={(e) => {
                 const updatedAreas = e.target.checked
-                  ? [...researchArea, area]
-                  : researchArea.filter((a) => a !== area);
-                setResearchArea(updatedAreas);
+                  ? [...selectedResearchArea, area]
+                  : selectedResearchArea.filter((a) => a !== area);
+                setSelectedResearchArea(updatedAreas);
               }}
             >
               {area}
             </Checkbox>
           ))}
+          <Textarea
+            width="30%"
+            placeholder="Add new research area"
+            value={newResearchArea}
+            onChange={(e) => setNewResearchArea(e.target.value)}
+          />
+          <Button onClick={handleAddResearchArea} width="20%" colorScheme="green">Add Research Area</Button>
         </Stack>
       </FormControl>
-      {isEditing ? (
-        <Button colorScheme="blue" onClick={handleUpdate}>
+
+      <Button mt={4} colorScheme="green" onClick={handleCreatePlatform}>
+        Create Platform
+      </Button>
+      {isEditing && (
+        <Button mt={4} onClick={handleUpdate}>
           Update
-        </Button>
-      ) : (
-        <Button colorScheme="green" onClick={handleAdd}>
-          Add
         </Button>
       )}
       <Box mt={8}>
+        <Heading size="md" mb={4}>Data</Heading>
         <Table variant="simple">
           <Thead>
             <Tr>
@@ -228,30 +298,25 @@ const FormComponent = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {data.map((item) => (
-              <Tr key={item._id}>
-                <Td>{item.roles.join(",")}</Td>
-                <Td>{item.exemptedLinks.join(",")}</Td>
-                <Td>{item.researchArea.join(",")}</Td>
-                <Td>
-                  <Button
-                    size="sm"
-                    colorScheme="blue"
-                    onClick={() => handleEdit(item._id)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    colorScheme="red"
-                    onClick={() => handleDelete(item._id)}
-                    ml={2}
-                  >
-                    Delete
-                  </Button>
-                </Td>
+            {data.length > 0 ? (
+              data.map((item) => (
+                <Tr key={item._id}>
+                  <Td>{item.roles.join(", ")}</Td>
+                  <Td>{item.exemptedLinks.join(", ")}</Td>
+                  <Td>{item.researchArea.join(", ")}</Td>
+                  <Td>
+                    <Button onClick={() => handleEdit(item._id)}>Edit</Button>
+                    <Button onClick={() => handleDelete(item._id)} ml={2}>
+                      Delete
+                    </Button>
+                  </Td>
+                </Tr>
+              ))
+            ) : (
+              <Tr>
+                <Td colSpan="4" style={{ textAlign: "center" }}>No data available</Td>
               </Tr>
-            ))}
+            )}
           </Tbody>
         </Table>
       </Box>

@@ -96,75 +96,47 @@ const MasterLoadDataTable = () => {
     { label: "Load", key: "count" },
   ];
 
-  function filterUniqueObjects(objects) {
-    const seen = new Set();
-    return objects.filter(obj => {
-      const key = JSON.stringify({
-        code: obj.code,
-        degree: obj.degree,
-        faculty: obj.faculty,
-        mergedClass: obj.mergedClass,
-        offeringDept: obj.offeringDept,
-        room: obj.room,
-        sem: obj.sem,
-        session: obj.session,
-        subject: obj.subject,
-        subjectCode: obj.subjectCode,
-        subjectCredit: obj.subjectCredit,
-        subjectDept: obj.subjectDept,
-        subjectFullName: obj.subjectFullName,
-        subjectType: obj.subjectType,
-        updated_at: obj.updated_at,
-        year: obj.year
-      });
-
-      if (seen.has(key)) {
-        return false;
-      } else {
-        seen.add(key);
-        return true;
-      }
-    });
-  }
-
   const mergeAndFilterData = (data) => {
-    const mergedData = {};
-    data.forEach(item => {
-      const key = item.subjectFullName;
-      if (!mergedData[key]) {
-        mergedData[key] = { 
-          ...item, 
-          count: 1, 
-          faculty: [item.faculty],
-          offeringDept: [item.offeringDept],
-          room: [item.room],
-        };
-        delete mergedData[key].day;
-        delete mergedData[key].slot;
+    const groupedData = data.reduce((acc, item) => {
+      const key = `${item.subjectCode}-${item.subjectFullName}-${item.faculty}-${item.sem}-${item.subjectType}`; // Unique key based on subjectCode and subjectFullName
+      if (!acc[key]) {
+        acc[key] = { ...item, count: 1 }; // Initialize with count 1
+        delete acc[key].day; // Remove fields not needed in the merged result
+        delete acc[key].slot;
       } else {
-        mergedData[key].count += 1;
-        if (!mergedData[key].faculty.includes(item.faculty)) {
-          mergedData[key].faculty.push(item.faculty);
-        }
-        if (!mergedData[key].offeringDept.includes(item.offeringDept)) {
-          mergedData[key].offeringDept.push(item.offeringDept);
-        }
-        if (!mergedData[key].room.includes(item.room)) {
-          mergedData[key].room.push(item.room);
-        }
+        acc[key].count += 1; // Increment the count for the same key
+        Object.keys(item).forEach(field => {
+          if (field !== 'subjectCode' && field !== 'subjectType' && field !== 'faculty' && field !== 'day' && field !== 'slot') {
+            if (Array.isArray(acc[key][field])) {
+              if (!acc[key][field].includes(item[field])) {
+                acc[key][field].push(item[field]);
+              }
+            } else {
+              acc[key][field] = [acc[key][field], item[field]];
+            }
+          }
+        });
       }
-    });
+      return acc;
+    }, {});
 
-    return Object.values(mergedData).map(item => ({
-      ...item,
-      faculty: item.faculty.sort().join(', '),
-      offeringDept: item.offeringDept.join(', '),
-      room: item.room.join(', '),
-    }));
+    return Object.values(groupedData).map(item => {
+      const processedItem = { ...item };
+      Object.keys(processedItem).forEach(field => {
+        if (Array.isArray(processedItem[field])) {
+          if (field === 'faculty') {
+            processedItem[field] = Array.from(new Set(processedItem[field])).sort().join(', ');
+          } else {
+            processedItem[field] = Array.from(new Set(processedItem[field])).join(', ');
+          }
+        }
+      });
+      return processedItem;
+    });
   };
 
   const filteredData = useMemo(() => {
-    const filtered = filterUniqueObjects(data.filter(item =>
+    const filtered = data.filter(item =>
       item.subject && item.faculty &&
       Object.entries(filters).every(([key, value]) => {
         const itemValue = item[key];
@@ -174,7 +146,7 @@ const MasterLoadDataTable = () => {
         const itemValue = item[key];
         return !term || (itemValue && itemValue.toString().toLowerCase().includes(term.toLowerCase()));
       })
-    ));
+    );
     return mergeAndFilterData(filtered);
   }, [data, filters, searchTerms]);
 
