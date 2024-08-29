@@ -1,6 +1,5 @@
 import pdfMakeInitializer from './pdfMakeInitializer';
 
-
 pdfMakeInitializer(); 
 
 import header from '../assets/header.png';
@@ -64,7 +63,7 @@ const session = ttdata[0].session;
       if (period === 5) {
         cellData = timetableData[day]['lunch'];
         console.log(cellData)
-        if(!cellData || cellData.length==0)
+        if(!cellData || cellData.length==0 || cellData[0].length==0 || !cellData[0])
         {      
         console.log(cellData)
         // cellData='Lunch'
@@ -130,6 +129,7 @@ const session = ttdata[0].session;
   });
 
   const summaryTableData = [];
+  const summaryTableData2 = [];
     
   const summaryTitleRow = [
     { text: 'Summary', bold: true, alignment: 'left', colSpan: 7, border: [false, false, false, false] },
@@ -164,7 +164,7 @@ const session = ttdata[0].session;
   summaryTableData.push(summaryTableHeader);
 
   // Iterate through the summary data and add rows to the table
-  Object.keys(summaryData).forEach((subject) => {
+  Object.keys(summaryData).forEach((subject,index) => {
     const summaryRow = [];
     summaryRow.push({ text: summaryData[subject].originalKeys.join(', '), fontSize: 10, alignment: 'center' });
     summaryRow.push({ text: summaryData[subject].subCode, fontSize: 10, alignment: 'center' });
@@ -195,7 +195,11 @@ const session = ttdata[0].session;
     }
 
 
-    summaryTableData.push(summaryRow);
+    if (index <= 18) {
+      summaryTableData.push(summaryRow);
+    } else {
+      summaryTableData2.push(summaryRow);
+    }
   });
 
   const summarySignRow = [
@@ -206,12 +210,21 @@ const session = ttdata[0].session;
   ];
 
   const blankRow = [{text:'',colSpan:7,border: [false, false, false, false] }, {}, {}, {}, {},{},{}];
-summaryTableData.push(blankRow);
-summaryTableData.push(blankRow);
-// summaryTableData.push(blankRow);
-// summaryTableData.push(blankRow);
+  if (summaryTableData2.length == 0) {
+    summaryTableData.push(blankRow);
+    summaryTableData.push(blankRow);
+    summaryTableData.push(blankRow);
+    summaryTableData.push(blankRow);
 
-  summaryTableData.push(summarySignRow);
+    summaryTableData.push(summarySignRow);
+  } else {
+    summaryTableData2.push(blankRow);
+    summaryTableData2.push(blankRow);
+    summaryTableData.push(blankRow);
+    summaryTableData.push(blankRow);
+
+    summaryTableData2.push(summarySignRow);
+  }
 
   const headerImage = new Image();
   headerImage.src = header;
@@ -327,6 +340,19 @@ summaryTableData.push(blankRow);
                   
         ],
       
+      },
+      summaryTableData2.length==0?null:{
+        pageBreak:"before",
+        unbreakable: true,
+        stack: [
+          {
+            table: {
+              fontSize: 10,
+              body: summaryTableData2,
+              alignment: 'center',
+            },
+          },
+        ],
       }
                 // {
           //   table: {

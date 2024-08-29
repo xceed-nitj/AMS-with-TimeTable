@@ -57,9 +57,7 @@ function CMDashboard() {
             data[i].certificatesIssued = issuedCount;
             setTable(data)
           }
-        } catch (error) {
-
-        }
+        } catch (error) { /* empty */ }
 
         if (data.length > 0) {
           const lastEventLocked = data[data.length - 1].lock;

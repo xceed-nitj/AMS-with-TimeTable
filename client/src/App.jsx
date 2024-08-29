@@ -53,6 +53,8 @@ import CertificateForm from './certificatemodule/pages/certificatedesign';
 import ServicePage from './pages/Service';
 import Participant from './certificatemodule/pages/participantdataupload';
 import UserEvents from './certificatemodule/pages/UserEvents'
+import UserLogos from './certificatemodule/pages/UserLogo.jsx';
+import UserSignatures from './certificatemodule/pages/UserSignatures.jsx';
 
 import EODashboard from './conferencemodule/layout/eodashboard';
 import HomeConf from './conferencemodule/Tabs/HomeConf';
@@ -229,6 +231,8 @@ function App() {
         <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03 />} />
         <Route path='/cm/useraddevent' element={< UserEventRegistration/>} />
         <Route path="/cm/userevents/:userId" element={<UserEvents/>} />
+        <Route path="/cm/userimages/logos/:userId" element={<UserLogos />} />
+        <Route path="/cm/userimages/signatures/:userId" element={<UserSignatures />} />
 
     {/* Review management routes*/}
     <Route path="/prm/login" element={<ReviewLogin/>} />

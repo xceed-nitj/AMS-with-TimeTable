@@ -3,8 +3,9 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
 import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from '../styles/customStyles';
-import { Box, Center, Container, Input, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
+import { Box, Center, Button, Container, Input, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
 import Header from '../components/header';
+import { Parser } from '@json2csv/plainjs/index.js';
 
 function Subject() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -213,6 +214,39 @@ function Subject() {
     }
   };
 
+  const downloadCSV = () => {
+    const visibleColumns = [
+      { label: 'Faculty ID', key: 'facultyID' },
+      { label: 'Name', key: 'name' },
+      { label: 'Designation', key: 'designation' },
+      { label: 'Department', key: 'dept' },
+      { label: 'Type', key: 'type' },
+      { label: 'Email', key: 'email' },
+      { label: 'Extension', key: 'extension' }
+    ];
+    
+    const csvData = tableData.map(item => {
+      const filteredItem = {};
+      for(let x in visibleColumns) filteredItem[visibleColumns[x].label] = item[visibleColumns[x].key]
+      return filteredItem;
+    });
+
+    const parser = new Parser({ fields: visibleColumns.map(c => (c.label)) });
+    const csv = parser.parse(csvData);
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'MasterFaculty-XCEED.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <Container maxW="7xl">
       {/* <h1>Master Faculty </h1> */}
@@ -333,6 +367,7 @@ function Subject() {
       </Box>
 
       <Text mb='1' ml='1' as='b'>Table of Faculty Data (Total Entries: {tableData.length}):</Text>
+      <Center><Button colorScheme='blue' onClick={downloadCSV}>Download in CSV</Button></Center>
       <TableContainer>
         <Table
         variant='striped'

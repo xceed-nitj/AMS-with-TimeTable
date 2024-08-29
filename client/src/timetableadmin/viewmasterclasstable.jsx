@@ -1,4 +1,3 @@
-// src/DataTable.js
 import React, { useEffect, useState, useMemo } from 'react';
 import { Box, Table, Thead, Tbody, HStack, Tr, Th, Td, TableContainer, Spinner, Alert, 
   AlertIcon, Container, FormControl, FormLabel, Select, Button, Input,
@@ -21,8 +20,30 @@ const MasterDataTable = () => {
   const [filters, setFilters] = useState({});
   const [searchTerms, setSearchTerms] = useState({});
   const [hiddenColumns, setHiddenColumns] = useState([]);
-
+  const [refresh, setRefresh] = useState(false)
+  if(refresh===true) {setRefresh(filters); setFilters({})} // this makes the filters take effect when columns are hidden, pls dont judge
+  else if(refresh!==false) {setFilters(refresh); setRefresh(false)} // this is just a workaround
   const apiUrl = getEnvironment();
+
+  const slotTimeMapping = {
+    period1: "8.30 AM - 9:25 AM",
+    period2: "9.30 AM - 10:25 AM",
+    period3: "10.30 AM - 11:25 AM",
+    period4: "11.30 AM - 12:25 PM",
+    period5: "1.30 PM - 2:25 PM",
+    period6: "2.30 PM - 3:25 PM",
+    period7: "3.30 PM - 4:25 PM",
+    period8: "4.30 PM - 5:25 PM",
+  };
+
+  const getTimeFromSlot = (slot) => slotTimeMapping[slot] || slot;
+  const getSlotFromTime = (time) => {
+    for (const [key, value] of Object.entries(slotTimeMapping)) {
+      if (value === time) return key;
+    }
+    return time;
+  };
+  const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -64,7 +85,7 @@ const MasterDataTable = () => {
   const handleFilterChange = (column, value) => {
     setFilters(prevFilters => ({
       ...prevFilters,
-      [column]: value
+      [column]: column === 'slot' ? getSlotFromTime(value) : value
     }));
   };
 
@@ -95,34 +116,31 @@ const MasterDataTable = () => {
     { label: "Subject Code", key: "subjectCode" },
     { label: "Subject", key: "subject" },
     { label: "Subject Credit", key: "subjectCredit" },
-    // { label: "Code", key: "code" },
-    // { label: "Merged Class", key: "mergedClass" }
   ];
 
-  function filterUniqueObjects(objects) { //GPT wrote this function :??
+  function filterUniqueObjects(objects) {
     const seen = new Set();
     return objects.filter(obj => {
       const key = JSON.stringify({
-        code: obj.code,
-        day: obj.day,
-        degree: obj.degree,
-        faculty: obj.faculty,
-        mergedClass: obj.mergedClass,
-        offeringDept: obj.offeringDept,
-        room: obj.room,
-        sem: obj.sem,
-        session: obj.session,
-        slot: obj.slot,
-        subject: obj.subject,
-        subjectCode: obj.subjectCode,
-        subjectCredit: obj.subjectCredit,
-        subjectDept: obj.subjectDept,
-        subjectFullName: obj.subjectFullName,
-        subjectType: obj.subjectType,
-        updated_at: obj.updated_at,
-        year: obj.year
+        // code: obj.code,
+        day: (hiddenColumns.includes('day'))?'reserve':obj.day,
+        degree: (hiddenColumns.includes('degree'))?'reserve':obj.degree,
+        faculty: (hiddenColumns.includes('faculty'))?'reserve':obj.faculty,
+        // mergedClass: (hiddenColumns.includes(''))?'reserve':obj.mergedClass,
+        offeringDept: (hiddenColumns.includes('offeringDept'))?'reserve':obj.offeringDept,
+        room: (hiddenColumns.includes('room'))?'reserve':obj.room,
+        sem: (hiddenColumns.includes('sem'))?'reserve':obj.sem,
+        // session: (hiddenColumns.includes('session'))?'reserve':obj.session,
+        slot: (hiddenColumns.includes('slot'))?'reserve':obj.slot,
+        subject: (hiddenColumns.includes('subject'))?'reserve':obj.subject,
+        subjectCode: (hiddenColumns.includes('subjectCode'))?'reserve':obj.subjectCode,
+        subjectCredit: (hiddenColumns.includes('subjectCredit'))?'reserve':obj.subjectCredit,
+        subjectDept: (hiddenColumns.includes('subjectDept'))?'reserve':obj.subjectDept,
+        subjectFullName: (hiddenColumns.includes('subjectFullName'))?'reserve':obj.subjectFullName,
+        subjectType: (hiddenColumns.includes('subjectType'))?'reserve':obj.subjectType,
+        // updated_at: obj.updated_at,/
+        year: (hiddenColumns.includes('year'))?'reserve':obj.year
       });
-
       if (seen.has(key)) {
         return false;
       } else {
@@ -137,6 +155,9 @@ const MasterDataTable = () => {
       item.subject && item.faculty &&
       Object.entries(filters).every(([key, value]) => {
         const itemValue = item[key];
+        if (key === 'slot') {
+          return !value || (itemValue && itemValue === value);
+        }
         return !value || (itemValue && itemValue.toString().toLowerCase() === value.toLowerCase());
       }) &&
       Object.entries(searchTerms).every(([key, term]) => {
@@ -149,11 +170,18 @@ const MasterDataTable = () => {
   const filterOptions = useMemo(() => {
     return columns.reduce((acc, { key }) => {
       const columnValues = data.map(item => item[key]).filter(value => value !== undefined && value !== null);
-      acc[key] = Array.from(new Set(columnValues)).filter(Boolean).sort((a, b) => a.toString().localeCompare(b.toString()));
+      acc[key] = Array.from(new Set(columnValues)).filter(Boolean);
+      if (key === 'slot') {
+        acc[key] = acc[key].sort((a, b) => a.localeCompare(b));
+      } else if (key === 'day') {
+        acc[key] = acc[key].sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+      } else {
+        acc[key] = acc[key].sort((a, b) => a.toString().localeCompare(b.toString()));
+      }
       return acc;
     }, {});
   }, [data, columns]);
-  
+
   if (loading) {
     return <Spinner size="xl" />;
   }
@@ -172,7 +200,7 @@ const MasterDataTable = () => {
     const csvData = filteredData.map(item => {
       const filteredItem = {};
       visibleColumns.forEach(({ key }) => {
-        filteredItem[key] = item[key];
+        filteredItem[key] = key === 'slot' ? getTimeFromSlot(item[key]) : item[key];
       });
       return filteredItem;
     });
@@ -210,11 +238,11 @@ const MasterDataTable = () => {
             ))}
           </Select>
         </FormControl>
-        <HStack>
+        <HStack flexWrap={'wrap'}>
           <CustomBlueButton onClick={clearFilters} mb={4}>Clear Filters</CustomBlueButton>
           {
             !hiddenColumns.length ? '' :
-              <CustomBlueButton onClick={() => setHiddenColumns([])} mb={4}>Show All Columns</CustomBlueButton>
+              <CustomBlueButton onClick={() => {setHiddenColumns([]); setRefresh(true)}} mb={4}>Show All Columns</CustomBlueButton>
           }
           <Spacer />
           <Center>
@@ -222,8 +250,8 @@ const MasterDataTable = () => {
           </Center>
         </HStack>
         <Box p={4}>
-          <TableContainer>
-            <Table variant="striped" colorScheme="teal">
+          <TableContainer style={{transform:'rotateX(180deg)'}}>
+            <Table style={{transform:'rotateX(-180deg)'}} variant="striped" colorScheme="teal">
               <Thead>
                 <Tr>
                   {columns.filter(c => !hiddenColumns.includes(c.key)).map(({ label, key }) => (
@@ -237,13 +265,13 @@ const MasterDataTable = () => {
                                 borderRadius={'50%'} color={'red'}
                                 border='2px solid red' cursor={'pointer'}
                                 onClick={() => {
-                                  setHiddenColumns([...hiddenColumns, key])
+                                  setHiddenColumns([...hiddenColumns, key]);
+                                  setRefresh(true)
                                 }}
                               >
                                 <FaMinus />
                               </Box>
                           }
-
                         </HStack>
                         <Input
                           placeholder={`Search ${label}`}
@@ -252,15 +280,20 @@ const MasterDataTable = () => {
                           onChange={(e) => handleSearchChange(key, e.target.value)}
                         />
                         <Select
-                          size="sm"
-                          onChange={(e) => handleFilterChange(key, e.target.value)}
-                          value={filters[key] || ''}
-                        >
-                          <option value="">All</option>
-                          {filterOptions[key] && filterOptions[key].map((value) => (
-                            <option key={value} value={value}>{value}</option>
-                          ))}
-                        </Select>
+  size="sm"
+  onChange={(e) => handleFilterChange(key, e.target.value)}
+  value={key === 'slot' ? getTimeFromSlot(filters[key] || '') : (filters[key] || '')}
+>
+  <option value="">All</option>
+  {filterOptions[key] && filterOptions[key].map((value) => (
+    <option 
+      key={value} 
+      value={key === 'slot' ? getTimeFromSlot(value) : value}
+    >
+      {key === 'slot' ? getTimeFromSlot(value) : value}
+    </option>
+  ))}
+</Select>
                       </VStack>
                     </Th>
                   ))}
@@ -269,9 +302,9 @@ const MasterDataTable = () => {
               <Tbody>
                 {filteredData.map((item, index) => (
                   <Tr key={index}>
-                    {columns.filter(c => !hiddenColumns.includes(c.key)).map(({ key }) => (
+                    {!refresh&& columns.filter((e)=>{return hiddenColumns||true}).filter(c => !hiddenColumns.includes(c.key)).map(({ key }) => (
                       <Td key={key}>
-                        {item[key] !== undefined && item[key] !== null ? item[key].toString() : ''}
+                        {key === 'slot' ? getTimeFromSlot(item[key]) : item[key]}
                       </Td>
                     ))}
                   </Tr>
