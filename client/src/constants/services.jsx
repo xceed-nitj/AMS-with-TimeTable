@@ -5,6 +5,8 @@ import {
   PresentationChartLineIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/solid';
+import { GiPodiumWinner } from "react-icons/gi";
+import { GoCodeReview } from "react-icons/go";
 import { certificateTeam, conferenceTeam, timeTableTeam } from './members';
 
 export const services = [
@@ -62,6 +64,21 @@ export const services = [
   },
   {
     id: 4,
+    icon: <GoCodeReview />,
+    type: 'premium',
+    title: 'Review Module',
+    description:
+      'We specialize in crafting visually stunning and functionally robust websites that showcase your work, talents, and achievements. From captivating visuals to intuitive navigation, our portfolio websites are designed to leave a lasting impression and effectively communicate your unique story. Let us bring your achievements to life online, creating a digital showcase that captivates and engages your audience.',
+    price: '₹ 5000 onwards',
+    features: [
+      'Personal website to showcase your achievements, skills and collaborations to wider audience',
+      'Admin panel will be provided to the client for the dynamic updation',
+      'Responsive design for a seamless experience on various devices.  ',
+      'Domain cost and maintenance cost will be recurring in nature and it is above the design cost of 5000/-',
+    ],
+  },
+  {
+    id: 5,
     icon: <AcademicCapIcon />,
     type: 'institute',
     title: 'Institute Time Table Module',
@@ -70,7 +87,7 @@ export const services = [
     team: timeTableTeam,
   },
   {
-    id: 5,
+    id: 6,
     icon: <WrenchScrewdriverIcon />,
     type: 'institute',
     title: "Management of NITJ's Official Website",
@@ -94,10 +111,18 @@ export const services = [
     team: 'https://www.nitj.ac.in/admin/students.html',
   },
   {
-    id: 6,
+    id: 7,
     icon: <Cog6ToothIcon />,
     type: 'institute',
     title: 'FE Course & Hackathons',
+    description:
+      'WDM Club at our esteemed institution has taken a pioneering step to offer a unique foundation elective course for first-year students. This course aims to provide an immersive and comprehensive introduction to web development, a critical technology in the field of software engineering which is the future!. The foundation elective course offered is designed to cater to students from diverse academic backgrounds. Inaddition to this, Through workshops, and hackathons, we aim to empower our members with the knowledge and practical experience necessary for success in the dynamic field of software development.',
+  },
+  {
+    id: 8,
+    icon: <GiPodiumWinner />,
+    type: 'institute',
+    title: 'Success Stories',
     description:
       'WDM Club at our esteemed institution has taken a pioneering step to offer a unique foundation elective course for first-year students. This course aims to provide an immersive and comprehensive introduction to web development, a critical technology in the field of software engineering which is the future!. The foundation elective course offered is designed to cater to students from diverse academic backgrounds. Inaddition to this, Through workshops, and hackathons, we aim to empower our members with the knowledge and practical experience necessary for success in the dynamic field of software development.',
   },
