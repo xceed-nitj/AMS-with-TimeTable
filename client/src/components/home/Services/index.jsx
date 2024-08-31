@@ -90,12 +90,11 @@ const Services = () => {
           >
             {duplicatedServices.map((service, index) => (
               <div
-                className="tw-flex-shrink-0 tw-px-2 tw-py-4 tw-w-full md:tw-w-64 lg:tw-w-80 xs:tw-w-32" // Responsive width
+                className="tw-m-4 tw-overflow-hidden sm:tw-p-[1px]" // Responsive width based on screen size
                 key={`${service.id}-${index}`}
                 style={{ 
                   border:"2px solid #164e63",
-                  borderRadius: "10px",  
-                  padding: "20px"
+                  borderRadius: "10px",
                 }}
               >
                 <ServiceCard {...service} />
@@ -139,12 +138,11 @@ const Services = () => {
           >
             {duplicatedInstituteServices.map((service, index) => (
               <div
-                className="tw-flex-shrink-0 tw-px-2 tw-py-4 tw-w-full md:tw-w-64 lg:tw-w-80 xs:tw-w-32" // Responsive width based on screen size
+                className="tw-m-4 tw-overflow-hidden sm:tw-p-[1px]" // Responsive width based on screen size
                 key={`${service.id}-${index}`}
                 style={{ 
                   border:"2px solid #164e63",
-                  borderRadius: "10px",  
-                  padding: "20px"
+                  borderRadius: "10px",
                 }}
               >
                 <ServiceCard {...service} />
