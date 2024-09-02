@@ -3,61 +3,15 @@ import EnquireModal from './EnquireModal';
 import { useDisclosure } from '@chakra-ui/react';
 import ServiceCard from './ServiceCard';
 import { services } from '../../../constants/services';
+import CardSlider from './Features/CardSlider';
 import { useState, useEffect, useRef } from 'react';
 
 const Services = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const sliderRef = useRef(null);
 
   const filteredServices = services.filter((service) => service.type === 'premium');
   const filteredInstituteServices = services.filter((service) => service.type === 'institute');
-  const totalSlides = Math.ceil(filteredServices.length / 3); // Number of slides to show
-
-  // Create a duplicated array to enable infinite scrolling effect
-  const duplicatedServices = [ ...filteredServices, ...filteredServices, ...filteredServices];
-  const duplicatedInstituteServices = [ ...filteredInstituteServices, ...filteredInstituteServices, ...filteredInstituteServices];
-
-  useEffect(() => {
-    let interval;
-    if (!isPaused) {
-      interval = setInterval(() => {
-        setCurrentIndex((prevIndex) => {
-          if (prevIndex+1 >= filteredServices.length) {
-            sliderRef.current.style.transition = 'none'; // Disable transition for reset
-            return prevIndex=0; // Reset index to 0 when exceeding the original content length
-          }
-          sliderRef.current.style.transition = 'transform 3s ease'; // Re-enable transition
-          return prevIndex + 1 ;
-        });
-      }, 3000); // 3000ms interval for sliding
-    }
-
-    return () => clearInterval(interval); // Cleanup interval on component unmount
-  }, [isPaused, filteredServices.length]);
-
-  useEffect(() => {
-    let intervalInstitute;
-    if (!isPaused) {
-      intervalInstitute = setInterval(() => {
-        setCurrentIndex((prevIndex) => {
-          if (prevIndex+1 >= filteredInstituteServices.length) {
-            sliderRef.current.style.transition = 'none'; // Disable transition for reset
-            return 0; // Reset index to 0 when exceeding the original content length
-          }
-          sliderRef.current.style.transition = 'transform 2s ease'; // Re-enable transition
-          return prevIndex + 1 ;
-        });
-      }, 3000); // 3000ms interval for sliding
-    }
-
-    return () => clearInterval(intervalInstitute); // Cleanup interval on component unmount
-  }, [isPaused, filteredInstituteServices.length]);
-
-  const handleMouseEnter = () => setIsPaused(true);
-  const handleMouseLeave = () => setIsPaused(false);
-
+  
   return (
     <section id="services" className="tw-bg-white dark:tw-bg-gray-900 overflow-hidden">
       <div className="tw-py-8 tw-px-4 tw-mx-auto tw-max-w-screen-xl sm:tw-py-16 lg:tw-px-6">
@@ -75,32 +29,9 @@ const Services = () => {
           </h4>
         </div>
         <div 
-          className="tw-overflow-hidden tw-w-full tw-mb-20" 
-          onMouseEnter={handleMouseEnter} 
-          onMouseLeave={handleMouseLeave}
+          className="tw-overflow-hidden tw-w-full tw-mb-20"
         >
-          <div
-            ref={sliderRef}
-            className="tw-flex tw-transition-transform tw-duration-500"
-            style={{
-              transform: `translateX(-${(currentIndex * 100) / 4}%)`, // Adjusted for full width
-              width: `${(duplicatedServices.length / 3) * 100}%`,
-              justifyContent: "space-around"
-            }}
-          >
-            {duplicatedServices.map((service, index) => (
-              <div
-                className="tw-m-4 tw-overflow-hidden sm:tw-p-[1px]" // Responsive width based on screen size
-                key={`${service.id}-${index}`}
-                style={{ 
-                  border:"2px solid #164e63",
-                  borderRadius: "10px",
-                }}
-              >
-                <ServiceCard {...service} />
-              </div>
-            ))}
-          </div>
+          <CardSlider services={filteredServices} />
         </div>
 
         {/* Modal toggle */}
@@ -123,35 +54,12 @@ const Services = () => {
           </h4>
         </div>
         <div 
-          className="tw-overflow-hidden tw-w-full tw-mb-20" 
-          onMouseEnter={handleMouseEnter} 
-          onMouseLeave={handleMouseLeave}
+          className="tw-overflow-hidden tw-mx-auto tw-w-full tw-mb-20 md:tw-w-11/12 lg:tw-w-full sm:tw-w-11/12"
         >
-          <div
-            ref={sliderRef}
-            className="tw-flex tw-transition-transform tw-duration-500"
-            style={{
-              transform: `translateX(-${(currentIndex * 100) / 4}%)`, // Adjusted for full width
-              width: `${(duplicatedInstituteServices.length / 3) * 100}%`,
-              justifyContent: "space-around"
-            }}
-          >
-            {duplicatedInstituteServices.map((service, index) => (
-              <div
-                className="tw-m-4 tw-overflow-hidden sm:tw-p-[1px]" // Responsive width based on screen size
-                key={`${service.id}-${index}`}
-                style={{ 
-                  border:"2px solid #164e63",
-                  borderRadius: "10px",
-                }}
-              >
-                <ServiceCard {...service} />
-              </div>
-            ))}
-          </div>
-        </div>       
-      </div>
-    </section>
+            <CardSlider services={filteredInstituteServices} />
+        </div>  
+    </div>
+  </section>
   );
 };
 

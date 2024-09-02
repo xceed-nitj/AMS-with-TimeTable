@@ -7,7 +7,6 @@ const cookieParser = require("cookie-parser");
 const path = require("path");
 const axios = require("axios");
 const v1router = require("./routes");
-
 // CORS configuration
 app.use(
   cors({
