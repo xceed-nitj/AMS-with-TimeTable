@@ -3,12 +3,17 @@ import EnquireModal from './EnquireModal';
 import { useDisclosure } from '@chakra-ui/react';
 import ServiceCard from './ServiceCard';
 import { services } from '../../../constants/services';
+import CardSlider from './Features/CardSlider';
+import { useState, useEffect, useRef } from 'react';
 
 const Services = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  const filteredServices = services.filter((service) => service.type === 'premium');
+  const filteredInstituteServices = services.filter((service) => service.type === 'institute');
+  
   return (
-    <section id="services" className="tw-bg-white dark:tw-bg-gray-900">
+    <section id="services" className="tw-bg-white dark:tw-bg-gray-900 overflow-hidden">
       <div className="tw-py-8 tw-px-4 tw-mx-auto tw-max-w-screen-xl sm:tw-py-16 lg:tw-px-6">
         <div className="tw-text-gray-500 sm:tw-text-lg dark:tw-text-gray-400">
           <SectionHeader centered title="Our Services" />
@@ -23,13 +28,12 @@ const Services = () => {
             Premium Services
           </h4>
         </div>
-        <div className="tw-mb-4 tw-space-y-8 md:tw-grid md:tw-grid-cols-2 lg:tw-grid-cols-3 md:tw-gap-12 md:tw-space-y-0 tw-py-5">
-          {services
-            .filter((service) => service.type === 'premium')
-            .map((service) => (
-              <ServiceCard key={service.id} {...service} />
-            ))}
+        <div 
+          className="tw-overflow-hidden tw-w-full tw-mb-20"
+        >
+          <CardSlider services={filteredServices} />
         </div>
+
         {/* Modal toggle */}
         <button
           onClick={onOpen}
@@ -49,15 +53,13 @@ const Services = () => {
             Institute Services
           </h4>
         </div>
-        <div className="tw-space-y-8 md:tw-grid md:tw-grid-cols-2 lg:tw-grid-cols-3 md:tw-gap-12 md:tw-space-y-0 tw-py-5">
-          {services
-            .filter((service) => service.type === 'institute')
-            .map((service) => (
-              <ServiceCard key={service.id} {...service} />
-            ))}
-        </div>
-      </div>
-    </section>
+        <div 
+          className="tw-overflow-hidden tw-mx-auto tw-w-full tw-mb-20 md:tw-w-11/12 lg:tw-w-full sm:tw-w-11/12"
+        >
+            <CardSlider services={filteredInstituteServices} />
+        </div>  
+    </div>
+  </section>
   );
 };
 
