@@ -1,3 +1,4 @@
+import { AvatarGroup, Avatar } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 
 const ServiceCard = ({ id, icon, title, description, price }) => {
@@ -21,6 +22,14 @@ const ServiceCard = ({ id, icon, title, description, price }) => {
       <p className="tw-flex tw-items-end tw-py-[10px] tw-flex-grow tw tw-font-bold tw-text-cyan-600 dark:tw-text-cyan-300 tw-italic ">
         {price}
       </p>
+      
+      <AvatarGroup size='md' max={2} >
+        <Avatar name='Ryan Florence' bg="teal.900" src='https://bit.ly/ryan-florence' />
+        <Avatar name='Segun Adebayo' src='https://bit.ly/sage-adebayo' />
+        <Avatar name='Kent Dodds' src='https://bit.ly/kent-c-dodds' />
+        <Avatar name='Prosper Otemuyiwa' src='https://bit.ly/prosper-baba' />
+        <Avatar name='Christian Nwamba'  src='https://bit.ly/code-beast' />
+      </AvatarGroup>
     </div>
   );
 };
