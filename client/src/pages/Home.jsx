@@ -1,6 +1,7 @@
 import Hero from '../components/home/Hero';
 import About from '../components/home/About';
 import JoinUs from '../components/home/JoinUs';
+import GrowthTree from '../components/home/Tree';
 import Footer from '../components/footer';
 import Services from '../components/home/Services';
 import RevenueDistribution from '../components/home/RevenueDistribution';
@@ -26,6 +27,7 @@ const Home = () => {
       {/* <Navbar /> */}
       <Hero />
       <Services />
+      <GrowthTree />
       <About />
       <TeamSection />
       <JoinUs />
