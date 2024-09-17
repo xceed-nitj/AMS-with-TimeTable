@@ -22,7 +22,7 @@ const Hero = () => {
           />
         </Link>
         <Link
-          to=""
+          to="https://eaicnitj.com/"
           className="tw-inline-flex tw-justify-between tw-items-center tw-py-1 tw-px-1 tw-pr-4 tw-mb-7 tw-text-sm tw-text-gray-700 tw-bg-gray-100 tw-rounded-full dark:tw-bg-gray-800 dark:tw-text-white hover:tw-bg-gray-200 dark:hover:tw-bg-gray-700"
           role="alert"
         >
