@@ -12,7 +12,7 @@ import LockedSummary from './timetableadmin/lockedsummary';
 import Login from './dashboard/login';
 import ForgotPassword from './dashboard/ForgotPassword';
 import SuperAdminPage from './dashboard/superadmin';
-
+import CommonSlot from './timetableadmin/commonslot.jsx';
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
 // import LockedView from './timetableviewer/viewer';
@@ -166,6 +166,7 @@ function App() {
         <Route path="/usermanagement" element={<UserManagement />} />
 
         <Route path="/tt">
+          <Route path="commonslot" element={<CommonSlot />} />
           <Route path="dashboard" element={<CreateTimetable />} />
           <Route path="masterview" element={<MasterView />} />
           <Route path="masterfaculty" element={<MasterFaculty />} />
