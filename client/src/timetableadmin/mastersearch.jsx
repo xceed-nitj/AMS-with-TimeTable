@@ -486,8 +486,8 @@ function MasterView() {
         <meta name='description' content="NITJ's official time table search engine for all semesters and courses" />
       </Helmet>
       <Container maxW="7xl">
-        <Header title="View TimeTable "></Header>
-        <HStack>
+        <Header title="View TimeTables "></Header>
+        <div className="tw-flex tw-flex-col md:tw-flex-row">
           {/* Empty spacer to push the button to the right */}
           {/* <Box flex="" /> */}
           <Link
@@ -508,11 +508,11 @@ function MasterView() {
           <Link
             to='/classrooms'
           >
-            <Button colorScheme="green" style={{ marginLeft: 'auto',background:"darkgreen" }}>
+            <Button colorScheme="green" style={{ marginRight: 'auto',background:"darkgreen" }}>
               Geo Locate Classrooms
             </Button>
           </Link>
-        </HStack>
+        </div>
         <FormLabel fontWeight="bold">Select Session:
         </FormLabel>
 
