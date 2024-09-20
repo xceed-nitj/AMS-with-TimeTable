@@ -6,7 +6,7 @@ import ViewTimetable from "./viewtt";
 import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
 import { Container } from "@chakra-ui/layout";
-import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
+import { FormControl, FormLabel, Heading, Select, UnorderedList, ListItem } from "@chakra-ui/react";
 import {
   CustomTh,
   CustomLink,
@@ -41,7 +41,7 @@ function MasterView() {
   const [selectedSemester, setSelectedSemester] = useState("");
   const [selectedFaculty, setSelectedFaculty] = useState("");
   const [selectedRoom, setSelectedRoom] = useState("");
-  const [commonLoad, setCommonLoad]=useState();
+  const [commonLoad, setCommonLoad] = useState();
 
   const apiUrl = getEnvironment();
   // const navigate = useNavigate();
@@ -58,11 +58,11 @@ function MasterView() {
   const [facultyLockedTime, setFacultyLockedTime] = useState();
   const [roomlockedTime, setRoomLockedTime] = useState();
 
-  const [allsessions, setAllSessions]=useState([]);
+  const [allsessions, setAllSessions] = useState([]);
   const [availableDepts, setAvailableDepts] = useState([]);
   const [currentCode, setCurrentCode] = useState('');
-  const [selectedSession, setSelectedSession]=useState('');
-  const [selectedDept, setSelectedDept]=useState('');
+  const [selectedSession, setSelectedSession] = useState('');
+  const [selectedDept, setSelectedDept] = useState('');
 
   const semesters = availableSems;
 
@@ -76,47 +76,46 @@ function MasterView() {
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-  
+
         const data = await response.json();
         // console.log(data)
         const { uniqueSessions, uniqueDept } = data;
-  
+
         setAllSessions(uniqueSessions);
         setAvailableDepts(uniqueDept);
-  
+
         // console.log('Received session data:', uniqueSessions);
         // console.log('Received department data:', uniqueDept);
       } catch (error) {
         console.error("Error fetching existing timetable data:", error);
       }
     };
-  
+
     fetchSessions();
   }, []); // Empty dependency array means this effect runs once on mount
-  
-useEffect(()=>
-{
-  const fetchCode= async (session, dept) => {
-    try {
-      const response = await fetch(
-        `${apiUrl}/timetablemodule/timetable/getcode/${session}/${dept}`,
-        { credentials: "include" }
-      );
-      const data1 = await response.json();
 
-      setCurrentCode(data1)
-      // setAvailableDepts(dept)
-      // console.log('received code:',data1)
+  useEffect(() => {
+    const fetchCode = async (session, dept) => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/timetable/getcode/${session}/${dept}`,
+          { credentials: "include" }
+        );
+        const data1 = await response.json();
 
-      // console.log('received dept data:',dept)
+        setCurrentCode(data1)
+        // setAvailableDepts(dept)
+        // console.log('received code:',data1)
 
-    } catch (error) {
-      console.error("Error fetching existing timetable data:", error);
-      return {};
+        // console.log('received dept data:',dept)
+
+      } catch (error) {
+        console.error("Error fetching existing timetable data:", error);
+        return {};
+      }
     }
-  }
-  fetchCode(selectedSession,selectedDept);
-},[selectedSession,selectedDept])
+    fetchCode(selectedSession, selectedDept);
+  }, [selectedSession, selectedDept])
 
 
   useEffect(() => {
@@ -127,7 +126,7 @@ useEffect(()=>
           { credentials: "include" }
         );
         const data1 = await response.json();
-        const data=data1.timetableData;
+        const data = data1.timetableData;
         setSemNotes(data1.notes)
         // console.log('data received from...',data);
         const initialData = generateInitialTimetableData(data, "sem");
@@ -143,10 +142,10 @@ useEffect(()=>
       // console.log('selected sem',semester)
       // console.log('selected code',currentCode)
 
-      const data = await fetchData(semester,currentCode);
+      const data = await fetchData(semester, currentCode);
       // console.log('returned data after fetch', data)
     };
-    fetchViewData(selectedSemester,currentCode);
+    fetchViewData(selectedSemester, currentCode);
   }, [selectedSemester]);
 
   useEffect(() => {
@@ -173,26 +172,26 @@ useEffect(()=>
       setViewFacultyData(data);
     };
 
-      const fetchCommonLoad = async (currentCode, viewFaculty) => {
-        try {
-          const response = await fetch(
-            
-            `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
-            { credentials: "include" }
-          );
-          if (response.ok) {
-            const data = await response.json();
-            // console.log('faculty response',data[0]);
-            setCommonLoad(data);
-            // console.log('coomomo load', data);
-          }
-        } catch (error) {
-          console.error("Error fetching commonload:", error);
+    const fetchCommonLoad = async (currentCode, viewFaculty) => {
+      try {
+        const response = await fetch(
+
+          `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
+          { credentials: "include" }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          // console.log('faculty response',data[0]);
+          setCommonLoad(data);
+          // console.log('coomomo load', data);
         }
-      };
+      } catch (error) {
+        console.error("Error fetching commonload:", error);
+      }
+    };
     fetchCommonLoad(currentCode, selectedFaculty); // Call the function to fetch subject data
     fetchFacultyData(selectedFaculty);
-  }, [currentCode,selectedFaculty]);
+  }, [currentCode, selectedFaculty]);
 
   useEffect(() => {
     const roomData = async (currentCode, room) => {
@@ -213,7 +212,7 @@ useEffect(()=>
       }
     };
 
-    const fetchRoomData = async (currentCode,room) => {
+    const fetchRoomData = async (currentCode, room) => {
       const data = await roomData(currentCode, room);
       setViewRoomData(data);
     };
@@ -265,23 +264,23 @@ useEffect(()=>
 
     const fetchFaculty = async (currentCode) => {
       try {
-      const fetchedttdetails=await fetchTTData(currentCode);
+        const fetchedttdetails = await fetchTTData(currentCode);
         // console.log("fetchedttdetails", fetchedttdetails)
-      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`,{credentials: 'include',});
-      if (response.ok) {
-        const data = await response.json();
-        const facultydata = data.map(faculty => faculty.name);
+        const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`, { credentials: 'include', });
+        if (response.ok) {
+          const data = await response.json();
+          const facultydata = data.map(faculty => faculty.name);
 
-        // console.log('faculty response',data);
-        setAvailableFaculties(facultydata);
-        // console.log('deptfaculties', facultydata);
-        return data;
+          // console.log('faculty response',data);
+          setAvailableFaculties(facultydata);
+          // console.log('deptfaculties', facultydata);
+          return data;
+        }
+
+      } catch (error) {
+        console.error('Error fetching subject data:', error);
       }
-       
-    } catch (error) {
-      console.error('Error fetching subject data:', error);
-    }
-  };
+    };
 
     const fetchTime = async () => {
       try {
@@ -315,12 +314,12 @@ useEffect(()=>
         // body: JSON.stringify(userData),
         credentials: 'include'
       });
-      
+
       const data = await response.json();
       // console.log('ttdata',data)
-    setTTData(data);
+      setTTData(data);
       return data;
-    //   
+      //   
     } catch (error) {
       console.error('Error fetching TTdata:', error);
     }
@@ -336,13 +335,12 @@ useEffect(()=>
     for (const day of days) {
       initialData[day] = {};
       for (const period of periods) {
-        if(period =='lunch')
-        {
+        if (period == 'lunch') {
           initialData[day]['lunch'] = [];
 
           if (fetchedData[day] && fetchedData[day]['lunch']) {
             const slotData = fetchedData[day]['lunch'];
-  
+
             for (const slot of slotData) {
               const slotSubjects = [];
               let faculty = ""; // Declare faculty here
@@ -370,65 +368,64 @@ useEffect(()=>
 
                 if (slotSubjects.length > 0) {
                   initialData[day]['lunch'].push(slotSubjects);
-                }   
+                }
               }
             }
           }
 
         }
-        else
-        {
-        initialData[day][`period${period}`] = [];
+        else {
+          initialData[day][`period${period}`] = [];
 
-        if (fetchedData[day] && fetchedData[day][`period${period}`]) {
-          const slotData = fetchedData[day][`period${period}`];
+          if (fetchedData[day] && fetchedData[day][`period${period}`]) {
+            const slotData = fetchedData[day][`period${period}`];
 
-          for (const slot of slotData) {
-            const slotSubjects = [];
-            let faculty = ""; // Declare faculty here
-            let room = "";
-            for (const slotItem of slot) {
-              const subj = slotItem.subject || "";
-              if (type == "room") {
-                room = slotItem.sem || "";
-              } else {
-                room = slotItem.room || "";
+            for (const slot of slotData) {
+              const slotSubjects = [];
+              let faculty = ""; // Declare faculty here
+              let room = "";
+              for (const slotItem of slot) {
+                const subj = slotItem.subject || "";
+                if (type == "room") {
+                  room = slotItem.sem || "";
+                } else {
+                  room = slotItem.room || "";
+                }
+                if (type == "faculty") {
+                  faculty = slotItem.sem || "";
+                } else {
+                  faculty = slotItem.faculty || "";
+                }
+                // Only push the values if they are not empty
+                if (subj || room || faculty) {
+                  slotSubjects.push({
+                    subject: subj,
+                    room: room,
+                    faculty: faculty,
+                  });
+                }
               }
-              if (type == "faculty") {
-                faculty = slotItem.sem || "";
-              } else {
-                faculty = slotItem.faculty || "";
-              }
-              // Only push the values if they are not empty
-              if (subj || room || faculty) {
+
+              // Push an empty array if no data is available for this slot
+              if (slotSubjects.length === 0) {
                 slotSubjects.push({
-                  subject: subj,
-                  room: room,
-                  faculty: faculty,
+                  subject: "",
+                  room: "",
+                  faculty: "",
                 });
               }
-            }
 
-            // Push an empty array if no data is available for this slot
-            if (slotSubjects.length === 0) {
-              slotSubjects.push({
-                subject: "",
-                room: "",
-                faculty: "",
-              });
+              initialData[day][`period${period}`].push(slotSubjects);
             }
-
-            initialData[day][`period${period}`].push(slotSubjects);
+          } else {
+            // Assign an empty array if day or period data is not available
+            initialData[day][`period${period}`].push([]);
           }
-        } else {
-          // Assign an empty array if day or period data is not available
-          initialData[day][`period${period}`].push([]);
         }
       }
-      }
-  
+
     }
-  
+
     // console.log("initial datat to be received",initialData);
     return initialData;
   };
@@ -453,7 +450,7 @@ useEffect(()=>
     const fetchSubjectData = async (currentCode) => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`,
-        { credentials: "include" }
+          { credentials: "include" }
         );
         const data = await response.json();
         setSubjectData(data);
@@ -484,271 +481,278 @@ useEffect(()=>
 
   return (
     <>
-    <Helmet>
-      <title>Time Table | XCEED NITJ</title>
-      <meta name='description' content="NITJ's official time table search engine for all semesters and courses" />
-    </Helmet>
-    <Container maxW="7xl">
-      <Header title="View TimeTable "></Header>
-      <HStack>
-    {/* Empty spacer to push the button to the right */}
-    {/* <Box flex="" /> */}
-    <Link
-    to='/tt/masterdata'
-    >
-    <Button colorScheme="purple" style={{ marginRight: 'auto' }}>
-        Slot wise master search
-      </Button>
-    </Link>
-    <Spacer/>
-    <Link
-    to='/classrooms'
-    >
-      <Button colorScheme="green" style={{ marginLeft: 'auto' }}>
-        Geo Locate Classrooms
-      </Button>
-    </Link>
-  </HStack>
-      <FormLabel fontWeight="bold">Select Session:
-          </FormLabel>
-
-          <Select
-            value={selectedSession}
-            onChange={(e) => setSelectedSession(e.target.value)}
-            isRequired
+      <Helmet>
+        <title>Time Table | XCEED NITJ</title>
+        <meta name='description' content="NITJ's official time table search engine for all semesters and courses" />
+      </Helmet>
+      <Container maxW="7xl">
+        <Header title="View TimeTable "></Header>
+        <div className="tw-flex tw-flex-col md:tw-flex-row">
+          {/* Empty spacer to push the button to the right */}
+          {/* <Box flex="" /> */}
+          <Link
+            to='/tt/masterdata'
           >
-            <option value="">Select Session</option>
-            {allsessions.map((session, index) => (
-              <option key={index} value={session}>
-                {session}
-              </option>
-            ))}
-          </Select>
-
-          <FormLabel fontWeight="bold">Select Department:
-          </FormLabel>
-
-          <Select
-            value={selectedDept}
-            onChange={(e) => setSelectedDept(e.target.value)}
-            isRequired
+            <Button colorScheme="purple" style={{ marginRight: 'auto', background:'darkred' }}>
+              Slot wise master search
+            </Button>
+          </Link>
+          <Link
+            to='/tt/commonslot'
           >
-            <option value="">Select Department</option>
-            {availableDepts.map((dept, index) => (
-              <option key={index} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </Select>
-
-
-          {selectedSession === '' || selectedDept === '' ? (
-        <Text color="red">Please select Session and Department to proceed further.</Text>
-      ) : (
-        <>
-    <Container maxW="6xl">
-    <Center my={4}>
-        <Text color="blue">Select semester (or) faculty (or) room to view the time table</Text>
-      </Center>
-      <FormControl>
-          <FormLabel fontWeight="bold">View Semester timetable:
-          </FormLabel>
-
-          <Select
-            value={selectedSemester}
-            onChange={(e) => setSelectedSemester(e.target.value)}
+            <Button colorScheme="blue" style={{ marginRight: 'auto',background:'darkblue' }}>
+              Search Meet-Slot
+            </Button>
+          </Link>
+          <Spacer />
+          <Link
+            to='/classrooms'
           >
-            <option value="">Select Semester</option>
-            {semesters.map((semester, index) => (
-              <option key={index} value={semester}>
-                {semester}
-              </option>
-            ))}
-          </Select>
-      <Box mb='5'>
-        {selectedSemester ? (
-          <Box>
-            <Text color="green" style={{fontWeight:'700'}} id="saveTime" mb="2.5" mt="2.5">
-              Last saved on: {lockedTime ? lockedTime : "Not saved yet"}
-            </Text>
-            <ViewTimetable timetableData={viewData} />
-            <TimetableSummary
-              timetableData={viewData}
-              type={"sem"}
-              code={currentCode}
-              time={lockedTime}
-              headTitle={selectedSemester}
-              subjectData={subjectData}
-              TTData={TTData}
-              notes={semNotes}
-              />
-      <Box>
-  {semNotes.length > 0 ? (
-    <div>
-      <Text fontSize="xl" fontWeight="bold">
-        Notes:
-      </Text>
-      {semNotes.map((noteArray, index) => (
-        <UnorderedList key={index}>
-          {noteArray.map((note, noteIndex) => (
-            <ListItem key={noteIndex}>{note}</ListItem>
-          ))}
-        </UnorderedList>
-      ))}
-    </div>
-  ) : (
-    <Text>No notes added for this selection.</Text>
-  )}
-</Box>
+            <Button colorScheme="green" style={{ marginRight: 'auto',background:"darkgreen" }}>
+              Geo Locate Classrooms
+            </Button>
+          </Link>
+        </div>
+        <FormLabel fontWeight="bold">Select Session:
+        </FormLabel>
 
-
-
-          </Box>
-          // {semNotes? <p>semNotes</p>:null}          
-          ) : (
-            <Text>Please select a Semester from the dropdown.</Text>
-            )}
-      </Box>
-      <Center my={4}>
-        <Text style={{fontWeight:'800', color:"#394870", fontSize:'large'}}>or</Text>
-      </Center>
-      {/* Faculty Dropdown */}
-      <FormControl>
-        <FormLabel fontWeight='bold'>View Faculty timetable</FormLabel>
         <Select
-          value={selectedFaculty}
-          onChange={(e) => setSelectedFaculty(e.target.value)}
-          >
-          <option value="">Select Faculty</option>
-          {availableFaculties.map((faculty, index) => (
-            <option key={index} value={faculty}>
-              {faculty}
+          value={selectedSession}
+          onChange={(e) => setSelectedSession(e.target.value)}
+          isRequired
+        >
+          <option value="">Select Session</option>
+          {allsessions.map((session, index) => (
+            <option key={index} value={session}>
+              {session}
             </option>
           ))}
         </Select>
-      </FormControl>
-      <Box mb='5'>
-        {selectedFaculty ? (
-          <Box>
-            <Text color="green" style={{fontWeight:'700'}} id="saveTime" mb='2.5' mt='2.5'>
-              Last saved on:{" "}
-              {facultyLockedTime ? facultyLockedTime : "Not saved yet"}
-            </Text>
 
-            <ViewTimetable timetableData={viewFacultyData} />
-            <TimetableSummary
-              timetableData={viewFacultyData}
-              type={"faculty"}
-              code={currentCode}
-              time={facultyLockedTime}
-              headTitle={selectedFaculty}
-              subjectData={subjectData}
-              TTData={TTData}
-              notes={facultyNotes}
-              commonLoad={commonLoad}
-              />
-            {/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
-            {/* <PDFViewTimetable timetableData={viewFacultyData} /> */}
-            {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
+        <FormLabel fontWeight="bold">Select Department:
+        </FormLabel>
 
-            <Box>
-  {facultyNotes.length>0 ? (
-    <div>
-      <Text fontSize="xl" fontWeight="bold">
-        Notes:
-      </Text>
-      {facultyNotes.map((noteArray, index) => (
-        <UnorderedList key={index}>
-          {noteArray.map((note, noteIndex) => (
-            <ListItem key={noteIndex}>{note}</ListItem>
-          ))}
-        </UnorderedList>
-      ))}
-    </div>
-  ) : (
-    <Text>No notes added for this selection.</Text>
-  )}
-</Box>
-
-
-          </Box>
-        ) : (
-          <Text>Please select a faculty from the dropdown.</Text>
-          )}
-      </Box>
-      <Center my={4}>
-        <Text style={{fontWeight:'800', color:"#394870", fontSize:'large'}}>or</Text>
-      </Center>
-
-    <FormControl>
-     <FormLabel fontWeight='bold' >View Room timetable</FormLabel>
-      {/* Room Dropdown */}
-      <Select
-        value={selectedRoom}
-        onChange={(e) => setSelectedRoom(e.target.value)}
+        <Select
+          value={selectedDept}
+          onChange={(e) => setSelectedDept(e.target.value)}
+          isRequired
         >
-        <option value="">Select Room</option>
-        {availableRooms.map((room, index) => (
-          <option key={index} value={room}>
-            {room}
-          </option>
-        ))}
-      </Select>
-      </FormControl>
-      <Box mb='5'>
-        {selectedRoom ? (
-          <Box>
-            <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
-              Last saved on: {roomlockedTime ? roomlockedTime : "Not saved yet"}
-            </Text>
-
-            <ViewTimetable timetableData={viewRoomData} />
-            {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/>  */}
-
-            <TimetableSummary 
-            timetableData={viewRoomData} 
-            type={'room'}
-            code={currentCode}
-            time={roomlockedTime}
-            headTitle={selectedRoom}
-            subjectData={subjectData}
-              TTData={TTData}
-              notes={roomNotes}
-
-/>
-<Box>
-  {roomNotes.length>0 ? (
-    <div>
-      <Text fontSize="xl" fontWeight="bold">
-        Notes:
-      </Text>
-      {roomNotes.map((noteArray, index) => (
-        <UnorderedList key={index}>
-          {noteArray.map((note, noteIndex) => (
-            <ListItem key={noteIndex}>{note}</ListItem>
+          <option value="">Select Department</option>
+          {availableDepts.map((dept, index) => (
+            <option key={index} value={dept}>
+              {dept}
+            </option>
           ))}
-        </UnorderedList>
-      ))}
-    </div>
-  ) : (
-    <Text>No notes added for this selection.</Text>
-  )}
-</Box>
+        </Select>
 
 
-
-          </Box>
+        {selectedSession === '' || selectedDept === '' ? (
+          <Text color="red">Please select Session and Department to proceed further.</Text>
         ) : (
-          <Text>Please select a Room from the dropdown.</Text>
-          )}
-      </Box>
-      </FormControl>
-      </Container>
-        
-        </>
-      )}
+          <>
+            <Container maxW="6xl">
+              <Center my={4}>
+                <Text color="blue">Select semester (or) faculty (or) room to view the time table</Text>
+              </Center>
+              <FormControl>
+                <FormLabel fontWeight="bold">View Semester timetable:
+                </FormLabel>
 
-    </Container>
+                <Select
+                  value={selectedSemester}
+                  onChange={(e) => setSelectedSemester(e.target.value)}
+                >
+                  <option value="">Select Semester</option>
+                  {semesters.map((semester, index) => (
+                    <option key={index} value={semester}>
+                      {semester}
+                    </option>
+                  ))}
+                </Select>
+                <Box mb='5'>
+                  {selectedSemester ? (
+                    <Box>
+                      <Text color="green" style={{ fontWeight: '700' }} id="saveTime" mb="2.5" mt="2.5">
+                        Last saved on: {lockedTime ? lockedTime : "Not saved yet"}
+                      </Text>
+                      <ViewTimetable timetableData={viewData} />
+                      <TimetableSummary
+                        timetableData={viewData}
+                        type={"sem"}
+                        code={currentCode}
+                        time={lockedTime}
+                        headTitle={selectedSemester}
+                        subjectData={subjectData}
+                        TTData={TTData}
+                        notes={semNotes}
+                      />
+                      <Box>
+                        {semNotes.length > 0 ? (
+                          <div>
+                            <Text fontSize="xl" fontWeight="bold">
+                              Notes:
+                            </Text>
+                            {semNotes.map((noteArray, index) => (
+                              <UnorderedList key={index}>
+                                {noteArray.map((note, noteIndex) => (
+                                  <ListItem key={noteIndex}>{note}</ListItem>
+                                ))}
+                              </UnorderedList>
+                            ))}
+                          </div>
+                        ) : (
+                          <Text>No notes added for this selection.</Text>
+                        )}
+                      </Box>
+
+
+
+                    </Box>
+                    // {semNotes? <p>semNotes</p>:null}          
+                  ) : (
+                    <Text>Please select a Semester from the dropdown.</Text>
+                  )}
+                </Box>
+                <Center my={4}>
+                  <Text style={{ fontWeight: '800', color: "#394870", fontSize: 'large' }}>or</Text>
+                </Center>
+                {/* Faculty Dropdown */}
+                <FormControl>
+                  <FormLabel fontWeight='bold'>View Faculty timetable</FormLabel>
+                  <Select
+                    value={selectedFaculty}
+                    onChange={(e) => setSelectedFaculty(e.target.value)}
+                  >
+                    <option value="">Select Faculty</option>
+                    {availableFaculties.map((faculty, index) => (
+                      <option key={index} value={faculty}>
+                        {faculty}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Box mb='5'>
+                  {selectedFaculty ? (
+                    <Box>
+                      <Text color="green" style={{ fontWeight: '700' }} id="saveTime" mb='2.5' mt='2.5'>
+                        Last saved on:{" "}
+                        {facultyLockedTime ? facultyLockedTime : "Not saved yet"}
+                      </Text>
+
+                      <ViewTimetable timetableData={viewFacultyData} />
+                      <TimetableSummary
+                        timetableData={viewFacultyData}
+                        type={"faculty"}
+                        code={currentCode}
+                        time={facultyLockedTime}
+                        headTitle={selectedFaculty}
+                        subjectData={subjectData}
+                        TTData={TTData}
+                        notes={facultyNotes}
+                        commonLoad={commonLoad}
+                      />
+                      {/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
+                      {/* <PDFViewTimetable timetableData={viewFacultyData} /> */}
+                      {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
+
+                      <Box>
+                        {facultyNotes.length > 0 ? (
+                          <div>
+                            <Text fontSize="xl" fontWeight="bold">
+                              Notes:
+                            </Text>
+                            {facultyNotes.map((noteArray, index) => (
+                              <UnorderedList key={index}>
+                                {noteArray.map((note, noteIndex) => (
+                                  <ListItem key={noteIndex}>{note}</ListItem>
+                                ))}
+                              </UnorderedList>
+                            ))}
+                          </div>
+                        ) : (
+                          <Text>No notes added for this selection.</Text>
+                        )}
+                      </Box>
+
+
+                    </Box>
+                  ) : (
+                    <Text>Please select a faculty from the dropdown.</Text>
+                  )}
+                </Box>
+                <Center my={4}>
+                  <Text style={{ fontWeight: '800', color: "#394870", fontSize: 'large' }}>or</Text>
+                </Center>
+
+                <FormControl>
+                  <FormLabel fontWeight='bold' >View Room timetable</FormLabel>
+                  {/* Room Dropdown */}
+                  <Select
+                    value={selectedRoom}
+                    onChange={(e) => setSelectedRoom(e.target.value)}
+                  >
+                    <option value="">Select Room</option>
+                    {availableRooms.map((room, index) => (
+                      <option key={index} value={room}>
+                        {room}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Box mb='5'>
+                  {selectedRoom ? (
+                    <Box>
+                      <Text color="black" id="saveTime" mb='2.5' mt='2.5'>
+                        Last saved on: {roomlockedTime ? roomlockedTime : "Not saved yet"}
+                      </Text>
+
+                      <ViewTimetable timetableData={viewRoomData} />
+                      {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/>  */}
+
+                      <TimetableSummary
+                        timetableData={viewRoomData}
+                        type={'room'}
+                        code={currentCode}
+                        time={roomlockedTime}
+                        headTitle={selectedRoom}
+                        subjectData={subjectData}
+                        TTData={TTData}
+                        notes={roomNotes}
+
+                      />
+                      <Box>
+                        {roomNotes.length > 0 ? (
+                          <div>
+                            <Text fontSize="xl" fontWeight="bold">
+                              Notes:
+                            </Text>
+                            {roomNotes.map((noteArray, index) => (
+                              <UnorderedList key={index}>
+                                {noteArray.map((note, noteIndex) => (
+                                  <ListItem key={noteIndex}>{note}</ListItem>
+                                ))}
+                              </UnorderedList>
+                            ))}
+                          </div>
+                        ) : (
+                          <Text>No notes added for this selection.</Text>
+                        )}
+                      </Box>
+
+
+
+                    </Box>
+                  ) : (
+                    <Text>Please select a Room from the dropdown.</Text>
+                  )}
+                </Box>
+              </FormControl>
+            </Container>
+
+          </>
+        )}
+
+      </Container>
     </>
 
   );
