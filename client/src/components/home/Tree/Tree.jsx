@@ -1,6 +1,7 @@
 import { VStack, Text, HStack, Avatar, Icon } from "@chakra-ui/react";
 import { AiOutlineLinkedin } from "react-icons/ai";
 import { GrCertificate } from "react-icons/gr";
+import BasicUsage from "./Components/modal";
 
 const GrowthTree = () => {
   return (
@@ -94,21 +95,24 @@ const GrowthTree = () => {
                 fontSize={{ base: "8px", md: "12px" }} fontWeight="semibold">Top Contributors:</Text>
                 <VStack>
                   <HStack justifyContent="space-between" w={{ base: "100px", md: "150px" }} spacing={0}>
-                    <HStack>
-                      <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov' h={{ base: "4", md: "6" }} w={{ base: "4", md: "6" }}  />
-                      <VStack spacing={0}>
-                        <Text fontSize={{ base: "8px", md: "11px" }}>ABC EFG</Text>
-                        <Text fontWeight="light" fontSize={{ base: "8px", md: "9px" }} color="gray">Designation</Text>
-                      </VStack>
-                    </HStack>
+                  <HStack>
+                    <Avatar name="Dan Abrahmov" src="https://bit.ly/dan-abramov" h={{ base: "4", md: "6" }} w={{ base: "4", md: "6" }} />
+                    <VStack spacing={0} align="start">
+                      <BasicUsage student="ABC EFG" />
+                      <Text fontWeight="light" fontSize={{ base: "8px", md: "10px" }} color="gray.500">
+                        Designation
+                      </Text>
+                    </VStack>
+                  </HStack>
+
                     <Icon as={AiOutlineLinkedin} h={{ base: "4", md: "5" }} w={{ base: "4", md: "5" }}  />
                   </HStack>
 
                   <HStack justifyContent="space-between" w={{ base: "100px", md: "150px" }} spacing={0}>
                     <HStack>
                       <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov' h={{ base: "4", md: "6" }} w={{ base: "4", md: "6" }} />
-                      <VStack spacing={0}>
-                        <Text fontSize={{ base: "8px", md: "11px" }}>ABC EFG</Text>
+                      <VStack spacing={0} align="baseline">
+                      <BasicUsage student="ABC EFG" />
                         <Text fontWeight="light" fontSize={{ base: "8px", md: "9px" }} color="gray">Designation</Text>
                       </VStack>
                     </HStack>
@@ -118,9 +122,9 @@ const GrowthTree = () => {
                   <HStack justifyContent="space-between" w={{ base: "100px", md: "150px" }} spacing={0}>
                     <HStack>
                       <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov' h={{ base: "4", md: "6" }} w={{ base: "4", md: "6" }}  />
-                      <VStack spacing={0}>
-                        <Text fontSize={{ base: "8px", md: "11px" }}>ABC EFG</Text>
-                        <Text fontWeight="light" fontSize={{ base: "8px", md: "9px" }} color="gray">Designation</Text>
+                      <VStack spacing={0} align="baseline">
+                      <BasicUsage student="ABC EFG" />
+                      <Text fontWeight="light" fontSize={{ base: "8px", md: "9px" }} color="gray">Designation</Text>
                       </VStack>
                     </HStack>
                     <Icon as={AiOutlineLinkedin} h={{ base: "4", md: "5" }} w={{ base: "4", md: "5" }}  />
@@ -230,9 +234,9 @@ const GrowthTree = () => {
                   <HStack justifyContent="space-between" w={{ base: "100px", md: "150px" }} spacing={0}>
                     <HStack>
                       <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov' w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />
-                      <VStack spacing={0}>
-                        <Text fontSize={{ base: "8px", md: "12px" }}>ABC EFG</Text>
-                        <Text fontWeight="light" fontSize={{ base: "6px", md: "10px" }} color="gray">Designation</Text>
+                      <VStack spacing={0} align="baseline">
+                      <BasicUsage student="ABC EFG" />
+                        <Text fontWeight="light" fontSize={{ base: "8px", md: "9px" }} color="gray">Designation</Text>
                       </VStack>
                     </HStack>
                     <Icon as={AiOutlineLinkedin} w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />
@@ -241,9 +245,9 @@ const GrowthTree = () => {
                   <HStack justifyContent="space-between" w={{ base: "100px", md: "150px" }} spacing={0}>
                     <HStack>
                       <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov'w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />
-                      <VStack spacing={0}>
-                        <Text fontSize={{ base: "8px", md: "12px" }}>ABC EFG</Text>
-                        <Text fontWeight="light" fontSize={{ base: "6px", md: "10px" }} color="gray">Designation</Text>
+                      <VStack spacing={0} align="baseline">
+                      <BasicUsage student="ABC EFG" />
+                        <Text fontWeight="light" fontSize={{ base: "8px", md: "9px" }} color="gray">Designation</Text>
                       </VStack>
                     </HStack>
                     <Icon as={AiOutlineLinkedin} w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />
@@ -252,9 +256,9 @@ const GrowthTree = () => {
                   <HStack justifyContent="space-between" w={{ base: "100px", md: "150px" }} spacing={0}>
                     <HStack>
                       <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov'w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />
-                      <VStack spacing={0}>
-                        <Text fontSize={{ base: "8px", md: "12px" }}>ABC EFG</Text>
-                        <Text fontWeight="light" fontSize={{ base: "6px", md: "10px" }} color="gray">Designation</Text>
+                      <VStack spacing={0} align="baseline">
+                      <BasicUsage student="ABC EFG" />
+                        <Text fontWeight="light" fontSize={{ base: "8px", md: "9px" }} color="gray">Designation</Text>
                       </VStack>
                     </HStack>
                     <Icon as={AiOutlineLinkedin} w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />
