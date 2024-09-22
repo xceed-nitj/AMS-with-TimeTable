@@ -1,4 +1,5 @@
 const Platform = require("../../models/platform");
+const path = require('path');
 
 const addPlatform = async (req, res) => {
   const {roles,exemptedLinks,researchArea} = req.body;
@@ -62,5 +63,54 @@ const deletePlatform = async (req, res) => {
     }
 };
 
-module.exports = {addPlatform,getPlatform,getPlatformById,updatePlatform,deletePlatform};
+const addModule = (req, res) => {
+  try {
+    const { name, description, yearLaunched, contributors } = req.body;
+    const files = req.files;
+
+    // Ensure contributors is an array
+    let parsedContributors;
+    if (Array.isArray(contributors)) {
+      parsedContributors = contributors; // If it's already an array
+    } else if (typeof contributors === 'string') {
+      try {
+        parsedContributors = JSON.parse(contributors); // Attempt to parse if it's a JSON string
+        if (!Array.isArray(parsedContributors)) {
+          return res.status(400).json({ message: 'Contributors should be an array.' });
+        }
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid contributors format.' });
+      }
+    } else {
+      return res.status(400).json({ message: 'Contributors should be an array or valid JSON string.' });
+    }
+
+    // Ensure the number of files matches the number of contributors
+    if (parsedContributors.length !== files.length) {
+      return res.status(400).json({ message: 'Mismatch between contributors and uploaded images.' });
+    }
+
+    // Map contributors with their corresponding images
+    const formattedContributors = parsedContributors.map((contributor, index) => ({
+      ...contributor,
+      image: files[index] ? files[index].path : null,
+    }));
+
+    const moduleData = {
+      name,
+      description,
+      yearLaunched,
+      contributors: formattedContributors,
+    };
+
+    console.log(moduleData); // For debugging
+
+    res.status(200).json({ message: 'Module added successfully', data: moduleData });
+  } catch (error) {
+    console.error('Error in addModule:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+module.exports = {addPlatform,getPlatform,getPlatformById,updatePlatform,deletePlatform,addModule};
 

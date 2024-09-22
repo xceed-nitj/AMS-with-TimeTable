@@ -10,6 +10,8 @@ import {
     VStack,
     Icon,
     Avatar,
+    Center,
+    Divider
   } from '@chakra-ui/react'
   import { FaGithub } from "react-icons/fa6";
   import { FaLinkedinIn } from "react-icons/fa";
@@ -47,22 +49,57 @@ import {
           <ModalContent bg="#172144" color="white" border="2px solid #41DFDE">
             <ModalCloseButton color="#41DFDE"/>
             <ModalBody>
-                <HStack p="10px">
-                    <VStack align="left">
-                        <VStack align="left" spacing={0}>
-                            <Text fontSize="20px" fontWeight="bold">ABC DEF</Text>
-                            <Text fontSize="16px" fontWeight="semibold">Designation</Text>
-                            <HStack>
-                                <Icon as={FaGithub} h={5} w={5}  />
-                                <Icon as={FaLinkedinIn} h={5} w={5}  />
-                                <Icon as={FaTwitter} h={5} w={5}  />
-                            </HStack>
-                        </VStack>
+                <HStack p="10px" w="100%" spacing={5}>
+                    <VStack align="left" w="300px">
+                        <Text fontSize="20px" fontWeight="bold">Certificate Module</Text>
                         <Text textAlign="justify" >
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed nonne merninisti licere mihi ista probare, quae sunt a te dicta? Refert tamen, quo modo.
                         </Text>
                     </VStack>
-                    <Avatar name="Dan Abrahmov" src="https://bit.ly/dan-abramov" h="200px" w="133px" />
+                    <Center h="200px">
+                      <Divider orientation='vertical' />
+                    </Center>
+                    <VStack w="50%">
+                      <Text color="#197676" fontSize="16px" fontWeight="bold">Contributors:</Text>
+                      <VStack w="100%">
+                        <HStack justifyContent="space-between" w="100%" spacing={0}>
+                          <HStack>
+                            <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov' w={8} h={8} />
+                            <VStack spacing={0} align="baseline">
+                            <Text fontWeight="semibold" fontSize="14px">ABC EFG</Text>
+                              <Text fontWeight="light" fontSize="10px" color="gray">Designation</Text>
+                            </VStack>
+                          </HStack>
+                          <Icon as={FaLinkedinIn} w={5} h={5} />
+                        </HStack>
+
+                        <HStack justifyContent="space-between" w="100%" spacing={0}>
+                        <HStack justifyContent="space-between" w="100%" spacing={0}>
+                          <HStack>
+                            <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov' w={8} h={8} />
+                            <VStack spacing={0} align="baseline">
+                            <Text fontWeight="semibold" fontSize="14px">ABC EFG</Text>
+                              <Text fontWeight="light" fontSize="10px" color="gray">Designation</Text>
+                            </VStack>
+                          </HStack>
+                          <Icon as={FaLinkedinIn} w={5} h={5} />
+                        </HStack>
+                      </HStack>
+
+                        <HStack justifyContent="space-between" w="100%" spacing={0}>
+                        <HStack justifyContent="space-between" w="100%" spacing={0}>
+                          <HStack>
+                            <Avatar name='Dan Abrahmov' src='https://bit.ly/dan-abramov' w={8} h={8} />
+                            <VStack spacing={0} align="baseline">
+                            <Text fontWeight="semibold" fontSize="14px">ABC EFG</Text>
+                              <Text fontWeight="light" fontSize="10px" color="gray">Designation</Text>
+                            </VStack>
+                          </HStack>
+                          <Icon as={FaLinkedinIn} w={5} h={5} />
+                        </HStack>
+                        </HStack>
+                      </VStack>
+                    </VStack>
                 </HStack>
             </ModalBody>
           </ModalContent>

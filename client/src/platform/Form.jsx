@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useToast, Box, Button, Checkbox, FormControl, FormLabel, Heading, Stack, Table, Thead, Tbody, Tr, Th, Td, Textarea } from "@chakra-ui/react";
 import getEnvironment from "../getenvironment";
+import TreeForm from "./treeForm";
 
 const FormComponent = () => {
   const [roles, setRoles] = useState(['PRM', 'Admin', 'Editor', 'SuperAdmin']); // Default values
@@ -320,6 +321,7 @@ const FormComponent = () => {
           </Tbody>
         </Table>
       </Box>
+      <TreeForm />
     </Box>
   );
 };
