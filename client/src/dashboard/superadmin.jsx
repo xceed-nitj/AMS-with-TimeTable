@@ -37,6 +37,11 @@ const SuperAdminPage = () => {
             <Link as={RouterLink} to="/platform" color="white" fontSize={{ base: "xl", md: "2xl" }}>Logs</Link>
           </Box>
         </GridItem>
+        <GridItem>
+          <Box bg="gray.200" p={6} borderRadius="md" textAlign="center">
+            <Link as={RouterLink} to="/platform" color="white" fontSize={{ base: "xl", md: "2xl" }}>XCEED</Link>
+          </Box>
+        </GridItem>
       </Grid>
     </Flex>
   );

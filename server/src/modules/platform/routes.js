@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-const {addPlatform,getPlatform,updatePlatform,deletePlatform,getPlatformById,addModule} = require('../platform/controller');
+const {addPlatform,getPlatform,updatePlatform,deletePlatform,getPlatformById,addModule, getModules, getModuleById, updateModule, deleteModule,} = require('../platform/controller');
 
 router.post("/add", addPlatform);
 router.get("/getplatform", getPlatform);
@@ -12,7 +12,6 @@ router.get("/get/:id", getPlatformById);
 router.patch("/update/:id", updatePlatform);
 router.delete("/delete/:id", deletePlatform);
 
-// Ensure uploads directory exists
 const uploadDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -31,6 +30,11 @@ const upload = multer({ storage });
 
 // Define module routes
 router.post('/add-module', upload.array('contributorImages', 10), addModule);
+router.post("/add-module", addModule);
+router.get("/get-modules", getModules);
+router.get("/get-module/:id", getModuleById);
+router.patch("/update-module/:id", updateModule);
+router.delete("/delete-module/:id", deleteModule);
 
 
 module.exports = router;
