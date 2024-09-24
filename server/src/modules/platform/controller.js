@@ -1,4 +1,5 @@
 const Platform = require("../../models/platform");
+const Module = require("../../models/module");
 const path = require('path');
 
 const addPlatform = async (req, res) => {
@@ -112,5 +113,69 @@ const addModule = (req, res) => {
   }
 };
 
-module.exports = {addPlatform,getPlatform,getPlatformById,updatePlatform,deletePlatform,addModule};
+// Get all modules
+const getModules = async (req, res) => {
+  try {
+    const modules = await Module.find();
+    res.status(200).json(modules);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch modules" });
+  }
+};
+
+
+// Get a single module by ID
+const getModuleById = async (req, res) => {
+  try {
+    const moduleId = req.params.id;
+    const module = await Module.findById(moduleId);
+    
+    if (!module) {
+      return res.status(404).json({ error: "Module not found" });
+    }
+    res.status(200).json(module);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch module" });
+  }
+};
+
+// Update a module
+const updateModule = async (req, res) => {
+  try {
+    const moduleId = req.params.id;
+    const { name, description, yearLaunched, contributors } = req.body;
+
+    const updatedModule = await Module.findByIdAndUpdate(
+      moduleId,
+      { name, description, yearLaunched, contributors: JSON.parse(contributors) },
+      { new: true }
+    );
+
+    if (!updatedModule) {
+      return res.status(404).json({ error: "Module not found" });
+    }
+
+    res.status(200).json({ message: "Module updated successfully", updatedModule });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update module" });
+  }
+};
+
+// Delete a module
+const deleteModule = async (req, res) => {
+  try {
+    const moduleId = req.params.id;
+    const deletedModule = await Module.findByIdAndDelete(moduleId);
+
+    if (!deletedModule) {
+      return res.status(404).json({ error: "Module not found" });
+    }
+
+    res.status(200).json({ message: "Module deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete module" });
+  }
+};
+
+module.exports = {addPlatform,getPlatform,getPlatformById,updatePlatform,deletePlatform,addModule, getModules, getModuleById, updateModule, deleteModule};
 
