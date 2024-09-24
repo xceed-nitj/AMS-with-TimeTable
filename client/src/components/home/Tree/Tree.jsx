@@ -30,7 +30,7 @@ const GrowthTree = () => {
         </VStack>
       </VStack>
       <HStack spacing={0} w="100%">
-        <VStack color="white" w="50%" borderRight="5px solid #02D496" h={{ base: "600px", md: "720px", lg: "800px", xl:"1800px"}} spacing={0}> 
+        <VStack color="white" w="50%" borderRight="5px solid #02D496" h={{ base: "1500px", md: "1700px", lg: "1700px", xl:"1800px"}} spacing={0}> 
           <VStack w="100%" spacing={100}>
             <VStack w="100%" justify="left" spacing={0}  align="end">
               <HStack w={{ base: "70%", md: "70%", lg:"50%" }} spacing={0} justify={{ base: "end", md: "none" }}>
@@ -47,7 +47,7 @@ const GrowthTree = () => {
                     <Text fontWeight="bold" fontSize="14px">Certificate Module</Text> 
                   </HStack>
                   <Text fontSize={{ base: "8px", md: "12px" }}> 
-                  Our service caters to your unique needs, offering a robust and customizable webpage to bring your short-term courses to a wide audience.... 
+                  Our service caters to your unique needs, offering a robust and customizable webpage to bring your.... 
                   </Text>
                 </VStack>
                 <HStack
@@ -163,7 +163,7 @@ const GrowthTree = () => {
                     <Text fontWeight="bold" fontSize="14px">Review Module</Text> 
                   </HStack>
                   <Text fontSize={{ base: "8px", md: "12px" }}> 
-                  We specialize in crafting visually stunning and functionally robust websites that showcase your work, talents, and achievements.. .. 
+                  We specialize in crafting visually stunning and functionally robust websites that .. .. 
                   </Text>
                 </VStack>
                 <HStack
@@ -274,7 +274,7 @@ const GrowthTree = () => {
                     <Text fontWeight="bold" fontSize="14px">Time Table Module</Text> 
                   </HStack>
                   <Text fontSize={{ base: "8px", md: "12px" }}> 
-                  Timetable Module is aimed at reducing the manual work to a great extent in generating time table online and to digitally view and share the time table to various stakeholders... 
+                  Timetable Module is aimed at reducing the manual work to a great extent in... 
                   </Text>
                 </VStack>
                 <HStack
@@ -304,7 +304,8 @@ const GrowthTree = () => {
                   textAlign="center"
                   justify="center"
                 >
-                  <Text sx={{ transform: 'rotate(225deg)' }}>2021</Text>
+                  <Text sx={{ transform: 'rotate(225deg)' }}>2023
+                  </Text>
                 </VStack>
                 <HStack border="5px solid #02D496" w={{ base: "75%", md: "80%" }}>
                   <Text color="#02D496" fontWeight="semibold"></Text>
@@ -375,7 +376,7 @@ const GrowthTree = () => {
           </VStack>
         </VStack>
 {/* right side is here         */}
-        <VStack color="white" w="50%" borderLeft="5px solid #197676" h={{ base: "600px", md: "720px", lg: "800px", xl:"1800px" }}   spacing={0} pb="25px" pt="12%">
+        <VStack color="white" w="50%" borderLeft="5px solid #197676" h={{ base: "1500px", md: "1700px", lg: "1700px", xl:"1800px"}}   spacing={0} pb="25px" pt="12%">
           <VStack w="100%" align="baseline" spacing={100}>
             <VStack w="100%" align="baseline" spacing={0}>
               <HStack w="80%" spacing={0}>
@@ -405,7 +406,7 @@ const GrowthTree = () => {
                     <Text fontWeight="bold" fontSize={{ base: "8px", md: "14px" }}>Conference Module</Text>
                   </HStack>
                   <Text fontSize={{ base: "8px", md: "12px" }}>
-                  Elevate your conference experience with our expertly crafted conference website development services. We specialize in creating dynamic and responsive platforms...
+                  Elevate your conference experience with our expertly crafted conference website development services....
                   </Text>
                 </VStack>
               </HStack>
@@ -517,7 +518,7 @@ const GrowthTree = () => {
                     <Text fontWeight="bold" fontSize={{ base: "8px", md: "14px" }}>Management of NITJ's Official Website</Text>
                   </HStack>
                   <Text fontSize={{ base: "8px", md: "12px" }}>
-                  This service is under the Website Development and Management Committe (WDMC) with multiple groups mentored by....
+                  This service is under the Website Development and Management Committe....
                   </Text>
                 </VStack>
               </HStack>
