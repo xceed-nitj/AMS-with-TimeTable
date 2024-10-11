@@ -4,7 +4,7 @@ const SickDay = require("../../../models/diabeticsModule/sickday");
 const addSickDay = async(req, res) => {
     const input = req.body;
     try {
-        const newSick = await SickDay(input);
+        const newSick = new SickDay(input);
         await newSick.save();
         res.status(201).json(newSick);
     } catch (error) {

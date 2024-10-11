@@ -3,7 +3,7 @@ const Hospital = require("../../../models/diabeticsModule/hospital")
 // Create a hospital
 const addHospital = async(req, res) => {
     try {
-        const newHospital = await Hospital(req.body);
+        const newHospital = new Hospital(req.body);
         await newHospital.save();
         res.status(201).json(newHospital);
     } catch (error) {
@@ -40,7 +40,7 @@ const updateHospital = async(req, res) => {
     try {
         const updated = await Hospital.findByIdAndUpdate(id, fields, {new: true});
         if (!updated) return res.status(404).json({message: "Hospital not found."});
-        res.status(200).json(hospital);
+        res.status(200).json(updated);
     } catch (error) {
         res.status(500).json({message: "Error updating hospital.", error});
     }

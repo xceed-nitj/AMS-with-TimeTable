@@ -1,7 +1,10 @@
 const { default: mongoose } = require("mongoose");
 
 const gamificationSchema = new mongoose.Schema({
-    patientId: {type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true},
+    patientId: {
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Patient', 
+        required: true},
     date: {type: Date, required: true},
     progress: {type: Number, required: true},
     entryTime: {type: Date, default: Date.now()},
