@@ -9,5 +9,3 @@ router.use("/patient", require("./patient.js"));
 router.use("/sickday", require("./sickday.js"));
 
 module.exports = router;
-
-// TODO erase: patient = 6709589a89fd42b3228ad92a
