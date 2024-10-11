@@ -3,7 +3,7 @@ const { addSickDay, getSickDays, getSickDayById, updateSickDay, deleteSickDay } 
 
 const router = express.Router();
 
-router.post("/", addSickDay);
+router.post("/add", addSickDay);
 router.get("/all/:patientId", getSickDays);
 router.get("/:id", getSickDayById);
 router.patch("/:id", updateSickDay);

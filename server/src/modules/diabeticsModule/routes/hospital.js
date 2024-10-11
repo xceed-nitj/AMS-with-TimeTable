@@ -3,7 +3,7 @@ const { addHospital, getHospitals, getHospitalById, updateHospital, deleteHospit
 
 const router = express.Router();
 
-router.post("/", addHospital);
+router.post("/add", addHospital);
 router.get("/all", getHospitals);
 router.get("/:id", getHospitalById);
 router.patch("/:id", updateHospital);

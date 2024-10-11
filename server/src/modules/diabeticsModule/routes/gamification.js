@@ -3,7 +3,7 @@ const { addGamification, getAllGamifications, getGamificationById, updateGamific
 
 const router = express.Router();
 
-router.post("/", addGamification);
+router.post("/add", addGamification);
 router.get("/all", getAllGamifications);
 router.get("/:id", getGamificationById);
 router.patch("/:id", updateGamification);

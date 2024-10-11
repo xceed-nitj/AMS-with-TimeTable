@@ -3,7 +3,7 @@ const { addPatient, getAllPatients, getPatientById, updatePatient, deletePatient
 const router = express.Router();
 
 // Route to add a new patient
-router.post('/', addPatient); // POST /api/v1/diabeticsmodule/patient
+router.post('/add', addPatient); // POST /api/v1/diabeticsmodule/patient
 router.get("/all", getAllPatients);
 router.get("/:id", getPatientById);
 router.patch("/:id", updatePatient);
