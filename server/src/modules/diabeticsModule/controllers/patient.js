@@ -31,7 +31,57 @@ const addPatient = async (req, res) => {
     }
 };
 
+// get all patients
+const getAllPatients = async(req, res) => {
+    try {
+        const patients = await Patient.find();
+        res.status(200).json(patients);
+    } catch (error) {
+        res.status(500).json({message: "Error fetching patients.", error});
+    }
+};
+
+// get patient by id
+const getPatientById = async(req, res) => {
+    const {id} = req.params;
+    try {
+        const patient = await Patient.findById(id);
+        if (!patient) return res.status(404).json({message: "Patient not found."});
+        res.status(200).json(patient);
+    } catch (error) {
+        res.status(500).json({message: "Error retrieving patient.", error});
+    }
+};
+
+// update patient
+const updatePatient = async(req, res) => {
+    const {id} = req.params;
+    try {
+        const patient = await Patient.findByIdAndUpdate(id, req.body, {new: true});
+        if (!patient) return res.status(404).json({message: "Patient not found."});
+        res.status(200).json(patient);
+    } catch (error) {
+        res.status(500).json({message: "Error updating patient.", error});
+    }
+};
+
+// delete a patient
+const deletePatient = async(req, res) => {
+    const {id} = req.params;
+    try {
+        const patient = await Patient.findByIdAndDelete(id);
+        if (!patient) return res.status(404).json({message: "Patient not found."});
+        res.status(200).json({message: "Patient deleted."});
+    } catch (error) {
+        res.status(500).json({message: "Error deleting patient.", error});
+    }
+};
+
 // Export the controller functions
 module.exports = {
     addPatient,
+    getAllPatients,
+    getPatientById,
+    updatePatient,
+    deletePatient
 };

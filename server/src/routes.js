@@ -42,8 +42,8 @@ v1router.use("/platform", platform);
 const stories = require("./modules/stories/routes/index");
 v1router.use("/stories", stories);
 
-const patientModule = require("./modules/diabeticsModule/routes/patient");
-v1router.use("/diabeticsmodule/patient", patientModule);
-
+// diabetics
+const diabeticsModule = require("./modules/diabeticsModule/routes/index");
+v1router.use("/diabeticsModule", diabeticsModule);
 
 module.exports = v1router;

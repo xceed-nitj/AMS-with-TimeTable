@@ -7,7 +7,7 @@ const addGamification = async(req, res) => {
         await newPlayer.save();
         res.status(201).json(newPlayer);
     } catch (error) {
-        res.status(500).json({message: "Error creating "})
+        res.status(500).json({message: "Error creating gamification", error});
     }
 };
 

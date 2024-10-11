@@ -7,7 +7,7 @@ const gamificationSchema = new mongoose.Schema({
         required: true},
     date: {type: Date, required: true},
     progress: {type: Number, required: true},
-    entryTime: {type: Date, default: Date.now()},
+    entryTime: {type: String, default: Date.now()},
     badgeCount: {type: Number, default: 0},
     starCount: {type: Number, default: 0},
     TotalStars: {type: Number, default: 0},

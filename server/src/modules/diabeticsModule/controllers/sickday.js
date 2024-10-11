@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const SickDay = require("../../../models/diabeticsModule/sickday");
 
 // create a sick day
@@ -13,13 +14,17 @@ const addSickDay = async(req, res) => {
 };
 
 // Get sick days for a patient
-const getSickDays = async(req, res) => {
-    const {patientId} = req.params;
+const getSickDays = async (req, res) => {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) return res.status(400).json({ message: "Invalid patient ID format." });
+
     try {
-        const sicks = await SickDay.find({patientId});
+        const sicks = await SickDay.find({ patientId });
         res.status(200).json(sicks);
     } catch (error) {
-        res.status(500).json({message: "Error retrieving sick days.", error});
+        console.error("Error retrieving sick days:", error); // Logging for debugging
+        res.status(500).json({ message: "Error retrieving sick days.", error });
     }
 };
 
