@@ -55,7 +55,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                         }
                     })
                     // console.log("Image: ", Image)
-                    const Images = [Image[0]];
+                    let Images = [Image[0]];
                     for (let i = 1; i < Image.length; i++) {
                         let count = 0;
                         Images.forEach(element => {
@@ -66,6 +66,9 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                         if (count == 0 && Image[i].url.url.trim()) { Images.push(Image[i]) }
                     }
                     // console.log("Images: ",Images)
+                    Images = Images.filter(function( element ) {
+                        return element !== undefined;
+                     });
                     setImages(Images)
                 } else {
                     console.error(response.error)
@@ -109,6 +112,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
         })
         setIsOpen(false)
     }
+    console.log(images);
     return (
         <div>
             <button type='button' style={{ color: "black", height: "25px", width: "25px" }} onClick={openModal}><FaUpload style={{ height: "25px", width: "25px", color:"deeppink" }} /></button>
@@ -130,7 +134,7 @@ const Signaturemodal = ({ eventId, formData, setFormData, index, handleFileChang
                     <div>
                         <div style={{ height: "500px" }} className='tw-flex tw-flex-col'>
                             <div style={{ height: "495px" }} className="uploadedImages tw-flex tw-gap-4 tw-flex-wrap tw-p-4 tw-overflow-y-scroll">
-                                {images.length == 0 ? "You have no images uploaded" : images.map((elem, index) => (
+                                {images.length == 0 ? <p>You have no images uploaded</p> : images.map((elem, index) => (
                                     <div onClick={(e) => { handleClick(e, index) }} key={`${index}`} style={{ height: "150px", width: "150px" }} className="tw-border-2 tw-border-zinc-300 tw-rounded-lg tw-object-contain tw-p-1 hover:tw-bg-slate-300 hover:tw-cursor-pointer" >
                                         <div className='tw-relative'
                                             onMouseEnter={e => { const copy = e.target.parentElement.lastChild; copy.style.display = "block" }}
