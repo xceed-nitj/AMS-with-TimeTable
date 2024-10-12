@@ -23,7 +23,7 @@
     "eventsource-polyfill": "^0.9.6",
     "exceljs": "^4.4.0",
     "expres": "^0.0.5",
-    "express": "^4.19.2",
+    "express": "^4.21.1",
     "html2pdf.js": "^0.10.1",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^2.5.1",
