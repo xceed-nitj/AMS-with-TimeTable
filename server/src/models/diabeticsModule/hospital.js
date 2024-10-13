@@ -4,8 +4,14 @@ const hospitalSchema = new mongoose.Schema({
     name: { type: String, required: true },
     location: { type: String, required: true },
     phone: { type: String, required: true },
-    doctors: [{ type: String }],
-    patients: [{ type: String }],
+    doctors: [{
+        doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' },
+        name: { type: String } // Add this line
+    }],
+    patients: [{
+        patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient' },
+        name: { type: String } // Add this line
+    }]
 }, { timestamps: true }
 );
 
