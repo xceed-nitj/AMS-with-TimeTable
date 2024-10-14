@@ -64,10 +64,14 @@ const deletePlatform = async (req, res) => {
     }
 };
 
-const addModule = (req, res) => {
+const addModule = async (req, res) => {
   try {
+    console.log('Body:', req.body); // Debugging request body
+    console.log('Files:', req.files); // Debugging uploaded files
+
     const { name, description, yearLaunched, contributors } = req.body;
-    const files = req.files;
+    console.log('contributors:', contributors);
+    const files = req.files || [];
 
     // Ensure contributors is an array
     let parsedContributors;
@@ -106,6 +110,10 @@ const addModule = (req, res) => {
 
     console.log(moduleData); // For debugging
 
+    // Save to MongoDB
+    const newModule = new Module(moduleData);
+    await newModule.save();
+
     res.status(200).json({ message: 'Module added successfully', data: moduleData });
   } catch (error) {
     console.error('Error in addModule:', error);
@@ -113,10 +121,12 @@ const addModule = (req, res) => {
   }
 };
 
+
 // Get all modules
 const getModules = async (req, res) => {
   try {
     const modules = await Module.find();
+    console.log("modules:",modules);
     res.status(200).json(modules);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch modules" });
@@ -144,10 +154,12 @@ const updateModule = async (req, res) => {
   try {
     const moduleId = req.params.id;
     const { name, description, yearLaunched, contributors } = req.body;
+    console.log('body:', req.body);
 
+    // No need to manually parse `contributors`, as Express will do it for you
     const updatedModule = await Module.findByIdAndUpdate(
       moduleId,
-      { name, description, yearLaunched, contributors: JSON.parse(contributors) },
+      { name, description, yearLaunched, contributors },
       { new: true }
     );
 
@@ -157,9 +169,12 @@ const updateModule = async (req, res) => {
 
     res.status(200).json({ message: "Module updated successfully", updatedModule });
   } catch (error) {
-    res.status(500).json({ error: "Failed to update module" });
+    console.error("Error updating module:", error); // Log the error for debugging
+    res.status(500).json({ error: "Failed to update module", details: error.message });
   }
 };
+
+
 
 // Delete a module
 const deleteModule = async (req, res) => {
