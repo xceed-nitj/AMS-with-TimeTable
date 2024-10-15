@@ -46,7 +46,7 @@ const Timetable = () => {
 
   const [facultyUpdateTime, setFacultyUpdateTime] = useState();
   const [roomUpdateTime, setRoomUpdateTime] = useState();
-  const [commonLoad, setCommonLoad]=useState();
+  const [commonLoad, setCommonLoad] = useState();
   // const availableRooms = ['L-201', 'L-209','room1','room2'];
   // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
   // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
@@ -57,7 +57,10 @@ const Timetable = () => {
   const [viewFaculty, setViewFaculty] = useState(availableFaculties[0]);
   const [viewRoom, setViewRoom] = useState(availableRooms[0]);
 
-  const [selectedSemester, setSelectedSemester] = useState(availableSems[0]||"");
+  const [selectedSemester, setSelectedSemester] = useState(availableSems[0] || "");
+  const [clash, setClash] = useState([]);
+  const [clashFlag, setClashFlag] = useState(false);
+  console.log("clash length::  ", clash.length, "     clash flag::", clashFlag)
   const selectedCell = null;
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
@@ -185,7 +188,7 @@ const Timetable = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log('faculty common response',data);
+          console.log('faculty common response', data);
           setCommonLoad(data);
           console.log('coomomo load', data);
         }
@@ -231,7 +234,7 @@ const Timetable = () => {
 
   useEffect(() => {
     // Fetch subject data from the database and populate availableSubjects
-    const fetchSubjects = async (currentCode,selectedSemester) => {
+    const fetchSubjects = async (currentCode, selectedSemester) => {
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/subject/filteredsubject/${currentCode}/${selectedSemester}`,
@@ -266,7 +269,7 @@ const Timetable = () => {
       }
     };
 
-    const fetchFaculty = async (currentCode,selectedSemester) => {
+    const fetchFaculty = async (currentCode, selectedSemester) => {
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/addfaculty/filteredfaculty/${currentCode}/${selectedSemester}`,
@@ -284,10 +287,10 @@ const Timetable = () => {
     };
 
 
-    fetchSubjects(currentCode,selectedSemester);
+    fetchSubjects(currentCode, selectedSemester);
     fetchRoom(currentCode);
-    fetchFaculty(currentCode,selectedSemester);
-  }, [selectedSemester, viewData, currentCode,apiUrl]);
+    fetchFaculty(currentCode, selectedSemester);
+  }, [selectedSemester, viewData, currentCode, apiUrl]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -297,13 +300,12 @@ const Timetable = () => {
     for (const day of days) {
       initialData[day] = {};
       for (const period of periods) {
-        if(period =='lunch')
-        {
+        if (period == 'lunch') {
           initialData[day]['lunch'] = [];
 
           if (fetchedData[day] && fetchedData[day]['lunch']) {
             const slotData = fetchedData[day]['lunch'];
-  
+
             for (const slot of slotData) {
               const slotSubjects = [];
               let faculty = ""; // Declare faculty here
@@ -332,65 +334,64 @@ const Timetable = () => {
 
               if (slotSubjects.length > 0) {
                 initialData[day]['lunch'].push(slotSubjects);
-              }          
+              }
             }
           }
 
         }
-        else
-        {
-        initialData[day][`period${period}`] = [];
+        else {
+          initialData[day][`period${period}`] = [];
 
-        if (fetchedData[day] && fetchedData[day][`period${period}`]) {
-          const slotData = fetchedData[day][`period${period}`];
+          if (fetchedData[day] && fetchedData[day][`period${period}`]) {
+            const slotData = fetchedData[day][`period${period}`];
 
-          for (const slot of slotData) {
-            const slotSubjects = [];
-            let faculty = ""; // Declare faculty here
-            let room = "";
-            for (const slotItem of slot) {
-              const subj = slotItem.subject || "";
-              if (type == "room") {
-                room = slotItem.sem || "";
-              } else {
-                room = slotItem.room || "";
+            for (const slot of slotData) {
+              const slotSubjects = [];
+              let faculty = ""; // Declare faculty here
+              let room = "";
+              for (const slotItem of slot) {
+                const subj = slotItem.subject || "";
+                if (type == "room") {
+                  room = slotItem.sem || "";
+                } else {
+                  room = slotItem.room || "";
+                }
+                if (type == "faculty") {
+                  faculty = slotItem.sem || "";
+                } else {
+                  faculty = slotItem.faculty || "";
+                }
+                // Only push the values if they are not empty
+                if (subj || room || faculty) {
+                  slotSubjects.push({
+                    subject: subj,
+                    room: room,
+                    faculty: faculty,
+                  });
+                }
               }
-              if (type == "faculty") {
-                faculty = slotItem.sem || "";
-              } else {
-                faculty = slotItem.faculty || "";
-              }
-              // Only push the values if they are not empty
-              if (subj || room || faculty) {
+
+              // Push an empty array if no data is available for this slot
+              if (slotSubjects.length === 0) {
                 slotSubjects.push({
-                  subject: subj,
-                  room: room,
-                  faculty: faculty,
+                  subject: "",
+                  room: "",
+                  faculty: "",
                 });
               }
-            }
 
-            // Push an empty array if no data is available for this slot
-            if (slotSubjects.length === 0) {
-              slotSubjects.push({
-                subject: "",
-                room: "",
-                faculty: "",
-              });
+              initialData[day][`period${period}`].push(slotSubjects);
             }
-
-            initialData[day][`period${period}`].push(slotSubjects);
+          } else {
+            // Assign an empty array if day or period data is not available
+            initialData[day][`period${period}`].push([]);
           }
-        } else {
-          // Assign an empty array if day or period data is not available
-          initialData[day][`period${period}`].push([]);
         }
       }
-      }
-  
+
     }
-  
-    console.log("initial datat to be received",initialData);
+
+    console.log("initial datat to be received", initialData);
     return initialData;
   };
 
@@ -401,7 +402,7 @@ const Timetable = () => {
   useEffect(() => {
     const fetchSubjectData = async (currentCode) => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`,{credentials: "include"});
+        const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`, { credentials: "include" });
         const data = await response.json();
         setSubjectData(data);
         // console.log('subjectdata',data)
@@ -420,7 +421,7 @@ const Timetable = () => {
           // body: JSON.stringify(userData),
           credentials: 'include'
         });
-        
+
         const data = await response.json();
         setTTData(data);
       } catch (error) {
@@ -630,59 +631,59 @@ const Timetable = () => {
     const isConfirmed = window.confirm('Are you sure you want to lock the timetable?');
 
     if (isConfirmed) {
-    // Mark the function as async
-    setMessage("Data is being saved....");
-    // await handleSubmit();
-    // console.log('Data is getting Locked');
-    setMessage("Data saved. Commencing lock");
-    setMessage("Data is being locked");
-    const Url = `${apiUrl}/timetablemodule/lock/locktt`;
-    const code = currentCode;
-    const sem = selectedSemester;
-    try {
-      const response = await fetch(Url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code }),
-        credentials: "include",
+      // Mark the function as async
+      setMessage("Data is being saved....");
+      // await handleSubmit();
+      // console.log('Data is getting Locked');
+      setMessage("Data saved. Commencing lock");
+      setMessage("Data is being locked");
+      const Url = `${apiUrl}/timetablemodule/lock/locktt`;
+      const code = currentCode;
+      const sem = selectedSemester;
+      try {
+        const response = await fetch(Url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ code }),
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('response from backend for lock', data);
+          // console.log(data.updatedTime);
+          setMessage("");
+          toast({
+            title: 'Timetable Locked',
+            status: 'success',
+            duration: 6000,
+            isClosable: true,
+            position: 'top',
+          });
+          // setLockedTime(data.updatedTime);
+        } else {
+          console.error(
+            "Failed to send data to the backend. HTTP status:",
+            response.status
+          );
+        }
+      } catch (error) {
+        console.error("Error sending data to the backend:", error);
+      }
+    } else {
+      toast({
+        title: 'Timetable Lock Failed',
+        description: 'An error occurred while attempting to lock the timetable.',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+        position: 'top',
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('response from backend for lock',data);
-        // console.log(data.updatedTime);
-        setMessage("");
-        toast({
-          title: 'Timetable Locked',
-          status: 'success',
-          duration: 6000,
-          isClosable: true,
-          position: 'top', 
-        });    
-        // setLockedTime(data.updatedTime);
-      } else {
-        console.error(
-          "Failed to send data to the backend. HTTP status:",
-          response.status
-        );
-      }
-    } catch (error) {
-      console.error("Error sending data to the backend:", error);
-    } 
-  } else {
-    toast({
-      title: 'Timetable Lock Failed',
-      description: 'An error occurred while attempting to lock the timetable.',
-      status: 'error',
-      duration: 6000,
-      isClosable: true,
-      position: 'top', 
-    });
-    
 
-  }
+    }
 
 
   };
@@ -710,6 +711,94 @@ const Timetable = () => {
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
+  useEffect(() => {
+    if (availableFaculties.length != 0 && availableRooms.length != 0) {
+
+      let obj = [];
+      const roomData = async (currentCode, room) => {
+        try {
+          const response = await fetch(
+            `${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room}`,
+            { credentials: "include" }
+          );
+          const data1 = await response.json();
+          const data = data1.timetableData;
+          setRoomUpdateTime(data1.updatedTime);
+          const initialData = generateInitialTimetableData(data, "room");
+          return initialData;
+        } catch (error) {
+          console.error("Error fetching existing timetable data:", error);
+          return {};
+        }
+      };
+
+      const fetchRoomData = async (room) => {
+        const data = await roomData(currentCode, room);
+        // console.log("data::: ",room,":::",data);
+        for (let i in data) {
+          for (let j in data[i]) {
+
+            if (data[i][j].length >= 2 && data[i][j][0][0]["faculty"] !== data[i][j][1][0]["faculty"]) {
+              let temp = { "name": room, "day": i, "period": j }
+              obj.push(temp);
+
+              console.log("dataaaA:: ", room, "::", data[i][j][0][0]["faculty"])
+            }
+          }
+        }
+      };
+
+
+
+      const facultyData = async (currentCode, faculty) => {
+        try {
+          const response = await fetch(
+            `${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty}`,
+            { credentials: "include" }
+          );
+          const data1 = await response.json();
+          const data = data1.timetableData;
+          setFacultyUpdateTime(data1.updatedTime);
+          const initialData = generateInitialTimetableData(data, "faculty");
+          return initialData;
+        } catch (error) {
+          console.error("Error fetching existing timetable data:", error);
+          return {};
+        }
+      };
+      const fetchFacultyData = async (faculty) => {
+        const data = await facultyData(currentCode, faculty);
+        // console.log("dataaaA:: ",faculty,"::",data)
+        for (let i in data) {
+          for (let j in data[i]) {
+            if (data[i][j].length >= 2 && data[i][j][0]["room"] !== data[i][j][1]["room"]) {
+              let temp = { "name": faculty, "day": i, "period": j }
+              obj.push(temp);
+
+              console.log("dataaaA:: ", faculty, "::", data[i][j])
+            }
+          }
+        }
+      };
+      (async () => {
+        console.log(availableFaculties, availableRooms);
+        for (let i = 0; i < availableFaculties.length; i++) {
+          console.log(availableFaculties[i]);
+          await fetchFacultyData(availableFaculties[i]);
+        }
+        for (let i = 0; i < availableRooms.length; i++) {
+          console.log(availableRooms[i]);
+          await fetchRoomData(availableRooms[i]);
+        }
+        console.log(obj);
+        setClash(obj, setClashFlag(true));
+
+        console.log("value set");
+
+      })()
+    }
+  }, [availableFaculties, availableRooms]);
+
   return (
     <Container maxW="8xl">
       <Heading as="h1" size="xl" mt="6" mb="6">
@@ -717,19 +806,19 @@ const Timetable = () => {
       </Heading>
       <Box display="left">
         {/* <Box ml='-1.5'> */}
-      <Button mx="auto" colorScheme="red" onClick={handleFirstYear}>
-            First Year Faculty Allotment
-          </Button>
-          <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
-           View Centrally Alloted Rooms
-          </Button>
-          <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
-            Master View of Time Table (any sem/dept)
-          </Button>
-          <Button m="1 auto" colorScheme="blue" onClick={handleEditFaculty}>
-            Edit Faculty Details
-          </Button>
-</Box>
+        <Button mx="auto" colorScheme="red" onClick={handleFirstYear}>
+          First Year Faculty Allotment
+        </Button>
+        <Button m="1 auto" colorScheme="blue" onClick={handleViewRoom}>
+          View Centrally Alloted Rooms
+        </Button>
+        <Button m="1 auto" colorScheme="blue" onClick={handleMasterView}>
+          Master View of Time Table (any sem/dept)
+        </Button>
+        <Button m="1 auto" colorScheme="blue" onClick={handleEditFaculty}>
+          Edit Faculty Details
+        </Button>
+      </Box>
       <Box display="flex" justifyContent="space-between">
         <Box ml='-1.5'>
           <Button m="1 auto" colorScheme="teal" onClick={handleAddSem}>
@@ -753,7 +842,7 @@ const Timetable = () => {
           <Button m="1 auto" colorScheme="teal" onClick={handleAddLunchSlot}>
             Add Lunch slots
           </Button>
-          
+
         </Box>
         <Box mr='-1.5'>
           <Button m="1 auto" colorScheme="orange" onClick={handleLockTT}>
@@ -763,6 +852,19 @@ const Timetable = () => {
             View Locked TT
           </Button>
         </Box>
+      </Box>
+      <Box
+        padding="6px"
+        borderRadius="6px"
+      >
+        <ul
+          className="tw-flex tw-flex-wrap tw-w-fit"
+        >
+
+          {clashFlag == true ? clash.length == 0 ? "No Clashes" : clash.map((elem, index) => (
+            <li key={index} className="tw-h-10 tw-p-2 tw-mx-3 tw-w-1/3 tw-content-center tw-text-red-700 tw-font-normal tw-rounded-md">Check {elem["name"]}'s slot on {elem["day"]} at {elem["period"]}</li>
+          )) : "searching for clashes..."}
+        </ul>
       </Box>
 
       <Box display="flex" justifyContent="space-between" mb="4">
@@ -993,8 +1095,8 @@ const Timetable = () => {
                 headTitle={viewselectedSemester}
                 commonLoad={commonLoad}
               />
-           
-      {/* <Box>
+
+              {/* <Box>
   {semNotes.length > 0 ? (
     <div>
       <Text fontSize="xl" fontWeight="bold">
@@ -1013,9 +1115,9 @@ const Timetable = () => {
   )}
 </Box> */}
 
-      </Box>
-        
-) : (
+            </Box>
+
+          ) : (
             <Text>Please select a Semester from the dropdown.</Text>
           )}
         </Box>
