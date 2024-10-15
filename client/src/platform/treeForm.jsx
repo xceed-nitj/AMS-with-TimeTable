@@ -11,7 +11,8 @@ import {
   VStack,
   HStack,
   useToast,
-  IconButton
+  IconButton,
+  Img
 } from '@chakra-ui/react';
 import { Table, Thead, Tbody, Tr, Th, Td, TableContainer } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
@@ -21,10 +22,12 @@ import axios from 'axios';
 const TreeForm = () => {
   const [contributors, setContributors] = useState([{ name: '', designation: '', linkedin: '', image: null }]);
   const [submittedModules, setSubmittedModules] = useState([]); // Store submitted modules
+  const [updating, setUpdating] = useState(false);
   const apiUrl = getEnvironment();
   const toast = useToast();
 
   const [moduleDetails, setModuleDetails] = useState({
+    id: '',
     name: '',
     description: '',
     yearLaunched: '',
@@ -65,69 +68,117 @@ const TreeForm = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     const formData = new FormData();
     formData.append('name', moduleDetails.name);
     formData.append('description', moduleDetails.description);
     formData.append('yearLaunched', moduleDetails.yearLaunched);
     formData.append('contributors', JSON.stringify(contributors));
-
+  
+    // Append images if they exist
     contributors.forEach((contributor) => {
       if (contributor.image) {
         formData.append('contributorImages', contributor.image);
       }
     });
-
+  
     try {
-      const response = await axios.post(`http://localhost:8010/platform/add-module`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      toast({
-        title: "Module added successfully!",
-        status: "success",
-        duration: 2000,
-        isClosable: true,
-      });
-
-      setSubmittedModules((prevModules) => [
-        ...prevModules,
+      // Conditional API call: if `moduleDetails.id` exists, use the update API
+      const response = await fetch(
+        moduleDetails.id
+          ? `${apiUrl}/platform/update-module/${moduleDetails.id}` // Update existing module
+          : `${apiUrl}/platform/add-module`, // Add new module
         {
-          name: moduleDetails.name,
-          description: moduleDetails.description,
-          yearLaunched: moduleDetails.yearLaunched,
-          contributors: contributors,
-        },
-      ]);
-
-      // Reset form fields
-      setModuleDetails({
-        name: '',
-        description: '',
-        yearLaunched: '',
-      });
-      setContributors([{ name: '', designation: '', linkedin: '', image: null }]);
-
+          method: moduleDetails.id ? 'PUT' : 'POST', // PATCH for update, POST for add
+          body: formData, // Attach FormData directly as the body
+        }
+      );
+  
+      if (response.ok) {
+        toast({
+          title: moduleDetails.id
+            ? "Module updated successfully!" // Success message for update
+            : "Module added successfully!", // Success message for add
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
+  
+        setSubmittedModules((prevModules) => [
+          ...prevModules,
+          {
+            name: moduleDetails.name,
+            description: moduleDetails.description,
+            yearLaunched: moduleDetails.yearLaunched,
+            contributors: contributors,
+          },
+        ]);
+  
+        // Reset form fields
+        setModuleDetails({
+          name: '',
+          description: '',
+          yearLaunched: '',
+        });
+        setContributors([{ name: '', designation: '', linkedin: '', image: null }]);
+        window.location.reload();
+      } else {
+        throw new Error(moduleDetails.id ? 'Failed to update module' : 'Failed to add module');
+      }
     } catch (error) {
+      console.error(moduleDetails.id ? 'Error updating module:' : 'Error adding module:', error);
       toast({
-        title: 'Error adding module!',
+        title: moduleDetails.id ? 'Error updating module!' : 'Error adding module!',
         status: "error",
         duration: 2000,
         isClosable: true,
       });
     }
   };
-
-  const deleteModule = async (moduleId) => {
+  
+  const fetchModuleDetails = async (moduleId) => {
     try {
-      const response = await axios.delete(`${apiUrl}/platform/delete-module/${moduleId}`);
+      const response = await axios.get(`${apiUrl}/platform/get-module/${moduleId}`);
       if (response.status === 200) {
-        alert('Module deleted successfully');
+        console.log('Module details:', response.data);
+        // setModuleDetails(response.data); // Show current module data in form
+        return response.data;
       }
-    } catch (error) {
-      console.error(`Error deleting module with ID ${moduleId}:`, error);
+    } catch (err) {
+      alert(`Error fetching module: ${err.message}`);
+    }
+  };
+  
+  const handleUpdate = async (moduleId, e) => {
+    e?.preventDefault(); // Prevent form default only if 'e' exists
+  
+    try {
+      setUpdating(true); // Set the updating flag to true while the operation is ongoing
+      
+      console.log('Module ID:', moduleId); // Log the module ID for debugging
+
+      // Fetch module details
+      const result = await fetchModuleDetails(moduleId);
+      console.log('fetchmoduledetails:', fetchModuleDetails(moduleId));
+      console.log('Result:', result);
+  
+      if (result && result.name) {
+        // Assuming `result` contains the module data
+        setModuleDetails({
+          id: moduleId,
+          name: result.name || '',
+          description: result.description || '',
+          yearLaunched: result.yearLaunched || '',
+        });
+        setContributors(result.contributors || []);
+      } else {
+        console.error('Error: Module not found or invalid module ID.');
+        throw new Error('Module not found');
+      }
+    } catch (err) {
+      alert(`Error updating module: ${err.message}`);
+    } finally {
+      setUpdating(false); // Turn off the updating flag once done
     }
   };
   
@@ -136,7 +187,7 @@ const TreeForm = () => {
     try {
       const response = await axios.get(`${apiUrl}/platform/get-modules`);
       console.log(response.data);
-      return response.data;  // Return fetched module data
+      setSubmittedModules(response.data);
     } catch (error) {
       console.error("Error fetching modules:", error);
     }
@@ -147,16 +198,20 @@ const TreeForm = () => {
   }, []);
 
 
-  const updateModule = async (moduleId, updatedData) => {
+  const deleteModule = async (moduleId) => {
     try {
-      const response = await axios.patch(`${apiUrl}/platform/modules/${moduleId}`, updatedData);
-      if (response.status === 200) {
-        alert('Module updated successfully');
+      const { data, status } = await axios.delete(`${apiUrl}/platform/delete-module/${moduleId}`);
+      if (status === 200) {
+        console.log("Module deleted successfully:", data);
+        window.location.reload();
+      } else {
+        console.warn("Unexpected status code:", status);
       }
     } catch (error) {
-      console.error(`Error updating module with ID ${moduleId}:`, error);
+      console.error("Error deleting module:", error?.response?.data?.message || error.message);
     }
   };
+  
   
 
   return (
@@ -299,7 +354,20 @@ const TreeForm = () => {
                       <strong>LinkedIn:</strong> <a href={contributor.linkedin} target="_blank" rel="noopener noreferrer">{contributor.linkedin}</a> <br />
                       {contributor.image && (
                         <Box>
-                          <strong>Image:</strong> <img src={URL.createObjectURL(contributor.image)} alt={contributor.name} width="50" height="50" />
+                          <strong>Image:</strong> 
+                          <Img src={contributor.image}/>
+                          {contributor.image && contributor.image instanceof Blob ? (
+                            <img
+                              src={URL.createObjectURL(contributor.image)}
+                              {...console.log(contributor.image)}
+                              alt={contributor.name}
+                              width="50"
+                              height="50"
+                              onLoad={(e) => URL.revokeObjectURL(e.target.src)} // Revoke the object URL to prevent memory leaks
+                            />
+                          ) : (
+                            <span>No image available</span> // Fallback if no image is provided
+                          )}
                         </Box>
                       )}
                     </Box>
