@@ -30,6 +30,10 @@ const patientSchema = new mongoose.Schema({
     medicalHistory: {
         type: String,
     },
+    hospital: {
+        type: String,
+        required: true,
+    }
     // Add other fields as necessary
 });
 

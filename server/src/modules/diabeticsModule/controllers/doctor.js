@@ -1,6 +1,8 @@
 const Doctor = require('../../../models/diabeticsModule/doctor'); // Adjusted path
 const Hospital = require('../../diabeticsModule/controllers/hospital');
 const { addDoctorToHospital } = require('../controllers/hospital');
+const User = require("../../../models/usermanagement/user"); // Import the User model
+
 // Controller function to add a new doctor
 const addDoctor = async (req, res) => {
     const { email, name, age, contactNumber, address, hospital } = req.body;
@@ -24,6 +26,18 @@ const addDoctor = async (req, res) => {
 
         // Save the doctor to the database
         await newDoctor.save();
+        // Add the doctor to the user database with role "doctor" and default password
+        const user = new User({
+            name,
+            role: ["doctor"], // Set the role to doctor
+            password: "12345", // Default password
+            email: [email], // Store email as an array
+            isEmailVerified: false, // Set default value for email verification
+            isFirstLogin: true // Set default value for first login
+        });
+
+        // Save the user to the user database
+        await user.save();
 
         try {
             await addDoctorToHospital(hospital, newDoctor._id, newDoctor.name);
