@@ -72,7 +72,7 @@ userRouter.post("/logout", verifyToken, async (req, res) => {
   }
 });
 
-userRouter.get("/all", async (req, res) => {
+userRouter.get("/all", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.getAllUserDetails(req, res);
   } catch (e) {
