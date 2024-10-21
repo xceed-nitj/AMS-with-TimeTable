@@ -4,7 +4,7 @@ const User = require('../../../models/usermanagement/user'); // Import the User 
 
 // Controller function to add a new patient
 const addPatient = async (req, res) => {
-    const { email, name, age, contactNumber, address, medicalHistory, hospital } = req.body;
+    const { email, name, DOB, gender, father_name, mother_name, weight, height, DOD_of_T1D, family_history, economic_status, family_tree, immunization_history, treatment_history, referring_physician, age, contactNumber, address, medicalHistory, hospital, doctorIds } = req.body;
 
     try {
         // Check if the patient already exists
@@ -12,16 +12,36 @@ const addPatient = async (req, res) => {
         if (existingPatient) {
             return res.status(400).json({ message: 'Patient already exists' });
         }
-
+        // Find all doctors in the same hospital
+        const doctors = await User.find({
+            role: 'doctor',
+            area: { $in: [hospital] }
+        });
+        // Extract the ObjectIds of the doctors
+        const doctorIds = doctors.map(doctor => doctor._id);
         // Create a new patient
         const newPatient = new Patient({
             email,
             name,
+            DOB,
+            gender,
+            father_name,
+            mother_name,
+            weight,
+            height,
+            DOD_of_T1D,
+            family_history,
+            economic_status,
+            family_tree,
+            immunization_history,
+            treatment_history,
+            referring_physician,
             age,
             contactNumber,
             address,
             medicalHistory,
             hospital,
+            doctorIds,
         });
 
         // Save the patient to the database

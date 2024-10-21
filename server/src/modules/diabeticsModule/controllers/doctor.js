@@ -32,6 +32,7 @@ const addDoctor = async (req, res) => {
             role: ["doctor"], // Set the role to doctor
             password: "12345", // Default password
             email: [email], // Store email as an array
+            area: hospital,
             isEmailVerified: false, // Set default value for email verification
             isFirstLogin: true // Set default value for first login
         });
