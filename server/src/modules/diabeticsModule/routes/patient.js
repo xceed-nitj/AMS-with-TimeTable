@@ -1,5 +1,5 @@
 const express = require('express');
-const { addPatient, getAllPatients, getPatientById, updatePatient, deletePatient } = require('../controllers/patient'); // Import the controller
+const { addPatient, getAllPatients, getPatientById, updatePatient, deletePatient, loginPatient } = require('../controllers/patient'); // Import the controller
 const router = express.Router();
 
 // Route to add a new patient
@@ -8,5 +8,6 @@ router.get("/all", getAllPatients);
 router.get("/:id", getPatientById);
 router.patch("/:id", updatePatient);
 router.delete("/:id", deletePatient);
+router.post('/login', loginPatient);
 
 module.exports = router;
