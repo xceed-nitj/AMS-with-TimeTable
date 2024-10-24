@@ -50,8 +50,8 @@ const convertToObject = async (eventId, formData, files, url) => {
             const field = file.fieldname.split("[")[0]
             const index = parseInt(file.fieldname.split("[")[1].split("]")[0])
             console.log(index, field)
-            if (field == "signatures") { form["signatures"][index]["url"]["url"] = `${apiURL}/certificatemodule/images/${file.path}`; }
-            if (field == "logos") { form["logos"][index]["url"] = `${apiURL}/certificatemodule/images/${file.path}` }
+            if (field == "signatures") { form["signatures"][index]["url"]["url"] = `${apiURL}/certificatemodule/images/uploads/certificateModuleImages/${file.filename}`; }
+            if (field == "logos") { form["logos"][index]["url"] = `${apiURL}/certificatemodule/images/uploads/certificateModuleImages/${file.filename}` }
         });
 
         return form
