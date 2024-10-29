@@ -40,7 +40,13 @@ const HomeConf = () => {
         "facebookLink": "",
         "twitterLink": "",
         "logo": "",
-        "shortName": ""
+        "shortName": "",
+        "abstractLink" : "",
+        "paperLink" : "",
+        "regLink" : "",
+        "flyerLink" : "",
+        "brochureLink" : "",
+        "posterLink": "",
     }
     const [formData, setFormData] = useState(initialData);
 
@@ -49,7 +55,8 @@ const HomeConf = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    const { confName, confStartDate, confEndDate, aboutConf, about, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName } = formData;
+    const { confName, confStartDate, confEndDate, aboutConf, about, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
+     regLink,flyerLink,brochureLink,posterLink } = formData;
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -296,7 +303,62 @@ const HomeConf = () => {
                         mb='2.5'
                     />
                 </FormControl>
-
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Abstract Link :</FormLabel>
+                    <Input
+                        type="text"
+                        name="abstractLink"
+                        value={abstractLink}
+                        onChange={handleChange}
+                        placeholder="Abstract Link"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Registration Link :</FormLabel>
+                    <Input
+                        type="text"
+                        name="regLink"
+                        value={regLink}
+                        onChange={handleChange}
+                        placeholder="Registration Link"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Flyer Link of Conference :</FormLabel>
+                    <Input
+                        type="text"
+                        name="flyerLink"
+                        value={flyerLink}
+                        onChange={handleChange}
+                        placeholder="Flyer Link"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Brochure Link of Conference :</FormLabel>
+                    <Input
+                        type="text"
+                        name="brochureLink"
+                        value={brochureLink}
+                        onChange={handleChange}
+                        placeholder="Brochure Link"
+                        mb='2.5'
+                    />
+                </FormControl>
+                <FormControl isRequired={true} mb='3' >
+                    <FormLabel >Poster Link :</FormLabel>
+                    <Input
+                        type="text"
+                        name="posterLink"
+                        value={posterLink}
+                        onChange={handleChange}
+                        placeholder="Poster Link"
+                        mb='2.5'
+                    />
+                </FormControl>
+       
                 <Center>
                     <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
                         {editID ? 'Update' : 'Add'}
