@@ -140,6 +140,14 @@ import Form from './platform/Form.jsx';
 import AllForms from './reviewmodule/pages/AllForms.jsx';
 import Reviews from './reviewmodule/pages/Reviews.jsx';
 
+//import diabetic modules
+import HospitalForm from './diabeticsModule/components/HospitalForm.jsx'
+import PatientForm from './diabeticsModule/components/PatientForm.jsx'
+import DailyDosageForm from './diabeticsModule/components/DailyDosageForm.jsx';
+import SickDayForm from './diabeticsModule/components/SickDayForm.jsx';
+import GamificationForm from './diabeticsModule/components/GamificationForm.jsx'
+import DoctorForm from './diabeticsModule/components/DoctorForm.jsx'
+
 function App() {
   
   return (
@@ -328,7 +336,6 @@ function App() {
         <Route path="/quiz/:code/live" element={<Quizzing />} />
         <Route path="/quiz/:code/feedback" element={<QuizFeedback />} />
 
-
         <Route path='test-message' element={<ErrorPage 
                     message='Custom error message...' 
                     destinationName={false}
@@ -342,6 +349,14 @@ function App() {
                     />}></Route>
 
         <Route path="/platform" element={<><Form/></>}/>
+
+        {/* Routes for diabetic module */}
+        <Route path="/dm/addHospital" element={<HospitalForm/>}/>
+        <Route path="/dm/addPatient" element={<PatientForm/>}/>
+        <Route path="/dm/addDailyDosage" element={<DailyDosageForm/>}/>
+        <Route path="/dm/addSickDay" element={<SickDayForm/>}/>
+        <Route path="/dm/addGamification" element={<GamificationForm/>}/>
+        <Route path="/dm/addDoctor" element={<DoctorForm/>}/>
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}

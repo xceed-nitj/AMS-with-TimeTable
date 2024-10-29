@@ -38,7 +38,7 @@ const CertificateForm = () => {
   const [type, setType] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const date = new Date();
-  const a = date.getMonth() > 9 ? "" : 0
+  const a = date.getMonth() > 8 ? "" : 0
   const defaultDate = `${date.getFullYear()}-${a}${date.getMonth() + 1}-${date.getDate()}`
   const [formData, setFormData] = useState({
     logos: [{ url: '', height: 80, width: 80 }],
