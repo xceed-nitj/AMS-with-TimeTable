@@ -15,6 +15,45 @@ const patientSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    DOB: {
+        type: String,
+    },
+    gender: {
+        type: String,
+    },
+    father_name: {
+        type: String,
+    },
+    mother_name: {
+        type: String,
+    },
+    weight: {
+        type: Number,
+    },
+    height: {
+        type: Number,
+    },
+    DOD_of_T1D: {
+        type: String,
+    },
+    family_history: {
+        type: String,
+    },
+    economic_status: {
+        type: String,
+    },
+    family_tree: {
+        type: String,
+    },
+    immunization_history: {
+        type: String,
+    },
+    treatment_history: {
+        type: String,
+    },
+    referring_physician: {
+        type: String,
+    },
     age: {
         type: Number,
         required: true,
@@ -30,6 +69,14 @@ const patientSchema = new mongoose.Schema({
     medicalHistory: {
         type: String,
     },
+    hospital: {
+        type: String,
+        required: true,
+    },
+    doctorIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User', // Reference to the User model for doctors
+    }]
     // Add other fields as necessary
 });
 
