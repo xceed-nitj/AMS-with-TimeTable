@@ -31,7 +31,7 @@ const upload = multer({ storage });
 // Define module routes
 router.post('/add-module', upload.array('contributorImages', 10), addModule);
 router.get("/get-modules", getModules);
-router.get("/get-module/:id", getModuleById);
+router.get("/get-modules/:id", getModuleById);
 router.put("/update-module/:id", updateModule);
 router.delete("/delete-module/:id", deleteModule);
 

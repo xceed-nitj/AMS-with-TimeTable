@@ -126,7 +126,7 @@ const addModule = async (req, res) => {
 const getModules = async (req, res) => {
   try {
     const modules = await Module.find();
-    console.log("modules:",modules);
+    // console.log("modules:",modules);
     res.status(200).json(modules);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch modules" });
@@ -139,15 +139,19 @@ const getModuleById = async (req, res) => {
   try {
     const moduleId = req.params.id;
     const module = await Module.findById(moduleId);
+    console.log('moduleId:', moduleId);
     
     if (!module) {
+      console.log('module:', module);
       return res.status(404).json({ error: "Module not found" });
     }
     res.status(200).json(module);
   } catch (error) {
+    console.error("Error fetching module:", error);
     res.status(500).json({ error: "Failed to fetch module" });
   }
 };
+
 
 // Update a module
 const updateModule = async (req, res) => {
