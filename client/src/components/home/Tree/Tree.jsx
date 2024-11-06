@@ -3,6 +3,7 @@ import { VStack, HStack, Icon, Text, Avatar } from '@chakra-ui/react';
 import { GrCertificate } from 'react-icons/gr';
 import { AiOutlineLinkedin } from 'react-icons/ai';
 import BasicUsage from './Components/modal';
+import getEnviroment from '../../../getenvironment';
 import axios from 'axios';
 
 const GrowthTree = () => {
@@ -11,13 +12,14 @@ const GrowthTree = () => {
   const [modull, setModull] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const apiUrl = getEnviroment(); 
 
   // Fetch modules from the backend
   useEffect(() => {
     const fetchModules = async () => {
 
       try {
-        const response = await axios.get('http://localhost:8010/platform/get-modules');
+        const response = await axios.get(`${apiUrl}/platform/get-modules`);
 
         let fetchedModules = response.data;
 
