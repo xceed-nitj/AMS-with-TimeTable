@@ -81,4 +81,3 @@ router.delete("/:id", checkRole(['EO']),async (req, res) => {
 });
 
 module.exports = router;
-

@@ -33,6 +33,12 @@ const homeSchema = new mongoose.Schema({
   twitterLink: String,
   logo: String,
   shortName: String,
+  abstractLink : String,
+  paperLink : String,
+  regLink : String,
+  flyerLink : String,
+  brochureLink : String,
+  posterLink: String,
 });
 
 // Create the Mongoose model
