@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { VStack, HStack, Icon, Text, Avatar } from '@chakra-ui/react';
 import { GrCertificate } from 'react-icons/gr';
 import { AiOutlineLinkedin } from 'react-icons/ai';
+import BasicUsage from './Components/modal';
+import getEnviroment from '../../../getenvironment';
 import axios from 'axios';
 
 const GrowthTree = () => {
@@ -10,21 +12,21 @@ const GrowthTree = () => {
   const [modull, setModull] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const apiUrl = getEnviroment();
 
   // Fetch modules from the backend
   useEffect(() => {
     const fetchModules = async () => {
-      console.log("Initiating module fetch...");
 
       try {
-        const response = await axios.get('http://localhost:8010/platform/get-modules');
-        console.log("Response from API:", response);
+        const response = await axios.get(`${apiUrl}/platform/get-modules` ,  {
+          credentials: 'include'
+        });
 
         let fetchedModules = response.data;
 
         // Sort modules by yearLaunched in descending order
         fetchedModules = fetchedModules.sort((a, b) => b.yearLaunched - a.yearLaunched);
-        console.log("Sorted modules by year in descending order:", fetchedModules);
 
         setModules(fetchedModules); // Store the sorted full data
 
@@ -64,10 +66,6 @@ const GrowthTree = () => {
     return <div>{error}</div>;
   }
 
-  // Debugging log for final states
-  console.log("Modules:", modules);
-  console.log("Modulr (Even index modules):", modulr);
-  console.log("Modull (Odd index modules):", modull);
 
   return (
     <VStack color="white" w="100%" spacing={5} >
@@ -181,7 +179,7 @@ const CertificateDetails = ({ Module }) => (
       >
         <HStack>
           <Icon as={GrCertificate} w={4} h={4} />
-          <Text fontWeight="bold" fontSize="14px">{Module.name}</Text>
+          <Text fontWeight="bold" fontSize="14px"><BasicUsage student={Module.name} id={Module._id}/></Text>
         </HStack>
         <Text fontSize={{ base: "8px", md: "12px" }}>{Module.description}</Text>
       </VStack>
@@ -213,7 +211,9 @@ const CertificateDetails = ({ Module }) => (
 const ContributorsListRight = ({ module}) => (
   <VStack>
     <VStack spacing={2}>
-      <Text fontWeight="bold" fontSize="12px">{module.name}</Text>
+      <Text fontWeight="bold" fontSize="12px">
+        <BasicUsage student={module.name} id={module._id}/>
+      </Text>
       <Text fontWeight="bold" fontSize="10px" color="#02D496">Top Contributors:</Text>
       <VStack spacing={1}>
         {module.contributors.map((contributor, index) => (
@@ -250,7 +250,7 @@ const CertificateDetails1 = (Module) => (
         >
           <HStack>
             <Icon as={GrCertificate} w={4} h={4} />
-            <Text fontWeight="bold" fontSize="14px">{Module.Module.name}</Text>
+            <Text fontWeight="bold" fontSize="14px"><BasicUsage student={Module.Module.name} id={Module.Module._id}/></Text>
           </HStack>
           <Text fontSize={{ base: "8px", md: "12px" }}>{Module.Module.description}</Text>
         </VStack>

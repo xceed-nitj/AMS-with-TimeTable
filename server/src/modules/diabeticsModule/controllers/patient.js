@@ -117,6 +117,28 @@ const deletePatient = async (req, res) => {
         res.status(500).json({ message: "Error deleting patient.", error });
     }
 };
+const loginPatient = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Check if the patient exists
+        const patient = await Patient.findOne({ email });
+        if (!patient) {
+            return res.status(404).json({ message: 'Patient not found.' });
+        }
+
+        // Check if the password is correct
+        if (password !== "12345") { // Assuming temporary password is "12345"
+            return res.status(401).json({ message: 'Invalid password.' });
+        }
+
+        // Successful login
+        return res.status(200).json({ message: 'Login successful.', patient });
+    } catch (error) {
+        console.error('Error logging in patient:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 // Export the controller functions
 module.exports = {
@@ -124,5 +146,6 @@ module.exports = {
     getAllPatients,
     getPatientById,
     updatePatient,
-    deletePatient
+    deletePatient,
+    loginPatient
 };
