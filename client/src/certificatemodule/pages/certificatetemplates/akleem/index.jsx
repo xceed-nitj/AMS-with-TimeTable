@@ -82,16 +82,16 @@ function Template01() {
       // input.style.width = '841.92px';
       // input.style.height = '595.499987px';
       html2canvas(input, {
-        x:0,
-        y:0,
-        width:845,
-        height:600,
+        x:1,
+        y:1,
+        width:input.firstElementChild.clientWidth,
+        height:input.firstElementChild.clientHeight,
         logging: true,
         allowTaint: true,
-        backgroundColor: null,
+        backgroundColor: "white",
         useCORS: true,
         foreignObjectRendering: true,
-        scale:10,
+        scale:5,
       }).then((canvas) => {
         const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
