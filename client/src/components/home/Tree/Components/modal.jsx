@@ -15,7 +15,6 @@ import {
     useDisclosure
 } from '@chakra-ui/react';
 import { FaLinkedinIn } from "react-icons/fa";
-import axios from 'axios';
 import getEnvironment from '../../../../getenvironment';
 
 function BasicUsage({ student, size, id }) {
@@ -31,10 +30,19 @@ function BasicUsage({ student, size, id }) {
     useEffect(() => {
         const fetchModule = async () => {
           try {
-            // console.log("Fetching module with ID:", id); // For debugging
-            const response = await fetch(`${apiUrl}/platform/get-modules/${id}`);
-            const moduleData = await response.json();  // Fixed: Removed the extra curly brace here
-            // console.log("Module data:", moduleData); // For debugging
+            const response = await fetch(`${apiUrl}/platform/get-modules/${id}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              credentials: 'include'
+            });
+      
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+      
+            const moduleData = await response.json();
             setModule(moduleData);
           } catch (err) {
             setError(err.message);
@@ -43,7 +51,8 @@ function BasicUsage({ student, size, id }) {
         };
       
         fetchModule();
-      }, [id]);
+      }, [id, apiUrl]);
+      
      
 
     return (
