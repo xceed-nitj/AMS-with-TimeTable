@@ -12,14 +12,16 @@ const GrowthTree = () => {
   const [modull, setModull] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const apiUrl = getEnviroment(); 
+  const apiUrl = getEnviroment();
 
   // Fetch modules from the backend
   useEffect(() => {
     const fetchModules = async () => {
 
       try {
-        const response = await axios.get(`${apiUrl}/platform/get-modules`);
+        const response = await axios.get(`${apiUrl}/platform/get-modules` ,  {
+          credentials: 'include'
+        });
 
         let fetchedModules = response.data;
 
