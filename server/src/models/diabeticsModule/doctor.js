@@ -30,10 +30,13 @@ const doctorSchema = new mongoose.Schema({
     hospital: {
         type: String,
         required: true,
-    }
+    },
+    patientIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User', // Reference to the User model for patients
+    }]
     // Add other fields as necessary
 });
-
 // Create and export the patient model
 const Doctor = mongoose.model('Doctor', doctorSchema);
 module.exports = Doctor;
