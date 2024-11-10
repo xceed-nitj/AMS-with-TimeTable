@@ -19,7 +19,8 @@ app.use(
   //for eaic2025
   "https://eaicnitj.com",
   //for civil site
-  "https://bejewelled-dodol-5034a5.netlify.app",
+  "https://igcnitj2025.netlify.app/",
+  "http://igc2025nitj.com"
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
