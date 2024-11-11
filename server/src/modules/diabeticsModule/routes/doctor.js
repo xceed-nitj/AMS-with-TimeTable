@@ -4,7 +4,8 @@ const { addDoctor,
     getDoctorById,
     updateDoctor,
     deleteDoctor,
-    registerPatient } = require('../controllers/doctor'); // Import the controller
+    registerPatient,
+    loginDoctor } = require('../controllers/doctor'); // Import the controller
 const router = express.Router();
 const { checkRole } = require("../../checkRole.middleware");
 
@@ -27,5 +28,6 @@ router.get("/:id", checkRole(['admin']), getDoctorById);
 router.patch("/:id", checkRole(['admin', 'doctor']), checkDoctorAccess, updateDoctor);
 router.delete("/:id", checkRole(['admin']), deleteDoctor);
 router.put('/registerPatient', checkRole(['doctor']), registerPatient); // PUT /api/v1/diabeticsmodule/doctor/registerPatient
+router.post('/login', loginDoctor);
 
 module.exports = router;

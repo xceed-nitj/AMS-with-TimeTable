@@ -33,8 +33,9 @@ const doctorSchema = new mongoose.Schema({
     },
     patientIds: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Reference to the User model for patients
-    }]
+        ref: 'User', // Reference to the User model for doctors
+    }],
+
     // Add other fields as necessary
 });
 // Create and export the patient model

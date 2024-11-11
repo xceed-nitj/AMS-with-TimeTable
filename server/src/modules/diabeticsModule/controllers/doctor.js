@@ -135,6 +135,28 @@ const registerPatient = async (req, res) => {
     }
 };
 
+const loginDoctor = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Check if the doctor exists
+        const doctor = await Doctor.findOne({ email });
+        if (!doctor) {
+            return res.status(404).json({ message: 'Doctor not found.' });
+        }
+
+        // Check if the password is correct
+        if (password !== "12345") { // Assuming temporary password is "12345"
+            return res.status(401).json({ message: 'Invalid password.' });
+        }
+
+        // Successful login
+        return res.status(200).json({ message: 'Login successful.', doctor });
+    } catch (error) {
+        console.error('Error logging in doctor:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
 // Export the controller functions
 module.exports = {
     addDoctor,
@@ -143,4 +165,5 @@ module.exports = {
     updateDoctor,
     deleteDoctor,
     registerPatient,
+    loginDoctor
 };
