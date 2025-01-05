@@ -5,7 +5,7 @@ import { AiOutlineLinkedin } from 'react-icons/ai';
 import BasicUsage from './Components/modal';
 import getEnviroment from '../../../getenvironment';
 import axios from 'axios';
-
+import  { useBreakpointValue } from '@chakra-ui/react';
 const GrowthTree = () => {
   const [modules, setModules] = useState([]);
   const [modulr, setModulr] = useState([]);
@@ -13,7 +13,6 @@ const GrowthTree = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const apiUrl = getEnviroment();
-
   // Fetch modules from the backend
   useEffect(() => {
     const fetchModules = async () => {
@@ -126,7 +125,7 @@ const GrowthTree = () => {
             <HStack
                     borderTop="5px solid #02D496"
                     borderRight="5px solid #02D496"
-                    w={{ base: "100px", md: "120px" }} 
+                    w={{ base: "50px", md: "120px" }} 
                     h={{ base: "100px", md: "120px" }} 
                     pos="relative"
                     bottom={{ base: "60px", md: "80px" }}
@@ -155,8 +154,8 @@ const GrowthTree = () => {
 };
 
 const CertificateDetails = ({ Module }) => (
-  <VStack w="100%" justify="left" spacing={0} align="baseline">
-    <HStack w={{ base: "70%", md: "70%", lg: "50%" }} spacing={0} justify={{ base: "end", md: "none" }} >
+  <VStack w="100%" justify="left" spacing={0} align="baseline" >
+    <HStack w={{ base: "90%", md: "70%", lg: "50%" }} spacing={0} justify={{ base: "end", md: "none" }}>
          <HStack
                   borderBottom="5px solid #02D496"
                   borderRight="5px solid #02D496"
@@ -176,12 +175,20 @@ const CertificateDetails = ({ Module }) => (
         p="15px"
         w={{ base: "150px", md: "200px" }}
         h={{ base: "150px", md: "200px" }}
+        align="center"
+        justify="center"
       >
         <HStack>
           <Icon as={GrCertificate} w={4} h={4} />
           <Text fontWeight="bold" fontSize="14px"><BasicUsage student={Module.name} id={Module._id}/></Text>
         </HStack>
-        <Text fontSize={{ base: "8px", md: "12px" }}>{Module.description}</Text>
+        <Text 
+        fontSize={{ base: "8px", md: "12px" }} 
+        noOfLines={3} 
+        overflow="hidden" 
+        textOverflow="ellipsis">
+        {Module.description}
+        </Text>
       </VStack>
     </HStack>
     <HStack w={{ base: "90%", md: "90%", lg: "60%" }} spacing={{ base: 2, md: 3 }}  >
@@ -208,21 +215,33 @@ const CertificateDetails = ({ Module }) => (
 );
 
 
-const ContributorsListRight = ({ module}) => (
+const ContributorsListRight = ({ module}) => { 
+  const contributorCount = useBreakpointValue({ base: 1, md: 2 });
+
+  return (
   <VStack>
-    <VStack spacing={2}>
-      <Text fontWeight="bold" fontSize="12px">
-        <BasicUsage student={module.name} id={module._id}/>
-      </Text>
-      <Text fontWeight="bold" fontSize="10px" color="#02D496">Top Contributors:</Text>
-      <VStack spacing={1}>
-        {module.contributors.map((contributor, index) => (
-          <ContributorRight key={index} contributor={contributor} />
-        ))}
-      </VStack>
+    <VStack 
+      spacing={2} 
+      align="center"
+      justify="center"
+    >
+        <Text fontWeight="bold" fontSize="12px">
+            <BasicUsage student={module.name} id={module._id}/>
+        </Text>
+        <Text fontWeight="bold" fontSize="10px" color="#02D496">Top Contributors:</Text>
+        <VStack spacing={1}>
+        {module.contributors
+                    .slice(0, contributorCount) // Ensure the hook is called inside the component
+                    .map((contributor, index) => (
+                <ContributorRight key={index} contributor={contributor} />
+            ))}
+        </VStack>
     </VStack>
-  </VStack>
+</VStack>
+
 );
+
+};
 
 const ContributorRight = ({ contributor }) => (
   <HStack justifyContent="space-between" w={{ base: "100px", md: "170px" }} spacing={0} justify="right">
@@ -239,7 +258,7 @@ const ContributorRight = ({ contributor }) => (
 
 const CertificateDetails1 = (Module) => (
     <VStack w="100%" justify="left" spacing={0} align="end">
-      <HStack w={{ base: "70%", md: "70%", lg: "50%" }} spacing={0} justify={{ base: "end", md: "none" }}>
+      <HStack w={{ base: "90%", md: "70%", lg: "50%" }} spacing={0} justify={{ base: "end", md: "none" }}>
         <VStack
           border="5px solid #02D496"
           borderTopEndRadius="25%"
@@ -247,12 +266,21 @@ const CertificateDetails1 = (Module) => (
           p="15px"
           w={{ base: "150px", md: "200px" }}
           h={{ base: "150px", md: "200px" }}
+          align="center"
+          justify="center"
         >
           <HStack>
             <Icon as={GrCertificate} w={4} h={4} />
             <Text fontWeight="bold" fontSize="14px"><BasicUsage student={Module.Module.name} id={Module.Module._id}/></Text>
           </HStack>
-          <Text fontSize={{ base: "8px", md: "12px" }}>{Module.Module.description}</Text>
+          <Text 
+              fontSize={{ base: "8px", md: "12px" }} 
+              noOfLines={3} 
+              overflow="hidden" 
+              textOverflow="ellipsis"
+          >
+              {Module.Module.description}
+          </Text>
         </VStack>
         <HStack
                     borderBottom="5px solid #02D496"
@@ -290,29 +318,25 @@ const CertificateDetails1 = (Module) => (
     </VStack>
   );
   
-  const ContributorsList = ({ module }) => (
-    <VStack spacing={2}>
-      <Text fontWeight="bold" fontSize="12px">{module.name}</Text>
-      <Text fontWeight="bold" fontSize="10px" color="#02D496">Top Contributors:</Text>
-      <VStack spacing={1}>
-        {module.contributors.map((contributor, index) => (
-          <ContributorRight key={index} contributor={contributor} />
-        ))}
-      </VStack>
-    </VStack>
-  );
-  const Contributor = ({ contributor }) => (
-    <HStack justifyContent="space-between" w={{ base: "100px", md: "170px" }} spacing={0} justify="right">
-      <HStack>
-        <Avatar name={contributor.name} src={contributor.avatar} h={{ base: "4", md: "6" }} w={{ base: "4", md: "6" }} />
-        <VStack spacing={0} align="start">
-          <Text fontWeight="bold" fontSize={{ base: "10px", md: "14px" }}>{contributor.name}</Text>
-          <Text fontWeight="light" fontSize={{ base: "8px", md: "10px" }} color="gray.500">{contributor.designation}</Text>
+  
+  const ContributorsList = ({ module }) => {
+    const contributorCount = useBreakpointValue({ base: 1, md: 2 });
+
+    return (
+        <VStack spacing={2} align="center" justify="center">
+            <Text fontWeight="bold" fontSize="12px">{module.name}</Text>
+            <Text fontWeight="bold" fontSize="10px" color="#02D496">Top Contributors:</Text>
+            <VStack spacing={1}>
+                {module.contributors
+                    .slice(0, contributorCount) // Ensure the hook is called inside the component
+                    .map((contributor, index) => (
+                        <ContributorRight key={index} contributor={contributor} />
+                    ))}
+            </VStack>
         </VStack>
-      </HStack>
-      <Icon as={AiOutlineLinkedin} h={{ base: "4", md: "5" }} w={{ base: "4", md: "5" }} onClick={() => window.open(contributor.linkedin)} cursor="pointer" />
-    </HStack>
-  );
+    );
+};
+
   
 
 export default GrowthTree;
