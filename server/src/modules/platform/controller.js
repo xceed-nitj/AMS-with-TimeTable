@@ -126,7 +126,7 @@ const addModule = async (req, res) => {
 const getModules = async (req, res) => {
   try {
     const modules = await Module.find();
-    // console.log("modules:",modules);
+    console.log("modules:",modules);
     res.status(200).json(modules);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch modules" });

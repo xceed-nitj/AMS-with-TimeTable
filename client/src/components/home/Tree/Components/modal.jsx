@@ -12,7 +12,8 @@ import {
     Center,
     Divider,
     Text,
-    useDisclosure
+    useDisclosure,
+    Grid
 } from '@chakra-ui/react';
 import { FaLinkedinIn } from "react-icons/fa";
 import getEnvironment from '../../../../getenvironment';
@@ -68,41 +69,45 @@ function BasicUsage({ student, size, id }) {
                 {student}
             </Text>
 
-            <Modal isOpen={isOpen} onClose={onClose} isCentered>
+            <Modal isOpen={isOpen} onClose={onClose}>
                 {overlay}
-                <ModalContent bg="#172144" color="white" border="2px solid #41DFDE">
+                <ModalContent
+                    bg="#172144"
+                    color="white"
+                    border="2px solid #41DFDE"
+                    maxWidth="90vw" // Adjusts width to 90% of the viewport width
+                    width="70vw"
+                    height="70vh" // Adjusts height to 90% of the viewport height
+                    margin="auto" // Ensures proper centering
+                >
                     <ModalCloseButton color="#41DFDE" />
                     <ModalBody>
-                        <HStack p="10px" w="100%" spacing={5}>
-                            <VStack align="left" w="300px">
+                        <HStack p="10px" w="100%" h="100%" spacing={5}>
+                            <VStack align="left" w="50%" h="100%">
                                 <Text fontSize="20px" fontWeight="bold">{module ? module.name : "Loading module name"}</Text>
                                 <Text textAlign="justify">
                                     {module ? module.description : "Loading module data..."}
                                 </Text>
                             </VStack>
-                            <Center h="200px">
-                            <Divider orientation="vertical" />
+                            <Center h="100%">
+                                <Divider orientation="vertical" />
                             </Center>
-                            <VStack w="50%">
-                            <Text color="#197676" fontSize="16px" fontWeight="bold">Contributors:</Text>
-                            <VStack w="100%">
-                                {module && module.contributors ? (
-                                module.contributors.map((contributor, index) => (
-                                    <HStack key={index} justifyContent="space-between" w="100%" spacing={0}>
-                                    <HStack>
-                                        <Avatar name="Dan Abrahmov" src={contributor.image} w={8} h={8} />
-                                        <VStack spacing={0} align="baseline">
-                                        <Text fontWeight="semibold" fontSize="14px">{contributor.name}</Text>
-                                        <Text fontWeight="light" fontSize="10px" color="gray">{contributor.designation}</Text>
-                                        </VStack>
-                                    </HStack>
-                                    <Icon as={FaLinkedinIn} w={5} h={5} onClick={() => window.open(contributor.linkedin)} cursor="pointer"/>
-                                    </HStack>
-                                ))
-                                ) : (
-                                <Text>Loading contributors...</Text>
-                                )}
-                            </VStack>
+                            <VStack w="50%" h="100%" align="left">
+                                <Text color="#197676" fontSize="16px" fontWeight="bold">Contributors:</Text>
+                                <Grid templateColumns="repeat(3, 1fr)" gap={4} w="100%">
+                                    {module && module.contributors ? (
+                                        module.contributors.map((contributor, index) => (
+                                            <VStack key={index} spacing={2} align="center">
+                                                <Avatar name={contributor.name} src={contributor.image} w={12} h={12}  onClick={() => window.open(contributor.linkedin)} cursor="pointer" />
+                                                <Text fontWeight="semibold" fontSize="14px">{contributor.name}</Text>
+                                                <Text fontWeight="light" fontSize="12px" color="gray">{contributor.designation}</Text>
+                                            </VStack>
+                                        ))
+                                    ) : (
+                                        <Text>Loading contributors...</Text>
+                                    )}
+                                </Grid>
+
                             </VStack>
                         </HStack>
                     </ModalBody>
