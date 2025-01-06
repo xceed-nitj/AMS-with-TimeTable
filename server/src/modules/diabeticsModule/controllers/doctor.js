@@ -99,11 +99,71 @@ const deleteDoctor = async (req, res) => {
     }
 };
 
+const registerPatient = async (req, res) => {
+    const { patientEmail, patientContactNumber } = req.body;
+
+    try {
+        // The doctorId is now available in req.user.id after passing through the checkRole middleware
+        const doctorId = req.user.id;
+
+        // Find the patient user by email and contact number
+        const patientUser = await User.findOne({
+            email: patientEmail,
+            contactNumber: patientContactNumber
+        });
+
+        if (!patientUser) {
+            return res.status(404).json({ message: 'Patient not found' });
+        }
+
+        // Find the doctor by doctorId
+        const doctor = await Doctor.findById(doctorId);
+        if (!doctor) {
+            return res.status(404).json({ message: 'Doctor not found' });
+        }
+
+        // Add the patient's ID to the doctor's patientIds field if it's not already added
+        if (!doctor.patientIds.includes(patientUser._id)) {
+            doctor.patientIds.push(patientUser._id);
+            await doctor.save();
+        }
+
+        return res.status(200).json({ message: 'Patient registered to doctor successfully', doctor });
+    } catch (error) {
+        console.error('Error registering patient:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+const loginDoctor = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Check if the doctor exists
+        const doctor = await Doctor.findOne({ email });
+        if (!doctor) {
+            return res.status(404).json({ message: 'Doctor not found.' });
+        }
+
+        // Check if the password is correct
+        if (password !== "12345") { // Assuming temporary password is "12345"
+            return res.status(401).json({ message: 'Invalid password.' });
+        }
+
+        // Successful login
+        return res.status(200).json({ message: 'Login successful.', doctor });
+    } catch (error) {
+        console.error('Error logging in doctor:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
 // Export the controller functions
 module.exports = {
     addDoctor,
     getAllDoctors,
     getDoctorById,
     updateDoctor,
-    deleteDoctor
+    deleteDoctor,
+    registerPatient,
+    loginDoctor
 };

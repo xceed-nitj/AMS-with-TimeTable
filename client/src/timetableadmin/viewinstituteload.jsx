@@ -130,7 +130,7 @@ const MasterLoadDataTable = () => {
   const mergeAndFilterData = (data) => {
     const mergedData = {};
     data.forEach(item => {
-      const key = item.subjectFullName;
+      const key = item.subjectCode+item.subjectType+item.sem;
       if (!mergedData[key]) {
         mergedData[key] = { 
           ...item, 

@@ -334,11 +334,14 @@ const CertificateForm = () => {
             }
             //for certificateOf
             let CertificateOf = {};
-            if (!certificateOf || !(certificateOf == "")) {
+            console.log(!certificateOf);
+            if (!certificateOf || certificateOf == "") {
+              console.log("hey");
               CertificateOf = formData.certificateOf;
             } else {
               CertificateOf = certificateOf;
             }
+            console.log(CertificateOf);
             // for body
             let Body = formData.body;
             if (body.body || body.body == "") {
