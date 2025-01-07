@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { VStack, HStack, Icon, Text, Avatar } from '@chakra-ui/react';
+import { VStack, HStack, Icon, Text, Avatar, Button } from '@chakra-ui/react';
 import { GrCertificate } from 'react-icons/gr';
 import { AiOutlineLinkedin } from 'react-icons/ai';
 import BasicUsage from './Components/modal';
 import getEnviroment from '../../../getenvironment';
 import axios from 'axios';
 import  { useBreakpointValue } from '@chakra-ui/react';
+
+const getYearColor = (year) => {
+  const yearColors = {
+    2026: "#80EBC6",
+    2025: "#4AE1AA",
+    2024: "#02D496",
+    2023: "#02A976",
+    2022: "#027F5A",
+  };
+  return yearColors[year] || "#02D496"; // Default to black if year is not found
+};
 const GrowthTree = () => {
   const [modules, setModules] = useState([]);
   const [modulr, setModulr] = useState([]);
@@ -13,6 +24,11 @@ const GrowthTree = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const apiUrl = getEnviroment();
+  const [showAll, setShowAll] = useState(false);
+  const slicedModuler = showAll ? modulr : modulr.slice(0, 2);
+  const slicedModulel = showAll ? modull : modull.slice(0, 2);
+
+
   // Fetch modules from the backend
   useEffect(() => {
     const fetchModules = async () => {
@@ -67,9 +83,10 @@ const GrowthTree = () => {
 
 
   return (
-    <VStack color="white" w="100%" spacing={5} >
+    <VStack color="white" w="100%" spacing={{ base: "0px", md: "1px", lg: "2"}} align="center">
         <VStack
-        border="10px solid #02D496"
+        border="25px solid #02D496"
+        borderWidth={{ base: "15px", md: "20px", lg: "25px" }}
         borderTopEndRadius="50%"
         fontSize={{ base: "12px", md: "18px", lg: "24px" }}
         fontWeight="bold"
@@ -83,17 +100,19 @@ const GrowthTree = () => {
           textAlign="center"
           justify="center"
         >
-          <Text>We are growing from 2022</Text>
+          <Text fontSize={{ base: "12px", md: "16px", lg: "20px" }}>
+            We are growing from 2022
+          </Text>
         </VStack>
       </VStack>
     <HStack spacing={0} w="100%" h="100%">
-    <VStack color="white" w="50%" borderRight="5px solid #02D496" h="100%" spacing={0} align="end" >
-    {modull.map((module, index) => (
+    <VStack color="white" w="50%" borderRight="10px solid #02D496" spacing={0} align="end" borderRightWidth={{ base: "5px", md: "10px" , lg:"15px" }}>
+    {slicedModulel.map((module, index) => (
       <VStack w="100%" spacing={0} pt="100px">
         <CertificateDetails1 Module={module} />
         <HStack spacing={0} w="85%" justify="right">
           <HStack
-          border="5px solid #02D496"
+          border={`5px solid ${getYearColor(module.yearLaunched)}`}
           borderTopLeftRadius="25%"
           borderBottomEndRadius="25%"
           p="15px"
@@ -102,8 +121,8 @@ const GrowthTree = () => {
               <ContributorsList module={module}/>
           </HStack>
           <HStack
-                    borderTop="5px solid #02D496"
-                    borderLeft="5px solid #02D496"
+                    borderTop={`5px solid ${getYearColor(module.yearLaunched)}`}
+                    borderLeft={`5px solid ${getYearColor(module.yearLaunched)}`}
                     w={{ base: "100px", md: "120px" }} 
                     h={{ base: "100px", md: "120px" }}
                     pos="relative"
@@ -118,13 +137,13 @@ const GrowthTree = () => {
     ))}
     </VStack>
     <VStack color="white" w="50%" borderLeft="5px solid #02D496" spacing={0} align="baseline" pt="50px">
-      {modulr.map((module, index) => (
+      {slicedModuler.map((module, index) => (
       <VStack w="100%" spacing={0} align="baseline" pt="100px">
         <CertificateDetails Module={module} />
         <HStack spacing={0}>
             <HStack
-                    borderTop="5px solid #02D496"
-                    borderRight="5px solid #02D496"
+                    borderTop={`5px solid ${getYearColor(module.yearLaunched)}`}
+                    borderRight={`5px solid ${getYearColor(module.yearLaunched)}`}
                     w={{ base: "50px", md: "120px" }} 
                     h={{ base: "100px", md: "120px" }} 
                     pos="relative"
@@ -135,7 +154,7 @@ const GrowthTree = () => {
                     <Text color="#02D496" fontWeight="semibold"></Text>
             </HStack>
             <HStack
-            border="5px solid #02D496"
+            border={`5px solid ${getYearColor(module.yearLaunched)}`}
             borderTopEndRadius="25%"
             borderBottomLeftRadius="25%"
             p="15px"
@@ -149,6 +168,16 @@ const GrowthTree = () => {
       ))}
     </VStack>
     </HStack>
+    {!showAll && (modulr.length > 2 || modull.length > 2) && (
+      <Button onClick={() => setShowAll(true)} colorScheme="teal" size="sm">
+        View All
+      </Button>
+    )}
+    {showAll && (modulr.length > 2 || modull.length > 2) && (
+      <Button onClick={() => setShowAll(false)} colorScheme="teal" size="sm">
+        View Less
+      </Button>
+    )}
     </VStack>
   );
 };
@@ -157,8 +186,8 @@ const CertificateDetails = ({ Module }) => (
   <VStack w="100%" justify="left" spacing={0} align="baseline" >
     <HStack w={{ base: "90%", md: "70%", lg: "50%" }} spacing={0} justify={{ base: "end", md: "none" }}>
          <HStack
-                  borderBottom="5px solid #02D496"
-                  borderRight="5px solid #02D496"
+                  borderBottom={`5px solid ${getYearColor(Module.yearLaunched)}`}
+                  borderRight={`5px solid ${getYearColor(Module.yearLaunched)}`}
                   w={{ base: "100px", md: "120px" }} 
                   h={{ base: "100px", md: "120px" }} 
                   pos="relative"
@@ -169,7 +198,7 @@ const CertificateDetails = ({ Module }) => (
                   <Text color="#02D496" fontWeight="semibold"></Text>
         </HStack>
       <VStack
-        border="5px solid #02D496"
+        border={`5px solid ${getYearColor(Module.yearLaunched)}`}
         borderTopLeftRadius="25%"
         borderBottomEndRadius="25%"
         p="15px"
@@ -192,11 +221,11 @@ const CertificateDetails = ({ Module }) => (
       </VStack>
     </HStack>
     <HStack w={{ base: "90%", md: "90%", lg: "60%" }} spacing={{ base: 2, md: 3 }}  >
-                <HStack border="5px solid #02D496" w={{ base: "75%", md: "80%" }}>
+                <HStack border={`5px solid ${getYearColor(Module.yearLaunched)}`} w={{ base: "75%", md: "80%" }}>
                   <Text color="#02D496" fontWeight="semibold"></Text>
                 </HStack>
                 <VStack
-                  border="5px solid #02D496"
+                  border={`5px solid ${getYearColor(Module.yearLaunched)}`}
                   borderTopEndRadius="50%"
                   fontSize="20px"
                   fontWeight="bold"
@@ -260,7 +289,7 @@ const CertificateDetails1 = (Module) => (
     <VStack w="100%" justify="left" spacing={0} align="end">
       <HStack w={{ base: "90%", md: "70%", lg: "50%" }} spacing={0} justify={{ base: "end", md: "none" }}>
         <VStack
-          border="5px solid #02D496"
+          border={`5px solid ${getYearColor(Module.Module.yearLaunched)}`}
           borderTopEndRadius="25%"
           borderBottomLeftRadius="25%"
           p="15px"
@@ -283,8 +312,8 @@ const CertificateDetails1 = (Module) => (
           </Text>
         </VStack>
         <HStack
-                    borderBottom="5px solid #02D496"
-                    borderLeft="5px solid #02D496"
+                    borderBottom={`5px solid ${getYearColor(Module.Module.yearLaunched)}`}
+                    borderLeft={`5px solid ${getYearColor(Module.Module.yearLaunched)}`}
                     w={{ base: "100px", md: "120px" }} 
                     h={{ base: "100px", md: "120px" }} 
                     pos="relative"
@@ -297,7 +326,7 @@ const CertificateDetails1 = (Module) => (
       </HStack>
       <HStack w={{ base: "90%", md: "90%", lg: "60%" }} spacing={{ base: 2, md: 3 }}  >
                   <VStack
-                    border="5px solid #02D496"
+                    border={`5px solid ${getYearColor(Module.Module.yearLaunched)}`}
                     borderTopEndRadius="50%"
                     fontSize="20px"
                     fontWeight="bold"
@@ -311,7 +340,7 @@ const CertificateDetails1 = (Module) => (
                   >
                     <Text sx={{ transform: 'rotate(225deg)' }}>{Module.Module.yearLaunched}</Text>
                   </VStack>
-                  <HStack border="5px solid #02D496" w={{ base: "75%", md: "80%" }}>
+                  <HStack border={`5px solid ${getYearColor(Module.Module.yearLaunched)}`} w={{ base: "75%", md: "80%" }}>
                     <Text color="#02D496" fontWeight="semibold"></Text>
                   </HStack>
       </HStack>
