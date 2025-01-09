@@ -80,39 +80,66 @@ function NirfRanking() {
     // Remove special characters and spaces from the string
     return str.replace(/[^\w\d]/gi, '').toLowerCase();
   }
-  
   useEffect(() => {
-    // Filter rooms based on the search term
     const sanitizedSearchTerm = sanitizeString(searchTerm);
-
+  
     const filteredRooms = masterRoomData.filter((room) => {
       const sanitizedRoom = sanitizeString(room.Institute);
-      const sanitizedLocation =sanitizeString(room.Location);
+      const sanitizedLocation = sanitizeString(room.Location);
       const roomYear = room.Year;
-
-
-         return (
-      sanitizedRoom.includes(sanitizedSearchTerm)|| sanitizedLocation.includes(sanitizedSearchTerm) &&
-      (selectedYears.length === 0 || selectedYears.includes(roomYear))
-    );      
+  
+      // Filter logic
+      return (
+        (sanitizedRoom.includes(sanitizedSearchTerm) || sanitizedLocation.includes(sanitizedSearchTerm)) &&
+        (selectedYears.length === 0 || selectedYears.includes(roomYear))
+      );
     });
-
+  
     const sortedRooms = filteredRooms.sort((a, b) => {
-        const rankA = a.Rank;
-        const rankB = b.Rank;
-      
-        // If both ranks are defined, sort based on descending order of rank
-        if (rankA !== undefined && rankB !== undefined) {
-          return sortOrder === 'asc' ? rankA - rankB : rankB - rankA;
-        }
-      
-        // Handle cases where one or both ranks are undefined
-        // Push undefined ranks to the end or beginning, depending on sortOrder
-        return rankA !== undefined ? -1 : 1; // Push undefined ranks to the end
-      });
-        
+      const rankA = a.Rank;
+      const rankB = b.Rank;
+  
+      if (rankA !== undefined && rankB !== undefined) {
+        return sortOrder === 'asc' ? rankA - rankB : rankB - rankA;
+      }
+      return rankA !== undefined ? -1 : 1;
+    });
+  
     setFilteredRooms(sortedRooms);
-  }, [searchTerm, masterRoomData, sortColumn, sortOrder, selectedYears]);
+  }, [searchTerm, masterRoomData, sortOrder, selectedYears]);
+  
+  // useEffect(() => {
+  //   // Filter rooms based on the search term
+  //   const sanitizedSearchTerm = sanitizeString(searchTerm);
+
+  //   const filteredRooms = masterRoomData.filter((room) => {
+  //     const sanitizedRoom = sanitizeString(room.Institute);
+  //     const sanitizedLocation =sanitizeString(room.Location);
+  //     const roomYear = room.Year;
+
+
+  //        return (
+  //     sanitizedRoom.includes(sanitizedSearchTerm)|| sanitizedLocation.includes(sanitizedSearchTerm) &&
+  //     (selectedYears.length === 0 || selectedYears.includes(roomYear))
+  //   );      
+  //   });
+
+  //   const sortedRooms = filteredRooms.sort((a, b) => {
+  //       const rankA = a.Rank;
+  //       const rankB = b.Rank;
+      
+  //       // If both ranks are defined, sort based on descending order of rank
+  //       if (rankA !== undefined && rankB !== undefined) {
+  //         return sortOrder === 'asc' ? rankA - rankB : rankB - rankA;
+  //       }
+      
+  //       // Handle cases where one or both ranks are undefined
+  //       // Push undefined ranks to the end or beginning, depending on sortOrder
+  //       return rankA !== undefined ? -1 : 1; // Push undefined ranks to the end
+  //     });
+        
+  //   setFilteredRooms(sortedRooms);
+  // }, [searchTerm, masterRoomData, sortColumn, sortOrder, selectedYears]);
 
 //   const handleSort = (column) => {
 //     // Toggle between 'asc' and 'desc' when clicking on the column header
