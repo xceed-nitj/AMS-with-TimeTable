@@ -1,4 +1,7 @@
 const getApiURL = require("../helper/getApiURL")
+const path = require("path");
+const fs = require("fs")
+
 
 const convertToObject = async (eventId, formData, files, url) => {
     const apiURL = getApiURL(url)
@@ -49,9 +52,20 @@ const convertToObject = async (eventId, formData, files, url) => {
         files?.forEach(file => {
             const field = file.fieldname.split("[")[0]
             const index = parseInt(file.fieldname.split("[")[1].split("]")[0])
-            console.log(index, field,file.path)
-            if (field == "signatures") { form["signatures"][index]["url"]["url"] = `${apiURL}/certificatemodule/images/uploads/certificateModuleImages/${file.path}`; }
-            if (field == "logos") { form["logos"][index]["url"] = `${apiURL}/certificatemodule/images/uploads/certificateModuleImages/${file.path}` }
+            console.log(index, field, file.path)
+            if (field == "signatures") { form["signatures"][index]["url"]["url"] = `${apiURL}/uploads/certificateModuleImages/${file.filename}`; }
+            if (field == "logos") { form["logos"][index]["url"] = `${apiURL}/uploads/certificateModuleImages/${file.filename}` }
+            const _secondaryPath = path.join(__dirname, '../../../../../client/public/uploads/certificateModuleImages');
+            if (!fs.existsSync(_secondaryPath)) {
+                fs.mkdirSync(_secondaryPath, { recursive: true }); // Recursive to ensure parent directories are created
+            }
+            const secondaryPath = path.join(_secondaryPath,`/${file.filename}`);
+            fs.copyFile(file.path, secondaryPath, (err) => {
+                if (err) {
+                    console.error('Error copying file to second folder:', err);
+                }
+                console.log('File uploaded and saved in both folders.');
+            });
         });
 
         return form
@@ -60,6 +74,8 @@ const convertToObject = async (eventId, formData, files, url) => {
         console.log(error)
     }
 }
+
+
 module.exports = {
     convertToObject,
 }
