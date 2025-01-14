@@ -6,7 +6,7 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
 
     // Define the path
-    const p = path.join(__dirname, '../../../../../client/dist/uploads/certificateModuleImages');
+    const p = path.join(__dirname, '../../../../uploads/certificateModuleImages');
     
     // Check if the directory exists, if not, create it
     if (!fs.existsSync(p)) {

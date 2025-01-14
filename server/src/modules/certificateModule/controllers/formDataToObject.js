@@ -55,17 +55,6 @@ const convertToObject = async (eventId, formData, files, url) => {
             console.log(index, field, file.path)
             if (field == "signatures") { form["signatures"][index]["url"]["url"] = `${apiURL}/uploads/certificateModuleImages/${file.filename}`; }
             if (field == "logos") { form["logos"][index]["url"] = `${apiURL}/uploads/certificateModuleImages/${file.filename}` }
-            const _secondaryPath = path.join(__dirname, '../../../../../client/public/uploads/certificateModuleImages');
-            if (!fs.existsSync(_secondaryPath)) {
-                fs.mkdirSync(_secondaryPath, { recursive: true }); // Recursive to ensure parent directories are created
-            }
-            const secondaryPath = path.join(_secondaryPath,`/${file.filename}`);
-            fs.copyFile(file.path, secondaryPath, (err) => {
-                if (err) {
-                    console.error('Error copying file to second folder:', err);
-                }
-                console.log('File uploaded and saved in both folders.');
-            });
         });
 
         return form
