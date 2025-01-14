@@ -87,6 +87,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(checkDatabaseConnection);
 app.use(express.static(path.join(__dirname + "/../../client/dist")));
+app.use("/uploads",express.static(path.join(__dirname ,"..","uploads")));
 
 app.get('/proxy-image', async (req, res) => {
   try {
