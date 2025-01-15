@@ -346,7 +346,7 @@ class PDFGenerator extends React.Component {
             //   alignment: 'left',
             // },
             {
-              unbreakable: true,
+              unbreakable: false,
               stack: [
                 {
                   table: {
