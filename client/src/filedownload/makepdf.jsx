@@ -333,7 +333,7 @@ class PDFGenerator extends React.Component {
               : []),
 
 
-            // type === 'sem' ? { text: '(summary of the timetable given below)', fontSize: 10, alignment: 'left', margin: [0, 5, 0, 0] } : null,
+            type === 'sem' ? { text: '(summary of the timetable given below)', fontSize: 10, alignment: 'left', margin: [0, 5, 0, 0] } : null,
 
             // type === 'sem' ? { text: '', pageBreak: '' } : null,
             // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
