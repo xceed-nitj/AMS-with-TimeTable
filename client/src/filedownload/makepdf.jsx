@@ -1,6 +1,6 @@
 import React from 'react';
 import pdfMakeInitializer from './pdfMakeInitializer';
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+// import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 // Import other dependencies
 
 
@@ -22,12 +22,12 @@ import {
 } from '@chakra-ui/table';
 
 
-pdfMake.vfs = pdfFonts.vfs;
+// pdfMake.vfs = pdfFonts.vfs;
 
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-pdfMake.vfs = pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
+// pdfMake.vfs = pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
 
 class PDFGenerator extends React.Component {
