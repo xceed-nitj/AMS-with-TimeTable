@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button, VStack, Input, Heading, Table, Thead, Tbody, Tr, Th, Td, Container } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
+import { Flex, Link as ChakraLink } from "@chakra-ui/react";
+import { Link } from "react-router-dom";
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
 import {
@@ -138,91 +140,88 @@ const AdminPage = () => {
   };
   return (
     <VStack spacing={4} align="stretch">
-<Container maxW="5xl">
+      <Container maxW="5xl">
+        <Header title="Timetable Admin Page" />
+        
+        {/* Navigation Buttons */}
+        <Flex wrap="wrap" justify="center" gap={4} mt={4}>
+          {[
+            { path: "/tt/mastersem", label: "Master Sem", bg: "blue.500" },
+            { path: "/tt/masterfaculty", label: "Master Faculty", bg: "green.500" },
+            { path: "/tt/masterroom", label: "Master Room", bg: "orange.500" },
+            { path: "/tt/masterdelete", label: "Admin Delete Page", bg: "red.500" },
+            { path: "/tt/allotment", label: "Room Allotment", bg: "purple.500" },
+            { path: "/tt/admin/adminview", label: "Edit Any Department Timetable", bg: "gray.500" },
+            // { path: "/tt/admin/instituteload", label: "Calculate Departwise Load", bg: "gray.700" },
+            { path: "/tt/viewinstituteload", label: "View Departwise Load", bg: "pink.500" }
+          ].map(({ path, label, bg }) => (
+            <ChakraLink
+              as={Link}
+              to={path}
+              key={path}
+              bg={bg}
+              color="white"
+              px={4}
+              py={2}
+              minW="180px"
+              textAlign="center"
+              borderRadius="md"
+              _hover={{ bg: "gray.600" }}
+            >
+              {label}
+            </ChakraLink>
+          ))}
+        </Flex>
 
-    <Header title="Timetable Admin page"></Header>
-    <div>
-      <Link to="/tt/mastersem" style={{ backgroundColor: 'blue', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>Master Sem</button>
-      </Link>
-      <Link to="/tt/masterfaculty" style={{ backgroundColor: 'green', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>Master Faculty</button>
-      </Link>
-      <Link to="/tt/masterroom" style={{ backgroundColor: 'orange', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>Master Room</button>
-      </Link>
-      <Link to="/tt/masterdelete" style={{ backgroundColor: 'red', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>Admin Delete Page</button>
-      </Link>
-      <Link to="/tt/allotment" style={{ backgroundColor: 'purple', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>Room Allotment</button>
-      </Link>
-      <Link to="/tt/admin/adminview" style={{ backgroundColor: 'gray', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>Edit any time table</button>
-      </Link>
-      <Link to="/tt/admin/instituteload" style={{ backgroundColor: 'gray', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>Calculate Departwise load distribution</button>
-      </Link>
-      <Link to="/tt/viewinstituteload" style={{ backgroundColor: 'brown', margin: '10px', padding: '10px', display: 'inline-block' }}>
-        <button>View Departwise load distribution</button>
-      </Link>
-    </div>
-    
-    <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
-      <Heading>Create New Session</Heading>
-    </div>
-      <form onSubmit={handleSubmit}>
-        <Input
-          type="text"
-          name="session"
-          value={formData.session}
-          onChange={handleChange}
-          placeholder="Enter New Session"
-        />
-        <Button type="submit" colorScheme="teal">
-          Create Session
-        </Button>
-      </form>
+        {/* Create New Session */}
+        <Heading textAlign="center" mt={6} mb={4}>Create New Session</Heading>
+        <form onSubmit={handleSubmit}>
+          <Flex gap={2}>
+            <Input
+              type="text"
+              name="session"
+              value={formData.session}
+              onChange={handleChange}
+              placeholder="Enter New Session"
+            />
+            <Button type="submit" colorScheme="teal">Create Session</Button>
+          </Flex>
+        </form>
 
-
-      <Table variant="striped">
-  <Thead>
-    <Tr>
-      <Th>Session</Th>
-      <Th>Edit</Th>
-      <Th>Delete</Th>
-    </Tr>
-  </Thead>
-  <Tbody>
-  {sessions.map((session, index) => (  
-  <Tr key={index}>
-    <Td>
-      {editingSessionId === session ? (
-        <Input
-          type='text'
-          value={editingSessionValue}
-          onChange={handleChange1}
-        />
-      ) : (
-        session
-      )}
-    </Td>
-    <Td>
-      {editingSessionId === session ? (
-        <Button onClick={handleSave}>Save</Button>
-      ) : (
-        <CustomTealButton onClick={() => handleEdit(session)}>Edit</CustomTealButton>
-      )}
-    </Td>
-    <Td>
-      <CustomDeleteButton onClick={() => handleDelete(session)}>Delete</CustomDeleteButton>
-    </Td>
-  </Tr>
-))}
-
-</Tbody>
-</Table>
-</Container>
+        {/* Session Table */}
+        <Table variant="striped" mt={6}>
+          <Thead>
+            <Tr>
+              <Th>Session</Th>
+              <Th>Edit</Th>
+              <Th>Delete</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {sessions.map((session, index) => (
+              <Tr key={index}>
+                <Td>
+                  {editingSessionId === session ? (
+                    <Input type="text" value={editingSessionValue} onChange={handleChange1} />
+                  ) : (
+                    session
+                  )}
+                </Td>
+                <Td>
+                  {editingSessionId === session ? (
+                    <Button onClick={handleSave}>Save</Button>
+                  ) : (
+                    <CustomTealButton onClick={() => handleEdit(session)}>Edit</CustomTealButton>
+                  )}
+                </Td>
+                <Td>
+                  <CustomDeleteButton onClick={() => handleDelete(session)}>Delete</CustomDeleteButton>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Container>
     </VStack>
   );
 };
