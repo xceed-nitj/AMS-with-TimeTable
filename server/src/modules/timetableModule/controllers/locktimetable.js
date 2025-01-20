@@ -23,46 +23,46 @@ const getIndianTime=require("../helper/getIndianTime")
 
 class LockTimeTableController {
   async locktt(req, res) {
-        try {
-          // Get the code parameter from the request
-          const { code } = req.body;
-      
-          // Fetch data from 'class table' based on the code
-          const classTableData = await ClassTable.find({ code });
-          // console.log(classTableData)
-          for (const dataItem of classTableData) {
-            const { code, day, slot, slotData, sem } = dataItem;
-      
-            // Check if data with the specified code, day, and slot exists in 'lock classtable'
-            const existingData = await LockSem.findOne({ code, day, slot, sem });
-            if (existingData) {
-              // If data with the code, day, and slot exists, update the existing data
-              existingData.slotData = slotData;
-              await existingData.save();
-            } else {
-              // If data with the code, day, and slot doesn't exist, insert new data
-              // console.log(dataItem)
-                           await LockSem.create({
-                            day: dataItem.day,
-                            slot: dataItem.slot,
-                            slotData: dataItem.slotData,
-                            sem: dataItem.sem,
-                            code: dataItem.code,
-                            timetable: dataItem.timetable
-                           }
-                            
-                            );
-            }
-          }
-      const timenow=Date.now();
-      // console.log(timenow)
-      const formattedtime= getIndianTime(timenow);
-      // console.log(formattedtime)
-      res.status(200).json({ message: 'Data Locked successfully!', updatedTime: formattedtime});
-      await MasterClassTableController.createMasterTable(req.body);
-        } catch (err) {
-          res.status(500).json({ error: 'An error occurred' });
+    async function locktt(req, res) {
+      try {
+        const { code } = req.body;
+    
+        // Delete all existing records in 'LockSem' for the given code
+        await LockSem.deleteMany({ code });
+    
+        // Fetch data from 'ClassTable' based on the code
+        const classTableData = await ClassTable.find({ code });
+    
+        if (!classTableData.length) {
+          return res.status(404).json({ error: "No data found for the provided code." });
         }
+    
+        // Prepare bulk insert operations
+        const bulkOperations = classTableData.map((dataItem) => ({
+          insertOne: { document: dataItem.toObject() },
+        }));
+    
+        // Perform bulk insert
+        if (bulkOperations.length > 0) {
+          await LockSem.bulkWrite(bulkOperations);
+        }
+    
+        // Get the current Indian time
+        const timenow = Date.now();
+        const formattedtime = getIndianTime(timenow);
+    
+        // Send response first to avoid UI delay
+        res.status(200).json({ message: "Data Locked successfully!", updatedTime: formattedtime });
+    
+        // Execute MasterTable logic asynchronously
+        await MasterClassTableController.createMasterTable(req.body);
+        
+      } catch (err) {
+        console.error("Error in locktt:", err);
+        res.status(500).json({ error: "An error occurred" });
+      }
+    }
+    
         }
  
 
