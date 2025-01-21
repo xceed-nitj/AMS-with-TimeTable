@@ -1,6 +1,9 @@
 import React from 'react';
 import pdfMakeInitializer from './pdfMakeInitializer';
+// import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 // Import other dependencies
+
+
 
 pdfMakeInitializer();
 
@@ -19,12 +22,12 @@ import {
 } from '@chakra-ui/table';
 
 
-//pdfMake.vfs = pdfFonts.vfs;
+// pdfMake.vfs = pdfFonts.vfs;
 
 
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-//pdfMake.vfs=pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
+// pdfMake.vfs = pdfFonts && pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : globalThis.pdfMake.vfs;
 
 
 class PDFGenerator extends React.Component {
@@ -198,12 +201,12 @@ class PDFGenerator extends React.Component {
           summaryRow.push({ text: summaryData[subject].rooms.join(', '), fontSize: 10 });
         }
       }
-
-      if (index <= 18) {
-        summaryTableData.push(summaryRow);
-      } else {
-        summaryTableData2.push(summaryRow);
-      }
+      summaryTableData.push(summaryRow);
+      // if (index <= 18) {
+      //   summaryTableData.push(summaryRow);
+      // } else {
+      //   summaryTableData2.push(summaryRow);
+      // }
     });
 
     const summarySignRow = [
@@ -214,23 +217,15 @@ class PDFGenerator extends React.Component {
     ];
 
     const blankRow = [{ text: '', colSpan: 7, border: [false, false, false, false] }, {}, {}, {}, {}, {}, {}];
+    summaryTableData.push(blankRow);
+    summaryTableData.push(blankRow);
+    summaryTableData.push(blankRow);
+    summaryTableData.push(blankRow);
 
-    if (summaryTableData2.length == 0) {
-      summaryTableData.push(blankRow);
-      summaryTableData.push(blankRow);
-      summaryTableData.push(blankRow);
-      summaryTableData.push(blankRow);
+    summaryTableData.push(summarySignRow);
+    console.log(summaryTableData.length,summaryTableData)
 
-      summaryTableData.push(summarySignRow);
-    } else {
-      summaryTableData2.push(blankRow);
-      summaryTableData2.push(blankRow);
-      summaryTableData.push(blankRow);
-      summaryTableData.push(blankRow);
-
-      summaryTableData2.push(summarySignRow);
-    }
-
+    
     const footerImage = new Image();
     footerImage.src = footer; // Replace with the actual path to your image
 
@@ -335,7 +330,7 @@ class PDFGenerator extends React.Component {
 
             type === 'sem' ? { text: '(summary of the timetable given below)', fontSize: 10, alignment: 'left', margin: [0, 5, 0, 0] } : null,
 
-            // type === 'sem' ? { text: '', pageBreak: '' } : null,
+            type === 'sem' ||type === 'room' ? { text: '', pageBreak: "before" } : null,
             // type === 'sem' ? { text: '', pageBreak: 'before' } : null,
 
             // {
@@ -346,6 +341,7 @@ class PDFGenerator extends React.Component {
             //   alignment: 'left',
             // },
             {
+              // pageBreak : "before",
               unbreakable: false,
               stack: [
                 {
@@ -357,22 +353,9 @@ class PDFGenerator extends React.Component {
                 },
               ],
             },
-            summaryTableData2.length==0?null:{
-              pageBreak:"before",
-              unbreakable: true,
-              stack: [
-                {
-                  table: {
-                    fontSize: 10,
-                    body: summaryTableData2,
-                    alignment: 'center',
-                  },
-                },
-              ],
-            }
 
           ],
-          // pageBreak: 'auto',
+          pageBreak: 'auto',
         }
         console.log(documentDefinition)
         pdfMake.createPdf(documentDefinition).open();
