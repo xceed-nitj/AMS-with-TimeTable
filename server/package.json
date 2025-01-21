@@ -14,6 +14,7 @@
     "body-parser": "^1.20.2",
     "canvg": "^4.0.1",
     "chrome-aws-lambda": "^10.1.0",
+    "cloudinary": "^2.5.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
