@@ -9,6 +9,7 @@ import {
   NumberInputField,
   Button,
   VStack,
+  Text,
   HStack,
   useToast,
   IconButton,
@@ -84,21 +85,16 @@ const TreeForm = () => {
   
     try {
       // Conditional API call: if `moduleDetails.id` exists, use the update API
-      const response = await fetch(
-        moduleDetails.id
-          ? `${apiUrl}/platform/update-module/${moduleDetails.id}` // Update existing module
-          : `${apiUrl}/platform/add-module`, // Add new module
+      const response = await fetch(`${apiUrl}/platform/add-module`, // Add new module
         {
-          method: moduleDetails.id ? 'PUT' : 'POST', // PATCH for update, POST for add
+          method: 'POST', // PATCH for update, POST for add
           body: formData, // Attach FormData directly as the body
         }
       );
   
       if (response.ok) {
         toast({
-          title: moduleDetails.id
-            ? "Module updated successfully!" // Success message for update
-            : "Module added successfully!", // Success message for add
+          title: "Module added successfully!", // Success message for add
           status: "success",
           duration: 2000,
           isClosable: true,
@@ -135,58 +131,169 @@ const TreeForm = () => {
       });
     }
   };
+
+  const handleUpdated = async (id, e) => {
+    e.preventDefault();
+  
+    const formData = new FormData();
+    formData.append('name', moduleDetails.name);
+    formData.append('description', moduleDetails.description);
+    formData.append('yearLaunched', moduleDetails.yearLaunched);
+    formData.append('contributors', JSON.stringify(contributors));
+    // Append images if they exist
+    contributors.forEach((contributor) => {
+      if (contributor.image) {
+        formData.append('contributorImages', contributor.image);
+      }
+    });
+  
+    try {
+      // API call
+      const response = await fetch(`${apiUrl}/platform/update-module/${id}`, {
+        method: 'PUT',
+        body: formData,
+      });
+      console.log("response:", response.body.values);
+  
+      if (response.ok) {
+        toast({
+          title: "Module updated successfully!",
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
+  
+        setSubmittedModules((prevModules) => [
+          ...prevModules,
+          {
+            name: moduleDetails.name,
+            description: moduleDetails.description,
+            yearLaunched: moduleDetails.yearLaunched,
+            contributors,
+          },
+        ]);
+  
+        // Reset form fields
+        setModuleDetails({
+          name: '',
+          description: '',
+          yearLaunched: '',
+        });
+        setContributors([{ name: '', designation: '', linkedin: '', image: null }]);
+        setUpdating(false);
+  
+        // Optional: Reload the page if necessary
+        // window.location.reload();
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Failed to update module: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error updating module:', error);
+      toast({
+        title: "Error updating module!",
+        description: error.message || "Something went wrong.",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+    }
+  };
+  
   
   const fetchModuleDetails = async (moduleId) => {
     try {
-      const response = await axios.get(`${apiUrl}/platform/get-module/${moduleId}`);
+      const response = await axios.get(`${apiUrl}/platform/get-modules/${moduleId}`);
+      
       if (response.status === 200) {
-        console.log('Module details:', response.data);
-        // setModuleDetails(response.data); // Show current module data in form
+  
+        // Additional validation to check if the response contains the expected data
+        if (!response.data || !response.data.name) {
+          throw new Error("Module data is incomplete or invalid.");
+        }
+  
         return response.data;
+      } else {
+        throw new Error("Failed to fetch module details.");
       }
     } catch (err) {
-      alert(`Error fetching module: ${err.message}`);
+      // Use toast to show the error message to the user
+      toast({
+        title: "Error",
+        description: `Error fetching module: ${err.message}`,
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+      console.error("Error fetching module:", err.message);
+      return null; // Returning null in case of error, you can modify based on your needs
     }
   };
+  
   
   const handleUpdate = async (moduleId, e) => {
-    e?.preventDefault(); // Prevent form default only if 'e' exists
+    e?.preventDefault();
+    console.log("moduleId:", moduleId);
+  
+    if (!moduleId || typeof moduleId !== "string") {
+      toast({
+        title: "Error",
+        description: "Invalid module ID format.",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+        position: "top-right",
+      });
+      return;
+    }
   
     try {
-      setUpdating(true); // Set the updating flag to true while the operation is ongoing
-      
-      console.log('Module ID:', moduleId); // Log the module ID for debugging
-
-      // Fetch module details
+      setUpdating(true);
+  
       const result = await fetchModuleDetails(moduleId);
-      console.log('fetchmoduledetails:', fetchModuleDetails(moduleId));
-      console.log('Result:', result);
   
-      if (result && result.name) {
-        // Assuming `result` contains the module data
-        setModuleDetails({
-          id: moduleId,
-          name: result.name || '',
-          description: result.description || '',
-          yearLaunched: result.yearLaunched || '',
-        });
-        setContributors(result.contributors || []);
-      } else {
-        console.error('Error: Module not found or invalid module ID.');
-        throw new Error('Module not found');
+      if (!result || !result.name) {
+        throw new Error("Module not found or invalid module ID.");
       }
-    } catch (err) {
-      alert(`Error updating module: ${err.message}`);
-    } finally {
-      setUpdating(false); // Turn off the updating flag once done
-    }
-  };
   
+      // Batch state updates
+      setModuleDetails({
+        id: moduleId,
+        name: result.name || "",
+        description: result.description || "",
+        yearLaunched: result.yearLaunched || "",
+      });
+      setContributors(result.contributors || []);
+      console.log("result:", result);
+      toast({
+        title: "Module loaded successfully.",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+        position: "top-right",
+      });
+    } catch (err) {
+      console.error("Error updating module:", {
+        moduleId,
+        message: err.message,
+        stack: err.stack,
+      });
+      toast({
+        title: "Error",
+        description: err.message,
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+        position: "top-right",
+      });
+    } finally {
+      // setUpdating(false);
+    }
+  };    
 
   const fetchModules = async () => {
     try {
       const response = await axios.get(`${apiUrl}/platform/get-modules`);
-      console.log(response.data);
       setSubmittedModules(response.data);
     } catch (error) {
       console.error("Error fetching modules:", error);
@@ -202,7 +309,6 @@ const TreeForm = () => {
     try {
       const { data, status } = await axios.delete(`${apiUrl}/platform/delete-module/${moduleId}`);
       if (status === 200) {
-        console.log("Module deleted successfully:", data);
         window.location.reload();
       } else {
         console.warn("Unexpected status code:", status);
@@ -216,115 +322,116 @@ const TreeForm = () => {
 
   return (
     <Box w="100%" p="5" borderRadius="lg">
-      <VStack spacing={4} as="form" onSubmit={handleSubmit}>
-        {/* Module Title */}
-        <FormControl isRequired>
-          <FormLabel>Module Name</FormLabel>
-          <Input
-            name="name"
-            value={moduleDetails.name}
-            onChange={handleModuleChange}
-            placeholder="Enter module name"
-          />
-        </FormControl>
-
-        {/* Module Description */}
-        <FormControl isRequired>
-          <FormLabel>Description</FormLabel>
-          <Textarea
-            name="description"
-            value={moduleDetails.description}
-            onChange={handleModuleChange}
-            placeholder="Enter module description"
-          />
-        </FormControl>
-
-        {/* Year Launched */}
-        <FormControl isRequired>
-          <FormLabel>Year Launched</FormLabel>
-          <NumberInput
-            min={2000}
-            max={2100}
-            value={moduleDetails.yearLaunched}
-            onChange={(value) => setModuleDetails({ ...moduleDetails, yearLaunched: value })}
-          >
-            <NumberInputField name="yearLaunched" />
-          </NumberInput>
-        </FormControl>
-
-        {/* Contributors Section */}
-        <FormLabel>Contributors</FormLabel>
-        {contributors.map((contributor, index) => (
-          <Box key={index} w="100%" p="4" border="1px" borderColor="gray.200" borderRadius="md">
-            <HStack spacing={4} mb={2}>
-              <FormControl isRequired>
-                <FormLabel>Contributor Name</FormLabel>
-                <Input
-                  name="name"
-                  value={contributor.name}
-                  onChange={(e) => handleContributorChange(index, e)}
-                  placeholder="Enter name"
-                />
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel>Designation</FormLabel>
-                <Input
-                  name="designation"
-                  value={contributor.designation}
-                  onChange={(e) => handleContributorChange(index, e)}
-                  placeholder="Enter designation"
-                />
-              </FormControl>
-            </HStack>
-
-            <HStack spacing={4} mb={2}>
-              <FormControl>
-                <FormLabel>LinkedIn</FormLabel>
-                <Input
-                  name="linkedin"
-                  value={contributor.linkedin}
-                  onChange={(e) => handleContributorChange(index, e)}
-                  placeholder="Enter LinkedIn profile link"
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>Contributor Image</FormLabel>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageChange(index, e)}
-                />
-              </FormControl>
-            </HStack>
-
-            <IconButton
-              aria-label="Remove contributor"
-              icon={<DeleteIcon />}
-              onClick={() => removeContributor(index)}
-              colorScheme="red"
-              size="sm"
+      <VStack spacing={4} as="form" onSubmit={(e) => (updating ? handleUpdated(moduleDetails.id, e) : handleSubmit(e))}>
+          {/* Module Title */}
+          <FormControl isRequired>
+            <FormLabel>Module Name</FormLabel>
+            <Input
+              name="name"
+              value={moduleDetails.name}
+              onChange={handleModuleChange}
+              placeholder="Enter module name"
             />
-          </Box>
-        ))}
+          </FormControl>
 
-        {/* Button to add more contributors */}
-        <Button
-          onClick={addContributor}
-          leftIcon={<AddIcon />}
-          colorScheme="teal"
-          variant="outline"
-          w="100%"
-        >
-          Add Contributor
-        </Button>
+          {/* Module Description */}
+          <FormControl isRequired>
+            <FormLabel>Description</FormLabel>
+            <Textarea
+              name="description"
+              value={moduleDetails.description}
+              onChange={handleModuleChange}
+              placeholder="Enter module description"
+            />
+          </FormControl>
 
-        {/* Submit Button */}
-        <Button type="submit" colorScheme="blue" size="lg" w="100%">
-          Submit
-        </Button>
-      </VStack>
+          {/* Year Launched */}
+          <FormControl isRequired>
+            <FormLabel>Year Launched</FormLabel>
+            <NumberInput
+              min={2000}
+              max={2100}
+              value={moduleDetails.yearLaunched}
+              onChange={(value) => setModuleDetails({ ...moduleDetails, yearLaunched: value })}
+            >
+              <NumberInputField name="yearLaunched" />
+            </NumberInput>
+          </FormControl>
+
+          {/* Contributors Section */}
+          <FormLabel>Contributors</FormLabel>
+          {contributors.map((contributor, index) => (
+            <Box key={index} w="100%" p="4" border="1px" borderColor="gray.200" borderRadius="md">
+              <HStack spacing={4} mb={2}>
+                <FormControl isRequired>
+                  <FormLabel>Contributor Name</FormLabel>
+                  <Input
+                    name="name"
+                    value={contributor.name}
+                    onChange={(e) => handleContributorChange(index, e)}
+                    placeholder="Enter name"
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel>Designation</FormLabel>
+                  <Input
+                    name="designation"
+                    value={contributor.designation}
+                    onChange={(e) => handleContributorChange(index, e)}
+                    placeholder="Enter designation"
+                  />
+                </FormControl>
+              </HStack>
+
+              <HStack spacing={4} mb={2}>
+                <FormControl>
+                  <FormLabel>LinkedIn</FormLabel>
+                  <Input
+                    name="linkedin"
+                    value={contributor.linkedin}
+                    onChange={(e) => handleContributorChange(index, e)}
+                    placeholder="Enter LinkedIn profile link"
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Contributor Image</FormLabel>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageChange(index, e)}
+                  />
+                </FormControl>
+              </HStack>
+
+              <IconButton
+                aria-label="Remove contributor"
+                icon={<DeleteIcon />}
+                onClick={() => removeContributor(index)}
+                colorScheme="red"
+                size="sm"
+              />
+            </Box>
+          ))}
+
+          {/* Button to add more contributors */}
+          <Button
+            onClick={addContributor}
+            leftIcon={<AddIcon />}
+            colorScheme="teal"
+            variant="outline"
+            w="100%"
+          >
+            Add Contributor
+          </Button>
+
+          {/* Submit Button */}
+          <Button type="submit" colorScheme="blue" size="lg" w="100%">
+            {updating ? "Update Module" : "Submit"}
+          </Button>
+        </VStack>
+
 
       {/* Display Submitted Modules */}
       <TableContainer mt={6}>
@@ -340,49 +447,56 @@ const TreeForm = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {submittedModules.map((module, index) => (
-              <Tr key={index}>
-                <Td>{index + 1}</Td>
-                <Td>{module.name}</Td>
-                <Td>{module.description}</Td>
-                <Td>{module.yearLaunched}</Td>
-                <Td>
-                  {module.contributors.map((contributor, i) => (
-                    <Box key={i} mb={3}>
-                      <strong>Name:</strong> {contributor.name} <br />
-                      <strong>Designation:</strong> {contributor.designation} <br />
-                      <strong>LinkedIn:</strong> <a href={contributor.linkedin} target="_blank" rel="noopener noreferrer">{contributor.linkedin}</a> <br />
-                      {contributor.image && (
-                        <Box>
-                          <strong>Image:</strong> 
-                          <Img src={contributor.image}/>
-                          {contributor.image && contributor.image instanceof Blob ? (
-                            <img
-                              src={URL.createObjectURL(contributor.image)}
-                              {...console.log(contributor.image)}
-                              alt={contributor.name}
-                              width="50"
-                              height="50"
-                              onLoad={(e) => URL.revokeObjectURL(e.target.src)} // Revoke the object URL to prevent memory leaks
-                            />
-                          ) : (
-                            <span>No image available</span> // Fallback if no image is provided
-                          )}
-                        </Box>
-                      )}
-                    </Box>
-                  ))}
-                </Td>
-                <Td>
-                  <Button colorScheme="red" size="sm" onClick={() => deleteModule(module._id)}>
-                    <DeleteIcon />
-                  </Button>
-                  <Button colorScheme="green" size="sm" onClick={() => handleUpdate(module._id)}>
-                    <EditIcon />
-                  </Button>
-                </Td>
-              </Tr>
-            ))}
+          {submittedModules.map((module, index) => (
+            <Tr key={index}>
+              <Td>{index + 1}</Td>
+              <Td>
+                <Text isTruncated maxW="150px" noOfLines={2}>
+                  {module.name}
+                </Text>
+              </Td>
+              <Td>
+                <Text whiteSpace="normal" wordBreak="break-word">
+                  {module.description}
+                </Text>
+              </Td>
+              <Td>{module.yearLaunched}</Td>
+              <Td>
+                {module.contributors.map((contributor, i) => (
+                  <Box key={i} mb={3}>
+                    <strong>Name:</strong> {contributor.name} <br />
+                    <strong>Designation:</strong> {contributor.designation} <br />
+                    <strong>LinkedIn:</strong> <a href={contributor.linkedin} target="_blank" rel="noopener noreferrer">{contributor.linkedin}</a> <br />
+                    {contributor.image && (
+                      <Box>
+                        <strong>Image:</strong>
+                        <Img src={contributor.image} />
+                        {contributor.image && contributor.image instanceof Blob ? (
+                          <img
+                            src={URL.createObjectURL(contributor.image)}
+                            alt={contributor.name}
+                            width="50"
+                            height="50"
+                            onLoad={(e) => URL.revokeObjectURL(e.target.src)} // Revoke the object URL to prevent memory leaks
+                          />
+                        ) : (
+                          <span></span> // Fallback if no image is provided
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+                ))}
+              </Td>
+              <Td>
+                <Button colorScheme="red" size="sm" onClick={() => deleteModule(module._id)}>
+                  <DeleteIcon />
+                </Button>
+                <Button colorScheme="green" size="sm" onClick={(e) => handleUpdate(module._id, e)}>
+                  <EditIcon />
+                </Button>
+              </Td>
+            </Tr>
+          ))}
           </Tbody>
         </Table>
       </TableContainer>
