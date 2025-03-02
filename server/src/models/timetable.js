@@ -23,7 +23,9 @@ const tableSchema = new mongoose.Schema({
   user: {
     type: Schema.Types.ObjectId,
     ref: "User"
-  }
+  },
+  currentSession: { type: Boolean, default: false }
+  
 });
 
 tableSchema.add(commonFields);

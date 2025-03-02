@@ -81,11 +81,19 @@ function MasterView() {
         // console.log(data)
         const { uniqueSessions, uniqueDept } = data;
 
-        setAllSessions(uniqueSessions);
+        setAllSessions(uniqueSessions.map(s => s.session));
         setAvailableDepts(uniqueDept);
 
         // console.log('Received session data:', uniqueSessions);
         // console.log('Received department data:', uniqueDept);
+        const currentSessionObj = uniqueSessions.find(s => s.currentSession);
+        if (currentSessionObj) {
+          setSelectedSession(currentSessionObj.session);
+        } else if (uniqueSessions.length > 0) {
+          setSelectedSession(uniqueSessions[0].session); // Set the first available session if none is marked as current
+        }
+
+
       } catch (error) {
         console.error("Error fetching existing timetable data:", error);
       }
@@ -521,7 +529,7 @@ function MasterView() {
           onChange={(e) => setSelectedSession(e.target.value)}
           isRequired
         >
-          <option value="">Select Session</option>
+          {/* <option value="">Select Session</option> */}
           {allsessions.map((session, index) => (
             <option key={index} value={session}>
               {session}

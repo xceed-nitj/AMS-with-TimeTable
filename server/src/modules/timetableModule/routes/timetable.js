@@ -126,6 +126,14 @@ TableRouter.post("/",protectRoute, async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+
+  TableRouter.post("/set-current-session", async (req, res) => {
+    try {
+      await tableController.setCurrentSession(req, res);
+    } catch (e) {
+      res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+    }
+  });
   
 
 
