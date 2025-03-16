@@ -1,186 +1,258 @@
 import React, { useState, useEffect } from 'react';
-import getEnvironment from '../../getenvironment';
+import { axiosInstance } from '../../getenvironment';
 import {
-    Box,
-    FormControl,
-    FormLabel,
-    Input,
-    Select,
-    chakra,
-    Text,
-} from "@chakra-ui/react";
-import { Button } from "@chakra-ui/button";
+  Button,
+  Container,
+  FormControl,
+  FormLabel,
+  Heading,
+  Input,
+  Select,
+  chakra,
+  Textarea,
+  VStack,
+  SimpleGrid,
+  Flex,
+  Text,
+  useToast,
+  Card,
+  CardHeader,
+  CardBody,
+  Icon,
+  useColorModeValue,
+} from '@chakra-ui/react';
+import { FiAlertTriangle, FiCheck } from 'react-icons/fi';
 
 function SickDayForm() {
-    const [formData, setFormData] = useState({
-        patientId: '',
-        data: {
-            date: '',
-            time: '',
-            bloodSugar: '',
-            carboLevel: '',
-            insulin: '',
-            longLastingInsulin: '',
-        }
+  const [sickDayData, setSickDayData] = useState({
+    patientId: '',
+    reason: '',
+    ketones: '',
+    data: {
+      date: '',
+      bloodSugar: '',
+      insulin: '',
+    },
+  });
+
+  const [allPatients, setAllPatients] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const toast = useToast();
+
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  // Fetch patients data
+  useEffect(() => {
+    axiosInstance
+      .get('/diabeticsModule/patient/all')
+      .then((response) => {
+        setAllPatients(response.data);
+      })
+      .catch(handleError);
+  }, []);
+
+  // Set today's date as default when the component mounts
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setSickDayData((prevData) => ({
+      ...prevData,
+      data: {
+        ...prevData.data,
+        date: today,
+      },
+    }));
+  }, []);
+
+  // Handle API error
+  const handleError = (error) => {
+    console.error('Error:', error);
+    toast({
+      title: 'Error',
+      description: error.message || 'An error occurred',
+      status: 'error',
+      duration: 5000,
+      isClosable: true,
     });
+  };
 
-    const [allPatients, setAllPatients] = useState([]);
-    const apiUrl = getEnvironment();
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'patientId' || name === 'reason' || name === 'ketones') {
+      setSickDayData({
+        ...sickDayData,
+        [name]: value,
+      });
+    } else {
+      setSickDayData({
+        ...sickDayData,
+        data: {
+          ...sickDayData.data,
+          [name]: value,
+        },
+      });
+    }
+  };
 
-    // Fetch patients data
-    useEffect(() => {
-        fetch(`${apiUrl}/diabeticsModule/patient/all`, { credentials: 'include' })
-            .then(handleResponse)
-            .then((data) => {
-                setAllPatients(data);
-            })
-            .catch(handleError);
-    }, []);
+  // Submit the form
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-    // Handle API responses
-    const handleResponse = (response) => {
-        if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json(); 
-    };
+    axiosInstance
+      .post('/diabeticsModule/sickday/add', sickDayData)
+      .then((response) => {
+        toast({
+          title: 'Success!',
+          description: 'Sick day record added successfully',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
 
-    const handleError = (error) => {
-        console.error("Error:", error);
-    };
+        // Reset form except for patientId
+        setSickDayData({
+          patientId: sickDayData.patientId,
+          reason: '',
+          ketones: '',
+          data: {
+            date: new Date().toISOString().split('T')[0],
+            bloodSugar: '',
+            insulin: '',
+          },
+        });
+      })
+      .catch(handleError)
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+  };
 
-    // Handle input changes for form fields
-    const handleChange = (e) => {
-        const { name, value } = e.target;
+  return (
+    <Container maxW="container.md" py={8}>
+      <Card
+        bg={bg}
+        boxShadow="md"
+        borderWidth="1px"
+        borderColor={borderColor}
+        borderRadius="lg"
+        overflow="hidden"
+      >
+        <CardHeader pb={0}>
+          <Flex align="center">
+            <Icon as={FiAlertTriangle} mr={2} color="orange.500" />
+            <Heading size="lg">Sick Day Record</Heading>
+          </Flex>
+        </CardHeader>
 
-        // If the field is part of the data object
-        if (name in formData.data) {
-            setFormData(prev => ({
-                ...prev,
-                data: { ...prev.data, [name]: value }
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
-    };
+        <CardBody>
+          <Text mb={6} color="gray.600">
+            Record special blood sugar readings and insulin doses during illness
+            or stress periods.
+          </Text>
 
-    // Submit form
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        console.log(formData.patientId);
-        const Id = formData.patientId;
-        
-        fetch(`${apiUrl}/diabeticsModule/sickday/add`, {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        })
-            .then(handleResponse)
-            .catch(handleError)
-            .finally(() => {
-                // Reset form fields
-                setFormData({
-                    patientId: '',
-                    data: {
-                        date: '',
-                        time: '',
-                        bloodSugar: '',
-                        carboLevel: '',
-                        insulin: '',
-                        longLastingInsulin: '',
-                    }
-                });
-            });
-    };
-
-    return (
-        <chakra.form onSubmit={handleSubmit} mt="1">
-            <FormControl isRequired mt="1">
-                <FormLabel>Select Patient:</FormLabel>
+          <chakra.form onSubmit={handleSubmit}>
+            <VStack spacing={6} align="stretch">
+              <FormControl isRequired>
+                <FormLabel fontWeight="medium">Select Patient</FormLabel>
                 <Select
-                    name="patientId"
-                    value={formData.patientId}
-                    onChange={handleChange}
+                  name="patientId"
+                  placeholder="Choose a patient"
+                  value={sickDayData.patientId}
+                  onChange={handleInputChange}
                 >
-                    <option value="">Select Patient</option>
-                    {allPatients.map((patient) => (
-                        <option key={patient._id} value={patient._id}>
-                            {patient.name} - {patient.age}
-                        </option>
-                    ))}
+                  {allPatients.map((patient) => (
+                    <option key={patient._id} value={patient._id}>
+                      {patient.name} - {patient.age} years
+                    </option>
+                  ))}
                 </Select>
-            </FormControl>
+              </FormControl>
 
-            <FormControl isRequired mt="1">
-                <FormLabel>Date:</FormLabel>
-                <Input
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Date</FormLabel>
+                  <Input
                     type="date"
                     name="date"
-                    value={formData.data.date}
-                    onChange={handleChange}
-                />
-            </FormControl>
+                    value={sickDayData.data.date}
+                    onChange={handleInputChange}
+                  />
+                </FormControl>
 
-            <FormControl isRequired mt="1">
-                <FormLabel>Time:</FormLabel>
-                <Input
-                    type="time"
-                    name="time"
-                    value={formData.data.time}
-                    onChange={handleChange}
-                />
-            </FormControl>
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Ketones Present</FormLabel>
+                  <Select
+                    name="ketones"
+                    placeholder="Select ketone status"
+                    value={sickDayData.ketones}
+                    onChange={handleInputChange}
+                  >
+                    <option value="none">None</option>
+                    <option value="trace">Trace</option>
+                    <option value="small">Small</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="large">Large</option>
+                  </Select>
+                </FormControl>
+              </SimpleGrid>
 
-            <FormControl isRequired mt="1">
-                <FormLabel>Blood Sugar (mg/dL):</FormLabel>
-                <Input
+              <FormControl isRequired>
+                <FormLabel fontWeight="medium">Reason for Sick Day</FormLabel>
+                <Textarea
+                  name="reason"
+                  placeholder="Describe the illness or stress causing elevated blood sugar"
+                  value={sickDayData.reason}
+                  onChange={handleInputChange}
+                />
+              </FormControl>
+
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Blood Sugar (mg/dL)</FormLabel>
+                  <Input
                     type="number"
                     name="bloodSugar"
-                    value={formData.data.bloodSugar}
-                    onChange={handleChange}
-                />
-            </FormControl>
+                    placeholder="Enter blood sugar level"
+                    value={sickDayData.data.bloodSugar}
+                    onChange={handleInputChange}
+                  />
+                </FormControl>
 
-            <FormControl isRequired mt="1">
-                <FormLabel>Carbohydrate Level (g):</FormLabel>
-                <Input
-                    type="number"
-                    name="carboLevel"
-                    value={formData.data.carboLevel}
-                    onChange={handleChange}
-                />
-            </FormControl>
-
-            <FormControl isRequired mt="1">
-                <FormLabel>Insulin (units):</FormLabel>
-                <Input
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">
+                    Insulin Dose (units)
+                  </FormLabel>
+                  <Input
                     type="number"
                     name="insulin"
-                    value={formData.data.insulin}
-                    onChange={handleChange}
-                />
-            </FormControl>
+                    placeholder="Enter insulin units"
+                    value={sickDayData.data.insulin}
+                    onChange={handleInputChange}
+                  />
+                </FormControl>
+              </SimpleGrid>
 
-            <FormControl isRequired mt="1">
-                <FormLabel>Long-lasting Insulin (units):</FormLabel>
-                <Input
-                    type="number"
-                    name="longLastingInsulin"
-                    value={formData.data.longLastingInsulin}
-                    onChange={handleChange}
-                />
-            </FormControl>
-
-            <Button type="submit" colorScheme="teal" mt="4">
-                Submit Sick Day Data
-            </Button>
-        </chakra.form>
-    );
+              <Flex justify="flex-end" mt={4}>
+                <Button
+                  type="submit"
+                  colorScheme="orange"
+                  size="lg"
+                  isLoading={isSubmitting}
+                  loadingText="Saving..."
+                  leftIcon={<FiCheck />}
+                >
+                  Save Sick Day Record
+                </Button>
+              </Flex>
+            </VStack>
+          </chakra.form>
+        </CardBody>
+      </Card>
+    </Container>
+  );
 }
 
 export default SickDayForm;

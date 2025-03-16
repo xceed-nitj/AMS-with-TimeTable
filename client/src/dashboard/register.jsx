@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Box, Input, Button, VStack, Checkbox, Text, Heading } from '@chakra-ui/react';
+import {
+  Box,
+  Input,
+  Button,
+  VStack,
+  Checkbox,
+  Text,
+  Heading,
+} from '@chakra-ui/react';
 import getEnvironment from '../getenvironment';
 
 const RegistrationForm = () => {
@@ -35,7 +43,6 @@ const RegistrationForm = () => {
     }
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -46,7 +53,7 @@ const RegistrationForm = () => {
       return;
     }
 
-     // Validation: Check if password is at least 6 characters
+    // Validation: Check if password is at least 6 characters
     if (formData.password.length < 6) {
       setError('Password should be a minimum of 6 characters.');
       setSuccess(''); // Clear success message on error
@@ -66,16 +73,16 @@ const RegistrationForm = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || 'Network response was not ok'); 
-         setSuccess('');  // Clear success message on error
+        setError(data.message || 'Network response was not ok');
+        setSuccess(''); // Clear success message on error
         return;
-      } 
+      }
 
-      setError('');  // Clear error on successful response
+      setError(''); // Clear error on successful response
       setSuccess(data.message); // Set success message
     } catch (error) {
       setError('Error occurred while processing the request.');
-      setSuccess('');  // Clear success message on error
+      setSuccess(''); // Clear success message on error
       console.error('Error:', error);
     }
   };
@@ -157,7 +164,30 @@ const RegistrationForm = () => {
           >
             Paper Review Manager
           </Checkbox>
-
+          <Checkbox
+            name="doctor"
+            value="doctor"
+            isChecked={formData.roles.includes('doctor')}
+            onChange={handleInputChange}
+          >
+            Diabetics Module Doctor
+          </Checkbox>
+          <Checkbox
+            name="patient"
+            value="patient"
+            isChecked={formData.roles.includes('patient')}
+            onChange={handleInputChange}
+          >
+            Diabetics Module Patient
+          </Checkbox>
+          <Checkbox
+            name="dm-admin"
+            value="dm-admin"
+            isChecked={formData.roles.includes('dm-admin')}
+            onChange={handleInputChange}
+          >
+            Diabetics Module Admin
+          </Checkbox>
         </VStack>
         <Button colorScheme="teal" onClick={handleSubmit}>
           Register

@@ -1,12 +1,40 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useToast, Box, Button, Checkbox, FormControl, FormLabel, Heading, Stack, Table, Thead, Tbody, Tr, Th, Td, Textarea } from "@chakra-ui/react";
-import getEnvironment from "../getenvironment";
-import TreeForm from "./treeForm";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import {
+  useToast,
+  Box,
+  Button,
+  Checkbox,
+  FormControl,
+  FormLabel,
+  Heading,
+  Stack,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Textarea,
+} from '@chakra-ui/react';
+import getEnvironment from '../getenvironment';
+import TreeForm from './treeForm';
 
 const FormComponent = () => {
-  const [roles, setRoles] = useState(['PRM', 'Admin', 'Editor', 'SuperAdmin']); // Default values
-  const [exemptedLinks, setExemptedLinks] = useState(['login', 'register', 'verify']); // Default values
+  const [roles, setRoles] = useState([
+    'PRM',
+    'Admin',
+    'Editor',
+    'SuperAdmin',
+    'doctor',
+    'patient',
+    'dm-admin',
+  ]); // Default values
+  const [exemptedLinks, setExemptedLinks] = useState([
+    'login',
+    'register',
+    'verify',
+  ]); // Default values
   const [researchArea, setResearchArea] = useState(['ECE', 'IT', 'EE', 'ME']); // Default values
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedExemptedLinks, setSelectedExemptedLinks] = useState([]);
@@ -30,14 +58,20 @@ const FormComponent = () => {
       setData(response.data);
       console.log(response.data);
       if (response.data.length > 0) {
-        setRoles((prevRoles) => [...new Set([...prevRoles, ...(response.data[0].roles || [])])]);
-        setExemptedLinks((prevLinks) => [...new Set([...prevLinks, ...(response.data[0].exemptedLinks || [])])]);
-        setResearchArea((prevAreas) => [...new Set([...prevAreas, ...(response.data[0].researchArea || [])])]);
+        setRoles((prevRoles) => [
+          ...new Set([...prevRoles, ...(response.data[0].roles || [])]),
+        ]);
+        setExemptedLinks((prevLinks) => [
+          ...new Set([...prevLinks, ...(response.data[0].exemptedLinks || [])]),
+        ]);
+        setResearchArea((prevAreas) => [
+          ...new Set([...prevAreas, ...(response.data[0].researchArea || [])]),
+        ]);
       }
     } catch (error) {
       toast({
-        title: "Failed to fetch data",
-        status: "error",
+        title: 'Failed to fetch data',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
@@ -47,8 +81,8 @@ const FormComponent = () => {
   const handleAddRole = () => {
     if (!newRole) {
       toast({
-        title: "Role cannot be empty",
-        status: "error",
+        title: 'Role cannot be empty',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
@@ -61,36 +95,44 @@ const FormComponent = () => {
   const handleAddExemptedLink = () => {
     if (!newExemptedLink) {
       toast({
-        title: "Exempted Link cannot be empty",
-        status: "error",
+        title: 'Exempted Link cannot be empty',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
       return;
     }
-    setExemptedLinks((prevLinks) => [...new Set([...prevLinks, newExemptedLink])]);
+    setExemptedLinks((prevLinks) => [
+      ...new Set([...prevLinks, newExemptedLink]),
+    ]);
     setNewExemptedLink('');
   };
 
   const handleAddResearchArea = () => {
     if (!newResearchArea) {
       toast({
-        title: "Research Area cannot be empty",
-        status: "error",
+        title: 'Research Area cannot be empty',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
       return;
     }
-    setResearchArea((prevAreas) => [...new Set([...prevAreas, newResearchArea])]);
+    setResearchArea((prevAreas) => [
+      ...new Set([...prevAreas, newResearchArea]),
+    ]);
     setNewResearchArea('');
   };
 
   const handleCreatePlatform = async () => {
-    if (!selectedRoles.length || !selectedExemptedLinks.length || !selectedResearchArea.length) {
+    if (
+      !selectedRoles.length ||
+      !selectedExemptedLinks.length ||
+      !selectedResearchArea.length
+    ) {
       toast({
-        title: "All fields are required",
-        status: "error",
+        title: 'All fields are required',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
@@ -108,15 +150,15 @@ const FormComponent = () => {
       setSelectedExemptedLinks([]);
       setSelectedResearchArea([]);
       toast({
-        title: "Platform created successfully",
-        status: "success",
+        title: 'Platform created successfully',
+        status: 'success',
         duration: 2000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: "Failed to create platform",
-        status: "error",
+        title: 'Failed to create platform',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
@@ -134,8 +176,8 @@ const FormComponent = () => {
       setCurrentId(id);
     } catch (error) {
       toast({
-        title: "Failed to fetch data",
-        status: "error",
+        title: 'Failed to fetch data',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
@@ -146,15 +188,16 @@ const FormComponent = () => {
     if (!currentId) return;
 
     try {
-      const response = await axios.patch(`${apiUrl}/platform/update/${currentId}`, {
-        roles: selectedRoles,
-        exemptedLinks: selectedExemptedLinks,
-        researchArea: selectedResearchArea,
-      });
+      const response = await axios.patch(
+        `${apiUrl}/platform/update/${currentId}`,
+        {
+          roles: selectedRoles,
+          exemptedLinks: selectedExemptedLinks,
+          researchArea: selectedResearchArea,
+        }
+      );
       setData((prevData) =>
-        prevData.map((item) =>
-          item._id === currentId ? response.data : item
-        )
+        prevData.map((item) => (item._id === currentId ? response.data : item))
       );
       setSelectedRoles([]);
       setSelectedExemptedLinks([]);
@@ -162,15 +205,15 @@ const FormComponent = () => {
       setIsEditing(false);
       setCurrentId(null);
       toast({
-        title: "Data updated successfully",
-        status: "success",
+        title: 'Data updated successfully',
+        status: 'success',
         duration: 2000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: "Failed to update data",
-        status: "error",
+        title: 'Failed to update data',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
@@ -182,15 +225,15 @@ const FormComponent = () => {
       await axios.delete(`${apiUrl}/platform/delete/${id}`);
       setData((prevData) => prevData.filter((item) => item._id !== id));
       toast({
-        title: "Data deleted successfully",
-        status: "success",
+        title: 'Data deleted successfully',
+        status: 'success',
         duration: 2000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: "Failed to delete data",
-        status: "error",
+        title: 'Failed to delete data',
+        status: 'error',
         duration: 2000,
         isClosable: true,
       });
@@ -223,7 +266,9 @@ const FormComponent = () => {
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
           />
-          <Button onClick={handleAddRole} width="10%" colorScheme="green">Add Role</Button>
+          <Button onClick={handleAddRole} width="10%" colorScheme="green">
+            Add Role
+          </Button>
         </Stack>
       </FormControl>
       <FormControl id="exemptedLinks" mb={4}>
@@ -249,7 +294,13 @@ const FormComponent = () => {
             value={newExemptedLink}
             onChange={(e) => setNewExemptedLink(e.target.value)}
           />
-          <Button onClick={handleAddExemptedLink} width='20%' colorScheme="green">Add Exempted Link</Button>
+          <Button
+            onClick={handleAddExemptedLink}
+            width="20%"
+            colorScheme="green"
+          >
+            Add Exempted Link
+          </Button>
         </Stack>
       </FormControl>
       <FormControl id="researchArea" mb={4}>
@@ -275,7 +326,13 @@ const FormComponent = () => {
             value={newResearchArea}
             onChange={(e) => setNewResearchArea(e.target.value)}
           />
-          <Button onClick={handleAddResearchArea} width="20%" colorScheme="green">Add Research Area</Button>
+          <Button
+            onClick={handleAddResearchArea}
+            width="20%"
+            colorScheme="green"
+          >
+            Add Research Area
+          </Button>
         </Stack>
       </FormControl>
 
@@ -288,7 +345,9 @@ const FormComponent = () => {
         </Button>
       )}
       <Box mt={8}>
-        <Heading size="md" mb={4}>Data</Heading>
+        <Heading size="md" mb={4}>
+          Data
+        </Heading>
         <Table variant="simple">
           <Thead>
             <Tr>
@@ -302,9 +361,9 @@ const FormComponent = () => {
             {data.length > 0 ? (
               data.map((item) => (
                 <Tr key={item._id}>
-                  <Td>{item.roles.join(", ")}</Td>
-                  <Td>{item.exemptedLinks.join(", ")}</Td>
-                  <Td>{item.researchArea.join(", ")}</Td>
+                  <Td>{item.roles.join(', ')}</Td>
+                  <Td>{item.exemptedLinks.join(', ')}</Td>
+                  <Td>{item.researchArea.join(', ')}</Td>
                   <Td>
                     <Button onClick={() => handleEdit(item._id)}>Edit</Button>
                     <Button onClick={() => handleDelete(item._id)} ml={2}>
@@ -315,7 +374,9 @@ const FormComponent = () => {
               ))
             ) : (
               <Tr>
-                <Td colSpan="4" style={{ textAlign: "center" }}>No data available</Td>
+                <Td colSpan="4" style={{ textAlign: 'center' }}>
+                  No data available
+                </Td>
               </Tr>
             )}
           </Tbody>
