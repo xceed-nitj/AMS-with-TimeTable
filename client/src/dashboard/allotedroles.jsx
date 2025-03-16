@@ -84,13 +84,13 @@ const AllocatedRolesPage = () => {
         navigate('/prm/home');
         break;
       case 'doctor':
-        navigate('/diabetics/doctor/dashboard');
+        navigate('/dm/doctor/dashboard');
         break;
       case 'patient':
-        navigate('/diabetics/patient/dashboard');
+        navigate('/dm/patient/dashboard');
         break;
       case 'dm-admin':
-        navigate('/diabetics/admin/dashboard');
+        navigate('/dm/admin/dashboard');
         break;
       default:
         return 'some unknown role! If it is a new role, add it in the cases';

@@ -298,10 +298,6 @@ export default function LoginPage() {
             </TabPanel>
           </TabPanels>
         </Tabs>
-
-        <Text mt={4} fontSize="sm" color="gray.600" textAlign="center">
-          For demo purposes: Use any email and password for testing.
-        </Text>
       </Box>
     </Container>
   );
