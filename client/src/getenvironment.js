@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 // envUtils.js
 function getEnvironment() {
   const currentURL = window.location.href;
@@ -11,8 +13,12 @@ function getEnvironment() {
   } else {
     // Default to a specific environment or handle other cases
     return nitjServer;
-
   }
 }
 
 export default getEnvironment;
+
+export const axiosInstance = axios.create({
+  baseURL: `${getEnvironment()}/api/v1`,
+  withCredentials: true,
+});
