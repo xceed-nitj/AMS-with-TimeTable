@@ -495,10 +495,7 @@ function App() {
 
         {/* Doctor Routes */}
         <Route path="/dm/doctor/dashboard" element={<DoctorDashboard />} />
-        <Route
-          path="/dm/doctor/patient/:patientId"
-          element={<PatientDetailView />}
-        />
+        <Route path="/dm/patient/:patientId" element={<PatientDetailView />} />
 
         {/* Data Entry Forms */}
         <Route path="/dm/addHospital" element={<HospitalForm />} />
@@ -506,7 +503,6 @@ function App() {
         <Route path="/dm/addDoctor" element={<DoctorForm />} />
         <Route path="/dm/addDailyDosage" element={<DailyDosageForm />} />
         <Route path="/dm/addSickDay" element={<SickDayForm />} />
-        {/* <Route path="/dm/addGamification" element={<GamificationForm/>}/> */}
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
