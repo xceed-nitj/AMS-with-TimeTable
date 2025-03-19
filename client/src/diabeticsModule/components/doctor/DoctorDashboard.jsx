@@ -234,7 +234,7 @@ export default function DoctorDashboard() {
             Welcome back, {doctorInfo?.name || 'Doctor'}
           </Text>
         </Box>
-        <Badge colorScheme="blue" p={2} borderRadius="md">
+        <Badge colorScheme="teal" p={2} borderRadius="md">
           {doctorInfo?.hospital || 'Hospital'}
         </Badge>
       </Flex>
@@ -246,7 +246,7 @@ export default function DoctorDashboard() {
           value={stats.totalPatients}
           description="Under your care"
           icon={FiUsers}
-          color="blue.500"
+          color="blue.700"
         />
         <StatCard
           title="Critical Patients"
@@ -260,14 +260,14 @@ export default function DoctorDashboard() {
           value={stats.stabilizedPatients}
           description="With normal readings"
           icon={FiCheckCircle}
-          color="green.500"
+          color="teal.300"
         />
         <StatCard
           title="Missing Readings"
           value={stats.missingReadings}
           description="No recent data"
           icon={FiBarChart2}
-          color="orange.500"
+          color="cyan.300"
         />
       </SimpleGrid>
 

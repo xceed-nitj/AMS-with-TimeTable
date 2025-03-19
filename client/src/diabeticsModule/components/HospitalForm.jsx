@@ -316,7 +316,7 @@ function HospitalForm() {
                         size="md"
                         borderRadius="full"
                         variant="solid"
-                        colorScheme="blue"
+                        colorScheme="cyan"
                       >
                         <TagLabel>{doctor.name}</TagLabel>
                         <TagCloseButton

@@ -122,9 +122,9 @@ const DMNavbar = () => {
           _hover={{
             color: 'blue.500',
           }}
-          color={isActive ? 'blue.500' : textColor}
+          color={isActive ? 'blue.700' : textColor}
           borderBottom={isActive ? '1px solid' : 'none'}
-          borderColor="blue.500"
+          borderColor="blue.700"
         >
           <Icon as={icon} mr={2} boxSize={4} />
           {name}
@@ -145,18 +145,15 @@ const DMNavbar = () => {
       borderBottom="1px"
       borderColor={borderColor}
     >
-      <Flex h={14} alignItems="center" justifyContent="space-between">
+      <Flex h={14} alignItems="center" justifyContent="space-between" px={2}>
         <Flex alignItems="center">
           <Link to="/dm/login">
             <Flex alignItems="center">
               <img
-                src="/logo-mark-black.svg"
+                src="/dm/it1d-logo.jpeg"
                 alt="DM Logo"
-                style={{ height: '28px' }}
+                style={{ height: '36px' }}
               />
-              <Text fontSize="lg" fontWeight="bold" ml={2}>
-                Diabetes Management
-              </Text>
             </Flex>
           </Link>
         </Flex>
@@ -168,11 +165,11 @@ const DMNavbar = () => {
           ))}
           {userDetails && (
             <Flex align="center" gap={3} ml={2}>
-              <Text fontSize="sm" color="orange.500">
+              <Text fontSize="sm" color="cyan.500">
                 {userDetails.user.email}
               </Text>
               <Button
-                colorScheme="blue"
+                colorScheme="teal"
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
@@ -206,11 +203,11 @@ const DMNavbar = () => {
             ))}
             {userDetails && (
               <Flex align="center" gap={3} w="100%" px={3} py={2}>
-                <Text fontSize="sm" color="orange.500">
+                <Text fontSize="sm" color="cyan.500">
                   {userDetails.user.email}
                 </Text>
                 <Button
-                  colorScheme="blue"
+                  colorScheme="teal"
                   variant="ghost"
                   size="sm"
                   onClick={handleLogout}

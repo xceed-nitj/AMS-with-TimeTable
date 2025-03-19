@@ -321,7 +321,7 @@ export default function PatientDashboard() {
                   type="monotone"
                   dataKey="bloodSugar"
                   name="Blood Sugar"
-                  stroke="#E53E3E"
+                  stroke="#5BA9B3"
                   strokeWidth={2}
                   dot={{ r: 4 }}
                   activeDot={{ r: 6 }}
@@ -331,7 +331,7 @@ export default function PatientDashboard() {
                   type="monotone"
                   dataKey="carboLevel"
                   name="Carbs"
-                  stroke="#38A169"
+                  stroke="#3B5998"
                   strokeWidth={2}
                   dot={{ r: 4 }}
                   activeDot={{ r: 6 }}
@@ -341,7 +341,7 @@ export default function PatientDashboard() {
                   type="monotone"
                   dataKey="insulin"
                   name="Insulin"
-                  stroke="#3182CE"
+                  stroke="#FF8C00"
                   strokeWidth={2}
                   dot={{ r: 4 }}
                   activeDot={{ r: 6 }}
@@ -382,38 +382,38 @@ export default function PatientDashboard() {
         </Heading>
 
         <VStack align="stretch" spacing={4}>
-          <Flex p={4} borderRadius="md" bg="blue.50">
-            <Icon as={FiActivity} boxSize={6} color="blue.500" mr={4} />
+          <Flex p={4} borderRadius="md" bg="cyan.50">
+            <Icon as={FiActivity} boxSize={6} color="cyan.500" mr={4} />
             <Box>
-              <Text fontWeight="bold" color="blue.700">
+              <Text fontWeight="bold" color="cyan.700">
                 Stay Active
               </Text>
-              <Text color="blue.600">
+              <Text color="cyan.600">
                 Regular physical activity can help maintain blood sugar levels.
               </Text>
             </Box>
           </Flex>
 
-          <Flex p={4} borderRadius="md" bg="green.50">
-            <Icon as={FiPieChart} boxSize={6} color="green.500" mr={4} />
+          <Flex p={4} borderRadius="md" bg="blue.50">
+            <Icon as={FiPieChart} boxSize={6} color="blue.700" mr={4} />
             <Box>
-              <Text fontWeight="bold" color="green.700">
+              <Text fontWeight="bold" color="blue.700">
                 Balance Your Diet
               </Text>
-              <Text color="green.600">
+              <Text color="blue.600">
                 Focus on a diet rich in vegetables, lean proteins, and complex
                 carbohydrates.
               </Text>
             </Box>
           </Flex>
 
-          <Flex p={4} borderRadius="md" bg="purple.50">
-            <Icon as={FiClock} boxSize={6} color="purple.500" mr={4} />
+          <Flex p={4} borderRadius="md" bg="teal.50">
+            <Icon as={FiClock} boxSize={6} color="teal.500" mr={4} />
             <Box>
-              <Text fontWeight="bold" color="purple.700">
+              <Text fontWeight="bold" color="teal.700">
                 Regular Monitoring
               </Text>
-              <Text color="purple.600">
+              <Text color="teal.600">
                 Consistently monitor your blood sugar levels as recommended by
                 your doctor.
               </Text>

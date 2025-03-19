@@ -178,7 +178,7 @@ export default function LoginPage() {
         boxShadow="lg"
         bg={bgColor}
       >
-        <Tabs isFitted variant="enclosed" colorScheme="teal">
+        <Tabs isFitted variant="enclosed" colorScheme="cyan">
           <TabList mb="1em">
             <Tab>Patient Login</Tab>
             <Tab>Doctor Login</Tab>
