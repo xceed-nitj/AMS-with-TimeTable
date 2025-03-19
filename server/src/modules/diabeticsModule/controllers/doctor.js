@@ -316,6 +316,102 @@ const getDoctorOwnData = async (req, res) => {
   }
 }
 
+// Assign multiple patients to a doctor
+const assignPatientsToDoctor = async (req, res) => {
+  try {
+    const { doctorId } = req.params
+    const { patientIds } = req.body
+
+    // Find the doctor
+    const doctor = await Doctor.findById(doctorId)
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' })
+    }
+
+    // Find all patients to verify they exist and are from the same hospital
+    const patients = await Patient.find({
+      _id: { $in: patientIds },
+      hospital: doctor.hospital,
+    })
+
+    if (patients.length !== patientIds.length) {
+      return res.status(400).json({
+        message:
+          'Some patients were not found or are not from the same hospital',
+      })
+    }
+
+    // Add patients to doctor's patientIds array if not already present
+    for (const patientId of patientIds) {
+      if (!doctor.patientIds.includes(patientId)) {
+        doctor.patientIds.push(patientId)
+      }
+    }
+
+    await doctor.save()
+
+    res.status(200).json({
+      message: 'Patients assigned successfully',
+      doctor: {
+        _id: doctor._id,
+        name: doctor.name,
+        patientIds: doctor.patientIds,
+      },
+    })
+  } catch (error) {
+    console.error('Error assigning patients:', error)
+    res
+      .status(500)
+      .json({ message: 'Error assigning patients', error: error.message })
+  }
+}
+
+// Remove a patient from a doctor
+const removePatientFromDoctor = async (req, res) => {
+  try {
+    const { doctorId, patientId } = req.params
+
+    // Find the doctor
+    const doctor = await Doctor.findById(doctorId)
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' })
+    }
+
+    // Find the patient
+    const patient = await Patient.findById(patientId)
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' })
+    }
+
+    // Verify patient is from the same hospital as doctor
+    if (patient.hospital !== doctor.hospital) {
+      return res.status(400).json({
+        message: 'Patient is not from the same hospital as the doctor',
+      })
+    }
+
+    // Remove patient from doctor's patientIds array
+    doctor.patientIds = doctor.patientIds.filter(
+      (id) => id.toString() !== patientId
+    )
+    await doctor.save()
+
+    res.status(200).json({
+      message: 'Patient removed successfully',
+      doctor: {
+        _id: doctor._id,
+        name: doctor.name,
+        patientIds: doctor.patientIds,
+      },
+    })
+  } catch (error) {
+    console.error('Error removing patient:', error)
+    res
+      .status(500)
+      .json({ message: 'Error removing patient', error: error.message })
+  }
+}
+
 // Export the controller functions
 module.exports = {
   addDoctor,
@@ -328,4 +424,6 @@ module.exports = {
   getDoctorCount,
   getDoctorPatients,
   getDoctorOwnData,
+  assignPatientsToDoctor,
+  removePatientFromDoctor,
 }
