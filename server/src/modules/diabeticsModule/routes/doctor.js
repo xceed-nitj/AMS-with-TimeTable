@@ -10,6 +10,8 @@ const {
   getDoctorCount,
   getDoctorPatients,
   getDoctorOwnData,
+  assignPatientsToDoctor,
+  removePatientFromDoctor,
 } = require('../controllers/doctor') // Import the controller
 const router = express.Router()
 const { checkRole } = require('../../checkRole.middleware')
@@ -48,6 +50,20 @@ router.get(
   '/:id/patients',
   checkRole(['admin', 'dm-admin', 'doctor']),
   getDoctorPatients
+)
+
+// Route to assign multiple patients to a doctor
+router.post(
+  '/:doctorId/assignPatients',
+  checkRole(['admin', 'dm-admin']),
+  assignPatientsToDoctor
+)
+
+// Route to remove a patient from a doctor
+router.delete(
+  '/:doctorId/patient/:patientId',
+  checkRole(['admin', 'dm-admin']),
+  removePatientFromDoctor
 )
 
 module.exports = router

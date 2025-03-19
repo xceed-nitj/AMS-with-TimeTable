@@ -2,6 +2,7 @@ const Patient = require('../../../models/diabeticsModule/patient') // Adjusted p
 const { addPatientToHospital } = require('../controllers/hospital')
 const User = require('../../../models/usermanagement/user') // Import the User model
 const bcrypt = require('bcryptjs')
+const Doctor = require('../../../models/diabeticsModule/doctor') // Import the Doctor model
 
 // Controller function to add a new patient
 const addPatient = async (req, res) => {
@@ -276,6 +277,31 @@ const getPatientOwnData = async (req, res) => {
   }
 }
 
+// Get unassigned patients for a doctor
+const getUnassignedPatients = async (req, res) => {
+  try {
+    const { doctorId } = req.params
+
+    // Find the doctor
+    const doctor = await Doctor.findById(doctorId)
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' })
+    }
+
+    // Get all patients that are not assigned to this doctor
+    const unassignedPatients = await Patient.find({
+      _id: { $nin: doctor.patientIds },
+      hospital: doctor.hospital, // Only show patients from the same hospital
+    })
+
+    res.status(200).json(unassignedPatients)
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Error fetching unassigned patients', error })
+  }
+}
+
 module.exports = {
   addPatient,
   getAllPatients,
@@ -285,4 +311,5 @@ module.exports = {
   loginPatient,
   getPatientCount,
   getPatientOwnData,
+  getUnassignedPatients,
 }
