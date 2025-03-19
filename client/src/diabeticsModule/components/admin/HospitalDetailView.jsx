@@ -449,7 +449,7 @@ export default function HospitalDetailView() {
         </CardBody>
       </Card>
 
-      <Tabs variant="enclosed" colorScheme="blue">
+      <Tabs variant="enclosed" colorScheme="cyan">
         <TabList>
           <Tab fontWeight="semibold">Doctors</Tab>
           <Tab fontWeight="semibold">Patients</Tab>
@@ -461,7 +461,7 @@ export default function HospitalDetailView() {
               <Heading size="md">Doctor List</Heading>
               <Button
                 leftIcon={<FiUserPlus />}
-                colorScheme="green"
+                colorScheme="teal"
                 onClick={onOpen}
                 isDisabled={availableDoctors.length === 0}
               >

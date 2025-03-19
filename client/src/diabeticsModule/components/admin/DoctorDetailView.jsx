@@ -427,7 +427,7 @@ export default function DoctorDetailView() {
         </CardBody>
       </Card>
 
-      <Tabs variant="enclosed" colorScheme="blue">
+      <Tabs variant="enclosed" colorScheme="cyan">
         <TabList>
           <Tab fontWeight="semibold">Assigned Patients</Tab>
         </TabList>
@@ -557,7 +557,7 @@ export default function DoctorDetailView() {
               Cancel
             </Button>
             <Button
-              colorScheme="blue"
+              colorScheme="teal"
               leftIcon={<FiUserCheck />}
               onClick={assignPatients}
               isDisabled={

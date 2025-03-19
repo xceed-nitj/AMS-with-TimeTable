@@ -45,7 +45,6 @@ export default function AdminDashboard() {
   const [doctors, setDoctors] = useState([]);
   const [hospitals, setHospitals] = useState([]);
   const toast = useToast();
-  const navigate = useNavigate();
 
   const fetchStats = async () => {
     try {
@@ -162,28 +161,28 @@ export default function AdminDashboard() {
           title="Total Patients"
           stat={stats.patientsCount}
           helpText="Registered in the system"
-          accentColor="teal.500"
+          accentColor="cyan.400"
         />
         <StatCard
           icon={UserPlusIcon}
           title="Total Doctors"
           stat={stats.doctorsCount}
           helpText="Active practitioners"
-          accentColor="blue.500"
+          accentColor="blue.400"
         />
         <StatCard
           icon={BuildingOfficeIcon}
           title="Total Hospitals"
           stat={stats.hospitalsCount}
           helpText="Partnered facilities"
-          accentColor="purple.500"
+          accentColor="teal.400"
         />
         <StatCard
           icon={ChartBarIcon}
           title="Total Readings"
           stat={stats.readingsCount}
           helpText="Patient health metrics"
-          accentColor="orange.500"
+          accentColor="cyan.400"
         />
       </SimpleGrid>
 
@@ -193,7 +192,7 @@ export default function AdminDashboard() {
           <Button
             as={RouterLink}
             to="/dm/addPatient"
-            colorScheme="teal"
+            colorScheme="cyan"
             size="sm"
           >
             Add Patient
@@ -209,7 +208,7 @@ export default function AdminDashboard() {
           <Button
             as={RouterLink}
             to="/dm/addHospital"
-            colorScheme="purple"
+            colorScheme="teal"
             size="sm"
           >
             Add Hospital
@@ -220,13 +219,37 @@ export default function AdminDashboard() {
       <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mt={6} bg={bg}>
         <Tabs isFitted variant="enclosed">
           <TabList>
-            <Tab>Patients</Tab>
-            <Tab>Doctors</Tab>
-            <Tab>Hospitals</Tab>
+            <Tab
+              _selected={{
+                color: 'cyan.800',
+                bg: 'cyan.100',
+                borderBottomColor: 'transparent',
+              }}
+            >
+              Patients
+            </Tab>
+            <Tab
+              _selected={{
+                color: 'blue.800',
+                bg: 'blue.100',
+                borderBottomColor: 'transparent',
+              }}
+            >
+              Doctors
+            </Tab>
+            <Tab
+              _selected={{
+                color: 'teal.800',
+                bg: 'teal.100',
+                borderBottomColor: 'transparent',
+              }}
+            >
+              Hospitals
+            </Tab>
           </TabList>
 
           <TabPanels>
-            <TabPanel>
+            <TabPanel bg="cyan.100">
               <DataList
                 items={patients}
                 fields={['name', 'age', 'contactNumber', 'hospital']}
@@ -235,7 +258,7 @@ export default function AdminDashboard() {
                 type="patients"
               />
             </TabPanel>
-            <TabPanel>
+            <TabPanel bg="blue.100">
               <DataList
                 items={doctors}
                 fields={['name', 'age', 'contactNumber', 'hospital']}
@@ -244,7 +267,7 @@ export default function AdminDashboard() {
                 type="doctors"
               />
             </TabPanel>
-            <TabPanel>
+            <TabPanel bg="teal.100">
               <DataList
                 items={hospitals}
                 fields={['name', 'location', 'phone']}
@@ -366,7 +389,7 @@ const DataList = ({ items, fields, headers, emptyText, type }) => {
               >
                 <Button
                   size="xs"
-                  colorScheme="blue"
+                  colorScheme="teal"
                   variant="ghost"
                   onClick={() => handleView(item._id)}
                 >

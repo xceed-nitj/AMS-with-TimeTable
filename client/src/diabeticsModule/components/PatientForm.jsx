@@ -529,7 +529,7 @@ function PatientForm() {
                           <Button
                             key={doctorId}
                             size="sm"
-                            colorScheme="blue"
+                            colorScheme="cyan"
                             variant="outline"
                             onClick={() => removeDoctor(doctorId)}
                           >
