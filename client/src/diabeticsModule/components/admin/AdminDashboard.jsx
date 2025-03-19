@@ -1,35 +1,35 @@
-import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Heading,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
+  Button,
+  chakra,
   Container,
   Flex,
-  Button,
-  Text,
-  useColorModeValue,
-  SimpleGrid,
-  chakra,
+  Heading,
   Icon,
+  SimpleGrid,
+  Spinner,
+  Stat,
+  StatHelpText,
+  StatLabel,
+  StatNumber,
   Tab,
   TabList,
   TabPanel,
   TabPanels,
   Tabs,
-  Spinner,
+  Text,
+  useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
+import React, { useEffect, useState } from 'react';
 
-import { Link as RouterLink } from 'react-router-dom';
 import {
   BuildingOfficeIcon,
   ChartBarIcon,
   UserPlusIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../../../getenvironment';
 
 // Create an axios instance with the base URL
@@ -45,6 +45,7 @@ export default function AdminDashboard() {
   const [doctors, setDoctors] = useState([]);
   const [hospitals, setHospitals] = useState([]);
   const toast = useToast();
+  const navigate = useNavigate();
 
   const fetchStats = async () => {
     try {
@@ -231,6 +232,7 @@ export default function AdminDashboard() {
                 fields={['name', 'age', 'contactNumber', 'hospital']}
                 headers={['Name', 'Age', 'Contact', 'Hospital']}
                 emptyText="No patients registered yet"
+                type="patients"
               />
             </TabPanel>
             <TabPanel>
@@ -239,6 +241,7 @@ export default function AdminDashboard() {
                 fields={['name', 'age', 'contactNumber', 'hospital']}
                 headers={['Name', 'Age', 'Contact', 'Hospital']}
                 emptyText="No doctors registered yet"
+                type="doctors"
               />
             </TabPanel>
             <TabPanel>
@@ -247,6 +250,7 @@ export default function AdminDashboard() {
                 fields={['name', 'location', 'phone']}
                 headers={['Name', 'Location', 'Phone']}
                 emptyText="No hospitals registered yet"
+                type="hospitals"
               />
             </TabPanel>
           </TabPanels>
@@ -288,8 +292,9 @@ const StatCard = ({ title, stat, helpText, icon, accentColor }) => {
   );
 };
 
-const DataList = ({ items, fields, headers, emptyText }) => {
+const DataList = ({ items, fields, headers, emptyText, type }) => {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const navigate = useNavigate();
 
   if (!items || items.length === 0) {
     return (
@@ -298,6 +303,22 @@ const DataList = ({ items, fields, headers, emptyText }) => {
       </Text>
     );
   }
+
+  const handleView = (id) => {
+    switch (type) {
+      case 'patients':
+        navigate(`/dm/patient/${id}`);
+        break;
+      case 'doctors':
+        navigate(`/dm/doctor/${id}`);
+        break;
+      case 'hospitals':
+        navigate(`/dm/hospital/${id}`);
+        break;
+      default:
+        break;
+    }
+  };
 
   return (
     <Box overflowX="auto">
@@ -343,7 +364,12 @@ const DataList = ({ items, fields, headers, emptyText }) => {
                 borderColor={borderColor}
                 textAlign="right"
               >
-                <Button size="xs" colorScheme="blue" variant="ghost">
+                <Button
+                  size="xs"
+                  colorScheme="blue"
+                  variant="ghost"
+                  onClick={() => handleView(item._id)}
+                >
                   View
                 </Button>
               </chakra.td>
