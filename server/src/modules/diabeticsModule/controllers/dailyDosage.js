@@ -1,8 +1,22 @@
 const DailyDosage = require('../../../models/diabeticsModule/dailyDosage')
+const Patient = require('../../../models/diabeticsModule/patient')
+const Doctor = require('../../../models/diabeticsModule/doctor')
 
 // Create a dosage entry
 const addDosage = async (req, res) => {
   try {
+    if (!req.body.patientId) {
+      if (req.user.roles.includes('patient')) {
+        // Find the patient by userId
+        const patient = await Patient.findOne({ userId: req.user.id })
+        if (!patient) {
+          return res.status(404).json({ message: 'Patient not found.' })
+        }
+        req.body.patientId = patient._id
+      } else {
+        return res.status(400).json({ message: 'Patient ID is required.' })
+      }
+    }
     const newDose = new DailyDosage(req.body)
     await newDose.save()
     res.status(201).json(newDose)
@@ -141,6 +155,138 @@ const getReadingsByDateRange = async (req, res) => {
   }
 }
 
+// Get readings for a patient by date (using authenticated user's ID)
+const getPatientOwnReadingsByDate = async (req, res) => {
+  try {
+    const { date } = req.params
+
+    // Find the patient by userId
+    const patient = await Patient.findOne({ userId: req.user.id })
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found.' })
+    }
+
+    // Create date range for the specified date (start of day to end of day)
+    const startDate = new Date(date)
+    startDate.setHours(0, 0, 0, 0)
+
+    const endDate = new Date(date)
+    endDate.setHours(23, 59, 59, 999)
+
+    const readings = await DailyDosage.find({
+      patientId: patient._id,
+      'data.date': { $gte: startDate, $lte: endDate },
+    }).sort({ 'data.date': 1 })
+
+    res.status(200).json(readings)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+// Get readings for a patient within a date range (using authenticated user's ID)
+const getPatientOwnReadingsByDateRange = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.params
+
+    // Find the patient by userId
+    const patient = await Patient.findOne({ userId: req.user.id })
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found.' })
+    }
+
+    const start = new Date(startDate)
+    start.setHours(0, 0, 0, 0)
+
+    const end = new Date(endDate)
+    end.setHours(23, 59, 59, 999)
+
+    const readings = await DailyDosage.find({
+      patientId: patient._id,
+      'data.date': { $gte: start, $lte: end },
+    }).sort({ 'data.date': 1 })
+
+    res.status(200).json(readings)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+// Get readings for a patient by date (doctor accessing their patient's data)
+const getDoctorPatientReadingsByDate = async (req, res) => {
+  try {
+    const { patientId, date } = req.params
+
+    // Find the doctor by userId
+    const doctor = await Doctor.findOne({ userId: req.user.id })
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found.' })
+    }
+
+    // Verify that the patient belongs to this doctor
+    const patient = await Patient.findOne({
+      _id: patientId,
+      doctorIds: doctor._id,
+    })
+    if (!patient) {
+      return res.status(403).json({ message: 'Access to this patient denied.' })
+    }
+
+    // Create date range for the specified date
+    const startDate = new Date(date)
+    startDate.setHours(0, 0, 0, 0)
+
+    const endDate = new Date(date)
+    endDate.setHours(23, 59, 59, 999)
+
+    const readings = await DailyDosage.find({
+      patientId: patient._id,
+      'data.date': { $gte: startDate, $lte: endDate },
+    }).sort({ 'data.date': 1 })
+
+    res.status(200).json(readings)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+// Get readings for a patient within a date range (doctor accessing their patient's data)
+const getDoctorPatientReadingsByDateRange = async (req, res) => {
+  try {
+    const { patientId, startDate, endDate } = req.params
+
+    // Find the doctor by userId
+    const doctor = await Doctor.findOne({ userId: req.user.id })
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found.' })
+    }
+
+    // Verify that the patient belongs to this doctor
+    const patient = await Patient.findOne({
+      _id: patientId,
+      doctorIds: doctor._id,
+    })
+    if (!patient) {
+      return res.status(403).json({ message: 'Access to this patient denied.' })
+    }
+
+    const start = new Date(startDate)
+    start.setHours(0, 0, 0, 0)
+
+    const end = new Date(endDate)
+    end.setHours(23, 59, 59, 999)
+
+    const readings = await DailyDosage.find({
+      patientId: patient._id,
+      'data.date': { $gte: start, $lte: end },
+    }).sort({ 'data.date': 1 })
+
+    res.status(200).json(readings)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
 module.exports = {
   addDosage,
   getAllDosages,
@@ -151,4 +297,8 @@ module.exports = {
   getLatestReading,
   getReadingsByDate,
   getReadingsByDateRange,
+  getPatientOwnReadingsByDate,
+  getPatientOwnReadingsByDateRange,
+  getDoctorPatientReadingsByDate,
+  getDoctorPatientReadingsByDateRange,
 }
