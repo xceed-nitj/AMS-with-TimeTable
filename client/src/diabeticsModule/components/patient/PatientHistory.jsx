@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import {
   Box,
   Container,
@@ -41,6 +40,7 @@ import {
 } from 'react-icons/fi';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { axiosInstance } from '../../../getenvironment';
 
 // Mock data - replace with actual API calls
 const mockReadings = Array(30)
@@ -100,7 +100,9 @@ export default function PatientHistory() {
         return;
       }
 
-      const res = await axios.get(`/api/diabeticsModule/patient/${patientId}`);
+      const res = await axiosInstance.get(
+        `/diabeticsModule/patient/${patientId}`
+      );
       setPatient(res.data);
     } catch (error) {
       console.error('Error fetching patient data:', error);
@@ -120,8 +122,8 @@ export default function PatientHistory() {
       const patientId = localStorage.getItem('patientId');
       if (!patientId) return;
 
-      const res = await axios.get(
-        `/api/diabeticsModule/dailyDosage/patient/${patientId}`
+      const res = await axiosInstance.get(
+        `/diabeticsModule/dailyDosage/patient/${patientId}`
       );
       setReadings(res.data || []);
       setFilteredReadings(res.data || []);
