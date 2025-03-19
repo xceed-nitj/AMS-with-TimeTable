@@ -89,7 +89,30 @@ const getDoctorById = async (req, res) => {
   try {
     const doctor = await Doctor.findById(id)
     if (!doctor) return res.status(404).json({ message: 'Doctor not found.' })
-    res.status(200).json(doctor)
+
+    // Get the associated user data
+    const user = await User.findById(doctor.userId)
+    if (!user)
+      return res.status(404).json({ message: 'Associated user not found.' })
+
+    // Get the doctor's patients
+    const patients = await Patient.find({ doctorIds: doctor._id })
+
+    // Combine doctor, user, and patients data
+    const doctorData = {
+      ...doctor.toObject(),
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        isFirstLogin: user.isFirstLogin,
+      },
+      patients: patients,
+    }
+
+    res.status(200).json(doctorData)
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving doctor.', error })
   }
@@ -256,6 +279,43 @@ const getDoctorPatients = async (req, res) => {
   }
 }
 
+// Get doctor's own data
+const getDoctorOwnData = async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ userId: req.user.id })
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found.' })
+    }
+
+    // Get the associated user data
+    const user = await User.findById(doctor.userId)
+    if (!user) {
+      return res.status(404).json({ message: 'Associated user not found.' })
+    }
+
+    // Get the doctor's patients
+    const patients = await Patient.find({ doctorIds: doctor._id })
+
+    // Combine doctor, user, and patients data
+    const doctorData = {
+      ...doctor.toObject(),
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        isFirstLogin: user.isFirstLogin,
+      },
+      patients: patients,
+    }
+
+    res.status(200).json(doctorData)
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving doctor data.', error })
+  }
+}
+
 // Export the controller functions
 module.exports = {
   addDoctor,
@@ -267,4 +327,5 @@ module.exports = {
   loginDoctor,
   getDoctorCount,
   getDoctorPatients,
+  getDoctorOwnData,
 }
