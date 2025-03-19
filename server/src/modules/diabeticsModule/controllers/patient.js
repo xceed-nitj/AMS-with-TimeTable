@@ -30,13 +30,11 @@ const addPatient = async (req, res) => {
   } = req.body
 
   try {
-    // Check if the patient already exists
     const existingPatient = await Patient.findOne({ email })
     if (existingPatient) {
       return res.status(400).json({ message: 'Patient already exists' })
     }
 
-    // Check if a user with this email already exists
     const existingUser = await User.findOne({ email: [email] })
     if (existingUser) {
       return res
@@ -44,17 +42,16 @@ const addPatient = async (req, res) => {
         .json({ message: 'User with this email already exists' })
     }
 
-    // First create a user with role "patient"
-    const defaultPassword = '12345' // Default password
+    const defaultPassword = '12345'
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
     const newUser = new User({
       name,
-      role: ['patient'], // Set the role to patient
-      password: hashedPassword, // Hashed default password
-      email: [email], // Store email as an array
-      isEmailVerified: false, // Set default value for email verification
-      isFirstLogin: true, // Set default value for first login
+      role: ['patient'],
+      password: hashedPassword,
+      email: [email],
+      isEmailVerified: false,
+      isFirstLogin: true,
     })
 
     // Save the user to the database
@@ -69,11 +66,10 @@ const addPatient = async (req, res) => {
     // Extract the ObjectIds of the doctors if not provided
     const finalDoctorIds = doctorIds || doctors.map((doctor) => doctor._id)
 
-    // Create a new patient with reference to the user
     const newPatient = new Patient({
       email,
       name,
-      userId: newUser._id, // Store reference to the user
+      userId: newUser._id,
       DOB,
       gender,
       father_name,
@@ -98,11 +94,9 @@ const addPatient = async (req, res) => {
     // Save the patient to the database
     await newPatient.save()
 
-    // Add the patient to the hospital
     try {
       await addPatientToHospital(hospital, newPatient._id, newPatient.name)
     } catch (error) {
-      // If adding to hospital fails, continue with the patient creation
       console.error('Error adding patient to hospital:', error)
     }
 
@@ -133,7 +127,13 @@ const getPatientById = async (req, res) => {
   try {
     const patient = await Patient.findById(id)
     if (!patient) return res.status(404).json({ message: 'Patient not found.' })
-    res.status(200).json(patient)
+
+    // Combine patient and user data
+    const patientData = {
+      ...patient.toObject(),
+    }
+
+    res.status(200).json(patientData)
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving patient.', error })
   }
@@ -243,7 +243,39 @@ const getPatientCount = async (req, res) => {
   }
 }
 
-// Export the controller functions
+// Get patient's own data
+const getPatientOwnData = async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ userId: req.user.id })
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found.' })
+    }
+
+    // Get the associated user data
+    const user = await User.findById(patient.userId)
+    if (!user) {
+      return res.status(404).json({ message: 'Associated user not found.' })
+    }
+
+    // Combine patient and user data
+    const patientData = {
+      ...patient.toObject(),
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        isFirstLogin: user.isFirstLogin,
+      },
+    }
+
+    res.status(200).json(patientData)
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving patient data.', error })
+  }
+}
+
 module.exports = {
   addPatient,
   getAllPatients,
@@ -252,4 +284,5 @@ module.exports = {
   deletePatient,
   loginPatient,
   getPatientCount,
+  getPatientOwnData,
 }

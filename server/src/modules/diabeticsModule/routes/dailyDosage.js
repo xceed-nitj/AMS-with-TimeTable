@@ -9,6 +9,10 @@ const {
   getLatestReading,
   getReadingsByDate,
   getReadingsByDateRange,
+  getPatientOwnReadingsByDate,
+  getPatientOwnReadingsByDateRange,
+  getDoctorPatientReadingsByDate,
+  getDoctorPatientReadingsByDateRange,
 } = require('../controllers/dailyDosage')
 const { checkRole } = require('../../checkRole.middleware')
 
@@ -16,6 +20,32 @@ const router = express.Router()
 
 // Define the count route first (before any routes with :id parameter)
 router.get('/count', checkRole(['admin', 'dm-admin']), getDailyDosageCount)
+
+// Routes for patients to access their own data
+router.get(
+  '/me/date/:date',
+  checkRole(['patient']),
+  getPatientOwnReadingsByDate
+)
+
+router.get(
+  '/me/range/:startDate/:endDate',
+  checkRole(['patient']),
+  getPatientOwnReadingsByDateRange
+)
+
+// Routes for doctors to access their patients' data
+router.get(
+  '/doctor/patient/:patientId/date/:date',
+  checkRole(['doctor']),
+  getDoctorPatientReadingsByDate
+)
+
+router.get(
+  '/doctor/patient/:patientId/range/:startDate/:endDate',
+  checkRole(['doctor']),
+  getDoctorPatientReadingsByDateRange
+)
 
 router.post(
   '/add',

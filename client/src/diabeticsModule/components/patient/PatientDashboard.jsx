@@ -1,85 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
+  Badge,
   Box,
-  Container,
-  Heading,
-  Text,
-  SimpleGrid,
-  Flex,
   Button,
+  Container,
+  Flex,
+  HStack,
+  Heading,
+  Icon,
+  SimpleGrid,
+  Spinner,
   Stat,
+  StatHelpText,
   StatLabel,
   StatNumber,
-  StatHelpText,
-  HStack,
+  Text,
   VStack,
-  Badge,
-  Progress,
   useColorModeValue,
-  Divider,
-  Icon,
-  Input,
-  FormControl,
-  FormLabel,
-  Spinner,
-  useToast,
-  Select,
 } from '@chakra-ui/react';
-import { Link as RouterLink } from 'react-router-dom';
+import { format } from 'date-fns';
+import React, { useEffect, useState } from 'react';
 import {
   FiActivity,
-  FiDroplet,
-  FiPieChart,
-  FiZap,
+  FiBarChart2,
   FiCalendar,
   FiClock,
+  FiDroplet,
+  FiPieChart,
   FiPlus,
-  FiBarChart2,
+  FiZap,
 } from 'react-icons/fi';
-import { Line } from 'recharts';
-
-// Mock data - replace with actual API calls
-const mockWeekData = [
-  { day: 'Mon', bloodSugar: 120, carboLevel: 80, insulin: 10 },
-  { day: 'Tue', bloodSugar: 140, carboLevel: 95, insulin: 12 },
-  { day: 'Wed', bloodSugar: 130, carboLevel: 85, insulin: 11 },
-  { day: 'Thu', bloodSugar: 125, carboLevel: 75, insulin: 10 },
-  { day: 'Fri', bloodSugar: 145, carboLevel: 90, insulin: 14 },
-  { day: 'Sat', bloodSugar: 135, carboLevel: 88, insulin: 12 },
-  { day: 'Sun', bloodSugar: 118, carboLevel: 72, insulin: 9 },
-];
+import { Link as RouterLink } from 'react-router-dom';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import DailyDosageForm from '../DailyDosageForm';
+import { axiosInstance } from '../../../getenvironment';
 
 export default function PatientDashboard() {
   const [patient, setPatient] = useState(null);
   const [todaysReadings, setTodaysReadings] = useState([]);
-  const [weekData, setWeekData] = useState(mockWeekData);
+  const [weekData, setWeekData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newReading, setNewReading] = useState({
-    session: 'pre-breakfast',
-    bloodSugar: '',
-    carboLevel: '',
-    insulin: '',
-    longLastingInsulin: '',
-    physicalActivity: 'Low',
-  });
-  const toast = useToast();
 
   // Get current patient info
   const fetchPatientData = async () => {
     try {
-      // This would need to get the current logged-in patient
-      const patientId = localStorage.getItem('patientId');
-      if (!patientId) {
-        // Redirect to login if no patient ID
-        return;
-      }
-
-      const res = await axios.get(`/api/diabeticsModule/patient/${patientId}`);
+      const res = await axiosInstance.get('/diabeticsModule/patient/me');
       setPatient(res.data);
     } catch (error) {
       console.error('Error fetching patient data:', error);
-      // In development, use mock data
       setPatient({
         name: 'John Doe',
         age: 42,
@@ -92,14 +68,13 @@ export default function PatientDashboard() {
   // Get today's readings
   const fetchTodaysReadings = async () => {
     try {
-      const patientId = localStorage.getItem('patientId');
-      if (!patientId) return;
-
       const today = new Date().toISOString().split('T')[0];
-      const res = await axios.get(
-        `/api/diabeticsModule/dailyDosage/patient/${patientId}/date/${today}`
+      const res = await axiosInstance.get(
+        `/diabeticsModule/dailyDosage/me/date/${today}`
       );
-      setTodaysReadings(res.data || []);
+      // Extract the data from the nested structure
+      const readings = res.data.map((reading) => reading.data);
+      setTodaysReadings(readings || []);
     } catch (error) {
       console.error("Error fetching today's readings:", error);
       // Use mock data
@@ -125,96 +100,27 @@ export default function PatientDashboard() {
   // Get week's data for chart
   const fetchWeekData = async () => {
     try {
-      const patientId = localStorage.getItem('patientId');
-      if (!patientId) return;
-
       // Get data for the last 7 days
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 6);
 
-      const res = await axios.get(
-        `/api/diabeticsModule/dailyDosage/patient/${patientId}/range/${startDate.toISOString()}/${endDate.toISOString()}`
+      const res = await axiosInstance.get(
+        `/diabeticsModule/dailyDosage/me/range/${startDate.toISOString()}/${endDate.toISOString()}`
       );
 
-      // Process the data for the chart
-      // This would need to be adapted based on the actual API response format
       if (res.data && res.data.length > 0) {
-        setWeekData(res.data);
+        // Extract the data from the nested structure
+        const readings = res.data.map((reading) => reading.data);
+        setWeekData(readings);
+      } else {
+        setWeekData([]);
       }
     } catch (error) {
       console.error('Error fetching week data:', error);
-      // Keep using mock data if API fails
+      setWeekData([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Save a new reading
-  const handleSaveReading = async () => {
-    try {
-      const patientId = localStorage.getItem('patientId');
-      if (!patientId) return;
-
-      // Validate input
-      if (
-        !newReading.bloodSugar ||
-        !newReading.carboLevel ||
-        !newReading.insulin
-      ) {
-        toast({
-          title: 'Missing fields',
-          description: 'Please fill in all required fields',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
-      }
-
-      // Prepare the data
-      const data = {
-        patientId,
-        data: {
-          date: new Date(),
-          ...newReading,
-          bloodSugar: parseFloat(newReading.bloodSugar),
-          carboLevel: parseFloat(newReading.carboLevel),
-          insulin: parseFloat(newReading.insulin),
-          longLastingInsulin: parseFloat(newReading.longLastingInsulin || 0),
-        },
-      };
-
-      await axios.post('/api/diabeticsModule/dailyDosage', data);
-
-      toast({
-        title: 'Reading saved',
-        description: 'Your health data has been recorded',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-
-      // Clear form and refresh data
-      setNewReading({
-        session: 'pre-breakfast',
-        bloodSugar: '',
-        carboLevel: '',
-        insulin: '',
-        longLastingInsulin: '',
-        physicalActivity: 'Low',
-      });
-      fetchTodaysReadings();
-      fetchWeekData();
-    } catch (error) {
-      console.error('Error saving reading:', error);
-      toast({
-        title: 'Error',
-        description: 'Could not save your reading. Please try again.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
     }
   };
 
@@ -224,13 +130,7 @@ export default function PatientDashboard() {
     fetchWeekData();
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewReading((prev) => ({ ...prev, [name]: value }));
-  };
-
   const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   if (loading) {
     return (
@@ -271,7 +171,7 @@ export default function PatientDashboard() {
             </Heading>
             <HStack>
               <Icon as={FiClock} />
-              <Text fontSize="sm">{new Date().toLocaleDateString()}</Text>
+              <Text fontSize="sm">{format(new Date(), 'dd-MM-yyyy')}</Text>
             </HStack>
           </Flex>
 
@@ -360,95 +260,13 @@ export default function PatientDashboard() {
           boxShadow="md"
           id="new-reading-form"
         >
-          <Heading as="h2" size="md" mb={4}>
-            Add New Reading
-          </Heading>
-
-          <VStack spacing={4} align="stretch">
-            <FormControl>
-              <FormLabel>Session</FormLabel>
-              <Select
-                name="session"
-                value={newReading.session}
-                onChange={handleInputChange}
-              >
-                <option value="pre-breakfast">Pre-Breakfast</option>
-                <option value="pre-lunch">Pre-Lunch</option>
-                <option value="pre-dinner">Pre-Dinner</option>
-                <option value="night">Night</option>
-              </Select>
-            </FormControl>
-
-            <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4}>
-              <FormControl isRequired>
-                <FormLabel>Blood Sugar (mg/dL)</FormLabel>
-                <Input
-                  type="number"
-                  name="bloodSugar"
-                  value={newReading.bloodSugar}
-                  onChange={handleInputChange}
-                  placeholder="Enter value"
-                />
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel>Carbohydrate Level (g)</FormLabel>
-                <Input
-                  type="number"
-                  name="carboLevel"
-                  value={newReading.carboLevel}
-                  onChange={handleInputChange}
-                  placeholder="Enter value"
-                />
-              </FormControl>
-            </SimpleGrid>
-
-            <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4}>
-              <FormControl isRequired>
-                <FormLabel>Insulin (units)</FormLabel>
-                <Input
-                  type="number"
-                  name="insulin"
-                  value={newReading.insulin}
-                  onChange={handleInputChange}
-                  placeholder="Enter value"
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>Long-lasting Insulin (units)</FormLabel>
-                <Input
-                  type="number"
-                  name="longLastingInsulin"
-                  value={newReading.longLastingInsulin}
-                  onChange={handleInputChange}
-                  placeholder="Enter value"
-                />
-              </FormControl>
-            </SimpleGrid>
-
-            <FormControl>
-              <FormLabel>Expected Physical Activity</FormLabel>
-              <Select
-                name="physicalActivity"
-                value={newReading.physicalActivity}
-                onChange={handleInputChange}
-              >
-                <option value="Low">Low</option>
-                <option value="Moderate">Moderate</option>
-                <option value="High">High</option>
-              </Select>
-            </FormControl>
-
-            <Button
-              colorScheme="teal"
-              size="md"
-              onClick={handleSaveReading}
-              mt={2}
-            >
-              Save Reading
-            </Button>
-          </VStack>
+          <DailyDosageForm
+            patientId={localStorage.getItem('patientId')}
+            onSuccess={() => {
+              fetchTodaysReadings();
+              fetchWeekData();
+            }}
+          />
         </Box>
       </SimpleGrid>
 
@@ -473,12 +291,88 @@ export default function PatientDashboard() {
           over the past week
         </Text>
 
-        {/* This would be replaced with Recharts Line Chart */}
-        <Box h="300px" position="relative">
-          <Text textAlign="center" color="gray.500">
-            Last 7 days readings
-          </Text>
-        </Box>
+        {weekData.length > 0 ? (
+          <Box h="300px">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={weekData}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(date) => format(new Date(date), 'MMM dd')}
+                />
+                <YAxis yAxisId="left" />
+                <YAxis yAxisId="right" orientation="right" />
+                <Tooltip
+                  labelFormatter={(date) =>
+                    format(new Date(date), 'MMM dd, yyyy')
+                  }
+                />
+                <Legend />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="bloodSugar"
+                  name="Blood Sugar"
+                  stroke="#E53E3E"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="carboLevel"
+                  name="Carbs"
+                  stroke="#38A169"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="insulin"
+                  name="Insulin"
+                  stroke="#3182CE"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="longLastingInsulin"
+                  name="Long Lasting Insulin"
+                  stroke="#805AD5"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Box>
+        ) : (
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
+            h="300px"
+            bg="gray.50"
+            borderRadius="md"
+          >
+            <Text color="gray.500">
+              No readings available for the past week
+            </Text>
+          </Flex>
+        )}
       </Box>
 
       {/* Advice & Recommendations */}

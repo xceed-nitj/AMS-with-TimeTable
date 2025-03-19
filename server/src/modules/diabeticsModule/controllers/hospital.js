@@ -1,4 +1,6 @@
 const Hospital = require('../../../models/diabeticsModule/hospital')
+const Doctor = require('../../../models/diabeticsModule/doctor')
+const Patient = require('../../../models/diabeticsModule/patient')
 
 // Create a hospital
 const addHospital = async (req, res) => {
@@ -105,6 +107,122 @@ const getHospitalCount = async (req, res) => {
   }
 }
 
+// Get all doctors assigned to a hospital
+const getHospitalDoctors = async (req, res) => {
+  const { id } = req.params
+  try {
+    const hospital = await Hospital.findById(id)
+    if (!hospital) {
+      return res.status(404).json({ message: 'Hospital not found.' })
+    }
+
+    // Get all doctors assigned to this hospital
+    const doctors = await Doctor.find({ hospital: hospital.name })
+    res.status(200).json(doctors)
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching hospital doctors.', error })
+  }
+}
+
+// Get all patients assigned to a hospital
+const getHospitalPatients = async (req, res) => {
+  const { id } = req.params
+  try {
+    const hospital = await Hospital.findById(id)
+    if (!hospital) {
+      return res.status(404).json({ message: 'Hospital not found.' })
+    }
+
+    // Get all patients assigned to this hospital
+    const patients = await Patient.find({ hospital: hospital.name })
+    res.status(200).json(patients)
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Error fetching hospital patients.', error })
+  }
+}
+
+// Get all unassigned doctors (not assigned to any hospital)
+const getUnassignedDoctors = async (req, res) => {
+  const { hospitalId } = req.params
+  try {
+    const hospital = await Hospital.findById(hospitalId)
+    if (!hospital) {
+      return res.status(404).json({ message: 'Hospital not found.' })
+    }
+
+    // Get all doctors that are not assigned to this hospital
+    const doctors = await Doctor.find({ hospital: { $ne: hospital.name } })
+    res.status(200).json(doctors)
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Error fetching unassigned doctors.', error })
+  }
+}
+
+// Assign multiple doctors to a hospital
+const assignDoctorsToHospital = async (req, res) => {
+  const { id } = req.params
+  const { doctorIds } = req.body
+
+  try {
+    const hospital = await Hospital.findById(id)
+    if (!hospital) {
+      return res.status(404).json({ message: 'Hospital not found.' })
+    }
+
+    // Update each doctor's hospital field
+    await Doctor.updateMany(
+      { _id: { $in: doctorIds } },
+      { $set: { hospital: hospital.name } }
+    )
+
+    // Add doctors to hospital's doctors array
+    for (const doctorId of doctorIds) {
+      const doctor = await Doctor.findById(doctorId)
+      if (doctor) {
+        await addDoctorToHospital(hospital.name, doctor._id, doctor.name)
+      }
+    }
+
+    res.status(200).json({ message: 'Doctors assigned successfully.' })
+  } catch (error) {
+    res.status(500).json({ message: 'Error assigning doctors.', error })
+  }
+}
+
+// Remove a doctor from a hospital
+const removeDoctorFromHospital = async (req, res) => {
+  const { id, doctorId } = req.params
+  try {
+    const hospital = await Hospital.findById(id)
+    if (!hospital) {
+      return res.status(404).json({ message: 'Hospital not found.' })
+    }
+
+    const doctor = await Doctor.findById(doctorId)
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found.' })
+    }
+
+    // Remove doctor from hospital's doctors array
+    hospital.doctors = hospital.doctors.filter(
+      (d) => d.dcotorId.toString() !== doctorId
+    )
+    await hospital.save()
+
+    // Update doctor's hospital field to null
+    doctor.hospital = null
+    await doctor.save()
+
+    res.status(200).json({ message: 'Doctor removed successfully.' })
+  } catch (error) {
+    res.status(500).json({ message: 'Error removing doctor.', error })
+  }
+}
+
 module.exports = {
   addHospital,
   getHospitals,
@@ -114,4 +232,9 @@ module.exports = {
   addPatientToHospital,
   addDoctorToHospital,
   getHospitalCount,
+  getHospitalDoctors,
+  getHospitalPatients,
+  getUnassignedDoctors,
+  assignDoctorsToHospital,
+  removeDoctorFromHospital,
 }

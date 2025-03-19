@@ -160,6 +160,10 @@ import DoctorDashboard from './diabeticsModule/pages/DoctorDashboard';
 import PatientDetailView from './diabeticsModule/pages/PatientDetailView';
 import LoginPage from './diabeticsModule/pages/LoginPage';
 
+// Detail View Routes for Admin
+import DoctorDetailView from './diabeticsModule/pages/DoctorDetailView';
+import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
+
 function App() {
   return (
     <Router>
@@ -496,6 +500,13 @@ function App() {
         {/* Doctor Routes */}
         <Route path="/dm/doctor/dashboard" element={<DoctorDashboard />} />
         <Route path="/dm/patient/:patientId" element={<PatientDetailView />} />
+
+        {/* Detail View Routes for Admin */}
+        <Route path="/dm/doctor/:doctorId" element={<DoctorDetailView />} />
+        <Route
+          path="/dm/hospital/:hospitalId"
+          element={<HospitalDetailView />}
+        />
 
         {/* Data Entry Forms */}
         <Route path="/dm/addHospital" element={<HospitalForm />} />
