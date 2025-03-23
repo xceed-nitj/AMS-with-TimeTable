@@ -22,7 +22,8 @@ import {
   CardBody,
   useToast,
 } from '@chakra-ui/react';
-import { axiosInstance } from '../../../getenvironment';
+import { axiosInstance } from '../../api/config';
+import { getStatusColor } from '../../utils/statusUtils';
 const PatientDetailView = () => {
   const { patientId } = useParams();
   const [patient, setPatient] = useState(null);
@@ -134,18 +135,6 @@ const PatientDetailView = () => {
       processChartData(readings, timeRange, selectedSession);
     }
   }, [timeRange, selectedSession, readings]);
-
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-
-    const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -268,8 +257,79 @@ const PatientDetailView = () => {
             <Heading size="md">Hospital Information</Heading>
           </CardHeader>
           <CardBody>
-            <Text>Hospital: {patient.hospital}</Text>
-            <Text>Assigned Doctors: {patient.doctorIds?.length || 0}</Text>
+            <VStack spacing={6} align="stretch">
+              {/* Hospital Details */}
+              <Box>
+                <Heading size="sm" mb={3}>
+                  Hospital Details
+                </Heading>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  <Box>
+                    <Text fontWeight="bold">Name</Text>
+                    <Text>{patient.hospital.name}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold">Location</Text>
+                    <Text>{patient.hospital.location}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold">Contact</Text>
+                    <Text>{patient.hospital.phone}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold">Registration Date</Text>
+                    <Text>
+                      {new Date(
+                        patient.hospital.createdAt
+                      ).toLocaleDateString()}
+                    </Text>
+                  </Box>
+                </SimpleGrid>
+              </Box>
+
+              <Divider />
+
+              {/* Assigned Doctors */}
+              <Box>
+                <Heading size="sm" mb={3}>
+                  Assigned Doctors
+                </Heading>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  {patient.doctors?.map((doctor) => (
+                    <Card key={doctor._id} variant="outline">
+                      <CardBody>
+                        <VStack align="start" spacing={2}>
+                          <Text fontWeight="bold" fontSize="lg">
+                            {doctor.name}
+                          </Text>
+                          <SimpleGrid columns={2} spacing={4} width="100%">
+                            <Box>
+                              <Text color="gray.600">Age</Text>
+                              <Text>{doctor.age}</Text>
+                            </Box>
+                            <Box>
+                              <Text color="gray.600">Contact</Text>
+                              <Text>{doctor.contactNumber}</Text>
+                            </Box>
+                            <Box>
+                              <Text color="gray.600">Email</Text>
+                              <Text>{doctor.email}</Text>
+                            </Box>
+                            <Box>
+                              <Text color="gray.600">Address</Text>
+                              <Text>{doctor.address}</Text>
+                            </Box>
+                          </SimpleGrid>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+                {(!patient.doctors || patient.doctors.length === 0) && (
+                  <Text color="gray.500">No doctors assigned yet</Text>
+                )}
+              </Box>
+            </VStack>
           </CardBody>
         </Card>
       </VStack>
@@ -281,17 +341,6 @@ export default PatientDetailView;
 
 // Stat Box Component
 const StatBox = ({ title, value, unit, status, icon }) => {
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'warning':
-        return 'orange.500';
-      case 'danger':
-        return 'red.500';
-      default:
-        return 'green.500';
-    }
-  };
-
   const color = getStatusColor(status);
   const bg = useColorModeValue('white', 'gray.700');
 

@@ -63,7 +63,7 @@ import {
   FiUserX,
 } from 'react-icons/fi';
 import { Link as RouterLink, useParams } from 'react-router-dom';
-import { axiosInstance } from '../../../getenvironment';
+import { axiosInstance } from '../../api/config';
 
 // Mock data - replace with actual API calls
 export default function HospitalDetailView() {
@@ -94,11 +94,11 @@ export default function HospitalDetailView() {
       const res = await axiosInstance.get(
         `/diabeticsModule/hospital/${hospitalId}`
       );
-      setHospital(res.data);
+      setHospital(res.data.hospital);
       setFormData({
-        name: res.data.name,
-        location: res.data.location,
-        phone: res.data.phone,
+        name: res.data.hospital.name,
+        location: res.data.hospital.location,
+        phone: res.data.hospital.phone,
       });
     } catch (error) {
       console.error('Error fetching hospital data:', error);

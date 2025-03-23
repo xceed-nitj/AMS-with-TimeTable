@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '../../getenvironment';
+import { axiosInstance } from '../api/config';
 import {
   Box,
   Button,
@@ -24,8 +24,14 @@ import {
   Radio,
   Stack,
   useColorModeValue,
+  HStack,
+  Tag,
+  TagLabel,
+  TagCloseButton,
 } from '@chakra-ui/react';
-import { FiCheck, FiUsers } from 'react-icons/fi';
+import { FiCheck, FiUsers, FiUserPlus, FiPlus } from 'react-icons/fi';
+import { getHospitalDoctors } from '../api/hospitalApi';
+import { addPatient } from '../api/patientApi';
 
 function PatientForm() {
   const [formData, setFormData] = useState({
@@ -47,7 +53,7 @@ function PatientForm() {
     age: '',
     contactNumber: '',
     address: '',
-    selectedDoctors: [],
+    doctorIds: [],
     password: '12345', // Default password
     hospital: '',
   });
@@ -55,6 +61,7 @@ function PatientForm() {
   const [hospitals, setHospitals] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState('');
 
   const toast = useToast();
 
@@ -64,8 +71,13 @@ function PatientForm() {
   // Fetch hospitals and doctors when component mounts
   useEffect(() => {
     fetchHospitals();
-    fetchDoctors();
   }, []);
+
+  useEffect(() => {
+    if (formData.hospital) {
+      fetchDoctors(formData.hospital);
+    }
+  }, [formData.hospital]);
 
   // Fetch hospitals data
   const fetchHospitals = async () => {
@@ -85,10 +97,11 @@ function PatientForm() {
   };
 
   // Fetch doctors data
-  const fetchDoctors = async () => {
+  const fetchDoctors = async (hospitalId) => {
     try {
-      const response = await axiosInstance.get('/diabeticsModule/doctor/all');
-      setDoctors(response.data || []);
+      const doctors = await getHospitalDoctors(hospitalId);
+      console.log(doctors);
+      setDoctors(doctors || []);
     } catch (error) {
       console.error('Error fetching doctors:', error);
       toast({
@@ -114,10 +127,10 @@ function PatientForm() {
   const handleDoctorChange = (e) => {
     const value = e.target.value;
 
-    if (!formData.selectedDoctors.includes(value) && value) {
+    if (!formData.doctorIds.includes(value) && value) {
       setFormData({
         ...formData,
-        selectedDoctors: [...formData.selectedDoctors, value],
+        doctorIds: [...formData.doctorIds, value],
       });
     }
   };
@@ -126,7 +139,7 @@ function PatientForm() {
   const removeDoctor = (doctorId) => {
     setFormData({
       ...formData,
-      selectedDoctors: formData.selectedDoctors.filter((id) => id !== doctorId),
+      doctorIds: formData.doctorIds.filter((id) => id !== doctorId),
     });
   };
 
@@ -165,10 +178,7 @@ function PatientForm() {
     setIsSubmitting(true);
 
     try {
-      const response = await axiosInstance.post(
-        '/diabeticsModule/patient/add',
-        formData
-      );
+      await addPatient(formData);
 
       toast({
         title: 'Success!',
@@ -198,7 +208,7 @@ function PatientForm() {
         age: '',
         contactNumber: '',
         address: '',
-        selectedDoctors: [],
+        doctorIds: [],
         password: '12345',
         hospital: '',
       });
@@ -214,6 +224,16 @@ function PatientForm() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const addDoctor = () => {
+    if (selectedDoctor && !formData.doctorIds.includes(selectedDoctor)) {
+      setFormData({
+        ...formData,
+        doctorIds: [...formData.doctorIds, selectedDoctor],
+      });
+      setSelectedDoctor('');
     }
   };
 
@@ -409,7 +429,7 @@ function PatientForm() {
                       onChange={handleChange}
                     >
                       {hospitals.map((hospital) => (
-                        <option key={hospital._id} value={hospital.name}>
+                        <option key={hospital._id} value={hospital._id}>
                           {hospital.name}
                         </option>
                       ))}
@@ -496,49 +516,66 @@ function PatientForm() {
 
               {/* Doctor Assignment */}
               <Box>
-                <Heading size="md" mb={4}>
-                  Assign Doctors
-                </Heading>
-                <FormControl>
-                  <FormLabel>Select Doctors</FormLabel>
-                  <Select
-                    placeholder="Select a doctor"
-                    onChange={handleDoctorChange}
-                  >
-                    <option value="">Select doctor</option>
-                    {doctors.map((doctor) => (
-                      <option key={doctor._id} value={doctor._id}>
-                        {doctor.name}{' '}
-                        {doctor.specialization
-                          ? `- ${doctor.specialization}`
-                          : ''}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Flex align="center" mb={2}>
+                  <Icon as={FiUserPlus} mr={2} color="blue.500" />
+                  <Heading size="md">Assign Doctors</Heading>
+                </Flex>
 
-                {formData.selectedDoctors.length > 0 && (
-                  <Box mt={4}>
-                    <Text fontWeight="medium" mb={2}>
-                      Assigned Doctors:
-                    </Text>
-                    <Flex wrap="wrap" gap={2}>
-                      {formData.selectedDoctors.map((doctorId) => {
-                        const doctor = doctors.find((d) => d._id === doctorId);
-                        return doctor ? (
-                          <Button
-                            key={doctorId}
-                            size="sm"
-                            colorScheme="cyan"
-                            variant="outline"
+                <HStack spacing={4} mb={4}>
+                  <FormControl>
+                    <Select
+                      value={selectedDoctor}
+                      onChange={(e) => setSelectedDoctor(e.target.value)}
+                      placeholder="Select Doctor"
+                      size="md"
+                      borderRadius="md"
+                      disabled={formData.hospital === ''}
+                    >
+                      {doctors.map((doctor) => (
+                        <option key={doctor._id} value={doctor._id}>
+                          {doctor.name}{' '}
+                          {doctor.specialization
+                            ? `- ${doctor.specialization}`
+                            : ''}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Button
+                    onClick={addDoctor}
+                    colorScheme="blue"
+                    leftIcon={<FiPlus />}
+                    flexShrink={0}
+                    isDisabled={!selectedDoctor || formData.hospital === ''}
+                  >
+                    Add
+                  </Button>
+                </HStack>
+
+                {formData.doctorIds.length > 0 ? (
+                  <Flex wrap="wrap" gap={2} mb={4}>
+                    {formData.doctorIds.map((doctorId) => {
+                      const doctor = doctors.find((d) => d._id === doctorId);
+                      return doctor ? (
+                        <Tag
+                          key={doctorId}
+                          size="md"
+                          borderRadius="full"
+                          variant="solid"
+                          colorScheme="cyan"
+                        >
+                          <TagLabel>{doctor.name}</TagLabel>
+                          <TagCloseButton
                             onClick={() => removeDoctor(doctorId)}
-                          >
-                            {doctor.name} ✕
-                          </Button>
-                        ) : null;
-                      })}
-                    </Flex>
-                  </Box>
+                          />
+                        </Tag>
+                      ) : null;
+                    })}
+                  </Flex>
+                ) : (
+                  <Text color="gray.500" fontSize="sm" mb={4}>
+                    No doctors assigned yet
+                  </Text>
                 )}
               </Box>
             </VStack>

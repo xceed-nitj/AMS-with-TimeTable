@@ -21,7 +21,8 @@ import {
   FiLogOut,
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
-import getEnvironment, { axiosInstance } from '../../getenvironment';
+import getEnvironment from '../../getenvironment';
+import { axiosInstance } from '../api/config';
 
 const DMNavbar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();

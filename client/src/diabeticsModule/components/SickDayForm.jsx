@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '../../getenvironment';
+import { axiosInstance } from '../api/config';
 import {
   Button,
   Container,

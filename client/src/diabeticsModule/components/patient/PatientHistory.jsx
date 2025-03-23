@@ -40,7 +40,7 @@ import {
 } from 'react-icons/fi';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { axiosInstance } from '../../../getenvironment';
+import { axiosInstance } from '../../api/config';
 
 // Mock data - replace with actual API calls
 const mockReadings = Array(30)

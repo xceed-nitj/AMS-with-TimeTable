@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '../../getenvironment';
+import { axiosInstance } from '../api/config';
 import {
   Box,
   Container,
@@ -181,6 +181,7 @@ function HospitalForm() {
     setIsSubmitting(true);
 
     try {
+      // TODO : create a function in the api file for add hospital
       const response = await axiosInstance.post(
         '/diabeticsModule/hospital/add',
         hospitalData

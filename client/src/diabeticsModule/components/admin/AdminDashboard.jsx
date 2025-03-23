@@ -5,13 +5,8 @@ import {
   Container,
   Flex,
   Heading,
-  Icon,
   SimpleGrid,
   Spinner,
-  Stat,
-  StatHelpText,
-  StatLabel,
-  StatNumber,
   Tab,
   TabList,
   TabPanel,
@@ -21,19 +16,21 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
-
 import {
   BuildingOfficeIcon,
   ChartBarIcon,
   UserPlusIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { axiosInstance } from '../../../getenvironment';
+import React, { useEffect, useState } from 'react';
+import { Link, Link as RouterLink, useNavigate } from 'react-router-dom';
+import { getDailyDosageCount } from '../../api/dailyDosageApi';
+import { getAllDoctors, getDoctorCount } from '../../api/doctorApi';
+import { getAllHospitals, getHospitalCount } from '../../api/hospitalApi';
+import { getAllPatients, getPatientCount } from '../../api/patientApi';
+import StatCard from '../common/StatCard';
 
-// Create an axios instance with the base URL
-export default function AdminDashboard() {
+const AdminDashboard = () => {
   const [stats, setStats] = useState({
     patientsCount: 0,
     doctorsCount: 0,
@@ -49,37 +46,28 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      // These endpoints would need to be implemented on the backend
-      const [patientsRes, doctorsRes, hospitalsRes, readingsRes] =
+      const [patientsCount, doctorsCount, hospitalsCount, readingsCount] =
         await Promise.all([
-          axiosInstance.get('/diabeticsModule/patient/count'),
-          axiosInstance.get('/diabeticsModule/doctor/count'),
-          axiosInstance.get('/diabeticsModule/hospital/count'),
-          axiosInstance.get('/diabeticsModule/dailyDosage/count'),
+          getPatientCount(),
+          getDoctorCount(),
+          getHospitalCount(),
+          getDailyDosageCount(),
         ]);
 
       setStats({
-        patientsCount: patientsRes.data.count || 0,
-        doctorsCount: doctorsRes.data.count || 0,
-        hospitalsCount: hospitalsRes.data.count || 0,
-        readingsCount: readingsRes.data.count || 0,
+        patientsCount: patientsCount.count || 0,
+        doctorsCount: doctorsCount.count || 0,
+        hospitalsCount: hospitalsCount.count || 0,
+        readingsCount: readingsCount.count || 0,
       });
     } catch (error) {
-      console.error('Error fetching stats:', error);
       toast({
         title: 'Error fetching data',
-        description: 'Unable to load dashboard statistics',
+        description: error.message || 'Unable to load dashboard statistics',
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
-      // Use mock data when API fails
-      // setStats({
-      //   patientsCount: 28,
-      //   doctorsCount: 12,
-      //   hospitalsCount: 4,
-      //   readingsCount: 348,
-      // });
     } finally {
       setLoading(false);
     }
@@ -87,13 +75,12 @@ export default function AdminDashboard() {
 
   const fetchPatients = async () => {
     try {
-      const res = await axiosInstance.get('/diabeticsModule/patient/all');
-      setPatients(res.data || []);
+      const data = await getAllPatients();
+      setPatients(data || []);
     } catch (error) {
-      console.error('Error fetching patients:', error);
       toast({
         title: 'Error',
-        description: 'Unable to load patients data',
+        description: error.message || 'Unable to load patients data',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -103,13 +90,12 @@ export default function AdminDashboard() {
 
   const fetchDoctors = async () => {
     try {
-      const res = await axiosInstance.get('/diabeticsModule/doctor/all');
-      setDoctors(res.data || []);
+      const data = await getAllDoctors();
+      setDoctors(data || []);
     } catch (error) {
-      console.error('Error fetching doctors:', error);
       toast({
         title: 'Error',
-        description: 'Unable to load doctors data',
+        description: error.message || 'Unable to load doctors data',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -119,13 +105,12 @@ export default function AdminDashboard() {
 
   const fetchHospitals = async () => {
     try {
-      const res = await axiosInstance.get('/diabeticsModule/hospital/all');
-      setHospitals(res.data || []);
+      const data = await getAllHospitals();
+      setHospitals(data || []);
     } catch (error) {
-      console.error('Error fetching hospitals:', error);
       toast({
         title: 'Error',
-        description: 'Unable to load hospitals data',
+        description: error.message || 'Unable to load hospitals data',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -141,7 +126,6 @@ export default function AdminDashboard() {
   }, []);
 
   const bg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   if (loading) {
     return (
@@ -159,30 +143,30 @@ export default function AdminDashboard() {
         <StatCard
           icon={UsersIcon}
           title="Total Patients"
-          stat={stats.patientsCount}
-          helpText="Registered in the system"
-          accentColor="cyan.400"
+          value={stats.patientsCount}
+          description="Registered in the system"
+          color="cyan.400"
         />
         <StatCard
           icon={UserPlusIcon}
           title="Total Doctors"
-          stat={stats.doctorsCount}
-          helpText="Active practitioners"
-          accentColor="blue.400"
+          value={stats.doctorsCount}
+          description="Active practitioners"
+          color="blue.400"
         />
         <StatCard
           icon={BuildingOfficeIcon}
           title="Total Hospitals"
-          stat={stats.hospitalsCount}
-          helpText="Partnered facilities"
-          accentColor="teal.400"
+          value={stats.hospitalsCount}
+          description="Partnered facilities"
+          color="teal.400"
         />
         <StatCard
           icon={ChartBarIcon}
           title="Total Readings"
-          stat={stats.readingsCount}
-          helpText="Patient health metrics"
-          accentColor="cyan.400"
+          value={stats.readingsCount}
+          description="Patient health metrics"
+          color="cyan.400"
         />
       </SimpleGrid>
 
@@ -281,39 +265,9 @@ export default function AdminDashboard() {
       </Box>
     </Container>
   );
-}
-
-const StatCard = ({ title, stat, helpText, icon, accentColor }) => {
-  const bg = useColorModeValue('white', 'gray.700');
-
-  return (
-    <Box
-      bg={bg}
-      p={6}
-      borderRadius="lg"
-      boxShadow="md"
-      borderLeft="4px solid"
-      borderLeftColor={accentColor}
-    >
-      <Flex justifyContent="space-between" alignItems="center">
-        <Box>
-          <Stat>
-            <StatLabel color="gray.500" fontSize="sm">
-              {title}
-            </StatLabel>
-            <StatNumber fontSize="3xl" fontWeight="bold">
-              {stat}
-            </StatNumber>
-            <StatHelpText fontSize="xs" color="gray.500">
-              {helpText}
-            </StatHelpText>
-          </Stat>
-        </Box>
-        <Icon as={icon} boxSize={8} color={accentColor} opacity={0.8} />
-      </Flex>
-    </Box>
-  );
 };
+
+export default AdminDashboard;
 
 const DataList = ({ items, fields, headers, emptyText, type }) => {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -377,7 +331,22 @@ const DataList = ({ items, fields, headers, emptyText, type }) => {
                   borderColor={borderColor}
                   fontSize="sm"
                 >
-                  {item[field]}
+                  {field === 'hospital' ? (
+                    item.hospital ? (
+                      <Button size="xs" colorScheme="blue" variant="ghost">
+                        <Link
+                          to={`/dm/hospital/${item.hospital._id}`}
+                          color="blue.500"
+                        >
+                          {item.hospital.name}
+                        </Link>
+                      </Button>
+                    ) : (
+                      'N/A'
+                    )
+                  ) : (
+                    item[field]
+                  )}
                 </chakra.td>
               ))}
               <chakra.td
