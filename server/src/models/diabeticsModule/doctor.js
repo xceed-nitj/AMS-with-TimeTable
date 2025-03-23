@@ -33,13 +33,14 @@ const doctorSchema = new mongoose.Schema({
     required: true,
   },
   hospital: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Hospital',
     required: true,
   },
   patientIds: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // Reference to the User model for doctors
+      ref: 'user', // Reference to the User model for doctors
     },
   ],
 

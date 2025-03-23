@@ -6,46 +6,46 @@ const Patient = require('../../../models/diabeticsModule/patient')
 const addHospital = async (req, res) => {
   try {
     const newHospital = new Hospital(req.body)
-    await newHospital.save()
-    res.status(201).json(newHospital)
+    const doctorIds = req.body.doctors
+    const patientIds = req.body.patients
+
+    const savedHospital = await newHospital.save()
+
+    if (doctorIds) {
+      await Doctor.updateMany(
+        { _id: { $in: doctorIds } },
+        { $set: { hospital: savedHospital._id } }
+      )
+    }
+
+    if (patientIds) {
+      await Patient.updateMany(
+        { _id: { $in: patientIds } },
+        { $set: { hospital: savedHospital._id } }
+      )
+    }
+    res.status(201).json(savedHospital)
   } catch (error) {
     res.status(500).json({ message: 'Error creating hospital.', error })
   }
 }
 
-const addPatientToHospital = async (hospitalName, patientId, patientName) => {
-  try {
-    const hospital = await Hospital.findOne({ name: hospitalName })
+// const addPatientToHospital = async (hospitalName, patientId, patientName) => {
+//   try {
+//     const hospital = await Hospital.findOne({ name: hospitalName })
 
-    if (!hospital) {
-      throw new Error('Hospital not found')
-    }
+//     if (!hospital) {
+//       throw new Error('Hospital not found')
+//     }
 
-    // Add patient object to the hospital's patients array
-    hospital.patients.push({ patientId, name: patientName })
-    await hospital.save()
-  } catch (error) {
-    console.error('Error updating hospital with patient:', error)
-    throw error // re-throw to handle in calling function
-  }
-}
-
-const addDoctorToHospital = async (hospitalName, dcotorId, doctorName) => {
-  try {
-    const hospital = await Hospital.findOne({ name: hospitalName })
-
-    if (!hospital) {
-      throw new Error('Hospital not found')
-    }
-
-    // Add patient object to the hospital's patients array
-    hospital.doctors.push({ dcotorId, name: doctorName })
-    await hospital.save()
-  } catch (error) {
-    console.error('Error updating hospital with doctor:', error)
-    throw error // re-throw to handle in calling function
-  }
-}
+//     // Add patient object to the hospital's patients array
+//     hospital.patients.push({ patientId, name: patientName })
+//     await hospital.save()
+//   } catch (error) {
+//     console.error('Error updating hospital with patient:', error)
+//     throw error // re-throw to handle in calling function
+//   }
+// }
 
 // Get all
 const getHospitals = async (req, res) => {
@@ -62,9 +62,11 @@ const getHospitalById = async (req, res) => {
   const { id } = req.params
   try {
     const hospital = await Hospital.findById(id)
+    const doctors = await Doctor.find({ hospital: hospital._id })
+    const patients = await Patient.find({ hospital: hospital._id })
     if (!hospital)
       return res.status(404).json({ message: 'Hospital not found.' })
-    res.status(200).json(hospital)
+    res.status(200).json({ hospital, doctors, patients })
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving hospital.', error })
   }
@@ -116,8 +118,7 @@ const getHospitalDoctors = async (req, res) => {
       return res.status(404).json({ message: 'Hospital not found.' })
     }
 
-    // Get all doctors assigned to this hospital
-    const doctors = await Doctor.find({ hospital: hospital.name })
+    const doctors = await Doctor.find({ hospital: hospital._id })
     res.status(200).json(doctors)
   } catch (error) {
     res.status(500).json({ message: 'Error fetching hospital doctors.', error })
@@ -134,7 +135,7 @@ const getHospitalPatients = async (req, res) => {
     }
 
     // Get all patients assigned to this hospital
-    const patients = await Patient.find({ hospital: hospital.name })
+    const patients = await Patient.find({ hospital: hospital._id })
     res.status(200).json(patients)
   } catch (error) {
     res
@@ -153,7 +154,7 @@ const getUnassignedDoctors = async (req, res) => {
     }
 
     // Get all doctors that are not assigned to this hospital
-    const doctors = await Doctor.find({ hospital: { $ne: hospital.name } })
+    const doctors = await Doctor.find({ hospital: null })
     res.status(200).json(doctors)
   } catch (error) {
     res
@@ -176,16 +177,8 @@ const assignDoctorsToHospital = async (req, res) => {
     // Update each doctor's hospital field
     await Doctor.updateMany(
       { _id: { $in: doctorIds } },
-      { $set: { hospital: hospital.name } }
+      { $set: { hospital: hospital._id } }
     )
-
-    // Add doctors to hospital's doctors array
-    for (const doctorId of doctorIds) {
-      const doctor = await Doctor.findById(doctorId)
-      if (doctor) {
-        await addDoctorToHospital(hospital.name, doctor._id, doctor.name)
-      }
-    }
 
     res.status(200).json({ message: 'Doctors assigned successfully.' })
   } catch (error) {
@@ -229,8 +222,8 @@ module.exports = {
   getHospitalById,
   updateHospital,
   deleteHospital,
-  addPatientToHospital,
-  addDoctorToHospital,
+  // addPatientToHospital,
+  // addDoctorToHospital,
   getHospitalCount,
   getHospitalDoctors,
   getHospitalPatients,

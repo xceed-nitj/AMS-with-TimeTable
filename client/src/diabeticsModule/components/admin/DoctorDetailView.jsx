@@ -55,7 +55,7 @@ import {
   FiUserX,
 } from 'react-icons/fi';
 import { Link as RouterLink, useParams } from 'react-router-dom';
-import { axiosInstance } from '../../../getenvironment';
+import { axiosInstance } from '../../api/config';
 
 export default function DoctorDetailView() {
   const { doctorId } = useParams();
@@ -83,6 +83,7 @@ export default function DoctorDetailView() {
         `/diabeticsModule/doctor/${doctorId}`
       );
       setDoctor(res.data);
+      setAssignedPatients(res.data.patients);
       setFormData({
         name: res.data.name,
         email: res.data.email,
@@ -94,18 +95,6 @@ export default function DoctorDetailView() {
       });
     } catch (error) {
       console.error('Error fetching doctor data:', error);
-    }
-  };
-
-  // Fetch assigned patients
-  const fetchAssignedPatients = async () => {
-    try {
-      const res = await axiosInstance.get(
-        `/diabeticsModule/doctor/${doctorId}/patients`
-      );
-      setAssignedPatients(res.data || []);
-    } catch (error) {
-      console.error('Error fetching assigned patients:', error);
     }
   };
 
@@ -142,7 +131,6 @@ export default function DoctorDetailView() {
 
   useEffect(() => {
     fetchDoctorData();
-    fetchAssignedPatients();
     fetchAvailablePatients();
     fetchHospitals();
   }, [doctorId]);
@@ -160,6 +148,7 @@ export default function DoctorDetailView() {
   const handleUpdate = async () => {
     try {
       setLoading(true);
+      // TODO: create a function in the api file for update doctor
       const response = await axiosInstance.patch(
         `/diabeticsModule/doctor/${doctorId}`,
         formData
@@ -235,7 +224,7 @@ export default function DoctorDetailView() {
 
       onClose();
       setSelectedPatients([]);
-      fetchAssignedPatients();
+      fetchDoctorData();
       fetchAvailablePatients();
     } catch (error) {
       console.error('Error assigning patients:', error);
@@ -265,7 +254,7 @@ export default function DoctorDetailView() {
         isClosable: true,
       });
 
-      fetchAssignedPatients();
+      fetchDoctorData();
       fetchAvailablePatients();
     } catch (error) {
       console.error('Error removing patient:', error);
@@ -415,7 +404,20 @@ export default function DoctorDetailView() {
               <HStack>
                 <Icon as={FiMapPin} color="blue.500" />
                 <Text fontWeight="bold">Hospital:</Text>
-                <Text>{doctor?.hospital}</Text>
+                <Text>
+                  <Button
+                    variant="link"
+                    colorScheme="blue"
+                    onClick={() => {
+                      window.open(
+                        `/dm/hospital/${doctor?.hospital._id}`,
+                        '_blank'
+                      );
+                    }}
+                  >
+                    {doctor?.hospital?.name}
+                  </Button>
+                </Text>
               </HStack>
               <HStack gridColumn={{ md: 'span 2' }}>
                 <Icon as={FiMapPin} color="blue.500" />
@@ -474,7 +476,20 @@ export default function DoctorDetailView() {
                         </Td>
                         <Td>{patient.age}</Td>
                         <Td>{patient.contactNumber}</Td>
-                        <Td>{patient.hospital}</Td>
+                        <Td>
+                          <Button
+                            variant="link"
+                            colorScheme="blue"
+                            onClick={() => {
+                              window.open(
+                                `/dm/hospital/${doctor?.hospital._id}`,
+                                '_blank'
+                              );
+                            }}
+                          >
+                            {doctor?.hospital?.name}
+                          </Button>
+                        </Td>
                         <Td>
                           <HStack spacing={2}>
                             <IconButton

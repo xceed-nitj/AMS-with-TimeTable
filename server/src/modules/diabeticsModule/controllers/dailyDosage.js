@@ -94,14 +94,18 @@ const getLatestReading = async (req, res) => {
   try {
     const patientId = req.params.patientId
 
+    // Check if the patient exists
+    const patientExists = await Patient.exists({ _id: patientId })
+    if (!patientExists) {
+      return res.status(404).json({ message: 'Patient not found' })
+    }
+
     const latestReading = await DailyDosage.findOne({ patientId })
       .sort({ 'data.date': -1, createdAt: -1 })
       .limit(1)
 
     if (!latestReading) {
-      return res
-        .status(404)
-        .json({ message: 'No readings found for this patient' })
+      return res.status(200).json({ data: [] })
     }
 
     res.status(200).json(latestReading.data)

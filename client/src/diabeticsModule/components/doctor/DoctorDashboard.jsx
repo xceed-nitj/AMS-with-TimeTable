@@ -12,10 +12,6 @@ import {
   InputLeftElement,
   SimpleGrid,
   Spinner,
-  Stat,
-  StatHelpText,
-  StatLabel,
-  StatNumber,
   Table,
   Tbody,
   Td,
@@ -26,19 +22,22 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
+import { format } from 'date-fns';
 import React, { useEffect, useState } from 'react';
 import {
-  FiActivity,
   FiAlertCircle,
   FiArrowRight,
   FiBarChart2,
   FiCheckCircle,
   FiSearch,
-  FiUser,
   FiUsers,
 } from 'react-icons/fi';
 import { Link as RouterLink } from 'react-router-dom';
-import { axiosInstance } from '../../../getenvironment';
+import { getPatientLatestDosage } from '../../api/dailyDosageApi';
+import { getCurrentDoctor } from '../../api/doctorApi';
+import { getPatientById } from '../../api/patientApi';
+import { getStatusColor, getStatusIcon } from '../../utils/statusUtils';
+import StatCard from '../common/StatCard';
 
 export default function DoctorDashboard() {
   const [patients, setPatients] = useState([]);
@@ -60,13 +59,13 @@ export default function DoctorDashboard() {
   // Fetch doctor's own data
   const fetchDoctorProfile = async () => {
     try {
-      const res = await axiosInstance.get('/diabeticsModule/doctor/me');
-      setDoctorInfo(res.data);
+      const data = await getCurrentDoctor();
+      setDoctorInfo(data);
+      fetchPatients(data);
     } catch (error) {
-      console.error('Error fetching doctor profile:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load doctor profile',
+        description: error.message || 'Failed to load doctor profile',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -75,67 +74,58 @@ export default function DoctorDashboard() {
   };
 
   // Fetch patients assigned to this doctor
-  const fetchPatients = async () => {
+  const fetchPatients = async (doctorData) => {
     try {
-      // Get doctor's own data which includes their patients
-      const res = await axiosInstance.get('/diabeticsModule/doctor/me');
-      const doctorData = res.data;
-
-      // For each patient, get their latest reading using the new doctor-specific endpoint
-      const patientsWithReadings = await Promise.all(
+      const patientsWithDetails = await Promise.all(
         doctorData.patients.map(async (patient) => {
           try {
-            const readingRes = await axiosInstance.get(
-              `/diabeticsModule/dailyDosage/doctor/patient/${patient._id}/latest`
-            );
+            const latestReading = await getPatientLatestDosage(patient._id);
 
-            let status = 'normal';
-            if (readingRes.data && readingRes.data.bloodSugar) {
-              if (readingRes.data.bloodSugar > 180) status = 'danger';
-              else if (readingRes.data.bloodSugar < 70) status = 'warning';
+            let status = 'unknown';
+            if (latestReading && latestReading.bloodSugar !== undefined) {
+              console.log(latestReading);
+              if (latestReading.bloodSugar > 180) status = 'danger';
+              else if (latestReading.bloodSugar < 70) status = 'warning';
+              else status = 'normal';
             }
 
             return {
               ...patient,
-              lastReading: readingRes.data || null,
+              lastReading: latestReading || null,
               status,
+              hospital: doctorData.hospital,
             };
           } catch (error) {
-            console.error(
-              `Error fetching readings for patient ${patient._id}:`,
-              error
-            );
-            return {
-              ...patient,
-              lastReading: null,
-              status: 'unknown',
-            };
+            console.error(`Error fetching patient ${patient.name}:`, error);
+            return null;
           }
         })
       );
 
-      setPatients(patientsWithReadings);
+      const validPatients = patientsWithDetails.filter(
+        (patient) => patient !== null
+      );
+      setPatients(validPatients);
 
       // Calculate stats
-      const critical = patientsWithReadings.filter(
+      const critical = validPatients.filter(
         (p) => p.status === 'danger'
       ).length;
-      const stable = patientsWithReadings.filter(
-        (p) => p.status === 'normal'
+      const stable = validPatients.filter((p) => p.status === 'normal').length;
+      const missing = validPatients.filter(
+        (p) => p.lastReading.bloodSugar === undefined
       ).length;
-      const missing = patientsWithReadings.filter((p) => !p.lastReading).length;
 
       setStats({
-        totalPatients: patientsWithReadings.length,
+        totalPatients: validPatients.length,
         criticalPatients: critical,
         stabilizedPatients: stable,
         missingReadings: missing,
       });
     } catch (error) {
-      console.error('Error fetching patients:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load patients data',
+        description: error.message || 'Failed to load patients data',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -147,7 +137,6 @@ export default function DoctorDashboard() {
 
   useEffect(() => {
     fetchDoctorProfile();
-    fetchPatients();
   }, []);
 
   // Filter patients based on search query
@@ -155,6 +144,7 @@ export default function DoctorDashboard() {
     if (!searchQuery) return true;
 
     const query = searchQuery.toLowerCase();
+    console.log(patient);
     return (
       patient.name.toLowerCase().includes(query) ||
       patient.contactNumber.includes(query) ||
@@ -170,52 +160,6 @@ export default function DoctorDashboard() {
     if (a.status === 'normal' && b.status === 'warning') return 1;
     return 0;
   });
-
-  // Utility functions
-  const formatTime = (timestamp) => {
-    if (!timestamp) return 'N/A';
-
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-
-    // Less than a day
-    if (diffMs < 86400000) {
-      return date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    }
-
-    // More than a day
-    return date.toLocaleDateString();
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'danger':
-        return 'red.500';
-      case 'warning':
-        return 'orange.500';
-      case 'normal':
-        return 'green.500';
-      default:
-        return 'gray.500';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'danger':
-        return FiAlertCircle;
-      case 'warning':
-        return FiActivity;
-      case 'normal':
-        return FiCheckCircle;
-      default:
-        return FiUser;
-    }
-  };
 
   if (loading) {
     return (
@@ -235,7 +179,7 @@ export default function DoctorDashboard() {
           </Text>
         </Box>
         <Badge colorScheme="teal" p={2} borderRadius="md">
-          {doctorInfo?.hospital || 'Hospital'}
+          {doctorInfo?.hospital?.name || 'Unknown Hospital'}
         </Badge>
       </Flex>
 
@@ -320,13 +264,18 @@ export default function DoctorDashboard() {
                     {patient.lastReading ? (
                       <Flex direction="column">
                         <Text fontWeight="medium">
-                          {patient.lastReading.bloodSugar} mg/dL
+                          {patient.lastReading.bloodSugar === undefined
+                            ? 'No data'
+                            : patient.lastReading.bloodSugar + ' mg/dL'}
                         </Text>
                         <Text fontSize="xs" color="gray.500">
-                          {formatTime(
-                            patient.lastReading.timestamp ||
-                              patient.lastReading.createdAt
-                          )}
+                          {patient.lastReading.bloodSugar === undefined
+                            ? 'No data'
+                            : format(
+                                patient.lastReading.timestamp ||
+                                  patient.lastReading.createdAt,
+                                'dd/MM/yyyy HH:mm'
+                              )}
                         </Text>
                       </Flex>
                     ) : (
@@ -340,6 +289,8 @@ export default function DoctorDashboard() {
                           ? 'red'
                           : patient.status === 'warning'
                           ? 'orange'
+                          : patient.status === 'unknown'
+                          ? 'gray'
                           : 'green'
                       }
                       display="flex"
@@ -353,6 +304,8 @@ export default function DoctorDashboard() {
                         ? 'Critical'
                         : patient.status === 'warning'
                         ? 'Warning'
+                        : patient.status === 'unknown'
+                        ? 'Unknown'
                         : 'Normal'}
                     </Badge>
                   </Td>
@@ -386,45 +339,3 @@ export default function DoctorDashboard() {
     </Container>
   );
 }
-
-// Stat Card Component
-const StatCard = ({ title, value, description, icon, color }) => {
-  const bgColor = useColorModeValue('white', 'gray.800');
-
-  return (
-    <Box
-      p={5}
-      borderRadius="lg"
-      boxShadow="md"
-      bg={bgColor}
-      borderLeft="4px solid"
-      borderLeftColor={color}
-    >
-      <Flex justify="space-between">
-        <Box>
-          <Stat>
-            <StatLabel fontSize="sm" color="gray.500">
-              {title}
-            </StatLabel>
-            <StatNumber fontSize="3xl" fontWeight="bold">
-              {value}
-            </StatNumber>
-            <StatHelpText m={0} fontSize="xs">
-              {description}
-            </StatHelpText>
-          </Stat>
-        </Box>
-        <Flex
-          align="center"
-          justify="center"
-          h="50px"
-          w="50px"
-          borderRadius="md"
-          bg={`${color}15`}
-        >
-          <Icon as={icon} boxSize={6} color={color} />
-        </Flex>
-      </Flex>
-    </Box>
-  );
-};

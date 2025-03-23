@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { axiosInstance } from '../../getenvironment';
+import { loginPatient } from '../api/patientApi';
+import { loginDoctor } from '../api/doctorApi';
 import {
   Box,
   Button,
@@ -33,24 +34,20 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   const handlePatientLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await axiosInstance.post(
-        '/diabeticsModule/patient/login',
-        {
-          email: patientEmail,
-          password: patientPassword,
-        }
-      );
+      const response = await loginPatient({
+        email: patientEmail,
+        password: patientPassword,
+      });
 
       // Store patient ID in localStorage
-      localStorage.setItem('patientId', response.data.patient._id);
-      localStorage.setItem('patientName', response.data.patient.name);
+      localStorage.setItem('patientId', response.patient._id);
+      localStorage.setItem('patientName', response.patient.name);
       localStorage.setItem('role', 'patient');
 
       toast({
@@ -64,10 +61,9 @@ export default function LoginPage() {
       // Redirect to patient dashboard
       navigate('/dm/patient/dashboard');
     } catch (error) {
-      console.error('Login error:', error);
       toast({
         title: 'Login failed',
-        description: error.response?.data?.message || 'Invalid credentials',
+        description: error.message || 'Invalid credentials',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -82,17 +78,14 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await axiosInstance.post(
-        '/diabeticsModule/doctor/login',
-        {
-          email: doctorEmail,
-          password: doctorPassword,
-        }
-      );
+      const response = await loginDoctor({
+        email: doctorEmail,
+        password: doctorPassword,
+      });
 
       // Store doctor ID and other info in localStorage
-      localStorage.setItem('doctorId', response.data.doctor._id);
-      localStorage.setItem('doctorName', response.data.doctor.name);
+      localStorage.setItem('doctorId', response.doctor._id);
+      localStorage.setItem('doctorName', response.doctor.name);
       localStorage.setItem('role', 'doctor');
 
       toast({
@@ -106,10 +99,9 @@ export default function LoginPage() {
       // Redirect to doctor dashboard
       navigate('/dm/doctor/dashboard');
     } catch (error) {
-      console.error('Login error:', error);
       toast({
         title: 'Login failed',
-        description: error.response?.data?.message || 'Invalid credentials',
+        description: error.message || 'Invalid credentials',
         status: 'error',
         duration: 5000,
         isClosable: true,

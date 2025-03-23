@@ -3,6 +3,8 @@ const { addPatientToHospital } = require('../controllers/hospital')
 const User = require('../../../models/usermanagement/user') // Import the User model
 const bcrypt = require('bcryptjs')
 const Doctor = require('../../../models/diabeticsModule/doctor') // Import the Doctor model
+const DailyDosage = require('../../../models/diabeticsModule/dailyDosage')
+const Hospital = require('../../../models/diabeticsModule/hospital')
 
 // Controller function to add a new patient
 const addPatient = async (req, res) => {
@@ -58,15 +60,6 @@ const addPatient = async (req, res) => {
     // Save the user to the database
     await newUser.save()
 
-    // Find all doctors in the same hospital
-    const doctors = await User.find({
-      role: ['doctor'],
-      area: { $in: [hospital] },
-    })
-
-    // Extract the ObjectIds of the doctors if not provided
-    const finalDoctorIds = doctorIds || doctors.map((doctor) => doctor._id)
-
     const newPatient = new Patient({
       email,
       name,
@@ -89,16 +82,18 @@ const addPatient = async (req, res) => {
       address,
       medicalHistory,
       hospital,
-      doctorIds: finalDoctorIds,
     })
 
     // Save the patient to the database
     await newPatient.save()
 
-    try {
-      await addPatientToHospital(hospital, newPatient._id, newPatient.name)
-    } catch (error) {
-      console.error('Error adding patient to hospital:', error)
+    // Add patient to the doctors who in the doctorIds array
+    for (const doctorId of doctorIds) {
+      const doctor = await Doctor.findById(doctorId)
+      if (doctor) {
+        doctor.patientIds.push(newPatient._id)
+        await doctor.save()
+      }
     }
 
     return res.status(201).json({
@@ -115,8 +110,13 @@ const addPatient = async (req, res) => {
 // get all patients
 const getAllPatients = async (req, res) => {
   try {
-    const patients = await Patient.find()
-    res.status(200).json(patients)
+    const patients = await Patient.find().lean()
+    const hospitals = await Hospital.find().lean()
+    const patientsWithHospitals = patients.map((patient) => {
+      const hospital = hospitals.find((h) => h._id.equals(patient.hospital))
+      return { ...patient, hospital: hospital || null }
+    })
+    res.status(200).json(patientsWithHospitals)
   } catch (error) {
     res.status(500).json({ message: 'Error fetching patients.', error })
   }
@@ -129,13 +129,18 @@ const getPatientById = async (req, res) => {
     const patient = await Patient.findById(id)
     if (!patient) return res.status(404).json({ message: 'Patient not found.' })
 
+    const hospital = await Hospital.findById(patient.hospital)
+    const doctors = await Doctor.find({ patientIds: { $in: [id] } })
     // Combine patient and user data
     const patientData = {
       ...patient.toObject(),
+      hospital,
+      doctors,
     }
 
     res.status(200).json(patientData)
   } catch (error) {
+    console.error('Error retrieving patient:', error)
     res.status(500).json({ message: 'Error retrieving patient.', error })
   }
 }
@@ -202,6 +207,9 @@ const deletePatient = async (req, res) => {
 
     // Delete the patient record
     await Patient.findByIdAndDelete(id)
+
+    // Delete all the records created by the patient
+    await DailyDosage.deleteMany({ patientId: id })
 
     res
       .status(200)

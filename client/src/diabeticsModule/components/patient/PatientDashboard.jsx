@@ -41,7 +41,11 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import DailyDosageForm from '../DailyDosageForm';
-import { axiosInstance } from '../../../getenvironment';
+import { getCurrentPatient } from '../../api/patientApi';
+import {
+  getPatientDailyDosageByDate,
+  getPatientDailyDosageByRange,
+} from '../../api/dailyDosageApi';
 
 export default function PatientDashboard() {
   const [patient, setPatient] = useState(null);
@@ -52,8 +56,8 @@ export default function PatientDashboard() {
   // Get current patient info
   const fetchPatientData = async () => {
     try {
-      const res = await axiosInstance.get('/diabeticsModule/patient/me');
-      setPatient(res.data);
+      const data = await getCurrentPatient();
+      setPatient(data);
     } catch (error) {
       console.error('Error fetching patient data:', error);
       setPatient({
@@ -69,11 +73,9 @@ export default function PatientDashboard() {
   const fetchTodaysReadings = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const res = await axiosInstance.get(
-        `/diabeticsModule/dailyDosage/me/date/${today}`
-      );
+      const data = await getPatientDailyDosageByDate(today);
       // Extract the data from the nested structure
-      const readings = res.data.map((reading) => reading.data);
+      const readings = data.map((reading) => reading.data);
       setTodaysReadings(readings || []);
     } catch (error) {
       console.error("Error fetching today's readings:", error);
@@ -105,13 +107,14 @@ export default function PatientDashboard() {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 6);
 
-      const res = await axiosInstance.get(
-        `/diabeticsModule/dailyDosage/me/range/${startDate.toISOString()}/${endDate.toISOString()}`
+      const data = await getPatientDailyDosageByRange(
+        startDate.toISOString(),
+        endDate.toISOString()
       );
 
-      if (res.data && res.data.length > 0) {
+      if (data && data.length > 0) {
         // Extract the data from the nested structure
-        const readings = res.data.map((reading) => reading.data);
+        const readings = data.map((reading) => reading.data);
         setWeekData(readings);
       } else {
         setWeekData([]);

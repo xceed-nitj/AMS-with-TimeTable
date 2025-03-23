@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '../../getenvironment';
+import { axiosInstance } from '../api/config';
 import {
   Box,
   Button,
@@ -208,7 +208,7 @@ function DoctorForm() {
                     onChange={handleChange}
                   >
                     {hospitals.map((hospital) => (
-                      <option key={hospital._id} value={hospital.name}>
+                      <option key={hospital._id} value={hospital._id}>
                         {hospital.name}
                       </option>
                     ))}

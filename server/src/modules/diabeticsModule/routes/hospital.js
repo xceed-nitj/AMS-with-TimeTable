@@ -5,8 +5,6 @@ const {
   getHospitalById,
   updateHospital,
   deleteHospital,
-  addPatientToHospital,
-  addDoctorToHospital,
   getHospitalCount,
   getHospitalDoctors,
   getHospitalPatients,
@@ -51,7 +49,7 @@ router.post(
 )
 router.delete(
   '/:id/doctor/:doctorId',
-  checkRole(['admin', 'dm-admin']),
+  checkRole(['admin']),
   removeDoctorFromHospital
 )
 
