@@ -34,8 +34,16 @@ router.get('/me', checkRole(['patient']), getPatientOwnData)
 // Route to add a new patient
 router.post('/add', addPatient) // POST /api/v1/diabeticsmodule/patient
 router.get('/all', checkRole(['admin', 'dm-admin']), getAllPatients)
-router.get('/:id', checkRole(['admin', 'dm-admin', 'patient']), getPatientById)
-router.patch('/:id', checkRole(['admin', 'dm-admin', 'patient']), updatePatient)
+router.get(
+  '/:id',
+  checkRole(['admin', 'dm-admin', 'doctor', 'patient']),
+  getPatientById
+)
+router.patch(
+  '/:id',
+  checkRole(['admin', 'dm-admin', 'doctor', 'patient']),
+  updatePatient
+)
 router.delete('/:id', checkRole(['admin', 'dm-admin']), deletePatient)
 router.post('/login', loginPatient)
 

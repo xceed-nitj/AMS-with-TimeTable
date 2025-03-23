@@ -42,7 +42,7 @@ router.get('/all', checkRole(['admin', 'dm-admin']), getAllDoctors)
 router.get('/:id', checkRole(['admin', 'dm-admin']), getDoctorById)
 router.patch('/:id', checkRole(['admin', 'dm-admin', 'doctor']), updateDoctor)
 router.delete('/:id', checkRole(['admin', 'dm-admin']), deleteDoctor)
-router.put('/registerPatient', checkRole(['doctor']), registerPatient) // PUT /api/v1/diabeticsmodule/doctor/registerPatient
+router.put('/registerPatient', checkRole(['doctor']), registerPatient)
 router.post('/login', loginDoctor)
 
 // Route to get all patients for a doctor

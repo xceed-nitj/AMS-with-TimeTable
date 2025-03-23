@@ -1,11 +1,10 @@
 const Doctor = require('../../../models/diabeticsModule/doctor') // Adjusted path
-const Hospital = require('../../diabeticsModule/controllers/hospital')
 const { addDoctorToHospital } = require('../controllers/hospital')
 const User = require('../../../models/usermanagement/user') // Import the User model
 const Patient = require('../../../models/diabeticsModule/patient') // Import the Patient model
 const bcrypt = require('bcryptjs')
+const Hospital = require('../../../models/diabeticsModule/hospital')
 
-// Controller function to add a new doctor
 const addDoctor = async (req, res) => {
   const { email, name, age, contactNumber, address, hospital } = req.body
 
@@ -76,8 +75,15 @@ const addDoctor = async (req, res) => {
 // get all doctors
 const getAllDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.find()
-    res.status(200).json(doctors)
+    const doctors = await Doctor.find().lean()
+    const hospitals = await Hospital.find().lean()
+
+    const doctorsWithHospitals = doctors.map((doctor) => {
+      const hospital = hospitals.find((h) => h._id.equals(doctor.hospital))
+      return { ...doctor, hospital: hospital || null }
+    })
+
+    res.status(200).json(doctorsWithHospitals)
   } catch (error) {
     res.status(500).json({ message: 'Error fetching doctors.', error })
   }
@@ -95,8 +101,9 @@ const getDoctorById = async (req, res) => {
     if (!user)
       return res.status(404).json({ message: 'Associated user not found.' })
 
+    const hospital = await Hospital.findById(doctor.hospital)
     // Get the doctor's patients
-    const patients = await Patient.find({ doctorIds: doctor._id })
+    const patients = await Patient.find({ _id: { $in: doctor.patientIds } })
 
     // Combine doctor, user, and patients data
     const doctorData = {
@@ -110,6 +117,7 @@ const getDoctorById = async (req, res) => {
         isFirstLogin: user.isFirstLogin,
       },
       patients: patients,
+      hospital: hospital,
     }
 
     res.status(200).json(doctorData)
@@ -294,24 +302,21 @@ const getDoctorOwnData = async (req, res) => {
     }
 
     // Get the doctor's patients
-    const patients = await Patient.find({ doctorIds: doctor._id })
+    const patients = await Patient.find({ _id: { $in: doctor.patientIds } })
+
+    const hospital = await Hospital.findById(doctor.hospital)
 
     // Combine doctor, user, and patients data
     const doctorData = {
       ...doctor.toObject(),
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified,
-        isFirstLogin: user.isFirstLogin,
-      },
-      patients: patients,
+      user,
+      patients,
+      hospital,
     }
 
     res.status(200).json(doctorData)
   } catch (error) {
+    console.error('Error retrieving doctor data:', error)
     res.status(500).json({ message: 'Error retrieving doctor data.', error })
   }
 }
