@@ -57,15 +57,11 @@ export default function PatientDashboard() {
   const fetchPatientData = async () => {
     try {
       const data = await getCurrentPatient();
+      console.log(data);
+      localStorage.setItem('patientId', data._id);
       setPatient(data);
     } catch (error) {
       console.error('Error fetching patient data:', error);
-      setPatient({
-        name: 'John Doe',
-        age: 42,
-        hospital: 'Metro Hospital',
-        doctorIds: ['Dr. Sarah Wilson'],
-      });
     }
   };
 
@@ -79,23 +75,6 @@ export default function PatientDashboard() {
       setTodaysReadings(readings || []);
     } catch (error) {
       console.error("Error fetching today's readings:", error);
-      // Use mock data
-      setTodaysReadings([
-        {
-          session: 'pre-breakfast',
-          bloodSugar: 130,
-          carboLevel: 80,
-          insulin: 11,
-          longLastingInsulin: 15,
-        },
-        {
-          session: 'pre-lunch',
-          bloodSugar: 145,
-          carboLevel: 90,
-          insulin: 13,
-          longLastingInsulin: 0,
-        },
-      ]);
     }
   };
 
@@ -113,7 +92,6 @@ export default function PatientDashboard() {
       );
 
       if (data && data.length > 0) {
-        // Extract the data from the nested structure
         const readings = data.map((reading) => reading.data);
         setWeekData(readings);
       } else {
@@ -187,9 +165,10 @@ export default function PatientDashboard() {
                     <Text fontSize="sm" color="gray.500">
                       {new Date(
                         reading.createdAt || Date.now()
-                      ).toLocaleTimeString([], {
+                      ).toLocaleTimeString('en-CA', {
                         hour: '2-digit',
                         minute: '2-digit',
+                        hour12: false,
                       })}
                     </Text>
                   </Flex>
@@ -308,15 +287,21 @@ export default function PatientDashboard() {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
-                  dataKey="date"
-                  tickFormatter={(date) => format(new Date(date), 'MMM dd')}
+                  dataKey={(data) => `${data.date} ${data.time}`}
+                  tickFormatter={(dateTime) => {
+                    if (!dateTime) return '';
+                    const [date, time] = dateTime.split(' ');
+                    return `${format(new Date(date), 'MMM dd')} / ${time}`;
+                  }}
                 />
                 <YAxis yAxisId="left" />
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip
-                  labelFormatter={(date) =>
-                    format(new Date(date), 'MMM dd, yyyy')
-                  }
+                  labelFormatter={(dateTime) => {
+                    if (!dateTime) return '';
+                    const [date, time] = dateTime.split(' ');
+                    return `${format(new Date(date), 'MMM dd')} at ${time}`;
+                  }}
                 />
                 <Legend />
                 <Line
@@ -378,7 +363,6 @@ export default function PatientDashboard() {
         )}
       </Box>
 
-      {/* Advice & Recommendations */}
       <Box p={6} borderRadius="lg" borderWidth="1px" bg={cardBg} boxShadow="md">
         <Heading as="h2" size="md" mb={4}>
           Tips & Recommendations

@@ -42,28 +42,6 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { axiosInstance } from '../../api/config';
 
-// Mock data - replace with actual API calls
-const mockReadings = Array(30)
-  .fill(0)
-  .map((_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-
-    return {
-      _id: `reading-${i}`,
-      data: {
-        date: date.toISOString(),
-        session: ['pre-breakfast', 'pre-lunch', 'pre-dinner', 'night'][i % 4],
-        bloodSugar: 100 + Math.floor(Math.random() * 100),
-        carboLevel: 60 + Math.floor(Math.random() * 40),
-        insulin: 8 + Math.floor(Math.random() * 8),
-        longLastingInsulin: i % 2 === 0 ? 15 : 0,
-        physicalActivity: ['Low', 'Moderate', 'High'][i % 3],
-      },
-      createdAt: date.toISOString(),
-    };
-  });
-
 export default function PatientHistory() {
   const [readings, setReadings] = useState([]);
   const [filteredReadings, setFilteredReadings] = useState([]);
@@ -106,12 +84,6 @@ export default function PatientHistory() {
       setPatient(res.data);
     } catch (error) {
       console.error('Error fetching patient data:', error);
-      // Mock data for development
-      setPatient({
-        name: 'John Doe',
-        age: 42,
-        hospital: 'Metro Hospital',
-      });
     }
   };
 
@@ -123,15 +95,12 @@ export default function PatientHistory() {
       if (!patientId) return;
 
       const res = await axiosInstance.get(
-        `/diabeticsModule/dailyDosage/patient/${patientId}`
+        `/diabeticsModule/dailyDosage/all/${patientId}`
       );
       setReadings(res.data || []);
       setFilteredReadings(res.data || []);
     } catch (error) {
       console.error('Error fetching readings:', error);
-      // Use mock data for development
-      setReadings(mockReadings);
-      setFilteredReadings(mockReadings);
     } finally {
       setLoading(false);
     }

@@ -93,7 +93,7 @@ const DMNavbar = () => {
         //   path: '/dm/addDailyDosage',
         //   icon: FiActivity,
         // },
-        { name: 'Add Sick Day', path: '/dm/addSickDay', icon: FiActivity },
+        // { name: 'Add Sick Day', path: '/dm/addSickDay', icon: FiActivity },
       ];
     }
 
