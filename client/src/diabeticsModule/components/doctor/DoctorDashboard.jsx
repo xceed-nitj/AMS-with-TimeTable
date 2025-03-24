@@ -271,11 +271,10 @@ export default function DoctorDashboard() {
                         <Text fontSize="xs" color="gray.500">
                           {patient.lastReading.bloodSugar === undefined
                             ? 'No data'
-                            : format(
-                                patient.lastReading.timestamp ||
-                                  patient.lastReading.createdAt,
-                                'dd/MM/yyyy HH:mm'
-                              )}
+                            : `${format(
+                                patient.lastReading.date,
+                                'dd/MM/yyyy'
+                              )} at ${patient.lastReading.time}`}
                         </Text>
                       </Flex>
                     ) : (

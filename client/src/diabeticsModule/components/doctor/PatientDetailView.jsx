@@ -63,7 +63,7 @@ const PatientDetailView = () => {
   const fetchReadings = async () => {
     try {
       const res = await axiosInstance.get(
-        `/diabeticsModule/dailyDosage/patient/${patientId}`
+        `/diabeticsModule/dailyDosage/all/${patientId}`
       );
       setReadings(res.data || []);
       processChartData(res.data || [], timeRange, selectedSession);
@@ -103,6 +103,8 @@ const PatientDetailView = () => {
     }
 
     // Filter by date and session
+    console.log(data);
+
     let filteredData = data.filter(
       (reading) =>
         new Date(reading.data.date) >= startDate &&

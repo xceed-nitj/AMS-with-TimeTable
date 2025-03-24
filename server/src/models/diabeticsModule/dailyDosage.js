@@ -9,7 +9,7 @@ const DailyDosageSchema = new mongoose.Schema(
     },
     data: {
       date: { type: Date, required: true },
-      timestamp: { type: Date, required: true },
+      time: { type: String, required: true },
       session: {
         type: String,
         enum: ['pre-breakfast', 'pre-lunch', 'pre-dinner', 'night'],
