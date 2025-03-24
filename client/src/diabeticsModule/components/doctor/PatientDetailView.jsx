@@ -159,7 +159,7 @@ const PatientDetailView = ({ patientId }) => {
   return (
     <Container maxW="container.xl" py={8}>
       <Button
-        onClick={() => navigate('/dm/doctor/dashboard')}
+        onClick={() => navigate(-1)}
         leftIcon={<FiArrowLeft />}
         mb={6}
         variant="outline"
