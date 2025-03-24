@@ -18,7 +18,7 @@ const DailyDosageSchema = new mongoose.Schema(
       bloodSugar: { type: Number, required: true },
       carboLevel: { type: Number, required: true },
       insulin: { type: Number, required: true },
-      longLastingInsulin: { type: Number, required: true },
+      longLastingInsulin: { type: Number },
       physicalActivity: { type: String },
     },
   },
