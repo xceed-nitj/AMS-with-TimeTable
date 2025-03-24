@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -57,6 +57,7 @@ const PatientDetailView = ({ patientId }) => {
   const [readings, setReadings] = useState([]);
   const [chartData, setChartData] = useState([]);
   const toast = useToast();
+  const navigate = useNavigate();
 
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -158,8 +159,7 @@ const PatientDetailView = ({ patientId }) => {
   return (
     <Container maxW="container.xl" py={8}>
       <Button
-        as={RouterLink}
-        to="/dm/doctor/dashboard"
+        onClick={() => navigate('/dm/doctor/dashboard')}
         leftIcon={<FiArrowLeft />}
         mb={6}
         variant="outline"
