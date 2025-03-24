@@ -13,28 +13,26 @@ import {
   Th,
   Td,
   Badge,
-  Select,
-  FormControl,
-  FormLabel,
-  Input,
-  Grid,
-  GridItem,
   Spinner,
   useToast,
   useColorModeValue,
   HStack,
   VStack,
-  Icon,
   IconButton,
+  Card,
+  CardBody,
+  Divider,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  SimpleGrid,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FiCalendar,
   FiDownload,
-  FiFilter,
   FiArrowLeft,
   FiPrinter,
-  FiSearch,
   FiChevronLeft,
   FiChevronRight,
 } from 'react-icons/fi';
@@ -317,7 +315,7 @@ export default function PatientHistory({ patientId }) {
             variant="ghost"
             mr={4}
           >
-            Back to Dashboard
+            Go Back
           </Button>
           <Heading flex="1">Health History</Heading>
           <HStack spacing={2}>
@@ -339,8 +337,42 @@ export default function PatientHistory({ patientId }) {
           </HStack>
         </Flex>
 
+        {/* Patient Details Card */}
+        {patient && (
+          <Card mb={6} boxShadow="md">
+            <CardBody>
+              <VStack align="stretch" spacing={4}>
+                <Flex justify="space-between" align="center">
+                  <Heading size="md">Patient Information</Heading>
+                  <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>
+                    ID: {patient._id}
+                  </Badge>
+                </Flex>
+                <Divider />
+                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+                  <Stat>
+                    <StatLabel>Name</StatLabel>
+                    <StatNumber fontSize="xl">{patient.name}</StatNumber>
+                    <StatHelpText>Age: {patient.age} years</StatHelpText>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>Contact</StatLabel>
+                    <StatNumber fontSize="xl">{patient.phone}</StatNumber>
+                    <StatHelpText>{patient.email}</StatHelpText>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>Address</StatLabel>
+                    <StatNumber fontSize="xl">{patient.address}</StatNumber>
+                    <StatHelpText>City: {patient.city}</StatHelpText>
+                  </Stat>
+                </SimpleGrid>
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
+
         {/* Filters Section */}
-        <Box
+        {/* <Box
           p={6}
           borderRadius="lg"
           borderWidth="1px"
@@ -437,7 +469,7 @@ export default function PatientHistory({ patientId }) {
               Apply Filters
             </Button>
           </Flex>
-        </Box>
+        </Box> */}
 
         {/* Results Table */}
         <Box
