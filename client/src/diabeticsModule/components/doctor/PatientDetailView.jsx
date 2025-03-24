@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -10,6 +10,7 @@ import {
   Stat,
   StatNumber,
   StatHelpText,
+  StatLabel,
   Badge,
   Divider,
   Icon,
@@ -21,19 +22,45 @@ import {
   CardHeader,
   CardBody,
   useToast,
+  Button,
+  Avatar,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
 } from '@chakra-ui/react';
 import { axiosInstance } from '../../api/config';
-import { getStatusColor } from '../../utils/statusUtils';
-const PatientDetailView = () => {
-  const { patientId } = useParams();
+import {
+  FiArrowLeft,
+  FiCalendar,
+  FiDroplet,
+  FiPieChart,
+  FiZap,
+  FiBarChart2,
+} from 'react-icons/fi';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import { format } from 'date-fns';
+
+const PatientDetailView = ({ patientId }) => {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [readings, setReadings] = useState([]);
-
   const [chartData, setChartData] = useState([]);
-  const [timeRange, setTimeRange] = useState('week'); // 'week', 'month', 'year'
-  const [selectedSession, setSelectedSession] = useState('all'); // 'all', 'pre-breakfast', etc.
   const toast = useToast();
+
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const statBg = useColorModeValue('blue.50', 'blue.900');
 
   useEffect(() => {
     const fetchPatient = async () => {
@@ -66,9 +93,16 @@ const PatientDetailView = () => {
         `/diabeticsModule/dailyDosage/all/${patientId}`
       );
       setReadings(res.data || []);
-      processChartData(res.data || [], timeRange, selectedSession);
+      processChartData(res.data || []);
     } catch (error) {
       console.error('Error fetching readings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load patient readings',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
@@ -76,48 +110,17 @@ const PatientDetailView = () => {
     fetchReadings();
   }, [patientId]);
 
-  // Process data for charts based on time range and session filter
-  const processChartData = (data, range, session) => {
+  // Process data for charts
+  const processChartData = (data) => {
     if (!data || data.length === 0) return;
 
-    // Filter by time range
-    const now = new Date();
-    let startDate;
-
-    switch (range) {
-      case 'week':
-        startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case 'month':
-        startDate = new Date(now);
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-      case 'year':
-        startDate = new Date(now);
-        startDate.setFullYear(startDate.getFullYear() - 1);
-        break;
-      default:
-        startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - 7);
-    }
-
-    // Filter by date and session
-    console.log(data);
-
-    let filteredData = data.filter(
-      (reading) =>
-        new Date(reading.data.date) >= startDate &&
-        (session === 'all' || reading.data.session === session)
-    );
-
     // Sort by date
-    filteredData = filteredData.sort(
+    const sortedData = data.sort(
       (a, b) => new Date(a.data.date) - new Date(b.data.date)
     );
 
     // Format for recharts
-    const formattedData = filteredData.map((reading) => ({
+    const formattedData = sortedData.map((reading) => ({
       date: new Date(reading.data.date).toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
@@ -130,16 +133,6 @@ const PatientDetailView = () => {
 
     setChartData(formattedData);
   };
-
-  // Update chart when filters change
-  useEffect(() => {
-    if (readings.length > 0) {
-      processChartData(readings, timeRange, selectedSession);
-    }
-  }, [timeRange, selectedSession, readings]);
-
-  const bg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   if (loading) {
     return (
@@ -164,212 +157,310 @@ const PatientDetailView = () => {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <VStack spacing={6} align="stretch">
-        {/* Header Section */}
-        <Box>
-          <Heading size="lg">{patient.name}</Heading>
-          <HStack spacing={4} mt={2}>
-            <Badge colorScheme="blue">Patient ID: {patient._id}</Badge>
-            <Badge colorScheme="green">Age: {patient.age}</Badge>
-            <Badge colorScheme="purple">Gender: {patient.gender}</Badge>
-          </HStack>
-        </Box>
+      <Button
+        as={RouterLink}
+        to="/dm/doctor/dashboard"
+        leftIcon={<FiArrowLeft />}
+        mb={6}
+        variant="outline"
+      >
+        Back to Dashboard
+      </Button>
 
-        <Divider />
+      <Card
+        bg={cardBg}
+        boxShadow="md"
+        mb={6}
+        borderColor={borderColor}
+        borderWidth="1px"
+      >
+        <CardHeader>
+          <Flex justify="space-between" align="center">
+            <Flex align="center">
+              <Avatar size="xl" name={patient.name} mr={4} />
+              <Box>
+                <Heading size="lg">{patient.name}</Heading>
+                <HStack spacing={4} mt={2}>
+                  <Badge colorScheme="blue">
+                    Hospital: {patient?.hospital?.name}
+                  </Badge>
+                  <Badge colorScheme="green">Age: {patient.age}</Badge>
+                  <Badge colorScheme="purple">Gender: {patient.gender}</Badge>
+                </HStack>
+              </Box>
+            </Flex>
+            <Button
+              as={RouterLink}
+              to={`/dm/patient/${patientId}/history`}
+              colorScheme="teal"
+              leftIcon={<FiCalendar />}
+            >
+              View History
+            </Button>
+          </Flex>
+        </CardHeader>
 
-        {/* Personal Information */}
-        <Card>
-          <CardHeader>
-            <Heading size="md">Personal Information</Heading>
-          </CardHeader>
-          <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              <Box>
-                <Text fontWeight="bold">Contact Information</Text>
-                <Text>Email: {patient.email}</Text>
-                <Text>Phone: {patient.contactNumber}</Text>
-                <Text>Address: {patient.address}</Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold">Family Information</Text>
-                <Text>Father&apos;s Name: {patient.father_name}</Text>
-                <Text>Mother&apos;s Name: {patient.mother_name}</Text>
-                <Text>Economic Status: {patient.economic_status}</Text>
-              </Box>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
+        <CardBody>
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={6}>
+            <Stat bg={statBg} p={4} borderRadius="md" boxShadow="sm">
+              <StatLabel>Latest Blood Sugar</StatLabel>
+              <Flex align="center">
+                <Icon as={FiDroplet} color="blue.500" mr={2} />
+                <StatNumber>
+                  {readings.length > 0
+                    ? readings[readings.length - 1].data.bloodSugar
+                    : 'N/A'}
+                </StatNumber>
+              </Flex>
+              <StatHelpText>mg/dL</StatHelpText>
+            </Stat>
+            <Stat bg={statBg} p={4} borderRadius="md" boxShadow="sm">
+              <StatLabel>Latest Carbs</StatLabel>
+              <Flex align="center">
+                <Icon as={FiPieChart} color="blue.500" mr={2} />
+                <StatNumber>
+                  {readings.length > 0
+                    ? readings[readings.length - 1].data.carboLevel
+                    : 'N/A'}
+                </StatNumber>
+              </Flex>
+              <StatHelpText>grams</StatHelpText>
+            </Stat>
+            <Stat bg={statBg} p={4} borderRadius="md" boxShadow="sm">
+              <StatLabel>Latest Insulin</StatLabel>
+              <Flex align="center">
+                <Icon as={FiZap} color="blue.500" mr={2} />
+                <StatNumber>
+                  {readings.length > 0
+                    ? readings[readings.length - 1].data.insulin
+                    : 'N/A'}
+                </StatNumber>
+              </Flex>
+              <StatHelpText>units</StatHelpText>
+            </Stat>
+          </SimpleGrid>
 
-        {/* Medical Information */}
-        <Card>
-          <CardHeader>
-            <Heading size="md">Medical Information</Heading>
-          </CardHeader>
-          <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              <Box>
-                <Text fontWeight="bold">Physical Details</Text>
-                <Text>Weight: {patient.weight} kg</Text>
-                <Text>Height: {patient.height} cm</Text>
-                <Text>
-                  Date of Birth: {new Date(patient.DOB).toLocaleDateString()}
-                </Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold">Diabetes Information</Text>
-                <Text>
-                  Type 1 Diabetes Diagnosis Date:{' '}
-                  {new Date(patient.DOD_of_T1D).toLocaleDateString()}
-                </Text>
-                <Text>Family History: {patient.family_history}</Text>
-                <Text>Referring Physician: {patient.referring_physician}</Text>
-              </Box>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
+          <Divider mb={6} />
 
-        {/* Medical History */}
-        <Card>
-          <CardHeader>
-            <Heading size="md">Medical History</Heading>
-          </CardHeader>
-          <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              <Box>
-                <Text fontWeight="bold">Treatment History</Text>
-                <Text>
-                  {patient.treatment_history ||
-                    'No treatment history available'}
-                </Text>
-              </Box>
-              <Box>
-                <Text fontWeight="bold">Immunization History</Text>
-                <Text>
-                  {patient.immunization_history ||
-                    'No immunization history available'}
-                </Text>
-              </Box>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
+          <Tabs variant="enclosed" colorScheme="cyan">
+            <TabList>
+              <Tab fontWeight="semibold">Patient Information</Tab>
+              <Tab fontWeight="semibold">Medical Records</Tab>
+              <Tab fontWeight="semibold">Health Trends</Tab>
+            </TabList>
 
-        {/* Hospital Information */}
-        <Card>
-          <CardHeader>
-            <Heading size="md">Hospital Information</Heading>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={6} align="stretch">
-              {/* Hospital Details */}
-              <Box>
-                <Heading size="sm" mb={3}>
-                  Hospital Details
-                </Heading>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  <Box>
-                    <Text fontWeight="bold">Name</Text>
-                    <Text>{patient.hospital.name}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontWeight="bold">Location</Text>
-                    <Text>{patient.hospital.location}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontWeight="bold">Contact</Text>
-                    <Text>{patient.hospital.phone}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontWeight="bold">Registration Date</Text>
-                    <Text>
-                      {new Date(
-                        patient.hospital.createdAt
-                      ).toLocaleDateString()}
-                    </Text>
-                  </Box>
-                </SimpleGrid>
-              </Box>
-
-              <Divider />
-
-              {/* Assigned Doctors */}
-              <Box>
-                <Heading size="sm" mb={3}>
-                  Assigned Doctors
-                </Heading>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  {patient.doctors?.map((doctor) => (
-                    <Card key={doctor._id} variant="outline">
-                      <CardBody>
-                        <VStack align="start" spacing={2}>
-                          <Text fontWeight="bold" fontSize="lg">
-                            {doctor.name}
+            <TabPanels>
+              <TabPanel p={0} pt={4}>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                  <Card variant="outline">
+                    <CardHeader>
+                      <Heading size="md">Personal Information</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack align="stretch" spacing={4}>
+                        <Box>
+                          <Text fontWeight="bold">Contact Information</Text>
+                          <Text>Email: {patient.email}</Text>
+                          <Text>Phone: {patient.contactNumber}</Text>
+                          <Text>Address: {patient.address}</Text>
+                        </Box>
+                        <Box>
+                          <Text fontWeight="bold">Family Information</Text>
+                          <Text>Father&apos;s Name: {patient.father_name}</Text>
+                          <Text>Mother&apos;s Name: {patient.mother_name}</Text>
+                          <Text>
+                            Economic Status: {patient.economic_status}
                           </Text>
-                          <SimpleGrid columns={2} spacing={4} width="100%">
-                            <Box>
-                              <Text color="gray.600">Age</Text>
-                              <Text>{doctor.age}</Text>
-                            </Box>
-                            <Box>
-                              <Text color="gray.600">Contact</Text>
-                              <Text>{doctor.contactNumber}</Text>
-                            </Box>
-                            <Box>
-                              <Text color="gray.600">Email</Text>
-                              <Text>{doctor.email}</Text>
-                            </Box>
-                            <Box>
-                              <Text color="gray.600">Address</Text>
-                              <Text>{doctor.address}</Text>
-                            </Box>
-                          </SimpleGrid>
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  ))}
+                        </Box>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+
+                  <Card variant="outline">
+                    <CardHeader>
+                      <Heading size="md">Medical Information</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack align="stretch" spacing={4}>
+                        <Box>
+                          <Text fontWeight="bold">Physical Details</Text>
+                          <Text>Weight: {patient.weight} kg</Text>
+                          <Text>Height: {patient.height} cm</Text>
+                          <Text>
+                            Date of Birth:{' '}
+                            {new Date(patient.DOB).toLocaleDateString()}
+                          </Text>
+                        </Box>
+                        <Box>
+                          <Text fontWeight="bold">Diabetes Information</Text>
+                          <Text>
+                            Type 1 Diabetes Diagnosis Date:{' '}
+                            {new Date(patient.DOD_of_T1D).toLocaleDateString()}
+                          </Text>
+                          <Text>Family History: {patient.family_history}</Text>
+                          <Text>
+                            Referring Physician: {patient.referring_physician}
+                          </Text>
+                        </Box>
+                      </VStack>
+                    </CardBody>
+                  </Card>
                 </SimpleGrid>
-                {(!patient.doctors || patient.doctors.length === 0) && (
-                  <Text color="gray.500">No doctors assigned yet</Text>
-                )}
-              </Box>
-            </VStack>
-          </CardBody>
-        </Card>
-      </VStack>
+              </TabPanel>
+
+              <TabPanel p={0} pt={4}>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                  <Card variant="outline">
+                    <CardHeader>
+                      <Heading size="md">Medical History</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack align="stretch" spacing={4}>
+                        <Box>
+                          <Text fontWeight="bold">Treatment History</Text>
+                          <Text>
+                            {patient.treatment_history ||
+                              'No treatment history available'}
+                          </Text>
+                        </Box>
+                        <Box>
+                          <Text fontWeight="bold">Immunization History</Text>
+                          <Text>
+                            {patient.immunization_history ||
+                              'No immunization history available'}
+                          </Text>
+                        </Box>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+
+                  <Card variant="outline">
+                    <CardHeader>
+                      <Heading size="md">Hospital Information</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack align="stretch" spacing={4}>
+                        <Box>
+                          <Text fontWeight="bold">Hospital Details</Text>
+                          <Text>Name: {patient.hospital.name}</Text>
+                          <Text>Location: {patient.hospital.location}</Text>
+                          <Text>Contact: {patient.hospital.phone}</Text>
+                          <Text>
+                            Registration Date:{' '}
+                            {new Date(
+                              patient.hospital.createdAt
+                            ).toLocaleDateString()}
+                          </Text>
+                        </Box>
+                        <Box>
+                          <Text fontWeight="bold">Assigned Doctors</Text>
+                          {patient.doctors?.map((doctor) => (
+                            <Box key={doctor._id} mb={2}>
+                              <Text>
+                                {doctor.name} -{' '}
+                                {doctor.specialization || 'General'}
+                              </Text>
+                            </Box>
+                          ))}
+                        </Box>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </SimpleGrid>
+              </TabPanel>
+
+              <TabPanel p={0} pt={4}>
+                <Card variant="outline">
+                  <CardHeader>
+                    <Heading size="md">
+                      <Flex align="center">
+                        <Icon as={FiBarChart2} mr={2} />
+                        Health Trends
+                      </Flex>
+                    </Heading>
+                  </CardHeader>
+                  <CardBody>
+                    {chartData.length > 0 ? (
+                      <Box h="400px">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={chartData}
+                            margin={{
+                              top: 5,
+                              right: 30,
+                              left: 20,
+                              bottom: 5,
+                            }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="date"
+                              tickFormatter={(date) =>
+                                format(new Date(date), 'MMM dd')
+                              }
+                            />
+                            <YAxis yAxisId="left" />
+                            <YAxis yAxisId="right" orientation="right" />
+                            <Tooltip
+                              labelFormatter={(date) =>
+                                format(new Date(date), 'MMM dd, yyyy')
+                              }
+                            />
+                            <Legend />
+                            <Line
+                              yAxisId="left"
+                              type="monotone"
+                              dataKey="bloodSugar"
+                              name="Blood Sugar"
+                              stroke="#5BA9B3"
+                              strokeWidth={2}
+                              dot={{ r: 4 }}
+                              activeDot={{ r: 6 }}
+                            />
+                            <Line
+                              yAxisId="left"
+                              type="monotone"
+                              dataKey="carboLevel"
+                              name="Carbs"
+                              stroke="#3B5998"
+                              strokeWidth={2}
+                              dot={{ r: 4 }}
+                              activeDot={{ r: 6 }}
+                            />
+                            <Line
+                              yAxisId="right"
+                              type="monotone"
+                              dataKey="insulin"
+                              name="Insulin"
+                              stroke="#FF8C00"
+                              strokeWidth={2}
+                              dot={{ r: 4 }}
+                              activeDot={{ r: 6 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </Box>
+                    ) : (
+                      <Flex
+                        direction="column"
+                        align="center"
+                        justify="center"
+                        h="400px"
+                        bg="gray.50"
+                        borderRadius="md"
+                      >
+                        <Text color="gray.500">No readings available</Text>
+                      </Flex>
+                    )}
+                  </CardBody>
+                </Card>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </CardBody>
+      </Card>
     </Container>
   );
 };
 
 export default PatientDetailView;
-
-// Stat Box Component
-const StatBox = ({ title, value, unit, status, icon }) => {
-  const color = getStatusColor(status);
-  const bg = useColorModeValue('white', 'gray.700');
-
-  return (
-    <Box p={5} borderRadius="lg" boxShadow="sm" bg={bg} borderWidth="1px">
-      <Flex align="center" mb={2}>
-        <Flex
-          align="center"
-          justify="center"
-          h="40px"
-          w="40px"
-          borderRadius="full"
-          bg={`${color}15`}
-          mr={3}
-        >
-          <Icon as={icon} color={color} boxSize={5} />
-        </Flex>
-        <Text fontWeight="medium">{title}</Text>
-      </Flex>
-      <Stat>
-        <StatNumber fontSize="2xl" color={color}>
-          {value}{' '}
-          <StatHelpText as="span" fontSize="md">
-            {unit}
-          </StatHelpText>
-        </StatNumber>
-      </Stat>
-    </Box>
-  );
-};

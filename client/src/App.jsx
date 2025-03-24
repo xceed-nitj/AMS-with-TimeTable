@@ -495,11 +495,14 @@ function App() {
 
         {/* Patient Routes */}
         <Route path="/dm/patient/dashboard" element={<PatientDashboard />} />
-        <Route path="/dm/patient/history" element={<PatientHistory />} />
 
         {/* Doctor Routes */}
         <Route path="/dm/doctor/dashboard" element={<DoctorDashboard />} />
         <Route path="/dm/patient/:patientId" element={<PatientDetailView />} />
+        <Route
+          path="/dm/patient/:patientId/history"
+          element={<PatientHistory />}
+        />
 
         {/* Detail View Routes for Admin */}
         <Route path="/dm/doctor/:doctorId" element={<DoctorDetailView />} />

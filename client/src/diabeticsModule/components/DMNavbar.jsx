@@ -101,7 +101,11 @@ const DMNavbar = () => {
     if (roles.includes('patient')) {
       return [
         { name: 'Dashboard', path: '/dm/patient/dashboard', icon: FiHome },
-        { name: 'History', path: '/dm/patient/history', icon: FiActivity },
+        // {
+        //   name: 'History',
+        //   path: `/dm/patient/${userDetails?.user._id}/history`,
+        //   icon: FiActivity,
+        // },
       ];
     }
 
