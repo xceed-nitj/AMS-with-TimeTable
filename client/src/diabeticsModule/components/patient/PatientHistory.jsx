@@ -27,7 +27,7 @@ import {
   Icon,
   IconButton,
 } from '@chakra-ui/react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   FiCalendar,
   FiDownload,
@@ -42,7 +42,7 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { axiosInstance } from '../../api/config';
 
-export default function PatientHistory() {
+export default function PatientHistory({ patientId }) {
   const [readings, setReadings] = useState([]);
   const [filteredReadings, setFilteredReadings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +58,7 @@ export default function PatientHistory() {
   const [itemsPerPage] = useState(10);
   const tableRef = useRef(null);
   const toast = useToast();
+  const navigate = useNavigate();
 
   // Formatted date for display
   const formatDate = (dateString) => {
@@ -72,9 +73,7 @@ export default function PatientHistory() {
   // Fetch patient data
   const fetchPatientData = async () => {
     try {
-      const patientId = localStorage.getItem('patientId');
       if (!patientId) {
-        // Redirect to login if no patient ID
         return;
       }
 
@@ -91,7 +90,6 @@ export default function PatientHistory() {
   const fetchReadings = async () => {
     try {
       setLoading(true);
-      const patientId = localStorage.getItem('patientId');
       if (!patientId) return;
 
       const res = await axiosInstance.get(
@@ -109,7 +107,7 @@ export default function PatientHistory() {
   useEffect(() => {
     fetchPatientData();
     fetchReadings();
-  }, []);
+  }, [patientId]);
 
   // Apply filters
   const applyFilters = () => {
@@ -314,8 +312,7 @@ export default function PatientHistory() {
       <Flex direction="column">
         <Flex align="center" mb={8}>
           <Button
-            as={RouterLink}
-            to="/dm/patient/dashboard"
+            onClick={() => navigate(-1)}
             leftIcon={<FiArrowLeft />}
             variant="ghost"
             mr={4}

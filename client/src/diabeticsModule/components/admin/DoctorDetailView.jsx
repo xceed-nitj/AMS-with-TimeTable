@@ -54,11 +54,10 @@ import {
   FiUserPlus,
   FiUserX,
 } from 'react-icons/fi';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { axiosInstance } from '../../api/config';
 
-export default function DoctorDetailView() {
-  const { doctorId } = useParams();
+export default function DoctorDetailView({ doctorId }) {
   const [doctor, setDoctor] = useState(null);
   const [assignedPatients, setAssignedPatients] = useState([]);
   const [availablePatients, setAvailablePatients] = useState([]);

@@ -62,12 +62,10 @@ import {
   FiUsers,
   FiUserX,
 } from 'react-icons/fi';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { axiosInstance } from '../../api/config';
 
-// Mock data - replace with actual API calls
-export default function HospitalDetailView() {
-  const { hospitalId } = useParams();
+export default function HospitalDetailView({ hospitalId }) {
   const [hospital, setHospital] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);

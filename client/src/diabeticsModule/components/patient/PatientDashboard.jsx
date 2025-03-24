@@ -57,8 +57,6 @@ export default function PatientDashboard() {
   const fetchPatientData = async () => {
     try {
       const data = await getCurrentPatient();
-      console.log(data);
-      localStorage.setItem('patientId', data._id);
       setPatient(data);
     } catch (error) {
       console.error('Error fetching patient data:', error);
@@ -129,7 +127,7 @@ export default function PatientDashboard() {
         </Heading>
         <Button
           as={RouterLink}
-          to="/dm/patient/history"
+          to={`/dm/patient/${patient?._id}/history`}
           colorScheme="teal"
           leftIcon={<FiCalendar />}
         >
@@ -243,7 +241,7 @@ export default function PatientDashboard() {
           id="new-reading-form"
         >
           <DailyDosageForm
-            patientId={localStorage.getItem('patientId')}
+            patientId={patient?._id}
             onSuccess={() => {
               fetchTodaysReadings();
               fetchWeekData();
