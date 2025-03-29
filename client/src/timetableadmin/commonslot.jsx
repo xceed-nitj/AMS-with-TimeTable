@@ -34,6 +34,7 @@ import { Helmet } from "react-helmet-async";
 // import PDFViewTimetable from '../filedownload/chakrapdf'
 
 function CommonSlot() {
+    // console.log("chakrapdf");
     const [viewData, setViewData] = useState({});
     const [viewFacultyData, setViewFacultyData] = useState({});
     const [selectedFaculty, setSelectedFaculty] = useState("");
@@ -54,9 +55,11 @@ function CommonSlot() {
     const [faculties, setFaculties] = useState([]);
 
 
+   
     useEffect(() => {
         const fetchSessions = async () => {
             try {
+                // console.log('Fetching sessions');
                 const response = await fetch(
                     `${apiUrl}/timetablemodule/timetable/sess/allsessanddept`,
                     { credentials: "include" }
@@ -64,11 +67,12 @@ function CommonSlot() {
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
+                // console.log("response object",response);
 
                 const data = await response.json();
-                // console.log(data)
+                // console.log("data",data)
                 const { uniqueSessions, uniqueDept } = data;
-
+                
                 setAllSessions(uniqueSessions);
                 setSelectedSession(uniqueSessions[0]);
                 setAvailableDepts(uniqueDept);
@@ -83,15 +87,16 @@ function CommonSlot() {
     useEffect(() => {
         const fetchCode = async (session, dept) => {
             try {
+                // console.log(session,dept);
                 const response = await fetch(
-                    `${apiUrl}/timetablemodule/timetable/getcode/${session}/${dept}`,
+                    `${apiUrl}/timetablemodule/timetable/getcode/${session?.session}/${dept}`,
                     { credentials: "include" }
                 );
                 const data1 = await response.json();
+                // console.log(data1);
 
                 setCurrentCode(data1)
-
-            } catch (error) {
+               } catch (error) {
                 console.error("Error fetching existing timetable data:", error);
                 return {};
             }
@@ -180,8 +185,8 @@ function CommonSlot() {
         const fetchFaculty = async (currentCode) => {
             try {
                 const fetchedttdetails = await fetchTTData(currentCode);
-                // console.log("fetchedttdetails", fetchedttdetails)
-                const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`, { credentials: 'include', });
+                console.log("fetchedttdetails", fetchedttdetails)
+                const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails?.dept}`, { credentials: 'include', });
                 if (response.ok) {
                     const data = await response.json();
                     const facultydata = data.map(faculty => faculty.name);
@@ -200,9 +205,10 @@ function CommonSlot() {
         fetchFaculty(currentCode); // Call the function to fetch subject data
     }, [apiUrl, currentCode, selectedFaculty]);
 
+   
     const fetchTTData = async (currentCode) => {
         try {
-            const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
+             const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -479,6 +485,7 @@ function CommonSlot() {
                 </>
 
             </Container>
+            
         </>
 
     );

@@ -119,17 +119,42 @@ class TableController {
         }
     }
 
-    async getTableByCode(code) 
-    {
-      // const code=req.params.code;
+    // async getTableByCode(code) 
+    // {
+    //   // const code=req.params.code;
+    //   try {
+    //       const TableField = await TimeTable.find({code});
+    //       return TableField;
+    //     } catch (error) {
+    //       console.error(error); 
+    //       res.status(500).json({ error: "Internal server error" });
+    //     }
+    // }
+
+    //newcode
+    async getTableByCode(code) {
       try {
-          const TableField = await TimeTable.find({code});
-          return TableField;
-        } catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
+        if (typeof code !== "string") {
+          console.error("Invalid code received:", code); 
+          throw new HttpException(400, "Invalid code format");
         }
+    
+        console.log("Fetching timetable details for code:", code);  
+    
+        const TableField = await TimeTable.findOne({ code }); 
+        
+        if (!TableField) {
+          throw new HttpException(404, "Timetable not found for the given code");
+        }
+    
+        return TableField;
+      } catch (error) {
+        console.error("Error fetching timetable by code:", error);
+        throw new HttpException(500, error.message || "Internal server error");
+      }
     }
+    
+    
 
 
     async getTableById(id) {
