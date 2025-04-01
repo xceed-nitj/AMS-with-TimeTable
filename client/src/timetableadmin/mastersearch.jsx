@@ -110,6 +110,7 @@ function MasterView() {
           { credentials: "include" }
         );
         const data1 = await response.json();
+        console.log("received code:",data1);
 
         setCurrentCode(data1)
         // setAvailableDepts(dept)
@@ -272,12 +273,16 @@ function MasterView() {
 
     const fetchFaculty = async (currentCode) => {
       try {
+        console.log('Fetching faculty');
         const fetchedttdetails = await fetchTTData(currentCode);
-        // console.log("fetchedttdetails", fetchedttdetails)
-        const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`, { credentials: 'include', });
+        console.log("fetchedttdetails", fetchedttdetails)
+        const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails.dept}`, { credentials: 'include', });
+        console.log("response in fetchfaculty",response)
         if (response.ok) {
           const data = await response.json();
+          
           const facultydata = data.map(faculty => faculty.name);
+          console.log('faculty data',data);
 
           // console.log('faculty response',data);
           setAvailableFaculties(facultydata);
