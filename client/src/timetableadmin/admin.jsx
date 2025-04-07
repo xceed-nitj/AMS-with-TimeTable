@@ -256,6 +256,7 @@ const AdminPage = () => {
       <Th>Session</Th>
       <Th>Edit</Th>
       <Th>Delete</Th>
+      <Th>Make current</Th>
     </Tr>
   </Thead>
   <Tbody>
@@ -281,6 +282,13 @@ const AdminPage = () => {
     </Td>
     <Td>
       <CustomDeleteButton onClick={() => handleDelete(session)}>Delete</CustomDeleteButton>
+    </Td>
+    <Td>
+      {sessionsWithTT.includes(session) ? (
+        (
+          <CustomBlueButton onClick={() => handleSetCurrentSession(session)}>Make Current</CustomBlueButton>
+        )
+      ) :("N/A") }
     </Td>
   </Tr>
 ))}
