@@ -84,6 +84,7 @@ export default function Navbar() {
     '/tt/commonslot',
     '/prm/register',
     '/prm/emailverification',
+    '/404',
   ];
 
   useEffect(() => {
