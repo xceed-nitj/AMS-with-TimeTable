@@ -1,255 +1,416 @@
 import React, { useState, useEffect } from 'react';
-import getEnvironment from '../../getenvironment';
+import { axiosInstance } from '../api/config';
 import {
-    Box,
-    FormControl,
-    FormLabel,
-    Input,
-    Select,
-    chakra,
-    Text,
-} from "@chakra-ui/react";
-import { Button } from "@chakra-ui/button";
+  Box,
+  Container,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  chakra,
+  Text,
+  Button,
+  Heading,
+  VStack,
+  HStack,
+  SimpleGrid,
+  Tag,
+  TagLabel,
+  TagCloseButton,
+  useToast,
+  Card,
+  CardHeader,
+  CardBody,
+  Divider,
+  useColorModeValue,
+  Icon,
+  Flex,
+} from '@chakra-ui/react';
+import { FiPlus, FiUsers, FiHome, FiCheck, FiUserPlus } from 'react-icons/fi';
 
 function HospitalForm() {
-    const [hospitalData, setHospitalData] = useState({
-        name: "",
-        location: "",
-        phone: "",
-        doctors: [],
-        patients: []
+  const [hospitalData, setHospitalData] = useState({
+    name: '',
+    location: '',
+    phone: '',
+    doctors: [],
+    patients: [],
+  });
+
+  const [allDoctors, setAllDoctors] = useState([]);
+  const [allPatients, setAllPatients] = useState([]);
+  const [selectedDoctor, setSelectedDoctor] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const toast = useToast();
+
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  // Fetch doctors and patients when the component mounts
+  useEffect(() => {
+    // Fetch doctors
+    axiosInstance
+      .get('/diabeticsModule/doctor/all')
+      .then((response) => {
+        setAllDoctors(response.data || []);
+      })
+      .catch(handleError);
+
+    // Fetch patients
+    axiosInstance
+      .get('/diabeticsModule/patient/all')
+      .then((response) => {
+        setAllPatients(response.data || []);
+      })
+      .catch(handleError);
+  }, []);
+
+  // Handle API error
+  const handleError = (error) => {
+    console.error('Error:', error);
+    toast({
+      title: 'Error',
+      description: error.message || 'An error occurred',
+      status: 'error',
+      duration: 5000,
+      isClosable: true,
     });
+  };
 
-    const [allDoctors, setAllDoctors] = useState([]);
-    const [allPatients, setAllPatients] = useState([]);
-    const [selectedPatientId, setSelectedPatientId] = useState('');
-    const [selectedDoctorId, setSelectedDoctorId] = useState('');
+  // Handle hospital input changes
+  const handleHospitalChange = (e) => {
+    const { name, value } = e.target;
+    setHospitalData({ ...hospitalData, [name]: value });
+  };
 
-    const apiUrl = getEnvironment();
+  // Add a doctor to the hospital
+  const addDoctor = () => {
+    if (!selectedDoctor) return;
 
-    // Fetch patients data
-    useEffect(() => {
-        fetch(`${apiUrl}/diabeticsModule/patient/all`, { credentials: 'include' })
-            .then(handleResponse)
-            .then((data) => {
-                setAllPatients(data);
-            })
-            .catch(handleError);
-            console.log(allPatients);
-    }, []);
+    // Check if doctor is already in the list
+    if (hospitalData.doctors.some((doctor) => doctor.id === selectedDoctor)) {
+      toast({
+        title: 'Doctor already added',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
 
-    // Fetch doctors data
-    useEffect(() => {
-        fetch(`${apiUrl}/diabeticsModule/doctor/all`, { credentials: 'include' })
-            .then(handleResponse)
-            .then((data) => {
-                setAllDoctors(data);
-            })
-            .catch(handleError);
-    }, []);
+    // Find the selected doctor's details
+    const doctorDetails = allDoctors.find(
+      (doctor) => doctor._id === selectedDoctor
+    );
 
-    // Handle API responses
-    const handleResponse = (response) => {
-        if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json(); 
-    };
+    if (doctorDetails) {
+      const newDoctor = {
+        id: doctorDetails._id,
+        name: doctorDetails.name,
+      };
 
-    const handleError = (error) => {
-        console.error("Error:", error);
-    };
+      setHospitalData({
+        ...hospitalData,
+        doctors: [...hospitalData.doctors, newDoctor],
+      });
 
-    // Handling hospital detail changes
-    const handleHospitalChange = (e) => {
-        const { name, value } = e.target;
-        setHospitalData({ ...hospitalData, [name]: value });
-    };
+      setSelectedDoctor(''); // Reset selection
+    }
+  };
 
-    // Add selected doctor
-    const addDoctor = () => {
-        if (!selectedDoctorId) {
-            console.error("No doctor selected");
-            return;
-        }
-        console.log(selectedDoctorId);
+  // Remove a doctor from the hospital
+  const removeDoctor = (doctorId) => {
+    setHospitalData({
+      ...hospitalData,
+      doctors: hospitalData.doctors.filter((doctor) => doctor.id !== doctorId),
+    });
+  };
 
-        const selectedDoctor = allDoctors.find((doctor) => doctor._id === selectedDoctorId);
+  // Add a patient to the hospital
+  const addPatient = () => {
+    if (!selectedPatient) return;
 
-        if (!selectedDoctor) {
-            console.error(`Doctor with id ${selectedDoctorId} not found`);
-            return;
-        }
+    // Check if patient is already in the list
+    if (
+      hospitalData.patients.some((patient) => patient.id === selectedPatient)
+    ) {
+      toast({
+        title: 'Patient already added',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
 
-        // Ensure that the patient doesn't already exist in the list
-        if (hospitalData.doctors.some((doctor) => doctor._id === selectedDoctorId)) {
-            console.error(`Doctor with id ${selectedDoctorId} is already added`);
-            return;
-        }
+    // Find the selected patient's details
+    const patientDetails = allPatients.find(
+      (patient) => patient._id === selectedPatient
+    );
 
-        // Add the patient to the hospitalData
-        setHospitalData((prevData) => ({
-            ...prevData,
-            doctors: [...prevData.doctors, selectedDoctor]
-        }));
+    if (patientDetails) {
+      const newPatient = {
+        id: patientDetails._id,
+        name: patientDetails.name,
+      };
 
-        // Reset the selected patient ID after adding
-        setSelectedDoctorId('');
-    };
+      setHospitalData({
+        ...hospitalData,
+        patients: [...hospitalData.patients, newPatient],
+      });
 
-    // Add existing patient to hospital
-    const addPatient = () => {
-        if (!selectedPatientId) {
-            console.error("No patient selected");
-            return;
-        }
-        console.log(selectedPatientId);
+      setSelectedPatient(''); // Reset selection
+    }
+  };
 
-        const selectedPatient = allPatients.find((patient) => patient._id === selectedPatientId);
+  // Remove a patient from the hospital
+  const removePatient = (patientId) => {
+    setHospitalData({
+      ...hospitalData,
+      patients: hospitalData.patients.filter(
+        (patient) => patient.id !== patientId
+      ),
+    });
+  };
 
-        if (!selectedPatient) {
-            console.error(`Patient with id ${selectedPatientId} not found`);
-            return;
-        }
+  // Submit the form
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-        // Ensure that the patient doesn't already exist in the list
-        if (hospitalData.patients.some((patient) => patient._id === selectedPatientId)) {
-            console.error(`Patient with id ${selectedPatientId} is already added`);
-            return;
-        }
+    try {
+      // TODO : create a function in the api file for add hospital
+      const response = await axiosInstance.post(
+        '/diabeticsModule/hospital/add',
+        hospitalData
+      );
 
-        // Add the patient to the hospitalData
-        setHospitalData((prevData) => ({
-            ...prevData,
-            patients: [...prevData.patients, selectedPatient]
-        }));
+      toast({
+        title: 'Success!',
+        description: 'Hospital added successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
 
-        // Reset the selected patient ID after adding
-        setSelectedPatientId('');
-    };
+      // Reset form
+      setHospitalData({
+        name: '',
+        location: '',
+        phone: '',
+        doctors: [],
+        patients: [],
+      });
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    // Submit form
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        fetch(`${apiUrl}/diabeticsModule/hospital/add`, {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(hospitalData)
-        })
-            .then(handleResponse)
-            .catch(handleError)
-            .finally(() => {
-                setHospitalData({
-                    name: '',
-                    location: '',
-                    phone: '',
-                    doctors: [],
-                    patients: []
-                });
-            });
-    };
+  return (
+    <Container maxW="container.lg" py={8}>
+      <Card
+        bg={bg}
+        boxShadow="md"
+        borderWidth="1px"
+        borderColor={borderColor}
+        borderRadius="lg"
+        overflow="hidden"
+      >
+        <CardHeader pb={0}>
+          <Flex align="center">
+            <Icon as={FiHome} mr={2} color="blue.500" />
+            <Heading size="lg">Register New Hospital</Heading>
+          </Flex>
+        </CardHeader>
 
-    return (
-        <chakra.form onSubmit={handleSubmit} mt="1">
-            <FormControl isRequired mt="1">
-                <FormLabel>Enter hospital name:</FormLabel>
-                <Input
+        <CardBody>
+          <chakra.form onSubmit={handleSubmit}>
+            <VStack spacing={6} align="stretch">
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Hospital Name</FormLabel>
+                  <Input
                     type="text"
                     name="name"
-                    placeholder="Hospital Name"
+                    placeholder="Enter hospital name"
                     value={hospitalData.name}
                     onChange={handleHospitalChange}
-                />
-            </FormControl>
+                    size="md"
+                    borderRadius="md"
+                  />
+                </FormControl>
 
-            <FormControl isRequired mt="1">
-                <FormLabel>Enter location:</FormLabel>
-                <Input
-                    type="text"
-                    name="location"
-                    placeholder="Location"
-                    value={hospitalData.location}
-                    onChange={handleHospitalChange}
-                />
-            </FormControl>
-
-            <FormControl isRequired mt="1">
-                <FormLabel>Enter Contact:</FormLabel>
-                <Input
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Phone Number</FormLabel>
+                  <Input
                     type="text"
                     name="phone"
-                    placeholder="Phone Number"
+                    placeholder="Enter contact number"
                     value={hospitalData.phone}
                     onChange={handleHospitalChange}
+                    size="md"
+                    borderRadius="md"
+                  />
+                </FormControl>
+              </SimpleGrid>
+
+              <FormControl isRequired>
+                <FormLabel fontWeight="medium">Location</FormLabel>
+                <Input
+                  type="text"
+                  name="location"
+                  placeholder="Enter hospital address"
+                  value={hospitalData.location}
+                  onChange={handleHospitalChange}
+                  size="md"
+                  borderRadius="md"
                 />
-            </FormControl>
+              </FormControl>
 
-            {/* Doctor Selection */}
-            <FormControl mt="3">
-                <FormLabel>Add Doctor:</FormLabel>
-                <Select
-                    value={selectedDoctorId}
-                    onChange={(e) => setSelectedDoctorId(e.target.value)}
-                >
-                    <option value="" disabled>
-                        Select Doctor
-                    </option>
-                    {allDoctors.map((doctor) => (
+              <Divider my={3} />
+
+              {/* Doctors Section */}
+              <Box>
+                <Flex align="center" mb={2}>
+                  <Icon as={FiUserPlus} mr={2} color="blue.500" />
+                  <Heading size="md">Assign Doctors</Heading>
+                </Flex>
+
+                <HStack spacing={4} mb={4}>
+                  <FormControl>
+                    <Select
+                      value={selectedDoctor}
+                      onChange={(e) => setSelectedDoctor(e.target.value)}
+                      placeholder="Select Doctor"
+                      size="md"
+                      borderRadius="md"
+                    >
+                      {allDoctors.map((doctor) => (
                         <option key={doctor._id} value={doctor._id}>
-                            {doctor.name} - {doctor.specialization}
+                          {doctor.name}{' '}
+                          {doctor.specialization
+                            ? `- ${doctor.specialization}`
+                            : ''}
                         </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Button
+                    onClick={addDoctor}
+                    colorScheme="blue"
+                    leftIcon={<FiPlus />}
+                    flexShrink={0}
+                  >
+                    Add
+                  </Button>
+                </HStack>
+
+                {hospitalData.doctors.length > 0 ? (
+                  <Flex wrap="wrap" gap={2} mb={4}>
+                    {hospitalData.doctors.map((doctor) => (
+                      <Tag
+                        key={doctor.id}
+                        size="md"
+                        borderRadius="full"
+                        variant="solid"
+                        colorScheme="cyan"
+                      >
+                        <TagLabel>{doctor.name}</TagLabel>
+                        <TagCloseButton
+                          onClick={() => removeDoctor(doctor.id)}
+                        />
+                      </Tag>
                     ))}
-                </Select>
-            </FormControl>
-            <Button type="button" mt="2" onClick={addDoctor}>Add Doctor</Button>
+                  </Flex>
+                ) : (
+                  <Text color="gray.500" fontSize="sm" mb={4}>
+                    No doctors added yet
+                  </Text>
+                )}
+              </Box>
 
-            {/* List Added Doctors */}
-            <Text mt="2">Added Doctors:</Text>
-            <ul>
-                {hospitalData.doctors.map((doctor) => (
-                    <li key={doctor._id}>
-                        {doctor.name} - {doctor.specialization}
-                    </li>
-                ))}
-            </ul>
+              <Divider my={3} />
 
-            {/* Patient Selection */}
-            <FormControl mt="3">
-                <FormLabel>Add Patient:</FormLabel>
-                <Select
-                    value={selectedPatientId}
-                    onChange={(e) => setSelectedPatientId(e.target.value)}
-                >
-                    <option value="">
-                        Select Patient
-                    </option>
-                    {allPatients.map((patient) => (
+              {/* Patients Section */}
+              <Box>
+                <Flex align="center" mb={2}>
+                  <Icon as={FiUsers} mr={2} color="green.500" />
+                  <Heading size="md">Register Patients</Heading>
+                </Flex>
+
+                <HStack spacing={4} mb={4}>
+                  <FormControl>
+                    <Select
+                      value={selectedPatient}
+                      onChange={(e) => setSelectedPatient(e.target.value)}
+                      placeholder="Select Patient"
+                      size="md"
+                      borderRadius="md"
+                    >
+                      {allPatients.map((patient) => (
                         <option key={patient._id} value={patient._id}>
-                            {patient.name} - {patient.age}
+                          {patient.name} - {patient.age} years
                         </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Button
+                    onClick={addPatient}
+                    colorScheme="green"
+                    leftIcon={<FiPlus />}
+                    flexShrink={0}
+                  >
+                    Add
+                  </Button>
+                </HStack>
+
+                {hospitalData.patients.length > 0 ? (
+                  <Flex wrap="wrap" gap={2}>
+                    {hospitalData.patients.map((patient) => (
+                      <Tag
+                        key={patient.id}
+                        size="md"
+                        borderRadius="full"
+                        variant="solid"
+                        colorScheme="blue"
+                        m={1}
+                      >
+                        <TagLabel>{patient.name}</TagLabel>
+                        <TagCloseButton
+                          onClick={() => removePatient(patient.id)}
+                        />
+                      </Tag>
                     ))}
-                </Select>
-            </FormControl>
-            <Button type="button" mt="2" onClick={addPatient}>Add Patient</Button>
+                  </Flex>
+                ) : (
+                  <Text color="gray.500" fontSize="sm">
+                    No patients added yet
+                  </Text>
+                )}
+              </Box>
+            </VStack>
 
-            {/* List Added Patients */}
-            <Text mt="2">Added Patients:</Text>
-            <ul>
-                {hospitalData.patients.map((patient) => (
-                    <li key={patient._id}>
-                        {patient.name} - {patient.age}
-                    </li>
-                ))}
-            </ul>
-
-            {/* Submit Button */}
-            <Button type="submit" className="bg-blue-500 text-white px-4 py-2" mt="4">
+            <Flex justify="flex-end" mt={8}>
+              <Button
+                type="submit"
+                colorScheme="blue"
+                size="lg"
+                isLoading={isSubmitting}
+                loadingText="Creating..."
+                leftIcon={<FiCheck />}
+              >
                 Create Hospital
-            </Button>
-        </chakra.form>
-    );
+              </Button>
+            </Flex>
+          </chakra.form>
+        </CardBody>
+      </Card>
+    </Container>
+  );
 }
 
 export default HospitalForm;

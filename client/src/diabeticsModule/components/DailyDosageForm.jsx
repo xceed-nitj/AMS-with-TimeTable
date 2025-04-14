@@ -1,201 +1,315 @@
 import React, { useState, useEffect } from 'react';
-import getEnvironment from '../../getenvironment';
+import { axiosInstance } from '../api/config';
 import {
-    Box,
-    Center,
-    Container,
-    FormControl,
-    FormLabel,
-    Heading,
-    Input,
-    Select,
-    chakra,
-} from "@chakra-ui/react";
-import { Button } from "@chakra-ui/button";
+  Button,
+  FormControl,
+  FormLabel,
+  Heading,
+  Input,
+  Select,
+  chakra,
+  VStack,
+  SimpleGrid,
+  Flex,
+  Text,
+  useToast,
+  Card,
+  CardHeader,
+  CardBody,
+  Icon,
+  Divider,
+  Box,
+  Badge,
+} from '@chakra-ui/react';
+import {
+  FiCheck,
+  FiDroplet,
+  FiClock,
+  FiActivity,
+  FiThermometer,
+} from 'react-icons/fi';
 
-function DailyDosageForm() {
-    const [dosageData, setDosageData] = useState({
-        patientId: '',
-        data : {
-            date: '',
-            session: '', //"pre-breakfast", "pre-lunch", "pre-dinner", "night"
-            bloodSugar: '',
-            carboLevel: '',
-            insulin: '',
-            longLastingInsulin: '',
-            physicalActivity: ''
-        }
+function DailyDosageForm({ patientId, onSuccess }) {
+  const [dosageData, setDosageData] = useState({
+    data: {
+      date: '',
+      time: '',
+      session: '',
+      bloodSugar: '',
+      carboLevel: '',
+      insulin: '',
+      longLastingInsulin: '',
+      physicalActivity: '',
+    },
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const toast = useToast();
+
+  // Set today's date and current time as default when the component mounts
+  useEffect(() => {
+    const today = new Date().toLocaleDateString('en-CA'); // Format as YYYY-MM-DD
+    const currentTime = new Date().toLocaleTimeString('en-CA', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
     });
 
-    const [allPatients, setAllPatients] = useState([]); // For storing fetched patients
-    const apiUrl = getEnvironment();
+    setDosageData((prevData) => ({
+      ...prevData,
+      data: {
+        ...prevData.data,
+        date: today,
+        time: currentTime,
+      },
+    }));
+  }, []);
 
-    // Fetch patients data
-    useEffect(() => {
-        fetch(`${apiUrl}/diabeticsModule/patient/all`, { credentials: 'include' })
-            .then(handleResponse)
-            .then((data) => {
-                setAllPatients(data);
-            })
-            .catch(handleError);
-    }, []);
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setDosageData({
+      ...dosageData,
+      data: {
+        ...dosageData.data,
+        [name]: value,
+      },
+    });
+  };
 
-    // Handle API response
-    const handleResponse = (response) => {
-        if (!response.ok) {
-            throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        return response.json();
-    };
+  // Submit the form
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-    // Handle API errors
-    const handleError = (error) => {
-        console.error("Error:", error);
-    };
+    try {
+      const data = {
+        patientId,
+        ...dosageData,
+      };
 
-    // Handle changes in dosage form inputs
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-    
-        // Update the state for the nested data object
-        setDosageData((prevData) => ({
-            ...prevData,
-            data: {
-                ...prevData.data,
-                [name]: value
-            }
-        }));
-    };
+      await axiosInstance.post('/diabeticsModule/dailyDosage/add', data);
 
-    // Submit the form
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log(dosageData);
-        
-        fetch(`${apiUrl}/diabeticsModule/dailyDosage/add`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(dosageData),
-        })
-            .then(handleResponse)
-            .catch(handleError)
-            .finally(() => {
-                setDosageData({
-                    patientId: '',
-                    data : {
-                        date: '',
-                        session: '', //"pre-breakfast", "pre-lunch", "pre-dinner", "night"
-                        bloodSugar: '',
-                        carboLevel: '',
-                        insulin: '',
-                        longLastingInsulin: '',
-                        physicalActivity: ''
-                    }
-                });
-            });
-    };
+      toast({
+        title: 'Success!',
+        description: 'Daily dosage record added successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
 
-    return (
-        <chakra.form onSubmit={handleSubmit} mt="4">
-            <FormControl isRequired mt="2">
-                <FormLabel>Date:</FormLabel>
-                <Input
+      // Reset form
+      setDosageData({
+        data: {
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toLocaleTimeString('en-CA', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          }),
+          session: 'pre-breakfast',
+          bloodSugar: '',
+          carboLevel: '',
+          insulin: '',
+          longLastingInsulin: '',
+          physicalActivity: 'Low',
+        },
+      });
+
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'An error occurred',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Card shadow={'none'} p={0}>
+      <CardHeader p={0}>
+        <Flex align="center" mb={2}>
+          <Icon as={FiDroplet} mr={2} color="red.500" boxSize={6} />
+          <Heading as="h2" size="md">
+            Daily Dosage Entry
+          </Heading>
+        </Flex>
+        <Text color="gray.600" fontSize="sm">
+          Record blood sugar levels, insulin doses, and other daily metrics for
+          diabetes management.
+        </Text>
+      </CardHeader>
+
+      <CardBody p={0} pt={6}>
+        <chakra.form onSubmit={handleSubmit}>
+          <VStack spacing={8} align="stretch">
+            {/* Date and Time Section */}
+            <Box>
+              <Flex align="center" mb={4}>
+                <Icon as={FiClock} mr={2} color="gray.500" />
+                <Text fontWeight="medium">Date & Time Information</Text>
+              </Flex>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Date</FormLabel>
+                  <Input
                     type="date"
                     name="date"
                     value={dosageData.data.date}
                     onChange={handleInputChange}
-                />
-            </FormControl>
+                    size="md"
+                  />
+                </FormControl>
 
-            <FormControl isRequired mt="2">
-                <FormLabel>Select Patient:</FormLabel>
-                <Select
-                    name="patientId"
-                    value={dosageData.patientId}
-                    onChange={(e) => setDosageData({ ...dosageData, patientId: e.target.value })}
-                >
-                    <option value="">Select Patient</option>
-                    {allPatients.map((patient) => (
-                        <option key={patient._id} value={patient._id}>
-                            {patient.name} - {patient.age}
-                        </option>
-                    ))}
-                </Select>
-            </FormControl>
-
-            {/* "pre-breakfast", "pre-lunch", "pre-dinner", "night" */}
-            <FormControl isRequired mt="2"> 
-                <FormLabel>Session:</FormLabel>
-                <Select
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Time of Dosage</FormLabel>
+                  <Input
+                    type="time"
+                    name="time"
+                    value={dosageData.data.time}
+                    onChange={handleInputChange}
+                    size="md"
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Session</FormLabel>
+                  <Select
                     name="session"
+                    placeholder="Select session"
                     value={dosageData.data.session}
                     onChange={handleInputChange}
-                >
-                    <option value="">Select Session</option>
+                    size="md"
+                  >
                     <option value="pre-breakfast">Pre-Breakfast</option>
                     <option value="pre-lunch">Pre-Lunch</option>
                     <option value="pre-dinner">Pre-Dinner</option>
                     <option value="night">Night</option>
-                </Select>
-            </FormControl>
+                  </Select>
+                </FormControl>
+              </SimpleGrid>
+            </Box>
 
-            <FormControl isRequired mt="2">
-                <FormLabel>Blood Sugar (mg/dL):</FormLabel>
-                <Input
+            <Divider />
+
+            {/* Health Metrics Section */}
+            <Box>
+              <Flex align="center" mb={4}>
+                <Icon as={FiThermometer} mr={2} color="gray.500" />
+                <Text fontWeight="medium">Health Metrics</Text>
+              </Flex>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Blood Sugar (mg/dL)</FormLabel>
+                  <Input
                     type="number"
                     name="bloodSugar"
+                    placeholder="Enter blood sugar level"
                     value={dosageData.data.bloodSugar}
                     onChange={handleInputChange}
-                />
-            </FormControl>
+                    size="md"
+                  />
+                </FormControl>
 
-            <FormControl isRequired mt="2">
-                <FormLabel>Carbohydrate Level (g):</FormLabel>
-                <Input
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">
+                    Carbohydrate Intake (g)
+                  </FormLabel>
+                  <Input
                     type="number"
                     name="carboLevel"
+                    placeholder="Enter carbohydrate intake"
                     value={dosageData.data.carboLevel}
                     onChange={handleInputChange}
-                />
-            </FormControl>
+                    size="md"
+                  />
+                </FormControl>
+              </SimpleGrid>
+            </Box>
 
-            <FormControl isRequired mt="2">
-                <FormLabel>Insulin (units):</FormLabel>
-                <Input
-                    type="number"
-                    name="insulin"
-                    value={dosageData.data.insulin}
-                    onChange={handleInputChange}
-                />
-            </FormControl>
+            <Divider />
 
-            <FormControl isRequired mt="2">
-                <FormLabel>Long-lasting Insulin (units):</FormLabel>
-                <Input
-                    type="number"
-                    name="longLastingInsulin"
-                    value={dosageData.data.longLastingInsulin}
-                    onChange={handleInputChange}
-                />
-            </FormControl>
+            {/* Insulin and Activity Section */}
+            <Box>
+              <Flex align="center" mb={4}>
+                <Icon as={FiActivity} mr={2} color="gray.500" />
+                <Text fontWeight="medium">Insulin & Activity</Text>
+              </Flex>
+              <VStack spacing={6} align="stretch">
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                  <FormControl isRequired>
+                    <FormLabel fontWeight="medium">
+                      Insulin Dose (units)
+                    </FormLabel>
+                    <Input
+                      type="number"
+                      name="insulin"
+                      placeholder="Short-acting insulin"
+                      value={dosageData.data.insulin}
+                      onChange={handleInputChange}
+                      size="md"
+                    />
+                  </FormControl>
 
-            <FormControl mt="2">
-                <FormLabel>Physical Activity :</FormLabel>
-                <Input
-                    type="text"
+                  <FormControl>
+                    <FormLabel fontWeight="medium">
+                      Long-lasting Insulin (units)
+                    </FormLabel>
+                    <Input
+                      type="number"
+                      name="longLastingInsulin"
+                      placeholder="If applicable"
+                      value={dosageData.data.longLastingInsulin}
+                      onChange={handleInputChange}
+                      size="md"
+                    />
+                  </FormControl>
+                </SimpleGrid>
+
+                <FormControl isRequired>
+                  <FormLabel fontWeight="medium">Physical Activity</FormLabel>
+                  <Select
                     name="physicalActivity"
+                    placeholder="Select activity level"
                     value={dosageData.data.physicalActivity}
                     onChange={handleInputChange}
-                />
-            </FormControl>
+                    size="md"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="High">High</option>
+                  </Select>
+                </FormControl>
+              </VStack>
+            </Box>
 
-            <Button type="submit" colorScheme="teal" mt="4">
-                Submit Dosage
-            </Button>
+            <Flex justify="flex-end" mt={6}>
+              <Button
+                type="submit"
+                colorScheme="red"
+                isLoading={isSubmitting}
+                loadingText="Saving..."
+                leftIcon={<FiCheck />}
+                size="lg"
+                px={8}
+              >
+                Save Dosage Record
+              </Button>
+            </Flex>
+          </VStack>
         </chakra.form>
-    );
+      </CardBody>
+    </Card>
+  );
 }
 
 export default DailyDosageForm;

@@ -274,7 +274,7 @@ function Subject() {
         {isAddFacultyFormVisible ? (
           <Box>
             <Box>
-              <Text mb='1' >Faculty ID: </Text>
+              <Text mb='1' >Faculty ID: <span>*</span> </Text>
               <Input
                 mb='2'
                 type="text"
@@ -285,7 +285,7 @@ function Subject() {
               />
             </Box>
             <Box>
-              <Text mb='1' >Name: </Text>
+              <Text mb='1' >Name: <span>*</span></Text>
               <Input
                 mb='2'
                 type="text"
@@ -296,7 +296,7 @@ function Subject() {
               />
             </Box>
             <Box>
-              <Text mb='1'>Designation: </Text>
+              <Text mb='1'>Designation: <span>*</span></Text>
               <Input
                 mb='2'
                 type="text"
@@ -307,7 +307,7 @@ function Subject() {
               />
             </Box>
             <Box>
-              <Text mb='1'>Dept: </Text>
+              <Text mb='1'>Dept: <span>*</span></Text>
               <Input
                mb='2'
                 type="text"

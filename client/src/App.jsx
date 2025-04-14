@@ -1,5 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, RouterProvider } from 'react-router-dom';
-import Lottie from 'lottie-react'
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  RouterProvider,
+} from 'react-router-dom';
+import Lottie from 'lottie-react';
 import Timetable from './timetableadmin/timetable';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
@@ -35,7 +40,7 @@ import LunchLoad from './timetableadmin/addlunchload';
 import InstituteLoad from './timetableadmin/instituteload';
 import ViewInstituteLoad from './timetableadmin/viewinstituteload';
 import EditMasterFaculty from './timetableadmin/editmasterfaculty';
-import ImportForm from './timetableadmin/importCentralRoom'
+import ImportForm from './timetableadmin/importCentralRoom';
 import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
 import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
@@ -44,7 +49,7 @@ import Departmentloadallocation from './timetableadmin/departmentloadallocation.
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
-import animation404 from '../public/404.json'
+import animation404 from '../public/404.json';
 import { LogoAnimation } from './components/login/LogoAnimation.jsx';
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
@@ -52,7 +57,7 @@ import CertificateForm from './certificatemodule/pages/certificatedesign';
 // import Certificate from './certificatemodule/pages/certificatetemplates/Certificate';
 import ServicePage from './pages/Service';
 import Participant from './certificatemodule/pages/participantdataupload';
-import UserEvents from './certificatemodule/pages/UserEvents'
+import UserEvents from './certificatemodule/pages/UserEvents';
 import UserLogos from './certificatemodule/pages/UserLogo.jsx';
 import UserSignatures from './certificatemodule/pages/UserSignatures.jsx';
 
@@ -72,7 +77,6 @@ import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
-
 
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
@@ -103,9 +107,9 @@ import UserDetails from './reviewmodule/pages/UserDetails.jsx';
 import PrmEditorDashboard from './reviewmodule/pages/PrmEditorDashboard';
 
 // import ConferenceDetails from './reviewmodule/pages/EditorConferencePage';
-import AllPaper from './reviewmodule/pages/allpapers'
+import AllPaper from './reviewmodule/pages/allpapers';
 import EventForm from './reviewmodule/pages/editorevent';
-import MultiEditorEvent from "./reviewmodule/pages/addeditor";
+import MultiEditorEvent from './reviewmodule/pages/addeditor';
 import PaperDetails from './reviewmodule/components/PaperDetails';
 
 import ReviewerAcceptance from './reviewmodule/pages/ReviewerAcceptance';
@@ -121,7 +125,7 @@ import AddTemplate from './reviewmodule/pages/addTemplate';
 import EditTemplate from './reviewmodule/pages/EditTemplate';
 import EditDefaultTemplate from './reviewmodule/pages/EditDefaultTemplate.jsx';
 import NirfRanking from './nirf/rankings';
-import AddPaper from './reviewmodule/pages/addpaper'
+import AddPaper from './reviewmodule/pages/addpaper';
 
 // imports for Quiz Module
 import CreateQuiz from './quizModule/creator/createQuiz/CreateQuiz';
@@ -141,21 +145,32 @@ import AllForms from './reviewmodule/pages/AllForms.jsx';
 import Reviews from './reviewmodule/pages/Reviews.jsx';
 
 //import diabetic modules
-import HospitalForm from './diabeticsModule/components/HospitalForm.jsx'
-import PatientForm from './diabeticsModule/components/PatientForm.jsx'
+import HospitalForm from './diabeticsModule/components/HospitalForm.jsx';
+import PatientForm from './diabeticsModule/components/PatientForm.jsx';
 import DailyDosageForm from './diabeticsModule/components/DailyDosageForm.jsx';
 import SickDayForm from './diabeticsModule/components/SickDayForm.jsx';
-import GamificationForm from './diabeticsModule/components/GamificationForm.jsx'
-import DoctorForm from './diabeticsModule/components/DoctorForm.jsx'
+import GamificationForm from './diabeticsModule/components/GamificationForm.jsx';
+import DoctorForm from './diabeticsModule/components/DoctorForm.jsx';
+
+// Diabetics Module Dashboards
+import AdminDashboard from './diabeticsModule/pages/AdminDashboard';
+import PatientDashboard from './diabeticsModule/pages/PatientDashboard';
+import PatientHistory from './diabeticsModule/pages/PatientHistory';
+import DoctorDashboard from './diabeticsModule/pages/DoctorDashboard';
+import PatientDetailView from './diabeticsModule/pages/PatientDetailView';
+import LoginPage from './diabeticsModule/pages/LoginPage';
+
+// Detail View Routes for Admin
+import DoctorDetailView from './diabeticsModule/pages/DoctorDetailView';
+import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 
 function App() {
-  
   return (
     <Router>
       {/* <div className="app"> */}
 
       {/* <h1>XCEED-Timetable Module</h1>  */}
-       <Navbar />
+      <Navbar />
 
       <Routes>
         {/* Landing Page */}
@@ -183,9 +198,7 @@ function App() {
           <Route path="masterdelete" element={<MasterDelete />} />
           <Route path="viewmrooms" element={<ViewMRooms />} />
           <Route path="masterdata" element={<MasterDataTable />} />
-          
         </Route>
-
 
         <Route path="/tt/:generatedLink">
           <Route index element={<Timetable />}></Route>
@@ -210,13 +223,13 @@ function App() {
         <Route path="classrooms" element={<ViewMRooms />} />
         {/* Same link */}
 
-          {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
-          <Route path="/tt/allotment" element={<AllotmentForm/>}/>
-          <Route path="/tt/allotment/import" element={<ImportForm/>}/>
+        {/* <Route path="/tt/viewtimetable" element={<LockedView/>} /> */}
+        <Route path="/tt/allotment" element={<AllotmentForm />} />
+        <Route path="/tt/allotment/import" element={<ImportForm />} />
 
-          <Route path="/tt/admin" element={<AdminPage/>}/>
-          <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
-        
+        <Route path="/tt/admin" element={<AdminPage />} />
+        <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
+
         {/* Same link */}
         <Route path="timetable" element={<MasterView />} />
         {/* Same link */}
@@ -230,76 +243,149 @@ function App() {
           path="/tt/:generatedLink/generatepdf/mergepdf"
           element={<MergePDFComponent />}
         />
-        <Route path="/tt/:generatedLink/generatepdf/loadallocation" element={<Departmentloadallocation />} />
+        <Route
+          path="/tt/:generatedLink/generatepdf/loadallocation"
+          element={<Departmentloadallocation />}
+        />
 
         <Route path="/cm/addevent" element={<EventRegistration />} />
         <Route path="/cm/dashboard" element={<CMDashboard />} />
         <Route path="/cm/:eventid" element={<CertificateForm />} />
         <Route path="/cm/:eventid/addparticipant" element={<Participant />} />
         <Route path="/cm/c/:eventid/:participantid" element={<Template01 />} />
-        <Route path="/cm/c/:eventid/:participantid/sarthak" element={<Template03 />} />
-        <Route path='/cm/useraddevent' element={< UserEventRegistration/>} />
-        <Route path="/cm/userevents/:userId" element={<UserEvents/>} />
+        <Route
+          path="/cm/c/:eventid/:participantid/sarthak"
+          element={<Template03 />}
+        />
+        <Route path="/cm/useraddevent" element={<UserEventRegistration />} />
+        <Route path="/cm/userevents/:userId" element={<UserEvents />} />
         <Route path="/cm/userimages/logos/:userId" element={<UserLogos />} />
-        <Route path="/cm/userimages/signatures/:userId" element={<UserSignatures />} />
+        <Route
+          path="/cm/userimages/signatures/:userId"
+          element={<UserSignatures />}
+        />
 
-    {/* Review management routes*/}
-    <Route path="/prm/login" element={<ReviewLogin/>} />
-    <Route path="/prm/signup" element={<CreateUser/>} />
-    <Route path="/prm/assigneditor" element={<PRMEventRegistration/>} />
-    <Route path="/prm/dashboard" element={<PRMDashboard/>} />
-    <Route path="/prm/emailverification" element={<OTPverification/>} />
-    <Route path="/prm/userdetails" element={<UserDetails/>} />
-    {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
-    <Route path="/prm/:eventId/editor/confdetails" element={<EventForm/>}/>
-    <Route path="/prm/:eventId/editor/addEditor" element={<MultiEditorEvent/>}/>
-    <Route path="/prm/:eventId/editor/addreviewer" element={<AddReviewer/>}/>
-    <Route path="/prm/:eventId/:paperId/:userId/Review" element={<Review/>}/>
-    <Route path="/prm/:eventId/:paperId/summary" element={<PaperSummary/>}/>
-    <Route path="/prm/:eventId/:paperId/reviews" element={<Reviews/>}/>
-    <Route path="/prm/:eventId/Forms" element={<Forms/>}/>
-    <Route path="/prm/:eventId/:formId/FormAnswers" element={<FormAnswers/>}/>
-    <Route path="/prm/:eventId/ReviewQuestion" element={<ReviewerQuestion/>}/>
-    <Route path="/prm/:eventId/ReviewQuestionHome" element={<ReviewerQuestionHome/>}/>
-    <Route path="/prm/DefaultQuestion" element={<DefaultQuestion/>}/>
-    <Route path="/prm/DefaultQuestionHome" element={<DefaultQuestionHome/>}/>
-    <Route path="/prm/:eventId/reviewer/:reviewerId" element={<UpdateReviewerStatus/>}/>
-    <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack/>}/>
-    <Route path="/prm/:eventId/editor/edittemplate" element={<EditTemplate/>}/>
-    <Route path="/prm/editdefaulttemplate" element={<EditDefaultTemplate/>}/>
-    <Route path="/prm/:eventId/editor/papers" element={<AllPaper/>}/>
-    <Route path="/prm/:eventId/editor/papers/addpaper" element={<AddPaper/>}/>
-    <Route path="/prm/:eventId/editor/startSubmission" element={<StartSubmission/>}/>
-    <Route path="/prm/:eventId/editor/forms" element={<AllForms/>}/>
-    <Route path="/prm/:eventId/paper" element={<PaperDetails/>}/>
-    <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard/>} /> 
-    <Route path="/prm/:eventId/ed" element={<PrmEdDashboard/>} /> 
-    
+        {/* Review management routes*/}
+        <Route path="/prm/login" element={<ReviewLogin />} />
+        <Route path="/prm/signup" element={<CreateUser />} />
+        <Route path="/prm/assigneditor" element={<PRMEventRegistration />} />
+        <Route path="/prm/dashboard" element={<PRMDashboard />} />
+        <Route path="/prm/emailverification" element={<OTPverification />} />
+        <Route path="/prm/userdetails" element={<UserDetails />} />
+        {/* <Route path="/prm/papersubmission" element={<MultiStepForm/>}/> */}
+        <Route
+          path="/prm/:eventId/editor/confdetails"
+          element={<EventForm />}
+        />
+        <Route
+          path="/prm/:eventId/editor/addEditor"
+          element={<MultiEditorEvent />}
+        />
+        <Route
+          path="/prm/:eventId/editor/addreviewer"
+          element={<AddReviewer />}
+        />
+        <Route
+          path="/prm/:eventId/:paperId/:userId/Review"
+          element={<Review />}
+        />
+        <Route
+          path="/prm/:eventId/:paperId/summary"
+          element={<PaperSummary />}
+        />
+        <Route path="/prm/:eventId/:paperId/reviews" element={<Reviews />} />
+        <Route path="/prm/:eventId/Forms" element={<Forms />} />
+        <Route
+          path="/prm/:eventId/:formId/FormAnswers"
+          element={<FormAnswers />}
+        />
+        <Route
+          path="/prm/:eventId/ReviewQuestion"
+          element={<ReviewerQuestion />}
+        />
+        <Route
+          path="/prm/:eventId/ReviewQuestionHome"
+          element={<ReviewerQuestionHome />}
+        />
+        <Route path="/prm/DefaultQuestion" element={<DefaultQuestion />} />
+        <Route
+          path="/prm/DefaultQuestionHome"
+          element={<DefaultQuestionHome />}
+        />
+        <Route
+          path="/prm/:eventId/reviewer/:reviewerId"
+          element={<UpdateReviewerStatus />}
+        />
+        <Route path="/prm/:eventId/editor/addtrack" element={<AddTrack />} />
+        <Route
+          path="/prm/:eventId/editor/edittemplate"
+          element={<EditTemplate />}
+        />
+        <Route
+          path="/prm/editdefaulttemplate"
+          element={<EditDefaultTemplate />}
+        />
+        <Route path="/prm/:eventId/editor/papers" element={<AllPaper />} />
+        <Route
+          path="/prm/:eventId/editor/papers/addpaper"
+          element={<AddPaper />}
+        />
+        <Route
+          path="/prm/:eventId/editor/startSubmission"
+          element={<StartSubmission />}
+        />
+        <Route path="/prm/:eventId/editor/forms" element={<AllForms />} />
+        <Route path="/prm/:eventId/paper" element={<PaperDetails />} />
+        <Route path="/prm/:eventId/editor" element={<PrmEditorDashboard />} />
+        <Route path="/prm/:eventId/ed" element={<PrmEdDashboard />} />
 
-    <Route path="/prm/:eventId/author/newpaper" element={<MultiStepForm />} />
-    <Route path="/prm/reviewerAcceptance" element={<ReviewerAcceptance/>} />
-    <Route path="/prm/home" element={<HomePage/>}/>
-    <Route path="/prm/register" element={<UserRegistration/>}/>
-    <Route path='/prm/end' element={<ErrorPage 
-                                      message='Paper Submission for this event has ended...' 
-                                      destination='/prm/home'
-                                      destinationName='Paper Review Manager Home'
-                                      animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
-                                      />}></Route>
-    <Route path='/prm/*' element={<ErrorPage 
-                                      message='The page you are looking for does not exist...' 
-                                      destination='/prm/home'
-                                      destinationName='Paper Review Manager Home'
-                                      animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
-                                      />}></Route>
+        <Route
+          path="/prm/:eventId/author/newpaper"
+          element={<MultiStepForm />}
+        />
+        <Route
+          path="/prm/reviewerAcceptance"
+          element={<ReviewerAcceptance />}
+        />
+        <Route path="/prm/home" element={<HomePage />} />
+        <Route path="/prm/register" element={<UserRegistration />} />
+        <Route
+          path="/prm/end"
+          element={
+            <ErrorPage
+              message="Paper Submission for this event has ended..."
+              destination="/prm/home"
+              destinationName="Paper Review Manager Home"
+              animation={
+                <Lottie
+                  animationData={animation404}
+                  style={{ opacity: '15%' }}
+                />
+              }
+            />
+          }
+        ></Route>
+        <Route
+          path="/prm/*"
+          element={
+            <ErrorPage
+              message="The page you are looking for does not exist..."
+              destination="/prm/home"
+              destinationName="Paper Review Manager Home"
+              animation={
+                <Lottie
+                  animationData={animation404}
+                  style={{ opacity: '15%' }}
+                />
+              }
+            />
+          }
+        ></Route>
 
-    
-
-
-          {/* Conference Module Admin-Panel */}
-          <Route path="/cf/dashboard" element={<EODashboard/>} />
-          <Route path="/cf/addconf" element={<ConferencePage />} />
-          <Route path="/cf/:confid" element={<Sidebar  />}>
+        {/* Conference Module Admin-Panel */}
+        <Route path="/cf/dashboard" element={<EODashboard />} />
+        <Route path="/cf/addconf" element={<ConferencePage />} />
+        <Route path="/cf/:confid" element={<Sidebar />}>
           <Route index element={<HomeConf />} />
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
@@ -319,44 +405,118 @@ function App() {
           <Route path="events" element={<Event />} />
           <Route path="souvenir" element={<Souvenir />} />
           <Route path="commontemplate" element={<CommonTemplate />} />
-
-          </Route>
+        </Route>
 
         {/* Quiz Module Routes */}
-        <Route path='/quiz/createquiz' element={<CreateQuiz/>}></Route>
-        <Route path="/quiz/:code" element={ <> <AddQuestionHome />   </>} />
-        <Route path="/quiz/:code/addinstruction" element={<><AddInstruction /></>} />
-        <Route path="/quiz/:code/addinstruction/preview" element={<><PreviewInstructions /></>} />
-        <Route path="/quiz/:code/settings" element={<><Settings/></>}/>
+        <Route path="/quiz/createquiz" element={<CreateQuiz />}></Route>
+        <Route
+          path="/quiz/:code"
+          element={
+            <>
+              {' '}
+              <AddQuestionHome />{' '}
+            </>
+          }
+        />
+        <Route
+          path="/quiz/:code/addinstruction"
+          element={
+            <>
+              <AddInstruction />
+            </>
+          }
+        />
+        <Route
+          path="/quiz/:code/addinstruction/preview"
+          element={
+            <>
+              <PreviewInstructions />
+            </>
+          }
+        />
+        <Route
+          path="/quiz/:code/settings"
+          element={
+            <>
+              <Settings />
+            </>
+          }
+        />
         {/* <Route path="/quiz/:code/result" element={<><ResultSummary /></>} /> */}
-        {/*<Route path="/addQuestionHome" element={<><AddQuestionHome /></>} /> */} 
-        
+        {/*<Route path="/addQuestionHome" element={<><AddQuestionHome /></>} /> */}
+
         {/* quiz-student-routes */}
         {/* <Route path="/quiz/:code/test" element={<Instructions />} /> */}
         <Route path="/quiz/:code/live" element={<Quizzing />} />
         <Route path="/quiz/:code/feedback" element={<QuizFeedback />} />
 
-        <Route path='test-message' element={<ErrorPage 
-                    message='Custom error message...' 
-                    destinationName={false}
-                    animation={<LogoAnimation style={{opacity:'20%'}} />}  // any type of component can be sent here
-                    />}></Route>
-        <Route path='*' element={<ErrorPage 
-                    message='The page you are looking for does not exist...' 
-                    destination='/'
-                    destinationName='Home' 
-                    animation={<Lottie animationData ={animation404} style={{opacity:'15%'}}/>} 
-                    />}></Route>
+        <Route
+          path="test-message"
+          element={
+            <ErrorPage
+              message="Custom error message..."
+              destinationName={false}
+              animation={<LogoAnimation style={{ opacity: '20%' }} />} // any type of component can be sent here
+            />
+          }
+        ></Route>
+        <Route
+          path="*"
+          element={
+            <ErrorPage
+              message="The page you are looking for does not exist..."
+              destination="/"
+              destinationName="Home"
+              animation={
+                <Lottie
+                  animationData={animation404}
+                  style={{ opacity: '15%' }}
+                />
+              }
+            />
+          }
+        ></Route>
 
-        <Route path="/platform" element={<><Form/></>}/>
+        <Route
+          path="/platform"
+          element={
+            <>
+              <Form />
+            </>
+          }
+        />
 
-        {/* Routes for diabetic module */}
-        <Route path="/dm/addHospital" element={<HospitalForm/>}/>
-        <Route path="/dm/addPatient" element={<PatientForm/>}/>
-        <Route path="/dm/addDailyDosage" element={<DailyDosageForm/>}/>
-        <Route path="/dm/addSickDay" element={<SickDayForm/>}/>
-        <Route path="/dm/addGamification" element={<GamificationForm/>}/>
-        <Route path="/dm/addDoctor" element={<DoctorForm/>}/>
+        {/* Routes for Diabetics Module */}
+        {/* Authentication */}
+        <Route path="/dm/login" element={<LoginPage />} />
+
+        {/* Admin Routes */}
+        <Route path="/dm/admin/dashboard" element={<AdminDashboard />} />
+
+        {/* Patient Routes */}
+        <Route path="/dm/patient/dashboard" element={<PatientDashboard />} />
+
+        {/* Doctor Routes */}
+        <Route path="/dm/doctor/dashboard" element={<DoctorDashboard />} />
+        <Route path="/dm/patient/:patientId" element={<PatientDetailView />} />
+        <Route
+          path="/dm/patient/:patientId/history"
+          element={<PatientHistory />}
+        />
+
+        {/* Detail View Routes for Admin */}
+        <Route path="/dm/doctor/:doctorId" element={<DoctorDetailView />} />
+        <Route
+          path="/dm/hospital/:hospitalId"
+          element={<HospitalDetailView />}
+        />
+
+        {/* Data Entry Forms */}
+        <Route path="/dm/addHospital" element={<HospitalForm />} />
+        <Route path="/dm/addPatient" element={<PatientForm />} />
+        <Route path="/dm/addDoctor" element={<DoctorForm />} />
+        <Route path="/dm/addDailyDosage" element={<DailyDosageForm />} />
+        <Route path="/dm/addSickDay" element={<SickDayForm />} />
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}

@@ -119,17 +119,42 @@ class TableController {
         }
     }
 
-    async getTableByCode(code) 
-    {
-      // const code=req.params.code;
+    // async getTableByCode(code) 
+    // {
+    //   // const code=req.params.code;
+    //   try {
+    //       const TableField = await TimeTable.find({code});
+    //       return TableField;
+    //     } catch (error) {
+    //       console.error(error); 
+    //       res.status(500).json({ error: "Internal server error" });
+    //     }
+    // }
+
+    //newcode
+    async getTableByCode(code) {
       try {
-          const TableField = await TimeTable.find({code});
-          return TableField;
-        } catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
+        if (typeof code !== "string") {
+          console.error("Invalid code received:", code); 
+          throw new HttpException(400, "Invalid code format");
         }
+    
+        console.log("Fetching timetable details for code:", code);  
+    
+        const TableField = await TimeTable.findOne({ code }); 
+        
+        if (!TableField) {
+          throw new HttpException(404, "Timetable not found for the given code");
+        }
+    
+        return TableField;
+      } catch (error) {
+        console.error("Error fetching timetable by code:", error);
+        throw new HttpException(500, error.message || "Internal server error");
+      }
     }
+    
+    
 
 
     async getTableById(id) {
@@ -188,11 +213,25 @@ class TableController {
       // Step 1: Get distinct sessions with their creation times
       const sessionsWithCreationTimes = await TimeTable.find(
         {},
-        { session: 1, created_at: 1 }
+        { session: 1, created_at: 1, currentSession: 1 }
       ).sort({ created_at: -1 });
   
       // Extract unique sessions and sort them by creation time
-      const uniqueSessions = [...new Set(sessionsWithCreationTimes.map(doc => doc.session))];
+      // const uniqueSessions = sessionsWithCreationTimes.map(doc => ({
+      //   session: doc.session,
+      //   currentSession: doc.currentSession
+      // }));
+
+      //this will prevent duplicacy
+      const uniqueSessions = Array.from(
+        new Map(
+          sessionsWithCreationTimes.map(doc => [doc.session, { 
+            session: doc.session, 
+            currentSession: doc.currentSession 
+          }])
+        ).values()
+      );
+      // console.log(uniqueSessions);
       
       // Step 2: Get distinct departments
       const uniqueDept = await TimeTable.distinct('dept');
@@ -225,6 +264,33 @@ class TableController {
       throw error;
     }
   }
+
+  async setCurrentSession(req, res) {
+    const { session } = req.body;
+  
+    try {
+      
+      await TimeTable.updateMany({}, { $set: { currentSession: false } });
+  
+      
+      const updatedSession = await TimeTable.findOneAndUpdate(
+        { session },
+        { $set: { currentSession: true } },
+        { new: true }
+      );
+  
+      if (!updatedSession) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+  
+      res.json({ message: "Current session updated successfully", updatedSession });
+    } catch (error) {
+      console.error("Error updating current session:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
+  
 
 
 }

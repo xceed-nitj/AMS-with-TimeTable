@@ -81,11 +81,19 @@ function MasterView() {
         // console.log(data)
         const { uniqueSessions, uniqueDept } = data;
 
-        setAllSessions(uniqueSessions);
+        setAllSessions(uniqueSessions.map(s => s.session));
         setAvailableDepts(uniqueDept);
 
         // console.log('Received session data:', uniqueSessions);
         // console.log('Received department data:', uniqueDept);
+        const currentSessionObj = uniqueSessions.find(s => s.currentSession);
+        if (currentSessionObj) {
+          setSelectedSession(currentSessionObj.session);
+        } else if (uniqueSessions.length > 0) {
+          setSelectedSession(uniqueSessions[0].session); // Set the first available session if none is marked as current
+        }
+
+
       } catch (error) {
         console.error("Error fetching existing timetable data:", error);
       }
@@ -102,6 +110,7 @@ function MasterView() {
           { credentials: "include" }
         );
         const data1 = await response.json();
+        console.log("received code:",data1);
 
         setCurrentCode(data1)
         // setAvailableDepts(dept)
@@ -264,12 +273,16 @@ function MasterView() {
 
     const fetchFaculty = async (currentCode) => {
       try {
+        console.log('Fetching faculty');
         const fetchedttdetails = await fetchTTData(currentCode);
-        // console.log("fetchedttdetails", fetchedttdetails)
-        const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`, { credentials: 'include', });
+        console.log("fetchedttdetails", fetchedttdetails)
+        const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails.dept}`, { credentials: 'include', });
+        console.log("response in fetchfaculty",response)
         if (response.ok) {
           const data = await response.json();
+          
           const facultydata = data.map(faculty => faculty.name);
+          console.log('faculty data',data);
 
           // console.log('faculty response',data);
           setAvailableFaculties(facultydata);
@@ -521,7 +534,7 @@ function MasterView() {
           onChange={(e) => setSelectedSession(e.target.value)}
           isRequired
         >
-          <option value="">Select Session</option>
+          {/* <option value="">Select Session</option> */}
           {allsessions.map((session, index) => (
             <option key={index} value={session}>
               {session}
