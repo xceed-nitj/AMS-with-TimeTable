@@ -1,27 +1,27 @@
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as pdfMake from 'pdfmake/build/pdfmake';
+import * as Pvfs from 'pdfmake/build/vfs_fonts';
 
-// const pdfMakeInitializer = () => {
-//   // Check if the pdfMake object already exists
-//   if (!globalThis.pdfMake) {
-//     // Initialize pdfMake with the fonts
-//     pdfMake.vfs = Pvfs.vfs;
-//     globalThis.pdfMake = pdfMake;
-//   }
-// };
+const pdfMakeInitializer = () => {
+  // Check if the pdfMake object already exists
+  if (!globalThis.pdfMake) {
+    // Initialize pdfMake with the fonts
+    pdfMake.vfs = Pvfs.vfs;
+    globalThis.pdfMake = pdfMake;
+  }
+};
 
 // export default pdfMakeInitializer;
 
-const pdfMakeInitializer = () => {
-  // Always ensure the VFS is initialized
-  pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// const pdfMakeInitializer = () => {
+//   // Always ensure the VFS is initialized
+//   pdfMake.vfs = pdfFonts.pdfMake.vfs;
   
-  // Make it global if needed
-  if (typeof window !== 'undefined') {
-    window.pdfMake = pdfMake;
-  }
+//   // Make it global if needed
+//   if (typeof window !== 'undefined') {
+//     window.pdfMake = pdfMake;
+//   }
   
-  return pdfMake;
-};
+//   return pdfMake;
+// };
 
 export default pdfMakeInitializer;
