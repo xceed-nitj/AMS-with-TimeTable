@@ -19,6 +19,7 @@ router.use('/note', require("./note"));
 router.use('/commonLoad', require("./commonLoad")); 
 router.use('/instituteLoad', require("./instituteLoad")); 
 router.use('/mastertable', require("./masterclasstable")); 
+router.use('/message', require("./message"));
 
 module.exports = router;
 
