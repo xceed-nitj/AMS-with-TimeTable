@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import { Container } from "@chakra-ui/layout";
-import { FormControl, FormLabel, Heading, Input, Select } from '@chakra-ui/react';
+import { FormControl, FormLabel, Heading, Input, Select ,useDisclosure} from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
 import {
   Table,
@@ -11,10 +11,31 @@ import {
   Td,
   Th,
   Thead,
+
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
 import { Center, Square, Circle } from '@chakra-ui/react'
+import {
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuGroup,
+  MenuDivider,
+  IconButton,
+  
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  Text,
+  Box
+} from "@chakra-ui/react";
+import { FaGlobe } from "react-icons/fa";
+
 
 function CreateTimetable() {
   const navigate = useNavigate();
@@ -31,6 +52,10 @@ function CreateTimetable() {
   const [apiUrl] = useState(getEnvironment());
   const [sessions, setSessions] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [messages, setMessages] = useState([]);
+  
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -38,6 +63,25 @@ function CreateTimetable() {
       ...formData,
       [name]: value,
     });
+  };
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/message/myMessages`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Fetched messages data:", data); // Log the fetched data
+        setMessages(data.data);
+        console.log("Fetched messages:", messages); // Log the fetched messages
+      } else {
+        console.error("Failed to fetch messages");
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
   };
 
   useEffect(() => {
@@ -56,6 +100,7 @@ function CreateTimetable() {
         if (response.ok) {
           const data = await response.json();
           setSessions(data);
+          
         } else {
           console.error("Failed to fetch sessions");
         }
@@ -83,7 +128,7 @@ function CreateTimetable() {
         console.error("Error:", error);
       }
     };
-
+    fetchMessages();
     fetchSessions();
     fetchDepartments();
   }, [apiUrl]);
@@ -147,11 +192,57 @@ function CreateTimetable() {
 
   return (
     <Container maxW='5xl'>
-      <Heading as="h1" size="xl" mt="6" mb="6">
+      
+       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+
+       <Heading as="h1" size="xl" mt="6" mb="6">
         Create Time Table
       </Heading>
 
+       <Box  >
+        <Menu>
+          
+          <MenuButton
+            as={IconButton}
+            icon={<FaGlobe />}
+            variant="outline"
+            colorScheme="teal"
+            aria-label="Messages"
+          />
+          <MenuList maxH="200px" overflowY="auto" position="relative" >
+            <MenuGroup  position="sticky" top="0" zIndex="1" title="Notifications" fontWeight="bold"/>
+            <MenuDivider  />
+            {messages.length === 0 ? (
+              <MenuItem>No messages</MenuItem>
+            ) : (
+              messages.map((msg, idx) => (
+                <MenuItem  key={idx}  onClick={() => { setSelectedMessage(msg); onOpen(); }}>
+                  {(messages.length - idx)+"."+" " +msg.title}
+                </MenuItem>
+              ))
+            )}
+          </MenuList>
+        </Menu>
+      </Box>
+
+      {/* Modal for selected message */}
+      <Modal  isOpen={isOpen} onClose={onClose} isCentered size={"xl"} >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{selectedMessage?.title}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text whiteSpace="pre-wrap">{selectedMessage?.content}</Text>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
       
+       
+       
+       </div>
+
+
       <FormControl isRequired mb='3' >
       <FormLabel >Name of the Time Table Coordinator :</FormLabel>
           <Input

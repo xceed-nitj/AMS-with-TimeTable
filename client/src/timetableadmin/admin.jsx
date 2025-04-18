@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, VStack, Input, Heading, Table, Thead, Tbody, Tr, Th, Td, Container ,Select} from '@chakra-ui/react';
+import { Button, VStack, Input, Heading, Table, Thead, Tbody,Textarea ,Tr, Th, Td, Container ,Select} from '@chakra-ui/react';
+import { Flex, Link as ChakraLink } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
@@ -17,6 +18,8 @@ const AdminPage = () => {
   const [formData, setFormData] = useState({
     session: '',
   });
+  const [messageTitle, setMessageTitle] = useState('');
+  const [messageContent, setMessageContent] = useState('');
 
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingSessionValue, setEditingSessionValue] = useState('');
@@ -198,6 +201,41 @@ const AdminPage = () => {
       console.error('Error setting current session:', error.message);
     }
   };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+  
+    if (!messageTitle.trim() || !messageContent.trim()) {
+      alert("Title and content cannot be empty.");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/message/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: messageTitle,
+          content: messageContent,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+  
+      alert("Message sent successfully.");
+      setMessageTitle('');
+      setMessageContent('');
+    } catch (error) {
+      console.error("Error sending message:", error.message);
+      alert("Something went wrong.");
+    }
+  };
+  
   
 
 
@@ -320,6 +358,26 @@ const AdminPage = () => {
   {console.log(selectedSession)}
   Mark as Current
 </Button>
+
+<Heading textAlign="center" mt={10} mb={4}>Send Message to Dept. TT Coordinators</Heading>
+<form onSubmit={handleSendMessage}>
+  <VStack spacing={3} align="start">
+    <Input
+      type="text"
+      placeholder="Enter message title"
+      value={messageTitle}
+      onChange={(e) => setMessageTitle(e.target.value)}
+    />
+    <Textarea
+      type="text"
+      placeholder="Enter message content"
+      value={messageContent}
+      onChange={(e) => setMessageContent(e.target.value)}
+    />
+    <Button type="submit" colorScheme="blue">Send Message</Button>
+  </VStack>
+</form>
+
 
 </Container>
 
