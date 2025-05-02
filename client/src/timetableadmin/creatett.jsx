@@ -199,8 +199,8 @@ function CreateTimetable() {
         Create Time Table
       </Heading>
 
-       <Box  >
-        <Menu>
+       
+        {/* <Menu>
           
           <MenuButton
             as={IconButton}
@@ -222,11 +222,12 @@ function CreateTimetable() {
               ))
             )}
           </MenuList>
-        </Menu>
-      </Box>
+        </Menu> */}
+        <Button colorScheme="teal" onClick={() => navigate("/tt/viewmessages")}>View Messages</Button>
+      
 
       {/* Modal for selected message */}
-      <Modal  isOpen={isOpen} onClose={onClose} isCentered size={"xl"} >
+      {/* <Modal  isOpen={isOpen} onClose={onClose} isCentered size={"xl"} >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{selectedMessage?.title}</ModalHeader>
@@ -235,7 +236,7 @@ function CreateTimetable() {
             <Text whiteSpace="pre-wrap">{selectedMessage?.content}</Text>
           </ModalBody>
         </ModalContent>
-      </Modal>
+      </Modal> */}
 
       
        

@@ -20,6 +20,8 @@ import SuperAdminPage from './dashboard/superadmin';
 import CommonSlot from './timetableadmin/commonslot.jsx';
 import Subjects from './timetableadmin/addsubjects';
 import ViewMRooms from './timetableadmin/viewmrooms';
+import MessagesPage from './timetableadmin/viewMessages.jsx';
+
 // import LockedView from './timetableviewer/viewer';
 import Note from './timetableadmin/addnote';
 import Navbar from './components/home/Navbar';
@@ -191,6 +193,7 @@ function App() {
         <Route path="/tt">
           <Route path="commonslot" element={<CommonSlot />} />
           <Route path="dashboard" element={<CreateTimetable />} />
+          <Route path="viewmessages" element={<MessagesPage />} />
           <Route path="masterview" element={<MasterView />} />
           <Route path="masterfaculty" element={<MasterFaculty />} />
           <Route path="masterroom" element={<MasterRoom />} />

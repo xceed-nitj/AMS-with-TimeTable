@@ -8,7 +8,13 @@ const MessageSchema = new mongoose.Schema({
   content:    { type: String, required: true },
   targetRole: { type: String,
                 enum: ['ITTC', 'DTTI', 'CM', 'admin', 'EO', 'editor', 'PRM', 'FACULTY', 'doctor', 'patient', 'dm-admin'],
-                default: 'DTTI' },  
+                default: 'DTTI' }, 
+  readBy: [
+            {
+              user:     { type: mongoose.Types.ObjectId, ref: 'user' },
+              readAt:   { type: Date, default: Date.now }
+            }
+          ]               
   
 
 },{

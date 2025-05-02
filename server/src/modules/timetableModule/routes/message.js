@@ -27,5 +27,26 @@ messageRouter.get("/myMessages",protectRoute,
         }
       }
 );
+messageRouter.put("/readMessage/:messageId",protectRoute, 
+    async (req, res) => {
+        try {
+          await messageController.markMessageAsRead(req, res);
+        } catch (e) {
+          res
+            .status(e?.status || 500)
+            .json({ error: e?.message || "Internal Server Error" });
+        }
+      }
+);
+messageRouter.delete("/delete/:messageId",protectRoute,async (req, res) => {
+    try {
+        await messageController.deleteMessage(req, res);
+      } catch (e) {
+        res
+          .status(e?.status || 500)
+          .json({ error: e?.message || "Internal Server Error" });
+      }
+    }
+);
 
 module.exports = messageRouter;

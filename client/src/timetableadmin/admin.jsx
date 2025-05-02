@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Button, VStack, Input, Heading, Table, Thead, Tbody,Textarea ,Tr, Th, Td, Container ,Select} from '@chakra-ui/react';
+import { Button, VStack, Input, Heading, Table, Thead, Tbody,Textarea ,Tr, Th, Td, Container ,Select, Box,Text} from '@chakra-ui/react';
 import { Flex, Link as ChakraLink } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   CustomTh,
   CustomLink,
@@ -368,12 +372,27 @@ const AdminPage = () => {
       value={messageTitle}
       onChange={(e) => setMessageTitle(e.target.value)}
     />
-    <Textarea
-      type="text"
-      placeholder="Enter message content"
-      value={messageContent}
-      onChange={(e) => setMessageContent(e.target.value)}
-    />
+
+    <Box width="100%" border="1px solid #CBD5E0" borderRadius="md" p={2}>
+      <ReactQuill
+        theme="snow"
+        value={messageContent}
+        onChange={setMessageContent}
+        modules={{
+          toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['clean'],
+            [{ align: [] }],
+            [{ color: [] }, { background: [] }],
+            [{ font: [] }, { size: [] }],
+          ]
+        }}
+        formats={['bold', 'italic', 'underline', 'list', 'bullet', 'align', 'color', 'background', 'font', 'size']}
+      />
+      <Text fontSize="sm" color="red.500" mt={2}>*Editing the message is not possible once sent</Text>
+    </Box>
+
     <Button type="submit" colorScheme="blue">Send Message</Button>
   </VStack>
 </form>
