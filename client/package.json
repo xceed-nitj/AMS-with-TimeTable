@@ -13,6 +13,8 @@
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/react": "^2.8.2",
+    "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+    "@ckeditor/ckeditor5-react": "^9.5.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
