@@ -182,6 +182,7 @@ const generateSummaryTablePDF = async (allFacultySummaries, deptfaculty, session
       },
     };
     
+    pdfMake.createPdf(docDefinition).download();
     pdfMake.createPdf(docDefinition).open();
   } catch (error) {
     console.error('Error during PDF generation:', error);

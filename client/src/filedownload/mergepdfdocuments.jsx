@@ -32,7 +32,7 @@ const MergePDFComponent = () => {
       
       const data = await response.json();
       console.log('ttdata', data)
-      setDept(data[0].dept);
+      setDept(data.dept);
       return data;
     } catch (error) {
       console.error('Error fetching TTdata:', error);
