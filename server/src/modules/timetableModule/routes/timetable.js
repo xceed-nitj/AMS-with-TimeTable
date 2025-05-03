@@ -86,6 +86,7 @@ TableRouter.post("/",protectRoute, async (req, res) => {
       console.log("Fetching timetable details for code:", req.params.code);
       
       const code = req.params.code;
+      console.log("Code from request params:", code);
       if (!code) {
         return res.status(400).json({ error: "Code is required" });
       }
