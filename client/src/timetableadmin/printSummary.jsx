@@ -381,7 +381,7 @@ const PrintSummary = () => {
     try {
       const fetchedttdetails = await fetchTTData(currentCode);
 
-      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`, { credentials: 'include', });
+      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails.dept}`, { credentials: 'include', });
       if (response.ok) {
         const data = await response.json();
         // console.log('faculty response',data);
@@ -977,7 +977,7 @@ const PrintSummary = () => {
 
     }
     console.log(allFacultySummaries)
-    generateSummaryTablePDF(allFacultySummaries, filteredFaculties, fetchedttdetails.session, fetchedttdetails[0].dept)
+    generateSummaryTablePDF(allFacultySummaries, filteredFaculties, fetchedttdetails.session, fetchedttdetails.dept)
 
     setCompleteStatus("downloadCompleted")
 
