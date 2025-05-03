@@ -1,5 +1,5 @@
-import * as pdfMake from 'pdfmake/build/pdfmake';
-import * as Pvfs from 'pdfmake/build/vfs_fonts';
+import pdfMake from 'pdfmake/build/pdfmake';
+import Pvfs from 'pdfmake/build/vfs_fonts';
 
 const pdfMakeInitializer = () => {
   // Check if the pdfMake object already exists

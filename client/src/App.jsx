@@ -19,6 +19,8 @@ import ForgotPassword from './dashboard/ForgotPassword';
 import SuperAdminPage from './dashboard/superadmin';
 import CommonSlot from './timetableadmin/commonslot.jsx';
 import Subjects from './timetableadmin/addsubjects';
+import ImportTT from './timetableadmin/importt.jsx';
+
 import ViewMRooms from './timetableadmin/viewmrooms';
 import MessagesPage from './timetableadmin/viewMessages.jsx';
 
@@ -207,6 +209,8 @@ function App() {
           <Route index element={<Timetable />}></Route>
 
           <Route path="addfaculty" element={<AddFaculty />} />
+          <Route path="importttdata" element={<ImportTT />} />
+
           <Route path="addroom" element={<AddRoom />} />
           <Route path="addcommonload" element={<CommonLoad />} />
           <Route path="addlunchload" element={<LunchLoad />} />
