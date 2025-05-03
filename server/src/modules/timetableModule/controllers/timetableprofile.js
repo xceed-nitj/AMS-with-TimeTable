@@ -25,6 +25,7 @@ class TableController {
     }
       try {
         const newCode = await generateUniqueLink();
+        console.log(newCode);
         //const userObject = await User.findById(userId)
         const newTimeTable = new TimeTable({
           ...data,
@@ -142,6 +143,7 @@ class TableController {
         console.log("Fetching timetable details for code:", code);  
     
         const TableField = await TimeTable.findOne({ code }); 
+        console.log("Fetched timetable details:", TableField);
         
         if (!TableField) {
           throw new HttpException(404, "Timetable not found for the given code");

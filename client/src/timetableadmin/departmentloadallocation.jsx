@@ -355,6 +355,7 @@ const Departmentloadallocation = () => {
   };
 
   const fetchTTData = async (currentCode) => {
+    console.log('current code', currentCode)
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
         method: 'GET',
@@ -379,8 +380,9 @@ const Departmentloadallocation = () => {
   const fetchDeptFaculty = async (currentCode) => {
     try {
       const fetchedttdetails = await fetchTTData(currentCode);
+      console.log('fetchedttdetails',fetchedttdetails)
 
-      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`, { credentials: 'include', });
+      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails?.dept}`, { credentials: 'include', });
       if (response.ok) {
         const data = await response.json();
         // console.log('faculty response',data);
@@ -607,7 +609,7 @@ const Departmentloadallocation = () => {
       const lockTime = updateTime;
       setHeaderStatus("fetchingHeadersFooters")
       const postData = {
-        session: fetchedttdetails[0].session,
+        session: fetchedttdetails.session,
         name: faculty,
         type: 'faculty',
         timeTableData: fetchedttdata,
