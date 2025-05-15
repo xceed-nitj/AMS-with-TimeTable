@@ -211,7 +211,7 @@ function MasterRoom() {
         {isAddRoomFormVisible ? (
           <FormControl>
             <Box mt='1'>
-              <FormLabel>Room No:</FormLabel>
+              <FormLabel>Room No: <span>*</span></FormLabel>
               <Input
                 type='text'
                 value={editedRoom.room}
@@ -219,7 +219,7 @@ function MasterRoom() {
               />
             </Box>
             <Box mt='3'>
-              <FormLabel>Type:</FormLabel>
+              <FormLabel>Type: <span>*</span></FormLabel>
               <Input
                 type='text'
                 value={editedRoom.type}
@@ -228,7 +228,7 @@ function MasterRoom() {
             </Box>
 
             <Box  mt='3'>
-              <FormLabel>Building:</FormLabel>
+              <FormLabel>Building: <span>*</span></FormLabel>
               <Input
                 type='text'
                 value={editedRoom.building}

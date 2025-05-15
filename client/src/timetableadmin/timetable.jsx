@@ -559,6 +559,10 @@ const Timetable = () => {
     // Navigate to the "Add Room" page
     navigate(`${currentPathname}/editmasterfaculty`);
   };
+  const handleImportData = () => {
+    // Navigate to the "Add Room" page
+    navigate(`${currentPathname}/importttdata`);
+  };
   const saveSlotData = async (day, slot, slotData) => {
     // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
@@ -817,6 +821,9 @@ const Timetable = () => {
         </Button>
         <Button m="1 auto" colorScheme="blue" onClick={handleEditFaculty}>
           Edit Faculty Details
+        </Button>
+        <Button m="1 auto" colorScheme="yellow" onClick={handleImportData}>
+          Import Data
         </Button>
       </Box>
       <Box display="flex" justifyContent="space-between">

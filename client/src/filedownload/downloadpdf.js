@@ -19,8 +19,8 @@ function downloadPDF(timetableData, summaryData, type, ttdata, updatedTime, head
 // console.log('passed time',updatedTime)
 // console.log('title',headTitle)
 
-const session = ttdata[0].session;
-  const dept = ttdata[0].dept;
+const session = ttdata.session;
+  const dept = ttdata.dept;
   const updatedTime1 =updatedTime;
   const headTitle1 =headTitle;
   const printNotes=notes;

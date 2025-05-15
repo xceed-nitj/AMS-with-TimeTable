@@ -1,6 +1,7 @@
 const Platform = require("../../models/platform");
 const Module = require("../../models/module");
 const path = require('path');
+const { uploadOnCloudinary } = require("./utils/clodinary.js");
 
 const addPlatform = async (req, res) => {
   const {roles,exemptedLinks,researchArea} = req.body;
@@ -66,40 +67,47 @@ const deletePlatform = async (req, res) => {
 
 const addModule = async (req, res) => {
   try {
-    console.log('Body:', req.body); // Debugging request body
-    console.log('Files:', req.files); // Debugging uploaded files
-
     const { name, description, yearLaunched, contributors } = req.body;
-    console.log('contributors:', contributors);
     const files = req.files || [];
 
     // Ensure contributors is an array
     let parsedContributors;
     if (Array.isArray(contributors)) {
       parsedContributors = contributors; // If it's already an array
-    } else if (typeof contributors === 'string') {
+    } else if (typeof contributors === "string") {
       try {
         parsedContributors = JSON.parse(contributors); // Attempt to parse if it's a JSON string
         if (!Array.isArray(parsedContributors)) {
-          return res.status(400).json({ message: 'Contributors should be an array.' });
+          return res.status(400).json({ message: "Contributors should be an array." });
         }
       } catch (error) {
-        return res.status(400).json({ message: 'Invalid contributors format.' });
+        return res.status(400).json({ message: "Invalid contributors format." });
       }
     } else {
-      return res.status(400).json({ message: 'Contributors should be an array or valid JSON string.' });
+      return res.status(400).json({ message: "Contributors should be an array or valid JSON string." });
     }
 
     // Ensure the number of files matches the number of contributors
     if (parsedContributors.length !== files.length) {
-      return res.status(400).json({ message: 'Mismatch between contributors and uploaded images.' });
+      return res.status(400).json({ message: "Mismatch between contributors and uploaded images." });
     }
 
-    // Map contributors with their corresponding images
-    const formattedContributors = parsedContributors.map((contributor, index) => ({
-      ...contributor,
-      image: files[index] ? files[index].path : null,
-    }));
+    // Upload files to Cloudinary and map contributors with their corresponding images
+    const formattedContributors = await Promise.all(
+      parsedContributors.map(async (contributor, index) => {
+        try {
+          const filePath = files[index]?.path;
+          const uploadResponse = await uploadOnCloudinary(filePath);
+          return {
+            ...contributor,
+            image: uploadResponse.secure_url, // Use Cloudinary URL
+          };
+        } catch (uploadError) {
+          console.error(`Error uploading image for contributor ${contributor.name}:`, uploadError);
+          throw new Error(`Failed to upload image for ${contributor.name}`);
+        }
+      })
+    );
 
     const moduleData = {
       name,
@@ -114,10 +122,10 @@ const addModule = async (req, res) => {
     const newModule = new Module(moduleData);
     await newModule.save();
 
-    res.status(200).json({ message: 'Module added successfully', data: moduleData });
+    res.status(200).json({ message: "Module added successfully", data: moduleData });
   } catch (error) {
-    console.error('Error in addModule:', error);
-    res.status(500).json({ message: 'Server error', error });
+    console.error("Error in addModule:", error);
+    res.status(500).json({ message: "Server error", error });
   }
 };
 
@@ -158,12 +166,56 @@ const updateModule = async (req, res) => {
   try {
     const moduleId = req.params.id;
     const { name, description, yearLaunched, contributors } = req.body;
-    console.log('body:', req.body);
+    const files = req.files || [];
 
-    // No need to manually parse `contributors`, as Express will do it for you
+    console.log("Body:", req.body);
+    console.log("Files:", files);
+
+    // Parse and validate contributors if necessary
+    let parsedContributors;
+    if (Array.isArray(contributors)) {
+      parsedContributors = contributors;
+    } else if (typeof contributors === "string") {
+      try {
+        parsedContributors = JSON.parse(contributors);
+        if (!Array.isArray(parsedContributors)) {
+          return res.status(400).json({ error: "Contributors should be an array." });
+        }
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid contributors format." });
+      }
+    }
+
+    // Handle file uploads and map contributors with their corresponding images
+    const updatedContributors = files.length
+      ? await Promise.all(
+          parsedContributors.map(async (contributor, index) => {
+            try {
+              const filePath = files[index]?.path;
+              const uploadResponse = filePath
+                ? await uploadOnCloudinary(filePath)
+                : { secure_url: contributor.image }; // Retain existing image if no file provided
+              return {
+                ...contributor,
+                image: uploadResponse.secure_url,
+              };
+            } catch (uploadError) {
+              console.error(`Error uploading image for contributor ${contributor.name}:`, uploadError);
+              throw new Error(`Failed to upload image for ${contributor.name}`);
+            }
+          })
+        )
+      : parsedContributors;
+
+    // Update the module
     const updatedModule = await Module.findByIdAndUpdate(
       moduleId,
-      { name, description, yearLaunched, contributors },
+      {
+        name,
+        description,
+        yearLaunched,
+        contributors: updatedContributors,
+      },
       { new: true }
     );
 
@@ -173,7 +225,7 @@ const updateModule = async (req, res) => {
 
     res.status(200).json({ message: "Module updated successfully", updatedModule });
   } catch (error) {
-    console.error("Error updating module:", error); // Log the error for debugging
+    console.error("Error updating module:", error);
     res.status(500).json({ error: "Failed to update module", details: error.message });
   }
 };

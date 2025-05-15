@@ -13,4 +13,14 @@ importRouter.post("/centralallotment", async (req, res) => {
     }
   });
 
+  importRouter.post("/ttdata", async (req, res) => {
+    try {
+      await importController.importTTData(req, res);
+    } catch (e) {
+      res
+        .status(e?.status || 500)
+        .json({ error: e?.message || "Internal Server Error" });
+    }
+  });
+
   module.exports = importRouter;

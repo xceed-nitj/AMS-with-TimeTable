@@ -48,10 +48,11 @@ class PDFGenerator extends React.Component {
     const updatedTime = this.props.updatedTime;
     const headTitle = this.props.headTitle;
     const notes = this.props.notes;
-
-    const session = ttdata[0].session;
-    const dept = ttdata[0].dept;
-    // console.log('summarytimeDate',timetableData)
+    console.log('session-ttdata',ttdata)
+    // console.log('first item:', ttdata && ttdata[0]);
+    const session = ttdata.session;
+    const dept = ttdata.dept;
+   
     const tableData = [];
     const { headerImageDataURL } = this.state; // Use the header image URL from the state
 

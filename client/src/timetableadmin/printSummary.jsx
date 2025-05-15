@@ -381,7 +381,7 @@ const PrintSummary = () => {
     try {
       const fetchedttdetails = await fetchTTData(currentCode);
 
-      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails[0].dept}`, { credentials: 'include', });
+      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails.dept}`, { credentials: 'include', });
       if (response.ok) {
         const data = await response.json();
         // console.log('faculty response',data);
@@ -590,7 +590,7 @@ const PrintSummary = () => {
 
 
 
-    // console.log('ttdetails', fetchedttdetails);
+    console.log('ttdetails', fetchedttdetails);
     // setTTData(fetchedttdetails);
 
     for (const semester of availableSems) {
@@ -598,7 +598,7 @@ const PrintSummary = () => {
       const { initialData, notes } = await fetchTimetableData(semester);
 
       const fetchedttdata = initialData;
-      // console.log('semdddddd',initialData)
+      // console.log('semdddddd',initialData.session)
       const semNotes = notes;
 
       const summaryData = generateSummary(fetchedttdata, subjectData, 'sem', semester);
@@ -606,7 +606,7 @@ const PrintSummary = () => {
       const lockTime = await fetchTime();
 
       const postData = {
-        session: fetchedttdetails[0].session,
+        session: fetchedttdetails.session,
         name: semester,
         type: 'sem',
         timeTableData: fetchedttdata,
@@ -669,7 +669,7 @@ const PrintSummary = () => {
       const lockTime = await fetchTime();
 
       const postData = {
-        session: fetchedttdetails[0].session,
+        session: fetchedttdetails.session,
         name: semester,
         type: 'sem',
         timeTableData: fetchedttdata,
@@ -732,7 +732,7 @@ const PrintSummary = () => {
       const lockTime = updateTime;
       setHeaderStatus("fetchingHeadersFootersMerged")
       const postData = {
-        session: fetchedttdetails[0].session,
+        session: fetchedttdetails.session,
         name: faculty,
         type: 'faculty',
         timeTableData: fetchedttdata,
@@ -790,7 +790,7 @@ const PrintSummary = () => {
       const lockTime = updateTime;
       setHeaderStatus("fetchingHeadersFooters")
       const postData = {
-        session: fetchedttdetails[0].session,
+        session: fetchedttdetails.session,
         name: faculty,
         type: 'faculty',
         timeTableData: fetchedttdata,
@@ -842,7 +842,7 @@ const PrintSummary = () => {
       const lockTime = updateTime;
       setHeaderStatus("fetchingHeadersFooters")
       const postData = {
-        session: fetchedttdetails[0].session,
+        session: fetchedttdetails.session,
         name: room,
         type: 'room',
         timeTableData: fetchedttdata,
@@ -890,7 +890,7 @@ const PrintSummary = () => {
       const lockTime = updateTime;
       setHeaderStatus("fetchingHeadersFooters")
       const postData = {
-        session: fetchedttdetails[0].session,
+        session: fetchedttdetails.session,
         name: room,
         type: 'room',
         timeTableData: fetchedttdata,
@@ -949,7 +949,7 @@ const PrintSummary = () => {
       const lockTime = updateTime;
       setHeaderStatus("fetchingHeadersFooters")
       const postData = {
-        session: fetchedttdetails[0].session,
+        session: fetchedttdetails.session,
         name: faculty,
         type: 'faculty',
         timeTableData: fetchedttdata,
@@ -977,7 +977,7 @@ const PrintSummary = () => {
 
     }
     console.log(allFacultySummaries)
-    generateSummaryTablePDF(allFacultySummaries, filteredFaculties, fetchedttdetails[0].session, fetchedttdetails[0].dept)
+    generateSummaryTablePDF(allFacultySummaries, filteredFaculties, fetchedttdetails.session, fetchedttdetails.dept)
 
     setCompleteStatus("downloadCompleted")
 

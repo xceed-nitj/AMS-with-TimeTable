@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
 import { Text, Button, Flex } from '@chakra-ui/react';
 import NavBar from '../../reviewmodule/components/NavBar';
+import DMNavbar from '../../diabeticsModule/components/DMNavbar';
 
 export default function Navbar() {
   const [navbarOpen, setNavbarOpen] = useState(false);
@@ -72,17 +73,30 @@ export default function Navbar() {
     }
   };
 
+  const publicPaths = [
+    '/',
+    '/forgot-password',
+    '/nirf',
+    '/login',
+    '/classrooms',
+    '/timetable',
+    '/tt/masterdata',
+    '/tt/commonslot',
+    '/prm/register',
+    '/prm/emailverification',
+    '/404',
+  ];
 
-const publicPaths = ['/','/forgot-password','/nirf', '/login', '/classrooms', '/timetable','/tt/masterdata','/tt/commonslot','/prm/register','/prm/emailverification'  ];
+  useEffect(() => {
+    const isPublicPath =
+      publicPaths.includes(location.pathname) ||
+      location.pathname.startsWith('/services/') ||
+      location.pathname.startsWith('/cm/c/');
 
-useEffect(() => {
-  const isPublicPath = publicPaths.includes(location.pathname) || location.pathname.startsWith('/services/') || location.pathname.startsWith('/cm/c/')
-
-  if (!isLoading && !isAuthenticated && !isPublicPath) {
-    navigate('/login');
-  }
-}, [isLoading, isAuthenticated, navigate, location.pathname]);
-
+    if (!isLoading && !isAuthenticated && !isPublicPath) {
+      navigate('/login');
+    }
+  }, [isLoading, isAuthenticated, navigate, location.pathname]);
 
   const excludedRoutes = ['/login', '/cm/c'];
 
@@ -94,9 +108,19 @@ useEffect(() => {
     return null;
   }
 
+  // Check if we're in the diabetics module
+  const isDMPath = location.pathname.startsWith('/dm');
   const isPRMPath = location.pathname.startsWith('/prm');
 
-  if (isPRMPath) return <NavBar />;
+  // If we're in the diabetics module, render the DMNavbar
+  if (isDMPath) {
+    return <DMNavbar />;
+  }
+
+  // If we're in the PRM module, render the PRM Navbar
+  if (isPRMPath) {
+    return <NavBar />;
+  }
 
   return (
     <nav

@@ -234,7 +234,7 @@ const MasterDataTable = () => {
           <Select value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)} isRequired>
             <option value="">Select Session</option>
             {allSessions.map((session, index) => (
-              <option key={index} value={session}>{session}</option>
+              <option key={index} value={session.session}>{session.session}</option>
             ))}
           </Select>
         </FormControl>

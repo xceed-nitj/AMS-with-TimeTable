@@ -18,48 +18,34 @@ const subjectController = new SubjectController();
 class ClassTimeTableController {
   async savett(req, res) {
     const timetableData = req.body.timetableData; // Access the timetableData object
+    const { code, sem } = req.body;
+  
     try {
-      for (const day of Object.keys(timetableData)) {
-        const dayData = timetableData[day];
-        for (const slot of Object.keys(dayData)) {
-          let slotData = dayData[slot]; // Access the slotData array
-          slotData = slotData.flat(); 
-          const { code, sem } = req.body;
+      // Delete all existing records for the given code and sem
+      await ClassTable.deleteMany({ code, sem });
   
-          const query = {
-            day,
-            slot,
-            code,
-            sem,
-          };
+      const bulkOperations = [];
+      const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
   
-          const existingRecord = await ClassTable.findOne(query);
+      for (const [day, dayData] of Object.entries(timetableData)) {
+        for (const [slot, slotDataArray] of Object.entries(dayData)) {
+          const slotData = slotDataArray.flat(); // Flatten slotData
   
-          if (existingRecord) {
-            // If a record already exists, update it with the new slotData
-            existingRecord.slotData = slotData;
-            await existingRecord.save();
-            // console.log(`Updated class table data for ${day} - ${slot}`);
-          } else {
-            // If no record exists, create a new one with the slotData
-            const timetableObject= await ClassTimeTableDto.findTimeTableIdByCode(code);
-            const classTableInstance = new ClassTable({
-              day,
-              slot,
-              slotData,
-              code,
-              sem,
-              timetable:timetableObject,
-            });
-            await classTableInstance.save();
-            // console.log(`Saved class table data for ${day} - ${slot}`);
-          }
+          bulkOperations.push({
+            insertOne: {
+              document: { day, slot, slotData, code, sem, timetable: timetableObject },
+            },
+          });
         }
       }
   
-      res.status(200).json({ message: "Data updated or created successfully" });
+      if (bulkOperations.length > 0) {
+        await ClassTable.bulkWrite(bulkOperations);
+      }
+  
+      res.status(200).json({ message: "Previous data deleted, new data inserted successfully" });
     } catch (error) {
-      console.error(error);
+      console.error("Error saving timetable:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   }

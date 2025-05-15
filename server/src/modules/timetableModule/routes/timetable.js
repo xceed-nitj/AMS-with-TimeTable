@@ -67,15 +67,36 @@ TableRouter.post("/",protectRoute, async (req, res) => {
     }
   });
 
+  // TableRouter.get("/alldetails/:code", async (req, res) => {
+  //   try {
+  //     const code = req.params.code;
+  //     const TTdetails = await tableController.getTableByCode(code);
+  //     res.status(200).json(TTdetails);
+  //   } catch (e) {
+  //     res
+  //       .status(e?.status || 500)
+  //       .json({ error: e?.message || "Internal Server Error" });
+  //   }
+  // });
+
+  
+  //newcode
   TableRouter.get("/alldetails/:code", async (req, res) => {
     try {
+      console.log("Fetching timetable details for code:", req.params.code);
+      
       const code = req.params.code;
+      console.log("Code from request params:", code);
+      if (!code) {
+        return res.status(400).json({ error: "Code is required" });
+      }
+  
       const TTdetails = await tableController.getTableByCode(code);
-      res.status(200).json(TTdetails);
+  
+      return res.status(200).json(TTdetails);
     } catch (e) {
-      res
-        .status(e?.status || 500)
-        .json({ error: e?.message || "Internal Server Error" });
+      console.error("Error in GET /alldetails/:code:", e);
+      return res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
     }
   });
 
@@ -124,6 +145,14 @@ TableRouter.post("/",protectRoute, async (req, res) => {
       res.status(200).json({ response: `Time Table with code ${code} deleted successfully` });
     } catch (error) {
       res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+  TableRouter.post("/set-current-session", async (req, res) => {
+    try {
+      await tableController.setCurrentSession(req, res);
+    } catch (e) {
+      res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
     }
   });
   

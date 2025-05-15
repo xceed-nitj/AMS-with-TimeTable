@@ -20,7 +20,9 @@ app.use(
   "https://eaicnitj.com",
   //for civil site
   "https://igcnitj2025.netlify.app",
-  "https://igc2025nitj.com"
+  "https://igc2025nitj.com",
+  "https://t1dixpert.netlify.app",
+"https://it1dxpert.org"
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,

@@ -238,7 +238,7 @@ const MasterLoadDataTable = () => {
           <Select value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)} isRequired>
             <option value="">Select Session</option>
             {allSessions.map((session, index) => (
-              <option key={index} value={session}>{session}</option>
+              <option key={index} value={session.session}>{session.session}</option>
             ))}
           </Select>
         </FormControl>
@@ -303,6 +303,7 @@ const MasterLoadDataTable = () => {
                     {columns.filter(c => !hiddenColumns.includes(c.key)).map(({ key }) => (
                       <Td key={key}>
                         {item[key] !== undefined && item[key] !== null ? item[key].toString() : ''}
+                        
                       </Td>
                     ))}
                   </Tr>
