@@ -7,8 +7,6 @@ const LockStatus = require("../helper/lockstatus");
 const { upload } = require("../helper/multer.middleware")
 const { convertToObject } = require("../controllers/formDataToObject")
 const { getImagesOfUserByEventId } = require("../controllers/signimagesofuser")
-const { convertCertificateToImage, convertCertificateToPDF } = require("../controllers/convertCertificate")
-const { convertallCertificates } = require("../controllers/convertAllCertificates")
 const { checkRole } = require("../../checkRole.middleware");
 const UserEventService = require("../controllers/logoAndSignatureofUser");
 const userEventService = new UserEventService();
@@ -168,13 +166,5 @@ certificateRouter.delete("/logos/:userId", checkRole(['admin']), async (req, res
       .json({ error: e?.message || "Internal Server Error" });
   }
 });
-
-
-
-// Route to download Certificate
-certificateRouter.post("/download/image", convertCertificateToImage);
-certificateRouter.post("/download/pdf", convertCertificateToPDF);
-certificateRouter.post("/downloadall", convertallCertificates);
-
 
 module.exports = certificateRouter;
