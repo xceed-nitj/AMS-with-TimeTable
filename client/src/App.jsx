@@ -148,6 +148,9 @@ import SickDayForm from './diabeticsModule/components/SickDayForm.jsx';
 import GamificationForm from './diabeticsModule/components/GamificationForm.jsx'
 import DoctorForm from './diabeticsModule/components/DoctorForm.jsx'
 
+// import fileUpload
+import FileUpload from './fileUpload/fileUploads.jsx'
+
 function App() {
   
   return (
@@ -172,6 +175,9 @@ function App() {
         <Route path="/userroles" element={<AllocatedRolesPage />} />
         <Route path="/superadmin" element={<SuperAdminPage />} />
         <Route path="/usermanagement" element={<UserManagement />} />
+        <Route path="/fileupload" element={<FileUpload />} />
+
+        {/* <Route path="/timetable" element={<Timetable />} /> */}
 
         <Route path="/tt">
           <Route path="commonslot" element={<CommonSlot />} />
