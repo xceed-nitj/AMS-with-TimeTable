@@ -24,7 +24,8 @@ const UserSchema = new Mongoose.Schema({
   isFirstLogin:{
     type : Boolean,
   },
-  researchArea:[{type: String}]
+  researchArea:[{type: String}],
+  uploads:[{type: String}],
 });
 const User = Mongoose.model("user", UserSchema);
 module.exports = User;
