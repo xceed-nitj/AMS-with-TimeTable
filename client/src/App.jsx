@@ -168,6 +168,9 @@ import LoginPage from './diabeticsModule/pages/LoginPage';
 import DoctorDetailView from './diabeticsModule/pages/DoctorDetailView';
 import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 
+// import fileUpload
+import FileUpload from './fileUpload/fileUploads.jsx'
+
 function App() {
   return (
     <Router>
@@ -191,6 +194,9 @@ function App() {
         <Route path="/userroles" element={<AllocatedRolesPage />} />
         <Route path="/superadmin" element={<SuperAdminPage />} />
         <Route path="/usermanagement" element={<UserManagement />} />
+        <Route path="/fileupload" element={<FileUpload />} />
+
+        {/* <Route path="/timetable" element={<Timetable />} /> */}
 
         <Route path="/tt">
           <Route path="commonslot" element={<CommonSlot />} />

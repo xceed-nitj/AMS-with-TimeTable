@@ -1,5 +1,12 @@
 const HttpException = require("../../../models/http-exception");
 const User = require("../../../models/usermanagement/user");
+const getApiURL = require("../../certificateModule/helper/getApiURL")
+
+
+const fs = require('fs')
+const path = require("path")
+
+
 
 class UserController {
   async getUserDetails(req, res) {
@@ -15,6 +22,56 @@ class UserController {
       res.status(500).json({ error: "Internal server error" });
     }
   }
+
+  async uploadFile(req, res) {
+    try {
+      const file = req.file;
+      const user = await User.findById(req.user.id);
+      if (!file) {
+        const error = new Error("Please upload a file");
+        error.httpStatusCode = 400;
+        res.send(error);
+      }
+      const url = req?.body?.url || "";
+      const currentUrl = getApiURL(url);
+      const link = `${currentUrl}/uploads/userUploads/${file.newfilename}`;
+      if(!user.uploads){
+        user.uploads = []; // Initialize uploads if it doesn't exist
+      }
+      user.uploads.push(link);
+      await user.save();
+      res.json({
+        link: link,
+      });
+    } catch (err) {
+      console.log(err);
+      res.json({ message: err.message });
+    }
+  };
+
+  async deleteFile(req, res) {
+    try {
+      const {link} = req.body;
+      const user = await User.findById(req.user.id);
+      if (!link) {
+        const error = new Error("Please provide the link to the file");
+        error.httpStatusCode = 400;
+        res.send(error);
+      }
+      user.uploads = user.uploads.filter(upload => upload !== link); 
+      const filePath = path.join(__dirname, `../../../../uploads/userUploads/${link.split('/').pop()}`);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath); // Delete the file from the server
+      }
+      await user.save();
+      res.json({
+        link: link,
+      });
+    } catch (err) {
+      console.log(err);
+      res.json({ message: err.message });
+    }
+  };
 
   async getAllUserDetails(req, res) {
     try {

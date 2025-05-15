@@ -3,6 +3,8 @@ const userRouter = express.Router();
 const userController = require("../controllers/user");
 const UserController = new userController();
 
+const { upload } = require("../helper/multer.helper");
+
 const jwt = require("jsonwebtoken");
 const jwtSecret =
   "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
@@ -76,6 +78,28 @@ userRouter.get("/all", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.getAllUserDetails(req, res);
   } catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+userRouter.post("/upload", verifyToken,upload.single("file"), async (req, res) => {
+  try {
+    await UserController.uploadFile(req, res);
+  } catch (e) {
+    console.log(e);
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+userRouter.delete("/deleteUpload", verifyToken, async (req, res) => {
+  try {
+    await UserController.deleteFile(req, res);
+  } catch (e) {
+    console.log(e);
     res
       .status(e?.status || 500)
       .json({ error: e?.message || "Internal Server Error" });
