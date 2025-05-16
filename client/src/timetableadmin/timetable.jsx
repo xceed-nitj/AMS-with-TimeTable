@@ -653,6 +653,7 @@ const Timetable = () => {
           body: JSON.stringify({ code }),
           credentials: "include",
         });
+        console.log('response from backend for lock', response);
 
         if (response.ok) {
           const data = await response.json();
