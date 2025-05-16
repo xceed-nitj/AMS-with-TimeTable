@@ -57,6 +57,11 @@ class ImportController {
   
       const oldCode = existingCode.code;
       const newCodeVal = newCode.code;
+
+      await addRoom.deleteMany({ code: newCodeVal });
+      await Subject.deleteMany({ code: newCodeVal });
+      await addSem.deleteMany({ code: newCodeVal });
+      await ClassTable.deleteMany({ code: newCodeVal });
   
       // Copy Room Data
       const roomData = await addRoom.find({ code: oldCode });
@@ -84,14 +89,26 @@ class ImportController {
       }));
       await addSem.insertMany(newSemData);
   
-      // Copy Class Table Data
-      const ttData = await ClassTable.find({ code: oldCode });
-      const newTTData = ttData.map(item => ({
-        ...item.toObject(),
-        _id: undefined,
-        code: newCodeVal
-      }));
-      await ClassTable.insertMany(newTTData);
+    // Copy Class Table Data (excluding faculty field)
+const ttData = await ClassTable.find({ code: oldCode });
+const newTTData = ttData.map(item => {
+  const newItem = item.toObject();
+  newItem._id = undefined;
+  newItem.code = newCodeVal;
+
+  // Remove or empty faculty in slotData array
+  if (Array.isArray(newItem.slotData)) {
+    newItem.slotData = newItem.slotData.map(slot => ({
+      ...slot,
+      faculty: "" // or use `undefined` or delete slot.faculty
+    }));
+  }
+
+  return newItem;
+});
+
+await ClassTable.insertMany(newTTData);
+
   
       return res.status(200).json({ message: 'Timetable data imported successfully.' });
   
