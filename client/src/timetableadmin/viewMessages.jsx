@@ -25,6 +25,7 @@ const MessagesPage = () => {
   const apiUrl = getEnvironment();
   const [selectedMessage, setSelectedMessage] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [user,setUser] = useState(null);
 
 
   useEffect(() => {
@@ -70,9 +71,10 @@ const fetchMessages = async () => {
       if (response.ok) {
         const data = await response.json();
         console.log("Fetched messages data:", data); // Log the fetched data
-        setMessages(data.data || []);
+        setMessages(data.data.messages || []);
         setLoading(false); // Set loading to false after fetching messages
         // console.log("Fetched messages:", messages); // Log the fetched messages
+        setUser(data.user);
       } else {
         console.error("Failed to fetch messages");
       }
@@ -95,11 +97,14 @@ const fetchMessages = async () => {
           messages?.map((msg, index) => (
             <Box
               key={index}
-              borderWidth="1px"
+              borderWidth={msg.readBy.some((read) => read.user === user._id) ? "1px" : "2px"}
               borderRadius="lg"
               boxShadow="md"
               p={4}
               mb={4}
+              bg="white"
+              borderColor={msg.readBy.some((read) => read.user === user._id) ? "gray.300" : "teal.500"}
+              
               display={"flex "}
               justifyContent={"space-between"}
               onClick={()=>handleMessageClick(index)}

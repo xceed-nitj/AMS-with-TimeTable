@@ -53,6 +53,9 @@ function CreateTimetable() {
   const [sessions, setSessions] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [currUser, setCurrUser] = useState(null);
+  const [unReadCount,setUnreadCount] = useState(0);
+
   
   const [selectedMessage, setSelectedMessage] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -64,25 +67,80 @@ function CreateTimetable() {
       [name]: value,
     });
   };
-  const fetchMessages = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/timetablemodule/message/myMessages`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-      });
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Fetched messages data:", data); // Log the fetched data
-        setMessages(data.data);
-        console.log("Fetched messages:", messages); // Log the fetched messages
-      } else {
-        console.error("Failed to fetch messages");
+  // const fetchMessages = async () => {
+  //   try {
+  //     const response = await fetch(`${apiUrl}/timetablemodule/message/myMessages`, {
+  //       method: "GET",
+  //       headers: { "Content-Type": "application/json" },
+  //       credentials: "include"
+  //     });
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       console.log("Fetched messages data:", data); // Log the fetched data
+  //       setMessages(data.data.messages || []);
+  //       setCurrUser(data.user);
+        
+  //       console.log("Fetched messages:", messages); // Log the fetched messages
+  //     } else {
+  //       console.error("Failed to fetch messages");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching messages:", error);
+  //   }
+  // };
+const fetchMessages = async () => {
+  try {
+    const res = await fetch(
+      `${apiUrl}/timetablemodule/message/myMessages`,
+      { credentials: "include" }
+    );
+    if (!res.ok) throw new Error("Failed to fetch messages");
+
+    const json = await res.json();
+    const msgs = Array.isArray(json.data.messages) ? json.data.messages : [];
+    const user = json.user || {};
+
+   
+    const unread = msgs.filter(m => {
+      if (!Array.isArray(m.readBy) || m.readBy.length === 0) {
+        // nobody has read it yet
+        return true;
       }
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };
+      
+      const hasRead = m.readBy.some(entry => entry.user === user._id);
+      return !hasRead;
+    }).length;
+
+    setMessages(msgs);
+    setCurrUser(user);
+    setUnreadCount(unread);
+
+    console.log("Fetched", msgs.length, "messages for user", user._id);
+    console.log("Computed unread count:", unread);
+  } catch (err) {
+    console.error("Error in fetchMessages:", err);
+  }
+};
+
+
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+  
+  // useEffect(() => {
+  //   if (!currUser?._id) return;
+  //   const userId = currUser?._id;
+  //       console.log("userId",userId);
+  //       console.log("messages",messages);
+  //       const unRead = messages.filter(msg => !msg.readBy.includes(userId));
+  //       setUnreadCount(unRead.length);
+  //       console.log("unReadCount",unRead.length);
+  // }, [messages]);
+
+
+
+
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -128,10 +186,12 @@ function CreateTimetable() {
         console.error("Error:", error);
       }
     };
-    fetchMessages();
+    // fetchMessages();
     fetchSessions();
     fetchDepartments();
   }, [apiUrl]);
+
+ 
 
   const fetchTimetables = async () => {
     try {
@@ -190,6 +250,9 @@ function CreateTimetable() {
   const urlParts = currentUrl.split("/");
   const domainName = urlParts[2];
 
+  
+  // console.log("unReadCount",unReadCount);
+
   return (
     <Container maxW='5xl'>
       
@@ -223,7 +286,28 @@ function CreateTimetable() {
             )}
           </MenuList>
         </Menu> */}
-        <Button colorScheme="teal" onClick={() => navigate("/tt/viewmessages")}>View Messages</Button>
+        {/* <Button colorScheme="teal" onClick={() => navigate("/tt/viewmessages")}>View Messages</Button> */}
+
+        <Box position="relative" display="inline-block">
+  <Button colorScheme="teal" onClick={() => navigate("/tt/viewmessages")}>
+    View Messages
+  </Button>
+  {unReadCount > 0 && (
+    <Box
+      position="absolute"
+      top="-1"
+      right="-1"
+      bg="red.500"
+      color="white"
+      borderRadius="full"
+      px={2}
+      fontSize="xs"
+    >
+      {unReadCount}
+    </Box>
+  )}
+</Box>
+
       
 
       {/* Modal for selected message */}

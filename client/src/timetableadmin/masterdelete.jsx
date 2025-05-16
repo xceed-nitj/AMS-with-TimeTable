@@ -10,56 +10,56 @@ function Del() {
   const [deleteMessage, setDeleteMessage] = useState('');
   const [messages, setMessages] = useState([]);
 
-  const deleteNotification = async (messageId) => {
-    try {
-      const condirmDeleteNotify = window.confirm("Are you sure you want to delete this message?");
-      if (!condirmDeleteNotify) {
-        return; // Exit if the user cancels the confirmation
-      }
-      const response = await fetch(`${apiUrl}/timetablemodule/message/delete/${messageId}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-      });
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Fetched messages data:", data); // Log the fetched data
-        setMessages(messages.filter((message) => message._id !== messageId));
-        console.log("Fetched messages:", messages); // Log the fetched messages
-      } else {
-        console.error("Failed to fetch messages");
-      }
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }}
+  // const deleteNotification = async (messageId) => {
+  //   try {
+  //     const condirmDeleteNotify = window.confirm("Are you sure you want to delete this message?");
+  //     if (!condirmDeleteNotify) {
+  //       return; // Exit if the user cancels the confirmation
+  //     }
+  //     const response = await fetch(`${apiUrl}/timetablemodule/message/delete/${messageId}`, {
+  //       method: "DELETE",
+  //       headers: { "Content-Type": "application/json" },
+  //       credentials: "include"
+  //     });
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       console.log("Fetched messages data:", data); // Log the fetched data
+  //       setMessages(messages.filter((message) => message._id !== messageId));
+  //       console.log("Fetched messages:", messages); // Log the fetched messages
+  //     } else {
+  //       console.error("Failed to fetch messages");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching messages:", error);
+  //   }}
 
   const handleInputChange = (e) => {
     const input = e.target.value;
     setCode(input);
     setIsInputValid(input.trim().length > 0); // Check if input is not empty
   };
-  const fetchMessages = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/timetablemodule/message/myMessages`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-      });
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Fetched messages data:", data); // Log the fetched data
-        setMessages(data.data);
-        console.log("Fetched messages:", messages); // Log the fetched messages
-      } else {
-        console.error("Failed to fetch messages");
-      }
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+  // const fetchMessages = async () => {
+  //   try {
+  //     const response = await fetch(`${apiUrl}/timetablemodule/message/myMessages`, {
+  //       method: "GET",
+  //       headers: { "Content-Type": "application/json" },
+  //       credentials: "include"
+  //     });
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       console.log("Fetched messages data:", data); // Log the fetched data
+  //       setMessages(data.data);
+  //       console.log("Fetched messages:", messages); // Log the fetched messages
+  //     } else {
+  //       console.error("Failed to fetch messages");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching messages:", error);
+  //   }
+  // };
+  // useEffect(() => {
+  //   fetchMessages();
+  // }, []);
 
   const deleteEntry = (tableName) => {
     if (!isInputValid) {
@@ -134,27 +134,8 @@ function Del() {
         </tr>
       </table>
 
-      <h2>Messages</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Message</th>
-            
-            <th>Time</th>
-            <th>Delete message</th>
-          </tr>
-        </thead>
-        <tbody>
-          {messages.map((message, index) => (
-            <tr key={index}>
-              <td>{message.title}</td>
-              {/* <td>{message.createdAt}</td> */}
-              <td>{new Date(message.createdAt).toLocaleString()}</td>
-              <td><Button onClick={() => deleteNotification(message._id)}>Delete</Button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      
+      
 
 
     </div>

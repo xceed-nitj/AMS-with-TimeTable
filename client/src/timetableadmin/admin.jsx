@@ -125,6 +125,8 @@ const AdminPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+
+
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
         method: 'POST',
@@ -258,7 +260,8 @@ const AdminPage = () => {
             { path: "/tt/allotment", label: "Room Allotment", bg: "purple.500" },
             { path: "/tt/admin/adminview", label: "Edit Any Department Timetable", bg: "gray.500" },
             // { path: "/tt/admin/instituteload", label: "Calculate Departwise Load", bg: "gray.700" },
-            { path: "/tt/viewinstituteload", label: "View Departwise Load", bg: "pink.500" }
+            { path: "/tt/viewinstituteload", label: "View Departwise Load", bg: "pink.500" },
+            { path: "/tt/messages" , label:"Messages", bg:"yellow.400" }
           ].map(({ path, label, bg }) => (
             <ChakraLink
               as={Link}
@@ -363,7 +366,7 @@ const AdminPage = () => {
   Mark as Current
 </Button>
 
-<Heading textAlign="center" mt={10} mb={4}>Send Message to Dept. TT Coordinators</Heading>
+{/* <Heading textAlign="center" mt={10} mb={4}>Send Message to Dept. TT Coordinators</Heading>
 <form onSubmit={handleSendMessage}>
   <VStack spacing={3} align="start">
     <Input
@@ -395,7 +398,7 @@ const AdminPage = () => {
 
     <Button type="submit" colorScheme="blue">Send Message</Button>
   </VStack>
-</form>
+</form> */}
 
 
 </Container>
