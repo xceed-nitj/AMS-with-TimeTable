@@ -27,8 +27,12 @@ const Home = () => {
       {/* <Navbar /> */}
       <Hero />
       <Services />
+      <RevenueDistribution />
       <GrowthTree />
       <About />
+      
+      {/* <FacultyCoordinators /> */}
+      {/* <TeamSection /> */}
       <TeamSection />
       <JoinUs />
       <Footer />
