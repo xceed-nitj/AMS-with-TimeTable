@@ -5,7 +5,7 @@ const TeamSection = () => {
   return (
     <>
       <Team
-        title="Core Team"
+        title="Founding Team Members"
         desp="Xceed has an experienced team of developers, designers and mentors
             dedicated to create web solutions based on your requirement."
         teamData={coreTeam}
