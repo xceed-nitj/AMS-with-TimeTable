@@ -15,6 +15,7 @@ import AddSem from './timetableadmin/addsemester';
 import AddRoom from './timetableadmin/addroom';
 import LockedSummary from './timetableadmin/lockedsummary';
 import Login from './dashboard/login';
+import Messages from './timetableadmin/messages';
 import ForgotPassword from './dashboard/ForgotPassword';
 import SuperAdminPage from './dashboard/superadmin';
 import CommonSlot from './timetableadmin/commonslot.jsx';
@@ -209,6 +210,7 @@ function App() {
           <Route path="masterdelete" element={<MasterDelete />} />
           <Route path="viewmrooms" element={<ViewMRooms />} />
           <Route path="masterdata" element={<MasterDataTable />} />
+          <Route path="messages" element={<Messages />} />
         </Route>
 
         <Route path="/tt/:generatedLink">

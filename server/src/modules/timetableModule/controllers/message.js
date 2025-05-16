@@ -50,7 +50,8 @@ class MessageController {
         const messages = await Message.find({ targetRole: "DTTI" }).sort('-createdAt');
         return res.status(200).json({
           message: 'Messages fetched successfully',
-          data: messages
+          data: {messages},
+          user: user
         });
       } catch (err) {
         console.error('getMyMessages error:', err);
