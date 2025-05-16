@@ -23,7 +23,6 @@ const getIndianTime=require("../helper/getIndianTime")
 
 class LockTimeTableController {
   async locktt(req, res) {
-    async function locktt(req, res) {
       try {
         const { code } = req.body;
     
@@ -61,7 +60,6 @@ class LockTimeTableController {
         console.error("Error in locktt:", err);
         res.status(500).json({ error: "An error occurred" });
       }
-    }
     
         }
  
