@@ -15,14 +15,16 @@ app.use(
       "https://nitjtt.netlify.app",
       "http://localhost:8010",
       //for chemcon
-      "http://localhost:5174","https://chemcon2024.com","https://pro1-chemcon.vercel.app",
+      "http://localhost:5174","https://chemcon2024.com",
   //for eaic2025
   "https://eaicnitj.com",
   //for civil site
   "https://igcnitj2025.netlify.app",
   "https://igc2025nitj.com",
   "https://t1dixpert.netlify.app",
-"https://it1dxpert.org"
+"https://it1dxpert.org",
+  //for physics site
+ "https://amsdt2025.com",
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
