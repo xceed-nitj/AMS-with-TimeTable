@@ -57,7 +57,7 @@ function AddSemComponent() {
     })
       .then(handleResponse)
       .then((data) => {
-        setDepartment(data[0].dept);
+        setDepartment(data.dept);
       })
       .catch(handleError);
   };
