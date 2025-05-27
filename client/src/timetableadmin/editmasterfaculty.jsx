@@ -43,6 +43,8 @@ function Subject() {
 
       if (filteredData.length > 0) {
         setDepartment(filteredData[0].dept);
+      } else {
+        setDepartment(filteredData.dept);
       }
 
       const facultyResponse = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${department}`, { credentials: 'include' });
