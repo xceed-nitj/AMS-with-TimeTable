@@ -22,7 +22,7 @@ import Header from '../components/header';
 
 function Subject() {
   const [facultyList, setFacultyList] = useState([]);
-  const [timetableData, setTimetableData] = useState([]);
+  // const [timetableData, setTimetableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [department, setDepartment] = useState('');
@@ -44,22 +44,54 @@ function Subject() {
   const parts = window.location.pathname.split("/");
   const currentCode = parts[parts.length - 2];
 
-  // Fetch timetable on mount or when currentCode changes
-  useEffect(() => {
-    const fetchTimetable = async () => {
-      try {
-        const res = await fetch(`${apiUrl}/timetablemodule/timetable`, { credentials: 'include' });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const data = await res.json();
-        const filtered = data.filter(row => row.code === currentCode);
-        setTimetableData(filtered);
-        if (filtered.length) setDepartment(filtered[0].dept);
-      } catch (err) {
-        console.error('Timetable fetch error:', err);
+
+ useEffect(() => {
+    fetchTTData(currentCode);
+  }, []);
+
+    const fetchTTData = async (currentCode) => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setDepartment(data[0].dept);
+        // setCurrentSession(data[0].session);
       }
-    };
-    fetchTimetable();
-  }, [apiUrl, currentCode]);
+      else{
+        setDepartment(data.dept)
+      }
+
+       console.log("tt", data);
+    } catch (error) {
+      console.error("Error fetching TTdata:", error);
+    }
+  };
+  // Fetch timetable on mount or when currentCode changes
+  // useEffect(() => {
+  //   const fetchTimetable = async () => {
+  //     try {
+  //       const res = await fetch(`${apiUrl}/timetablemodule/timetable`, { credentials: 'include' });
+  //       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  //       const data = await res.json();
+  //       const filtered = data.filter(row => row.code === currentCode);
+  //       setTimetableData(filtered);
+  //       if (filtered.length) setDepartment(filtered[0].dept);
+  //     } catch (err) {
+  //       console.error('Timetable fetch error:', err);
+  //     }
+  //   };
+  //   fetchTimetable();
+  // }, [apiUrl, currentCode]);
 
   // Fetch faculty when department is set
   useEffect(() => {
