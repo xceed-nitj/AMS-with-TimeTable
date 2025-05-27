@@ -40,12 +40,8 @@ function Subject() {
 
       const filteredData = timetableData.filter((row) => row.code === currentCode);
       setTimeTableData(filteredData);
+      setDepartment(filteredData.dept);
 
-      if (filteredData.length > 0) {
-        setDepartment(filteredData[0].dept);
-      } else {
-        setDepartment(filteredData.dept);
-      }
 
       const facultyResponse = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${department}`, { credentials: 'include' });
       if (!facultyResponse.ok) {
