@@ -99,6 +99,10 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
         setCurrentDepartment(data[0].dept);
         setCurrentSession(data[0].session);
       }
+      else{
+        setDepartment(data.dept);
+        setCurrentSession(data.session);
+      }
 
       // console.log("tt", data);
     } catch (error) {
