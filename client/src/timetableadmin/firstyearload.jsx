@@ -98,9 +98,14 @@ function FirstYearLoad() {
       );
 
       const data = await response.json();
+      console.log("tt data", data);
       if (Array.isArray(data) && data.length > 0) {
         setCurrentDepartment(data[0].dept);
         setCurrentSession(data[0].session);
+      }
+      else{
+        setCurrentDepartment(data.dept);
+        setCurrentSession(data.session);
       }
 
       // console.log("tt", data);
