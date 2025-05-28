@@ -95,6 +95,7 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
       );
 
       const data = await response.json();
+      console.log("tt data", data);
       if (Array.isArray(data) && data.length > 0) {
         setCurrentDepartment(data[0].dept);
         setCurrentSession(data[0].session);
@@ -103,8 +104,8 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
         setCurrentDepartment(data.dept);
         setCurrentSession(data.session);
       }
-
-      console.log("tt data", data);
+    console.log("tt data", currentCode, currentDepartment, currentSession); 
+      
     } catch (error) {
       console.error("Error fetching TTdata:", error);
     }
@@ -124,13 +125,13 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
       );
 
       const data = await response.json();
-      // console.log("subdata", data);
+      console.log("subdata", data[0].code);
 
       const uniqueSemesters = [...new Set(data.map((item) => item.sem))];
       console.log(uniqueSemesters)
       setAvailableSemesters(uniqueSemesters);
-      setFirstYearCode(data.code);
-      console.log("first year code",firstYearCode);
+      setFirstYearCode(data[0].code);
+      console.log("firstcode",firstYearCode);
 
     } catch (error) {
       console.error("Error fetching TTdata:", error);
@@ -177,7 +178,7 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
       );
 
       const data = await response.json();
-      // console.log("facdata", data);
+      console.log("faculty data", data);
 
       setFacultyData(data);
     } catch (error) {
@@ -204,7 +205,7 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
       // console.log("delteddata", data);
 
       // setFacultyData(data);
-      fetchFacultyData(currentCode,currentDepartment);
+      await fetchFacultyData(currentCode,currentDepartment);
     } catch (error) {
       console.error("Error fetching TTdata:", error);
     }
