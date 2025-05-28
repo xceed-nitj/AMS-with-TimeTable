@@ -100,7 +100,7 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
         setCurrentSession(data[0].session);
       }
       else{
-        setDepartment(data.dept);
+        setCurrentDepartment(data.dept);
         setCurrentSession(data.session);
       }
 
