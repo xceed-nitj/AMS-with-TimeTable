@@ -104,7 +104,7 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
         setCurrentSession(data.session);
       }
 
-      // console.log("tt", data);
+      console.log("tt data", data);
     } catch (error) {
       console.error("Error fetching TTdata:", error);
     }
@@ -127,9 +127,10 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
       // console.log("subdata", data);
 
       const uniqueSemesters = [...new Set(data.map((item) => item.sem))];
-      // console.log(uniqueSemesters)
+      console.log(uniqueSemesters)
       setAvailableSemesters(uniqueSemesters);
-      setFirstYearCode(data[0].code);
+      setFirstYearCode(data.code);
+      console.log("first year code",firstYearCode);
 
     } catch (error) {
       console.error("Error fetching TTdata:", error);
