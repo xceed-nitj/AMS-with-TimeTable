@@ -25,6 +25,7 @@ app.use(
 "https://it1dxpert.org",
   //for physics site
  "https://amsdt2025.com",
+"https://rococo-froyo-3445ac.netlify.app",
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
