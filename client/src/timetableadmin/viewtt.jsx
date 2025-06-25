@@ -60,7 +60,7 @@ const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
   return (
     <div>
       {Object.keys(timetableData).length === 0 ? (
-        <div>Loading...</div>
+        <div style={{color:"red", fontSize:"x-large"}} >Loading...</div>
       ) : (
         <div id='timetable-summary'>
           <TableContainer>

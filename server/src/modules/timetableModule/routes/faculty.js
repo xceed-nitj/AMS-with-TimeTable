@@ -59,6 +59,19 @@ facultyRouter.post("/",protectRoute, async (req, res) => {
         .json({ error: e?.message || "Internal Server Error" });
     }
   });
+
+  facultyRouter.get("/search", async (req, res) => {
+  try {
+    const query = req.query.q;
+    const resp = await facultyController.getFacultyByName(query);
+    res.status(200).json(resp);
+  } catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
   
     facultyRouter.put('/:id',protectRoute, async (req, res) => {
       try {
