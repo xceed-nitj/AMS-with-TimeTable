@@ -6,7 +6,8 @@ import ViewTimetable from "./viewtt";
 import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
 import { Container } from "@chakra-ui/layout";
-import { FormControl, FormLabel, Heading, Select, UnorderedList, ListItem ,Input, Spinner, List} from "@chakra-ui/react";
+import { FormControl, FormLabel, Heading, Select, UnorderedList, ListItem ,Input, Spinner, List,Flex} from "@chakra-ui/react";
+import { keyframes } from '@emotion/react';
 import {
   CustomTh,
   CustomLink,
@@ -72,6 +73,37 @@ function MasterView() {
   const facultySectionRef = useRef(null);
 
   const semesters = availableSems;
+
+//   const glowingBorder = keyframes`
+//   0% { border-color: #ff4b2b; box-shadow: 0 0 5px #ff4b2b; }
+//   25% { border-color: #ff416c; box-shadow: 0 0 8px #ff416c; }
+//   50% { border-color: #6a82fb; box-shadow: 0 0 10px #6a82fb; }
+//   75% { border-color: #21d4fd; box-shadow: 0 0 8px #21d4fd; }
+//   100% { border-color: #ff4b2b; box-shadow: 0 0 5px #ff4b2b; }
+// `;
+const softGlow = keyframes`
+  0% {
+    border-color: #a78bfa;  /* Soft Purple */
+    box-shadow: 0 0 10px #d6bffb;
+  }
+  25% {
+    border-color: #38bdf8;  /* Sky Blue */
+    box-shadow: 0 0 10px #a1e3fc;
+  }
+  50% {
+  border-color: #ffe0ac;  /* Light Apricot */
+    box-shadow: 0 0 10px #fff1cc;
+    
+  }
+  75% {
+    border-color: #34d399;  /* Mint Green */
+    box-shadow: 0 0 10px #bafce4;
+  }
+  100% {
+    border-color: #a78bfa;  /* Back to Soft Purple */
+    box-shadow: 0 0 10px #d6bffb;
+  }
+`;
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -559,7 +591,8 @@ function MasterView() {
       </Helmet>
       <Container maxW="7xl">
         <Header title="View TimeTable "></Header>
-        <div className="tw-flex tw-flex-col md:tw-flex-row">
+        {/* <div className="tw-flex tw-flex-col md:tw-flex-row items-center gap-2"> */}
+        <Flex direction={{ base: 'column', md: 'row' }} align={{base:"flex-start",md:"center"}} justify="flex-start"   gap={2} wrap="wrap">
           {/* Empty spacer to push the button to the right */}
           {/* <Box flex="" /> */}
           <Link
@@ -576,20 +609,32 @@ function MasterView() {
               Search Meet-Slot
             </Button>
           </Link>
-          <Spacer />
-          <Box  style={{ maxWidth: '400px' ,zIndex:'5',marginRight:'20px', position:'relative'}} >
+          {/* <Spacer /> */}
+          <Box flex="1" style={{ width: "100%", marginRight: "", position: 'relative', zIndex: '5' }}>
+
            <Input
             style={{ backgroundColor: 'white', borderRadius: '5px', padding: '10px', border: '1px solid #ccc' ,height:'45px'}}
-            placeholder="Search faculty "
+            placeholder="Type faculty name "
             value={query}
             onChange={(e) => {
                 const value = e.target.value;
                 setQuery(value)
                 fetchSuggestions(value);
             }}
+             sx={{
+                 backgroundColor: 'white',
+                 borderRadius: '5px',
+                 padding: '10px',
+                 height: '45px',
+                 border: '2px solid',
+                //  animation: `${glowingBorder} 3s infinite`,
+                animation: `${softGlow} 10s infinite ease-in-out`,
+                transition: 'box-shadow 2.5s ease-in-out',
+                 
+                }}
            />
       {loading && <Spinner mt={2} style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)' , zIndex: '11' }} />}
-      <List spacing={2} mt={4} style={{ maxHeight: '200px', overflowY: 'auto' ,position:'absolute',zIndex:'10',backgroundColor:'white' }} >
+      <List spacing={2} mt={4} style={{ maxHeight: '200px', overflowY: 'auto',width:'100%' ,position:'absolute',zIndex:'10',backgroundColor:'white' }} >
         {suggestions.map((faculty) => (
           <ListItem onClick={() => handleFacultyClick(faculty)} _hover={{ backgroundColor: 'gray.100' ,cursor:'pointer'}} key={faculty._id} p={2} borderWidth="1px" borderRadius="md">
             <Text fontWeight="bold">{faculty.name}</Text>
@@ -609,7 +654,8 @@ function MasterView() {
               Geo Locate Classrooms
             </Button>
           </Link>
-        </div>
+        {/* </div> */}
+        </Flex>
         <FormLabel fontWeight="bold">Select Session:
         </FormLabel>
 
