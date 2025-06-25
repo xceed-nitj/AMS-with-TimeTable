@@ -21,11 +21,13 @@ app.use(
   //for civil site
   "https://igcnitj2025.netlify.app",
   "https://igc2025nitj.com",
+      //for diabetics work
   "https://t1dixpert.netlify.app",
 "https://it1dxpert.org",
   //for physics site
  "https://amsdt2025.com",
-"https://clever-rugelach-dfc04c.netlify.app/",
+      //for ece site
+"https://cipher2026.com/",
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
