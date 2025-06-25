@@ -628,8 +628,8 @@ const softGlow = keyframes`
                  height: '45px',
                  border: '2px solid',
                 //  animation: `${glowingBorder} 3s infinite`,
-                animation: `${softGlow} 10s infinite ease-in-out`,
-                transition: 'box-shadow 2.5s ease-in-out',
+                animation: `${softGlow} 20s infinite ease-in-out`,
+                transition: 'box-shadow 5s ease-in-out',
                  
                 }}
            />
