@@ -51,6 +51,33 @@ class FacultyController {
         }
       }
 
+
+      async getFacultyByName(query){
+          if (!query) {
+          throw new HttpException(400, "Invalid search query");
+          }
+
+        try {
+        const regex = new RegExp(query, "i");
+        const data = await Faculty.find({
+         $or: [
+         { name: regex },
+         { dept: regex }
+        ]
+      }).limit(10);
+
+       return data;
+     } catch (e) {
+      throw new HttpException(500, e.message || "Internal Server Error");
+    }
+  };
+
+
+
+
+
+     
+
       async getFacultyByDepartment(department) {
         if (!department) {
           throw new HttpException(400, "Invalid Department");

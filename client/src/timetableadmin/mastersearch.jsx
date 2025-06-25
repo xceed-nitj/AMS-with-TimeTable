@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import jsPDF from "jspdf";
 import { useNavigate, useLocation, Form, Link } from "react-router-dom";
 import getEnvironment from "../getenvironment";
@@ -6,7 +6,7 @@ import ViewTimetable from "./viewtt";
 import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
 import { Container } from "@chakra-ui/layout";
-import { FormControl, FormLabel, Heading, Select, UnorderedList, ListItem } from "@chakra-ui/react";
+import { FormControl, FormLabel, Heading, Select, UnorderedList, ListItem ,Input, Spinner, List} from "@chakra-ui/react";
 import {
   CustomTh,
   CustomLink,
@@ -28,6 +28,8 @@ import {
 import { Button } from "@chakra-ui/button";
 import Header from "../components/header";
 import { Helmet } from "react-helmet-async";
+import debounce from 'lodash.debounce';
+
 
 // import PDFViewTimetable from '../filedownload/chakrapdf'
 
@@ -63,6 +65,11 @@ function MasterView() {
   const [currentCode, setCurrentCode] = useState('');
   const [selectedSession, setSelectedSession] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
+
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const facultySectionRef = useRef(null);
 
   const semesters = availableSems;
 
@@ -455,6 +462,33 @@ function MasterView() {
     window.location.href = pdfUrl;
   };
 
+  const handleFacultyClick = async (faculty) => {
+  const { name, dept } = faculty;
+
+  
+  setSelectedDept(dept);
+
+  
+  setTimeout(() => {
+    setSelectedFaculty(name);
+     setTimeout(() => {
+      if (facultySectionRef.current) {
+        const y = facultySectionRef.current.getBoundingClientRect().top + window.pageYOffset;
+
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
+   
+  }, 300); // enough delay to allow currentCode to update
+  // setQuery(""); // Clear the search query after selection
+  setSuggestions([]); // Clear suggestions after selection
+
+};
+
+
 
   const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
   const [TTData, setTTData] = useState([]); // Initialize as an empty array
@@ -466,6 +500,7 @@ function MasterView() {
           { credentials: "include" }
         );
         const data = await response.json();
+        // console.log('subject data is  ',data)
         setSubjectData(data);
         // console.log('subjectdata',data)
       } catch (error) {
@@ -489,6 +524,30 @@ function MasterView() {
   //   const pdfUrl = `${pathExceptLastPart}/viewmrooms`;
   //   window.location.href = pdfUrl;
   // };
+
+  const fetchSuggestions = useRef(
+    debounce(async (q) => {
+      if (!q) {
+        setSuggestions([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetch(`${apiUrl}/timetablemodule/faculty/search?q=${encodeURIComponent(q)}`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        setSuggestions(data);
+      } catch (err) {
+        console.error("Error fetching faculty:", err);
+        setSuggestions([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 300)
+  ).current;
+
+  
 
 
 
@@ -518,6 +577,31 @@ function MasterView() {
             </Button>
           </Link>
           <Spacer />
+          <Box  style={{ maxWidth: '400px' ,zIndex:'5',marginRight:'20px', position:'relative'}} >
+           <Input
+            style={{ backgroundColor: 'white', borderRadius: '5px', padding: '10px', border: '1px solid #ccc' ,height:'45px'}}
+            placeholder="Search faculty "
+            value={query}
+            onChange={(e) => {
+                const value = e.target.value;
+                setQuery(value)
+                fetchSuggestions(value);
+            }}
+           />
+      {loading && <Spinner mt={2} style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)' , zIndex: '11' }} />}
+      <List spacing={2} mt={4} style={{ maxHeight: '200px', overflowY: 'auto' ,position:'absolute',zIndex:'10',backgroundColor:'white' }} >
+        {suggestions.map((faculty) => (
+          <ListItem onClick={() => handleFacultyClick(faculty)} _hover={{ backgroundColor: 'gray.100' ,cursor:'pointer'}} key={faculty._id} p={2} borderWidth="1px" borderRadius="md">
+            <Text fontWeight="bold">{faculty.name}</Text>
+            <Text fontSize="sm" color="gray.600">{faculty.dept}</Text>
+            {/* <Button color="blue.500" onClick={() => handleFacultyClick(faculty)} >
+              View Timetable
+            </Button> */}
+          </ListItem>
+        ))}
+      </List></Box>
+
+
           <Link
             to='/classrooms'
           >
@@ -589,7 +673,7 @@ function MasterView() {
                         Last saved on: {lockedTime ? lockedTime : "Not saved yet"}
                       </Text>
                       <ViewTimetable timetableData={viewData} />
-                      <TimetableSummary
+                       {(Array.isArray(subjectData)&&subjectData.length>0) ?(<TimetableSummary
                         timetableData={viewData}
                         type={"sem"}
                         code={currentCode}
@@ -598,7 +682,17 @@ function MasterView() {
                         subjectData={subjectData}
                         TTData={TTData}
                         notes={semNotes}
-                      />
+                      />):<Text style={{ fontWeight: '700' , color: 'red' }}>Loading TimeTable Summary...</Text>}
+                       {/* <TimetableSummary
+                        timetableData={viewData}
+                        type={"sem"}
+                        code={currentCode}
+                        time={lockedTime}
+                        headTitle={selectedSemester}
+                        subjectData={subjectData}
+                        TTData={TTData}
+                        notes={semNotes}
+                      /> */}
                       <Box>
                         {semNotes.length > 0 ? (
                           <div>
@@ -630,7 +724,7 @@ function MasterView() {
                   <Text style={{ fontWeight: '800', color: "#394870", fontSize: 'large' }}>or</Text>
                 </Center>
                 {/* Faculty Dropdown */}
-                <FormControl>
+                <FormControl ref={facultySectionRef}>
                   <FormLabel fontWeight='bold'>View Faculty timetable</FormLabel>
                   <Select
                     value={selectedFaculty}
@@ -653,7 +747,7 @@ function MasterView() {
                       </Text>
 
                       <ViewTimetable timetableData={viewFacultyData} />
-                      <TimetableSummary
+                      {/* <TimetableSummary
                         timetableData={viewFacultyData}
                         type={"faculty"}
                         code={currentCode}
@@ -663,11 +757,23 @@ function MasterView() {
                         TTData={TTData}
                         notes={facultyNotes}
                         commonLoad={commonLoad}
-                      />
+                      /> */}
+                      {(Array.isArray(subjectData) && subjectData.length > 0) ? (
+                          <TimetableSummary
+                            timetableData={viewFacultyData}
+                            type={"faculty"}
+                            code={currentCode}
+                            time={facultyLockedTime}
+                            headTitle={selectedSemester}
+                            subjectData={subjectData}
+                            TTData={TTData}
+                            notes={facultyNotes}
+                            commonLoad={commonLoad}
+                          />
+                       ):<Text style={{ fontWeight: '700' , color: 'red' }}>Loading TimeTable Summary...</Text>}
                       {/* <CustomBlueButton onClick={() => generatePDF(viewFacultyData)}>Generate PDF</CustomBlueButton> */}
                       {/* <PDFViewTimetable timetableData={viewFacultyData} /> */}
                       {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'}/>  */}
-
                       <Box>
                         {facultyNotes.length > 0 ? (
                           <div>
@@ -722,7 +828,8 @@ function MasterView() {
                       <ViewTimetable timetableData={viewRoomData} />
                       {/* <TimetableSummary timetableData={viewFacultyData} type={'faculty'} code={currentCode}/>  */}
 
-                      <TimetableSummary
+                     {(Array.isArray(subjectData) && subjectData.length > 0) ? (
+                       <TimetableSummary
                         timetableData={viewRoomData}
                         type={'room'}
                         code={currentCode}
@@ -733,6 +840,18 @@ function MasterView() {
                         notes={roomNotes}
 
                       />
+                     ):<Text style={{ fontWeight: '700' , color: 'red' }}>Loading TimeTable Summary...</Text>}
+                      {/* <TimetableSummary
+                        timetableData={viewRoomData}
+                        type={'room'}
+                        code={currentCode}
+                        time={roomlockedTime}
+                        headTitle={selectedRoom}
+                        subjectData={subjectData}
+                        TTData={TTData}
+                        notes={roomNotes}
+
+                      /> */}
                       <Box>
                         {roomNotes.length > 0 ? (
                           <div>
@@ -759,6 +878,8 @@ function MasterView() {
                     <Text>Please select a Room from the dropdown.</Text>
                   )}
                 </Box>
+                <Box height="200px" />
+                {/* spacer to have scorllable space */}
               </FormControl>
             </Container>
 
