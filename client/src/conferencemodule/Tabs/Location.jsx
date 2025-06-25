@@ -52,7 +52,6 @@ const Location = () => {
     useEffect(() => {
         if (quillInstance.current) return; 
 
-        // Register the `quill-better-table` module
         Quill.register({
             "modules/better-table": QuillBetterTable,
         });
@@ -99,12 +98,10 @@ const Location = () => {
             placeholder: "Start writing here...",
         });
 
-        // Set initial content if editing
         if (formData.description) {
             quillInstance.current.root.innerHTML = formData.description;
         }
 
-        // Update state on text change
         quillInstance.current.on("text-change", () => {
             setFormData((prev) => ({
                 ...prev,
@@ -113,12 +110,10 @@ const Location = () => {
         });
     }, []);
 
-    // Keep Quill in sync when editing an existing location
     useEffect(() => {
         if (quillInstance.current && formData.description !== quillInstance.current.root.innerHTML) {
             quillInstance.current.root.innerHTML = formData.description || '';
         }
-    // eslint-disable-next-line
     }, [editID]);
 
     // --- Table Operation Buttons ---
@@ -239,18 +234,21 @@ const Location = () => {
     <main className='tw-py-10 tw-min-h-screen tw-flex tw-justify-center'>
         <div className="tw-w-full tw-max-w-full tw-px-2">
             <div className="tw-flex tw-flex-col lg:tw-flex-row tw-gap-8">
-                {/* Form Section - Full width on mobile, 3/5 on desktop */}
-                <div className="tw-w-full lg:tw-w-3/5">
+                <div className="tw-w-full lg:tw-w-1/2">
                     <Container maxW='full'>
                         <Center>
-                            <Heading as="h1" size="xl" mt="6" mb="6">
+                            <Heading as="h1"
+                            size="xl"
+                            style={{
+                                color: "#10B981", 
+                                textDecoration: "underline"
+                            }}>
                                 Location
                             </Heading>
                         </Center>
 
                         <FormControl isRequired={true} mb='3'>
                             <FormLabel>Description:</FormLabel>
-                            {/* Quill Better Table Toolbar */}
                             <div style={{ marginBottom: "10px" }}>
                                 <Button
                                     colorScheme="blue"
@@ -289,7 +287,7 @@ const Location = () => {
                             ></div>
                         </FormControl>
 
-                        {/* Live Preview Section - Shows below editor on mobile */}
+                        {/* Live Preview Section */}
                         <div className="tw-block lg:tw-hidden tw-mb-6">
                             <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg tw-border">
                                 <Heading as="h2" size="lg" mb="4" className="tw-text-center tw-text-gray-700">
@@ -368,74 +366,25 @@ const Location = () => {
                             </Select>
                         </FormControl>
 
-                    <Center>
+                            <Center>
                                 <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
                                     {editID ? 'Update' : 'Add'}
                                 </Button>
                             </Center>
-
-                            <Heading as="h1" size="xl" mt="6" mb="6">
-                                Added Location
-                            </Heading>
-
-                            {!loading ? (
-                                <TableContainer>
-                                    <Table
-                                        variant='striped'
-                                        size="md"
-                                        mt="1"
-                                    >
-                                        <Thead>
-                                            <Tr>
-                                                <CustomTh>Description</CustomTh>
-                                                <CustomTh>Address</CustomTh>
-                                                <CustomTh>Latitude</CustomTh>
-                                                <CustomTh>Longitude</CustomTh>
-                                                <CustomTh>Sequence</CustomTh>
-                                                <CustomTh>Feature</CustomTh>
-                                                <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
-                                            </Tr>
-                                        </Thead>
-                                        <Tbody>
-                                            {data ? (
-                                                <Tr key={data._id}>
-                                                    <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.description}</Td>
-                                                    <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.address}</Td>
-                                                    <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.latitude}</Td>
-                                                    <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.longitude}</Td>
-                                                    <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.sequence}</Td>
-                                                    <Td sx={{ maxWidth: '100px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{data.feature ? "Yes" : "No"}</Td>
-                                                    <Td position={'sticky'} right={'0'}>
-                                                        <Center>
-                                                            <Button colorScheme="red" onClick={() => handleDelete(data._id)}>Delete</Button>
-                                                            <Button colorScheme="teal" onClick={() => {
-                                                                handleEdit(data._id);
-                                                                setEditID(data._id);
-                                                            }}>Edit</Button>
-                                                        </Center>
-                                                    </Td>
-                                                </Tr>
-                                            ) : (
-                                                <Tr>
-                                                    <Td colSpan="7" className="tw-p-1 tw-text-center">
-                                                        <Center>No data available</Center>
-                                                    </Td>
-                                                </Tr>
-                                            )}
-                                        </Tbody>
-                                    </Table>
-                                </TableContainer>
-                            ) : <LoadingIcon />}
-                        {/* ...rest of your code (buttons, table, etc.) */}
                     </Container>
                 </div>
 
                 
 
                 {/* Right Section - Preview (desktop only) */}
-                <div className="tw-hidden lg:tw-block tw-w-2/5 tw-sticky tw-top-0 tw-h-screen tw-overflow-auto">
+                <div className="tw-hidden lg:tw-block tw-w-1/2 tw-sticky tw-top-0 tw-h-screen tw-overflow-auto">
                     <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg tw-border tw-h-full">
-                        <Heading as="h2" size="lg" mb="4" className="tw-text-center tw-text-gray-700">
+                        <Heading as="h1"
+                                size="xl"
+                                className="tw-text-[#10B981] tw-underline" style={{
+                                color: "#10B981", 
+                                textDecoration: "underline"
+                            }}>
                             Live Preview
                         </Heading>
                         <div className="tw-bg-white tw-p-4 tw-rounded tw-shadow-sm tw-min-h-full">
