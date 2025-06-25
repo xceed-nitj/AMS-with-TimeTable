@@ -50,6 +50,40 @@ const Location = () => {
     const quillInstance = useRef(null);
 
     useEffect(() => {
+        setLoading(true);
+        axios.get(`${apiUrl}/conferencemodule/location/${IdConf}`, {
+            withCredentials: true
+        })
+            .then(res => {
+                setData(res.data);
+            })
+            .catch(err => console.log(err))
+            .finally(() => setLoading(false));
+    }, [refresh, IdConf, apiUrl]);
+
+    useEffect(() => {
+        if (data && Object.keys(data).length > 0) {
+            setFormData({
+                confId: IdConf,
+                description: data.description || "",
+                address: data.address || "",
+                latitude: data.latitude || "",
+                longitude: data.longitude || "",
+                feature: typeof data.feature === 'boolean' ? data.feature : true,
+                sequence: data.sequence || ""
+            });
+            if (quillInstance.current) {
+                quillInstance.current.root.innerHTML = data.description || "";
+            }
+        } else {
+            setFormData(initialData);
+            if (quillInstance.current) {
+                quillInstance.current.root.innerHTML = "";
+            }
+        }
+    }, [data, IdConf]);
+
+    useEffect(() => {
         if (quillInstance.current) return; 
 
         Quill.register({
@@ -407,4 +441,4 @@ const Location = () => {
 
 };
 
-export default Location;
+export default Location; 

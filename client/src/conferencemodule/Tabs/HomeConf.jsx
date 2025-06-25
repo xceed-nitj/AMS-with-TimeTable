@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/layout";
 import formatDate from "../utils/formatDate";
-import { FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button } from '@chakra-ui/react';
+import {  Flex, Box, FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
 import {
     Table,
@@ -169,12 +169,43 @@ const HomeConf = () => {
     }, [refresh]);
 
     return (
-        <main className='tw-py-10  lg:tw-pl-72 tw-min-h-screen'>
+        <main className="tw-p-5 tw-min-h-screen">
 
-            <Container maxW='5xl' >
-                <Center><Heading as="h1" size="xl" mt="6" mb="6">
-                    About Conference
-                </Heading></Center>
+            <Flex>
+                {/* Sidebar */}
+                <Box
+                    width={{ base: "100%", md: "20%" }} 
+                    minWidth="220px"
+                    maxWidth="400px"
+                    bg="gray.100"
+                    p={5}
+                    borderRadius="none"
+                    boxShadow="md"
+                    height="100vh" 
+                    position="sticky"
+                    top={0}
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="flex-start"
+                >
+                    <Heading as="h2" size="md" mb={4}>
+                        Add Items
+                    </Heading>
+                    <Button colorScheme="blue" onClick={addNewAbout} mb="4" width="100%">
+                        Add New About
+                    </Button>
+                </Box>
+
+                {/* Main Content */}
+                <Box flex="1" width={{ base: "100%", md: "80%" }} 
+                overflowY="auto"
+                p={4}>
+                    <Container maxW='5xl'>
+                        <Center>
+                            <Heading as="h1" size="xl" mt="6" mb="6">
+                                About Conference
+                            </Heading>
+                        </Center>
 
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >Name of the Conference :</FormLabel>
@@ -212,29 +243,28 @@ const HomeConf = () => {
                 <FormLabel isRequired={true} >About:</FormLabel>
 
                 {about.map((about, index) => (
-                    <div key={index}>
-                        <FormControl mb='3'    >
-                            <p >Title:</p>
-                            <Input
-                                type="text"
-                                name="title"
-                                value={about.title}
-                                onChange={(e) => handleArrayChange(e, index)}
-                                placeholder="Title"
-                            />
-                        </FormControl>
-                        <FormControl mb='3' >
-                            <p >Description:</p>
-                            <JoditEditor
-                                ref={ref}
-                                value={about.description}
-                                onBlur={(value) => handleDescriptionChange(value, index)}
-                                classname='tw-mb-5'
-                            />
-                        </FormControl>
-                    </div>
-                ))}
-                <Button colorScheme="blue" onClick={addNewAbout} mb="4">Add New About</Button>
+                            <div key={index}>
+                                <FormControl mb='3'>
+                                    <p>Title:</p>
+                                    <Input
+                                        type="text"
+                                        name="title"
+                                        value={about.title}
+                                        onChange={(e) => handleArrayChange(e, index)}
+                                        placeholder="Title"
+                                    />
+                                </FormControl>
+                                <FormControl mb='3'>
+                                    <p>Description:</p>
+                                    <JoditEditor
+                                        ref={ref}
+                                        value={about.description}
+                                        onBlur={(value) => handleDescriptionChange(value, index)}
+                                        classname='tw-mb-5'
+                                    />
+                                </FormControl>
+                            </div>
+                        ))}
 
                 <FormControl isRequired={true} mb='3' >
                     <FormLabel >You Tube Link :</FormLabel>
@@ -431,7 +461,10 @@ const HomeConf = () => {
                         </div>
                     </div>
                 </div>
-            )}       
+            )}  
+                    
+                </Box>
+            </Flex>     
         </main>
     );
 };
