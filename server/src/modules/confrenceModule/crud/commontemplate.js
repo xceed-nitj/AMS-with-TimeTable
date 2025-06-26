@@ -44,6 +44,27 @@ class CommonTemplateController {
     }
   }
 
+  // GET /commontemplates/:confid/:templateid
+   async getTemplateByConfAndId(req, res) {
+    const { confid, templateid } = req.params;
+
+    try {
+      const template = await CommonTemplate.findOne({
+        _id: templateid,
+        confId: confid
+      });
+
+      if (!template) {
+        return res.status(404).json({ error: "Template not found for given conference ID" });
+      }
+
+      res.status(200).json(template);
+    } catch (error) {
+      console.error("Error fetching template:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
   // POST /commontemplates
   async createCommonTemplate(req, res) {
     const newCommonTemplate = req.body;
