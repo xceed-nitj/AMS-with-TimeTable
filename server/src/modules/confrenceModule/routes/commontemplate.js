@@ -5,6 +5,18 @@ const commontemplatesRouter = express.Router();
 const commontemplatesController = new CommonTemplatesController();
 const { checkRole } = require("../../checkRole.middleware");
 
+
+
+// GET /commontemplates/:confid/:templateid
+commontemplatesRouter.get("/:confid/:templateid", async (req, res) => {
+  try {
+    await commontemplatesController.getTemplateByConfAndId(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /commontemplates/conference/:id
 commontemplatesRouter.get("/conference/:id", async (req, res) => {
   try {
