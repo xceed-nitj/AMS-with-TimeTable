@@ -292,21 +292,6 @@ const Location = () => {
                                 >
                                     Insert Table
                                 </Button>
-                                <Button
-                                    colorScheme="blue"
-                                    size="sm"
-                                    onClick={getTable}
-                                    mr={2}
-                                >
-                                    Get Table
-                                </Button>
-                                <Button
-                                    colorScheme="blue"
-                                    size="sm"
-                                    onClick={getContents}
-                                >
-                                    Get Contents
-                                </Button>
                             </div>
                             <div
                                 ref={editorRef}
