@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
-import {CustomTh, CustomLink,CustomBlueButton, CustomTealButton, CustomDeleteButton} from '../styles/customStyles';
+import {
+  CustomTh,
+  CustomLink,
+  CustomBlueButton,
+  CustomTealButton,
+  CustomDeleteButton,
+} from '../styles/customStyles';
 import {
   Container,
   FormLabel,
@@ -12,69 +18,120 @@ import {
   Checkbox,
   Box,
   Text,
+  Tab,
+  TabList,
+  TabPanels,
+  Tabs,
+  VStack,
+  HStack,
+  ChakraProvider,
+  TabPanel,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  extendTheme,
+  Textarea,
 } from '@chakra-ui/react';
-import { Link } from "react-router-dom";
-import { useToast } from "@chakra-ui/react";
+import { Link } from 'react-router-dom';
+import { useToast } from '@chakra-ui/react';
 
+const theme = extendTheme({
+  colors: {
+    brand: {
+      50: '#E6F3F5',
+      100: '#CCE7EB',
+      200: '#99CFD7',
+      300: '#6BA3BE',
+      400: '#274D60',
+      500: '#0A7075',
+      600: '#0C969C',
+      700: '#08494a',
+      800: '#031716',
+      900: '#000000',
+    },
+  },
+  styles: {
+    global: {
+      body: {
+        bg: '#f8f9fa',
+      },
+    },
+  },
+});
 
 const AllotmentForm = () => {
-    const [formData, setFormData] = useState({
-      session: '',
-      centralisedAllotments: [
-        { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
-      ],
-      openElectiveAllotments: [
-        { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
-      ],
-      messaage:'',
-    });
+  const [formData, setFormData] = useState({
+    session: '',
+    centralisedAllotments: [
+      {
+        dept: '',
+        rooms: [{ room: '', morningSlot: false, afternoonSlot: false }],
+      },
+    ],
+    openElectiveAllotments: [
+      {
+        dept: '',
+        rooms: [{ room: '', morningSlot: false, afternoonSlot: false }],
+      },
+    ],
+    messaage: '',
+  });
 
   const [departments, setDepartments] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [sessions, setSessions] = useState([]);
   const apiUrl = getEnvironment();
-  const [session,setSession]=useState();
+  const [session, setSession] = useState();
   const toast = useToast();
 
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: 'include',
-        });
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/mastersem/dept`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          }
+        );
         if (response.ok) {
           const data = await response.json();
           setDepartments(data);
         } else {
-          console.error("Failed to fetch departments");
+          console.error('Failed to fetch departments');
         }
       } catch (error) {
-        console.error("Error:", error);
+        console.error('Error:', error);
       }
     };
 
     const fetchMasterRooms = async () => {
       try {
-        const response = await fetch(`${apiUrl}/timetablemodule/masterroom?type=Centralised Classroom`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: 'include',
-        });
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/masterroom?type=Centralised Classroom`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          }
+        );
         if (response.ok) {
           const data = await response.json();
-          const roomNames = data.map(room => room.room);
+          const roomNames = data.map((room) => room.room);
           setRooms(roomNames);
         } else {
-          console.error("Failed to fetch departments");
+          console.error('Failed to fetch departments');
         }
       } catch (error) {
-        console.error("Error:", error);
+        console.error('Error:', error);
       }
     };
 
@@ -83,62 +140,61 @@ const AllotmentForm = () => {
         const response = await fetch(
           `${apiUrl}/timetablemodule/allotment/session`,
           {
-            method: "GET",
+            method: 'GET',
             headers: {
-              "Content-Type": "application/json",
+              'Content-Type': 'application/json',
             },
-            credentials: 'include'
+            credentials: 'include',
           }
         );
         if (response.ok) {
           const data = await response.json();
           setSessions(data);
         } else {
-          console.error("Failed to fetch sessions");
-        }
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    };
-
-    fetchSessions();
-    fetchDepartments();
-    fetchMasterRooms();
-
-  }, []);
-
-    const fetchExistingData = async (session) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/allotment?session=${session}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          // console.log('Data from backend:', data);
-  
-          // Assuming you have only one item in the array (as per your example)
-          const [allotmentData] = data;
-  
-          setFormData({
-            session: allotmentData.session,
-            centralisedAllotments: allotmentData.centralisedAllotments ||[],
-            openElectiveAllotments: allotmentData.openElectiveAllotments || [],
-            message:allotmentData.message||"No message",  
-          });
-        } else {
-          console.error('Failed to fetch existing data');
+          console.error('Failed to fetch sessions');
         }
       } catch (error) {
         console.error('Error:', error);
       }
     };
 
-    // fetchExistingData(sessions[0]);
+    fetchSessions();
+    fetchDepartments();
+    fetchMasterRooms();
+  }, []);
+
+  const fetchExistingData = async (session) => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/allotment?session=${session}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const [allotmentData] = data;
+
+        setFormData({
+          session: allotmentData.session,
+          centralisedAllotments: allotmentData.centralisedAllotments || [],
+          openElectiveAllotments: allotmentData.openElectiveAllotments || [],
+          message: allotmentData.message || 'No message',
+        });
+      } else {
+        console.error('Failed to fetch existing data');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  // fetchExistingData(sessions[0]);
 
   const handleChange = (e, deptIndex, roomIndex, type) => {
     const { name, value, type: inputType, checked } = e.target;
@@ -170,7 +226,11 @@ const AllotmentForm = () => {
 
   const handleAddRoom = (deptIndex, type) => {
     const updatedAllotments = [...formData[type]];
-    updatedAllotments[deptIndex].rooms.push({ room: '', morningSlot: false, afternoonSlot: false });
+    updatedAllotments[deptIndex].rooms.push({
+      room: '',
+      morningSlot: false,
+      afternoonSlot: false,
+    });
 
     setFormData((prevData) => ({
       ...prevData,
@@ -193,14 +253,21 @@ const AllotmentForm = () => {
       ...prevData,
       [type]: [
         ...prevData[type],
-        { dept: '', rooms: [{ room: '', morningSlot: false, afternoonSlot: false }] },
+        {
+          dept: '',
+          rooms: [{ room: '', morningSlot: false, afternoonSlot: false }],
+        },
       ],
     }));
   };
 
   const handleAddRoomOpenElective = (deptIndex) => {
     const updatedAllotments = [...formData.openElectiveAllotments];
-    updatedAllotments[deptIndex].rooms.push({ room: '', morningSlot: false, afternoonSlot: false });
+    updatedAllotments[deptIndex].rooms.push({
+      room: '',
+      morningSlot: false,
+      afternoonSlot: false,
+    });
 
     setFormData((prevData) => ({
       ...prevData,
@@ -211,14 +278,12 @@ const AllotmentForm = () => {
   const handleRemoveAllotment = (deptIndex, type) => {
     const updatedAllotments = [...formData[type]];
     updatedAllotments.splice(deptIndex, 1);
-  
+
     setFormData((prevData) => ({
       ...prevData,
       [type]: updatedAllotments,
     }));
   };
-  
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -240,254 +305,686 @@ const AllotmentForm = () => {
       // console.log('Allotment created successfully');
       toast({
         position: 'top',
-        title: "Allotment Updated Successfully",
+        title: 'Allotment Updated Successfully',
         // description: "",
-        status: "success",
+        status: 'success',
         duration: 5000,
         isClosable: true,
       });
-
     } catch (error) {
       console.error('Error creating allotment:', error.message);
     }
   };
 
+  const getAvailableRooms = (deptIndex, currentRoomIndex, allotments) => {
+    const currentDeptRooms = allotments[deptIndex]?.rooms || [];
+    const selectedRooms = currentDeptRooms
+      .map((room, index) => (index !== currentRoomIndex ? room.room : null))
+      .filter((room) => room && room !== '');
+
+    return rooms.filter((room) => !selectedRooms.includes(room));
+  };
+
+  const getAvailableRoomsoe = (deptIndex, currentRoomIndex) => {
+    const currentDept = formData.openElectiveAllotments[deptIndex];
+    const selectedRooms = currentDept.rooms
+      .map((room, index) => (index !== currentRoomIndex ? room.room : null))
+      .filter((room) => room !== null && room !== '');
+
+    return rooms.filter((room) => !selectedRooms.includes(room));
+  };
+
   return (
-    <Container maxW="5xl">
-    <Box>
+    <Container maxW="6xl">
+      <Box>
+        <form onSubmit={handleSubmit}>
+          <Header title="Allotment"></Header>
+          <Link to="/tt/allotment/import">
+            <Button
+              bg="rgb(47, 104, 196)"
+              color="white"
+              _hover={{ bg: '#2563EB' }}
+            >
+              Import allotment from previous session
+            </Button>
+          </Link>
 
-    <form onSubmit={handleSubmit}>
-      <Header title="Allotment"></Header>
-      <Link to="/tt/allotment/import">
-          <CustomTealButton>Import allotment from previous session</CustomTealButton>
-                </Link>
+          <FormLabel>Session:</FormLabel>
+          <Select
+            borderColor="brand.300"
+            _hover={{ borderColor: 'brand.500' }}
+            _focus={{ borderColor: 'brand.500' }}
+            name="session"
+            value={formData.session}
+            isInvalid={!formData.session}
+            errorBorderColor="red.300"
+            onChange={(e) => {
+              const selectedSession = e.target.value;
+              setSession(selectedSession);
+              setFormData({ ...formData, session: selectedSession });
+              fetchExistingData(selectedSession);
+            }}
+          >
+            <option colorScheme="brand" value="">
+              Select a Session
+            </option>
+            {sessions.length > 0 &&
+              sessions.map((session, index) => (
+                <option key={index} value={session}>
+                  {session}
+                </option>
+              ))}
+          </Select>
+          {!formData.session && (
+            <Text color="red.500" fontSize="sm">
+              {/* Display an error message */}
+              Session is required.
+            </Text>
+          )}
 
-      <FormLabel>Session:</FormLabel>
-      <Select
-  name="session"
-  value={formData.session}
-  isInvalid={!formData.session}  // Highlight the field if it's empty
-  errorBorderColor="red.300"      // Customize the border color for the error state
-  onChange={(e) => {
-    const selectedSession = e.target.value;
-    setSession(selectedSession);
-    setFormData({ ...formData, session: selectedSession });
-    fetchExistingData(selectedSession);
-  }}
->
-  <option value="">Select a Session</option>
-  {sessions.length > 0 &&
-    sessions.map((session, index) => (
-      <option key={index} value={session}>
-        {session}
-      </option>
-    ))}
-</Select>
-{!formData.session && (
-  <Text color="red.500" fontSize="sm">
-    {/* Display an error message */}
-    Session is required.
-  </Text>
-)}
- <Heading>Message to timetable coordinators</Heading>
- {!formData.session && (
-  <Text color="green.500" fontSize="sm">
-    Send a note to coordinators. This will be displayed in centrally alloted room page.
-  </Text>
-)}
+          <ChakraProvider theme={theme}>
+            <Container maxW="auto" mx="auto" py={4}>
+              <Tabs variant="enclosed" colourScheme="brand">
+                <TabList gap={5}>
+                  <Tab
+                    m={''}
+                    borderBottom="0px"
+                    fontWeight="bold"
+                    borderRadius={'0px'}
+                    color="brand.400"
+                    transition={'box-shadow 0.1s ease'}
+                    _selected={{
+                      bgGradient: 'linear(to-r,brand.700, #031c30)',
+                      color: 'white',
+                      borderRadius: '10px 10px 0px 0px',
 
-{/* Add the new input field here */}
-<Input
-  mt={4} // Add some top margin for spacing
-  placeholder="Enter your message"
-  value={formData.message}
-  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-/>
-      <Heading>Centralised Room Allotment</Heading>
-      <table>
-        <thead>
-          <tr>
-            <th>Department</th>
-            <th>Room</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {formData.centralisedAllotments.map((allotment, deptIndex) => (
-            <tr key={`centralisedDeptRow-${deptIndex}`}>
-              <td>
-                <Select
-                  name="dept"
-                  value={allotment.dept}
-                  onChange={(e) => handleChange(e, deptIndex, null, 'centralisedAllotments')}
+                      border: '0px',
+                      fontWeight: 'bold',
+                      zIndex: '2px',
+                      boxShadow:
+                        'inset 2px 2px 4px rgba(0, 0, 0, 0.46),inset -2px -2px 4px rgba(255, 255, 255, 0.32)',
+                    }}
+                    fontSize="md"
+                    py={5}
+                    px={6}
+                  >
+                    Centralised Room Allotment
+                  </Tab>
+                  <Tab
+                    m={0}
+                    borderBottom="0px"
+                    fontWeight="bold"
+                    borderRadius={'0px'}
+                    color="brand.400"
+                    transition={'box-shadow 0.1s ease'}
+                    _selected={{
+                      bgGradient: 'linear(to-r,brand.700, #031c30)',
+                      color: 'white',
+                      borderRadius: '10px 10px 0px 0px',
+                      borderBottomColor: 'white',
+                      border: '0px',
+                      fontWeight: 'bold',
+                      zIndex: '2px',
+                      boxShadow:
+                        'inset 2px 2px 4px rgba(0, 0, 0, 0.46),inset -2px -2px 4px rgba(255, 255, 255, 0.32)',
+                    }}
+                    fontSize="md"
+                    py={5}
+                    px={6}
+                  >
+                    Open Elective Allotment
+                  </Tab>
+                  <Tab
+                    m={0}
+                    borderBottom="0px"
+                    fontWeight="bold"
+                    minW={'150px'}
+                    borderRadius={'0px'}
+                    color="brand.400"
+                    transition={'box-shadow 0.1s ease'}
+                    _selected={{
+                      bgGradient: 'linear(to-r,brand.700, #031c30)',
+                      color: 'white',
+                      borderRadius: '10px 10px 0px 0px',
+                      borderBottomColor: 'white',
+                      border: '0px',
+                      fontWeight: 'bold',
+                      zIndex: '2px',
+                      boxShadow:
+                        'inset 2px 2px 4px rgba(0, 0, 0, 0.46),inset -2px -2px 4px rgba(255, 255, 255, 0.32)',
+                    }}
+                    fontSize="md"
+                    py={5}
+                    px={6}
+                  >
+                    Message
+                  </Tab>
+                </TabList>
+
+                <TabPanels
+                  border="2px"
+                  borderRadius={' 6px'}
+                  borderColor="rgba(8, 73, 74, 0.82)"
                 >
-                  <option key={`centralisedDefaultDept-${deptIndex}`} value="">
-                    Select Department
-                  </option>
-                  {departments.map((department, index) => (
-                    <option key={`centralisedDept-${index}`} value={department}>
-                      {department}
-                    </option>
-                  ))}
-                </Select>
-              </td>
-              <td>
-  {allotment.rooms.map((room, roomIndex) => (
-    <div key={`centralisedRoom-${deptIndex}-${roomIndex}`}>
-      <Select
-        name="room"
-        value={room.room}
-        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-      >
-        <option key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`} value="">
-          Select Room
-        </option>
-        {rooms.map((room, index) => (
-          <option key={`centralisedRoom-${index}`} value={room}>
-            {room}
-          </option>
-        ))}
-      </Select>
-      <Checkbox
-        name="morningSlot"
-        isChecked={room.morningSlot}
-        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-      >
-        Morning Slot
-      </Checkbox>
-      <Checkbox
-        name="afternoonSlot"
-        isChecked={room.afternoonSlot}
-        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
-      >
-        Afternoon Slot
-      </Checkbox>
-      <div>
-      <CustomTealButton
-        type="Button"
-        onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}
-      >
-        Add Room
-      </CustomTealButton>
-      <CustomDeleteButton
-        type="Button"
-        onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
-      >
-        Remove Room
-      </CustomDeleteButton>
-      </div>       
-                  </div>
-                ))}
-               
-              </td>
-              <td>
-              <CustomDeleteButton
-                type="button"
-                onClick={() => handleRemoveAllotment(deptIndex, 'centralisedAllotments')}
-              >
-                Remove Allotment
-              </CustomDeleteButton>
-            </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <TabPanel p={5} pt={10}>
+                    <VStack spacing={8}>
+                      <Heading
+                        size="md"
+                        fontWeight="semibold"
+                        color="brand.800"
+                      >
+                        Centralised Room Allotment
+                      </Heading>
+                      <Table
+                        w="full"
+                        border="2px solid"
+                        borderColor="brand.600"
+                        borderRadius="md"
+                      >
+                        <Thead bg="brand.50">
+                          <Tr>
+                            <Th
+                              border="2px solid"
+                              color="brand.800"
+                              borderColor="brand.600"
+                              textAlign="center"
+                              py={4}
+                              w={'30%'}
+                            >
+                              Department
+                            </Th>
+                            <Th
+                              border="2px solid"
+                              color="brand.800"
+                              borderColor="brand.600"
+                              textAlign="center"
+                              py={4}
+                              w={'40%'}
+                            >
+                              Room
+                            </Th>
+                            <Th
+                              border="2px solid"
+                              color="brand.800"
+                              borderColor="brand.600"
+                              textAlign="center"
+                              py={4}
+                            >
+                              Actions
+                            </Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {formData.centralisedAllotments.map(
+                            (allotment, deptIndex) => (
+                              <Tr key={`centralisedDeptRow-${deptIndex}`}>
+                                <Td
+                                  fontWeight="medium"
+                                  borderColor="brand.600"
+                                  fontSize="sm"
+                                >
+                                  <Select
+                                    name="dept"
+                                    borderColor="brand.300"
+                                    _hover={{ borderColor: 'brand.500' }}
+                                    _focus={{ borderColor: 'brand.500' }}
+                                    fontSize="sm"
+                                    bg="white"
+                                    value={allotment.dept}
+                                    onChange={(e) =>
+                                      handleChange(
+                                        e,
+                                        deptIndex,
+                                        null,
+                                        'centralisedAllotments'
+                                      )
+                                    }
+                                  >
+                                    <option
+                                      key={`centralisedDefaultDept-${deptIndex}`}
+                                      value=""
+                                    >
+                                      Select Department
+                                    </option>
+                                    {departments.map((department, index) => (
+                                      <option
+                                        key={`centralisedDept-${index}`}
+                                        value={department}
+                                      >
+                                        {department}
+                                      </option>
+                                    ))}
+                                  </Select>
+                                </Td>
+                                <Td
+                                  fontWeight="medium"
+                                  borderColor="brand.600"
+                                  p={4}
+                                >
+                                  {allotment.rooms.map((room, roomIndex) => (
+                                    <div
+                                      key={`centralisedRoom-${deptIndex}-${roomIndex}`}
+                                    >
+                                      <Select
+                                        name="room"
+                                        value={room.room}
+                                        onChange={(e) =>
+                                          handleChange(
+                                            e,
+                                            deptIndex,
+                                            roomIndex,
+                                            'centralisedAllotments'
+                                          )
+                                        }
+                                        borderColor="brand.300"
+                                        _hover={{ borderColor: 'brand.500' }}
+                                        _focus={{ borderColor: 'brand.500' }}
+                                        fontSize="sm"
+                                        bg="white"
+                                      >
+                                        <option
+                                          key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`}
+                                          value=""
+                                        >
+                                          Select Room
+                                        </option>
+                                        {getAvailableRooms(
+                                          deptIndex,
+                                          roomIndex,
+                                          formData.centralisedAllotments
+                                        ).map((availableRoom, index) => (
+                                          <option
+                                            key={`centralisedRoom-${index}`}
+                                            value={availableRoom}
+                                          >
+                                            {availableRoom}
+                                          </option>
+                                        ))}
+                                      </Select>
+                                      <Checkbox
+                                        p={3}
+                                        name="morningSlot"
+                                        isChecked={room.morningSlot}
+                                        onChange={(e) =>
+                                          handleChange(
+                                            e,
+                                            deptIndex,
+                                            roomIndex,
+                                            'centralisedAllotments'
+                                          )
+                                        }
+                                        colorScheme="brand"
+                                        size="sm"
+                                      >
+                                        Morning Slot
+                                      </Checkbox>
+                                      <Checkbox
+                                        p={3}
+                                        name="afternoonSlot"
+                                        isChecked={room.afternoonSlot}
+                                        onChange={(e) =>
+                                          handleChange(
+                                            e,
+                                            deptIndex,
+                                            roomIndex,
+                                            'centralisedAllotments'
+                                          )
+                                        }
+                                        colorScheme="brand"
+                                        size="sm"
+                                      >
+                                        Afternoon Slot
+                                      </Checkbox>
+                                      <div>
+                                        <HStack
+                                          spacing={2}
+                                          justifyContent="center"
+                                        >
+                                          <Button
+                                            size="sm"
+                                            colorScheme="teal"
+                                            onClick={() =>
+                                              handleAddRoom(
+                                                deptIndex,
+                                                'centralisedAllotments'
+                                              )
+                                            }
+                                            fontSize="xs"
+                                          >
+                                            Add Room
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            colorScheme="red"
+                                            onClick={() =>
+                                              handleRemoveRoom(
+                                                deptIndex,
+                                                roomIndex,
+                                                'centralisedAllotments'
+                                              )
+                                            }
+                                            fontSize="xs"
+                                          >
+                                            Remove Room
+                                          </Button>
+                                        </HStack>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </Td>
+                                <Td
+                                  fontWeight="medium"
+                                  borderColor="brand.600"
+                                  p={4}
+                                  textAlign="center"
+                                >
+                                  <Button
+                                    size="sm"
+                                    colorScheme="red"
+                                    fontSize="sm"
+                                    textColor={'wh'}
+                                    p={4}
+                                    onClick={() =>
+                                      handleRemoveAllotment(
+                                        deptIndex,
+                                        'centralisedAllotments'
+                                      )
+                                    }
+                                  >
+                                    Remove Allotment
+                                  </Button>{' '}
+                                </Td>
+                              </Tr>
+                            )
+                          )}
+                        </Tbody>
+                      </Table>
+                      <HStack spacing={5}>
+                        <Button
+                          minW={'150px'}
+                          colorScheme="brand"
+                          fontSize="sm"
+                          alignSelf="center"
+                          onClick={() =>
+                            handleAddAllotment('centralisedAllotments')
+                          }
+                        >
+                          Add Allotment
+                        </Button>
+                        <Button
+                          colorScheme="brand"
+                          //bgGradient="linear(to-r,brand.200,brand.600,brand.600,brand.600,brand.200)"
+                          minW={'150px'}
+                          color="brand.50"
+                          fontSize="md"
+                          alignSelf="center"
+                          _hover={{
+                            bg: 'brand.600',
+                          }}
+                          transition="all 0.2s ease-in-out"
+                        >
+                          Submit
+                        </Button>
+                      </HStack>
+                    </VStack>
+                  </TabPanel>
 
-      <Button
-        type="Button"
-        onClick={() => handleAddAllotment('centralisedAllotments')}
-      >
-        Add Allotment
-      </Button>
-      <Button type="submit">Submit</Button>
+                  <TabPanel p={5} pt={10}>
+                    <VStack spacing={8}>
+                      <Heading
+                        size="md"
+                        fontWeight="semibold"
+                        color="brand.800"
+                      >
+                        Open Elective Room Allotment
+                      </Heading>
+                      <Table
+                        w="full"
+                        border="2px solid"
+                        borderColor="brand.600"
+                        borderRadius="md"
+                      >
+                        <Thead bg="brand.50">
+                          <Tr>
+                            <Th
+                              w={1 / 3}
+                              border="2px solid"
+                              color="brand.800"
+                              borderColor="brand.600"
+                              textAlign="center"
+                              py={4}
+                            >
+                              Department
+                            </Th>
+                            <Th
+                              border="2px solid"
+                              color="brand.800"
+                              borderColor="brand.600"
+                              textAlign="center"
+                              py={4}
+                              w={1 / 3}
+                            >
+                              Room
+                            </Th>
+                            <Th
+                              border="2px solid"
+                              color="brand.800"
+                              borderColor="brand.600"
+                              textAlign="center"
+                              py={4}
+                            >
+                              Actions
+                            </Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {formData.openElectiveAllotments.map(
+                            (allotment, deptIndex) => (
+                              <Tr key={`openElectiveDeptRow-${deptIndex}`}>
+                                <Td
+                                  fontWeight="medium"
+                                  borderColor="brand.600"
+                                  fontSize="sm"
+                                >
+                                  <Select
+                                    name="dept"
+                                    borderColor="brand.300"
+                                    _hover={{ borderColor: 'brand.500' }}
+                                    _focus={{ borderColor: 'brand.500' }}
+                                    fontSize="sm"
+                                    bg="white"
+                                    value={allotment.dept}
+                                    onChange={(e) =>
+                                      handleChange(
+                                        e,
+                                        deptIndex,
+                                        null,
+                                        'centralisedAllotments'
+                                      )
+                                    }
+                                  >
+                                    <option
+                                      key={`centralisedDefaultDept-${deptIndex}`}
+                                      value=""
+                                    >
+                                      Select Department
+                                    </option>
 
-      <Heading>Open Elective Room Allotment</Heading>
-      <table>
-        <thead>
-          <tr>
-            <th>Department</th>
-            <th>Room</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {formData.openElectiveAllotments.map((allotment, deptIndex) => (
-            <tr key={`openElectiveDeptRow-${deptIndex}`}>
-              <td>
-                <Select
-                  name="dept"
-                  value={allotment.dept}
-                  onChange={(e) => handleChange(e, deptIndex, null, 'openElectiveAllotments')}
-                >
-                  <option key={`openElectiveDefaultDept-${deptIndex}`} value="">
-                    Select Department
-                  </option>
-                  {departments.map((department, index) => (
-                    <option key={`openElectiveDept-${index}`} value={department}>
-                      {department}
-                    </option>
-                  ))}
-                </Select>
-              </td>
-              <td>
-  {allotment.rooms.map((room, roomIndex) => (
-    <div key={`openElectiveRoom-${deptIndex}-${roomIndex}`}>
-      <Select
-        name="room"
-        value={room.room}
-        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'openElectiveAllotments')}
-      >
-        <option key={`openElectiveDefaultRoom-${deptIndex}-${roomIndex}`} value="">
-          Select Room
-        </option>
-        {rooms.map((room, index) => (
-          <option key={`openElectiveRoom-${index}`} value={room}>
-            {room}
-          </option>
-        ))}
-      </Select>
-      {/* Other controls (e.g., checkboxes) here */}
-      <CustomTealButton
-        type="Button"
-        onClick={() => handleAddRoomOpenElective(deptIndex)}
-      >
-        Add Room
-      </CustomTealButton>
-      <CustomDeleteButton
-        type="Button"
-        onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
-      >
-        Remove Room
-      </CustomDeleteButton>
-    </div>
+                                    {departments.map((department, index) => (
+                                      <option
+                                        key={`centralisedDept-${index}`}
+                                        value={department}
+                                      >
+                                        {department}
+                                      </option>
+                                    ))}
+                                  </Select>
+                                </Td>
+                                <Td
+                                  fontWeight="medium"
+                                  borderColor="brand.600"
+                                  p={4}
+                                >
+                                  {allotment.rooms.map((room, roomIndex) => (
+                                    <div
+                                      key={`openElectiveRoom-${deptIndex}-${roomIndex}`}
+                                    >
+                                      <Select
+                                        name="room"
+                                        value={room.room}
+                                        onChange={(e) =>
+                                          handleChange(
+                                            e,
+                                            deptIndex,
+                                            roomIndex,
+                                            'openElectiveAllotments'
+                                          )
+                                        }
+                                        borderColor="brand.300"
+                                        _hover={{ borderColor: 'brand.500' }}
+                                        _focus={{ borderColor: 'brand.500' }}
+                                        fontSize="sm"
+                                        bg="white"
+                                      >
+                                        <option
+                                          key={`openElectiveDefaultRoom-${deptIndex}-${roomIndex}`}
+                                          value=""
+                                        >
+                                          Select Room
+                                        </option>
+                                        {getAvailableRoomsoe(
+                                          deptIndex,
+                                          roomIndex
+                                        ).map((roomOption, index) => (
+                                          <option
+                                            key={`openElectiveRoom-${index}`}
+                                            value={roomOption}
+                                          >
+                                            {roomOption}
+                                          </option>
+                                        ))}
+                                      </Select>
+                                      <HStack
+                                        pt={3}
+                                        spacing={2}
+                                        justifyContent="center"
+                                      >
+                                        <Button
+                                          size="sm"
+                                          colorScheme="teal"
+                                          onClick={() =>
+                                            handleAddRoomOpenElective(deptIndex)
+                                          }
+                                          fontSize="xs"
+                                        >
+                                          Add Room
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          colorScheme="red"
+                                          onClick={() =>
+                                            handleRemoveRoom(
+                                              deptIndex,
+                                              roomIndex,
+                                              'openElectiveAllotments'
+                                            )
+                                          }
+                                          fontSize="xs"
+                                        >
+                                          Remove Room
+                                        </Button>
+                                      </HStack>
+                                    </div>
+                                  ))}
+                                </Td>
+                                <Td
+                                  fontWeight="medium"
+                                  borderColor="brand.600"
+                                  p={4}
+                                  textAlign="center"
+                                >
+                                  <Button
+                                    size="sm"
+                                    colorScheme="red"
+                                    fontSize="sm"
+                                    alignSelf="center"
+                                    onClick={() =>
+                                      handleRemoveAllotment(
+                                        deptIndex,
+                                        'openElectiveAllotments'
+                                      )
+                                    }
+                                  >
+                                    Remove Allotment
+                                  </Button>{' '}
+                                </Td>
+                              </Tr>
+                            )
+                          )}
+                        </Tbody>
+                      </Table>
+                      <HStack spacing={4}>
+                        <Button
+                          colorScheme="brand"
+                          fontSize="sm"
+                          minW={'150px'}
+                          alignSelf="center"
+                          onClick={() =>
+                            handleAddAllotment('openElectiveAllotments')
+                          }
+                        >
+                          Add Allotment
+                        </Button>
+                        <Button
+                          colorScheme="brand"
+                          minW={'150px'}
+                          color="brand.50"
+                          fontSize="md"
+                          alignSelf="center"
+                        >
+                          Submit
+                        </Button>
+                      </HStack>
+                    </VStack>
+                  </TabPanel>
 
-))}
-</td>
-<td>
-  <CustomDeleteButton
-    type="button"
-    onClick={() => handleRemoveAllotment(deptIndex, 'openElectiveAllotments')}
-  >
-    Remove Allotment
-  </CustomDeleteButton>
-  </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <Button
-        type="Button"
-        onClick={() => handleAddAllotment('openElectiveAllotments')}
-      >
-        Add Allotment
-      </Button>
-
-      <Button type="submit">Submit</Button>
-    </form>
-</Box>
+                  <TabPanel p={10}>
+                    <VStack spacing={8} maxW="2xl" mx="auto">
+                      <VStack spacing={2} textAlign="center">
+                        <Heading
+                          size="md"
+                          fontWeight="semibold"
+                          color="brand.800"
+                        >
+                          Message to Timetable Coordinators
+                        </Heading>
+                        <Text color="brand.400" fontSize="sm">
+                          Send a note to coordinators. This will be displayed in
+                          centrally alloted room page.
+                        </Text>
+                      </VStack>
+                      <Textarea
+                        borderColor="brand.600"
+                        _focus={{ borderColor: 'brand.500' }}
+                        fontSize="md"
+                        minH="120px"
+                        resize="vertical"
+                        placeholder="Enter your message..."
+                        textAlign="start"
+                        value={formData.message}
+                        onChange={(e) =>
+                          setFormData({ ...formData, message: e.target.value })
+                        }
+                      />
+                    </VStack>
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
+            </Container>
+          </ChakraProvider>
+        </form>
+      </Box>
     </Container>
-
   );
 };
 
