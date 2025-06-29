@@ -412,7 +412,7 @@ const Location = () => {
 
                 {/* Right Section - Preview (desktop only) */}
                 <div className="tw-hidden lg:tw-block tw-w-1/2 tw-sticky tw-top-0 tw-h-screen tw-overflow-auto">
-                    <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg tw-border tw-h-full">
+                    <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg tw-h-full">
                         <Heading as="h1"
                                 size="xl"
                                 className="tw-text-[#10B981] tw-underline" style={{
