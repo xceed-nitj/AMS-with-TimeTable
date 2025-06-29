@@ -63,6 +63,20 @@ const Hero = () => {
             className="tw-size-4 tw-text-white"
           />
         </Link>
+         <Link
+          to="https://cipher2026.com/"
+          className="tw-inline-flex tw-justify-between tw-items-center tw-py-1 tw-px-1 tw-pr-4 tw-mb-7 tw-text-sm tw-text-gray-700 tw-bg-gray-100 tw-rounded-full dark:tw-bg-gray-800 dark:tw-text-white hover:tw-bg-gray-200 dark:hover:tw-bg-gray-700"
+          role="alert"
+        >
+          <span className="tw-text-xs tw-bg-yellow-500 tw-font-bold tw-uppercase tw-rounded-full tw-text-white tw-px-4 tw-py-1.5 tw-mr-3">
+            Sold!
+          </span>{" "}
+          <span className="tw-text-sm tw-font-medium">CIPHER-2026</span>
+          <ChevronRightIcon
+            strokeWidth={2.5}
+            className="tw-size-4 tw-text-white"
+          />
+        </Link>
         <br />
         <Link
           to="/timetable"
