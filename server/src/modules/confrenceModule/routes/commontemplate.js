@@ -7,9 +7,22 @@ const { checkRole } = require("../../checkRole.middleware");
 
 
 
+
+// GET /commontemplates/conference/:id
+commontemplatesRouter.get("/conference/:id", async (req, res) => {
+  try {
+    console.log("inside commontemplatesRouter.get('/conference/:id')");
+    await commontemplatesController.getCommonTemplateByConferenceId(req, res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /commontemplates/:confid/:templateid
 commontemplatesRouter.get("/:confid/:templateid", async (req, res) => {
   try {
+    console.log("inside commontemplatesRouter.get('/:confid/:templateid')");
     await commontemplatesController.getTemplateByConfAndId(req, res);
   } catch (error) {
     console.error(error);
@@ -17,15 +30,7 @@ commontemplatesRouter.get("/:confid/:templateid", async (req, res) => {
   }
 });
 
-// GET /commontemplates/conference/:id
-commontemplatesRouter.get("/conference/:id", async (req, res) => {
-  try {
-    await commontemplatesController.getCommonTemplateByConferenceId(req, res);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+
 
 // GET /commontemplates
 commontemplatesRouter.get("/", async (req, res) => {
