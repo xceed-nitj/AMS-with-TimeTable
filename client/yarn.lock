@@ -5642,6 +5642,11 @@ quill-delta@^5.1.0:
     lodash.clonedeep "^4.5.0"
     lodash.isequal "^4.5.0"
 
+quill-html-edit-button@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.npmjs.org/quill-html-edit-button/-/quill-html-edit-button-3.0.0.tgz"
+  integrity sha512-ZUV3rYjEvXz+v/7f8N0Mkp2+0D8VGDj6yCYPfagSLmyshczeMawS7vZJzaJ18dJp35IfjiPnzqyVk3KCI8qN1w==
+
 quill@^1.3.7:
   version "1.3.7"
   resolved "https://registry.npmjs.org/quill/-/quill-1.3.7.tgz"
