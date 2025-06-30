@@ -27,7 +27,7 @@ app.use(
   //for physics site
  "https://amsdt2025.com",
       //for ece site
-"https://cipher2026.com/",
+"https://cipher2026.com",
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
