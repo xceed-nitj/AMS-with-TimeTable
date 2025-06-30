@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import {
-  FormControl, FormLabel, Select, Button, VStack, Container, useToast, Spinner, Text
+  FormControl,
+  FormLabel,
+  Select,
+  Button,
+  VStack,
+  HStack,
+  Container,
+  useToast,
+  Spinner,
+  Text,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  Icon,
 } from '@chakra-ui/react';
-import getEnvironment from "../getenvironment";
+import { WarningIcon} from '@chakra-ui/icons';
+import getEnvironment from '../getenvironment';
 import Header from '../components/header';
 
 function ImportTT() {
@@ -17,7 +36,7 @@ function ImportTT() {
   const toast = useToast();
 
   const currentURL = window.location.pathname;
-  const parts = currentURL.split("/");
+  const parts = currentURL.split('/');
   const currentCode = parts[parts.length - 2];
 
   useEffect(() => {
@@ -28,25 +47,27 @@ function ImportTT() {
   const fetchTTData = async (code) => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${code}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/timetable/alldetails/${code}`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        }
+      );
 
       const data = await response.json();
-      console.log("data", data)
+      console.log('data', data);
 
-      setSelectedDept(data.dept);         // dept is a string
-      setToSession(data.session);         // session is a string
+      setSelectedDept(data.dept); // dept is a string
+      setToSession(data.session); // session is a string
 
-      console.log("data", selectedDept)
-
+      console.log('data', selectedDept);
     } catch (error) {
-      console.error("Error fetching timetable data:", error);
+      console.error('Error fetching timetable data:', error);
       toast({
-        title: "Failed to load data.",
-        status: "error",
+        title: 'Failed to load data.',
+        status: 'error',
         duration: 4000,
         isClosable: true,
       });
@@ -56,19 +77,22 @@ function ImportTT() {
 
   const fetchSessions = async () => {
     try {
-      const response = await fetch(`${apiUrl}/timetablemodule/allotment/session`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/allotment/session`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setSessions(data);
       } else {
-        console.error("Failed to fetch sessions");
+        console.error('Failed to fetch sessions');
       }
     } catch (error) {
-      console.error("Error fetching sessions:", error);
+      console.error('Error fetching sessions:', error);
     }
   };
 
@@ -77,8 +101,8 @@ function ImportTT() {
 
     if (!selectedDept || !fromSession || !toSession) {
       toast({
-        title: "All fields are required.",
-        status: "error",
+        title: 'All fields are required.',
+        status: 'error',
         duration: 4000,
         isClosable: true,
       });
@@ -90,35 +114,36 @@ function ImportTT() {
       const response = await fetch(`${apiUrl}/timetablemodule/import/ttdata`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: "include",
+        credentials: 'include',
         body: JSON.stringify({ dept: selectedDept, fromSession, toSession }),
       });
 
       if (response.ok) {
         toast({
-          title: "Time Table Imported",
-          description: "Go back to the allotment page.",
-          status: "success",
+          title: 'Time Table Imported',
+          description: 'Go back to the allotment page.',
+          status: 'success',
           duration: 5000,
           isClosable: true,
           position: 'bottom',
         });
+        onClose();
       } else {
         const errData = await response.json();
         toast({
-          title: "Import failed",
-          description: errData.message || "Something went wrong.",
-          status: "error",
+          title: 'Import failed',
+          description: errData.message || 'Something went wrong.',
+          status: 'error',
           duration: 5000,
           isClosable: true,
         });
       }
     } catch (error) {
-      console.error("Error during import:", error);
+      console.error('Error during import:', error);
       toast({
-        title: "Server error",
-        description: "Could not complete the request.",
-        status: "error",
+        title: 'Server error',
+        description: 'Could not complete the request.',
+        status: 'error',
         duration: 5000,
         isClosable: true,
       });
@@ -126,8 +151,43 @@ function ImportTT() {
     setSubmitting(false);
   };
 
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const handleImportClick = (e) => {
+    e.preventDefault();
+    if (!selectedDept || !fromSession || !toSession) {
+      toast({
+        title: 'All fields are required.',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      });
+      return;
+    }
+    // Open confirmation modal
+    onOpen();
+  };
+
+  const confirmImport = () => {
+    handleSubmit({ preventDefault: () => {} });
+  };
+
+  const cancelImport = () => {
+    // Show info toast when cancelled
+    toast({
+      title: 'Import Cancelled',
+      description: 'Your existing timetable remains unchanged.',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+      position: 'bottom',
+    });
+
+    onClose();
+  };
+
   return (
-    <Container maxW='5xl'>
+    <Container maxW="5xl">
       <Header title="Import Time Table from Previous Sessions" />
       {loading ? (
         <VStack py={10}>
@@ -174,9 +234,38 @@ function ImportTT() {
               </Select>
             </FormControl>
 
-            <Button type="submit" colorScheme="blue" isLoading={submitting}>
+            <Button
+              type="submit"
+              colorScheme="blue"
+              onClick={handleImportClick}
+              isLoading={submitting}
+            >
               Submit
             </Button>
+            <Modal isOpen={isOpen} onClose={cancelImport} isCentered size="md">
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>
+                  <HStack spacing={3}>
+                    <Icon as={WarningIcon} color="orange.500" boxSize={6} />
+                    <Text>Confirm Timetable Import</Text>
+                  </HStack>
+                </ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                  Existing Timetable will be deleted and selected session
+                  Timetable will be imported.
+                </ModalBody>
+                <ModalFooter>
+                  <Button colorScheme="blue" mr={3} onClick={confirmImport}>
+                    Yes, Import Timetable
+                  </Button>
+                  <Button variant="ghost" onClick={cancelImport}>
+                    Cancel
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
           </VStack>
         </form>
       )}
