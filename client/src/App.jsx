@@ -67,6 +67,7 @@ import UserLogos from './certificatemodule/pages/UserLogo.jsx';
 import UserSignatures from './certificatemodule/pages/UserSignatures.jsx';
 
 import EODashboard from './conferencemodule/layout/eodashboard';
+import Accomodation from './conferencemodule/Tabs/Accomodation';
 import HomeConf from './conferencemodule/Tabs/HomeConf';
 import Sidebar from './conferencemodule/components/Sidebar';
 import Speaker from './conferencemodule/Tabs/Speaker';
@@ -120,7 +121,6 @@ import PaperDetails from './reviewmodule/components/PaperDetails';
 import ReviewerAcceptance from './reviewmodule/pages/ReviewerAcceptance';
 
 import SponsorshipRate from './conferencemodule/Tabs/SponsorshipRates';
-import Accomodation from './conferencemodule/Tabs/Accomodation';
 import Event from './conferencemodule/Tabs/Events';
 import Souvenir from './conferencemodule/Tabs/Souvenir';
 import MultiStepForm from './reviewmodule/pages/MultiStepForm';
@@ -416,7 +416,7 @@ function App() {
           <Route path="navbar" element={<NavbarConf />} />
           {/* <Route path="template" element={<CommonTemplate/>} /> */}
           <Route path="sponsorship-rates" element={<SponsorshipRate />} />
-          <Route path="accomodation" element={<Accomodation />} />
+          <Route path="accommodation" element={<Accomodation />} />
           <Route path="events" element={<Event />} />
           <Route path="souvenir" element={<Souvenir />} />
           <Route path="commontemplate" element={<CommonTemplate />} />
