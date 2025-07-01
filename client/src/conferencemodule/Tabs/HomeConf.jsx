@@ -19,11 +19,19 @@ const HomeConf = () => {
     const editorRefs = useRef([]);
     const quillInstances = useRef([]);
     const isQuillRegistered = useRef(false);
+    const isUpdatingDescription = useRef(false);
+    const initializedTabs = useRef(new Set());
 
     const params = useParams();
     const apiUrl = getEnvironment();
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [showAboutDeleteConfirmation, setShowAboutDeleteConfirmation] = useState(false);
     const [deleteItemId, setDeleteItemId] = useState(null);
+    const [deleteAboutIndex, setDeleteAboutIndex] = useState(null);
+    const [activeAboutTab, setActiveAboutTab] = useState(null);
+    const [showAboutSection, setShowAboutSection] = useState(false);
+    const [showHtml, setShowHtml] = useState(false);
+    const [htmlContent, setHtmlContent] = useState('');
 
     const IdConf = params.confid;
     const initialData = {
@@ -31,7 +39,6 @@ const HomeConf = () => {
         "confName": "",
         "confStartDate": "",
         "confEndDate": "",
-        "about": [{ title: "", description: "" }],
         "youtubeLink": "",
         "instaLink": "",
         "facebookLink": "",
@@ -46,16 +53,18 @@ const HomeConf = () => {
         "posterLink": "",
     }
     const [formData, setFormData] = useState(initialData);
+    const [about, setAbout] = useState([{ title: "", description: "" }]);
 
     const [editID, setEditID] = useState("");
     const [data, setData] = useState(null);
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [aboutLoading, setAboutLoading] = useState(false);
 
     const isMobile = useBreakpointValue({ base: true, md: false });
     const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
 
-    const { confName, confStartDate, confEndDate, aboutConf, about, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
+    const { confName, confStartDate, confEndDate, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
      regLink,flyerLink,brochureLink,posterLink } = formData;
     
     const handleChange = (e) => {
@@ -66,7 +75,7 @@ const HomeConf = () => {
         const { name, value } = e.target;
         const newAboutIns = [...about];
         newAboutIns[index][name] = value;
-        setFormData({ ...formData, about: newAboutIns });
+        setAbout(newAboutIns);
     };
     
     const handleDelete = (deleteID) => {
@@ -74,29 +83,189 @@ const HomeConf = () => {
         setShowDeleteConfirmation(true);
     };
 
+    const handleAboutTabClick = (index) => {
+        setActiveAboutTab(index);
+        setShowAboutSection(true);
+        setShowHtml(false); 
+    };
+
+    const handleBackToForm = () => {
+        setShowAboutSection(false);
+        setActiveAboutTab(null);
+        setShowHtml(false); 
+    };
+
+    const handleDeleteAbout = (indexToRemove) => {
+        setDeleteAboutIndex(indexToRemove);
+        setShowAboutDeleteConfirmation(true);
+    };
+
+    const handleShowHtml = () => {
+        if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
+            const html = quillInstances.current[activeAboutTab].getHTML();
+            setHtmlContent(html);
+            setShowHtml(!showHtml);
+        }
+    };
+
+    const handleCopyHtml = async () => {
+        try {
+            await navigator.clipboard.writeText(htmlContent);
+            alert('HTML copied to clipboard!');
+        } catch (err) {
+            console.error('Failed to copy HTML: ', err);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = htmlContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+    };
+
+    const confirmDeleteAbout = async () => {
+        const indexToRemove = deleteAboutIndex;
+        if (about.length > 1) {
+            const aboutToDelete = about[indexToRemove];
+            
+            if (aboutToDelete._id) {
+                try {
+                    await axios.delete(`${apiUrl}/conferencemodule/home/about/${IdConf}/${aboutToDelete._id}`, {
+                        withCredentials: true
+                    });
+                    console.log('About item deleted from backend');
+                } catch (err) {
+                    console.error('Error deleting about item from backend:', err);
+                    window.alert('Error deleting about item from server');
+                    setShowAboutDeleteConfirmation(false);
+                    setDeleteAboutIndex(null);
+                    return;
+                }
+            }
+            
+            const newAbout = about.filter((_, index) => index !== indexToRemove);
+            setAbout(newAbout);
+            
+            // Clean up Quill instances and initialized tabs
+            if (quillInstances.current[indexToRemove]) {
+                quillInstances.current[indexToRemove] = null;
+            }
+            quillInstances.current = quillInstances.current.filter((_, index) => index !== indexToRemove);
+            editorRefs.current = editorRefs.current.filter((_, index) => index !== indexToRemove);
+            initializedTabs.current.delete(indexToRemove);
+            
+            // Adjust active tab
+            if (activeAboutTab >= newAbout.length) {
+                setActiveAboutTab(newAbout.length - 1);
+            } else if (activeAboutTab > indexToRemove) {
+                setActiveAboutTab(activeAboutTab - 1);
+            }
+
+            // If we deleted the currently active tab, go back to form
+            if (activeAboutTab === indexToRemove) {
+                handleBackToForm();
+            }
+        }
+        setShowAboutDeleteConfirmation(false);
+        setDeleteAboutIndex(null);
+    };
+
     const handleDescriptionChange = (value, index) => {
+        if (isUpdatingDescription.current) return;
+        
+        isUpdatingDescription.current = true;
         const newAboutIns = [...about];
         newAboutIns[index].description = value;
-        setFormData({ ...formData, about: newAboutIns });
+        console.log('Description updated for index:', index, 'Value:', value);
+        setAbout(newAboutIns);
+        
+        if (showHtml && activeAboutTab === index) {
+            setHtmlContent(value);
+        }
+        
+        setTimeout(() => {
+            isUpdatingDescription.current = false;
+        }, 100);
+    };
+
+    const fetchAboutSections = async () => {
+        setAboutLoading(true);
+        try {
+            const response = await axios.get(`${apiUrl}/conferencemodule/home/about/${IdConf}`, {
+                withCredentials: true
+            });
+            
+            if (response.data && response.data.length > 0) {
+                console.log('Fetched about sections:', response.data);
+                setAbout(response.data);
+            } else {
+                console.log('No about sections found, using default');
+                setAbout([{ title: "", description: "" }]);
+            }
+        } catch (err) {
+            console.log('Error fetching about sections:', err);
+            setAbout([{ title: "", description: "" }]);
+        } finally {
+            setAboutLoading(false);
+        }
     };
 
     const addNewAbout = () => {
-        setFormData({ ...formData, about: [...about, { title: "", description: "" }] });
+        const newAbout = [...about, { title: "", description: "" }];
+        setAbout(newAbout);
+        setActiveAboutTab(newAbout.length - 1);
+        setShowAboutSection(true);
     };
 
-    // Quill editor setup
-    useEffect(() => {
-        if (!isQuillRegistered.current) {
+    const handleAboutUpdate = async () => {
+        try {
+            const aboutData = { about: about };
+            
             try {
-                Quill.register({
-                    "modules/better-table": QuillBetterTable,
-                }, true);
-                isQuillRegistered.current = true;
-            } catch (error) {
-                console.log("Quill modules already registered");
-                isQuillRegistered.current = true;
+                await axios.put(`${apiUrl}/conferencemodule/home/about/${IdConf}`, aboutData, {
+                    withCredentials: true
+                });
+                console.log('About sections updated successfully');
+            } catch (updateErr) {
+                await axios.post(`${apiUrl}/conferencemodule/home/about/${IdConf}`, aboutData, {
+                    withCredentials: true
+                });
+                console.log('About sections created successfully');
             }
+            
+            fetchAboutSections(); 
+        } catch (err) {
+            console.error('Error updating about sections:', err);
+            window.alert('Error updating about sections');
         }
+    };
+
+    useEffect(() => {
+    if (!isQuillRegistered.current) {
+        try {
+            Quill.register(
+                {
+                    "modules/better-table": QuillBetterTable,
+                },
+                true
+            );
+            isQuillRegistered.current = true;
+        } catch (error) {
+            console.log("Quill modules already registered");
+        }
+    }
+
+    const initializeQuill = (index) => {
+        if (!editorRefs.current[index] || !about[index] || aboutLoading) {
+            return;
+        }
+
+        console.log("Initializing Quill for index:", index);
+        console.log("About data for index:", about[index]);
+        console.log("Description:", about[index]?.description);
+
+        editorRefs.current[index].innerHTML = "";
 
         const modules = {
             toolbar: [
@@ -111,9 +280,7 @@ const HomeConf = () => {
                 ["link", "image", "video"],
                 ["clean"],
             ],
-            clipboard: {
-                matchVisual: false,
-            },
+            clipboard: { matchVisual: false },
             "better-table": {
                 operationMenu: {
                     items: {
@@ -129,42 +296,59 @@ const HomeConf = () => {
                     },
                 },
             },
-            keyboard: {
-                bindings: QuillBetterTable.keyboardBindings,
-            },
+            keyboard: { bindings: QuillBetterTable.keyboardBindings },
         };
 
-        about.forEach((_, index) => {
-            if (editorRefs.current[index] && !quillInstances.current[index]) {
-                quillInstances.current[index] = new Quill(editorRefs.current[index], {
-                    theme: "snow",
-                    modules,
-                    placeholder: "Start writing here...",
-                });
+        quillInstances.current[index] = new Quill(editorRefs.current[index], {
+            theme: "snow",
+            modules,
+            placeholder: "Start writing here...",
+        });
 
-                quillInstances.current[index].root.innerHTML = about[index].description || "";
+        quillInstances.current[index].setHTML = (html) => {
+            quillInstances.current[index].root.innerHTML = html;
+        };
 
-                quillInstances.current[index].on("text-change", () => {
-                    handleDescriptionChange(quillInstances.current[index].root.innerHTML, index);
-                });
+        quillInstances.current[index].getHTML = () => {
+            return quillInstances.current[index].root.innerHTML;
+        };
+
+        const description = about[index]?.description || "";
+        console.log("Setting description:", description);
+        quillInstances.current[index].setHTML(description);
+
+        quillInstances.current[index].on("text-change", () => {
+            console.log("Current HTML content:", quillInstances.current[index].getHTML());
+            if (!isUpdatingDescription.current) {
+                handleDescriptionChange(quillInstances.current[index].getHTML(), index);
             }
         });
 
-        return () => {
-            if (quillInstances.current.length > about.length) {
-                quillInstances.current = quillInstances.current.slice(0, about.length);
-                editorRefs.current = editorRefs.current.slice(0, about.length);
-            }
-        };
-    }, [about.length]);
+        console.log("Quill initialized for index:", index);
+    };
 
-    useEffect(() => {
-        about.forEach((item, index) => {
-            if (quillInstances.current[index] && quillInstances.current[index].root.innerHTML !== item.description) {
-                quillInstances.current[index].root.innerHTML = item.description || "";
-            }
-        });
-    }, [formData]);
+    const reinitializeQuillIfNeeded = (index) => {
+        if (!quillInstances.current[index]) {
+            console.log("Reinitializing Quill for index:", index);
+            initializeQuill(index);
+        }
+    };
+
+    const timeoutId = setTimeout(() => {
+        if (!aboutLoading && about && about[activeAboutTab] && showAboutSection) {
+            reinitializeQuillIfNeeded(activeAboutTab);
+        }
+    }, 300);
+
+    return () => {
+        clearTimeout(timeoutId);
+
+        if (quillInstances.current[activeAboutTab]) {
+            quillInstances.current[activeAboutTab].off("text-change");
+            quillInstances.current[activeAboutTab] = null;
+        }
+    };
+}, [activeAboutTab, aboutLoading, showAboutSection]);
 
     const insertTable = (index) => {
         if (quillInstances.current[index]) {
@@ -173,6 +357,23 @@ const HomeConf = () => {
         }
     };
 
+    const updateConferenceAndAbout = async () => {
+        try {
+            const conferenceResponse = await axios.put(`${apiUrl}/conferencemodule/home/${editID}`, formData, {
+                withCredentials: true
+            });
+            
+            await handleAboutUpdate();
+            
+            setData(conferenceResponse.data);
+            setRefresh(refresh + 1);
+            console.log('Both conference and about data updated successfully');
+            
+        } catch (err) {
+            console.error('Error updating conference and about data:', err);
+        }
+    };
+    
     const handleSubmit = (e) => {
         e.preventDefault();
         
@@ -182,13 +383,13 @@ const HomeConf = () => {
         }
 
         if (editID) {
-            handleUpdate();
+            updateConferenceAndAbout();
         } else {
             axios.post(`${apiUrl}/conferencemodule/home`, formData, { withCredentials: true })
                 .then(res => {
                     setData(res.data);
                     console.log(res.data);
-                    setFormData(initialData);
+                    setEditID(res.data._id);
                     setRefresh(refresh + 1);
                 })
                 .catch(err => {
@@ -211,9 +412,7 @@ const HomeConf = () => {
         })
             .then(res => {
                 setData(res.data);
-                setFormData(initialData);
                 setRefresh(refresh + 1);
-                setEditID("");
             })
             .catch(err => console.log(err));
     };
@@ -242,8 +441,7 @@ const HomeConf = () => {
             .then(res => {
                 setFormData({
                     ...res.data,
-                    confId: IdConf,
-                    about: res.data.about && res.data.about.length > 0 ? res.data.about : [{ title: "", description: "" }]
+                    confId: IdConf
                 });
             })
             .catch(err => console.log(err));
@@ -254,15 +452,13 @@ const HomeConf = () => {
         if (data) {
             setFormData({
                 ...data,
-                confId: IdConf,
-                about: data.about && data.about.length > 0 ? data.about : [{ title: "", description: "" }]
+                confId: IdConf
             });
         } else {
             setFormData(initialData);
         }
     };
 
-    // Live Preview Component
     const LivePreviewSection = () => (
         <Box 
             className="tw-rounded-lg" 
@@ -279,22 +475,28 @@ const HomeConf = () => {
                 
                 <Box bg="white" p={4} borderRadius="md" boxShadow="sm">
                     <Heading as="h2" size="lg" mb={4} color="gray.700">
-                        About Sections Preview
+                        About Section Preview
                     </Heading>
                     
-                    {about.map((aboutItem, index) => (
-                        <Box key={index} mb={6} p={4} border="1px solid" borderColor="gray.200" borderRadius="md">
+                    {showAboutSection && activeAboutTab !== null && about[activeAboutTab] && (
+                        <Box mb={6} p={4} border="1px solid" borderColor="gray.200" borderRadius="md">
                             <Heading as="h3" size="md" mb={3} color="blue.600">
-                                {aboutItem.title || `About Section ${index + 1}`}
+                                {about[activeAboutTab].title || `About Section ${activeAboutTab + 1}`}
                             </Heading>
                             <Box
                                 className="tw-prose tw-max-w-none tw-min-h-[100px] tw-p-2 tw-border tw-rounded tw-bg-gray-50"
                                 dangerouslySetInnerHTML={{ 
-                                    __html: aboutItem.description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>' 
+                                    __html: about[activeAboutTab].description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>' 
                                 }}
                             />
                         </Box>
-                    ))}
+                    )}
+                    
+                    {!showAboutSection && (
+                        <Box textAlign="center" py={8} color="gray.500">
+                            <p>Select an about tab to see the live preview</p>
+                        </Box>
+                    )}
                 </Box>
             </Container>
         </Box>
@@ -317,8 +519,7 @@ const HomeConf = () => {
                     setEditID(res.data._id);
                     setFormData({
                         ...res.data,
-                        confId: IdConf, 
-                        about: res.data.about && res.data.about.length > 0 ? res.data.about : [{ title: "", description: "" }]
+                        confId: IdConf
                     });
                 } else {
                     setData(null);
@@ -333,7 +534,13 @@ const HomeConf = () => {
                 setFormData(initialData);
             })
             .finally(() => setLoading(false));
+
+        fetchAboutSections();
     }, [refresh]);
+
+    if (loading) {
+        return <LoadingIcon />;
+    }
 
     return (
         <main className="tw-p-5 tw-min-h-screen">
@@ -362,6 +569,58 @@ const HomeConf = () => {
                             <Button colorScheme="blue" onClick={addNewAbout} mb="4" width="100%" size="sm">
                                 Add New About
                             </Button>
+                            
+                            {/* Back to Form Button */}
+                            {showAboutSection && (
+                                <Button colorScheme="gray" onClick={handleBackToForm} mb="4" width="100%" size="sm">
+                                    Conference Details
+                                </Button>
+                            )}
+                            
+                            {/* About Tabs */}
+                            <Box width="100%" mb={4}>
+                                <Heading as="h3" size="sm" mb={2} color="gray.600">
+                                    About Sections:
+                                </Heading>
+                                <Box
+                                    bg="white"
+                                    border="1px solid"
+                                    borderColor="gray.200"
+                                    borderRadius="md"
+                                    overflow="hidden"
+                                >
+                                    {about.map((aboutItem, index) => (
+                                        <Box
+                                            key={index}
+                                            bg={activeAboutTab === index && showAboutSection ? "blue.500" : "white"}
+                                            color={activeAboutTab === index && showAboutSection ? "white" : "gray.700"}
+                                            p={3}
+                                            cursor="pointer"
+                                            onClick={() => handleAboutTabClick(index)}
+                                            borderBottom={index < about.length - 1 ? "1px solid" : "none"}
+                                            borderBottomColor="gray.200"
+                                            _hover={{
+                                                bg: activeAboutTab === index && showAboutSection ? "blue.600" : "gray.50"
+                                            }}
+                                            transition="all 0.2s"
+                                            display="flex"
+                                            justifyContent="space-between"
+                                            alignItems="center"
+                                        >
+                                            <Box>
+                                                <Box fontSize="sm" fontWeight="semibold">
+                                                    {aboutItem.title || `About ${index + 1}`}
+                                                </Box>
+                                                {activeAboutTab === index && showAboutSection && (
+                                                    <Box fontSize="xs" opacity={0.8}>
+                                                        Currently editing
+                                                    </Box>
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            </Box>
                         </Box>
                     )}
 
@@ -377,51 +636,248 @@ const HomeConf = () => {
                                 </Center>
 
                                 <form onSubmit={handleSubmit}>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Name of the Conference :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="confName"
-                                            value={confName}
-                                            onChange={handleChange}
-                                            placeholder="Name"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Starting Date of the Conference :</FormLabel>
-                                        <Input
-                                            type="date"
-                                            name="confStartDate"
-                                            value={confStartDate}
-                                            onChange={handleChange}
-                                            placeholder="Starting Date of the Conference"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Ending Date of the Conference :</FormLabel>
-                                        <Input
-                                            type="date"
-                                            name="confEndDate"
-                                            value={confEndDate}
-                                            onChange={handleChange}
-                                            placeholder="Ending Date of the Conference "
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
+                                    
+                                    {/* Show main form when not in about section */}
+                                    {!showAboutSection && (
+                                        <>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Name of the Conference :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="confName"
+                                                    value={confName}
+                                                    onChange={handleChange}
+                                                    placeholder="Name"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Starting Date of the Conference :</FormLabel>
+                                                <Input
+                                                    type="date"
+                                                    name="confStartDate"
+                                                    value={confStartDate}
+                                                    onChange={handleChange}
+                                                    placeholder="Starting Date of the Conference"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Ending Date of the Conference :</FormLabel>
+                                                <Input
+                                                    type="date"
+                                                    name="confEndDate"
+                                                    value={confEndDate}
+                                                    onChange={handleChange}
+                                                    placeholder="Ending Date of the Conference "
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
 
-                                    <FormLabel isRequired={true} >About:</FormLabel>
+                                            {/* Mobile About Tabs */}
+                                            {isMobile && (
+                                                <Box mb={6}>
+                                                    <FormLabel mb={3}>About Sections:</FormLabel>
+                                                    <Box
+                                                        bg="white"
+                                                        border="1px solid"
+                                                        borderColor="gray.200"
+                                                        borderRadius="md"
+                                                        overflow="hidden"
+                                                        mb={4}
+                                                    >
+                                                        {about.map((aboutItem, index) => (
+                                                            <Box
+                                                                key={index}
+                                                                bg="white"
+                                                                color="gray.700"
+                                                                p={3}
+                                                                cursor="pointer"
+                                                                onClick={() => handleAboutTabClick(index)}
+                                                                borderBottom={index < about.length - 1 ? "1px solid" : "none"}
+                                                                borderBottomColor="gray.200"
+                                                                _hover={{
+                                                                    bg: "gray.50"
+                                                                }}
+                                                                transition="all 0.2s"
+                                                                display="flex"
+                                                                justifyContent="space-between"
+                                                                alignItems="center"
+                                                            >
+                                                                <Box fontSize="sm" fontWeight="semibold">
+                                                                    {aboutItem.title || `About ${index + 1}`}
+                                                                </Box>
+                                                                <Box fontSize="xs" color="blue.500">
+                                                                    Edit →
+                                                                </Box>
+                                                            </Box>
+                                                        ))}
+                                                    </Box>
+                                                    <Button colorScheme="blue" onClick={addNewAbout} size="sm" width="100%">
+                                                        Add New About
+                                                    </Button>
+                                                </Box>
+                                            )}
 
-                                    {about.map((aboutItem, index) => (
-                                        <div key={index}>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >You Tube Link :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="youtubeLink"
+                                                    value={youtubeLink}
+                                                    onChange={handleChange}
+                                                    placeholder="YouTube Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            
+                                            
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Instagram Link :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="instaLink"
+                                                    value={instaLink}
+                                                    onChange={handleChange}
+                                                    placeholder="Instagram Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >FaceBook Link:</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="facebookLink"
+                                                    value={facebookLink}
+                                                    onChange={handleChange}
+                                                    placeholder="FaceBook Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Twitter Link:</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="twitterLink"
+                                                    value={twitterLink}
+                                                    onChange={handleChange}
+                                                    placeholder="Twitter Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Logo:</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="logo"
+                                                    value={logo}
+                                                    onChange={handleChange}
+                                                    placeholder="Logo"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Short Name of Conference :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="shortName"
+                                                    value={shortName}
+                                                    onChange={handleChange}
+                                                    placeholder="Short Name"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Abstract Link :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="abstractLink"
+                                                    value={abstractLink}
+                                                    onChange={handleChange}
+                                                    placeholder="Abstract Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Registration Link :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="regLink"
+                                                    value={regLink}
+                                                    onChange={handleChange}
+                                                    placeholder="Registration Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Flyer Link of Conference :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="flyerLink"
+                                                    value={flyerLink}
+                                                    onChange={handleChange}
+                                                    placeholder="Flyer Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Brochure Link of Conference :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="brochureLink"
+                                                    value={brochureLink}
+                                                    onChange={handleChange}
+                                                    placeholder="Brochure Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+                                            <FormControl isRequired={true} mb='3' >
+                                                <FormLabel >Poster Link :</FormLabel>
+                                                <Input
+                                                    type="text"
+                                                    name="posterLink"
+                                                    value={posterLink}
+                                                    onChange={handleChange}
+                                                    placeholder="Poster Link"
+                                                    mb='2.5'
+                                                />
+                                            </FormControl>
+
+                                        
+                                   
+                                            <Center>
+                                                <Button colorScheme="blue" type="submit">
+                                                    {editID ? 'Update Conference Info' : 'Add Conference Info'}
+                                                </Button>
+                                            </Center>
+                                        </>
+                                    )}
+
+                                    {/* Show about editor when in about section */}
+                                    {showAboutSection && activeAboutTab !== null && !aboutLoading && about[activeAboutTab] && (
+                                        <div key={`about-${activeAboutTab}`}>
+                                            {/* Back to Form Button for Mobile */}
+                                            {isMobile && (
+                                                <Center mb="4">
+                                                    <Button 
+                                                        colorScheme="gray" 
+                                                        onClick={handleBackToForm} 
+                                                        width="100%"
+                                                        size="sm"
+                                                    >
+                                                        Conference Details
+                                                    </Button>
+                                                </Center>
+                                            )}
+                                            
                                             <FormControl mb='3'>
                                                 <p>Title:</p>
                                                 <Input
                                                     type="text"
                                                     name="title"
-                                                    value={aboutItem.title}
-                                                    onChange={(e) => handleArrayChange(e, index)}
+                                                    value={about[activeAboutTab]?.title || ""}
+                                                    onChange={(e) => handleArrayChange(e, activeAboutTab)}
                                                     placeholder="Title"
                                                 />
                                             </FormControl>
@@ -431,14 +887,22 @@ const HomeConf = () => {
                                                     <Button
                                                         colorScheme="blue"
                                                         size="sm"
-                                                        onClick={() => insertTable(index)}
+                                                        onClick={() => insertTable(activeAboutTab)}
                                                         mr={2}
                                                     >
                                                         Insert Table
                                                     </Button>
+                                                    <Button
+                                                        colorScheme="purple"
+                                                        size="sm"
+                                                        onClick={handleShowHtml}
+                                                        mr={2}
+                                                    >
+                                                        {showHtml ? 'Hide HTML' : 'Show HTML'}
+                                                    </Button>
                                                 </div>
                                                 <div
-                                                    ref={(el) => (editorRefs.current[index] = el)}
+                                                    ref={(el) => (editorRefs.current[activeAboutTab] = el)}
                                                     style={{
                                                         height: "200px",
                                                         width: "100%",
@@ -448,184 +912,77 @@ const HomeConf = () => {
                                                         background: "#fff"
                                                     }}
                                                 ></div>
+                                                
+                                                {/* HTML Display Area */}
+                                                {showHtml && (
+                                                    <Box
+                                                        bg="gray.50"
+                                                        border="1px solid"
+                                                        borderColor="gray.300"
+                                                        borderRadius="md"
+                                                        p={4}
+                                                        mb={4}
+                                                    >
+                                                        <Flex justifyContent="space-between" alignItems="center" mb={3}>
+                                                            <Heading as="h4" size="sm" color="gray.700">
+                                                                HTML Content
+                                                            </Heading>
+                                                            <Button
+                                                                colorScheme="green"
+                                                                size="sm"
+                                                                onClick={handleCopyHtml}
+                                                            >
+                                                                Copy HTML
+                                                            </Button>
+                                                        </Flex>
+                                                        <Box
+                                                            bg="white"
+                                                            border="1px solid"
+                                                            borderColor="gray.200"
+                                                            borderRadius="md"
+                                                            p={3}
+                                                            maxHeight="300px"
+                                                            overflowY="auto"
+                                                            fontFamily="monospace"
+                                                            fontSize="sm"
+                                                            whiteSpace="pre-wrap"
+                                                            wordBreak="break-all"
+                                                        >
+                                                            {htmlContent || '<p>No content</p>'}
+                                                        </Box>
+                                                    </Box>
+                                                )}
                                             </FormControl>
-                                        </div>
-                                    ))}
-
-                                    {/* Mobile Add New About Button */}
-                                    {isMobile && (
-                                        <Center mb="4">
-                                            <Button colorScheme="blue" onClick={addNewAbout} width="100%">
-                                                Add New About
-                                            </Button>
-                                        </Center>
-                                    )}
-
-                                    {(isMobile || isTablet) && <LivePreviewSection />}
-
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >You Tube Link :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="youtubeLink"
-                                            value={youtubeLink}
-                                            onChange={handleChange}
-                                            placeholder="YouTube Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Instagram Link :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="instaLink"
-                                            value={instaLink}
-                                            onChange={handleChange}
-                                            placeholder="Instagram Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >FaceBook Link:</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="facebookLink"
-                                            value={facebookLink}
-                                            onChange={handleChange}
-                                            placeholder="FaceBook Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Twitter Link:</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="twitterLink"
-                                            value={twitterLink}
-                                            onChange={handleChange}
-                                            placeholder="Twitter Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Logo:</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="logo"
-                                            value={logo}
-                                            onChange={handleChange}
-                                            placeholder="Logo"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Short Name of Conference :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="shortName"
-                                            value={shortName}
-                                            onChange={handleChange}
-                                            placeholder="Short Name"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Abstract Link :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="abstractLink"
-                                            value={abstractLink}
-                                            onChange={handleChange}
-                                            placeholder="Abstract Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Registration Link :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="regLink"
-                                            value={regLink}
-                                            onChange={handleChange}
-                                            placeholder="Registration Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Flyer Link of Conference :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="flyerLink"
-                                            value={flyerLink}
-                                            onChange={handleChange}
-                                            placeholder="Flyer Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Brochure Link of Conference :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="brochureLink"
-                                            value={brochureLink}
-                                            onChange={handleChange}
-                                            placeholder="Brochure Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-                                    <FormControl isRequired={true} mb='3' >
-                                        <FormLabel >Poster Link :</FormLabel>
-                                        <Input
-                                            type="text"
-                                            name="posterLink"
-                                            value={posterLink}
-                                            onChange={handleChange}
-                                            placeholder="Poster Link"
-                                            mb='2.5'
-                                        />
-                                    </FormControl>
-
-                                    {/* Mobile Edit/Delete buttons */}
-                                    {isMobile && data && (
-                                        <Center mb="4">
-                                            <Flex gap={2} width="100%">
+                                            
+                                            {/* About Section Update Button */}
+                                            <Center mb="4">
                                                 <Button 
                                                     colorScheme="green" 
-                                                    onClick={() => handleEdit(data._id)} 
-                                                    flex="1"
-                                                    isDisabled={editID === data._id}
+                                                    onClick={handleAboutUpdate}
+                                                    size="md"
+                                                    isLoading={aboutLoading}
+                                                    mr={4}
                                                 >
-                                                    {editID === data._id ? 'Editing...' : 'Edit Data'}
+                                                    Update About Section
                                                 </Button>
-                                                <Button 
-                                                    colorScheme="red" 
-                                                    onClick={() => handleDelete(data._id)} 
-                                                    flex="1"
-                                                >
-                                                    Delete
-                                                </Button>
-                                            </Flex>
-                                        </Center>
+                                                {about.length > 1 && (
+                                                    <Button 
+                                                        colorScheme="red" 
+                                                        onClick={() => handleDeleteAbout(activeAboutTab)}
+                                                        size="md"
+                                                    >
+                                                        Delete This About
+                                                    </Button>
+                                                )}
+                                            </Center>
+                                        </div>
                                     )}
 
-                                    {isMobile && editID && (
-                                        <Center mb="4">
-                                            <Button 
-                                                colorScheme="gray" 
-                                                onClick={handleCancelEdit} 
-                                                width="100%"
-                                            >
-                                                Cancel Edit
-                                            </Button>
-                                        </Center>
+                                    {aboutLoading && (
+                                        <Box textAlign="center" py={4}>
+                                            <LoadingIcon />
+                                        </Box>
                                     )}
-                           
-                                    <Center>
-                                        <Button colorScheme="blue" type="submit">
-                                            {editID ? 'Update' : 'Add'}
-                                        </Button>
-                                    </Center>
                                 </form>
                             </Container>
                         </Box>
@@ -665,6 +1022,35 @@ const HomeConf = () => {
                             <Button
                                 colorScheme="blue"
                                 onClick={() => setShowDeleteConfirmation(false)}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* About Delete Confirmation Modal */}
+            {showAboutDeleteConfirmation && (
+                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
+                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
+                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
+                            Are you sure you want to delete this about section?
+                        </p>
+                        <div className="tw-flex tw-justify-center">
+                            <Button
+                                colorScheme="red"
+                                onClick={confirmDeleteAbout}
+                                mr={4}
+                            >
+                                Yes, Delete
+                            </Button>
+                            <Button
+                                colorScheme="blue"
+                                onClick={() => {
+                                    setShowAboutDeleteConfirmation(false);
+                                    setDeleteAboutIndex(null);
+                                }}
                             >
                                 Cancel
                             </Button>
