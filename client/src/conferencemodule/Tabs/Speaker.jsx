@@ -26,7 +26,6 @@ const Speaker = () => {
     const [showAbstractHTML, setShowAbstractHTML] = useState(false);
     const apiUrl = getEnvironment();
 
-    // Define your initial data here
     const initialData = {
         "ConfId": IdConf,
         "Name": "",
@@ -49,7 +48,6 @@ const Speaker = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    // Quill Editor Setup
     const bioEditorRef = useRef(null);
     const abstractEditorRef = useRef(null);
     const bioQuillInstance = useRef(null);
@@ -57,17 +55,14 @@ const Speaker = () => {
 
     const { ConfId, Name, Designation, Institute, ProfileLink, ImgLink, TalkType, TalkTitle, Abstract, Bio, sequence, feature } = formData;
 
-    // Copy HTML function
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text).then(() => {
-            // You could add a toast notification here if needed
             console.log('HTML copied to clipboard');
         }).catch(err => {
             console.error('Failed to copy: ', err);
         });
     };
 
-    // ... keep existing code (Quill editor initialization useEffect)
     useEffect(() => {
         if (bioQuillInstance.current || abstractQuillInstance.current) return;
 
@@ -111,7 +106,6 @@ const Speaker = () => {
             },
         };
 
-        // Initialize Bio editor
         if (bioEditorRef.current && !bioQuillInstance.current) {
             bioQuillInstance.current = new Quill(bioEditorRef.current, {
                 theme: "snow",
@@ -144,7 +138,6 @@ const Speaker = () => {
         }
     }, []);
 
-    // ... keep existing code (data fetching useEffect)
     useEffect(() => {
         setLoading(true);
         axios.get(`${apiUrl}/conferencemodule/speakers/conference/${IdConf}`, {
@@ -185,7 +178,6 @@ const Speaker = () => {
             .finally(() => setLoading(false));
     }, [IdConf, apiUrl]);
 
-    // ... keep existing code (editor content sync useEffects)
     useEffect(() => {
         if (editID && bioQuillInstance.current && abstractQuillInstance.current) {
             if (formData.Bio !== bioQuillInstance.current.root.innerHTML) {
@@ -221,7 +213,6 @@ const Speaker = () => {
         }
     };
 
-    // ... keep existing code (form handlers)
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "sequence") {
@@ -334,7 +325,6 @@ const Speaker = () => {
                                 </Heading>
                             </Center>
 
-                            {/* ... keep existing code (all form controls from Name to TalkTitle) */}
                             <FormControl isRequired={true} mb='3'>
                                 <FormLabel>Name of the Speaker:</FormLabel>
                                 <Input
@@ -521,7 +511,6 @@ const Speaker = () => {
                                 )}
                             </FormControl>
 
-                            {/* ... keep existing code (sequence and feature form controls) */}
                             <FormControl isRequired={true} mb='3'>
                                 <FormLabel>Sequence:</FormLabel>
                                 <Input
@@ -561,7 +550,6 @@ const Speaker = () => {
                         </Container>
                     </div>
 
-                    {/* Right Section - Live Preview (Desktop only) */}
                     <div className="tw-hidden lg:tw-block tw-w-full lg:tw-w-1/2 tw-sticky tw-top-0 tw-h-screen tw-overflow-auto">
                         <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg tw-h-full">
                             <Heading as="h2" size="xl" mb="6" className="tw-text-center" style={{
@@ -595,7 +583,6 @@ const Speaker = () => {
                 </div>
             </div>
 
-            {/* ... keep existing code (delete confirmation modal) */}
             {showDeleteConfirmation && (
                 <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
                     <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
