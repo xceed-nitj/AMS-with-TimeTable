@@ -65,18 +65,88 @@ const deletePlatform = async (req, res) => {
     }
 };
 
+// const addModule = async (req, res) => {
+
+//   try {
+//     const { name, description, yearLaunched, contributors } = req.body;
+//     const files = req.files || [];
+
+//     // Ensure contributors is an array
+//     let parsedContributors;
+//     if (Array.isArray(contributors)) {
+//       parsedContributors = contributors; // If it's already an array
+//     } else if (typeof contributors === "string") {
+//       try {
+//         parsedContributors = JSON.parse(contributors); // Attempt to parse if it's a JSON string
+//         if (!Array.isArray(parsedContributors)) {
+//           return res.status(400).json({ message: "Contributors should be an array." });
+//         }
+//       } catch (error) {
+//         return res.status(400).json({ message: "Invalid contributors format." });
+//       }
+//     } else {
+//       return res.status(400).json({ message: "Contributors should be an array or valid JSON string." });
+//     }
+
+//     // Ensure the number of files matches the number of contributors
+//     if (parsedContributors.length !== files.length) {
+//       return res.status(400).json({ message: "Mismatch between contributors and uploaded images." });
+//     }
+
+//     // Upload files to Cloudinary and map contributors with their corresponding images
+//     const formattedContributors = await Promise.all(
+//       parsedContributors.map(async (contributor, index) => {
+//         try {
+//           const filePath = files[index]?.path;
+//           const uploadResponse = await uploadOnCloudinary(filePath);
+//           return {
+//             ...contributor,
+//             image: uploadResponse.secure_url, // Use Cloudinary URL
+//           };
+//         } catch (uploadError) {
+//           console.error(`Error uploading image for contributor ${contributor.name}:`, uploadError);
+//           throw new Error(`Failed to upload image for ${contributor.name}`);
+//         }
+//       })
+//     );
+
+//     const moduleData = {
+//       name,
+//       description,
+//       yearLaunched,
+//       contributors: formattedContributors,
+//     };
+
+//     console.log(moduleData); // For debugging
+
+//     // Save to MongoDB
+//     const newModule = new Module(moduleData);
+//     await newModule.save();
+
+//     res.status(200).json({ message: "Module added successfully", data: moduleData });
+//   } catch (error) {
+//     console.error("Error in addModule:", error);
+//     res.status(500).json({ message: "Server error", error });
+//   }
+// };
+
+
 const addModule = async (req, res) => {
   try {
     const { name, description, yearLaunched, contributors } = req.body;
     const files = req.files || [];
 
-    // Ensure contributors is an array
+    
+    console.log("Received contributors (raw):", contributors);
+    console.log("Received files:", files.map(f => f.originalname));
+
+    // Parse contributors
     let parsedContributors;
     if (Array.isArray(contributors)) {
-      parsedContributors = contributors; // If it's already an array
+      parsedContributors = contributors;
     } else if (typeof contributors === "string") {
       try {
-        parsedContributors = JSON.parse(contributors); // Attempt to parse if it's a JSON string
+        parsedContributors = JSON.parse(contributors);
         if (!Array.isArray(parsedContributors)) {
           return res.status(400).json({ message: "Contributors should be an array." });
         }
@@ -87,20 +157,20 @@ const addModule = async (req, res) => {
       return res.status(400).json({ message: "Contributors should be an array or valid JSON string." });
     }
 
-    // Ensure the number of files matches the number of contributors
-    if (parsedContributors.length !== files.length) {
-      return res.status(400).json({ message: "Mismatch between contributors and uploaded images." });
-    }
-
-    // Upload files to Cloudinary and map contributors with their corresponding images
+    // Map contributors with available files
     const formattedContributors = await Promise.all(
       parsedContributors.map(async (contributor, index) => {
+        const file = files[index]; // Try to match image by index
+        if (!file || !file.path) {
+          // No image uploaded for this contributor
+          return contributor;
+        }
+
         try {
-          const filePath = files[index]?.path;
-          const uploadResponse = await uploadOnCloudinary(filePath);
+          const uploadResponse = await uploadOnCloudinary(file.path);
           return {
             ...contributor,
-            image: uploadResponse.secure_url, // Use Cloudinary URL
+            image: uploadResponse.secure_url,
           };
         } catch (uploadError) {
           console.error(`Error uploading image for contributor ${contributor.name}:`, uploadError);
@@ -116,7 +186,7 @@ const addModule = async (req, res) => {
       contributors: formattedContributors,
     };
 
-    console.log(moduleData); // For debugging
+    console.log("Final module data:", moduleData);
 
     // Save to MongoDB
     const newModule = new Module(moduleData);
@@ -125,7 +195,10 @@ const addModule = async (req, res) => {
     res.status(200).json({ message: "Module added successfully", data: moduleData });
   } catch (error) {
     console.error("Error in addModule:", error);
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message || "Unknown error",
+    });
   }
 };
 
