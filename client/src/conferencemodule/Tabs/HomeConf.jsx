@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -11,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/layout";
 import formatDate from "../utils/formatDate";
-import {  Flex, Box, FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button, useBreakpointValue } from '@chakra-ui/react';
+import { Flex, Box, FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button, useBreakpointValue, Textarea } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
 
 const HomeConf = () => {
@@ -32,6 +31,7 @@ const HomeConf = () => {
     const [showAboutSection, setShowAboutSection] = useState(false);
     const [showHtml, setShowHtml] = useState(false);
     const [htmlContent, setHtmlContent] = useState('');
+    const [editableHtmlContent, setEditableHtmlContent] = useState('');
 
     const IdConf = params.confid;
     const initialData = {
@@ -104,18 +104,35 @@ const HomeConf = () => {
         if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
             const html = quillInstances.current[activeAboutTab].getHTML();
             setHtmlContent(html);
+            setEditableHtmlContent(html);
             setShowHtml(!showHtml);
+        }
+    };
+
+    const handleHtmlContentChange = (e) => {
+        setEditableHtmlContent(e.target.value);
+    };
+
+    const applyHtmlChanges = () => {
+        if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
+            quillInstances.current[activeAboutTab].setHTML(editableHtmlContent);
+            setHtmlContent(editableHtmlContent);
+            
+            // Update the about state
+            const newAbout = [...about];
+            newAbout[activeAboutTab].description = editableHtmlContent;
+            setAbout(newAbout);
         }
     };
 
     const handleCopyHtml = async () => {
         try {
-            await navigator.clipboard.writeText(htmlContent);
+            await navigator.clipboard.writeText(editableHtmlContent);
             alert('HTML copied to clipboard!');
         } catch (err) {
             console.error('Failed to copy HTML: ', err);
             const textArea = document.createElement('textarea');
-            textArea.value = htmlContent;
+            textArea.value = editableHtmlContent;
             document.body.appendChild(textArea);
             textArea.select();
             document.execCommand('copy');
@@ -178,6 +195,7 @@ const HomeConf = () => {
         
         if (showHtml && activeAboutTab === index) {
             setHtmlContent(value);
+            setEditableHtmlContent(value);
         }
         
         setTimeout(() => {
@@ -633,7 +651,6 @@ const HomeConf = () => {
 
                                 <form onSubmit={handleSubmit}>
                                     
-                                    {/* Show main form when not in about section */}
                                     {!showAboutSection && (
                                         <>
                                             <FormControl isRequired={true} mb='3' >
@@ -715,7 +732,8 @@ const HomeConf = () => {
                                                 </Box>
                                             )}
 
-                                            <FormControl isRequired={true} mb='3' >
+                                            
+                                        <FormControl isRequired={true} mb='3' >
                                                 <FormLabel >You Tube Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -839,7 +857,6 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-
                                         
                                    
                                             <Center>
@@ -853,7 +870,6 @@ const HomeConf = () => {
                                     {/* Show about editor when in about section */}
                                     {showAboutSection && activeAboutTab !== null && !aboutLoading && about[activeAboutTab] && (
                                         <div key={`about-${activeAboutTab}`}>
-                                            {/* Back to Form Button for Mobile */}
                                             {isMobile && (
                                                 <Center mb="4">
                                                     <Button 
@@ -921,31 +937,39 @@ const HomeConf = () => {
                                                     >
                                                         <Flex justifyContent="space-between" alignItems="center" mb={3}>
                                                             <Heading as="h4" size="sm" color="gray.700">
-                                                                HTML Content
+                                                                HTML Content (Editable)
                                                             </Heading>
-                                                            <Button
-                                                                colorScheme="green"
-                                                                size="sm"
-                                                                onClick={handleCopyHtml}
-                                                            >
-                                                                Copy HTML
-                                                            </Button>
+                                                            <Flex gap={2}>
+                                                                <Button
+                                                                    colorScheme="orange"
+                                                                    size="sm"
+                                                                    onClick={applyHtmlChanges}
+                                                                >
+                                                                    Apply Changes
+                                                                </Button>
+                                                                <Button
+                                                                    colorScheme="green"
+                                                                    size="sm"
+                                                                    onClick={handleCopyHtml}
+                                                                >
+                                                                    Copy HTML
+                                                                </Button>
+                                                            </Flex>
                                                         </Flex>
-                                                        <Box
+                                                        <Textarea
+                                                            value={editableHtmlContent}
+                                                            onChange={handleHtmlContentChange}
+                                                            placeholder="Edit HTML content here..."
+                                                            minHeight="200px"
+                                                            maxHeight="400px"
+                                                            fontFamily="monospace"
+                                                            fontSize="sm"
                                                             bg="white"
                                                             border="1px solid"
                                                             borderColor="gray.200"
                                                             borderRadius="md"
-                                                            p={3}
-                                                            maxHeight="300px"
-                                                            overflowY="auto"
-                                                            fontFamily="monospace"
-                                                            fontSize="sm"
-                                                            whiteSpace="pre-wrap"
-                                                            wordBreak="break-all"
-                                                        >
-                                                            {htmlContent || '<p>No content</p>'}
-                                                        </Box>
+                                                            resize="vertical"
+                                                        />
                                                     </Box>
                                                 )}
                                             </FormControl>

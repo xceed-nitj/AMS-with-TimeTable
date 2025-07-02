@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -24,6 +23,8 @@ const Speaker = () => {
     const [deleteItemId, setDeleteItemId] = useState(null);
     const [showBioHTML, setShowBioHTML] = useState(false);
     const [showAbstractHTML, setShowAbstractHTML] = useState(false);
+    const [editableBioHTML, setEditableBioHTML] = useState('');
+    const [editableAbstractHTML, setEditableAbstractHTML] = useState('');
     const apiUrl = getEnvironment();
 
     const initialData = {
@@ -61,6 +62,50 @@ const Speaker = () => {
         }).catch(err => {
             console.error('Failed to copy: ', err);
         });
+    };
+
+    const handleBioHTMLChange = (e) => {
+        setEditableBioHTML(e.target.value);
+    };
+
+    const handleAbstractHTMLChange = (e) => {
+        setEditableAbstractHTML(e.target.value);
+    };
+
+    const applyBioChanges = () => {
+        if (bioQuillInstance.current) {
+            bioQuillInstance.current.root.innerHTML = editableBioHTML;
+            setFormData(prev => ({
+                ...prev,
+                Bio: editableBioHTML
+            }));
+        }
+    };
+
+    const applyAbstractChanges = () => {
+        if (abstractQuillInstance.current) {
+            abstractQuillInstance.current.root.innerHTML = editableAbstractHTML;
+            setFormData(prev => ({
+                ...prev,
+                Abstract: editableAbstractHTML
+            }));
+        }
+    };
+
+    const handleShowBioHTML = () => {
+        if (bioQuillInstance.current) {
+            const html = bioQuillInstance.current.root.innerHTML;
+            setEditableBioHTML(html);
+            setShowBioHTML(!showBioHTML);
+        }
+    };
+
+    const handleShowAbstractHTML = () => {
+        if (abstractQuillInstance.current) {
+            const html = abstractQuillInstance.current.root.innerHTML;
+            setEditableAbstractHTML(html);
+            setShowAbstractHTML(!showAbstractHTML);
+        }
     };
 
     useEffect(() => {
@@ -114,14 +159,17 @@ const Speaker = () => {
             });
 
             bioQuillInstance.current.on("text-change", () => {
+                const html = bioQuillInstance.current.root.innerHTML;
                 setFormData((prev) => ({
                     ...prev,
-                    Bio: bioQuillInstance.current.root.innerHTML
+                    Bio: html
                 }));
+                if (showBioHTML) {
+                    setEditableBioHTML(html);
+                }
             });
         }
 
-        // Initialize Abstract editor
         if (abstractEditorRef.current && !abstractQuillInstance.current) {
             abstractQuillInstance.current = new Quill(abstractEditorRef.current, {
                 theme: "snow",
@@ -130,10 +178,14 @@ const Speaker = () => {
             });
 
             abstractQuillInstance.current.on("text-change", () => {
+                const html = abstractQuillInstance.current.root.innerHTML;
                 setFormData((prev) => ({
                     ...prev,
-                    Abstract: abstractQuillInstance.current.root.innerHTML
+                    Abstract: html
                 }));
+                if (showAbstractHTML) {
+                    setEditableAbstractHTML(html);
+                }
             });
         }
     }, []);
@@ -198,7 +250,6 @@ const Speaker = () => {
         }
     }, [editID]);
 
-    // ... keep existing code (table insertion functions)
     const insertTableInBio = () => {
         if (bioQuillInstance.current) {
             const tableModule = bioQuillInstance.current.getModule("better-table");
@@ -423,7 +474,7 @@ const Speaker = () => {
                                     <Button
                                         colorScheme="purple"
                                         size="sm"
-                                        onClick={() => setShowBioHTML(!showBioHTML)}
+                                        onClick={handleShowBioHTML}
                                     >
                                         {showBioHTML ? 'Hide HTML' : 'Show HTML'}
                                     </Button>
@@ -440,23 +491,48 @@ const Speaker = () => {
                                     }}
                                 ></div>
                                 {showBioHTML && (
-                                    <div className="tw-mb-5 tw-p-4 tw-bg-gray-100 tw-rounded-lg tw-border">
+                                    <Box
+                                        bg="gray.50"
+                                        border="1px solid"
+                                        borderColor="gray.300"
+                                        borderRadius="md"
+                                        p={4}
+                                        mb={4}
+                                    >
                                         <div className="tw-flex tw-justify-between tw-items-center tw-mb-3">
-                                            <h3 className="tw-text-lg tw-font-semibold tw-text-gray-700">HTML Content</h3>
-                                            <button
-                                                onClick={() => copyToClipboard(formData.Bio || '')}
-                                                className="tw-inline-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-bg-green-500 tw-text-white tw-rounded-lg tw-font-medium tw-hover:bg-green-600 tw-transition-colors"
-                                            >
-                                                <Copy size={16} />
-                                                Copy HTML
-                                            </button>
+                                            <h3 className="tw-text-lg tw-font-semibold tw-text-gray-700">HTML Content (Editable)</h3>
+                                            <div className="tw-flex tw-gap-2">
+                                                <Button
+                                                    colorScheme="orange"
+                                                    size="sm"
+                                                    onClick={applyBioChanges}
+                                                >
+                                                    Apply Changes
+                                                </Button>
+                                                <button
+                                                    onClick={() => copyToClipboard(editableBioHTML || '')}
+                                                    className="tw-inline-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-bg-green-500 tw-text-white tw-rounded-lg tw-font-medium tw-hover:bg-green-600 tw-transition-colors"
+                                                >
+                                                    <Copy size={16} />
+                                                    Copy HTML
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="tw-p-4 tw-bg-white tw-rounded-md tw-border tw-border-gray-200">
-                                            <pre className="tw-text-sm tw-text-gray-800 tw-whitespace-pre-wrap tw-font-mono tw-leading-relaxed">
-                                                {formData.Bio || '<p>No content available</p>'}
-                                            </pre>
-                                        </div>
-                                    </div>
+                                        <Textarea
+                                            value={editableBioHTML}
+                                            onChange={handleBioHTMLChange}
+                                            placeholder="Edit HTML content here..."
+                                            minHeight="200px"
+                                            maxHeight="400px"
+                                            fontFamily="monospace"
+                                            fontSize="sm"
+                                            bg="white"
+                                            border="1px solid"
+                                            borderColor="gray.200"
+                                            borderRadius="md"
+                                            resize="vertical"
+                                        />
+                                    </Box>
                                 )}
                             </FormControl>
 
@@ -474,7 +550,7 @@ const Speaker = () => {
                                     <Button
                                         colorScheme="purple"
                                         size="sm"
-                                        onClick={() => setShowAbstractHTML(!showAbstractHTML)}
+                                        onClick={handleShowAbstractHTML}
                                     >
                                         {showAbstractHTML ? 'Hide HTML' : 'Show HTML'}
                                     </Button>
@@ -491,23 +567,50 @@ const Speaker = () => {
                                     }}
                                 ></div>
                                 {showAbstractHTML && (
-                                    <div className="tw-mb-5 tw-p-4 tw-bg-gray-100 tw-rounded-lg tw-border">
+                                    <Box
+                                        bg="gray.50"
+                                        border="1px solid"
+                                        borderColor="gray.300"
+                                        borderRadius="md"
+                                        p={4}
+                                        mb={4}
+                                    >
                                         <div className="tw-flex tw-justify-between tw-items-center tw-mb-3">
-                                            <h3 className="tw-text-lg tw-font-semibold tw-text-gray-700">HTML Content</h3>
-                                            <button
-                                                onClick={() => copyToClipboard(formData.Abstract || '')}
-                                                className="tw-inline-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-bg-green-500 tw-text-white tw-rounded-lg tw-font-medium tw-hover:bg-green-600 tw-transition-colors"
-                                            >
-                                                <Copy size={16} />
-                                                Copy HTML
-                                            </button>
+                                            <h3 className="tw-text-lg tw-font-semibold tw-text-gray-700">HTML Content (Editable)</h3>
+                                            <div className="tw-flex tw-gap-2">
+                                                <Button
+                                                    colorScheme="orange"
+                                                    size="sm"
+                                                    onClick={applyAbstractChanges}
+                                                >
+                                                    Apply Changes
+                                                </Button>
+                                                <button
+                                                    onClick={() => copyToClipboard(editableAbstractHTML || '')}
+                                                    className="tw-inline-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-bg-green-600 tw-text-white tw-rounded-lg tw-font-medium tw-hover:bg-green-600 tw-transition-colors"
+                                                    colorScheme="green"
+                                                    size="sm"
+                                                >
+                                                    <Copy size={1} color="green" />
+                                                    Copy HTML
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="tw-p-4 tw-bg-white tw-rounded-md tw-border tw-border-gray-200">
-                                            <pre className="tw-text-sm tw-text-gray-800 tw-whitespace-pre-wrap tw-font-mono tw-leading-relaxed">
-                                                {formData.Abstract || '<p>No content available</p>'}
-                                            </pre>
-                                        </div>
-                                    </div>
+                                        <Textarea
+                                            value={editableAbstractHTML}
+                                            onChange={handleAbstractHTMLChange}
+                                            placeholder="Edit HTML content here..."
+                                            minHeight="200px"
+                                            maxHeight="400px"
+                                            fontFamily="monospace"
+                                            fontSize="sm"
+                                            bg="white"
+                                            border="1px solid"
+                                            borderColor="gray.200"
+                                            borderRadius="md"
+                                            resize="vertical"
+                                        />
+                                    </Box>
                                 )}
                             </FormControl>
 
