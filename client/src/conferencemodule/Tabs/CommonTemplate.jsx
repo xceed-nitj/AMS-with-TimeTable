@@ -14,11 +14,9 @@ import {
   FormLabel, Select, Center, Text, useBreakpointValue, useToast, Textarea
 } from "@chakra-ui/react";
 
-// Live Preview Section Component
 const LivePreviewSection = ({ title, html }) => {
   return (
     <Box p={4}>
-      {/* Title: Live Preview */}
       <Heading
         as="h1"
         size="xl"
@@ -334,26 +332,21 @@ const CommonTemplate = () => {
     }
   };
 
-  // New function to handle HTML content changes from the editable textarea
   const handleHtmlContentChange = (e) => {
     const newHtmlContent = e.target.value;
     setEditableHtmlContent(newHtmlContent);
   };
 
-  // New function to apply HTML changes to the Quill editor
   const applyHtmlChanges = () => {
     if (quillInstance.current) {
       try {
-        // Update the Quill editor with the new HTML content
         quillInstance.current.root.innerHTML = editableHtmlContent;
         
-        // Update the form data
         setFormData(prev => ({
           ...prev,
           description: editableHtmlContent
         }));
         
-        // Update the display HTML content
         setHtmlContent(editableHtmlContent);
         
         toast({
@@ -427,7 +420,6 @@ const CommonTemplate = () => {
     <main className="tw-p-5 tw-min-h-screen">
       <Flex direction="column">
         <Flex direction={{ base: "column", md: "row" }}>
-          {/* Sidebar - Hidden on mobile, reduced width on desktop */}
           {!isMobile && (
             <Box
               width="15%"
@@ -454,7 +446,6 @@ const CommonTemplate = () => {
             </Box>
           )}
 
-          {/* Main Content */}
           <Flex flex="1" width={{ base: "100%", md: "85%" }} direction={{ base: "column", lg: "row" }}>
             {/* Form Section */}
             <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto">
@@ -465,7 +456,6 @@ const CommonTemplate = () => {
                   </Heading>
                 </Center>
 
-                {/* Object ID Section - Only show when editing a template */}
                 {selectedTemplate && (
                   <Box
                     bg="gray.50"
