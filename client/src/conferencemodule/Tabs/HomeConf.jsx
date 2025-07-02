@@ -114,7 +114,6 @@ const HomeConf = () => {
             alert('HTML copied to clipboard!');
         } catch (err) {
             console.error('Failed to copy HTML: ', err);
-            // Fallback for older browsers
             const textArea = document.createElement('textarea');
             textArea.value = htmlContent;
             document.body.appendChild(textArea);
@@ -147,7 +146,6 @@ const HomeConf = () => {
             const newAbout = about.filter((_, index) => index !== indexToRemove);
             setAbout(newAbout);
             
-            // Clean up Quill instances and initialized tabs
             if (quillInstances.current[indexToRemove]) {
                 quillInstances.current[indexToRemove] = null;
             }
@@ -155,14 +153,12 @@ const HomeConf = () => {
             editorRefs.current = editorRefs.current.filter((_, index) => index !== indexToRemove);
             initializedTabs.current.delete(indexToRemove);
             
-            // Adjust active tab
             if (activeAboutTab >= newAbout.length) {
                 setActiveAboutTab(newAbout.length - 1);
             } else if (activeAboutTab > indexToRemove) {
                 setActiveAboutTab(activeAboutTab - 1);
             }
 
-            // If we deleted the currently active tab, go back to form
             if (activeAboutTab === indexToRemove) {
                 handleBackToForm();
             }
