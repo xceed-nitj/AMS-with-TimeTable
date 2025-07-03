@@ -66,7 +66,99 @@ const HomeConf = () => {
 
     const { confName, confStartDate, confEndDate, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
      regLink,flyerLink,brochureLink,posterLink } = formData;
-    
+
+    const parseHtmlTables = (html) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const tables = doc.querySelectorAll('table:not(.quill-better-table)');
+        
+        tables.forEach(table => {
+            const generateId = () => Math.random().toString(36).substr(2, 4);
+            
+            const rows = table.querySelectorAll('tr');
+            if (rows.length === 0) return;
+            
+            let maxCols = 0;
+            rows.forEach(row => {
+                let colCount = 0;
+                const cells = row.querySelectorAll('td, th');
+                cells.forEach(cell => {
+                    const colspan = parseInt(cell.getAttribute('colspan') || '1');
+                    colCount += colspan;
+                });
+                maxCols = Math.max(maxCols, colCount);
+            });
+            
+            const wrapper = doc.createElement('div');
+            wrapper.className = 'quill-better-table-wrapper';
+            
+            const newTable = doc.createElement('table');
+            newTable.className = 'quill-better-table';
+            
+            const colgroup = doc.createElement('colgroup');
+            for (let i = 0; i < maxCols; i++) {
+                const col = doc.createElement('col');
+                col.setAttribute('width', '100');
+                colgroup.appendChild(col);
+            }
+            newTable.appendChild(colgroup);
+            
+            const tbody = doc.createElement('tbody');
+            
+            rows.forEach(row => {
+                const newRow = doc.createElement('tr');
+                const rowId = `row-${generateId()}`;
+                newRow.setAttribute('data-row', rowId);
+                
+                const cells = row.querySelectorAll('td, th');
+                cells.forEach(cell => {
+                    const newCell = doc.createElement('td');
+                    const cellId = `cell-${generateId()}`;
+                    
+                    const colspan = cell.getAttribute('colspan') || '1';
+                    const rowspan = cell.getAttribute('rowspan') || '1';
+                    
+                    newCell.setAttribute('data-row', rowId);
+                    newCell.setAttribute('rowspan', rowspan);
+                    newCell.setAttribute('colspan', colspan);
+                    
+                    const cellContent = cell.innerHTML.trim();
+                    if (cellContent) {
+                        const p = doc.createElement('p');
+                        p.className = 'qlbt-cell-line';
+                        p.setAttribute('data-row', rowId);
+                        p.setAttribute('data-cell', cellId);
+                        p.setAttribute('data-rowspan', rowspan);
+                        p.setAttribute('data-colspan', colspan);
+                        
+                        p.innerHTML = cellContent;
+                        newCell.appendChild(p);
+                    } else {
+                        const p = doc.createElement('p');
+                        p.className = 'qlbt-cell-line';
+                        p.setAttribute('data-row', rowId);
+                        p.setAttribute('data-cell', cellId);
+                        p.setAttribute('data-rowspan', rowspan);
+                        p.setAttribute('data-colspan', colspan);
+                        p.innerHTML = '<br>';
+                        newCell.appendChild(p);
+                    }
+                    
+                    newRow.appendChild(newCell);
+                });
+                
+                tbody.appendChild(newRow);
+            });
+            
+            newTable.appendChild(tbody);
+            wrapper.appendChild(newTable);
+            
+            table.parentNode.replaceChild(wrapper, table);
+        });
+        
+        return doc.body.innerHTML;
+    };
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -115,13 +207,23 @@ const HomeConf = () => {
 
     const applyHtmlChanges = () => {
         if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
-            quillInstances.current[activeAboutTab].setHTML(editableHtmlContent);
-            setHtmlContent(editableHtmlContent);
-            
-            // Update the about state
-            const newAbout = [...about];
-            newAbout[activeAboutTab].description = editableHtmlContent;
-            setAbout(newAbout);
+            try {
+                const parsedHtml = parseHtmlTables(editableHtmlContent);
+                
+                quillInstances.current[activeAboutTab].setHTML(parsedHtml);
+                
+                const newAbout = [...about];
+                newAbout[activeAboutTab].description = parsedHtml;
+                setAbout(newAbout);
+                
+                setHtmlContent(parsedHtml);
+                setEditableHtmlContent(parsedHtml);
+                
+                console.log('HTML content applied successfully with table parsing');
+            } catch (error) {
+                console.error('Error applying HTML content:', error);
+                alert('Error applying HTML content. Please check the HTML format.');
+            }
         }
     };
 
@@ -560,7 +662,6 @@ const HomeConf = () => {
         <main className="tw-p-5 tw-min-h-screen">
             <Flex direction="column">
                 <Flex direction={{ base: "column", md: "row" }}>
-                    {/* Sidebar - Hidden on mobile, reduced width on desktop */}
                     {!isMobile && (
                         <Box
                             width="15%" 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -102,6 +101,105 @@ const CommonTemplate = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
   const [refresh, setRefresh] = useState(0);
+
+  const parseHtmlTablesToQuillFormat = (htmlString) => {
+    console.log('Original HTML:', htmlString);
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlString;
+    
+    const tables = tempDiv.querySelectorAll('table');
+    
+    tables.forEach((table, tableIndex) => {
+      const tableId = `table-${Date.now()}-${tableIndex}`;
+      
+      const rows = [];
+      let maxCols = 0;
+      
+      const theadRows = table.querySelectorAll('thead tr');
+      theadRows.forEach(tr => {
+        const cells = tr.querySelectorAll('th, td');
+        const rowData = [];
+        cells.forEach(cell => {
+          const colspan = parseInt(cell.getAttribute('colspan') || '1');
+          const rowspan = parseInt(cell.getAttribute('rowspan') || '1');
+          rowData.push({
+            content: cell.textContent.trim(),
+            colspan: colspan,
+            rowspan: rowspan
+          });
+        });
+        rows.push(rowData);
+        maxCols = Math.max(maxCols, rowData.reduce((sum, cell) => sum + cell.colspan, 0));
+      });
+      
+      const tbodyRows = table.querySelectorAll('tbody tr');
+      tbodyRows.forEach(tr => {
+        const cells = tr.querySelectorAll('th, td');
+        const rowData = [];
+        cells.forEach(cell => {
+          const colspan = parseInt(cell.getAttribute('colspan') || '1');
+          const rowspan = parseInt(cell.getAttribute('rowspan') || '1');
+          rowData.push({
+            content: cell.textContent.trim(),
+            colspan: colspan,
+            rowspan: rowspan
+          });
+        });
+        rows.push(rowData);
+        maxCols = Math.max(maxCols, rowData.reduce((sum, cell) => sum + cell.colspan, 0));
+      });
+      
+      if (theadRows.length === 0 && tbodyRows.length === 0) {
+        const allRows = table.querySelectorAll('tr');
+        allRows.forEach(tr => {
+          const cells = tr.querySelectorAll('th, td');
+          const rowData = [];
+          cells.forEach(cell => {
+            const colspan = parseInt(cell.getAttribute('colspan') || '1');
+            const rowspan = parseInt(cell.getAttribute('rowspan') || '1');
+            rowData.push({
+              content: cell.textContent.trim(),
+              colspan: colspan,
+              rowspan: rowspan
+            });
+          });
+          rows.push(rowData);
+          maxCols = Math.max(maxCols, rowData.reduce((sum, cell) => sum + cell.colspan, 0));
+        });
+      }
+      
+      if (rows.length === 0 || maxCols === 0) return;
+      
+      const colWidth = Math.floor(600 / maxCols); 
+      const colgroup = Array(maxCols).fill(0).map(() => `<col width="${colWidth}">`).join('');
+      
+      let quillTableHtml = `<div class="quill-better-table-wrapper"><table class="quill-better-table"><colgroup>${colgroup}</colgroup><tbody>`;
+      
+      rows.forEach((row, rowIndex) => {
+        const rowId = `row-${Date.now()}-${rowIndex}`;
+        quillTableHtml += `<tr data-row="${rowId}">`;
+        
+        row.forEach((cell, cellIndex) => {
+          const cellId = `cell-${Date.now()}-${rowIndex}-${cellIndex}`;
+          quillTableHtml += `<td data-row="${rowId}" rowspan="${cell.rowspan}" colspan="${cell.colspan}">`;
+          quillTableHtml += `<p class="qlbt-cell-line" data-row="${rowId}" data-cell="${cellId}" data-rowspan="${cell.rowspan}" data-colspan="${cell.colspan}">`;
+          quillTableHtml += cell.content || '';
+          quillTableHtml += `</p></td>`;
+        });
+        
+        quillTableHtml += `</tr>`;
+      });
+      
+      quillTableHtml += `</tbody></table></div>`;
+      
+      table.outerHTML = quillTableHtml;
+    });
+    
+    const result = tempDiv.innerHTML;
+    console.log('Converted HTML:', result);
+    return result;
+  };
 
   useEffect(() => {
     if (selectedTemplate) {
@@ -340,23 +438,27 @@ const CommonTemplate = () => {
   const applyHtmlChanges = () => {
     if (quillInstance.current) {
       try {
-        quillInstance.current.root.innerHTML = editableHtmlContent;
+        const convertedHtml = parseHtmlTablesToQuillFormat(editableHtmlContent);
+        
+        quillInstance.current.root.innerHTML = convertedHtml;
         
         setFormData(prev => ({
           ...prev,
-          description: editableHtmlContent
+          description: convertedHtml
         }));
         
-        setHtmlContent(editableHtmlContent);
+        setHtmlContent(convertedHtml);
+        setEditableHtmlContent(convertedHtml);
         
         toast({
-          title: "HTML Applied!",
-          description: "The HTML content has been applied to the editor.",
+          title: "HTML Applied & Tables Converted!",
+          description: "The HTML content has been applied and tables have been converted to editable format.",
           status: "success",
-          duration: 2000,
+          duration: 3000,
           isClosable: true,
         });
       } catch (error) {
+        console.error('Error applying HTML:', error);
         toast({
           title: "Invalid HTML",
           description: "The HTML content contains errors and could not be applied.",
@@ -401,11 +503,6 @@ const CommonTemplate = () => {
             <Box fontSize="sm" fontWeight="semibold">
               {template.pageTitle || `Template ${idx + 1}`}
             </Box>
-            {selectedTemplate?._id === template._id && (
-              <Box fontSize="xs" opacity={0.8}>
-                Currently editing
-              </Box>
-            )}
           </Box>
         )) : (
           <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
@@ -550,7 +647,7 @@ const CommonTemplate = () => {
                       >
                         <HStack justifyContent="space-between" alignItems="center" mb={3}>
                           <Heading as="h4" size="sm" color="gray.700">
-                            HTML Content (Editable)
+                            HTML Content (Editable) 
                           </Heading>
                           <HStack spacing={2}>
                             <Button
