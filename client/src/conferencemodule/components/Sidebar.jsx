@@ -25,14 +25,15 @@ const Sidebar = () => {
 
   // State for conference name
   const [conferenceName, setConferenceName] = useState('Conference Name');
-
+  
   useEffect(() => {
     if (!IdConf) return;
     axios
-      .get(`${apiUrl}/conferencemodule/home`, { withCredentials: true })
+      .get(`${apiUrl}/conferencemodule/home/conf/${IdConf}`, { withCredentials: true })
       .then(res => {
         console.log(res);
-        setConferenceName(res.data[0]?.confName || 'Conference Name');
+        console.log(IdConf);
+        setConferenceName(res.data?.confName || 'Conference Name');
       })
       .catch(err => {
         setConferenceName('Conference Name');
