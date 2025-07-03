@@ -74,7 +74,14 @@ function CommonSlot() {
                 const { uniqueSessions, uniqueDept } = data;
                 
                 setAllSessions(uniqueSessions);
-                setSelectedSession(uniqueSessions[0]);
+               // console.log("uniqueSessions is "+uniqueSessions.forEach(obj => {
+//   console.log(obj);
+// }));
+                const currentSession = uniqueSessions.find(session => session.currentSession === true);
+//                 console.log("currentSession is "+currentSession.forEach(obj => {
+//   console.log(obj);
+// }));
+                setSelectedSession(currentSession || uniqueSessions[0]);
                 setAvailableDepts(uniqueDept);
             } catch (error) {
                 console.error("Error fetching existing timetable data:", error);
