@@ -471,18 +471,36 @@ const CommonTemplate = () => {
   };
 
   const TemplateTabs = () => (
-    <Box width="100%" mb={4}>
-      <Heading as="h3" size="sm" mb={2} color="gray.600">
+  <Box width="100%" mb={4}>
+    <HStack justifyContent="space-between" alignItems="center" mb={2}>
+      <Heading as="h3" size="sm" color="gray.600">
         Template Pages:
       </Heading>
-      <Box
-        bg="white"
-        border="1px solid"
-        borderColor="gray.200"
-        borderRadius="md"
-        overflow="hidden"
-      >
-        {data.length > 0 ? data.map((template, idx) => (
+      {isMobile && (
+        <Button
+          colorScheme="blue"
+          size="sm"
+          onClick={handleAddNewTemplate}
+        >
+          Add Template
+        </Button>
+      )}
+    </HStack>
+    <Box
+      bg="white"
+      border="1px solid"
+      borderColor="gray.200"
+      borderRadius="md"
+      overflow="hidden"
+      maxH={isMobile ? "200px" : "none"}
+      overflowY={isMobile ? "auto" : "visible"}
+    >
+      {loading ? (
+        <Box p={4}>
+          <LoadingIcon />
+        </Box>
+      ) : data.length > 0 ? (
+        data.map((template, idx) => (
           <Box
             key={template._id}
             bg={selectedTemplate?._id === template._id ? "blue.500" : "white"}
@@ -496,22 +514,28 @@ const CommonTemplate = () => {
               bg: selectedTemplate?._id === template._id ? "blue.600" : "gray.50"
             }}
             transition="all 0.2s"
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
           >
-            <Box fontSize="sm" fontWeight="semibold">
+            <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
               {template.pageTitle || `Template ${idx + 1}`}
-            </Box>
+            </Text>
+            <Text
+              fontSize="xs"
+              color={selectedTemplate?._id === template._id ? "whiteAlpha.800" : "gray.600"}
+              noOfLines={2}
+            >
+              {template.metaDescription || "No description"}
+            </Text>
           </Box>
-        )) : (
-          <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-            No templates available
-          </Text>
-        )}
-      </Box>
+        ))
+      ) : (
+        <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
+          No templates available
+        </Text>
+      )}
     </Box>
-  );
+  </Box>
+);
+
 
   return (
     <main className="tw-p-5 tw-min-h-screen">
