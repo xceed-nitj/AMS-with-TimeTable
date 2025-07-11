@@ -660,9 +660,7 @@ const Announcement = () => {
                 console.log('Fetched announcements:', res.data);
                 setData(res.data);
                 
-                // Auto-select the first announcement when data is loaded
                 if (res.data && res.data.length > 0) {
-                    // Use setTimeout to ensure state updates are processed correctly
                     setTimeout(() => {
                         populateFormWithAnnouncement(res.data[0]);
                     }, 100);
