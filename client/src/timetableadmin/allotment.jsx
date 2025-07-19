@@ -335,7 +335,7 @@ const AllotmentForm = () => {
   };
 
   return (
-    <Container maxW="6xl">
+    <Container maxW={"6xl"}>
       <Box>
         <form onSubmit={handleSubmit}>
           <Header title="Allotment"></Header>
@@ -383,9 +383,11 @@ const AllotmentForm = () => {
           )}
 
           <ChakraProvider theme={theme}>
-            <Container maxW="auto" mx="auto" py={4}>
-              <Tabs variant="enclosed" colourScheme="brand">
-                <TabList gap={5}>
+            <Container maxW="100%" py={4} overflow={"auto"}>
+              <Tabs variant="enclosed" colourScheme="brand" >
+                <TabList  flexDirection={{ base: "column", md: "row" }}
+  alignItems="stretch"
+  gap={{ base: 1, md: 4 }}>
                   <Tab
                     m={''}
                     borderBottom="0px"
@@ -465,271 +467,279 @@ const AllotmentForm = () => {
                   border="2px"
                   borderRadius={' 6px'}
                   borderColor="rgba(8, 73, 74, 0.82)"
+                  overflowX="auto"
+                  whiteSpace="nowrap"
+                  minW={"max-content"}
+                  px={0}
                 >
-                  <TabPanel p={5} pt={10}>
-                    <VStack spacing={8}>
-                      <Heading
-                        size="md"
-                        fontWeight="semibold"
-                        color="brand.800"
-                      >
-                        Centralised Room Allotment
-                      </Heading>
-                      <Table
-                        w="full"
-                        border="2px solid"
-                        borderColor="brand.600"
-                        borderRadius="md"
-                      >
-                        <Thead bg="brand.50">
-                          <Tr>
-                            <Th
-                              border="2px solid"
-                              color="brand.800"
-                              borderColor="brand.600"
-                              textAlign="center"
-                              py={4}
-                              w={'30%'}
-                            >
-                              Department
-                            </Th>
-                            <Th
-                              border="2px solid"
-                              color="brand.800"
-                              borderColor="brand.600"
-                              textAlign="center"
-                              py={4}
-                              w={'40%'}
-                            >
-                              Room
-                            </Th>
-                            <Th
-                              border="2px solid"
-                              color="brand.800"
-                              borderColor="brand.600"
-                              textAlign="center"
-                              py={4}
-                            >
-                              Actions
-                            </Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
-                          {formData.centralisedAllotments.map(
-                            (allotment, deptIndex) => (
-                              <Tr key={`centralisedDeptRow-${deptIndex}`}>
-                                <Td
-                                  fontWeight="medium"
-                                  borderColor="brand.600"
-                                  fontSize="sm"
-                                >
-                                  <Select
-                                    name="dept"
-                                    borderColor="brand.300"
-                                    _hover={{ borderColor: 'brand.500' }}
-                                    _focus={{ borderColor: 'brand.500' }}
+                  <TabPanel p={5} pt={10} overflow={'auto'}>
+                    {' '}
+                    <Box minW="max-content" w={"full"}>
+                      <VStack spacing={8}>
+                        <Heading
+                          size="md"
+                          fontWeight="semibold"
+                          color="brand.800"
+                        >
+                          Centralised Room Allotment
+                        </Heading>
+                        <Table
+                          w="full"
+                          border="2px solid"
+                          borderColor="brand.600"
+                          borderRadius="md"
+                        >
+                          <Thead bg="brand.50">
+                            <Tr>
+                              <Th
+                                border="2px solid"
+                                color="brand.800"
+                                borderColor="brand.600"
+                                textAlign="center"
+                                py={4}
+                                w={'30%'}
+                              >
+                                Department
+                              </Th>
+                              <Th
+                                border="2px solid"
+                                color="brand.800"
+                                borderColor="brand.600"
+                                textAlign="center"
+                                py={4}
+                                w={'40%'}
+                              >
+                                Room
+                              </Th>
+                              <Th
+                                border="2px solid"
+                                color="brand.800"
+                                borderColor="brand.600"
+                                textAlign="center"
+                                py={4}
+                              >
+                                Actions
+                              </Th>
+                            </Tr>
+                          </Thead>
+                          <Tbody>
+                            {formData.centralisedAllotments.map(
+                              (allotment, deptIndex) => (
+                                <Tr key={`centralisedDeptRow-${deptIndex}`}>
+                                  <Td
+                                    fontWeight="medium"
+                                    borderColor="brand.600"
                                     fontSize="sm"
-                                    bg="white"
-                                    value={allotment.dept}
-                                    onChange={(e) =>
-                                      handleChange(
-                                        e,
-                                        deptIndex,
-                                        null,
-                                        'centralisedAllotments'
-                                      )
-                                    }
                                   >
-                                    <option
-                                      key={`centralisedDefaultDept-${deptIndex}`}
-                                      value=""
-                                    >
-                                      Select Department
-                                    </option>
-                                    {departments.map((department, index) => (
-                                      <option
-                                        key={`centralisedDept-${index}`}
-                                        value={department}
-                                      >
-                                        {department}
-                                      </option>
-                                    ))}
-                                  </Select>
-                                </Td>
-                                <Td
-                                  fontWeight="medium"
-                                  borderColor="brand.600"
-                                  p={4}
-                                >
-                                  {allotment.rooms.map((room, roomIndex) => (
-                                    <div
-                                      key={`centralisedRoom-${deptIndex}-${roomIndex}`}
-                                    >
-                                      <Select
-                                        name="room"
-                                        value={room.room}
-                                        onChange={(e) =>
-                                          handleChange(
-                                            e,
-                                            deptIndex,
-                                            roomIndex,
-                                            'centralisedAllotments'
-                                          )
-                                        }
-                                        borderColor="brand.300"
-                                        _hover={{ borderColor: 'brand.500' }}
-                                        _focus={{ borderColor: 'brand.500' }}
-                                        fontSize="sm"
-                                        bg="white"
-                                      >
-                                        <option
-                                          key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`}
-                                          value=""
-                                        >
-                                          Select Room
-                                        </option>
-                                        {getAvailableRooms(
+                                    <Select
+                                      name="dept"
+                                      borderColor="brand.300"
+                                      _hover={{ borderColor: 'brand.500' }}
+                                      _focus={{ borderColor: 'brand.500' }}
+                                      fontSize="sm"
+                                      bg="white"
+                                      value={allotment.dept}
+                                      onChange={(e) =>
+                                        handleChange(
+                                          e,
                                           deptIndex,
-                                          roomIndex,
-                                          formData.centralisedAllotments
-                                        ).map((availableRoom, index) => (
-                                          <option
-                                            key={`centralisedRoom-${index}`}
-                                            value={availableRoom}
-                                          >
-                                            {availableRoom}
-                                          </option>
-                                        ))}
-                                      </Select>
-                                      <Checkbox
-                                        p={3}
-                                        name="morningSlot"
-                                        isChecked={room.morningSlot}
-                                        onChange={(e) =>
-                                          handleChange(
-                                            e,
-                                            deptIndex,
-                                            roomIndex,
-                                            'centralisedAllotments'
-                                          )
-                                        }
-                                        colorScheme="brand"
-                                        size="sm"
+                                          null,
+                                          'centralisedAllotments'
+                                        )
+                                      }
+                                    >
+                                      <option
+                                        key={`centralisedDefaultDept-${deptIndex}`}
+                                        value=""
                                       >
-                                        Morning Slot
-                                      </Checkbox>
-                                      <Checkbox
-                                        p={3}
-                                        name="afternoonSlot"
-                                        isChecked={room.afternoonSlot}
-                                        onChange={(e) =>
-                                          handleChange(
-                                            e,
-                                            deptIndex,
-                                            roomIndex,
-                                            'centralisedAllotments'
-                                          )
-                                        }
-                                        colorScheme="brand"
-                                        size="sm"
-                                      >
-                                        Afternoon Slot
-                                      </Checkbox>
-                                      <div>
-                                        <HStack
-                                          spacing={2}
-                                          justifyContent="center"
+                                        Select Department
+                                      </option>
+                                      {departments.map((department, index) => (
+                                        <option
+                                          key={`centralisedDept-${index}`}
+                                          value={department}
                                         >
-                                          <Button
-                                            size="sm"
-                                            colorScheme="teal"
-                                            onClick={() =>
-                                              handleAddRoom(
-                                                deptIndex,
-                                                'centralisedAllotments'
-                                              )
-                                            }
-                                            fontSize="xs"
-                                          >
-                                            Add Room
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            colorScheme="red"
-                                            onClick={() =>
-                                              handleRemoveRoom(
-                                                deptIndex,
-                                                roomIndex,
-                                                'centralisedAllotments'
-                                              )
-                                            }
-                                            fontSize="xs"
-                                          >
-                                            Remove Room
-                                          </Button>
-                                        </HStack>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </Td>
-                                <Td
-                                  fontWeight="medium"
-                                  borderColor="brand.600"
-                                  p={4}
-                                  textAlign="center"
-                                >
-                                  <Button
-                                    size="sm"
-                                    colorScheme="red"
-                                    fontSize="sm"
-                                    textColor={'wh'}
+                                          {department}
+                                        </option>
+                                      ))}
+                                    </Select>
+                                  </Td>
+                                  <Td
+                                    fontWeight="medium"
+                                    borderColor="brand.600"
                                     p={4}
-                                    onClick={() =>
-                                      handleRemoveAllotment(
-                                        deptIndex,
-                                        'centralisedAllotments'
-                                      )
-                                    }
                                   >
-                                    Remove Allotment
-                                  </Button>{' '}
-                                </Td>
-                              </Tr>
-                            )
-                          )}
-                        </Tbody>
-                      </Table>
-                      <HStack spacing={5}>
-                        <Button
-                          minW={'150px'}
-                          colorScheme="brand"
-                          fontSize="sm"
-                          alignSelf="center"
-                          onClick={() =>
-                            handleAddAllotment('centralisedAllotments')
-                          }
-                        >
-                          Add Allotment
-                        </Button>
-                        <Button
-                          colorScheme="brand"
-                          //bgGradient="linear(to-r,brand.200,brand.600,brand.600,brand.600,brand.200)"
-                          minW={'150px'}
-                          color="brand.50"
-                          fontSize="md"
-                          alignSelf="center"
-                          _hover={{
-                            bg: 'brand.600',
-                          }}
-                          transition="all 0.2s ease-in-out"
-                        >
-                          Submit
-                        </Button>
-                      </HStack>
-                    </VStack>
+                                    {allotment.rooms.map((room, roomIndex) => (
+                                      <div
+                                        key={`centralisedRoom-${deptIndex}-${roomIndex}`}
+                                      >
+                                        <Select
+                                          name="room"
+                                          value={room.room}
+                                          onChange={(e) =>
+                                            handleChange(
+                                              e,
+                                              deptIndex,
+                                              roomIndex,
+                                              'centralisedAllotments'
+                                            )
+                                          }
+                                          borderColor="brand.300"
+                                          _hover={{ borderColor: 'brand.500' }}
+                                          _focus={{ borderColor: 'brand.500' }}
+                                          fontSize="sm"
+                                          bg="white"
+                                        >
+                                          <option
+                                            key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`}
+                                            value=""
+                                          >
+                                            Select Room
+                                          </option>
+                                          {getAvailableRooms(
+                                            deptIndex,
+                                            roomIndex,
+                                            formData.centralisedAllotments
+                                          ).map((availableRoom, index) => (
+                                            <option
+                                              key={`centralisedRoom-${index}`}
+                                              value={availableRoom}
+                                            >
+                                              {availableRoom}
+                                            </option>
+                                          ))}
+                                        </Select>
+                                        <Checkbox
+                                          p={3}
+                                          name="morningSlot"
+                                          isChecked={room.morningSlot}
+                                          onChange={(e) =>
+                                            handleChange(
+                                              e,
+                                              deptIndex,
+                                              roomIndex,
+                                              'centralisedAllotments'
+                                            )
+                                          }
+                                          colorScheme="brand"
+                                          size="sm"
+                                        >
+                                          Morning Slot
+                                        </Checkbox>
+                                        <Checkbox
+                                          p={3}
+                                          name="afternoonSlot"
+                                          isChecked={room.afternoonSlot}
+                                          onChange={(e) =>
+                                            handleChange(
+                                              e,
+                                              deptIndex,
+                                              roomIndex,
+                                              'centralisedAllotments'
+                                            )
+                                          }
+                                          colorScheme="brand"
+                                          size="sm"
+                                        >
+                                          Afternoon Slot
+                                        </Checkbox>
+                                        <div>
+                                          <HStack
+                                            spacing={2}
+                                            justifyContent="center"
+                                          >
+                                            <Button
+                                              size="sm"
+                                              colorScheme="teal"
+                                              onClick={() =>
+                                                handleAddRoom(
+                                                  deptIndex,
+                                                  'centralisedAllotments'
+                                                )
+                                              }
+                                              fontSize="xs"
+                                            >
+                                              Add Room
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              colorScheme="red"
+                                              onClick={() =>
+                                                handleRemoveRoom(
+                                                  deptIndex,
+                                                  roomIndex,
+                                                  'centralisedAllotments'
+                                                )
+                                              }
+                                              fontSize="xs"
+                                            >
+                                              Remove Room
+                                            </Button>
+                                          </HStack>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </Td>
+                                  <Td
+                                    fontWeight="medium"
+                                    borderColor="brand.600"
+                                    p={4}
+                                    textAlign="center"
+                                  >
+                                    <Button
+                                      size="sm"
+                                      colorScheme="red"
+                                      fontSize="sm"
+                                      textColor={'wh'}
+                                      p={4}
+                                      onClick={() =>
+                                        handleRemoveAllotment(
+                                          deptIndex,
+                                          'centralisedAllotments'
+                                        )
+                                      }
+                                    >
+                                      Remove Allotment
+                                    </Button>{' '}
+                                  </Td>
+                                </Tr>
+                              )
+                            )}
+                          </Tbody>
+                        </Table>
+                        <HStack spacing={5}>
+                          <Button
+                            minW={'150px'}
+                            colorScheme="brand"
+                            fontSize="sm"
+                            alignSelf="center"
+                            onClick={() =>
+                              handleAddAllotment('centralisedAllotments')
+                            }
+                          >
+                            Add Allotment
+                          </Button>
+                          <Button
+                            colorScheme="brand"
+                            //bgGradient="linear(to-r,brand.200,brand.600,brand.600,brand.600,brand.200)"
+                            minW={'150px'}
+                            color="brand.50"
+                            fontSize="md"
+                            alignSelf="center"
+                            _hover={{
+                              bg: 'brand.600',
+                            }}
+                            transition="all 0.2s ease-in-out"
+                          >
+                            Submit
+                          </Button>
+                        </HStack>
+                      </VStack>
+                    </Box>
                   </TabPanel>
 
-                  <TabPanel p={5} pt={10}>
+                  <TabPanel p={5} pt={10} overflow={'auto'}>
+                    <Box minW="max-content" w={"full"}>
                     <VStack spacing={8}>
                       <Heading
                         size="md"
@@ -946,9 +956,10 @@ const AllotmentForm = () => {
                         </Button>
                       </HStack>
                     </VStack>
+                    </Box>
                   </TabPanel>
 
-                  <TabPanel p={10}>
+                  <TabPanel p={10} overflow={'auto'}>
                     <VStack spacing={8} maxW="2xl" mx="auto">
                       <VStack spacing={2} textAlign="center">
                         <Heading
