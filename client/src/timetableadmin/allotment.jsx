@@ -284,37 +284,47 @@ const AllotmentForm = () => {
       [type]: updatedAllotments,
     }));
   };
-
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-        credentials: 'include',
-      });
+  const submitData = async () => {
+    const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+      credentials: 'include',
+    });
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      // console.log('Allotment created successfully');
-      toast({
-        position: 'top',
-        title: 'Allotment Updated Successfully',
-        // description: "",
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error('Error creating allotment:', error.message);
+    if (!response.ok) {
+      throw new Error('Network response was not ok'); 
     }
+
   };
+
+  toast.promise(submitData(), {
+    loading: {
+      title: 'Submitting...',
+      description: 'Please wait while we save your allotment.', 
+    },
+    success: {
+      title: 'Allotment Updated Successfully', 
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    },
+    error: {
+      title: 'Submission Failed', 
+      description: 'An error occurred while submitting the form.',
+      status: 'error',
+      duration: 5000,
+      isClosable: true,
+    },
+  }).catch((error) => {
+    console.error('Error creating allotment:', error.message);  });
+};
+
 
   const getAvailableRooms = (deptIndex, currentRoomIndex, allotments) => {
     const currentDeptRooms = allotments[deptIndex]?.rooms || [];
@@ -335,7 +345,7 @@ const AllotmentForm = () => {
   };
 
   return (
-    <Container maxW={"6xl"}>
+    <Container maxW={'6xl'}>
       <Box>
         <form onSubmit={handleSubmit}>
           <Header title="Allotment"></Header>
@@ -383,11 +393,13 @@ const AllotmentForm = () => {
           )}
 
           <ChakraProvider theme={theme}>
-            <Container maxW="100%" py={4} overflow={"auto"}>
-              <Tabs variant="enclosed" colourScheme="brand" >
-                <TabList  flexDirection={{ base: "column", md: "row" }}
-  alignItems="stretch"
-  gap={{ base: 1, md: 4 }}>
+            <Container maxW="100%" py={4} overflow={'auto'}>
+              <Tabs variant="enclosed" colourScheme="brand">
+                <TabList
+                  flexDirection={{ base: 'column', md: 'row' }}
+                  alignItems="stretch"
+                  gap={{ base: 1, md: 4 }}
+                >
                   <Tab
                     m={''}
                     borderBottom="0px"
@@ -469,12 +481,12 @@ const AllotmentForm = () => {
                   borderColor="rgba(8, 73, 74, 0.82)"
                   overflowX="auto"
                   whiteSpace="nowrap"
-                  minW={"max-content"}
+                  minW={'max-content'}
                   px={0}
                 >
                   <TabPanel p={5} pt={10} overflow={'auto'}>
                     {' '}
-                    <Box minW="max-content" w={"full"}>
+                    <Box minW="max-content" w={'full'}>
                       <VStack spacing={8}>
                         <Heading
                           size="md"
@@ -720,6 +732,7 @@ const AllotmentForm = () => {
                             Add Allotment
                           </Button>
                           <Button
+                            type="submit"
                             colorScheme="brand"
                             //bgGradient="linear(to-r,brand.200,brand.600,brand.600,brand.600,brand.200)"
                             minW={'150px'}
@@ -739,223 +752,226 @@ const AllotmentForm = () => {
                   </TabPanel>
 
                   <TabPanel p={5} pt={10} overflow={'auto'}>
-                    <Box minW="max-content" w={"full"}>
-                    <VStack spacing={8}>
-                      <Heading
-                        size="md"
-                        fontWeight="semibold"
-                        color="brand.800"
-                      >
-                        Open Elective Room Allotment
-                      </Heading>
-                      <Table
-                        w="full"
-                        border="2px solid"
-                        borderColor="brand.600"
-                        borderRadius="md"
-                      >
-                        <Thead bg="brand.50">
-                          <Tr>
-                            <Th
-                              w={1 / 3}
-                              border="2px solid"
-                              color="brand.800"
-                              borderColor="brand.600"
-                              textAlign="center"
-                              py={4}
-                            >
-                              Department
-                            </Th>
-                            <Th
-                              border="2px solid"
-                              color="brand.800"
-                              borderColor="brand.600"
-                              textAlign="center"
-                              py={4}
-                              w={1 / 3}
-                            >
-                              Room
-                            </Th>
-                            <Th
-                              border="2px solid"
-                              color="brand.800"
-                              borderColor="brand.600"
-                              textAlign="center"
-                              py={4}
-                            >
-                              Actions
-                            </Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
-                          {formData.openElectiveAllotments.map(
-                            (allotment, deptIndex) => (
-                              <Tr key={`openElectiveDeptRow-${deptIndex}`}>
-                                <Td
-                                  fontWeight="medium"
-                                  borderColor="brand.600"
-                                  fontSize="sm"
-                                >
-                                  <Select
-                                    name="dept"
-                                    borderColor="brand.300"
-                                    _hover={{ borderColor: 'brand.500' }}
-                                    _focus={{ borderColor: 'brand.500' }}
+                    <Box minW="max-content" w={'full'}>
+                      <VStack spacing={8}>
+                        <Heading
+                          size="md"
+                          fontWeight="semibold"
+                          color="brand.800"
+                        >
+                          Open Elective Room Allotment
+                        </Heading>
+                        <Table
+                          w="full"
+                          border="2px solid"
+                          borderColor="brand.600"
+                          borderRadius="md"
+                        >
+                          <Thead bg="brand.50">
+                            <Tr>
+                              <Th
+                                w={1 / 3}
+                                border="2px solid"
+                                color="brand.800"
+                                borderColor="brand.600"
+                                textAlign="center"
+                                py={4}
+                              >
+                                Department
+                              </Th>
+                              <Th
+                                border="2px solid"
+                                color="brand.800"
+                                borderColor="brand.600"
+                                textAlign="center"
+                                py={4}
+                                w={1 / 3}
+                              >
+                                Room
+                              </Th>
+                              <Th
+                                border="2px solid"
+                                color="brand.800"
+                                borderColor="brand.600"
+                                textAlign="center"
+                                py={4}
+                              >
+                                Actions
+                              </Th>
+                            </Tr>
+                          </Thead>
+                          <Tbody>
+                            {formData.openElectiveAllotments.map(
+                              (allotment, deptIndex) => (
+                                <Tr key={`openElectiveDeptRow-${deptIndex}`}>
+                                  <Td
+                                    fontWeight="medium"
+                                    borderColor="brand.600"
                                     fontSize="sm"
-                                    bg="white"
-                                    value={allotment.dept}
-                                    onChange={(e) =>
-                                      handleChange(
-                                        e,
-                                        deptIndex,
-                                        null,
-                                        'centralisedAllotments'
-                                      )
-                                    }
                                   >
-                                    <option
-                                      key={`centralisedDefaultDept-${deptIndex}`}
-                                      value=""
-                                    >
-                                      Select Department
-                                    </option>
-
-                                    {departments.map((department, index) => (
-                                      <option
-                                        key={`centralisedDept-${index}`}
-                                        value={department}
-                                      >
-                                        {department}
-                                      </option>
-                                    ))}
-                                  </Select>
-                                </Td>
-                                <Td
-                                  fontWeight="medium"
-                                  borderColor="brand.600"
-                                  p={4}
-                                >
-                                  {allotment.rooms.map((room, roomIndex) => (
-                                    <div
-                                      key={`openElectiveRoom-${deptIndex}-${roomIndex}`}
-                                    >
-                                      <Select
-                                        name="room"
-                                        value={room.room}
-                                        onChange={(e) =>
-                                          handleChange(
-                                            e,
-                                            deptIndex,
-                                            roomIndex,
-                                            'openElectiveAllotments'
-                                          )
-                                        }
-                                        borderColor="brand.300"
-                                        _hover={{ borderColor: 'brand.500' }}
-                                        _focus={{ borderColor: 'brand.500' }}
-                                        fontSize="sm"
-                                        bg="white"
-                                      >
-                                        <option
-                                          key={`openElectiveDefaultRoom-${deptIndex}-${roomIndex}`}
-                                          value=""
-                                        >
-                                          Select Room
-                                        </option>
-                                        {getAvailableRoomsoe(
+                                    <Select
+                                      name="dept"
+                                      borderColor="brand.300"
+                                      _hover={{ borderColor: 'brand.500' }}
+                                      _focus={{ borderColor: 'brand.500' }}
+                                      fontSize="sm"
+                                      bg="white"
+                                      value={allotment.dept}
+                                      onChange={(e) =>
+                                        handleChange(
+                                          e,
                                           deptIndex,
-                                          roomIndex
-                                        ).map((roomOption, index) => (
-                                          <option
-                                            key={`openElectiveRoom-${index}`}
-                                            value={roomOption}
-                                          >
-                                            {roomOption}
-                                          </option>
-                                        ))}
-                                      </Select>
-                                      <HStack
-                                        pt={3}
-                                        spacing={2}
-                                        justifyContent="center"
+                                          null,
+                                          'openElectiveAllotments'
+                                        )
+                                      }
+                                    >
+                                      <option
+                                        key={`openElectiveDefaultDept-${deptIndex}`}
+                                        value=""
                                       >
-                                        <Button
-                                          size="sm"
-                                          colorScheme="teal"
-                                          onClick={() =>
-                                            handleAddRoomOpenElective(deptIndex)
-                                          }
-                                          fontSize="xs"
+                                        Select Department
+                                      </option>
+
+                                      {departments.map((department, index) => (
+                                        <option
+                                          key={`openElectiveDept-${index}`}
+                                          value={department}
                                         >
-                                          Add Room
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          colorScheme="red"
-                                          onClick={() =>
-                                            handleRemoveRoom(
+                                          {department}
+                                        </option>
+                                      ))}
+                                    </Select>
+                                  </Td>
+                                  <Td
+                                    fontWeight="medium"
+                                    borderColor="brand.600"
+                                    p={4}
+                                  >
+                                    {allotment.rooms.map((room, roomIndex) => (
+                                      <div
+                                        key={`openElectiveRoom-${deptIndex}-${roomIndex}`}
+                                      >
+                                        <Select
+                                          name="room"
+                                          value={room.room}
+                                          onChange={(e) =>
+                                            handleChange(
+                                              e,
                                               deptIndex,
                                               roomIndex,
                                               'openElectiveAllotments'
                                             )
                                           }
-                                          fontSize="xs"
+                                          borderColor="brand.300"
+                                          _hover={{ borderColor: 'brand.500' }}
+                                          _focus={{ borderColor: 'brand.500' }}
+                                          fontSize="sm"
+                                          bg="white"
                                         >
-                                          Remove Room
-                                        </Button>
-                                      </HStack>
-                                    </div>
-                                  ))}
-                                </Td>
-                                <Td
-                                  fontWeight="medium"
-                                  borderColor="brand.600"
-                                  p={4}
-                                  textAlign="center"
-                                >
-                                  <Button
-                                    size="sm"
-                                    colorScheme="red"
-                                    fontSize="sm"
-                                    alignSelf="center"
-                                    onClick={() =>
-                                      handleRemoveAllotment(
-                                        deptIndex,
-                                        'openElectiveAllotments'
-                                      )
-                                    }
+                                          <option
+                                            key={`openElectiveDefaultRoom-${deptIndex}-${roomIndex}`}
+                                            value=""
+                                          >
+                                            Select Room
+                                          </option>
+                                          {getAvailableRoomsoe(
+                                            deptIndex,
+                                            roomIndex
+                                          ).map((roomOption, index) => (
+                                            <option
+                                              key={`openElectiveRoom-${index}`}
+                                              value={roomOption}
+                                            >
+                                              {roomOption}
+                                            </option>
+                                          ))}
+                                        </Select>
+                                        <HStack
+                                          pt={3}
+                                          spacing={2}
+                                          justifyContent="center"
+                                        >
+                                          <Button
+                                            size="sm"
+                                            colorScheme="teal"
+                                            onClick={() =>
+                                              handleAddRoomOpenElective(
+                                                deptIndex
+                                              )
+                                            }
+                                            fontSize="xs"
+                                          >
+                                            Add Room
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            colorScheme="red"
+                                            onClick={() =>
+                                              handleRemoveRoom(
+                                                deptIndex,
+                                                roomIndex,
+                                                'openElectiveAllotments'
+                                              )
+                                            }
+                                            fontSize="xs"
+                                          >
+                                            Remove Room
+                                          </Button>
+                                        </HStack>
+                                      </div>
+                                    ))}
+                                  </Td>
+                                  <Td
+                                    fontWeight="medium"
+                                    borderColor="brand.600"
+                                    p={4}
+                                    textAlign="center"
                                   >
-                                    Remove Allotment
-                                  </Button>{' '}
-                                </Td>
-                              </Tr>
-                            )
-                          )}
-                        </Tbody>
-                      </Table>
-                      <HStack spacing={4}>
-                        <Button
-                          colorScheme="brand"
-                          fontSize="sm"
-                          minW={'150px'}
-                          alignSelf="center"
-                          onClick={() =>
-                            handleAddAllotment('openElectiveAllotments')
-                          }
-                        >
-                          Add Allotment
-                        </Button>
-                        <Button
-                          colorScheme="brand"
-                          minW={'150px'}
-                          color="brand.50"
-                          fontSize="md"
-                          alignSelf="center"
-                        >
-                          Submit
-                        </Button>
-                      </HStack>
-                    </VStack>
+                                    <Button
+                                      size="sm"
+                                      colorScheme="red"
+                                      fontSize="sm"
+                                      alignSelf="center"
+                                      onClick={() =>
+                                        handleRemoveAllotment(
+                                          deptIndex,
+                                          'openElectiveAllotments'
+                                        )
+                                      }
+                                    >
+                                      Remove Allotment
+                                    </Button>{' '}
+                                  </Td>
+                                </Tr>
+                              )
+                            )}
+                          </Tbody>
+                        </Table>
+                        <HStack spacing={4}>
+                          <Button
+                            colorScheme="brand"
+                            fontSize="sm"
+                            minW={'150px'}
+                            alignSelf="center"
+                            onClick={() =>
+                              handleAddAllotment('openElectiveAllotments')
+                            }
+                          >
+                            Add Allotment
+                          </Button>
+                          <Button
+                            type="submit"
+                            colorScheme="brand"
+                            minW={'150px'}
+                            color="brand.50"
+                            fontSize="md"
+                            alignSelf="center"
+                          >
+                            Submit
+                          </Button>
+                        </HStack>
+                      </VStack>
                     </Box>
                   </TabPanel>
 
