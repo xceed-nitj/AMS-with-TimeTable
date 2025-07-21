@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -11,8 +10,9 @@ import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/layout";
 import {
     FormControl, FormErrorMessage, FormLabel, Center, Heading,
-    Input, Button, Select, Box
+    Input, Button, Select, Box, Textarea
 } from '@chakra-ui/react';
+import { Copy } from 'lucide-react';
 
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
 
@@ -21,9 +21,12 @@ const Speaker = () => {
     const IdConf = params.confid;
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [deleteItemId, setDeleteItemId] = useState(null);
+    const [showBioHTML, setShowBioHTML] = useState(false);
+    const [showAbstractHTML, setShowAbstractHTML] = useState(false);
+    const [editableBioHTML, setEditableBioHTML] = useState('');
+    const [editableAbstractHTML, setEditableAbstractHTML] = useState('');
     const apiUrl = getEnvironment();
 
-    // Define your initial data here
     const initialData = {
         "ConfId": IdConf,
         "Name": "",
@@ -46,7 +49,6 @@ const Speaker = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    // Quill Editor Setup
     const bioEditorRef = useRef(null);
     const abstractEditorRef = useRef(null);
     const bioQuillInstance = useRef(null);
@@ -54,7 +56,58 @@ const Speaker = () => {
 
     const { ConfId, Name, Designation, Institute, ProfileLink, ImgLink, TalkType, TalkTitle, Abstract, Bio, sequence, feature } = formData;
 
-    // Initialize Quill editors
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text).then(() => {
+            console.log('HTML copied to clipboard');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    };
+
+    const handleBioHTMLChange = (e) => {
+        setEditableBioHTML(e.target.value);
+    };
+
+    const handleAbstractHTMLChange = (e) => {
+        setEditableAbstractHTML(e.target.value);
+    };
+
+    const applyBioChanges = () => {
+        if (bioQuillInstance.current) {
+            bioQuillInstance.current.root.innerHTML = editableBioHTML;
+            setFormData(prev => ({
+                ...prev,
+                Bio: editableBioHTML
+            }));
+        }
+    };
+
+    const applyAbstractChanges = () => {
+        if (abstractQuillInstance.current) {
+            abstractQuillInstance.current.root.innerHTML = editableAbstractHTML;
+            setFormData(prev => ({
+                ...prev,
+                Abstract: editableAbstractHTML
+            }));
+        }
+    };
+
+    const handleShowBioHTML = () => {
+        if (bioQuillInstance.current) {
+            const html = bioQuillInstance.current.root.innerHTML;
+            setEditableBioHTML(html);
+            setShowBioHTML(!showBioHTML);
+        }
+    };
+
+    const handleShowAbstractHTML = () => {
+        if (abstractQuillInstance.current) {
+            const html = abstractQuillInstance.current.root.innerHTML;
+            setEditableAbstractHTML(html);
+            setShowAbstractHTML(!showAbstractHTML);
+        }
+    };
+
     useEffect(() => {
         if (bioQuillInstance.current || abstractQuillInstance.current) return;
 
@@ -98,7 +151,6 @@ const Speaker = () => {
             },
         };
 
-        // Initialize Bio editor
         if (bioEditorRef.current && !bioQuillInstance.current) {
             bioQuillInstance.current = new Quill(bioEditorRef.current, {
                 theme: "snow",
@@ -107,14 +159,17 @@ const Speaker = () => {
             });
 
             bioQuillInstance.current.on("text-change", () => {
+                const html = bioQuillInstance.current.root.innerHTML;
                 setFormData((prev) => ({
                     ...prev,
-                    Bio: bioQuillInstance.current.root.innerHTML
+                    Bio: html
                 }));
+                if (showBioHTML) {
+                    setEditableBioHTML(html);
+                }
             });
         }
 
-        // Initialize Abstract editor
         if (abstractEditorRef.current && !abstractQuillInstance.current) {
             abstractQuillInstance.current = new Quill(abstractEditorRef.current, {
                 theme: "snow",
@@ -123,10 +178,14 @@ const Speaker = () => {
             });
 
             abstractQuillInstance.current.on("text-change", () => {
+                const html = abstractQuillInstance.current.root.innerHTML;
                 setFormData((prev) => ({
                     ...prev,
-                    Abstract: abstractQuillInstance.current.root.innerHTML
+                    Abstract: html
                 }));
+                if (showAbstractHTML) {
+                    setEditableAbstractHTML(html);
+                }
             });
         }
     }, []);
@@ -182,7 +241,6 @@ const Speaker = () => {
         }
     }, [editID, formData.Bio, formData.Abstract]);
 
-    // Update editors when formData changes
     useEffect(() => {
         if (bioQuillInstance.current && formData.Bio !== bioQuillInstance.current.root.innerHTML) {
             bioQuillInstance.current.root.innerHTML = formData.Bio || '';
@@ -250,11 +308,8 @@ const Speaker = () => {
             withCredentials: true
         })
             .then(res => {
-                setFormData(initialData); 
                 setRefresh(refresh + 1);
-                setEditID(null);
-                if (bioQuillInstance.current) bioQuillInstance.current.root.innerHTML = '';
-                if (abstractQuillInstance.current) abstractQuillInstance.current.root.innerHTML = '';
+                console.log('Speaker updated successfully:', res.data);
             })
             .catch(err => console.log(err));
     };
@@ -273,6 +328,9 @@ const Speaker = () => {
                 setShowDeleteConfirmation(false);
                 setRefresh(refresh + 1);
                 setFormData(initialData);
+                setEditID(null);
+                if (bioQuillInstance.current) bioQuillInstance.current.root.innerHTML = '';
+                if (abstractQuillInstance.current) abstractQuillInstance.current.root.innerHTML = '';
             })
             .catch(err => console.log(err));
     };
@@ -295,6 +353,13 @@ const Speaker = () => {
             .catch(err => console.log(err));
     };
 
+    const handleClearForm = () => {
+        setFormData(initialData);
+        setEditID(null);
+        if (bioQuillInstance.current) bioQuillInstance.current.root.innerHTML = '';
+        if (abstractQuillInstance.current) abstractQuillInstance.current.root.innerHTML = '';
+    };
+
     return (
         <main className='tw-py-10 tw-min-h-screen tw-flex tw-justify-center'>
             <div className="tw-w-full tw-max-w-full tw-px-2">
@@ -307,7 +372,7 @@ const Speaker = () => {
                                 color: "#8B5CF6", 
                                 textDecoration: "underline"
                             }} >
-                                    Create a New Speaker
+                                    {editID ? 'Update Speaker' : 'Create a New Speaker'}
                                 </Heading>
                             </Center>
 
@@ -406,6 +471,13 @@ const Speaker = () => {
                                     >
                                         Insert Table
                                     </Button>
+                                    <Button
+                                        colorScheme="purple"
+                                        size="sm"
+                                        onClick={handleShowBioHTML}
+                                    >
+                                        {showBioHTML ? 'Hide HTML' : 'Show HTML'}
+                                    </Button>
                                 </div>
                                 <div
                                     ref={bioEditorRef}
@@ -414,10 +486,54 @@ const Speaker = () => {
                                         width: "100%",
                                         border: "1px solid #ccc",
                                         borderRadius: "5px",
-                                        marginBottom: "20px",
+                                        marginBottom: showBioHTML ? "10px" : "20px",
                                         background: "#fff"
                                     }}
                                 ></div>
+                                {showBioHTML && (
+                                    <Box
+                                        bg="gray.50"
+                                        border="1px solid"
+                                        borderColor="gray.300"
+                                        borderRadius="md"
+                                        p={4}
+                                        mb={4}
+                                    >
+                                        <div className="tw-flex tw-justify-between tw-items-center tw-mb-3">
+                                            <h3 className="tw-text-lg tw-font-semibold tw-text-gray-700">HTML Content (Editable)</h3>
+                                            <div className="tw-flex tw-gap-2">
+                                                <Button
+                                                    colorScheme="orange"
+                                                    size="sm"
+                                                    onClick={applyBioChanges}
+                                                >
+                                                    Apply Changes
+                                                </Button>
+                                                <button
+                                                    onClick={() => copyToClipboard(editableBioHTML || '')}
+                                                    className="tw-inline-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-bg-green-500 tw-text-white tw-rounded-lg tw-font-medium tw-hover:bg-green-600 tw-transition-colors"
+                                                >
+                                                    <Copy size={16} />
+                                                    Copy HTML
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <Textarea
+                                            value={editableBioHTML}
+                                            onChange={handleBioHTMLChange}
+                                            placeholder="Edit HTML content here..."
+                                            minHeight="200px"
+                                            maxHeight="400px"
+                                            fontFamily="monospace"
+                                            fontSize="sm"
+                                            bg="white"
+                                            border="1px solid"
+                                            borderColor="gray.200"
+                                            borderRadius="md"
+                                            resize="vertical"
+                                        />
+                                    </Box>
+                                )}
                             </FormControl>
 
                             <FormControl isRequired={true} mb='3'>
@@ -431,6 +547,13 @@ const Speaker = () => {
                                     >
                                         Insert Table
                                     </Button>
+                                    <Button
+                                        colorScheme="purple"
+                                        size="sm"
+                                        onClick={handleShowAbstractHTML}
+                                    >
+                                        {showAbstractHTML ? 'Hide HTML' : 'Show HTML'}
+                                    </Button>
                                 </div>
                                 <div
                                     ref={abstractEditorRef}
@@ -439,43 +562,57 @@ const Speaker = () => {
                                         width: "100%",
                                         border: "1px solid #ccc",
                                         borderRadius: "5px",
-                                        marginBottom: "20px",
+                                        marginBottom: showAbstractHTML ? "10px" : "20px",
                                         background: "#fff"
                                     }}
                                 ></div>
+                                {showAbstractHTML && (
+                                    <Box
+                                        bg="gray.50"
+                                        border="1px solid"
+                                        borderColor="gray.300"
+                                        borderRadius="md"
+                                        p={4}
+                                        mb={4}
+                                    >
+                                        <div className="tw-flex tw-justify-between tw-items-center tw-mb-3">
+                                            <h3 className="tw-text-lg tw-font-semibold tw-text-gray-700">HTML Content (Editable)</h3>
+                                            <div className="tw-flex tw-gap-2">
+                                                <Button
+                                                    colorScheme="orange"
+                                                    size="sm"
+                                                    onClick={applyAbstractChanges}
+                                                >
+                                                    Apply Changes
+                                                </Button>
+                                                <button
+                                                    onClick={() => copyToClipboard(editableAbstractHTML || '')}
+                                                    className="tw-inline-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-bg-green-600 tw-text-white tw-rounded-lg tw-font-medium tw-hover:bg-green-600 tw-transition-colors"
+                                                    colorScheme="green"
+                                                    size="sm"
+                                                >
+                                                    <Copy size={1} color="green" />
+                                                    Copy HTML
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <Textarea
+                                            value={editableAbstractHTML}
+                                            onChange={handleAbstractHTMLChange}
+                                            placeholder="Edit HTML content here..."
+                                            minHeight="200px"
+                                            maxHeight="400px"
+                                            fontFamily="monospace"
+                                            fontSize="sm"
+                                            bg="white"
+                                            border="1px solid"
+                                            borderColor="gray.200"
+                                            borderRadius="md"
+                                            resize="vertical"
+                                        />
+                                    </Box>
+                                )}
                             </FormControl>
-
-                            {/* Live Preview - Shows only on mobile/tablet  */}
-                            <div className="tw-block lg:tw-hidden tw-mb-6">
-                                <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg">
-                                    <Heading as="h2" size="lg" mb="4" className="tw-text-center" style={{
-                                color: "#8B5CF6", 
-                                textDecoration: "underline"
-                            }}>
-                                        Live Preview
-                                    </Heading>
-                                    <div className="tw-bg-white tw-p-4 tw-rounded tw-shadow-sm">
-                                        <div className="tw-mb-4">
-                                            <h3 className="tw-font-semibold tw-text-base tw-mb-2">Bio:</h3>
-                                            <div
-                                                className="tw-prose tw-max-w-none tw-min-h-[150px] tw-p-3 tw-border tw-rounded tw-bg-gray-50 tw-overflow-auto tw-text-sm"
-                                                dangerouslySetInnerHTML={{ 
-                                                    __html: formData.Bio || '<p class="tw-text-gray-400 tw-italic">Start typing in the bio editor to see the live preview here...</p>' 
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="tw-mb-2">
-                                            <h3 className="tw-font-semibold tw-text-base tw-mb-2">Abstract:</h3>
-                                            <div
-                                                className="tw-prose tw-max-w-none tw-min-h-[150px] tw-p-3 tw-border tw-rounded tw-bg-gray-50 tw-overflow-auto tw-text-sm"
-                                                dangerouslySetInnerHTML={{ 
-                                                    __html: formData.Abstract || '<p class="tw-text-gray-400 tw-italic">Start typing in the abstract editor to see the live preview here...</p>' 
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </Box>
-                            </div>
 
                             <FormControl isRequired={true} mb='3'>
                                 <FormLabel>Sequence:</FormLabel>
@@ -508,6 +645,7 @@ const Speaker = () => {
                                     type={editID ? "button" : "submit"} 
                                     onClick={() => { editID ? handleUpdate() : handleSubmit() }}
                                     size="lg"
+                                    mr={editID ? 4 : 0}
                                 >
                                     {editID ? 'Update' : 'Add'}
                                 </Button>
@@ -515,7 +653,6 @@ const Speaker = () => {
                         </Container>
                     </div>
 
-                    {/* Right Section - Live Preview (Desktop only) */}
                     <div className="tw-hidden lg:tw-block tw-w-full lg:tw-w-1/2 tw-sticky tw-top-0 tw-h-screen tw-overflow-auto">
                         <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg tw-h-full">
                             <Heading as="h2" size="xl" mb="6" className="tw-text-center" style={{

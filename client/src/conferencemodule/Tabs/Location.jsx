@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -11,7 +12,7 @@ import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/layout";
 import {
     FormControl, FormLabel, Center, Heading,
-    Input, Button, Select, Box
+    Input, Button, Select, Box, HStack, VStack, Text, Textarea, useToast
 } from '@chakra-ui/react';
 import { CustomTh } from '../utils/customStyles'
 import {
@@ -29,6 +30,11 @@ const Location = () => {
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [deleteItemId, setDeleteItemId] = useState(null);
     const apiUrl = getEnvironment();
+    const toast = useToast();
+
+    const [showHtml, setShowHtml] = useState(false);
+    const [htmlContent, setHtmlContent] = useState("");
+    const [editableHtmlContent, setEditableHtmlContent] = useState("");
 
     const initialData = {
         confId: IdConf,
@@ -45,7 +51,6 @@ const Location = () => {
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    // --- Quill Editor Setup ---
     const editorRef = useRef(null);
     const quillInstance = useRef(null);
 
@@ -56,6 +61,9 @@ const Location = () => {
         })
             .then(res => {
                 setData(res.data);
+                if (res.data && Object.keys(res.data).length > 0) {
+                    setEditID(res.data._id);
+                }
             })
             .catch(err => console.log(err))
             .finally(() => setLoading(false));
@@ -75,11 +83,17 @@ const Location = () => {
             if (quillInstance.current) {
                 quillInstance.current.root.innerHTML = data.description || "";
             }
+            setHtmlContent(data.description || "");
+            setEditableHtmlContent(data.description || "");
+            setEditID(data._id);
         } else {
             setFormData(initialData);
             if (quillInstance.current) {
                 quillInstance.current.root.innerHTML = "";
             }
+            setHtmlContent("");
+            setEditableHtmlContent("");
+            setEditID(null);
         }
     }, [data, IdConf]);
 
@@ -137,10 +151,13 @@ const Location = () => {
         }
 
         quillInstance.current.on("text-change", () => {
+            const html = quillInstance.current.root.innerHTML;
             setFormData((prev) => ({
                 ...prev,
-                description: quillInstance.current.root.innerHTML
+                description: html
             }));
+            setHtmlContent(html);
+            setEditableHtmlContent(html);
         });
     }, []);
 
@@ -150,20 +167,79 @@ const Location = () => {
         }
     }, [editID]);
 
-    // --- Table Operation Buttons ---
     const insertTable = () => {
         const tableModule = quillInstance.current.getModule("better-table");
         tableModule.insertTable(3, 3);
     };
-    const getTable = () => {
-        const tableModule = quillInstance.current.getModule("better-table");
-        console.log("Table details:", tableModule.getTable());
-    };
-    const getContents = () => {
-        console.log("Editor contents:", quillInstance.current.getContents());
+
+    const toggleHtmlView = () => {
+        if (quillInstance.current) {
+            const html = quillInstance.current.root.innerHTML;
+            setHtmlContent(html);
+            setEditableHtmlContent(html);
+        }
+        setShowHtml(!showHtml);
     };
 
-    // --- Form Handlers ---
+    const handleHtmlContentChange = (e) => {
+        const newHtmlContent = e.target.value;
+        setEditableHtmlContent(newHtmlContent);
+    };
+
+    const applyHtmlChanges = () => {
+        if (quillInstance.current) {
+            try {
+                quillInstance.current.root.innerHTML = editableHtmlContent;
+                
+                setFormData(prev => ({
+                    ...prev,
+                    description: editableHtmlContent
+                }));
+                
+                setHtmlContent(editableHtmlContent);
+                
+                toast({
+                    title: "HTML Applied!",
+                    description: "The HTML content has been applied to the editor.",
+                    status: "success",
+                    duration: 2000,
+                    isClosable: true,
+                });
+            } catch (error) {
+                toast({
+                    title: "Invalid HTML",
+                    description: "The HTML content contains errors and could not be applied.",
+                    status: "error",
+                    duration: 2000,
+                    isClosable: true,
+                });
+            }
+        }
+    };
+
+    const copyHtmlToClipboard = () => {
+        if (quillInstance.current) {
+            const html = quillInstance.current.root.innerHTML;
+            navigator.clipboard.writeText(html).then(() => {
+                toast({
+                    title: "HTML Copied!",
+                    description: "The HTML content has been copied to your clipboard.",
+                    status: "success",
+                    duration: 2000,
+                    isClosable: true,
+                });
+            }).catch(() => {
+                toast({
+                    title: "Copy Failed",
+                    description: "Failed to copy HTML content to clipboard.",
+                    status: "error",
+                    duration: 2000,
+                    isClosable: true,
+                });
+            });
+        }
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "sequence") {
@@ -187,7 +263,7 @@ const Location = () => {
     };
 
     const handleSubmit = () => {
-        if (data && Object.keys(data).length !== 0) {
+        if (data && Object.keys(data).length !== 0 && !editID) {
             window.alert('You can Add only one Location for one conference');
             setFormData(initialData)
         }
@@ -195,9 +271,15 @@ const Location = () => {
             axios.post(`${apiUrl}/conferencemodule/location`, formData, { withCredentials: true })
                 .then(res => {
                     setData(res.data);
-                    setFormData(initialData);
+                    setEditID(res.data._id);
                     setRefresh(refresh + 1);
-                    if (quillInstance.current) quillInstance.current.root.innerHTML = '';
+                    toast({
+                        title: "Location Added!",
+                        description: "Location has been successfully added.",
+                        status: "success",
+                        duration: 2000,
+                        isClosable: true,
+                    });
                 })
                 .catch(err => {
                     console.log(err);
@@ -211,10 +293,15 @@ const Location = () => {
             withCredentials: true
         })
             .then(res => {
-                setFormData(initialData);
+                setData(res.data);
                 setRefresh(refresh + 1);
-                setEditID(null);
-                if (quillInstance.current) quillInstance.current.root.innerHTML = '';
+                toast({
+                    title: "Location Updated!",
+                    description: "Location has been successfully updated.",
+                    status: "success",
+                    duration: 2000,
+                    isClosable: true,
+                });
             })
             .catch(err => console.log(err));
     };
@@ -234,6 +321,8 @@ const Location = () => {
                 setFormData(initialData);
                 setEditID(null);
                 if (quillInstance.current) quillInstance.current.root.innerHTML = '';
+                setHtmlContent('');
+                setEditableHtmlContent('');
             })
             .catch(err => console.log(err));
     };
@@ -247,21 +336,40 @@ const Location = () => {
                 setFormData(res.data);
                 setEditID(res.data._id);
                 if (quillInstance.current) quillInstance.current.root.innerHTML = res.data.description || '';
+                setHtmlContent(res.data.description || '');
+                setEditableHtmlContent(res.data.description || '');
             })
             .catch(err => console.log(err));
     };
 
-    useEffect(() => {
-        setLoading(true);
-        axios.get(`${apiUrl}/conferencemodule/location/${IdConf}`, {
-            withCredentials: true
-        })
-            .then(res => {
-                setData(res.data);
-            })
-            .catch(err => console.log(err))
-            .finally(() => setLoading(false));
-    }, [refresh, IdConf, apiUrl]);
+    const htmlPreviewStyles = {
+        fontSize: '16px',
+        lineHeight: '1.6',
+        color: '#374151'
+    };
+
+    const htmlContentStyles = `
+        h1 { font-size: 2rem; font-weight: bold; margin: 1rem 0; }
+        h2 { font-size: 1.5rem; font-weight: bold; margin: 0.875rem 0; }
+        h3 { font-size: 1.25rem; font-weight: bold; margin: 0.75rem 0; }
+        h4 { font-size: 1.125rem; font-weight: bold; margin: 0.625rem 0; }
+        h5 { font-size: 1rem; font-weight: bold; margin: 0.5rem 0; }
+        h6 { font-size: 0.875rem; font-weight: bold; margin: 0.5rem 0; }
+        p { margin: 0.75rem 0; }
+        strong { font-weight: bold; }
+        em { font-style: italic; }
+        u { text-decoration: underline; }
+        s { text-decoration: line-through; }
+        ul { list-style-type: disc; margin: 1rem 0; padding-left: 2rem; }
+        ol { list-style-type: decimal; margin: 1rem 0; padding-left: 2rem; }
+        li { margin: 0.25rem 0; }
+        blockquote { border-left: 4px solid #e5e7eb; margin: 1rem 0; padding-left: 1rem; font-style: italic; }
+        code { background-color: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: monospace; }
+        table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+        th, td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
+        th { background-color: #f9fafb; font-weight: bold; }
+        img { max-width: 100%; height: auto; }
+    `;
 
     
     return (
@@ -283,16 +391,22 @@ const Location = () => {
 
                         <FormControl isRequired={true} mb='3'>
                             <FormLabel>Description:</FormLabel>
-                            <div style={{ marginBottom: "10px" }}>
+                            <HStack spacing={2} mb={3}>
                                 <Button
                                     colorScheme="blue"
                                     size="sm"
                                     onClick={insertTable}
-                                    mr={2}
                                 >
                                     Insert Table
                                 </Button>
-                            </div>
+                                <Button
+                                    colorScheme="purple"
+                                    size="sm"
+                                    onClick={toggleHtmlView}
+                                >
+                                    {showHtml ? 'Hide HTML' : 'Show HTML'}
+                                </Button>
+                            </HStack>
                             <div
                                 ref={editorRef}
                                 style={{
@@ -304,9 +418,58 @@ const Location = () => {
                                     background: "#fff"
                                 }}
                             ></div>
+                            {showHtml && (
+                                <Box
+                                    bg="white"
+                                    border="1px solid"
+                                    borderColor="gray.300"
+                                    borderRadius="md"
+                                    p={4}
+                                    mb={4}
+                                    mt={4}
+                                >
+                                    <HStack justifyContent="space-between" alignItems="center" mb={3}>
+                                        <Heading as="h4" size="sm" color="gray.700">
+                                            HTML Content (Editable)
+                                        </Heading>
+                                        <HStack spacing={2}>
+                                            <Button
+                                                colorScheme="orange"
+                                                size="sm"
+                                                onClick={applyHtmlChanges}
+                                            >
+                                                Apply Changes
+                                            </Button>
+                                            <Button
+                                                colorScheme="green"
+                                                size="sm"
+                                                onClick={copyHtmlToClipboard}
+                                            >
+                                                Copy HTML
+                                            </Button>
+                                        </HStack>
+                                    </HStack>
+                                    <Textarea
+                                        value={editableHtmlContent || '<p>No content yet...</p>'}
+                                        onChange={handleHtmlContentChange}
+                                        placeholder="Paste or edit HTML content here..."
+                                        bg="gray.50"
+                                        border="1px solid"
+                                        borderColor="gray.200"
+                                        borderRadius="md"
+                                        fontFamily="monospace"
+                                        fontSize="sm"
+                                        minHeight="300px"
+                                        resize="vertical"
+                                    />
+                                    <Text fontSize="xs" color="gray.500" mt={2}>
+                                        Edit the HTML above and click "Apply Changes" to update the editor content.
+                                    </Text>
+                                </Box>
+                            )}
                         </FormControl>
 
-                        {/* Live Preview Section */}
+                        {/* Live Preview Section for Mobile */}
                         <div className="tw-block lg:tw-hidden tw-mb-6">
                             <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg tw-border">
                                 <Heading as="h2" size="lg" mb="4" className="tw-text-center tw-text-gray-700">
@@ -314,16 +477,17 @@ const Location = () => {
                                 </Heading>
 
                                 <div className="tw-bg-white tw-p-4 tw-rounded tw-shadow-sm tw-overflow-hidden">
+                                    <style>{htmlContentStyles}</style>
                                     <div 
-                                        className="tw-prose tw-max-w-none tw-min-h-[200px] tw-max-h-[300px] tw-p-4 tw-border tw-rounded tw-bg-gray-50 tw-overflow-auto"
+                                        className="tw-min-h-[200px] tw-max-h-[300px] tw-p-4 tw-border tw-rounded tw-bg-gray-50 tw-overflow-auto"
+                                        style={htmlPreviewStyles}
                                         dangerouslySetInnerHTML={{ 
-                                            __html: formData.description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>' 
+                                            __html: formData.description || '<p style="color: #9CA3AF; font-style: italic;">Start typing in the description editor to see the live preview here...</p>' 
                                         }}
                                     />
                                 </div>
                             </Box>
                         </div>
-
 
                         <FormControl isRequired={true} mb='3'>
                             <FormLabel>Address:</FormLabel>
@@ -393,9 +557,6 @@ const Location = () => {
                     </Container>
                 </div>
 
-                
-
-                {/* Right Section - Preview (desktop only) */}
                 <div className="tw-hidden lg:tw-block tw-w-1/2 tw-sticky tw-top-0 tw-h-screen tw-overflow-auto">
                     <Box className="tw-bg-gray-50 tw-p-6 tw-rounded-lg tw-h-full">
                         <Heading as="h1"
@@ -409,10 +570,12 @@ const Location = () => {
                         <div className="tw-bg-white tw-p-4 tw-rounded tw-shadow-sm tw-min-h-full">
                             <div className="tw-mb-4">
                                 <h3 className="tw-font-semibold tw-text-lg tw-mb-2">Description:</h3>
+                                <style>{htmlContentStyles}</style>
                                 <div
-                                    className="tw-prose tw-max-w-none tw-min-h-[200px] tw-p-2 tw-border tw-rounded"
+                                    className="tw-min-h-[200px] tw-p-4 tw-border tw-rounded tw-bg-gray-50"
+                                    style={htmlPreviewStyles}
                                     dangerouslySetInnerHTML={{ 
-                                        __html: formData.description || '<p class="tw-text-gray-400">Description will appear here...</p>' 
+                                        __html: formData.description || '<p style="color: #9CA3AF; font-style: italic;">Description will appear here...</p>' 
                                     }}
                                 />
                             </div>
@@ -426,4 +589,4 @@ const Location = () => {
 
 };
 
-export default Location; 
+export default Location;

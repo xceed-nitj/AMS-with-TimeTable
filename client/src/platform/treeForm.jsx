@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -18,8 +17,10 @@ import {
   Card,
   CardBody,
   Heading,
-  SimpleGrid,Link,Center,
-  useColorModeValue
+  SimpleGrid,
+  Link,
+  Center,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import {
   Table,
@@ -30,7 +31,12 @@ import {
   Td,
   TableContainer,
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon,AttachmentIcon, EditIcon } from '@chakra-ui/icons';
+import {
+  AddIcon,
+  DeleteIcon,
+  AttachmentIcon,
+  EditIcon,
+} from '@chakra-ui/icons';
 import getEnvironment from '../getenvironment';
 import axios from 'axios';
 
@@ -575,11 +581,11 @@ const TreeForm = () => {
                           />
                         </FormControl>
 
-                         <FormControl mb={4}>
-                        <FormLabel color="gray.700" fontWeight="600" mb={2}>
-                          Contributor Image
-                        </FormLabel>
-                        <Box position="relative">
+                        <FormControl mb={4}>
+                          <FormLabel color="gray.700" fontWeight="600" mb={2}>
+                            Contributor Image
+                          </FormLabel>
+                          {/* <Box position="relative">
                           <Input
                             type="file"
                             accept="image/*"
@@ -637,10 +643,78 @@ const TreeForm = () => {
                               </VStack>
                             </HStack>
                           </Box>
-                        </Box>
-                      </FormControl>
+                        </Box> */}
+                          <Box position="relative">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageChange(index, e)}
+                              position="absolute"
+                              top="0"
+                              left="0"
+                              width="100%"
+                              height="100%"
+                              opacity="0"
+                              cursor="pointer"
+                              zIndex="2"
+                            />
+                            <Box
+                              bg="white"
+                              borderRadius="lg"
+                              border="2px"
+                              borderColor="purple.200"
+                              borderStyle="dashed"
+                              p={4}
+                              cursor="pointer"
+                              _hover={{
+                                borderColor: 'purple.400',
+                                bg: 'purple.50',
+                                transform: 'scale(1.02)',
+                              }}
+                              transition="all 0.2s ease"
+                              position="relative"
+                              zIndex="1"
+                              height="60px"
+                            >
+                              <HStack
+                                spacing={3}
+                                height="100%"
+                                alignItems="center"
+                              >
+                                <Box
+                                  p={2}
+                                  borderRadius="md"
+                                  bg="purple.100"
+                                  color="purple.500"
+                                >
+                                  <AttachmentIcon boxSize={4} />
+                                </Box>
+                                <VStack spacing={0} alignItems="flex-start">
+                                  <Text
+                                    fontWeight="semibold"
+                                    color="purple.600"
+                                    fontSize="sm"
+                                  >
+                                    {contributor.image
+                                      ? 'File Selected'
+                                      : 'Choose Image File'}
+                                  </Text>
+                                  <Text fontSize="xs" color="gray.500">
+                                    PNG, JPG, GIF up to 10MB
+                                  </Text>
+                                </VStack>
+                              </HStack>
+                            </Box>
 
-
+                            {/* Show file name if selected */}
+                            {contributor.image &&
+                              typeof contributor.image !== 'string' && (
+                                <Text mt={2} fontSize="sm" color="gray.600">
+                                  Selected: {contributor.image.name}
+                                </Text>
+                              )}
+                          </Box>
+                        </FormControl>
                       </SimpleGrid>
                       <Box display="flex" justifyContent="flex-end">
                         <Button
@@ -720,9 +794,9 @@ const TreeForm = () => {
       </Card>
 
       {/* Display Submitted Modules */}
-      <Card 
+      <Card
         bg="white"
-        shadow="2xl" 
+        shadow="2xl"
         borderRadius="2xl"
         border="1px"
         borderColor="green.200"
@@ -732,17 +806,17 @@ const TreeForm = () => {
         transition="all 0.3s ease"
       >
         <CardBody p={8}>
-          <Box 
-            w="100%" 
-            bgGradient="linear(to-r, green.50, teal.50)" 
-            p={4} 
-            borderRadius="xl" 
+          <Box
+            w="100%"
+            bgGradient="linear(to-r, green.50, teal.50)"
+            p={4}
+            borderRadius="xl"
             mb={6}
             border="1px"
             borderColor="green.100"
           >
-            <Heading 
-              size="lg" 
+            <Heading
+              size="lg"
               bgGradient="linear(to-r, green.500, teal.500)"
               bgClip="text"
               fontWeight="bold"
@@ -750,57 +824,86 @@ const TreeForm = () => {
               Submitted Modules
             </Heading>
           </Box>
-          
-      <TableContainer borderRadius="xl" overflow="hidden" shadow="lg">
-        <Table variant="simple" size="md">
-          <Thead>
-            <Tr bgGradient="linear(to-r, purple.500, pink.500)">
-                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>SR. NO</Th>
-                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>MODULE NAME</Th>
-                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>DESCRIPTION</Th>
-                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>YEAR LAUNCHED</Th>
-                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>CONTRIBUTORS</Th>
-                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>EDIT/DELETE</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {submittedModules.map((module, index) => (
-              <Tr key={index} _hover={{ bg: "blue.50", transform: 'scale(1.01)' }}
+
+          <TableContainer borderRadius="xl" overflow="hidden" shadow="lg">
+            <Table variant="simple" size="md">
+              <Thead>
+                <Tr bgGradient="linear(to-r, purple.500, pink.500)">
+                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>
+                    SR. NO
+                  </Th>
+                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>
+                    MODULE NAME
+                  </Th>
+                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>
+                    DESCRIPTION
+                  </Th>
+                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>
+                    YEAR LAUNCHED
+                  </Th>
+                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>
+                    CONTRIBUTORS
+                  </Th>
+                  <Th color="white" fontSize="sm" fontWeight="bold" py={4}>
+                    EDIT/DELETE
+                  </Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {submittedModules.map((module, index) => (
+                  <Tr
+                    key={index}
+                    _hover={{ bg: 'blue.50', transform: 'scale(1.01)' }}
                     transition="all 0.2s ease"
-                    bg={index % 2 === 0 ? "gray.50" : "white"}>
-                <Td fontWeight="semibold">{index + 1}</Td>
-                <Td>
-                  <Text isTruncated maxW="150px" noOfLines={2}>
-                    {module.name}
-                  </Text>
-                </Td>
-                <Td>
-                  <Text whiteSpace="normal" wordBreak="break-word" fontSize="sm">
-                    {module.description}
-                  </Text>
-                </Td>
-                <Td> <Text fontWeight="semibold">
-                        {module.yearLaunched}
-                      </Text></Td>
-                <Td>
-                                        <VStack align="start" spacing={3}>
-                  {module.contributors.map((contributor, i) => (
-                    <Box key={i}  p={4} 
-                            bg="white" 
-                            borderRadius="lg" 
-                            border="1px" 
-                            borderColor="gray.200" 
+                    bg={index % 2 === 0 ? 'gray.50' : 'white'}
+                  >
+                    <Td fontWeight="semibold">{index + 1}</Td>
+                    <Td>
+                      <Text isTruncated maxW="150px" noOfLines={2}>
+                        {module.name}
+                      </Text>
+                    </Td>
+                    <Td>
+                      <Text
+                        whiteSpace="normal"
+                        wordBreak="break-word"
+                        fontSize="sm"
+                      >
+                        {module.description}
+                      </Text>
+                    </Td>
+                    <Td>
+                      {' '}
+                      <Text fontWeight="semibold">{module.yearLaunched}</Text>
+                    </Td>
+                    <Td>
+                      <VStack align="start" spacing={3}>
+                        {module.contributors.map((contributor, i) => (
+                          <Box
+                            key={i}
+                            p={4}
+                            bg="white"
+                            borderRadius="lg"
+                            border="1px"
+                            borderColor="gray.200"
                             w="100%"
                             shadow="sm"
-                            _hover={{ shadow: 'md', transform: 'translateY(-1px)' }}
+                            _hover={{
+                              shadow: 'md',
+                              transform: 'translateY(-1px)',
+                            }}
                             transition="all 0.2s ease"
                           >
-                      <Text fontSize="sm"><strong>{contributor.name}</strong></Text>
-                            <Text fontSize="xs" color="gray.600">{contributor.designation}</Text>
-                     {contributor.linkedin && (
-                              <Link 
-                                href={contributor.linkedin} 
-                                target="_blank" 
+                            <Text fontSize="sm">
+                              <strong>{contributor.name}</strong>
+                            </Text>
+                            <Text fontSize="xs" color="gray.600">
+                              {contributor.designation}
+                            </Text>
+                            {contributor.linkedin && (
+                              <Link
+                                href={contributor.linkedin}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 color="blue.500"
                                 fontSize="xs"
@@ -809,19 +912,33 @@ const TreeForm = () => {
                                 LinkedIn Profile
                               </Link>
                             )}
-                    {contributor.image && (
+                            {contributor.image && (
                               <Box mt={2}>
-                                <Img src={contributor.image} alt={contributor.name} w="40px" h="40px" borderRadius="full" />
-                                {contributor.image && contributor.image instanceof Blob && (
-                                  <img
-                                    src={URL.createObjectURL(contributor.image)}
-                                    alt={contributor.name}
-                                    width="40"
-                                    height="40"
-                                    style={{ borderRadius: '50%', marginTop: '8px' }}
-                                    onLoad={(e) => URL.revokeObjectURL(e.target.src)}
-                                  />
-                                )}
+                                <Img
+                                  src={contributor.image}
+                                  alt={contributor.name}
+                                  w="40px"
+                                  h="40px"
+                                  borderRadius="full"
+                                />
+                                {contributor.image &&
+                                  contributor.image instanceof Blob && (
+                                    <img
+                                      src={URL.createObjectURL(
+                                        contributor.image
+                                      )}
+                                      alt={contributor.name}
+                                      width="40"
+                                      height="40"
+                                      style={{
+                                        borderRadius: '50%',
+                                        marginTop: '8px',
+                                      }}
+                                      onLoad={(e) =>
+                                        URL.revokeObjectURL(e.target.src)
+                                      }
+                                    />
+                                  )}
                               </Box>
                             )}
                           </Box>
@@ -829,7 +946,7 @@ const TreeForm = () => {
                       </VStack>
                     </Td>
                     <Td>
-                   <VStack spacing={2}>
+                      <VStack spacing={2}>
                         <IconButton
                           aria-label="Edit module"
                           icon={<EditIcon />}
@@ -837,9 +954,9 @@ const TreeForm = () => {
                           colorScheme="green"
                           size="sm"
                           borderRadius="full"
-                          _hover={{ 
-                            transform: 'scale(1.1)', 
-                            shadow: 'md' 
+                          _hover={{
+                            transform: 'scale(1.1)',
+                            shadow: 'md',
                           }}
                           transition="all 0.2s ease"
                         />
@@ -850,9 +967,9 @@ const TreeForm = () => {
                           colorScheme="red"
                           size="sm"
                           borderRadius="full"
-                          _hover={{ 
-                            transform: 'scale(1.1)', 
-                            shadow: 'md' 
+                          _hover={{
+                            transform: 'scale(1.1)',
+                            shadow: 'md',
                           }}
                           transition="all 0.2s ease"
                         />

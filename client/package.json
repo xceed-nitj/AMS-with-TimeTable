@@ -42,6 +42,7 @@
     "jspdf-autotable": "^3.8.2",
     "lodash.debounce": "^4.0.8",
     "lottie-react": "^2.4.0",
+    "lucide-react": "^0.525.0",
     "moment-timezone": "^0.5.45",
     "node": "^21.1.0",
     "papaparse": "^5.4.1",

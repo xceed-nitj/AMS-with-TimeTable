@@ -29,7 +29,7 @@ const Hero = () => {
           <span className="tw-text-xs tw-bg-green-500 tw-font-bold tw-uppercase tw-rounded-full tw-text-white tw-px-4 tw-py-1.5 tw-mr-3">
             Sold!
           </span>{" "}
-          <span className="tw-text-sm tw-font-medium">EAIC-2025</span>
+          <span className="tw-text-sm tw-font-medium">EAIC-2026</span>
           <ChevronRightIcon
             strokeWidth={2.5}
             className="tw-size-4 tw-text-white"
