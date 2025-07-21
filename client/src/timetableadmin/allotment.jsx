@@ -77,7 +77,7 @@ const AllotmentForm = () => {
         rooms: [{ room: '', morningSlot: false, afternoonSlot: false }],
       },
     ],
-    messaage: '',
+    message: '',
   });
 
   const [departments, setDepartments] = useState([]);
