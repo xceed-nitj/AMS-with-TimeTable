@@ -34,6 +34,13 @@ import {
   Td,
   extendTheme,
   Textarea,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure
 } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@chakra-ui/react';
@@ -194,10 +201,17 @@ const AllotmentForm = () => {
     }
   };
 
-  // fetchExistingData(sessions[0]);
+  useEffect(() => {
+    if (sessions.length > 0 && !formData.session) {
+      const defaultSession = sessions[0]; // pick the first session
+      setSession(defaultSession);
+      setFormData((prev) => ({ ...prev, session: defaultSession }));
+      fetchExistingData(defaultSession);
+    }
+  }, [sessions]);
 
   const handleChange = (e, deptIndex, roomIndex, type) => {
-    const { name, value, type: inputType, checked } = e.target;
+   const { name, value, type: inputType, checked } = e.target;
 
     setFormData((prevData) => {
       const updatedAllotments = [...prevData[type]];
@@ -222,7 +236,7 @@ const AllotmentForm = () => {
         [type]: updatedAllotments,
       };
     });
-  };
+  }; 
 
   const handleAddRoom = (deptIndex, type) => {
     const updatedAllotments = [...formData[type]];
@@ -237,16 +251,49 @@ const AllotmentForm = () => {
       [type]: updatedAllotments,
     }));
   };
+const [pendingRemove, setPendingRemove] = useState(null);
+const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleRemoveRoom = (deptIndex, roomIndex, type) => {
+    setPendingRemove({ deptIndex, roomIndex, type }); // store the info
+  onOpen(); // open the modal
+};
+   const confirmRemoveRoom = () => {
+  const { deptIndex, roomIndex, type } = pendingRemove;
+
     const updatedAllotments = [...formData[type]];
-    updatedAllotments[deptIndex].rooms.splice(roomIndex, 1);
+    const rooms = [...updatedAllotments[deptIndex].rooms];
+
+    if (rooms.length === 1) {
+      rooms[0] = {
+        room: '',
+        morningSlot: false,
+        afternoonSlot: false,
+      };
+    } else {
+      rooms.splice(roomIndex, 1);
+    }
+
+    updatedAllotments[deptIndex].rooms = rooms;
 
     setFormData((prevData) => ({
       ...prevData,
       [type]: updatedAllotments,
     }));
-  };
+
+toast({
+    title: 'Room removed',
+    description: 'You have successfully removed a room.',
+    status: 'warning',
+    duration: 3000,
+    isClosable: true,
+    position: 'bottom ',
+  });
+
+  onClose(); // close the modal
+  setPendingRemove(null);
+};
+
 
   const handleAddAllotment = (type) => {
     setFormData((prevData) => ({
@@ -287,6 +334,72 @@ const AllotmentForm = () => {
   const handleSubmit = async (e) => {
   e.preventDefault();
 
+  const validateAllotments = (allotments, type) => {
+    for (let deptIndex = 0; deptIndex < allotments.length; deptIndex++) {
+      const allotment = allotments[deptIndex];
+
+      if (!allotment.dept || allotment.dept.trim() === '') {
+        toast({
+          title: `${type} allotment error`,
+          description: `Please select a department for allotment ${deptIndex + 1}.`,
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+          position: 'bottom ',
+        });
+        return false; 
+        
+      }
+
+      for (let roomIndex = 0; roomIndex < allotment.rooms.length; roomIndex++) {
+        const room = allotment.rooms[roomIndex];
+
+        if (!room.room || room.room.trim() === '') {
+          toast({
+            title: `${type} allotment error`,
+            description: `Please select a room for department ${allotment.dept} (room ${roomIndex + 1}).`,
+            status: 'error',
+            duration: 4000,
+            isClosable: true,
+            position: 'bottom ',
+          });
+          return false; 
+        }
+
+        if (!room.morningSlot && !room.afternoonSlot) {
+          toast({
+            title: `${type} allotment error`,
+            description: `At least one slot (morning/afternoon) must be selected for ${room.room} in ${allotment.dept}.`,
+            status: 'error',
+            duration: 4000,
+            isClosable: true,
+            position: 'bottom',
+          });
+          return false; 
+        }
+      }
+    }
+
+    return true; 
+  };
+
+  if (!formData.session || formData.session.trim() === '') {
+    toast({
+      title: 'Session missing',
+      description: 'Please select a session before submitting.',
+      status: 'error',
+      duration: 4000,
+      isClosable: true,
+      position: 'bottom',
+    });
+    return; 
+  }
+
+  const isValidCentral = validateAllotments(formData.centralisedAllotments, 'Centralised');
+  const isValidOpenElective = validateAllotments(formData.openElectiveAllotments, 'Open Elective');
+
+  if (!isValidCentral || !isValidOpenElective) return; 
+
   const submitData = async () => {
     const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
       method: 'POST',
@@ -298,33 +411,34 @@ const AllotmentForm = () => {
     });
 
     if (!response.ok) {
-      throw new Error('Network response was not ok'); 
+      throw new Error('Network response was not ok');
     }
-
   };
 
-  toast.promise(submitData(), {
-    loading: {
-      title: 'Submitting...',
-      description: 'Please wait while we save your allotment.', 
-    },
-    success: {
-      title: 'Allotment Updated Successfully', 
-      status: 'success',
-      duration: 5000,
-      isClosable: true,
-    },
-    error: {
-      title: 'Submission Failed', 
-      description: 'An error occurred while submitting the form.',
-      status: 'error',
-      duration: 5000,
-      isClosable: true,
-    },
-  }).catch((error) => {
-    console.error('Error creating allotment:', error.message);  });
+  toast
+    .promise(submitData(), {
+      loading: {
+        title: 'Submitting...',
+        description: 'Please wait while we save your allotment.',
+      },
+      success: {
+        title: 'Allotment Updated Successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      },
+      error: {
+        title: 'Submission Failed',
+        description: 'An error occurred while submitting the form.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      },
+    })
+    .catch((error) => {
+      console.error('Error creating allotment:', error.message);
+    });
 };
-
 
   const getAvailableRooms = (deptIndex, currentRoomIndex, allotments) => {
     const currentDeptRooms = allotments[deptIndex]?.rooms || [];
@@ -687,6 +801,37 @@ const AllotmentForm = () => {
                                             >
                                               Remove Room
                                             </Button>
+                                            <Modal
+                                              isOpen={isOpen}
+                                              onClose={onClose}
+                                              isCentered
+                                            >
+                                              <ModalOverlay />
+                                              <ModalContent>
+                                                <ModalHeader>
+                                                  Remove Room
+                                                </ModalHeader>
+                                                <ModalBody>
+                                                  ⚠️ Are you sure you want to
+                                                  remove this room?
+                                                </ModalBody>
+                                                <ModalFooter>
+                                                  <Button
+                                                    variant="ghost"
+                                                    mr={3}
+                                                    onClick={onClose}
+                                                  >
+                                                    Cancel
+                                                  </Button>
+                                                  <Button
+                                                    colorScheme="red"
+                                                    onClick={confirmRemoveRoom}
+                                                  >
+                                                    Remove
+                                                  </Button>
+                                                </ModalFooter>
+                                              </ModalContent>
+                                            </Modal>
                                           </HStack>
                                         </div>
                                       </div>
