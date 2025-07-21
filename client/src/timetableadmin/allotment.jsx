@@ -366,7 +366,7 @@ toast({
           return false; 
         }
 
-        if (!room.morningSlot && !room.afternoonSlot) {
+        if (type === 'Centralised' && !room.morningSlot && !room.afternoonSlot) {
           toast({
             title: `${type} allotment error`,
             description: `At least one slot (morning/afternoon) must be selected for ${room.room} in ${allotment.dept}.`,
