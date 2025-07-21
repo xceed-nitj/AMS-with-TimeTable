@@ -18,6 +18,7 @@ app.use(
       "http://localhost:5174","https://chemcon2024.com",
   //for eaic2025
   "https://eaicnitj.com",
+"https://eaic2025.netlify.app",
   //for civil site
   "https://igcnitj2025.netlify.app",
   "https://igc2025nitj.com",
