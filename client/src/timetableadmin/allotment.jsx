@@ -415,8 +415,10 @@ toast({
     }
   };
 
-  toast
-    .promise(submitData(), {
+  try {
+  await toast.promise(
+    submitData(),
+    {
       loading: {
         title: 'Submitting...',
         description: 'Please wait while we save your allotment.',
@@ -434,10 +436,12 @@ toast({
         duration: 5000,
         isClosable: true,
       },
-    })
-    .catch((error) => {
-      console.error('Error creating allotment:', error.message);
-    });
+    }
+  );
+} catch (error) {
+  console.error('Error creating allotment:', error.message);
+}
+
 };
 
   const getAvailableRooms = (deptIndex, currentRoomIndex, allotments) => {
@@ -562,7 +566,7 @@ toast({
                   >
                     Open Elective Allotment
                   </Tab>
-                  <Tab
+                  {/* <Tab
                     m={0}
                     borderBottom="0px"
                     fontWeight="bold"
@@ -586,7 +590,7 @@ toast({
                     px={6}
                   >
                     Message
-                  </Tab>
+                  </Tab> */} 
                 </TabList>
 
                 <TabPanels
@@ -806,7 +810,7 @@ toast({
                                               onClose={onClose}
                                               isCentered
                                             >
-                                              <ModalOverlay />
+                                              <ModalOverlay  bg="rgba(0, 0, 0, 0.7)" />
                                               <ModalContent>
                                                 <ModalHeader>
                                                   Remove Room
@@ -1120,7 +1124,7 @@ toast({
                     </Box>
                   </TabPanel>
 
-                  <TabPanel p={10} overflow={'auto'}>
+                  {/* <TabPanel p={10} overflow={'auto'}>
                     <VStack spacing={8} maxW="2xl" mx="auto">
                       <VStack spacing={2} textAlign="center">
                         <Heading
@@ -1149,7 +1153,7 @@ toast({
                         }
                       />
                     </VStack>
-                  </TabPanel>
+                  </TabPanel> */}
                 </TabPanels>
               </Tabs>
             </Container>
