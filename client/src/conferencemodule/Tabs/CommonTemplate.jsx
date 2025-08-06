@@ -94,7 +94,6 @@ const CommonTemplate = () => {
   const [htmlContent, setHtmlContent] = useState("");
   const [editableHtmlContent, setEditableHtmlContent] = useState("");
 
-  // Import related states
   const [conferences, setConferences] = useState([]);
   const [selectedImportConf, setSelectedImportConf] = useState('');
   const [importTemplates, setImportTemplates] = useState([]);
@@ -212,14 +211,12 @@ const CommonTemplate = () => {
     return result;
   };
 
-  // Fetch conferences for import
   const fetchConferences = async () => {
     try {
       const res = await axios.get(`${apiUrl}/conferencemodule/conf`, { withCredentials: true });
       const conferenceList = res.data.filter(conf => conf._id !== IdConf);
       setConferences(conferenceList);
       
-      // Fetch conference names for each conference
       const namePromises = conferenceList.map(async (conf) => {
         try {
           const nameRes = await axios.get(`${apiUrl}/conferencemodule/home/conf/${conf._id}`, { withCredentials: true });
@@ -248,7 +245,6 @@ const CommonTemplate = () => {
     }
   };
 
-  // Fetch templates from selected conference
   const fetchImportTemplates = async (confId) => {
     if (!confId) return;
     
@@ -270,10 +266,8 @@ const CommonTemplate = () => {
     }
   };
 
-  // Handle importing a template
   const handleImportTemplate = async (template) => {
     try {
-      // Create new template data with current conference ID
       const newTemplateData = {
         confId: IdConf,
         pageTitle: template.pageTitle,
@@ -281,22 +275,18 @@ const CommonTemplate = () => {
         feature: template.feature
       };
 
-      // Add the template to current conference
       const res = await axios.post(`${apiUrl}/conferencemodule/commontemplate`, newTemplateData, {
         withCredentials: true
       });
 
       const newTemplate = res.data;
       
-      // Add to local state immediately
       setData(prevData => [...prevData, newTemplate]);
       
-      // Set as selected template and populate form
       setSelectedTemplate(newTemplate);
       setEditID(newTemplate._id);
       setFormData(newTemplateData);
       
-      // Update Quill editor
       if (quillInstance.current) {
         const convertedHtml = parseHtmlTablesToQuillFormat(template.description || "");
         quillInstance.current.root.innerHTML = convertedHtml;
@@ -304,7 +294,6 @@ const CommonTemplate = () => {
         setEditableHtmlContent(convertedHtml);
       }
 
-      // Close import modal and show success message
       onImportClose();
       setRefresh(prev => prev + 1);
       
@@ -327,13 +316,11 @@ const CommonTemplate = () => {
     }
   };
 
-  // Handle opening import modal
   const handleOpenImport = () => {
     fetchConferences();
     onImportOpen();
   };
 
-  // Handle conference selection in import modal
   const handleImportConfChange = (e) => {
     const confId = e.target.value;
     setSelectedImportConf(confId);
@@ -688,7 +675,7 @@ const CommonTemplate = () => {
             colorScheme="green"
             size="lg"
             onClick={handleOpenImport}
-            leftIcon={<Text fontSize="lg">📥</Text>}
+            leftIcon={<Text fontSize="lg"></Text>}
           >
             Import from Other Conference
           </Button>
