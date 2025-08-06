@@ -1,21 +1,81 @@
 import { Link } from "react-router-dom";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect } from 'react'
+// import { ChevronRightIcon } from '@chakra-ui/icons'
 import StarryBackgroundAnimation from './StarryBackgroundAnimation.jsx';
+function AnimatedBadge({ newBg, soldBg }) {
+  const words = ['NEW', 'SOLD!']
+  const [wordIndex, setWordIndex] = useState(0)
+  const [displayedText, setDisplayedText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const typingSpeed = 150
+  const deletingSpeed = 100
+  const pauseDuration = 2000
+
+  useEffect(() => {
+    let timer
+    const current = words[wordIndex]
+    if (!isDeleting) {
+      if (displayedText.length < current.length) {
+        timer = setTimeout(
+          () => setDisplayedText(current.slice(0, displayedText.length + 1)),
+          typingSpeed
+        )
+      } else {
+        timer = setTimeout(() => setIsDeleting(true), pauseDuration)
+      }
+    } else {
+      if (displayedText.length > 0) {
+        timer = setTimeout(
+          () => setDisplayedText(current.slice(0, displayedText.length - 1)),
+          deletingSpeed
+        )
+      } else {
+        setIsDeleting(false)
+        setWordIndex((w) => (w + 1) % words.length)
+      }
+    }
+    return () => clearTimeout(timer)
+  }, [displayedText, isDeleting, wordIndex])
+
+  const bgClass =
+    displayedText === 'SOLD!' ? `tw-bg-${soldBg}` : `tw-bg-${newBg}`
+
+  return (
+    <span
+      className={`
+        tw-text-xs tw-font-sans tw-font-bold tw-uppercase tw-text-white
+        tw-px-4 tw-py-1.5 tw-rounded-full tw-mr-3
+        ${bgClass}
+        transition-all duration-150 ease-out
+      `}
+    >  
+      {displayedText}
+    </span>
+  )
+}
+
 const Hero = () => {
+
+  
   return (
     <>
     <StarryBackgroundAnimation/>
     <section id="home" >
       <div className="tw-py-8 tw-px-4 tw-mx-auto tw-max-w-screen-xl tw-text-center lg:tw-py-14 lg:tw-px-12">
+        
         <Link
-          to="https://chemcon2024.com/"
+          to="https://cipher2026.com/"
           className="tw-inline-flex tw-justify-between tw-items-center tw-py-1 tw-px-1 tw-pr-4 tw-mb-7 tw-text-sm tw-text-gray-700 tw-bg-gray-100 tw-rounded-full dark:tw-bg-gray-800 dark:tw-text-white hover:tw-bg-gray-200 dark:hover:tw-bg-gray-700"
           role="alert"
+          target="_blank"
         >
-          <span className="tw-text-xs tw-bg-orange-500 tw-font-bold tw-uppercase tw-rounded-full tw-text-white tw-px-4 tw-py-1.5 tw-mr-3">
+          <AnimatedBadge newBg="yellow-500" soldBg="yellow-500" />
+          {/* <span className="tw-text-xs tw-bg-yellow-500 tw-font-bold tw-uppercase tw-rounded-full tw-text-white tw-px-4 tw-py-1.5 tw-mr-3">
             Sold!
-          </span>{" "}
-          <span className="tw-text-sm tw-font-medium">Chemcon-2024</span>
+          </span>{" "} */}
+          <span className="tw-text-sm tw-font-medium">CIPHER-2026</span>
           <ChevronRightIcon
             strokeWidth={2.5}
             className="tw-size-4 tw-text-white"
@@ -25,11 +85,14 @@ const Hero = () => {
           to="https://eaicnitj.com/"
           className="tw-inline-flex tw-justify-between tw-items-center tw-py-1 tw-px-1 tw-pr-4 tw-mb-7 tw-text-sm tw-text-gray-700 tw-bg-gray-100 tw-rounded-full dark:tw-bg-gray-800 dark:tw-text-white hover:tw-bg-gray-200 dark:hover:tw-bg-gray-700"
           role="alert"
+          target="_blank"
         >
-          <span className="tw-text-xs tw-bg-green-500 tw-font-bold tw-uppercase tw-rounded-full tw-text-white tw-px-4 tw-py-1.5 tw-mr-3">
+          <AnimatedBadge newBg="green-500" soldBg="green-500" />
+
+          {/* <span className="tw-text-xs tw-bg-green-500 tw-font-bold tw-uppercase tw-rounded-full tw-text-white tw-px-4 tw-py-1.5 tw-mr-3">
             Sold!
-          </span>{" "}
-          <span className="tw-text-sm tw-font-medium">EAIC-2025</span>
+          </span>{" "} */}
+          <span className="tw-text-sm tw-font-medium">EAIC-2026</span>
           <ChevronRightIcon
             strokeWidth={2.5}
             className="tw-size-4 tw-text-white"
@@ -63,20 +126,22 @@ const Hero = () => {
             className="tw-size-4 tw-text-white"
           />
         </Link>
-         <Link
-          to="https://cipher2026.com/"
+                
+        <Link
+          to="https://chemcon2024.com/"
           className="tw-inline-flex tw-justify-between tw-items-center tw-py-1 tw-px-1 tw-pr-4 tw-mb-7 tw-text-sm tw-text-gray-700 tw-bg-gray-100 tw-rounded-full dark:tw-bg-gray-800 dark:tw-text-white hover:tw-bg-gray-200 dark:hover:tw-bg-gray-700"
           role="alert"
         >
-          <span className="tw-text-xs tw-bg-yellow-500 tw-font-bold tw-uppercase tw-rounded-full tw-text-white tw-px-4 tw-py-1.5 tw-mr-3">
+          <span className="tw-text-xs tw-bg-orange-500 tw-font-bold tw-uppercase tw-rounded-full tw-text-white tw-px-4 tw-py-1.5 tw-mr-3">
             Sold!
           </span>{" "}
-          <span className="tw-text-sm tw-font-medium">CIPHER-2026</span>
+          <span className="tw-text-sm tw-font-medium">Chemcon-2024</span>
           <ChevronRightIcon
             strokeWidth={2.5}
             className="tw-size-4 tw-text-white"
           />
         </Link>
+ 
         <br />
         <Link
           to="/timetable"

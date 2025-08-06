@@ -19,11 +19,11 @@ import PDFGenerator from '../filedownload/makepdf';
 const TimetableSummary = ({ timetableData, code, type, time, headTitle,subjectData,TTData,notes,commonLoad }) => {
 
   
-console.log('commonload data',commonLoad);
+// console.log('commonload data',commonLoad);
 
 
 
-console.log(type)
+console.log("faculty name",headTitle);
 
   const summaryData = {};
 
