@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -10,7 +11,9 @@ import getEnvironment from "../../getenvironment";
 import { Copy } from "lucide-react";
 import {
   Container, Box, VStack, HStack, Flex, Heading, Button, Input, FormControl,
-  FormLabel, Select, Center, Text, useBreakpointValue, useToast, Textarea
+  FormLabel, Select, Center, Text, useBreakpointValue, useToast, Textarea,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
+  ModalCloseButton, useDisclosure
 } from "@chakra-ui/react";
 
 const LivePreviewSection = ({ title, html }) => {
@@ -79,6 +82,7 @@ const CommonTemplate = () => {
   const editorRef = useRef(null);
   const quillInstance = useRef(null);
   const toast = useToast();
+  const { isOpen: isImportOpen, onOpen: onImportOpen, onClose: onImportClose } = useDisclosure();
 
   const isMobile = useBreakpointValue({ base: true, md: false });
 
@@ -89,6 +93,13 @@ const CommonTemplate = () => {
   const [showHtml, setShowHtml] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
   const [editableHtmlContent, setEditableHtmlContent] = useState("");
+
+  // Import related states
+  const [conferences, setConferences] = useState([]);
+  const [selectedImportConf, setSelectedImportConf] = useState('');
+  const [importTemplates, setImportTemplates] = useState([]);
+  const [loadingImport, setLoadingImport] = useState(false);
+  const [conferenceNames, setConferenceNames] = useState({});
 
   const initialData = {
     confId: IdConf,
@@ -199,6 +210,138 @@ const CommonTemplate = () => {
     const result = tempDiv.innerHTML;
     console.log('Converted HTML:', result);
     return result;
+  };
+
+  // Fetch conferences for import
+  const fetchConferences = async () => {
+    try {
+      const res = await axios.get(`${apiUrl}/conferencemodule/conf`, { withCredentials: true });
+      const conferenceList = res.data.filter(conf => conf._id !== IdConf);
+      setConferences(conferenceList);
+      
+      // Fetch conference names for each conference
+      const namePromises = conferenceList.map(async (conf) => {
+        try {
+          const nameRes = await axios.get(`${apiUrl}/conferencemodule/home/conf/${conf._id}`, { withCredentials: true });
+          return { confId: conf._id, confName: nameRes.data.confName };
+        } catch (error) {
+          console.error(`Error fetching name for conference ${conf._id}:`, error);
+          return { confId: conf._id, confName: `Conference ${conf._id}` };
+        }
+      });
+      
+      const names = await Promise.all(namePromises);
+      const nameMap = {};
+      names.forEach(({ confId, confName }) => {
+        nameMap[confId] = confName;
+      });
+      setConferenceNames(nameMap);
+    } catch (error) {
+      console.error('Error fetching conferences:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch conferences for import.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Fetch templates from selected conference
+  const fetchImportTemplates = async (confId) => {
+    if (!confId) return;
+    
+    setLoadingImport(true);
+    try {
+      const res = await axios.get(`${apiUrl}/conferencemodule/commontemplate/conference/${confId}`, { withCredentials: true });
+      setImportTemplates(res.data);
+    } catch (error) {
+      console.error('Error fetching import templates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch templates from selected conference.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setLoadingImport(false);
+    }
+  };
+
+  // Handle importing a template
+  const handleImportTemplate = async (template) => {
+    try {
+      // Create new template data with current conference ID
+      const newTemplateData = {
+        confId: IdConf,
+        pageTitle: template.pageTitle,
+        description: template.description,
+        feature: template.feature
+      };
+
+      // Add the template to current conference
+      const res = await axios.post(`${apiUrl}/conferencemodule/commontemplate`, newTemplateData, {
+        withCredentials: true
+      });
+
+      const newTemplate = res.data;
+      
+      // Add to local state immediately
+      setData(prevData => [...prevData, newTemplate]);
+      
+      // Set as selected template and populate form
+      setSelectedTemplate(newTemplate);
+      setEditID(newTemplate._id);
+      setFormData(newTemplateData);
+      
+      // Update Quill editor
+      if (quillInstance.current) {
+        const convertedHtml = parseHtmlTablesToQuillFormat(template.description || "");
+        quillInstance.current.root.innerHTML = convertedHtml;
+        setHtmlContent(convertedHtml);
+        setEditableHtmlContent(convertedHtml);
+      }
+
+      // Close import modal and show success message
+      onImportClose();
+      setRefresh(prev => prev + 1);
+      
+      toast({
+        title: "Template Imported!",
+        description: "The template has been successfully imported and added to your templates.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error importing template:', error);
+      toast({
+        title: "Import Failed",
+        description: "Failed to import the selected template.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Handle opening import modal
+  const handleOpenImport = () => {
+    fetchConferences();
+    onImportOpen();
+  };
+
+  // Handle conference selection in import modal
+  const handleImportConfChange = (e) => {
+    const confId = e.target.value;
+    setSelectedImportConf(confId);
+    if (confId) {
+      fetchImportTemplates(confId);
+    } else {
+      setImportTemplates([]);
+    }
   };
 
   useEffect(() => {
@@ -471,75 +614,86 @@ const CommonTemplate = () => {
   };
 
   const TemplateTabs = () => (
-  <Box width="100%" mb={4}>
-    <HStack justifyContent="space-between" alignItems="center" mb={2}>
-      <Heading as="h3" size="sm" color="gray.600">
-        Template Pages:
-      </Heading>
-      {isMobile && (
-        <Button
-          colorScheme="blue"
-          size="sm"
-          onClick={handleAddNewTemplate}
-        >
-          Add Template
-        </Button>
-      )}
-    </HStack>
-    <Box
-      bg="white"
-      border="1px solid"
-      borderColor="gray.200"
-      borderRadius="md"
-      overflow="hidden"
-      maxH={isMobile ? "200px" : "none"}
-      overflowY={isMobile ? "auto" : "visible"}
-    >
-      {loading ? (
-        <Box p={4}>
-          <LoadingIcon />
-        </Box>
-      ) : data.length > 0 ? (
-        data.map((template, idx) => (
-          <Box
-            key={template._id}
-            bg={selectedTemplate?._id === template._id ? "blue.500" : "white"}
-            color={selectedTemplate?._id === template._id ? "white" : "gray.700"}
-            p={3}
-            cursor="pointer"
-            onClick={() => handleTemplateSelect(template)}
-            borderBottom={idx < data.length - 1 ? "1px solid" : "none"}
-            borderBottomColor="gray.200"
-            _hover={{
-              bg: selectedTemplate?._id === template._id ? "blue.600" : "gray.50"
-            }}
-            transition="all 0.2s"
+    <Box width="100%" mb={4}>
+      <HStack justifyContent="space-between" alignItems="center" mb={2}>
+        <Heading as="h3" size="sm" color="gray.600">
+          Template Pages:
+        </Heading>
+        {isMobile && (
+          <Button
+            colorScheme="blue"
+            size="sm"
+            onClick={handleAddNewTemplate}
           >
-            <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
-              {template.pageTitle || `Template ${idx + 1}`}
-            </Text>
-            <Text
-              fontSize="xs"
-              color={selectedTemplate?._id === template._id ? "whiteAlpha.800" : "gray.600"}
-              noOfLines={2}
-            >
-              {template.metaDescription || "No description"}
-            </Text>
+            Add Template
+          </Button>
+        )}
+      </HStack>
+      <Box
+        bg="white"
+        border="1px solid"
+        borderColor="gray.200"
+        borderRadius="md"
+        overflow="hidden"
+        maxH={isMobile ? "200px" : "none"}
+        overflowY={isMobile ? "auto" : "visible"}
+      >
+        {loading ? (
+          <Box p={4}>
+            <LoadingIcon />
           </Box>
-        ))
-      ) : (
-        <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-          No templates available
-        </Text>
-      )}
+        ) : data.length > 0 ? (
+          data.map((template, idx) => (
+            <Box
+              key={template._id}
+              bg={selectedTemplate?._id === template._id ? "blue.500" : "white"}
+              color={selectedTemplate?._id === template._id ? "white" : "gray.700"}
+              p={3}
+              cursor="pointer"
+              onClick={() => handleTemplateSelect(template)}
+              borderBottom={idx < data.length - 1 ? "1px solid" : "none"}
+              borderBottomColor="gray.200"
+              _hover={{
+                bg: selectedTemplate?._id === template._id ? "blue.600" : "gray.50"
+              }}
+              transition="all 0.2s"
+            >
+              <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+                {template.pageTitle || `Template ${idx + 1}`}
+              </Text>
+              <Text
+                fontSize="xs"
+                color={selectedTemplate?._id === template._id ? "whiteAlpha.800" : "gray.600"}
+                noOfLines={2}
+              >
+                {template.metaDescription || "No description"}
+              </Text>
+            </Box>
+          ))
+        ) : (
+          <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
+            No templates available
+          </Text>
+        )}
+      </Box>
     </Box>
-  </Box>
-);
-
+  );
 
   return (
     <main className="tw-p-5 tw-min-h-screen">
       <Flex direction="column">
+        {/* Import Button at the top */}
+        <Box mb={4}>
+          <Button
+            colorScheme="green"
+            size="lg"
+            onClick={handleOpenImport}
+            leftIcon={<Text fontSize="lg">📥</Text>}
+          >
+            Import from Other Conference
+          </Button>
+        </Box>
+
         <Flex direction={{ base: "column", md: "row" }}>
           {!isMobile && (
             <Box
@@ -764,6 +918,88 @@ const CommonTemplate = () => {
           </Flex>
         </Flex>
       </Flex>
+
+      {/* Import Modal */}
+      <Modal isOpen={isImportOpen} onClose={onImportClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Import Template from Another Conference</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              <FormControl>
+                <FormLabel>Select Conference:</FormLabel>
+                <Select
+                  placeholder="Choose a conference..."
+                  value={selectedImportConf}
+                  onChange={handleImportConfChange}
+                >
+                  {conferences.map((conf) => (
+                    <option key={conf._id} value={conf._id}>
+                      {conferenceNames[conf._id] || `Conference ${conf._id}`}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+              
+              {selectedImportConf && (
+                <Box>
+                  <Heading as="h4" size="md" mb={3}>
+                    Available Templates:
+                  </Heading>
+                  {loadingImport ? (
+                    <Center p={4}>
+                      <LoadingIcon />
+                    </Center>
+                  ) : importTemplates.length > 0 ? (
+                    <VStack spacing={3} align="stretch">
+                      {importTemplates.map((template) => (
+                        <Box
+                          key={template._id}
+                          border="1px solid"
+                          borderColor="gray.200"
+                          borderRadius="md"
+                          p={4}
+                          bg="white"
+                          _hover={{ bg: "gray.50" }}
+                        >
+                          <HStack justifyContent="space-between" alignItems="start">
+                            <VStack align="start" spacing={2} flex={1}>
+                              <Text fontWeight="bold" fontSize="lg" color="blue.600">
+                                {template.pageTitle || "Untitled Template"}
+                              </Text>
+                              <Text fontSize="sm" color="gray.600">
+                                Featured: {template.feature ? "Yes" : "No"}
+                              </Text>
+                              <Text fontSize="sm" color="gray.700" noOfLines={3}>
+                                <span dangerouslySetInnerHTML={{ __html: template.description?.substring(0, 150) + "..." || "No description" }} />
+                              </Text>
+                            </VStack>
+                            <Button
+                              colorScheme="green"
+                              size="sm"
+                              onClick={() => handleImportTemplate(template)}
+                            >
+                              Import
+                            </Button>
+                          </HStack>
+                        </Box>
+                      ))}
+                    </VStack>
+                  ) : (
+                    <Text color="gray.500" textAlign="center" py={4}>
+                      No templates found in selected conference
+                    </Text>
+                  )}
+                </Box>
+              )}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={onImportClose}>Close</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirmation && (

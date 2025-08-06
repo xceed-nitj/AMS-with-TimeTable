@@ -28,6 +28,44 @@ const Sidebar = () => {
   
   useEffect(() => {
     if (!IdConf) return;
+
+    // try {
+    //   const response = axios.post(`${apiUrl}/conferencemodule/conf`, {
+    //     email: "import@testing",
+    //     name: "import testing"
+    //   }, {
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       // Add token if required for auth
+    //       // Authorization: `Bearer ${token}`
+    //     }
+    //   });
+
+    //   console.log('Conference added:', response.data);
+    //   alert("Conference added successfully");
+    // } catch (error) {
+    //   console.error('Error:', error.response?.data || error.message);
+    //   alert("Error adding conference: " + (error.response?.data?.error || error.message));
+    // }
+
+    axios.get(`${apiUrl}/conferencemodule/conf`, { withCredentials: true })
+         .then(res => {
+          console.log(res);
+          console.log(res.data);
+         })
+         .catch(err => {
+          console.log(err);
+         });
+
+    axios.get(`${apiUrl}/conferencemodule/commontemplate/conference/${IdConf}`, { withCredentials: true })
+         .then(res => {
+          console.log(res);
+          console.log(res.data);
+         })
+         .catch(err => {
+          console.log(err);
+         });
+
     axios
       .get(`${apiUrl}/conferencemodule/home/conf/${IdConf}`, { withCredentials: true })
       .then(res => {
