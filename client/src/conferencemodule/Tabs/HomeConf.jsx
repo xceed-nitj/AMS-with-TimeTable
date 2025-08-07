@@ -677,6 +677,7 @@ const HomeConf = () => {
                             display="flex"
                             flexDirection="column"
                             alignItems="flex-start"
+                            overflowY="auto"
                         >
                             <Heading as="h2" size="md" mb={4}>
                                 Add Items
