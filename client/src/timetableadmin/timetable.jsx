@@ -578,7 +578,7 @@ const Timetable = () => {
 
   const handleScroll = () => {
     const scrollPosition = window.scrollY;
-    const scrollThreshold = 2100;
+    const scrollThreshold = 3100;
     if (scrollPosition > scrollThreshold) setShowMessage(false);
     else setShowMessage(true);
   };
