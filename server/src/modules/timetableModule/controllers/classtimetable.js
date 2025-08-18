@@ -16,39 +16,73 @@ const subjectController = new SubjectController();
 
 
 class ClassTimeTableController {
-  async savett(req, res) {
-    const timetableData = req.body.timetableData; // Access the timetableData object
-    const { code, sem } = req.body;
-  
-    try {
-      // Delete all existing records for the given code and sem
-      await ClassTable.deleteMany({ code, sem });
-  
-      const bulkOperations = [];
-      const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
-  
-      for (const [day, dayData] of Object.entries(timetableData)) {
-        for (const [slot, slotDataArray] of Object.entries(dayData)) {
-          const slotData = slotDataArray.flat(); // Flatten slotData
-  
-          bulkOperations.push({
-            insertOne: {
-              document: { day, slot, slotData, code, sem, timetable: timetableObject },
-            },
-          });
-        }
+ // Controller method
+async savett(req, res) {
+  const timetableData = req.body.timetableData; // nested object (day -> slot -> [ [cells], [cells], ... ])
+  const { code, sem } = req.body;
+
+  // --- helper: clean + dedupe one slot's cells by (subject, room, faculty) ---
+  const dedupeSlotData = (cells) => {
+    const seen = new Set();
+    const cleaned = [];
+
+    for (const item of cells) {
+      if (!item || typeof item !== "object") continue;
+
+      // normalize fields (trim + case-insensitive for deduping)
+      const subject = (item.subject || "").trim();
+      const room    = (item.room    || "").trim();
+      const faculty = (item.faculty || "").trim();
+
+      // skip a fully empty row
+      if (!subject && !room && !faculty) continue;
+
+      const key = `${subject.toLowerCase()}|${room.toLowerCase()}|${faculty.toLowerCase()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        // store trimmed (original case kept as-is, or keep normalized—your call)
+        cleaned.push({ subject, room, faculty });
       }
-  
-      if (bulkOperations.length > 0) {
-        await ClassTable.bulkWrite(bulkOperations);
-      }
-  
-      res.status(200).json({ message: "Previous data deleted, new data inserted successfully" });
-    } catch (error) {
-      console.error("Error saving timetable:", error);
-      res.status(500).json({ error: "Internal server error" });
     }
+    return cleaned;
+  };
+
+  try {
+    // Remove prior records for this code/sem so we can insert a clean snapshot
+    await ClassTable.deleteMany({ code, sem });
+
+    const bulkOperations = [];
+    const timetableObject = await ClassTimeTableDto.findTimeTableIdByCode(code);
+
+    // timetableData: { Monday: { period1: [ [cells], [cells] ... ], lunch: [...] }, Tuesday: ... }
+    for (const [day, dayData] of Object.entries(timetableData || {})) {
+      for (const [slot, slotDataArray] of Object.entries(dayData || {})) {
+        // Flatten all groups in the slot to a single list of cells, then dedupe
+        // - use flat(2) to be robust against nesting depth
+        const rawCells = Array.isArray(slotDataArray) ? slotDataArray.flat(2) : [];
+        const slotData = dedupeSlotData(rawCells);
+
+        // You may choose to always insert a doc (even if slotData is empty),
+        // or skip empty ones. Keeping parity with your current shape, we insert.
+        bulkOperations.push({
+          insertOne: {
+            document: { day, slot, slotData, code, sem, timetable: timetableObject },
+          },
+        });
+      }
+    }
+
+    if (bulkOperations.length > 0) {
+      await ClassTable.bulkWrite(bulkOperations);
+    }
+
+    res.status(200).json({ message: "Previous data deleted, new data inserted successfully (duplicates removed)." });
+  } catch (error) {
+    console.error("Error saving timetable:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
+}
+
  
   async saveslot(req, res) {
     const day = req.params.day;

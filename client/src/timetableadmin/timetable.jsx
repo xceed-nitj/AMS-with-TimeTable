@@ -26,7 +26,6 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/table";
-// import { Button } from "@chakra-ui/button";
 import { Stack, HStack, VStack } from "@chakra-ui/react";
 import Header from "../components/header";
 
@@ -47,9 +46,7 @@ const Timetable = () => {
   const [facultyUpdateTime, setFacultyUpdateTime] = useState();
   const [roomUpdateTime, setRoomUpdateTime] = useState();
   const [commonLoad, setCommonLoad] = useState();
-  // const availableRooms = ['L-201', 'L-209','room1','room2'];
-  // const availableFaculties = ['Dr. Vinod Ashokan','Dr. Harleen Dahiya','Dr. Abhinav Pratap Singh','Professor Arvinder Singh',
-  // 'Dr. Praveen Malik','Dr. Rohit Mehra','Dr. Arvind Kumar','Dr. Kiran Singh','Dr. H. M. Mittal','Dr. Suneel Dutt', 'f1','f2',];
+
   const semesters = availableSems;
   const [viewselectedSemester, setViewSelectedSemester] = useState(
     availableSems[0]
@@ -60,13 +57,12 @@ const Timetable = () => {
   const [selectedSemester, setSelectedSemester] = useState(availableSems[0] || "");
   const [clash, setClash] = useState([]);
   const [clashFlag, setClashFlag] = useState(false);
-  console.log("clash length::  ", clash.length, "     clash flag::", clashFlag)
+
   const selectedCell = null;
   const navigate = useNavigate();
   const currentURL = window.location.pathname;
   const parts = currentURL.split("/");
   const currentCode = parts[parts.length - 1];
-  // console.log('Code:', code);
   const apiUrl = getEnvironment();
   const toast = useToast();
 
@@ -79,13 +75,11 @@ const Timetable = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          // console.log('filtered data',data)
           const filteredSems = data.filter((sem) => sem.code === currentCode);
           const semValues = filteredSems.map((sem) => sem.sem);
 
           setAvailableSems(semValues);
           setSelectedSemester(semValues[0]);
-          // console.log('available semesters',availableSems)
         }
       } catch (error) {
         console.error("Error fetching subject data:", error);
@@ -97,14 +91,11 @@ const Timetable = () => {
   useEffect(() => {
     const fetchData = async (semester) => {
       try {
-        // console.log('sem value',semester);
-        // console.log('current code', currentCode);
         const response = await fetch(
           `${apiUrl}/timetablemodule/tt/viewclasstt/${currentCode}/${semester}`,
           { credentials: "include" }
         );
         const data = await response.json();
-        // console.log(data);
         const initialData = generateInitialTimetableData(data, "sem");
         return initialData;
       } catch (error) {
@@ -115,8 +106,6 @@ const Timetable = () => {
 
     const fetchTime = async () => {
       try {
-        // console.log('sem value',semester);
-        // console.log('current code', currentCode);
         const response = await fetch(
           `${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`,
           { credentials: "include" }
@@ -146,7 +135,6 @@ const Timetable = () => {
           { credentials: "include" }
         );
         const data = await response.json();
-        // console.log(data);
         const initialData = generateInitialTimetableData(data, "sem");
         return initialData;
       } catch (error) {
@@ -188,9 +176,7 @@ const Timetable = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log('faculty common response', data);
           setCommonLoad(data);
-          console.log('coomomo load', data);
         }
       } catch (error) {
         console.error("Error fetching commonload:", error);
@@ -202,7 +188,7 @@ const Timetable = () => {
       setViewFacultyData(data);
     };
     fetchFacultyData(viewFaculty);
-    fetchCommonLoad(currentCode, viewFaculty); // Call the function to fetch subject data
+    fetchCommonLoad(currentCode, viewFaculty);
 
   }, [viewFaculty, viewData]);
 
@@ -233,7 +219,6 @@ const Timetable = () => {
   }, [viewRoom, viewData]);
 
   useEffect(() => {
-    // Fetch subject data from the database and populate availableSubjects
     const fetchSubjects = async (currentCode, selectedSemester) => {
       try {
         const response = await fetch(
@@ -243,7 +228,6 @@ const Timetable = () => {
         if (response.ok) {
           const data = await response.json();
           setAvailableSubjects(data);
-          // console.log('subjects', availableSubjects);
         }
       } catch (error) {
         console.error("Error fetching subject data:", error);
@@ -262,7 +246,6 @@ const Timetable = () => {
           const semValues = filteredSems.map((room) => room.room);
 
           setAvailableRooms(semValues);
-          // console.log('available rooms',availableRooms)
         }
       } catch (error) {
         console.error("Error fetching subject data:", error);
@@ -277,15 +260,12 @@ const Timetable = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          // console.log('faculty response',data[0]);
           setAvailableFaculties(data[0].faculty);
-          // console.log('faculties', availableFaculties);
         }
       } catch (error) {
         console.error("Error fetching subject data:", error);
       }
     };
-
 
     fetchSubjects(currentCode, selectedSemester);
     fetchRoom(currentCode);
@@ -308,7 +288,7 @@ const Timetable = () => {
 
             for (const slot of slotData) {
               const slotSubjects = [];
-              let faculty = ""; // Declare faculty here
+              let faculty = "";
               let room = "";
               for (const slotItem of slot) {
                 const subj = slotItem.subject || "";
@@ -322,7 +302,6 @@ const Timetable = () => {
                 } else {
                   faculty = slotItem.faculty || "";
                 }
-                // Only push the values if they are not empty
                 if (subj || room || faculty) {
                   slotSubjects.push({
                     subject: subj,
@@ -347,7 +326,7 @@ const Timetable = () => {
 
             for (const slot of slotData) {
               const slotSubjects = [];
-              let faculty = ""; // Declare faculty here
+              let faculty = "";
               let room = "";
               for (const slotItem of slot) {
                 const subj = slotItem.subject || "";
@@ -361,7 +340,6 @@ const Timetable = () => {
                 } else {
                   faculty = slotItem.faculty || "";
                 }
-                // Only push the values if they are not empty
                 if (subj || room || faculty) {
                   slotSubjects.push({
                     subject: subj,
@@ -371,7 +349,6 @@ const Timetable = () => {
                 }
               }
 
-              // Push an empty array if no data is available for this slot
               if (slotSubjects.length === 0) {
                 slotSubjects.push({
                   subject: "",
@@ -383,7 +360,6 @@ const Timetable = () => {
               initialData[day][`period${period}`].push(slotSubjects);
             }
           } else {
-            // Assign an empty array if day or period data is not available
             initialData[day][`period${period}`].push([]);
           }
         }
@@ -391,13 +367,11 @@ const Timetable = () => {
 
     }
 
-    console.log("initial datat to be received", initialData);
     return initialData;
   };
 
-
-  const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
-  const [TTData, setTTData] = useState([]); // Initialize as an empty array
+  const [subjectData, setSubjectData] = useState([]);
+  const [TTData, setTTData] = useState([]);
 
   useEffect(() => {
     const fetchSubjectData = async (currentCode) => {
@@ -405,7 +379,6 @@ const Timetable = () => {
         const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`, { credentials: "include" });
         const data = await response.json();
         setSubjectData(data);
-        // console.log('subjectdata',data)
       } catch (error) {
         console.error('Error fetching subject data:', error);
       }
@@ -418,7 +391,6 @@ const Timetable = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          // body: JSON.stringify(userData),
           credentials: 'include'
         });
 
@@ -429,32 +401,14 @@ const Timetable = () => {
       }
     };
 
-
-
     fetchSubjectData(currentCode);
     fetchTTData(currentCode);
-
-
   }, []);
-
-
-
-
-
-
-
-
-  useEffect(() => {
-    // console.log('Updated timetableData:', timetableData);
-  }, [timetableData]);
 
   const handleCellChange = (day, period, slotIndex, cellIndex, type, event) => {
     const newValue = event.target.value;
 
-    // Create a copy of the current state to update
     const updatedData = { ...timetableData };
-
-    // Ensure that the slot and cell exist before updating
     if (
       updatedData[day] &&
       updatedData[day][`period${period}`] &&
@@ -470,7 +424,6 @@ const Timetable = () => {
       );
     }
 
-    // Update the state with the modified data
     setTimetableData(updatedData);
   };
 
@@ -481,147 +434,88 @@ const Timetable = () => {
       faculty: "",
     };
 
-    // Add the new cell to the specific slot within the day and period
     timetableData[day][`period${period}`][slotIndex].push(newCell);
-
-    // Update the state
     setTimetableData({ ...timetableData });
   };
 
+  // ====== CHANGED: delete a specific cell, persist only that slot ======
   const handleDeleteCell = (day, period, slotIndex, cellIndex) => {
-    // Ensure that the slot and cell exist before updating
-    if (timetableData[day] && timetableData[day][`period${period}`]) {
-      const slot = timetableData[day][`period${period}`][slotIndex];
+    setTimetableData(prev => {
+      const updated = { ...prev };
+      const slotKey = `period${period}`;
+      const slot = updated[day]?.[slotKey]?.[slotIndex];
+      if (!slot) return prev;
 
-      // Check if there is more than one item in the slot
-      if (slot.length > 0) {
-        // Remove the last item from the slot
-        slot.pop();
-        // Update the state
-        setTimetableData({ ...timetableData });
+      if (slot.length > 1) {
+        // Remove just the targeted cell
+        slot.splice(cellIndex, 1);
+      } else {
+        // Keep structure stable: clear the only cell
+        slot[0] = { subject: "", room: "", faculty: "" };
       }
-    }
+
+      // Persist ONLY this slot
+      saveSlotData(day, slotKey, slot);
+
+      return { ...updated };
+    });
   };
+  // ====================================================================
 
   const location = useLocation();
   const currentPathname = location.pathname;
-  const handleAddSubject = () => {
-    // Navigate to the "Add Subject" page
-    // const currentPathname = location.pathname;
+  const handleAddSubject = () => navigate(`${currentPathname}/addsubjects`);
+  const handleAddFaculty = () => navigate(`${currentPathname}/addfaculty`);
+  const handleAddSem = () => navigate(`${currentPathname}/addsem`);
+  const handleFirstYear = () => navigate(`${currentPathname}/firstyearload`);
+  const handleAddRoom = () => navigate(`${currentPathname}/addroom`);
+  const handleAddNote = () => navigate(`${currentPathname}/addnote`);
+  const handleAddCommonLoad = () => navigate(`${currentPathname}/addcommonload`);
+  const handleAddLunchSlot = () => navigate(`${currentPathname}/addlunchload`);
+  const handleViewRoom = () => navigate(`${currentPathname}/roomallotment`);
+  const handleMasterView = () => navigate('/timetable');
+  const handleViewSummary = () => navigate(`${currentPathname}/lockedsummary`);
+  const handleEditFaculty = () => navigate(`${currentPathname}/editmasterfaculty`);
+  const handleImportData = () => navigate(`${currentPathname}/importttdata`);
 
-    // Navigate to the current URL with an additional path segment
-    navigate(`${currentPathname}/addsubjects`);
-  };
-
-  const handleAddFaculty = () => {
-    // Navigate to the current URL with an additional path segment
-    navigate(`${currentPathname}/addfaculty`);
-  };
-
-  const handleAddSem = () => {
-    // Navigate to the current URL with an additional path segment
-    navigate(`${currentPathname}/addsem`);
-  };
-  const handleFirstYear = () => {
-    // Navigate to the current URL with an additional path segment
-    navigate(`${currentPathname}/firstyearload`);
-  };
-
-  const handleAddRoom = () => {
-    // Navigate to the "Add Room" page
-    navigate(`${currentPathname}/addroom`);
-  };
-  const handleAddNote = () => {
-    // Navigate to the "Add Room" page
-    navigate(`${currentPathname}/addnote`);
-  };
-  const handleAddCommonLoad = () => {
-    // Navigate to the "Add Room" page
-    navigate(`${currentPathname}/addcommonload`);
-  };
-  const handleAddLunchSlot = () => {
-    // Navigate to the "Add Room" page
-    navigate(`${currentPathname}/addlunchload`);
-  };
-  const handleViewRoom = () => {
-    // Navigate to the "Add Room" page
-    navigate(`${currentPathname}/roomallotment`);
-  };
-  const handleMasterView = () => {
-    // Navigate to the "Add Room" page
-    navigate('/timetable');
-  };
-  const handleViewSummary = () => {
-    // Navigate to the "Add Room" page
-    navigate(`${currentPathname}/lockedsummary`);
-  };
-  const handleEditFaculty = () => {
-    // Navigate to the "Add Room" page
-    navigate(`${currentPathname}/editmasterfaculty`);
-  };
-  const handleImportData = () => {
-    // Navigate to the "Add Room" page
-    navigate(`${currentPathname}/importttdata`);
-  };
   const saveSlotData = async (day, slot, slotData) => {
-    // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
     const code = currentCode;
     const sem = selectedSemester;
-    const dataToSend = JSON.stringify({ slotData, code, sem });
-
-    // console.log('Slot JSON Data to Send:', dataToSend);
 
     try {
       const response = await fetch(Url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slotData, code, sem }),
         credentials: "include",
       });
 
       if (response) {
         const data = await response.json();
-        // console.log('Slot Data sent to the backend:', data.message);
         setMessage(data.message);
-      } else {
-        // console.log('no response');
       }
     } catch (error) {
-      // console.error('Error sending slot data to the backend:', error);
+      // handle error silently
     }
   };
 
   const handleSubmit = async () => {
-    // Mark the function as async
     const Url = `${apiUrl}/timetablemodule/tt/savett`;
     const code = currentCode;
     const sem = selectedSemester;
-    const dataToSend = JSON.stringify({ timetableData, code });
-
-    // console.log('Data is getting saved');
 
     setMessage("Data is being saved....");
     try {
       const response = await fetch(Url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ timetableData, code, sem }),
         credentials: "include",
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        // console.log('Data sent to the backend:', data);
-      } else {
-        console.error(
-          "Failed to send data to the backend. HTTP status:",
-          response.status
-        );
+      if (!response.ok) {
+        console.error("Failed to send data to the backend. HTTP status:", response.status);
       }
     } catch (error) {
       console.error("Error sending data to the backend:", error);
@@ -631,34 +525,24 @@ const Timetable = () => {
   };
 
   const handleLockTT = async () => {
-
     const isConfirmed = window.confirm('Are you sure you want to lock the timetable?');
 
     if (isConfirmed) {
-      // Mark the function as async
       setMessage("Data is being saved....");
-      // await handleSubmit();
-      // console.log('Data is getting Locked');
       setMessage("Data saved. Commencing lock");
       setMessage("Data is being locked");
       const Url = `${apiUrl}/timetablemodule/lock/locktt`;
       const code = currentCode;
-      const sem = selectedSemester;
       try {
         const response = await fetch(Url, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code }),
           credentials: "include",
         });
-        console.log('response from backend for lock', response);
 
         if (response.ok) {
           const data = await response.json();
-          console.log('response from backend for lock', data);
-          // console.log(data.updatedTime);
           setMessage("");
           toast({
             title: 'Timetable Locked',
@@ -667,12 +551,8 @@ const Timetable = () => {
             isClosable: true,
             position: 'top',
           });
-          // setLockedTime(data.updatedTime);
         } else {
-          console.error(
-            "Failed to send data to the backend. HTTP status:",
-            response.status
-          );
+          console.error("Failed to send data to the backend. HTTP status:", response.status);
         }
       } catch (error) {
         console.error("Error sending data to the backend:", error);
@@ -686,39 +566,27 @@ const Timetable = () => {
         isClosable: true,
         position: 'top',
       });
-
-
     }
-
-
   };
 
   const [showMessage, setShowMessage] = useState(true);
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => { window.removeEventListener("scroll", handleScroll); };
   }, []);
 
   const handleScroll = () => {
     const scrollPosition = window.scrollY;
-    const scrollThreshold = 2100; // Adjust this value to control when the message disappears
-
-    if (scrollPosition > scrollThreshold) {
-      setShowMessage(false);
-    } else {
-      setShowMessage(true);
-    }
+    const scrollThreshold = 3100;
+    if (scrollPosition > scrollThreshold) setShowMessage(false);
+    else setShowMessage(true);
   };
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
   useEffect(() => {
     if (availableFaculties.length != 0 && availableRooms.length != 0) {
-
       let obj = [];
       const roomData = async (currentCode, room) => {
         try {
@@ -739,21 +607,15 @@ const Timetable = () => {
 
       const fetchRoomData = async (room) => {
         const data = await roomData(currentCode, room);
-        // console.log("data::: ",room,":::",data);
         for (let i in data) {
           for (let j in data[i]) {
-
             if (data[i][j].length >= 2 && data[i][j][0][0]["faculty"] !== data[i][j][1][0]["faculty"]) {
               let temp = { "name": room, "day": i, "period": j }
               obj.push(temp);
-
-              console.log("dataaaA:: ", room, "::", data[i][j][0][0]["faculty"])
             }
           }
         }
       };
-
-
 
       const facultyData = async (currentCode, faculty) => {
         try {
@@ -773,33 +635,23 @@ const Timetable = () => {
       };
       const fetchFacultyData = async (faculty) => {
         const data = await facultyData(currentCode, faculty);
-        // console.log("dataaaA:: ",faculty,"::",data)
         for (let i in data) {
           for (let j in data[i]) {
             if (data[i][j].length >= 2 && data[i][j][0]["room"] !== data[i][j][1]["room"]) {
               let temp = { "name": faculty, "day": i, "period": j }
               obj.push(temp);
-
-              console.log("dataaaA:: ", faculty, "::", data[i][j])
             }
           }
         }
       };
       (async () => {
-        console.log(availableFaculties, availableRooms);
         for (let i = 0; i < availableFaculties.length; i++) {
-          console.log(availableFaculties[i]);
           await fetchFacultyData(availableFaculties[i]);
         }
         for (let i = 0; i < availableRooms.length; i++) {
-          console.log(availableRooms[i]);
           await fetchRoomData(availableRooms[i]);
         }
-        console.log(obj);
         setClash(obj, setClashFlag(true));
-
-        console.log("value set");
-
       })()
     }
   }, [availableFaculties, availableRooms]);
@@ -809,8 +661,8 @@ const Timetable = () => {
       <Heading as="h1" size="xl" mt="6" mb="6">
         TIME TABLE ALLOTMENT
       </Heading>
+
       <Box display="left">
-        {/* <Box ml='-1.5'> */}
         <Button mx="auto" colorScheme="red" onClick={handleFirstYear}>
           First Year Faculty Allotment
         </Button>
@@ -827,6 +679,7 @@ const Timetable = () => {
           Import Data
         </Button>
       </Box>
+
       <Box display="flex" justifyContent="space-between">
         <Box ml='-1.5'>
           <Button m="1 auto" colorScheme="teal" onClick={handleAddSem}>
@@ -850,7 +703,6 @@ const Timetable = () => {
           <Button m="1 auto" colorScheme="teal" onClick={handleAddLunchSlot}>
             Add Lunch slots
           </Button>
-
         </Box>
         <Box mr='-1.5'>
           <Button m="1 auto" colorScheme="orange" onClick={handleLockTT}>
@@ -861,16 +713,13 @@ const Timetable = () => {
           </Button>
         </Box>
       </Box>
-      <Box
-        padding="6px"
-        borderRadius="6px"
-      >
-        <ul
-          className="tw-flex tw-flex-wrap tw-w-fit"
-        >
 
+      <Box padding="6px" borderRadius="6px">
+        <ul className="tw-flex tw-flex-wrap tw-w-fit">
           {clashFlag == true ? clash.length == 0 ? "No Clashes" : clash.map((elem, index) => (
-            <li key={index} className="tw-h-10 tw-p-2 tw-mx-3 tw-w-1/3 tw-content-center tw-text-red-700 tw-font-normal tw-rounded-md">Check {elem["name"]}'s slot on {elem["day"]} at {elem["period"]}</li>
+            <li key={index} className="tw-h-10 tw-p-2 tw-mx-3 tw-w-1/3 tw-content-center tw-text-red-700 tw-font-normal tw-rounded-md">
+              Check {elem["name"]}'s slot on {elem["day"]} at {elem["period"]}
+            </li>
           )) : "searching for clashes..."}
         </ul>
       </Box>
@@ -884,19 +733,9 @@ const Timetable = () => {
         </Text>
       </Box>
 
-      {/* <div style={{
-  backgroundColor: 'brown',
-  color: 'white',
-  textAlign: 'center',
-  fontWeight: 'bold',
-  fontSize: '1.5rem', // Adjust the font size as needed
-}}>
-  {message}
-</div> */}
-      {/* Floating Message */}
       <Portal>
         <Box
-          bg={showMessage && message ? "rgba(255, 100, 0, 0.9)" : 0} // Brighter yellow with some transparency
+          bg={showMessage && message ? "rgba(255, 100, 0, 0.9)" : 0}
           color="white"
           textAlign="center"
           fontWeight="bold"
@@ -906,8 +745,8 @@ const Timetable = () => {
           left="50%"
           transform="translate(-50%, -50%)"
           zIndex="999"
-          borderRadius="20px" // Adding curved borders
-          p="10px" // Padding to make it a bit larger
+          borderRadius="20px"
+          p="10px"
           opacity={showMessage ? 1 : 0}
         >
           <Text>{message}</Text>
@@ -915,19 +754,13 @@ const Timetable = () => {
       </Portal>
 
       <Box display="flex" mb="2.5">
-        <Text fontWeight="bold" mb="1.5">
-          Select Semester:
-        </Text>
+        <Text fontWeight="bold" mb="1.5">Select Semester:</Text>
         <Select
           value={selectedSemester}
           onChange={(e) => setSelectedSemester(e.target.value)}
         >
-          {/* <option value="">Select Semester</option> */}
-
           {semesters.map((semester, index) => (
-            <option key={index} value={semester}>
-              {semester}
-            </option>
+            <option key={index} value={semester}>{semester}</option>
           ))}
         </Select>
       </Box>
@@ -938,122 +771,86 @@ const Timetable = () => {
         <TableContainer>
           <Table variant="striped">
             <Tr fontWeight="bold">
-              <Td>
-                <Text>Day/Period</Text>
-              </Td>
-
+              <Td><Text>Day/Period</Text></Td>
               {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
-                <Td key={period}>
-                  <Text>
-                    <Center>{period}</Center>
-                  </Text>
-                </Td>
+                <Td key={period}><Text><Center>{period}</Center></Text></Td>
               ))}
             </Tr>
             {days.map((day) => (
               <Tr key={day} fontWeight="bold">
-                <Td>
-                  <Text>
-                    <Center>{day}</Center>
-                  </Text>
-                </Td>
+                <Td><Text><Center>{day}</Center></Text></Td>
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((period) => (
                   <Td key={period}>
-                    {timetableData[day][`period${period}`].map(
-                      (slot, slotIndex) => (
-                        <Box key={slotIndex}>
-                          {slot.map((cell, cellIndex) => (
-                            <Box key={cellIndex}>
-                              <Select
-                                value={cell.subject}
-                                onChange={(event) =>
-                                  handleCellChange(
-                                    day,
-                                    period,
-                                    slotIndex,
-                                    cellIndex,
-                                    "subject",
-                                    event
-                                  )
-                                }
-                              >
-                                <option value="">Select Subject</option>
-                                {availableSubjects.map((subject) => (
-                                  <option
-                                    key={subject._id}
-                                    value={subject.subName}
-                                  >
-                                    {subject.subName}
-                                  </option>
-                                ))}
-                              </Select>
-                              <Select
-                                value={cell.room}
-                                onChange={(event) =>
-                                  handleCellChange(
-                                    day,
-                                    period,
-                                    slotIndex,
-                                    cellIndex,
-                                    "room",
-                                    event
-                                  )
-                                }
-                              >
-                                <option value="">Select Room</option>{" "}
-                                {/* Add an empty option */}
-                                {availableRooms.map((roomOption) => (
-                                  <option key={roomOption} value={roomOption}>
-                                    {roomOption}
-                                  </option>
-                                ))}
-                              </Select>
-                              <Select
-                                value={cell.faculty}
-                                onChange={(event) =>
-                                  handleCellChange(
-                                    day,
-                                    period,
-                                    slotIndex,
-                                    cellIndex,
-                                    "faculty",
-                                    event
-                                  )
-                                }
-                              >
-                                <option value="">Select Faculty</option>{" "}
-                                {/* Add an empty option */}
-                                {availableFaculties.map((faculty, index) => (
-                                  <option key={index} value={faculty}>
-                                    {faculty}
-                                  </option>
-                                ))}
-                              </Select>
-                            </Box>
-                          ))}
-                          {slotIndex === 0 && (
-                            <CustomPlusButton
-                              className="cell-split-button"
-                              onClick={() =>
-                                handleSplitCell(day, period, slotIndex)
+                    {timetableData[day][`period${period}`].map((slot, slotIndex) => (
+                      <Box key={slotIndex}>
+                        {slot.map((cell, cellIndex) => (
+                          <Box key={cellIndex} mb="2">
+                            <Select
+                              value={cell.subject}
+                              onChange={(event) =>
+                                handleCellChange(day, period, slotIndex, cellIndex, "subject", event)
                               }
                             >
-                              +
-                            </CustomPlusButton>
-                          )}
-                          {slotIndex === 0 && slot.length > 1 && (
+                              <option value="">Select Subject</option>
+                              {availableSubjects.map((subject) => (
+                                <option key={subject._id} value={subject.subName}>
+                                  {subject.subName}
+                                </option>
+                              ))}
+                            </Select>
+
+                            <Select
+                              value={cell.room}
+                              onChange={(event) =>
+                                handleCellChange(day, period, slotIndex, cellIndex, "room", event)
+                              }
+                            >
+                              <option value="">Select Room</option>
+                              {availableRooms.map((roomOption) => (
+                                <option key={roomOption} value={roomOption}>
+                                  {roomOption}
+                                </option>
+                              ))}
+                            </Select>
+
+                            <Select
+                              value={cell.faculty}
+                              onChange={(event) =>
+                                handleCellChange(day, period, slotIndex, cellIndex, "faculty", event)
+                              }
+                            >
+                              <option value="">Select Faculty</option>
+                              {availableFaculties.map((faculty, index) => (
+                                <option key={index} value={faculty}>
+                                  {faculty}
+                                </option>
+                              ))}
+                            </Select>
+
+                            {/* NEW: per-cell Delete button */}
                             <CustomDeleteButton
                               className="cell-delete-button"
                               onClick={() =>
-                                handleDeleteCell(day, period, slotIndex)
+                                handleDeleteCell(day, period, slotIndex, cellIndex)
                               }
                             >
                               Delete
                             </CustomDeleteButton>
-                          )}
-                        </Box>
-                      )
-                    )}
+                          </Box>
+                        ))}
+
+                        {/* Keep your add (+) at slotIndex 0 if that's intended */}
+                        {slotIndex === 0 && (
+                          <CustomPlusButton
+                            className="cell-split-button"
+                            onClick={() => handleSplitCell(day, period, slotIndex)}
+                          >
+                            +
+                          </CustomPlusButton>
+                        )}
+
+                      </Box>
+                    ))}
                   </Td>
                 ))}
               </Tr>
@@ -1077,7 +874,6 @@ const Timetable = () => {
             value={viewselectedSemester}
             onChange={(e) => setViewSelectedSemester(e.target.value)}
           >
-            {" "}
             <option value="">Select </option>
             {semesters.map((semester, index) => (
               <option key={index} value={semester}>
@@ -1103,33 +899,13 @@ const Timetable = () => {
                 headTitle={viewselectedSemester}
                 commonLoad={commonLoad}
               />
-
-              {/* <Box>
-  {semNotes.length > 0 ? (
-    <div>
-      <Text fontSize="xl" fontWeight="bold">
-        Notes:
-      </Text>
-      {semNotes.map((noteArray, index) => (
-        <UnorderedList key={index}>
-          {noteArray.map((note, noteIndex) => (
-            <ListItem key={noteIndex}>{note}</ListItem>
-          ))}
-        </UnorderedList>
-      ))}
-    </div>
-  ) : (
-    <Text>No notes added for this selection.</Text>
-  )}
-</Box> */}
-
             </Box>
-
           ) : (
             <Text>Please select a Semester from the dropdown.</Text>
           )}
         </Box>
       </Box>
+
       <Box>
         <Box>
           <Heading as="h1" size="xl" mt="6" mb="6">
@@ -1202,7 +978,6 @@ const Timetable = () => {
             </Text>
 
             <ViewTimetable timetableData={viewRoomData} />
-            {/* <TimetableSummary timetableData={viewRoomData} type={'room'} code={currentCode}/>  */}
           </Box>
         ) : (
           <Text>Please select a Room from the dropdown.</Text>
