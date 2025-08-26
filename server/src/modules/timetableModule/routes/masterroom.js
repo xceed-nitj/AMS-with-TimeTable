@@ -92,6 +92,18 @@ masterroomRouter.post("/",ttadminRoute, async (req, res) => {
       }
     });
 
+  masterroomRouter.get("/search", async (req, res) => {
+  try {
+    const query = req.query.q;
+    const resp = await masterroomController.getRoomByName(query);
+    res.status(200).json(resp);
+  } catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
 
 
   module.exports = masterroomRouter;
