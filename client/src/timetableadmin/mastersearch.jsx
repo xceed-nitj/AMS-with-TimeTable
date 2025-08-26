@@ -607,34 +607,34 @@ const fetchSuggestions = useRef(
         }));
 
       // ---- Fallback: backend room search when local is empty ----
-      let roomRemote = [];
-      if (roomLocal.length === 0) {
-        const rRes = await fetch(
-          `${apiUrl}/timetablemodule/masterroom/search?q=${encodeURIComponent(q)}`,
-          { credentials: "include" }
-        );
-        if (rRes.ok) {
-          const rJson = await rRes.json().catch(() => []);
-          const rArr = Array.isArray(rJson) ? rJson
-                     : Array.isArray(rJson?.data) ? rJson.data
-                     : Array.isArray(rJson?.results) ? rJson.results
-                     : [];
-          roomRemote = rArr
-            .slice(0, 12)
-            .map(r => ({
-              _id: `room-${r.room || r.roomNo || r.room_no || r.name || r.roomName}`,
-              name: r.room || r.roomNo || r.room_no || r.name || r.roomName || "",
-              dept: r.dept || r.department || r.allottedDept || r.allotedDept || "",
-              kind: "room",
-              room: r.room || r.roomNo || r.room_no || r.name || r.roomName || "",
-            }))
-            .filter(x => x.name);
-        }
-      }
+      // let roomRemote = [];
+      // if (roomLocal.length === 0) {
+      //   const rRes = await fetch(
+      //     `${apiUrl}/timetablemodule/masterroom/search?q=${encodeURIComponent(q)}`,
+      //     { credentials: "include" }
+      //   );
+      //   if (rRes.ok) {
+      //     const rJson = await rRes.json().catch(() => []);
+      //     const rArr = Array.isArray(rJson) ? rJson
+      //                : Array.isArray(rJson?.data) ? rJson.data
+      //                : Array.isArray(rJson?.results) ? rJson.results
+      //                : [];
+      //     roomRemote = rArr
+      //       .slice(0, 12)
+      //       .map(r => ({
+      //         _id: `room-${r.room || r.roomNo || r.room_no || r.name || r.roomName}`,
+      //         name: r.room || r.roomNo || r.room_no || r.name || r.roomName || "",
+      //         dept: r.dept || r.department || r.allottedDept || r.allotedDept || "",
+      //         kind: "room",
+      //         room: r.room || r.roomNo || r.room_no || r.name || r.roomName || "",
+      //       }))
+      //       .filter(x => x.name);
+      //   }
+      // }
 
       // ---- Merge & dedupe by kind+name ----
       const seen = new Set();
-      const merged = [...facultyItems, ...roomLocal, ...roomRemote].filter(it => {
+      const merged = [...facultyItems, ...roomLocal].filter(it => {
         const key = `${it.kind}:${it.name}`;
         if (seen.has(key)) return false;
         seen.add(key);
