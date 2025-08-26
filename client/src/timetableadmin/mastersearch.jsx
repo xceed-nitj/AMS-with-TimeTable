@@ -535,25 +535,18 @@ const softGlow = keyframes`
 
   // 🔹 ADDED: Handle room selection from search suggestions
   const handleRoomClick = (roomItem) => {
-    const roomName = roomItem?.room || roomItem?.name;
-    if (!roomName) return;
-    const dept = roomDeptIndex[roomName] || roomItem?.dept;
+  const roomName = roomItem?.room || roomItem?.name;
+  if (!roomName) return;
 
-    if (dept) setSelectedDept(dept);
-    // wait for currentCode to update via selectedDept effect, then set room & scroll
-    setTimeout(() => {
-      setSelectedRoom(roomName);
-      setTimeout(() => {
-        if (roomSectionRef.current) {
-          const y = roomSectionRef.current.getBoundingClientRect().top + window.pageYOffset;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        }
-      }, 100);
-    }, 300);
+  const rawDept = roomDeptIndex[roomName.trim().toUpperCase()] || roomItem?.dept;
+  const dept = canonDept(rawDept);
+  if (dept) setSelectedDept(dept);       // triggers currentCode + rooms refresh
 
-    setQuery("");
-    setSuggestions([]);
-  };
+  setPendingRoom(roomName);              // select after rooms load
+  setQuery("");
+  setSuggestions([]);
+};
+
 
   const [subjectData, setSubjectData] = useState([]); 
   const [TTData, setTTData] = useState([]); 
@@ -661,6 +654,30 @@ const fetchSuggestions = useRef(
 ).current;
 
 useEffect(() => () => fetchSuggestions.cancel?.(), [fetchSuggestions]);
+const [pendingRoom, setPendingRoom] = useState(null);
+
+// map any dept string to the exact option in availableDepts (case/space tolerant)
+const canonDept = (name) => {
+  const n = (name || "").trim().toLowerCase();
+  const match = availableDepts.find(d => (d || "").trim().toLowerCase() === n);
+  return match || name || "";
+};
+
+useEffect(() => {
+  if (!pendingRoom) return;
+  const target = (pendingRoom || "").trim().toLowerCase();
+  const match = availableRooms.find(r => (r || "").trim().toLowerCase() === target);
+  if (match) {
+    setSelectedRoom(match);
+    setPendingRoom(null);
+    setTimeout(() => {
+      if (roomSectionRef.current) {
+        const y = roomSectionRef.current.getBoundingClientRect().top + window.pageYOffset;
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+    }, 50);
+  }
+}, [availableRooms, pendingRoom]);
 
   return (
     <>
@@ -905,8 +922,12 @@ useEffect(() => () => fetchSuggestions.cancel?.(), [fetchSuggestions]);
                       const rm = e.target.value;
                       setSelectedRoom(rm);
                       // 🔹 ADDED: auto-match dept from allotment mapping
-                      const dep = roomDeptIndex[rm];
-                      if (dep && dep !== selectedDept) setSelectedDept(dep);
+                      // const dep = roomDeptIndex[rm];
+                      // if (dep && dep !== selectedDept) setSelectedDept(dep);
+                    const dep = roomDeptIndex[rm.trim().toUpperCase()];
+   const depCanon = canonDept(dep);
+   if (dep && dep !== selectedDept) setSelectedDept(dep);
+   if (depCanon && depCanon !== selectedDept) setSelectedDept(depCanon);
                     }}
                   >
                     <option value="">Select Room</option>
