@@ -98,6 +98,29 @@ class MroomController {
           throw new HttpException(500, e.message || "Internal Server Error");
         }
       }
+
+     async getRoomByName(query){
+          if (!query) {
+          throw new HttpException(400, "Invalid search query");
+          }
+
+        try {
+          const regex = new RegExp(query, "i");
+          const data = await Masterroom.find({
+            $or: [
+              { room: regex },
+              { dept: regex }
+            ]
+          }).limit(10);
+
+          return data;
+        } catch (e) {
+          throw new HttpException(500, e.message || "Internal Server Error");
+        }
+      }
+
+       
+
     }
 
 

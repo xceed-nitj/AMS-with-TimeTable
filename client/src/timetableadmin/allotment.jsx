@@ -186,7 +186,7 @@ const AllotmentForm = () => {
       if (response.ok) {
         const data = await response.json();
         const [allotmentData] = data;
-
+        console.log(allotmentData);
         setFormData({
           session: allotmentData.session,
           centralisedAllotments: allotmentData.centralisedAllotments || [],
