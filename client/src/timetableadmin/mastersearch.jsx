@@ -175,7 +175,7 @@ const softGlow = keyframes`
           const data = await res.json();
           const [allotment] = Array.isArray(data) ? data : [];
           setAllotmentData(allotment || null);
-
+          console.log('Fetched allotment:', allotment);
           // Build room -> dept index & a flat room catalog
           const index = {};
           const catalog = [];
@@ -576,51 +576,90 @@ const softGlow = keyframes`
   }, [currentCode]);
 
   // 🔸 CHANGED: augment suggestions with rooms from allotment (keeping faculty fetch)
-  const fetchSuggestions = useRef(
-    debounce(async (q) => {
-      if (!q) {
-        setSuggestions([]);
-        return;
+const fetchSuggestions = useRef(
+  debounce(async (q) => {
+    if (!q) {
+      setSuggestions([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      // ---- FACULTY (existing endpoint) ----
+      const facRes = await fetch(
+        `${apiUrl}/timetablemodule/faculty/search?q=${encodeURIComponent(q)}`,
+        { credentials: "include" }
+      );
+      const facJson = facRes.ok ? await facRes.json() : [];
+      const facultyItems = (Array.isArray(facJson) ? facJson : []).map(f => ({
+        _id: f._id || f.id || f.name || Math.random().toString(36).slice(2),
+        name: f.name || f.fullName || f.displayName || "",
+        dept: f.dept || f.department || "",
+        kind: "faculty",
+      })).filter(x => x.name);
+
+      // ---- ROOMS from allotment (local) ----
+      const qlc = q.toLowerCase();
+      const roomLocal = (roomCatalogRef.current || [])
+        .filter(r =>
+          (r.room && r.room.toLowerCase().includes(qlc)) ||
+          (r.dept && r.dept.toLowerCase().includes(qlc))
+        )
+        .slice(0, 12)
+        .map(r => ({
+          _id: `room-${r.room}`,
+          name: r.room,
+          dept: r.dept,
+          kind: "room",
+          room: r.room,
+        }));
+
+      // ---- Fallback: backend room search when local is empty ----
+      let roomRemote = [];
+      if (roomLocal.length === 0) {
+        const rRes = await fetch(
+          `${apiUrl}/timetablemodule/masterroom/search?q=${encodeURIComponent(q)}`,
+          { credentials: "include" }
+        );
+        if (rRes.ok) {
+          const rJson = await rRes.json().catch(() => []);
+          const rArr = Array.isArray(rJson) ? rJson
+                     : Array.isArray(rJson?.data) ? rJson.data
+                     : Array.isArray(rJson?.results) ? rJson.results
+                     : [];
+          roomRemote = rArr
+            .slice(0, 12)
+            .map(r => ({
+              _id: `room-${r.room || r.roomNo || r.room_no || r.name || r.roomName}`,
+              name: r.room || r.roomNo || r.room_no || r.name || r.roomName || "",
+              dept: r.dept || r.department || r.allottedDept || r.allotedDept || "",
+              kind: "room",
+              room: r.room || r.roomNo || r.room_no || r.name || r.roomName || "",
+            }))
+            .filter(x => x.name);
+        }
       }
-      setLoading(true);
-      try {
-        // faculty API (existing)
-        const res = await fetch(`${apiUrl}/timetablemodule/faculty/search?q=${encodeURIComponent(q)}`, {
-          credentials: "include",
-        });
-        const data = res.ok ? await res.json() : [];
 
-        // rooms from allotment (local)
-        const qlc = q.toLowerCase();
-        const roomMatches = (roomCatalogRef.current || [])
-          .filter(r =>
-            (r.room && r.room.toLowerCase().includes(qlc)) ||
-            (r.dept && r.dept.toLowerCase().includes(qlc))
-          )
-          .slice(0, 12)
-          .map(r => ({
-            _id: `room-${r.room}`,
-            name: r.room,   // so UI can reuse 'name'
-            dept: r.dept,
-            kind: 'room',
-            room: r.room
-          }));
+      // ---- Merge & dedupe by kind+name ----
+      const seen = new Set();
+      const merged = [...facultyItems, ...roomLocal, ...roomRemote].filter(it => {
+        const key = `${it.kind}:${it.name}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
-        // tag faculty results (non-breaking)
-        const facNormalized = Array.isArray(data)
-          ? data.map(f => ({ ...f, kind: 'faculty' }))
-          : [];
+      setSuggestions(merged);
+      // Optional debug (won't crash prod):
+      // console.log('[rooms] local:', roomLocal.length, 'remote:', roomRemote.length, 'catalog:', roomCatalogRef.current?.length || 0);
+    } catch (err) {
+      console.error("Error in fetchSuggestions:", err);
+      setSuggestions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, 300)
+).current;
 
-        setSuggestions([...facNormalized, ...roomMatches]);
-
-      } catch (err) {
-        console.error("Error fetching faculty:", err);
-        setSuggestions([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 300)
-  ).current;
 useEffect(() => () => fetchSuggestions.cancel?.(), [fetchSuggestions]);
 
   return (
