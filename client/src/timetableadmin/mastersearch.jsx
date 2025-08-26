@@ -189,7 +189,7 @@ const softGlow = keyframes`
                 catalog.push({
                   room,
                   dept,
-                  source, // "centralised" | "openElective"
+                  // source, // "centralised" | "openElective"
                   morningSlot: !!r.morningSlot,
                   afternoonSlot: !!r.afternoonSlot,
                 });
@@ -612,6 +612,7 @@ const softGlow = keyframes`
           : [];
 
         setSuggestions([...facNormalized, ...roomMatches]);
+
       } catch (err) {
         console.error("Error fetching faculty:", err);
         setSuggestions([]);
@@ -620,6 +621,7 @@ const softGlow = keyframes`
       }
     }, 300)
   ).current;
+useEffect(() => () => fetchSuggestions.cancel?.(), [fetchSuggestions]);
 
   return (
     <>
