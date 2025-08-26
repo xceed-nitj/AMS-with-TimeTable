@@ -739,7 +739,7 @@ useEffect(() => {
               {item.kind === 'room' ? item.room : item.name}
               <Text as="span" ml={2} fontSize="xs" color="gray.600">[{item.kind || 'faculty'}]</Text>
             </Text>
-            <Text fontSize="sm" color="gray.600">{item.dept}</Text>
+            <Text fontSize="sm" color="gray.600">{item.kind === 'faculty' ? item.dept : ''}</Text>
           </ListItem>
         ))}
       </List></Box>
