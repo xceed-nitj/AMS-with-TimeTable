@@ -165,16 +165,16 @@ const softGlow = keyframes`
   // 🔹 ADDED: Fetch allotment for current session and build room maps
   useEffect(() => {
     const fetchAllotment = async () => {
-      if (!selectedSession) return;
+      // if (!selectedSession) return;
       try {
         const res = await fetch(
-          `${apiUrl}/timetablemodule/allotment?session=${encodeURIComponent(selectedSession)}`,
+          `${apiUrl}/timetablemodule/allotment?session=${selectedSession}`,
           { credentials: "include" }
         );
         if (res.ok) {
           const data = await res.json();
           const [allotment] = Array.isArray(data) ? data : [];
-          setAllotmentData(allotment || null);
+          setAllotmentData(allotment);
           console.log('Fetched allotment:', allotment);
           // Build room -> dept index & a flat room catalog
           const index = {};
@@ -739,7 +739,7 @@ useEffect(() => {
               {item.kind === 'room' ? item.room : item.name}
               <Text as="span" ml={2} fontSize="xs" color="gray.600">[{item.kind || 'faculty'}]</Text>
             </Text>
-            <Text fontSize="sm" color="gray.600">{item.kind === 'faculty' ? item.dept : ''}</Text>
+            <Text fontSize="sm" color="gray.600">{item.kind === 'faculty' ? item.dept : `Allotted to ${item.dept} & others`}</Text>
           </ListItem>
         ))}
       </List></Box>
