@@ -11,7 +11,7 @@ const navigation = [
 // { name: 'Locations', href: 'locations', color: 'tw-bg-emerald-500', lightColor: 'tw-bg-emerald-100', borderColor: 'tw-border-emerald-800' },
 { name: 'Navbar', href: 'navbar', color: 'tw-bg-rose-500', lightColor: 'tw-bg-rose-100', borderColor: 'tw-border-rose-800' },
 { name: 'File Upload', href: '/fileupload', color: 'tw-bg-sky-500', lightColor: 'tw-bg-sky-100', borderColor: 'tw-border-sky-800' },
-{ name: 'Common Template', href: 'commontemplate', color: 'tw-bg-emrald-500', lightColor: 'tw-bg-slate-100', borderColor: 'tw-border-slate-800' },
+{ name: 'Common Template', href: 'commontemplate', color: 'tw-bg-emerald-500', lightColor: 'tw-bg-slate-100', borderColor: 'tw-border-slate-800' },
 { name: 'Announcements', href: 'announcement', color: 'tw-bg-violet-500', lightColor: 'tw-bg-violet-100', borderColor: 'tw-border-violet-800'},
 ];
 

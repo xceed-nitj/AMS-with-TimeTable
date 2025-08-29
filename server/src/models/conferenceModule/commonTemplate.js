@@ -16,6 +16,11 @@ const commonTemplate = new mongoose.Schema({
   feature: {
     type: Boolean,
   },
+  // Add this field to your commontemplate schema
+descriptionDelta: {
+  type: mongoose.Schema.Types.Mixed, // Can store Delta object
+  default: null
+},
   sequence: {
     type: Number,
   }}, { timestamps: true }

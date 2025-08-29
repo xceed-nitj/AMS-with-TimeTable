@@ -55,7 +55,7 @@
     "quill-better-table": "^1.2.10",
     "quill-html-edit-button": "^3.0.0",
     "quill-image-drop-module": "^1.0.3",
-    "quill-image-resize-module": "^3.0.0",
+    "quill-image-resize-module--fix-imports-error": "^3.0.0",
     "quill-mention": "^6.1.1",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",

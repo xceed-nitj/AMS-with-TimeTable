@@ -608,7 +608,7 @@ const fetchSuggestions = useRef(
 
       // ---- Fallback: backend room search when local is empty ----
       let roomRemote = [];
-      if (roomLocal.length === 0) {
+      if (roomLocal.length >0) {
         const rRes = await fetch(
           `${apiUrl}/timetablemodule/masterroom/search?q=${encodeURIComponent(q)}`,
           { credentials: "include" }
