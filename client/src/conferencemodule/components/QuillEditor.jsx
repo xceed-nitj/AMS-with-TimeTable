@@ -1,10 +1,10 @@
-// QuillEditor.jsx — Fixed version with image resize (tables + normal flow)
+// QuillEditor.jsx — Image resize that round-trips via Delta (tables + normal flow)
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import QuillBetterTable from "quill-better-table";
 import "quill-better-table/dist/quill-better-table.css";
-import ImageResize from "quill-image-resize-module--fix-imports-error";
+
 const QuillEditor = forwardRef(
   (
     {
@@ -41,13 +41,15 @@ const QuillEditor = forwardRef(
 
     const normalizeImageSrc = (src = "") => {
       const s = (src || "").trim();
-      if (!/^https?:\/\//i.test(s)) return s;
+      if (!/^https?:\/\//i.test(s)) return s; // keep data:, mailto: etc. untouched
       try {
         const u = new URL(s);
+        // encode each path segment (keeps slashes)
         u.pathname = u.pathname
           .split("/")
           .map(seg => seg === "" ? "" : encodeURIComponent(decodeURIComponent(seg)))
           .join("/");
+        // encode query keys/values individually
         if (u.search) {
           const sp = new URLSearchParams(u.search);
           const sp2 = new URLSearchParams();
@@ -56,6 +58,7 @@ const QuillEditor = forwardRef(
         }
         return u.toString();
       } catch {
+        // simple fallback
         return s.replace(/\s/g, "%20");
       }
     };
@@ -94,6 +97,21 @@ const QuillEditor = forwardRef(
       q.setSelection(index + 1, 0, "silent");
     };
 
+    // --- helpers for persisting sizes into Delta ---
+    const toCssSize = (v) => {
+      if (v == null) return null;
+      if (typeof v === "number") return `${v}px`;
+      const s = String(v).trim();
+      return /^\d+$/.test(s) ? `${s}px` : s;
+    };
+
+    const applySizeToBlot = (img, { width, height }) => {
+      const blot = Quill.find(img);
+      if (!blot || typeof blot.format !== "function") return;
+      if (width != null)  blot.format("width",  toCssSize(width)  || "");
+      if (height != null) blot.format("height", toCssSize(height) || "");
+    };
+
     // ✅ NEW: Custom Image blot to PERSIST width/height in Delta
     const registerImageBlot = () => {
       const BaseImage = Quill.import("formats/image");
@@ -122,6 +140,162 @@ const QuillEditor = forwardRef(
       }
       Quill.register(ImageFormat, true);
     };
+
+    // --- Inline, dependency-free image resizer (writes formats so Delta saves) ---
+    class ImageResizeLite {
+      constructor(quill, options = {}) {
+        this.quill = quill;
+        this.options = { handleSize: 12, keepRatio: true, ...options };
+        this.overlay = null;
+        this.img = null;
+        this.start = null;
+        this.ratio = 1;
+
+        this.onClick = this.onClick.bind(this);
+        this.onScroll = this.reposition.bind(this);
+        this.onTextChange = this.reposition.bind(this);
+
+        quill.root.addEventListener("click", this.onClick,true);
+        quill.root.addEventListener("scroll", this.onScroll, { passive: true });
+        quill.on("text-change", this.onTextChange);
+      }
+
+      destroy() {
+        this.removeOverlay();
+        this.quill.root.removeEventListener("click", this.onClick);
+        this.quill.root.removeEventListener("scroll", this.onScroll);
+        this.quill.off("text-change", this.onTextChange);
+      }
+
+      onClick(e) {
+        const target = e.target;
+        if (target && target.tagName === "IMG") {
+          if (this.img === target) return;
+          this.select(target);
+        } else if (!this.overlay || !this.overlay.contains(target)) {
+          this.deselect();
+        }
+      }
+
+      select(img) {
+        this.img = img;
+        const { width, height } = img.getBoundingClientRect();
+        const naturalRatio =
+          img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : width / height || 1;
+        this.ratio = naturalRatio;
+
+        this.createOverlay();
+        this.reposition();
+      }
+
+      deselect() {
+        this.img = null;
+        this.removeOverlay();
+      }
+
+      createOverlay() {
+        this.removeOverlay();
+        const container = this.quill.root;
+        const ov = document.createElement("div");
+        ov.className = "ql-ir-lite";
+        ov.style.position = "absolute";
+        ov.style.pointerEvents = "none";
+        ov.style.zIndex = "10000";
+        ov.style.boxSizing = "border-box";
+        ov.style.border = "1px dashed rgba(0,0,0,.35)";
+
+        // single SE handle
+        const h = document.createElement("div");
+        h.className = "ql-ir-lite-handle";
+        h.style.position = "absolute";
+        h.style.right = "-6px";
+        h.style.bottom = "-6px";
+        h.style.width = "12px";
+        h.style.height = "12px";
+        h.style.background = "#fff";
+        h.style.border = "1px solid rgba(0,0,0,.4)";
+        h.style.cursor = "se-resize";
+        h.style.pointerEvents = "auto";
+
+        h.addEventListener("mousedown", (ev) => this.startDrag(ev));
+        ov.appendChild(h);
+        container.appendChild(ov);
+        this.overlay = ov;
+      }
+
+      removeOverlay() {
+        if (this.overlay && this.overlay.parentNode) {
+          this.overlay.parentNode.removeChild(this.overlay);
+        }
+        this.overlay = null;
+      }
+
+      startDrag(e) {
+        e.preventDefault();
+        if (!this.img) return;
+        const rect = this.img.getBoundingClientRect();
+        const rootRect = this.quill.root.getBoundingClientRect();
+
+        this.start = {
+          x: e.clientX,
+          y: e.clientY,
+          imgW: rect.width,
+          imgH: rect.height,
+          left: rect.left - rootRect.left + this.quill.root.scrollLeft,
+          top: rect.top - rootRect.top + this.quill.root.scrollTop,
+        };
+
+        this.onMove = this.onDrag.bind(this);
+        this.onUp = this.endDrag.bind(this);
+        document.addEventListener("mousemove", this.onMove);
+        document.addEventListener("mouseup", this.onUp);
+      }
+
+      onDrag(e) {
+        if (!this.start || !this.img) return;
+        const dx = e.clientX - this.start.x;
+        const dy = e.clientY - this.start.y;
+
+        let newW = Math.max(20, this.start.imgW + dx);
+        let newH = this.start.imgH;
+
+        if (this.options.keepRatio) {
+          newH = Math.round(newW / this.ratio);
+        } else {
+          newH = Math.max(20, this.start.imgH + dy);
+        }
+
+        // apply to DOM
+        this.img.style.width = `${Math.round(newW)}px`;
+        this.img.style.height = `${Math.round(newH)}px`;
+
+        // immediately persist to blot formats (so Delta saves)
+        applySizeToBlot(this.img, { width: newW, height: newH });
+
+        // reposition overlay box
+        this.reposition();
+      }
+
+      endDrag() {
+        document.removeEventListener("mousemove", this.onMove);
+        document.removeEventListener("mouseup", this.onUp);
+        this.start = null;
+      }
+
+      reposition() {
+        if (!this.overlay || !this.img) return;
+        const imgRect = this.img.getBoundingClientRect();
+        const rootRect = this.quill.root.getBoundingClientRect();
+
+        const left = imgRect.left - rootRect.left + this.quill.root.scrollLeft;
+        const top = imgRect.top - rootRect.top + this.quill.root.scrollTop;
+
+        this.overlay.style.left = `${left}px`;
+        this.overlay.style.top = `${top}px`;
+        this.overlay.style.width = `${imgRect.width}px`;
+        this.overlay.style.height = `${imgRect.height}px`;
+      }
+    }
 
     // ✅ FIXED: Enhanced setDelta function with table cell format restoration
     const setDelta = (deltaObj) => {
@@ -209,8 +383,8 @@ const QuillEditor = forwardRef(
 
       // ✅ Register modules/blots
       Quill.register({ "modules/better-table": QuillBetterTable }, true);
-      Quill.register("modules/imageResize", ImageResize);   // ✅ NEW: Register the image resize module
-      registerImageBlot();                                   // ✅ NEW: Register custom image blot for persistence
+      Quill.register("modules/imageResizeLite", ImageResizeLite); // inline module
+      registerImageBlot();                                        // custom image blot (persist w/h)
 
       // Sanitize links
       const Link = Quill.import("formats/link");
@@ -317,11 +491,9 @@ const QuillEditor = forwardRef(
               },
             },
           },
-          // ✅ NEW: Enable image resize module (works inside/outside tables)
-          imageResize: {
-            displaySize: true,  // Show size overlay during resize
-            parchment: Quill.import("parchment"),
-            modules: ["Resize", "DisplaySize", "Toolbar"],  // Enable resize handles, size display, and toolbar
+          // ✅ NEW: enable inline image resizer (works in/out of tables)
+          imageResizeLite: {
+            keepRatio: true,
           },
           keyboard: {
             bindings: {
@@ -331,6 +503,9 @@ const QuillEditor = forwardRef(
           },
         },
       });
+
+      // attach instance for cleanup
+      q.__imageResizeLite = new ImageResizeLite(q, { keepRatio: true });
 
       // ENTER (and Shift+ENTER) inside a cell: keep the line in the same cell
       q.keyboard.addBinding({ key: 13 }, (range) => {
@@ -374,7 +549,6 @@ const QuillEditor = forwardRef(
           const href = node.getAttribute("href") || "";
           if (isImageUrl(href)) {
             const src = /^https?:\/\//i.test(href) ? normalizeImageSrc(href) : href;
-            // we cannot read width/height from <a>, so just insert image
             return new Delta().insert({ image: src });
           }
         } catch {}
@@ -386,20 +560,20 @@ const QuillEditor = forwardRef(
       style.setAttribute("data-quill-fixes", "1");
       style.textContent =
         `.ql-tooltip{z-index:9999}
-         .ql-container{position:relative;} /* ensure resize overlay positions correctly */
+         .ql-container{position:relative;}
+         .ql-editor{position:relative;} /* ensure resize overlay positions correctly */
          .ql-editor ul{list-style:disc;padding-left:1.5em;}
          .ql-editor ol{list-style:decimal;padding-left:1.5em;}
          .ql-editor table{table-layout:fixed;width:100%;border-collapse:collapse;}
          .ql-editor td,.ql-editor th{vertical-align:top;border:1px solid #ccc;padding:8px;}
          .ql-editor img{max-width:100%;height:auto;display:block;}
-         .ql-better-table .qlbt-cell-data{overflow:visible;} /* ✅ let resize handles show in cells */
+         .ql-better-table .qlbt-cell-data{overflow:visible;} /* let resize handles show in cells */
          .ql-editor table img{max-width:100%;height:auto;display:block;margin:2px 0;}
          .ql-editor table p{margin:0;padding:0;}
          .ql-editor .ql-table-cell-line{margin:0;}
-         /* ✅ NEW: image-resize overlay: keep above table ui */
-         .ql-image-resize{z-index:10000;}
-         .ql-image-resize .ql-image-handle{width:10px;height:10px;border:1px solid rgba(0,0,0,.4);background:#fff;}
-         .ql-image-resize .ql-image-size{font:12px/1.2 sans-serif;padding:2px 4px;background:rgba(0,0,0,.65);color:#fff;border-radius:3px;}`;
+         /* inline resizer overlay */
+         .ql-ir-lite{z-index:10000;}
+         .ql-ir-lite-handle{width:12px;height:12px;border:1px solid rgba(0,0,0,.4);background:#fff;}`;
       document.head.appendChild(style);
 
       q.on("text-change", () => {
@@ -415,6 +589,7 @@ const QuillEditor = forwardRef(
       else if (value) setHTML(value);
 
       return () => {
+        try { quillRef.current?.__imageResizeLite?.destroy(); } catch {}
         document.head.querySelector('[data-quill-fixes="1"]')?.remove();
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
