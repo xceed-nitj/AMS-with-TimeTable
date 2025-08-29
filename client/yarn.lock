@@ -2502,6 +2502,11 @@
     "@types/react" "*"
     hoist-non-react-statics "^3.3.0"
 
+"@types/katex@^0.16.7":
+  version "0.16.7"
+  resolved "https://registry.yarnpkg.com/@types/katex/-/katex-0.16.7.tgz#03ab680ab4fa4fbc6cb46ecf987ecad5d8019868"
+  integrity sha512-HMwFiRujE5PjrgwHQ25+bsLJgowjGjm5Z8FVSf0N6PwgJrwxH0QxzHYDcKsTfV3wva0vzrpqMTJS2jXPr5BMEQ==
+
 "@types/lodash.mergewith@4.6.7":
   version "4.6.7"
   resolved "https://registry.npmjs.org/@types/lodash.mergewith/-/lodash.mergewith-4.6.7.tgz"
@@ -3205,6 +3210,11 @@ commander@^4.0.0:
   version "4.1.1"
   resolved "https://registry.npmjs.org/commander/-/commander-4.1.1.tgz"
   integrity sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==
+
+commander@^8.3.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-8.3.0.tgz#4837ea1b2da67b9c616a67afbb0fafee567bca66"
+  integrity sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==
 
 compute-scroll-into-view@3.0.3:
   version "3.0.3"
@@ -4355,6 +4365,11 @@ hasown@^2.0.0, hasown@^2.0.2:
   dependencies:
     function-bind "^1.1.2"
 
+highlight.js@^11.11.1:
+  version "11.11.1"
+  resolved "https://registry.yarnpkg.com/highlight.js/-/highlight.js-11.11.1.tgz#fca06fa0e5aeecf6c4d437239135fabc15213585"
+  integrity sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==
+
 hoist-non-react-statics@^3.3.0, hoist-non-react-statics@^3.3.1, hoist-non-react-statics@^3.3.2:
   version "3.3.2"
   resolved "https://registry.npmjs.org/hoist-non-react-statics/-/hoist-non-react-statics-3.3.2.tgz"
@@ -4887,6 +4902,13 @@ jszip@^3.2.2:
     pako "~1.0.2"
     readable-stream "~2.3.6"
     setimmediate "^1.0.5"
+
+katex@^0.16.22:
+  version "0.16.22"
+  resolved "https://registry.yarnpkg.com/katex/-/katex-0.16.22.tgz#d2b3d66464b1e6d69e6463b28a86ced5a02c5ccd"
+  integrity sha512-XCHRdUw4lf3SKBaJe4EvgqIuWwkPSo9XoeO8GjQW94Bp7TWv9hNhzZjZ+OH9yf1UmLygb7DIT5GSFQiyt16zYg==
+  dependencies:
+    commander "^8.3.0"
 
 keyv@^4.5.3:
   version "4.5.4"
@@ -5602,7 +5624,7 @@ queue@^6.0.1:
 
 quill-better-table@^1.2.10:
   version "1.2.10"
-  resolved "https://registry.npmjs.org/quill-better-table/-/quill-better-table-1.2.10.tgz"
+  resolved "https://registry.yarnpkg.com/quill-better-table/-/quill-better-table-1.2.10.tgz#ed0e21cdbaff672189b902187720fde08ae2a96a"
   integrity sha512-CFwxAQzt4EPCQuynQ65R/FU7Yu//kcDBb/rmBBOsFfO758+q50zvG/PDt4Lenv9DcrSgwnyNkfo4yeA5fzzVYQ==
 
 quill-delta@^3.6.2:
@@ -5628,7 +5650,30 @@ quill-html-edit-button@^3.0.0:
   resolved "https://registry.npmjs.org/quill-html-edit-button/-/quill-html-edit-button-3.0.0.tgz"
   integrity sha512-ZUV3rYjEvXz+v/7f8N0Mkp2+0D8VGDj6yCYPfagSLmyshczeMawS7vZJzaJ18dJp35IfjiPnzqyVk3KCI8qN1w==
 
-quill@^1.3.7:
+quill-image-drop-module@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/quill-image-drop-module/-/quill-image-drop-module-1.0.3.tgz#0e5ec8329dd67a12126f166b191bf64d2057a7d3"
+  integrity sha512-HP0Y2kb3nQk1QbRKZzEe1j3mArRQerN5B/U/MlXrOnxmhy3m/xYmVv0YoE13vWnGnBOIcoXGJ/9fi7l6AwsP8Q==
+  dependencies:
+    quill "^1.2.2"
+
+quill-image-resize-module@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/quill-image-resize-module/-/quill-image-resize-module-3.0.0.tgz#0fd93746a837336d95b2f536140416a623c71771"
+  integrity sha512-1TZBnUxU/WIx5dPyVjQ9yN7C6mLZSp04HyWBEMqT320DIq4MW4JgzlOPDZX5ZpBM3bU6sacU4kTLUc8VgYQZYw==
+  dependencies:
+    lodash "^4.17.4"
+    quill "^1.2.2"
+    raw-loader "^0.5.1"
+
+quill-mention@^6.1.1:
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/quill-mention/-/quill-mention-6.1.1.tgz#c7eeeb3a92c52832930e25ee41af7e2eb1cc3b6d"
+  integrity sha512-Ay8lHScPotDa/qSWJry2mxOg8YZxW3UAqlsgwjxXMDwNGv8+g3ydvgpBOq5firdcE+I++tpNTuYubFaNAnejMg==
+  dependencies:
+    quill "^2.0.2"
+
+quill@^1.2.2, quill@^1.3.7:
   version "1.3.7"
   resolved "https://registry.npmjs.org/quill/-/quill-1.3.7.tgz"
   integrity sha512-hG/DVzh/TiknWtE6QmWAF/pxoZKYxfe3J/d/+ShUWkDvvkZQVTPeVmUJVu1uE6DDooC4fWTiCLh84ul89oNz5g==
@@ -5650,6 +5695,16 @@ quill@^2.0.2:
     parchment "^3.0.0"
     quill-delta "^5.1.0"
 
+quill@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/quill/-/quill-2.0.3.tgz#752765a31d5a535cdc5717dc49d4e50099365eb1"
+  integrity sha512-xEYQBqfYx/sfb33VJiKnSJp8ehloavImQ2A6564GAbqG55PGw1dAWUn1MUbQB62t0azawUS2CZZhWCjO8gRvTw==
+  dependencies:
+    eventemitter3 "^5.0.1"
+    lodash-es "^4.17.21"
+    parchment "^3.0.0"
+    quill-delta "^5.1.0"
+
 raf-schd@^4.0.2:
   version "4.0.3"
   resolved "https://registry.npmjs.org/raf-schd/-/raf-schd-4.0.3.tgz"
@@ -5661,6 +5716,11 @@ raf@^3.4.1:
   integrity sha512-Sq4CW4QhwOHE8ucn6J34MqtZCeWFP2aQSmrlroYgqAV1PjStIhJXxYuTgUIfkEk7zTLjmIjLmU5q+fbD1NnOJA==
   dependencies:
     performance-now "^2.1.0"
+
+raw-loader@^0.5.1:
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/raw-loader/-/raw-loader-0.5.1.tgz#0c3d0beaed8a01c966d9787bf778281252a979aa"
+  integrity sha512-sf7oGoLuaYAScB4VGr0tzetsYlS8EJH6qnTCfQ/WVEa89hALQ4RQfCKt5xCyPQKPDUbVUAIP1QsxAwfAjlDp7Q==
 
 react-addons-shallow-compare@^15.3.1:
   version "15.6.3"

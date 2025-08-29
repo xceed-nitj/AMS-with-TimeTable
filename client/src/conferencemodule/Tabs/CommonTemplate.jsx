@@ -1,16 +1,12 @@
-
 import React, { useState, useEffect, useRef } from "react";
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
-import QuillBetterTable from "quill-better-table";
-import "quill-better-table/dist/quill-better-table.css";
-import axios from 'axios';
+import axios from "axios";
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
 import { Copy } from "lucide-react";
+import QuillEditor from "../components/QuillEditor";
 import {
-  Container, Box, VStack, HStack, Flex, Heading, Button, Input, FormControl,
+  Container, Spacer, Box, VStack, HStack, Flex, Heading, Button, Input, FormControl,
   FormLabel, Select, Center, Text, useBreakpointValue, useToast, Textarea,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
   ModalCloseButton, useDisclosure
@@ -30,12 +26,10 @@ const LivePreviewSection = ({ title, html }) => {
         Live Preview
       </Heading>
 
-      {/* About Section Preview */}
       <Heading as="h3" size="lg" mb={4} color="gray.800">
-        Template Page Preview
+        Page Preview
       </Heading>
 
-      {/* Content Card */}
       <Box
         border="1px solid"
         borderColor="gray.200"
@@ -44,13 +38,12 @@ const LivePreviewSection = ({ title, html }) => {
         bg="white"
         boxShadow="sm"
       >
-        <VStack align="start" spacing={3}>
-          {/* Title */}
+        <VStack align="start" spacing={3} w="100%">
           <Text fontWeight="bold" color="blue.600" fontSize="lg">
             {title || "Untitled"}
           </Text>
 
-          {/* Description Box */}
+          {/* Render HTML inside a .ql-editor wrapper so lists/tables look correct */}
           <Box
             bg="gray.50"
             p={4}
@@ -59,16 +52,9 @@ const LivePreviewSection = ({ title, html }) => {
             borderColor="gray.200"
             w="100%"
             minH="100px"
+            className="ql-editor"
           >
-            <Text
-              fontSize="md"
-              color="gray.800"
-              whiteSpace="pre-wrap"
-              wordBreak="break-word"
-            >
-              {/* Rendered HTML */}
-              <span dangerouslySetInnerHTML={{ __html: html }} />
-            </Text>
+            <Box as="div" dangerouslySetInnerHTML={{ __html: html }} />
           </Box>
         </VStack>
       </Box>
@@ -79,26 +65,32 @@ const LivePreviewSection = ({ title, html }) => {
 const CommonTemplate = () => {
   const params = useParams();
   const apiUrl = getEnvironment();
-  const editorRef = useRef(null);
-  const quillInstance = useRef(null);
   const toast = useToast();
   const { isOpen: isImportOpen, onOpen: onImportOpen, onClose: onImportClose } = useDisclosure();
-
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   const IdConf = params.confid;
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+
   const [showHtml, setShowHtml] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
   const [editableHtmlContent, setEditableHtmlContent] = useState("");
 
   const [conferences, setConferences] = useState([]);
-  const [selectedImportConf, setSelectedImportConf] = useState('');
+  const [selectedImportConf, setSelectedImportConf] = useState("");
   const [importTemplates, setImportTemplates] = useState([]);
   const [loadingImport, setLoadingImport] = useState(false);
   const [conferenceNames, setConferenceNames] = useState({});
+
+  const [showPreview, setShowPreview] = useState(() => {
+    const saved = localStorage.getItem("ct_showPreview");
+    return saved ? JSON.parse(saved) : true; // default = true
+  });
+  useEffect(() => {
+    localStorage.setItem("ct_showPreview", JSON.stringify(showPreview));
+  }, [showPreview]);
 
   const initialData = {
     confId: IdConf,
@@ -112,129 +104,82 @@ const CommonTemplate = () => {
   const [data, setData] = useState([]);
   const [refresh, setRefresh] = useState(0);
 
+  const editorApiRef = useRef(null);
+
+  // HTML -> quill-better-table converter
   const parseHtmlTablesToQuillFormat = (htmlString) => {
-    console.log('Original HTML:', htmlString);
-    
-    const tempDiv = document.createElement('div');
+    const tempDiv = document.createElement("div");
     tempDiv.innerHTML = htmlString;
-    
-    const tables = tempDiv.querySelectorAll('table');
-    
-    tables.forEach((table, tableIndex) => {
-      const tableId = `table-${Date.now()}-${tableIndex}`;
-      
+    const tables = tempDiv.querySelectorAll("table");
+
+    tables.forEach((table) => {
       const rows = [];
       let maxCols = 0;
-      
-      const theadRows = table.querySelectorAll('thead tr');
-      theadRows.forEach(tr => {
-        const cells = tr.querySelectorAll('th, td');
-        const rowData = [];
-        cells.forEach(cell => {
-          const colspan = parseInt(cell.getAttribute('colspan') || '1');
-          const rowspan = parseInt(cell.getAttribute('rowspan') || '1');
-          rowData.push({
-            content: cell.textContent.trim(),
-            colspan: colspan,
-            rowspan: rowspan
-          });
-        });
-        rows.push(rowData);
-        maxCols = Math.max(maxCols, rowData.reduce((sum, cell) => sum + cell.colspan, 0));
-      });
-      
-      const tbodyRows = table.querySelectorAll('tbody tr');
-      tbodyRows.forEach(tr => {
-        const cells = tr.querySelectorAll('th, td');
-        const rowData = [];
-        cells.forEach(cell => {
-          const colspan = parseInt(cell.getAttribute('colspan') || '1');
-          const rowspan = parseInt(cell.getAttribute('rowspan') || '1');
-          rowData.push({
-            content: cell.textContent.trim(),
-            colspan: colspan,
-            rowspan: rowspan
-          });
-        });
-        rows.push(rowData);
-        maxCols = Math.max(maxCols, rowData.reduce((sum, cell) => sum + cell.colspan, 0));
-      });
-      
-      if (theadRows.length === 0 && tbodyRows.length === 0) {
-        const allRows = table.querySelectorAll('tr');
-        allRows.forEach(tr => {
-          const cells = tr.querySelectorAll('th, td');
+
+      const collect = (nodeList) => {
+        nodeList.forEach((tr) => {
+          const cells = tr.querySelectorAll("th, td");
           const rowData = [];
-          cells.forEach(cell => {
-            const colspan = parseInt(cell.getAttribute('colspan') || '1');
-            const rowspan = parseInt(cell.getAttribute('rowspan') || '1');
-            rowData.push({
-              content: cell.textContent.trim(),
-              colspan: colspan,
-              rowspan: rowspan
-            });
+          cells.forEach((cell) => {
+            const colspan = parseInt(cell.getAttribute("colspan") || "1");
+            const rowspan = parseInt(cell.getAttribute("rowspan") || "1");
+            rowData.push({ content: cell.textContent.trim(), colspan, rowspan });
           });
           rows.push(rowData);
           maxCols = Math.max(maxCols, rowData.reduce((sum, cell) => sum + cell.colspan, 0));
         });
-      }
-      
+      };
+
+      collect(table.querySelectorAll("thead tr"));
+      collect(table.querySelectorAll("tbody tr"));
+      if (rows.length === 0) collect(table.querySelectorAll("tr"));
+
       if (rows.length === 0 || maxCols === 0) return;
-      
-      const colWidth = Math.floor(600 / maxCols); 
-      const colgroup = Array(maxCols).fill(0).map(() => `<col width="${colWidth}">`).join('');
-      
+
+      const colWidth = Math.floor(600 / maxCols);
+      const colgroup = Array(maxCols).fill(0).map(() => `<col width="${colWidth}">`).join("");
+
       let quillTableHtml = `<div class="quill-better-table-wrapper"><table class="quill-better-table"><colgroup>${colgroup}</colgroup><tbody>`;
-      
       rows.forEach((row, rowIndex) => {
         const rowId = `row-${Date.now()}-${rowIndex}`;
         quillTableHtml += `<tr data-row="${rowId}">`;
-        
         row.forEach((cell, cellIndex) => {
           const cellId = `cell-${Date.now()}-${rowIndex}-${cellIndex}`;
           quillTableHtml += `<td data-row="${rowId}" rowspan="${cell.rowspan}" colspan="${cell.colspan}">`;
           quillTableHtml += `<p class="qlbt-cell-line" data-row="${rowId}" data-cell="${cellId}" data-rowspan="${cell.rowspan}" data-colspan="${cell.colspan}">`;
-          quillTableHtml += cell.content || '';
+          quillTableHtml += cell.content || "";
           quillTableHtml += `</p></td>`;
         });
-        
         quillTableHtml += `</tr>`;
       });
-      
       quillTableHtml += `</tbody></table></div>`;
-      
       table.outerHTML = quillTableHtml;
     });
-    
-    const result = tempDiv.innerHTML;
-    console.log('Converted HTML:', result);
-    return result;
+
+    return tempDiv.innerHTML;
   };
 
   const fetchConferences = async () => {
     try {
       const res = await axios.get(`${apiUrl}/conferencemodule/conf`, { withCredentials: true });
-      const conferenceList = res.data.filter(conf => conf._id !== IdConf);
+      const conferenceList = res.data.filter((conf) => conf._id !== IdConf);
       setConferences(conferenceList);
-      
-      const namePromises = conferenceList.map(async (conf) => {
-        try {
-          const nameRes = await axios.get(`${apiUrl}/conferencemodule/home/conf/${conf._id}`, { withCredentials: true });
-          return { confId: conf._id, confName: nameRes.data.confName };
-        } catch (error) {
-          console.error(`Error fetching name for conference ${conf._id}:`, error);
-          return { confId: conf._id, confName: `Conference ${conf._id}` };
-        }
-      });
-      
-      const names = await Promise.all(namePromises);
-      const nameMap = {};
-      names.forEach(({ confId, confName }) => {
-        nameMap[confId] = confName;
-      });
-      setConferenceNames(nameMap);
+
+      const names = await Promise.all(
+        conferenceList.map(async (conf) => {
+          try {
+            const nameRes = await axios.get(`${apiUrl}/conferencemodule/home/conf/${conf._id}`, { withCredentials: true });
+            return { confId: conf._id, confName: nameRes.data.confName };
+          } catch {
+            return { confId: conf._id, confName: `Conference ${conf._id}` };
+          }
+        })
+      );
+      const map = {};
+      names.forEach(({ confId, confName }) => (map[confId] = confName));
+      setConferenceNames(map);
     } catch (error) {
-      console.error('Error fetching conferences:', error);
+      console.error("Error fetching conferences:", error);
       toast({
         title: "Error",
         description: "Failed to fetch conferences for import.",
@@ -247,13 +192,12 @@ const CommonTemplate = () => {
 
   const fetchImportTemplates = async (confId) => {
     if (!confId) return;
-    
     setLoadingImport(true);
     try {
       const res = await axios.get(`${apiUrl}/conferencemodule/commontemplate/conference/${confId}`, { withCredentials: true });
       setImportTemplates(res.data);
     } catch (error) {
-      console.error('Error fetching import templates:', error);
+      console.error("Error fetching import templates:", error);
       toast({
         title: "Error",
         description: "Failed to fetch templates from selected conference.",
@@ -272,40 +216,38 @@ const CommonTemplate = () => {
         confId: IdConf,
         pageTitle: template.pageTitle,
         description: template.description,
-        feature: template.feature
+        feature: template.feature,
       };
 
       const res = await axios.post(`${apiUrl}/conferencemodule/commontemplate`, newTemplateData, {
-        withCredentials: true
+        withCredentials: true,
       });
+      const saved = res.data;
 
-      const newTemplate = res.data;
-      
-      setData(prevData => [...prevData, newTemplate]);
-      
-      setSelectedTemplate(newTemplate);
-      setEditID(newTemplate._id);
-      setFormData(newTemplateData);
-      
-      if (quillInstance.current) {
+      // Avoid local push to prevent duplicates; refresh from server
+      setSelectedTemplate(saved);
+      setEditID(saved._id);
+
+      if (editorApiRef.current) {
         const convertedHtml = parseHtmlTablesToQuillFormat(template.description || "");
-        quillInstance.current.root.innerHTML = convertedHtml;
+        editorApiRef.current.setHTML(convertedHtml);
+        setFormData(prev => ({ ...prev, description: convertedHtml, pageTitle: template.pageTitle, feature: template.feature }));
         setHtmlContent(convertedHtml);
         setEditableHtmlContent(convertedHtml);
       }
 
       onImportClose();
-      setRefresh(prev => prev + 1);
-      
+      setRefresh((p) => p + 1);
+
       toast({
-        title: "Template Imported!",
-        description: "The template has been successfully imported and added to your templates.",
+        title: "Page Imported!",
+        description: "The page has been successfully imported and added to your pages.",
         status: "success",
         duration: 3000,
         isClosable: true,
       });
     } catch (error) {
-      console.error('Error importing template:', error);
+      console.error("Error importing template:", error);
       toast({
         title: "Import Failed",
         description: "Failed to import the selected template.",
@@ -324,11 +266,8 @@ const CommonTemplate = () => {
   const handleImportConfChange = (e) => {
     const confId = e.target.value;
     setSelectedImportConf(confId);
-    if (confId) {
-      fetchImportTemplates(confId);
-    } else {
-      setImportTemplates([]);
-    }
+    if (confId) fetchImportTemplates(confId);
+    else setImportTemplates([]);
   };
 
   useEffect(() => {
@@ -348,116 +287,70 @@ const CommonTemplate = () => {
 
   useEffect(() => {
     setLoading(true);
-    axios.get(`${apiUrl}/conferencemodule/commontemplate/conference/${IdConf}`, {
-      withCredentials: true
-    })
-      .then(res => {
+    axios
+      .get(`${apiUrl}/conferencemodule/commontemplate/conference/${IdConf}`, { withCredentials: true })
+      .then((res) => {
         setData(res.data);
         if (!selectedTemplate && res.data.length > 0) {
           setSelectedTemplate(res.data[0]);
         }
       })
-      .catch(err => console.log(err))
+      .catch((err) => console.log(err))
       .finally(() => setLoading(false));
   }, [refresh, IdConf]);
 
+  // Load selected template into the editor (convert legacy <table> HTML)
   useEffect(() => {
-    if (quillInstance.current) return;
-    Quill.register({ "modules/better-table": QuillBetterTable }, true);
+    if (!editorApiRef.current || !selectedTemplate) return;
 
-    quillInstance.current = new Quill(editorRef.current, {
-      theme: "snow",
-      placeholder: "Write description here...",
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, 3, 4, 5, 6, false] }],
-          ["bold", "italic", "underline", "strike"],
-          [{ color: [] }, { background: [] }],
-          [{ script: "sub" }, { script: "super" }],
-          ["blockquote", "code-block"],
-          [{ list: "ordered" }, { list: "bullet" }],
-          [{ indent: "-1" }, { indent: "+1" }],
-          [{ align: [] }],
-          ["link", "image", "video"],
-          ["clean"],
-        ],
-        clipboard: { matchVisual: false },
-        "better-table": {
-          operationMenu: {
-            items: {
-              insertColumnRight: { text: "Insert Column Right" },
-              insertColumnLeft: { text: "Insert Column Left" },
-              insertRowUp: { text: "Insert Row Above" },
-              insertRowDown: { text: "Insert Row Below" },
-              mergeCells: { text: "Merge Cells" },
-              unmergeCells: { text: "Unmerge Cells" },
-              deleteColumn: { text: "Delete Column" },
-              deleteRow: { text: "Delete Row" },
-              deleteTable: { text: "Delete Table" },
-            },
-          },
-        },
-        keyboard: {
-          bindings: QuillBetterTable.keyboardBindings
-        }
-      }
-    });
+    const raw = selectedTemplate.description || "";
+    const converted = parseHtmlTablesToQuillFormat(raw);
 
-    quillInstance.current.on("text-change", () => {
-      const html = quillInstance.current.root.innerHTML;
-      setFormData(prev => ({
-        ...prev,
-        description: html
-      }));
-      setHtmlContent(html);
-      setEditableHtmlContent(html);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (quillInstance.current && selectedTemplate) {
-      const html = selectedTemplate.description || "";
-      quillInstance.current.root.innerHTML = html;
-      setHtmlContent(html);
-      setEditableHtmlContent(html);
-    }
+    editorApiRef.current.setHTML(converted);
+    setFormData(prev => ({ ...prev, description: converted }));
+    setHtmlContent(converted);
+    setEditableHtmlContent(converted);
   }, [selectedTemplate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === "feature" ? value === "true" : value
+      [name]: name === "feature" ? value === "true" : value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post(`${apiUrl}/conferencemodule/commontemplate`, formData, {
-      withCredentials: true
-    })
-      .then(res => {
-        const newTemplate = res.data;
-        setData(prevData => [...prevData, newTemplate]);
-        setSelectedTemplate(newTemplate);
-        setEditID(newTemplate._id);
-        setRefresh(prev => prev + 1);
+    axios
+      .post(`${apiUrl}/conferencemodule/commontemplate`, formData, {
+        withCredentials: true,
       })
-      .catch(err => console.log(err));
+      .then((res) => {
+        const saved = res.data;
+        // Avoid local push to prevent duplicates; refresh list
+        setSelectedTemplate(saved);
+        setEditID(saved._id);
+        editorApiRef.current?.setHTML(saved.description ?? formData.description);
+        setRefresh((p) => p + 1);
+        toast({ title: "Page added", status: "success", duration: 2000, isClosable: true });
+      })
+      .catch((err) => console.log(err));
   };
 
   const handleUpdate = () => {
-    axios.put(`${apiUrl}/conferencemodule/commontemplate/${editID}`, formData, {
-      withCredentials: true
-    })
-      .then(res => {
-        setData(prev =>
-          prev.map(tpl => tpl._id === editID ? { ...tpl, ...formData } : tpl)
-        );
-        setSelectedTemplate(prev => prev ? { ...prev, ...formData } : null);
-        setRefresh(prev => prev + 1);
+    axios
+      .put(`${apiUrl}/conferencemodule/commontemplate/${editID}`, formData, {
+        withCredentials: true,
       })
-      .catch(err => console.log(err));
+      .then((res) => {
+        const updated = res.data || { ...selectedTemplate, ...formData };
+        setData((prev) => prev.map((tpl) => (tpl._id === editID ? updated : tpl)));
+        setSelectedTemplate(updated);
+        editorApiRef.current?.setHTML(updated.description ?? formData.description);
+        toast({ title: "Page updated", status: "success", duration: 2000, isClosable: true });
+      })
+      .catch((err) => console.log(err));
   };
 
   const handleDelete = (deleteID) => {
@@ -466,49 +359,41 @@ const CommonTemplate = () => {
   };
 
   const confirmDelete = () => {
-    axios.delete(`${apiUrl}/conferencemodule/commontemplate/${deleteItemId}`, {
-      withCredentials: true
-    })
+    axios
+      .delete(`${apiUrl}/conferencemodule/commontemplate/${deleteItemId}`, {
+        withCredentials: true,
+      })
       .then(() => {
         setShowDeleteConfirmation(false);
         setFormData(initialData);
         setSelectedTemplate(null);
         setEditID(null);
-        setRefresh(prev => prev + 1);
-        if (quillInstance.current) {
-          quillInstance.current.root.innerHTML = '';
-          setHtmlContent('');
-          setEditableHtmlContent('');
+        setRefresh((p) => p + 1);
+        if (editorApiRef.current) {
+          editorApiRef.current.setHTML("");
+          setHtmlContent("");
+          setEditableHtmlContent("");
         }
       })
-      .catch(err => console.log(err));
+      .catch((err) => console.log(err));
   };
 
-  const handleTemplateSelect = (template) => {
-    setSelectedTemplate(template);
-  };
+  const handleTemplateSelect = (template) => setSelectedTemplate(template);
 
   const handleAddNewTemplate = () => {
     setSelectedTemplate(null);
     setFormData(initialData);
     setEditID(null);
-    if (quillInstance.current) {
-      quillInstance.current.root.innerHTML = '';
-      setHtmlContent('');
-      setEditableHtmlContent('');
-    }
-  };
-
-  const insertTable = () => {
-    if (quillInstance.current) {
-      const tableModule = quillInstance.current.getModule("better-table");
-      tableModule.insertTable(3, 3);
+    if (editorApiRef.current) {
+      editorApiRef.current.setHTML("");
+      setHtmlContent("");
+      setEditableHtmlContent("");
     }
   };
 
   const toggleHtmlView = () => {
-    if (quillInstance.current) {
-      const html = quillInstance.current.root.innerHTML;
+    if (editorApiRef.current) {
+      const html = editorApiRef.current.getHTML();
       setHtmlContent(html);
       setEditableHtmlContent(html);
     }
@@ -516,87 +401,80 @@ const CommonTemplate = () => {
   };
 
   const copyHtmlToClipboard = () => {
-    if (quillInstance.current) {
-      const html = quillInstance.current.root.innerHTML;
-      navigator.clipboard.writeText(html).then(() => {
+    const html = editorApiRef.current?.getHTML() || "";
+    navigator.clipboard
+      .writeText(html)
+      .then(() =>
         toast({
           title: "HTML Copied!",
           description: "The HTML content has been copied to your clipboard.",
           status: "success",
           duration: 2000,
           isClosable: true,
-        });
-      }).catch(() => {
+        })
+      )
+      .catch(() =>
         toast({
           title: "Copy Failed",
           description: "Failed to copy HTML content to clipboard.",
           status: "error",
           duration: 2000,
           isClosable: true,
-        });
-      });
-    }
+        })
+      );
   };
 
   const copyObjectIdToClipboard = () => {
     if (selectedTemplate && selectedTemplate._id) {
-      navigator.clipboard.writeText(selectedTemplate._id).then(() => {
-        toast({
-          title: "Object ID Copied!",
-          description: "The Object ID has been copied to your clipboard.",
-          status: "success",
-          duration: 2000,
-          isClosable: true,
-        });
-      }).catch(() => {
-        toast({
-          title: "Copy Failed",
-          description: "Failed to copy Object ID to clipboard.",
-          status: "error",
-          duration: 2000,
-          isClosable: true,
-        });
-      });
+      navigator.clipboard
+        .writeText(selectedTemplate._id)
+        .then(() =>
+          toast({
+            title: "Object ID Copied!",
+            description: "The Object ID has been copied to your clipboard.",
+            status: "success",
+            duration: 2000,
+            isClosable: true,
+          })
+        )
+        .catch(() =>
+          toast({
+            title: "Copy Failed",
+            description: "Failed to copy Object ID to your clipboard.",
+            status: "error",
+            duration: 2000,
+            isClosable: true,
+          })
+        );
     }
   };
 
-  const handleHtmlContentChange = (e) => {
-    const newHtmlContent = e.target.value;
-    setEditableHtmlContent(newHtmlContent);
-  };
+  const handleHtmlContentChange = (e) => setEditableHtmlContent(e.target.value);
 
   const applyHtmlChanges = () => {
-    if (quillInstance.current) {
-      try {
-        const convertedHtml = parseHtmlTablesToQuillFormat(editableHtmlContent);
-        
-        quillInstance.current.root.innerHTML = convertedHtml;
-        
-        setFormData(prev => ({
-          ...prev,
-          description: convertedHtml
-        }));
-        
-        setHtmlContent(convertedHtml);
-        setEditableHtmlContent(convertedHtml);
-        
-        toast({
-          title: "HTML Applied & Tables Converted!",
-          description: "The HTML content has been applied and tables have been converted to editable format.",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } catch (error) {
-        console.error('Error applying HTML:', error);
-        toast({
-          title: "Invalid HTML",
-          description: "The HTML content contains errors and could not be applied.",
-          status: "error",
-          duration: 2000,
-          isClosable: true,
-        });
-      }
+    if (!editorApiRef.current) return;
+    try {
+      const convertedHtml = parseHtmlTablesToQuillFormat(editableHtmlContent);
+      editorApiRef.current.setHTML(convertedHtml);
+      setFormData((prev) => ({ ...prev, description: convertedHtml }));
+      setHtmlContent(convertedHtml);
+      setEditableHtmlContent(convertedHtml);
+      toast({
+        title: "HTML Applied & Tables Converted!",
+        description: "The HTML content has been applied and tables have been converted to editable format.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Error applying HTML:", error);
+      toast({
+        title: "Invalid HTML",
+        description: "The HTML content contains errors and could not be applied.",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
     }
   };
 
@@ -604,15 +482,11 @@ const CommonTemplate = () => {
     <Box width="100%" mb={4}>
       <HStack justifyContent="space-between" alignItems="center" mb={2}>
         <Heading as="h3" size="sm" color="gray.600">
-          Template Pages:
+          Pages:
         </Heading>
         {isMobile && (
-          <Button
-            colorScheme="blue"
-            size="sm"
-            onClick={handleAddNewTemplate}
-          >
-            Add Template
+          <Button colorScheme="blue" size="sm" onClick={handleAddNewTemplate}>
+            Add Page
           </Button>
         )}
       </HStack>
@@ -641,7 +515,7 @@ const CommonTemplate = () => {
               borderBottom={idx < data.length - 1 ? "1px solid" : "none"}
               borderBottomColor="gray.200"
               _hover={{
-                bg: selectedTemplate?._id === template._id ? "blue.600" : "gray.50"
+                bg: selectedTemplate?._id === template._id ? "blue.600" : "gray.50",
               }}
               transition="all 0.2s"
             >
@@ -669,17 +543,37 @@ const CommonTemplate = () => {
   return (
     <main className="tw-p-5 tw-min-h-screen">
       <Flex direction="column">
-        {/* Import Button at the top */}
-        <Box mb={4}>
-          <Button
-            colorScheme="green"
-            size="lg"
-            onClick={handleOpenImport}
-            leftIcon={<Text fontSize="lg"></Text>}
-          >
-            Import from Other Conference
-          </Button>
-        </Box>
+  {/* Top bar: Import + Preview toggle */}
+  <Box mb={4}>
+    <HStack w="full" align="center">
+      {/* Left group */}
+      <HStack spacing={3}>
+        <Button colorScheme="orange" onClick={handleAddNewTemplate} mb="4" size="md">
+          Add New Page
+        </Button>
+        <Button colorScheme="green" onClick={handleOpenImport} mb="4" size="md">
+          Import data
+        </Button>
+      </HStack>
+
+      {/* Push the preview button to the right */}
+      <Spacer />
+
+      {/* Right-aligned Preview toggle */}
+      <Button
+        variant="outline"
+        colorScheme={showPreview ? "purple" : "blue"}
+        onClick={() => setShowPreview(v => !v)}
+        size="md"
+        aria-pressed={showPreview}
+        isDisabled={isMobile} // preview panel is desktop-only
+        title={isMobile ? "Preview panel is desktop-only" : ""}
+      >
+        {showPreview ? "Hide Preview" : "Show Preview"}
+      </Button>
+    </HStack>
+  </Box>
+
 
         <Flex direction={{ base: "column", md: "row" }}>
           {!isMobile && (
@@ -699,35 +593,31 @@ const CommonTemplate = () => {
               alignItems="flex-start"
               overflowY="auto"
             >
-              <Heading as="h2" size="md" mb={4}>
-                Add Items
-              </Heading>
-              <Button colorScheme="blue" onClick={handleAddNewTemplate} mb="4" width="100%" size="sm">
-                Add New Template
-              </Button>
+             
               <TemplateTabs />
             </Box>
           )}
 
           <Flex flex="1" width={{ base: "100%", md: "85%" }} direction={{ base: "column", lg: "row" }}>
-            {/* Form Section */}
-            <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto">
-              <Container maxW='full'>
+            {/* Form / Editor Section */}
+            <Box
+              width={showPreview ? { base: "100%", lg: "50%" } : "100%"}
+              p={4}
+              overflowY="auto"
+              height={showPreview ? "auto" : { base: "auto", lg: "100vh" }}
+              position={showPreview ? "static" : { lg: "sticky" }}
+              top={0}
+            >
+              <Container maxW="full">
                 <Center>
+                  
                   <Heading as="h1" size="xl" mt="2" mb="6" color="tw-bg-slate-100" textDecoration="underline">
-                    {selectedTemplate ? `Edit Template` : 'Create New Template'}
+                    {selectedTemplate ? `Edit Page Content` : "Create New Page"}
                   </Heading>
                 </Center>
 
                 {selectedTemplate && (
-                  <Box
-                    bg="gray.50"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    p={4}
-                    mb={6}
-                  >
+                  <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" p={4} mb={6}>
                     <HStack justifyContent="space-between" alignItems="center">
                       <VStack align="start" spacing={1}>
                         <Text fontSize="sm" color="gray.600" fontWeight="medium">
@@ -747,12 +637,7 @@ const CommonTemplate = () => {
                           {selectedTemplate._id}
                         </Text>
                       </VStack>
-                      <Button
-                        size="sm"
-                        colorScheme="blue"
-                        leftIcon={<Copy size={16} />}
-                        onClick={copyObjectIdToClipboard}
-                      >
+                      <Button size="sm" colorScheme="blue" leftIcon={<Copy size={16} />} onClick={copyObjectIdToClipboard}>
                         Copy ID
                       </Button>
                     </HStack>
@@ -760,80 +645,60 @@ const CommonTemplate = () => {
                 )}
 
                 <form onSubmit={handleSubmit}>
-                  {/* Mobile Template Tabs */}
                   {isMobile && <TemplateTabs />}
-                  
-                  <FormControl isRequired mb='3' >
+
+                  <FormControl isRequired mb="3">
                     <FormLabel>Page Title:</FormLabel>
-                    <Input
-                      type="text"
-                      name="pageTitle"
-                      value={formData.pageTitle}
-                      onChange={handleChange}
-                      placeholder="Page Title"
-                      mb='2.5'
-                    />
+                    <Input type="text" name="pageTitle" value={formData.pageTitle} onChange={handleChange} placeholder="Page Title" mb="2.5" />
                   </FormControl>
-                  <FormControl isRequired mb='3'>
+
+                  <FormControl isRequired mb="3">
                     <FormLabel>Description:</FormLabel>
                     <HStack spacing={2} mb={3}>
-                      <Button
-                        colorScheme="blue"
-                        size="sm"
-                        onClick={insertTable}
-                      >
-                        Insert Table
+                      {/* Removed "Insert Table" button — table actions available via right-click */}
+                      <Button colorScheme="purple" size="sm" onClick={toggleHtmlView}>
+                        {showHtml ? "Hide HTML" : "Show HTML"}
                       </Button>
-                      <Button
-                        colorScheme="purple"
-                        size="sm"
-                        onClick={toggleHtmlView}
-                      >
-                        {showHtml ? 'Hide HTML' : 'Show HTML'}
-                      </Button>
+                      {!isMobile && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowPreview((v) => !v)}
+                          aria-pressed={showPreview}
+                        >
+                          {showPreview ? "Hide Preview" : "Show Preview"}
+                        </Button>
+                      )}
                     </HStack>
-                    <div
-                      ref={editorRef}
-                      style={{
-                        height: "250px",
-                        border: "1px solid #ccc",
-                        borderRadius: "5px",
-                        backgroundColor: "#fff"
+
+                    <QuillEditor
+                      ref={editorApiRef}
+                      value={formData.description}
+                      onChange={(html) => {
+                        setFormData((prev) => ({ ...prev, description: html }));
+                        setHtmlContent(html);
                       }}
+                      onToggleHtml={toggleHtmlView}
+                      height={showPreview ? 250 : 650}
                     />
+
                     {showHtml && (
-                      <Box
-                        bg="white"
-                        border="1px solid"
-                        borderColor="gray.300"
-                        borderRadius="md"
-                        p={4}
-                        mb={4}
-                        mt={4}
-                      >
+                      <Box bg="white" border="1px solid" borderColor="gray.300" borderRadius="md" p={4} mb={4} mt={4}>
                         <HStack justifyContent="space-between" alignItems="center" mb={3}>
                           <Heading as="h4" size="sm" color="gray.700">
-                            HTML Content (Editable) 
+                            HTML Content (Editable)
                           </Heading>
                           <HStack spacing={2}>
-                            <Button
-                              colorScheme="orange"
-                              size="sm"
-                              onClick={applyHtmlChanges}
-                            >
+                            <Button colorScheme="orange" size="sm" onClick={applyHtmlChanges}>
                               Apply Changes
                             </Button>
-                            <Button
-                              colorScheme="green"
-                              size="sm"
-                              onClick={copyHtmlToClipboard}
-                            >
+                            <Button colorScheme="green" size="sm" onClick={copyHtmlToClipboard}>
                               Copy HTML
                             </Button>
                           </HStack>
                         </HStack>
                         <Textarea
-                          value={editableHtmlContent || '<p>No content yet...</p>'}
+                          value={editableHtmlContent || "<p>No content yet...</p>"}
                           onChange={handleHtmlContentChange}
                           placeholder="Paste or edit HTML content here..."
                           bg="gray.50"
@@ -851,33 +716,22 @@ const CommonTemplate = () => {
                       </Box>
                     )}
                   </FormControl>
-                  <FormControl isRequired mb='3'>
+
+                  <FormControl isRequired mb="3">
                     <FormLabel>Featured:</FormLabel>
-                    <Select
-                      name="feature"
-                      value={formData.feature}
-                      onChange={handleChange}
-                    >
+                    <Select name="feature" value={formData.feature} onChange={handleChange}>
                       <option value={true}>Yes</option>
                       <option value={false}>No</option>
                     </Select>
                   </FormControl>
+
                   <HStack spacing={4} justify="center" mt={6}>
-                    <Button
-                      colorScheme="blue"
-                      onClick={editID ? handleUpdate : handleSubmit}
-                      size="lg"
-                      type={editID ? "button" : "submit"}
-                    >
-                      {editID ? 'Update Template' : 'Add Template'}
+                    <Button colorScheme="blue" onClick={editID ? handleUpdate : handleSubmit} size="lg" type={editID ? "button" : "submit"}>
+                      {editID ? "Update Page" : "Add Page"}
                     </Button>
                     {selectedTemplate && (
-                      <Button
-                        colorScheme="red"
-                        onClick={() => handleDelete(selectedTemplate._id)}
-                        size="lg"
-                      >
-                        Delete Template
+                      <Button colorScheme="red" onClick={() => handleDelete(selectedTemplate._id)} size="lg">
+                        Delete Page
                       </Button>
                     )}
                   </HStack>
@@ -885,8 +739,8 @@ const CommonTemplate = () => {
               </Container>
             </Box>
 
-            {/* Desktop Live Preview Section */}
-            {!isMobile && (
+            {/* Live Preview panel (desktop only, toggled) */}
+            {!isMobile && showPreview && (
               <Box
                 width={{ base: "100%", lg: "50%" }}
                 p={4}
@@ -897,10 +751,7 @@ const CommonTemplate = () => {
                 top={0}
                 display={{ base: "none", lg: "block" }}
               >
-                <LivePreviewSection
-                  title={formData.pageTitle}
-                  html={formData.description}
-                />
+                <LivePreviewSection title={formData.pageTitle} html={formData.description} />
               </Box>
             )}
           </Flex>
@@ -911,17 +762,13 @@ const CommonTemplate = () => {
       <Modal isOpen={isImportOpen} onClose={onImportClose} size="xl">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Import Template from Another Conference</ModalHeader>
+          <ModalHeader>Import Page from Another Conference</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4} align="stretch">
               <FormControl>
                 <FormLabel>Select Conference:</FormLabel>
-                <Select
-                  placeholder="Choose a conference..."
-                  value={selectedImportConf}
-                  onChange={handleImportConfChange}
-                >
+                <Select placeholder="Choose a conference..." value={selectedImportConf} onChange={handleImportConfChange}>
                   {conferences.map((conf) => (
                     <option key={conf._id} value={conf._id}>
                       {conferenceNames[conf._id] || `Conference ${conf._id}`}
@@ -929,11 +776,11 @@ const CommonTemplate = () => {
                   ))}
                 </Select>
               </FormControl>
-              
+
               {selectedImportConf && (
                 <Box>
                   <Heading as="h4" size="md" mb={3}>
-                    Available Templates:
+                    Available Pages:
                   </Heading>
                   {loadingImport ? (
                     <Center p={4}>
@@ -956,18 +803,12 @@ const CommonTemplate = () => {
                               <Text fontWeight="bold" fontSize="lg" color="blue.600">
                                 {template.pageTitle || "Untitled Template"}
                               </Text>
-                              <Text fontSize="sm" color="gray.600">
-                                Featured: {template.feature ? "Yes" : "No"}
-                              </Text>
+                              <Text fontSize="sm" color="gray.600">Featured: {template.feature ? "Yes" : "No"}</Text>
                               <Text fontSize="sm" color="gray.700" noOfLines={3}>
                                 <span dangerouslySetInnerHTML={{ __html: template.description?.substring(0, 150) + "..." || "No description" }} />
                               </Text>
                             </VStack>
-                            <Button
-                              colorScheme="green"
-                              size="sm"
-                              onClick={() => handleImportTemplate(template)}
-                            >
+                            <Button colorScheme="green" size="sm" onClick={() => handleImportTemplate(template)}>
                               Import
                             </Button>
                           </HStack>
@@ -976,7 +817,7 @@ const CommonTemplate = () => {
                     </VStack>
                   ) : (
                     <Text color="gray.500" textAlign="center" py={4}>
-                      No templates found in selected conference
+                      No pages found in selected conference
                     </Text>
                   )}
                 </Box>
@@ -994,20 +835,13 @@ const CommonTemplate = () => {
         <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
           <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
             <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-              Are you sure you want to delete this template?
+              Are you sure you want to delete this page?
             </p>
             <div className="tw-flex tw-justify-center">
-              <Button
-                colorScheme="red"
-                onClick={confirmDelete}
-                mr={4}
-              >
+              <Button colorScheme="red" onClick={confirmDelete} mr={4}>
                 Yes, Delete
               </Button>
-              <Button
-                colorScheme="blue"
-                onClick={() => setShowDeleteConfirmation(false)}
-              >
+              <Button colorScheme="blue" onClick={() => setShowDeleteConfirmation(false)}>
                 Cancel
               </Button>
             </div>
