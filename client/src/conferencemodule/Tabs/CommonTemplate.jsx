@@ -95,7 +95,8 @@ const CommonTemplate = () => {
   const initialData = {
     confId: IdConf,
     pageTitle: "",
-    description: "",
+    description: "", // HTML for backward compatibility
+    descriptionDelta: null, // ✅ NEW: Delta format for round-trip editing
     feature: true,
   };
   const [formData, setFormData] = useState(initialData);
@@ -212,10 +213,12 @@ const CommonTemplate = () => {
 
   const handleImportTemplate = async (template) => {
     try {
+      // ✅ Import both HTML and Delta if available
       const newTemplateData = {
         confId: IdConf,
         pageTitle: template.pageTitle,
         description: template.description,
+        descriptionDelta: template.descriptionDelta || null, // Import delta if available
         feature: template.feature,
       };
 
@@ -224,16 +227,27 @@ const CommonTemplate = () => {
       });
       const saved = res.data;
 
-      // Avoid local push to prevent duplicates; refresh from server
       setSelectedTemplate(saved);
       setEditID(saved._id);
 
       if (editorApiRef.current) {
-        const convertedHtml = parseHtmlTablesToQuillFormat(template.description || "");
-        editorApiRef.current.setHTML(convertedHtml);
-        setFormData(prev => ({ ...prev, description: convertedHtml, pageTitle: template.pageTitle, feature: template.feature }));
-        setHtmlContent(convertedHtml);
-        setEditableHtmlContent(convertedHtml);
+        // ✅ Prefer Delta over HTML for import
+        if (saved.descriptionDelta) {
+          editorApiRef.current.setDelta(saved.descriptionDelta);
+        } else {
+          const convertedHtml = parseHtmlTablesToQuillFormat(template.description || "");
+          editorApiRef.current.setHTML(convertedHtml);
+        }
+        
+        setFormData(prev => ({ 
+          ...prev, 
+          description: template.description,
+          descriptionDelta: saved.descriptionDelta,
+          pageTitle: template.pageTitle, 
+          feature: template.feature 
+        }));
+        setHtmlContent(template.description);
+        setEditableHtmlContent(template.description);
       }
 
       onImportClose();
@@ -276,6 +290,7 @@ const CommonTemplate = () => {
         confId: selectedTemplate.confId,
         pageTitle: selectedTemplate.pageTitle || "",
         description: selectedTemplate.description || "",
+        descriptionDelta: selectedTemplate.descriptionDelta || null, // ✅ Load delta
         feature: selectedTemplate.feature ?? true,
       });
       setEditID(selectedTemplate._id);
@@ -291,6 +306,20 @@ const CommonTemplate = () => {
       .get(`${apiUrl}/conferencemodule/commontemplate/conference/${IdConf}`, { withCredentials: true })
       .then((res) => {
         setData(res.data);
+        
+        // ✅ DEBUG: Check what we're loading
+        if (res.data.length > 0) {
+          const firstTemplate = res.data[0];
+          console.log("Loaded template:", firstTemplate);
+          console.log("Has descriptionDelta?", !!firstTemplate.descriptionDelta);
+          if (firstTemplate.descriptionDelta) {
+            console.log("Delta content:", firstTemplate.descriptionDelta);
+            const deltaStr = JSON.stringify(firstTemplate.descriptionDelta);
+            console.log("Has newline in cell?", deltaStr.includes("\\n"));
+            console.log("Has image embed?", deltaStr.includes('"image"'));
+          }
+        }
+
         if (!selectedTemplate && res.data.length > 0) {
           setSelectedTemplate(res.data[0]);
         }
@@ -299,17 +328,27 @@ const CommonTemplate = () => {
       .finally(() => setLoading(false));
   }, [refresh, IdConf]);
 
-  // Load selected template into the editor (convert legacy <table> HTML)
+  // ✅ Load selected template into the editor with proper Delta support
   useEffect(() => {
     if (!editorApiRef.current || !selectedTemplate) return;
 
-    const raw = selectedTemplate.description || "";
-    const converted = parseHtmlTablesToQuillFormat(raw);
-
-    editorApiRef.current.setHTML(converted);
-    setFormData(prev => ({ ...prev, description: converted }));
-    setHtmlContent(converted);
-    setEditableHtmlContent(converted);
+    // ✅ Prefer Delta over HTML for loading
+    if (selectedTemplate.descriptionDelta) {
+      console.log("Loading from Delta:", selectedTemplate.descriptionDelta);
+      editorApiRef.current.setDelta(selectedTemplate.descriptionDelta);
+      setFormData(prev => ({ ...prev, description: selectedTemplate.description || "" }));
+      setHtmlContent(selectedTemplate.description || "");
+      setEditableHtmlContent(selectedTemplate.description || "");
+    } else {
+      // Fallback to HTML conversion for legacy data
+      console.log("Loading from HTML (legacy):", selectedTemplate.description);
+      const raw = selectedTemplate.description || "";
+      const converted = parseHtmlTablesToQuillFormat(raw);
+      editorApiRef.current.setHTML(converted);
+      setFormData(prev => ({ ...prev, description: converted }));
+      setHtmlContent(converted);
+      setEditableHtmlContent(converted);
+    }
   }, [selectedTemplate]);
 
   const handleChange = (e) => {
@@ -322,16 +361,27 @@ const CommonTemplate = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // ✅ Get both HTML and Delta before saving
+    const currentDelta = editorApiRef.current?.getDelta();
+    const currentHtml = editorApiRef.current?.getHTML();
+    
+    const submitData = {
+      ...formData,
+      description: currentHtml || formData.description,
+      descriptionDelta: currentDelta, // ✅ Save Delta for round-trip editing
+    };
+
+    console.log("Submitting:", submitData);
+
     axios
-      .post(`${apiUrl}/conferencemodule/commontemplate`, formData, {
+      .post(`${apiUrl}/conferencemodule/commontemplate`, submitData, {
         withCredentials: true,
       })
       .then((res) => {
         const saved = res.data;
-        // Avoid local push to prevent duplicates; refresh list
         setSelectedTemplate(saved);
         setEditID(saved._id);
-        editorApiRef.current?.setHTML(saved.description ?? formData.description);
         setRefresh((p) => p + 1);
         toast({ title: "Page added", status: "success", duration: 2000, isClosable: true });
       })
@@ -339,15 +389,26 @@ const CommonTemplate = () => {
   };
 
   const handleUpdate = () => {
+    // ✅ Get both HTML and Delta before updating
+    const currentDelta = editorApiRef.current?.getDelta();
+    const currentHtml = editorApiRef.current?.getHTML();
+    
+    const updateData = {
+      ...formData,
+      description: currentHtml || formData.description,
+      descriptionDelta: currentDelta, // ✅ Save Delta for round-trip editing
+    };
+
+    console.log("Updating:", updateData);
+
     axios
-      .put(`${apiUrl}/conferencemodule/commontemplate/${editID}`, formData, {
+      .put(`${apiUrl}/conferencemodule/commontemplate/${editID}`, updateData, {
         withCredentials: true,
       })
       .then((res) => {
-        const updated = res.data || { ...selectedTemplate, ...formData };
+        const updated = res.data || { ...selectedTemplate, ...updateData };
         setData((prev) => prev.map((tpl) => (tpl._id === editID ? updated : tpl)));
         setSelectedTemplate(updated);
-        editorApiRef.current?.setHTML(updated.description ?? formData.description);
         toast({ title: "Page updated", status: "success", duration: 2000, isClosable: true });
       })
       .catch((err) => console.log(err));
@@ -529,6 +590,10 @@ const CommonTemplate = () => {
               >
                 {template.metaDescription || "No description"}
               </Text>
+              {/* ✅ DEBUG: Show if template has Delta */}
+              <Text fontSize="xs" color={selectedTemplate?._id === template._id ? "whiteAlpha.600" : "gray.400"}>
+                {template.descriptionDelta ? "📄 Delta" : "🌐 HTML"}
+              </Text>
             </Box>
           ))
         ) : (
@@ -543,37 +608,36 @@ const CommonTemplate = () => {
   return (
     <main className="tw-p-5 tw-min-h-screen">
       <Flex direction="column">
-  {/* Top bar: Import + Preview toggle */}
-  <Box mb={4}>
-    <HStack w="full" align="center">
-      {/* Left group */}
-      <HStack spacing={3}>
-        <Button colorScheme="orange" onClick={handleAddNewTemplate} mb="4" size="md">
-          Add New Page
-        </Button>
-        <Button colorScheme="green" onClick={handleOpenImport} mb="4" size="md">
-          Import data
-        </Button>
-      </HStack>
+        {/* Top bar: Import + Preview toggle */}
+        <Box mb={4}>
+          <HStack w="full" align="center">
+            {/* Left group */}
+            <HStack spacing={3}>
+              <Button colorScheme="orange" onClick={handleAddNewTemplate} mb="4" size="md">
+                Add New Page
+              </Button>
+              <Button colorScheme="green" onClick={handleOpenImport} mb="4" size="md">
+                Import data
+              </Button>
+            </HStack>
 
-      {/* Push the preview button to the right */}
-      <Spacer />
+            {/* Push the preview button to the right */}
+            <Spacer />
 
-      {/* Right-aligned Preview toggle */}
-      <Button
-        variant="outline"
-        colorScheme={showPreview ? "purple" : "blue"}
-        onClick={() => setShowPreview(v => !v)}
-        size="md"
-        aria-pressed={showPreview}
-        isDisabled={isMobile} // preview panel is desktop-only
-        title={isMobile ? "Preview panel is desktop-only" : ""}
-      >
-        {showPreview ? "Hide Preview" : "Show Preview"}
-      </Button>
-    </HStack>
-  </Box>
-
+            {/* Right-aligned Preview toggle */}
+            <Button
+              variant="outline"
+              colorScheme={showPreview ? "purple" : "blue"}
+              onClick={() => setShowPreview(v => !v)}
+              size="md"
+              aria-pressed={showPreview}
+              isDisabled={isMobile}
+              title={isMobile ? "Preview panel is desktop-only" : ""}
+            >
+              {showPreview ? "Hide Preview" : "Show Preview"}
+            </Button>
+          </HStack>
+        </Box>
 
         <Flex direction={{ base: "column", md: "row" }}>
           {!isMobile && (
@@ -593,7 +657,6 @@ const CommonTemplate = () => {
               alignItems="flex-start"
               overflowY="auto"
             >
-             
               <TemplateTabs />
             </Box>
           )}
@@ -610,7 +673,6 @@ const CommonTemplate = () => {
             >
               <Container maxW="full">
                 <Center>
-                  
                   <Heading as="h1" size="xl" mt="2" mb="6" color="tw-bg-slate-100" textDecoration="underline">
                     {selectedTemplate ? `Edit Page Content` : "Create New Page"}
                   </Heading>
@@ -655,7 +717,6 @@ const CommonTemplate = () => {
                   <FormControl isRequired mb="3">
                     <FormLabel>Description:</FormLabel>
                     <HStack spacing={2} mb={3}>
-                      {/* Removed "Insert Table" button — table actions available via right-click */}
                       <Button colorScheme="purple" size="sm" onClick={toggleHtmlView}>
                         {showHtml ? "Hide HTML" : "Show HTML"}
                       </Button>
@@ -671,12 +732,18 @@ const CommonTemplate = () => {
                       )}
                     </HStack>
 
+                    {/* ✅ Updated QuillEditor with Delta support */}
                     <QuillEditor
                       ref={editorApiRef}
+                      // ✅ Use Delta as source of truth
+                      valueDelta={formData.descriptionDelta}
+                      onChangeDelta={(delta) => {
+                        setFormData((prev) => ({ ...prev, descriptionDelta: delta }));
+                      }}
+                      // Optional HTML for preview
                       value={formData.description}
                       onChange={(html) => {
                         setFormData((prev) => ({ ...prev, description: html }));
-                        setHtmlContent(html);
                       }}
                       onToggleHtml={toggleHtmlView}
                       height={showPreview ? 250 : 650}

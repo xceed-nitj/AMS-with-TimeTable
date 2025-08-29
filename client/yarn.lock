@@ -5657,10 +5657,10 @@ quill-image-drop-module@^1.0.3:
   dependencies:
     quill "^1.2.2"
 
-quill-image-resize-module@^3.0.0:
+quill-image-resize-module--fix-imports-error@^3.0.0:
   version "3.0.0"
-  resolved "https://registry.yarnpkg.com/quill-image-resize-module/-/quill-image-resize-module-3.0.0.tgz#0fd93746a837336d95b2f536140416a623c71771"
-  integrity sha512-1TZBnUxU/WIx5dPyVjQ9yN7C6mLZSp04HyWBEMqT320DIq4MW4JgzlOPDZX5ZpBM3bU6sacU4kTLUc8VgYQZYw==
+  resolved "https://registry.yarnpkg.com/quill-image-resize-module--fix-imports-error/-/quill-image-resize-module--fix-imports-error-3.0.0.tgz#bc5fe7d19bc1a957f343ed3ad9b274fba8fea524"
+  integrity sha512-D4jFjVscUqNUlW9SRY+4vynGIgkg/WB0159quuYL1smLmV35tU0DmIXCIVViUiH/umxRlRYYpESrv8bYz2UJbg==
   dependencies:
     lodash "^4.17.4"
     quill "^1.2.2"
