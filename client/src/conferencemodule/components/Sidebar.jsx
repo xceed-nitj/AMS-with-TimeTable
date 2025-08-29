@@ -8,10 +8,10 @@ const navigation = [
 { name: 'Home', href: 'home', color: 'tw-bg-blue-500', lightColor: 'tw-bg-blue-100', borderColor: 'tw-border-blue-800' },
 { name: 'Images', href: 'images', color: 'tw-bg-teal-500', lightColor: 'tw-bg-teal-100', borderColor: 'tw-border-teal-800' },
 { name: 'Event Dates', href: 'eventdates', color: 'tw-bg-orange-500', lightColor: 'tw-bg-orange-100', borderColor: 'tw-border-orange-800' },
-{ name: 'Locations', href: 'locations', color: 'tw-bg-emerald-500', lightColor: 'tw-bg-emerald-100', borderColor: 'tw-border-emerald-800' },
+// { name: 'Locations', href: 'locations', color: 'tw-bg-emerald-500', lightColor: 'tw-bg-emerald-100', borderColor: 'tw-border-emerald-800' },
 { name: 'Navbar', href: 'navbar', color: 'tw-bg-rose-500', lightColor: 'tw-bg-rose-100', borderColor: 'tw-border-rose-800' },
 { name: 'File Upload', href: '/fileupload', color: 'tw-bg-sky-500', lightColor: 'tw-bg-sky-100', borderColor: 'tw-border-sky-800' },
-{ name: 'Common Template', href: 'commontemplate', color: 'tw-bg-slate-500', lightColor: 'tw-bg-slate-100', borderColor: 'tw-border-slate-800' },
+{ name: 'Common Template', href: 'commontemplate', color: 'tw-bg-emrald-500', lightColor: 'tw-bg-slate-100', borderColor: 'tw-border-slate-800' },
 { name: 'Announcements', href: 'announcement', color: 'tw-bg-violet-500', lightColor: 'tw-bg-violet-100', borderColor: 'tw-border-violet-800'},
 ];
 
