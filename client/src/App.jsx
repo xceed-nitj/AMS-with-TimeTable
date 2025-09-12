@@ -172,6 +172,10 @@ import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 // import fileUpload
 import FileUpload from './fileUpload/fileUploads.jsx'
 
+
+//import faculty rankings
+
+import FacultyDashboard from './instituterankings/facultydashboard.jsx';
 function App() {
   return (
     <Router>
@@ -188,6 +192,7 @@ function App() {
         <Route path="/services/:serviceId" element={<ServicePage />} />
         {/* ********* */}
 
+        <Route path="/facultyrankings" element={<FacultyDashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
