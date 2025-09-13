@@ -56,6 +56,12 @@ const FacultyDashboard = () => {
   const [deptComponent, setDeptComponent] = useState("");
   const [instComponent, setInstComponent] = useState("");
 
+  // Dept contribution to institute
+  const [deptSummary, setDeptSummary] = useState([]); // totals per dept (no total column displayed)
+  const [deptAvg, setDeptAvg] = useState([]);         // per-category averages per faculty + ranks
+  const [avgRankComponent, setAvgRankComponent] = useState("SCI"); // dropdown for rank bar
+  const [percentComponent, setPercentComponent] = useState("SCI"); // dropdown for % contribution bar
+
   // Load CSV and compute everything
   useEffect(() => {
     Papa.parse("/facultydata.csv", {
@@ -119,7 +125,7 @@ const FacultyDashboard = () => {
           });
         });
 
-        // -------- 3-year combined totals --------
+        // -------- 3-year combined totals per faculty --------
         const combinedMap = {};
         processed.forEach(d => {
           const key = d.Faculty + "|" + d.Department;
@@ -137,7 +143,7 @@ const FacultyDashboard = () => {
         });
         const combinedData = Object.values(combinedMap);
 
-        // Combined institute ranks + Top% per category + total
+        // -------- Combined institute ranks + Top% per category + total --------
         categories.concat("TotalContribution").forEach(cat => {
           const sorted = [...combinedData].sort((a, b) => b[cat] - a[cat]);
           const N = sorted.length;
@@ -147,7 +153,7 @@ const FacultyDashboard = () => {
           });
         });
 
-        // Combined department ranks per category + total
+        // -------- Combined department ranks per category + total --------
         const deptSet = [...new Set(combinedData.map(d => d.Department))];
         deptSet.forEach(dep => {
           const deptRows = combinedData.filter(d => d.Department === dep);
@@ -181,57 +187,269 @@ const FacultyDashboard = () => {
     }
   }, [selectedFaculty, data, combined]);
 
+  // Build Department Contribution to Institute summary (3-year combined)
+  // 1) deptSummary: per-dept totals (no "total" displayed)
+  // 2) deptAvg: per-category averages per faculty + ranks (used for charts)
+  useEffect(() => {
+    if (!combined || combined.length === 0) {
+      setDeptSummary([]);
+      setDeptAvg([]);
+      return;
+    }
+
+    // Aggregate totals per department
+    const agg = {};
+    combined.forEach(row => {
+      const dep = row.Department;
+      if (!agg[dep]) {
+        agg[dep] = {
+          Department: dep,
+          FacultySet: new Set(),
+          SCI: 0, Scopus: 0, Projects: 0, Patents: 0,
+          Events: 0, Books: 0, PhD: 0, TotalContribution: 0,
+        };
+      }
+      agg[dep].FacultySet.add(row.Faculty);
+      categories.forEach(c => { agg[dep][c] += row[c]; });
+      agg[dep].TotalContribution += row.TotalContribution;
+    });
+
+    const summary = Object.values(agg).map(obj => {
+      const FacultyCount = obj.FacultySet.size;
+      return {
+        Department: obj.Department,
+        FacultyCount,
+        // keep totals per category (we won't display overall total)
+        SCI: obj.SCI,
+        Scopus: obj.Scopus,
+        Projects: obj.Projects,
+        Patents: obj.Patents,
+        Events: obj.Events,
+        Books: obj.Books,
+        PhD: obj.PhD,
+        TotalContribution: obj.TotalContribution, // not shown in table, but kept for any internal use
+        AvgTotalPerFaculty: FacultyCount > 0 ? obj.TotalContribution / FacultyCount : 0, // kept internal
+      };
+    });
+
+    // deptAvg with per-category averages per faculty
+    const avgRows = summary.map(s => {
+      const base = {
+        Department: s.Department,
+        FacultyCount: s.FacultyCount,
+        AvgTotalPerFaculty: s.AvgTotalPerFaculty,
+      };
+      categories.forEach(c => {
+        base[`${c}_Avg`] = s.FacultyCount > 0 ? s[c] / s.FacultyCount : 0;
+      });
+      return base;
+    });
+
+    // Rank departments by each category average (higher is better)
+    categories.forEach(c => {
+      const sorted = [...avgRows].sort((a, b) => b[`${c}_Avg`] - a[`${c}_Avg`]);
+      sorted.forEach((row, i) => {
+        row[`${c}_AvgRank`] = i + 1;
+      });
+    });
+
+    setDeptSummary(summary);
+    setDeptAvg(avgRows);
+  }, [combined]);
+
+  // Build rank chart data for selected component average
+  const rankKey = `${avgRankComponent}_AvgRank`;
+  const avgKey = `${avgRankComponent}_Avg`;
+
+  const rawRankData = [...deptAvg]
+    .map(r => ({ Department: r.Department, Rank: r[rankKey] || null, Avg: r[avgKey] || 0 }))
+    .filter(r => r.Rank !== null && r.Rank !== undefined);
+
+  const maxRank = rawRankData.length > 0 ? Math.max(...rawRankData.map(d => d.Rank)) : 0;
+  const deptRankBarData = rawRankData
+    .map(d => ({ ...d, RankScore: maxRank - d.Rank + 1 })) // Rank 1 -> highest bar
+    .sort((a, b) => a.Rank - b.Rank);
+
+  // Build percent-contribution data (per component)
+  const deptPercentData = React.useMemo(() => {
+    if (!percentComponent || deptSummary.length === 0) return [];
+    const totalOfComp = deptSummary.reduce((sum, d) => sum + (d[percentComponent] || 0), 0);
+    return deptSummary
+      .map(d => ({
+        Department: d.Department,
+        Percent: totalOfComp > 0 ? ((d[percentComponent] || 0) / totalOfComp) * 100 : 0
+      }))
+      .sort((a, b) => b.Percent - a.Percent);
+  }, [percentComponent, deptSummary]);
+
   return (
     <Box p={6}>
       <Heading mb={6} color="teal.600" size="xl" textAlign="center">
-        Faculty Contribution Dashboard
+        Institute Contribution Dashboard
       </Heading>
 
       <Tabs variant="soft-rounded" colorScheme="teal">
         <TabList justifyContent="center" mb={4} gap={3}>
-  <Tab
-    border="1px solid"
-    borderColor="gray.300"
-    borderRadius="full"
-    px={4}
-    py={2}
-    _hover={{ bg: "gray.50" }}
-    _selected={{ bg: "teal.500", borderColor: "teal.500", color: "white" }}
-  >
-    Individual Faculty Ranking
-  </Tab>
-
-  <Tab
-    border="1px solid"
-    borderColor="gray.300"
-    borderRadius="full"
-    px={4}
-    py={2}
-    _hover={{ bg: "gray.50" }}
-    _selected={{ bg: "blue.500", borderColor: "blue.500", color: "white" }}
-  >
-    Department Summary
-  </Tab>
-
-  <Tab
-    border="1px solid"
-    borderColor="gray.300"
-    borderRadius="full"
-    px={4}
-    py={2}
-    _hover={{ bg: "gray.50" }}
-    _selected={{ bg: "purple.500", borderColor: "purple.500", color: "white" }}
-  >
-    Institute Summary
-  </Tab>
-</TabList>
-
+           <Tab
+            border="1px solid" borderColor="gray.300" borderRadius="full" px={4} py={2}
+            _hover={{ bg: "gray.50" }}
+            _selected={{ bg: "orange.500", borderColor: "orange.500", color: "white" }}
+          >
+            Department Ranking
+          </Tab>
+          <Tab
+            border="1px solid" borderColor="gray.300" borderRadius="full" px={4} py={2}
+            _hover={{ bg: "gray.50" }}
+            _selected={{ bg: "teal.500", borderColor: "teal.500", color: "white" }}
+          >
+            Individual Faculty Ranking
+          </Tab>
+          <Tab
+            border="1px solid" borderColor="gray.300" borderRadius="full" px={4} py={2}
+            _hover={{ bg: "gray.50" }}
+            _selected={{ bg: "blue.500", borderColor: "blue.500", color: "white" }}
+          >
+            Department Level Faculty Ranking
+          </Tab>
+          <Tab
+            border="1px solid" borderColor="gray.300" borderRadius="full" px={4} py={2}
+            _hover={{ bg: "gray.50" }}
+            _selected={{ bg: "purple.500", borderColor: "purple.500", color: "white" }}
+          >
+            Institute Level Faculty Ranking
+          </Tab>
+         
+        </TabList>
 
         <TabPanels>
+          {/* TAB 4: Dept Contribution to Institute (aggregate per department) */}
+          <TabPanel>
+            <Heading size="md" mb={4}>Department Contribution to Institute (3-Year Combined)</Heading>
+            <Table variant="striped" colorScheme="orange" size="sm">
+              <Thead>
+                <Tr>
+                  <Th>Department</Th>
+                  <Th isNumeric>Faculty Count</Th>
+                  {categories.map(c => <Th key={c} isNumeric>{c}</Th>)}
+                </Tr>
+              </Thead>
+              <Tbody>
+                {deptSummary.map((row, i) => (
+                  <Tr key={i}>
+                    <Td>{row.Department}</Td>
+                    <Td isNumeric>{row.FacultyCount}</Td>
+                    {categories.map(c => (
+                      <Td key={c} isNumeric>{row[c]}</Td>
+                    ))}
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+
+            {/* SECOND TABLE: Averages ONLY (per faculty) */}
+            <Heading size="md" mt={8} mb={4}>Department Averages per Faculty (3-Year Combined)</Heading>
+            <Table variant="striped" colorScheme="orange" size="sm" mb={6}>
+              <Thead>
+                <Tr>
+                  <Th>Department</Th>
+                  <Th isNumeric>Faculty Count</Th>
+                  {categories.map(c => (
+                    <Th key={c} isNumeric>{c} Avg</Th>
+                  ))}
+                </Tr>
+              </Thead>
+              <Tbody>
+                {deptAvg.map((row, i) => (
+                  <Tr key={i}>
+                    <Td>{row.Department}</Td>
+                    <Td isNumeric>{row.FacultyCount}</Td>
+                    {categories.map(c => (
+                      <Td key={c} isNumeric>{row[`${c}_Avg`].toFixed(2)}</Td>
+                    ))}
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+
+            {/* RANK BAR: Highest bar for Rank 1 (using RankScore) */}
+            <Box mb={3} display="flex" alignItems="center" gap={3}>
+              <Heading size="sm">Select Component for Rank Chart:</Heading>
+              <Select
+                width="260px"
+                value={avgRankComponent}
+                onChange={(e) => setAvgRankComponent(e.target.value)}
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>{c} Avg (per Faculty)</option>
+                ))}
+              </Select>
+            </Box>
+
+            <BarChart width={900} height={420} data={deptRankBarData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="Department" />
+              <YAxis
+                allowDecimals={false}
+                domain={[0, maxRank]}
+                label={{ value: "Rank Score (higher = better)", angle: -90, position: "insideLeft" }}
+              />
+              <Tooltip
+                formatter={(value, name, props) => {
+                  if (name === "RankScore") {
+                    const { payload } = props;
+                    return [value, "Rank Score"];
+                  }
+                  if (name === "Avg") return [value.toFixed(2), "Avg per Faculty"];
+                  if (name === "Rank") return [value, "Rank"];
+                  return [value, name];
+                }}
+                labelFormatter={(label, payload) => {
+                  const item = payload && payload[0] ? payload[0].payload : null;
+                  if (!item) return label;
+                  return `${label} — Rank: ${item.Rank}, Avg: ${item.Avg.toFixed(2)}`;
+                }}
+              />
+              <Legend />
+              <Bar
+                dataKey="RankScore"
+                name="RankScore"
+                fill={categoryColors[avgRankComponent] || "#ED8936"}
+              />
+            </BarChart>
+
+            {/* % CONTRIBUTION BAR: share of institute by department for a component */}
+            <Box mt={8} mb={3} display="flex" alignItems="center" gap={3}>
+              <Heading size="sm">Select Component for % Contribution:</Heading>
+              <Select
+                width="260px"
+                value={percentComponent}
+                onChange={(e) => setPercentComponent(e.target.value)}
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </Select>
+            </Box>
+
+            <BarChart width={900} height={420} data={deptPercentData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="Department" />
+              <YAxis domain={[0, 100]} unit="%" />
+              <Tooltip formatter={(v) => [`${v.toFixed(2)}%`, "% of Institute"]} />
+              <Legend />
+              <Bar
+                dataKey="Percent"
+                name="% of Institute"
+                fill={categoryColors[percentComponent] || "#ED8936"}
+              />
+            </BarChart>
+          </TabPanel>
           {/* TAB 1: Individual Faculty Ranking */}
           <TabPanel>
             {/* Search bar with dynamic dropdown */}
             <Box mb={6} width="300px" mx="auto" position="relative">
+              <p>Search faculty or select dept and faculty </p>
+              
               <Input
                 placeholder="Search Faculty..."
                 value={search}
@@ -261,7 +479,7 @@ const FacultyDashboard = () => {
                         _hover={{ bg: "teal.100", cursor: "pointer" }}
                         onClick={() => {
                           setSelectedFaculty(f.Faculty);
-                          setSelectedDept(""); // don't constrain by dept when selecting from search
+                          setSelectedDept(""); // avoid constraining by dept when searching
                           setSearch("");
                         }}
                       >
@@ -648,6 +866,8 @@ const FacultyDashboard = () => {
               </>
             )}
           </TabPanel>
+
+          
         </TabPanels>
       </Tabs>
     </Box>
