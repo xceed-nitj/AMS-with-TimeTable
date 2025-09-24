@@ -84,7 +84,8 @@ export default function Navbar() {
     '/tt/commonslot',
     '/prm/register',
     '/prm/emailverification',
-    '/404'
+    '/404',
+    '/facultyrankings',
   ];
 
   useEffect(() => {
