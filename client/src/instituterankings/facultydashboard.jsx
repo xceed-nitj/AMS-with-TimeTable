@@ -302,9 +302,9 @@ const FacultyDashboard = () => {
             _hover={{ bg: "gray.50" }}
             _selected={{ bg: "teal.500", borderColor: "teal.500", color: "white" }}
           >
-            Individual Faculty Ranking
+            Individual Faculty Contribution
           </Tab>
-          <Tab
+          {/* <Tab
             border="1px solid" borderColor="gray.300" borderRadius="full" px={4} py={2}
             _hover={{ bg: "gray.50" }}
             _selected={{ bg: "blue.500", borderColor: "blue.500", color: "white" }}
@@ -317,7 +317,7 @@ const FacultyDashboard = () => {
             _selected={{ bg: "purple.500", borderColor: "purple.500", color: "white" }}
           >
             Institute Level Faculty Ranking
-          </Tab>
+          </Tab> */}
          
         </TabList>
 
@@ -551,7 +551,7 @@ const FacultyDashboard = () => {
                 </Table>
 
                 {/* Year-wise Rankings with arrows */}
-                <Heading size="sm" mb={2}>Year-wise Rankings</Heading>
+                {/* <Heading size="sm" mb={2}>Year-wise Rankings</Heading>
                 <Table variant="striped" colorScheme="blue" size="sm" mb={6}>
                   <Thead>
                     <Tr>
@@ -591,7 +591,7 @@ const FacultyDashboard = () => {
                       </Tr>
                     ))}
                   </Tbody>
-                </Table>
+                </Table> */}
 
                 {/* 3-Year Combined Contributions */}
                 <Heading size="sm" mb={2}>3-Year Combined Contributions</Heading>
@@ -614,7 +614,7 @@ const FacultyDashboard = () => {
                   </Tbody>
                 </Table>
 
-                {/* 3-Year Combined Rankings */}
+                {/* 3-Year Combined Rankings
                 <Heading size="sm" mb={2}>3-Year Combined Rankings</Heading>
                 <Table variant="striped" colorScheme="purple" size="sm" mb={6}>
                   <Thead>
@@ -639,14 +639,13 @@ const FacultyDashboard = () => {
                       </Td>
                     </Tr>
                   </Tbody>
-                </Table>
+                </Table>} */}
 
-                {/* Graphs Overview with legend */}
                 <Box mt={10}>
-                  <Heading size="sm" mb={2}>Graphs Overview</Heading>
+                  {/* <Heading size="sm" mb={2}>Graphs Overview</Heading> */}
 
                   {/* Legend */}
-                  <Box mb={4} display="flex" flexWrap="wrap" gap={3} justifyContent="center">
+                  {/* <Box mb={4} display="flex" flexWrap="wrap" gap={3} justifyContent="center">
                     {Object.entries(categoryColors).map(([key, color]) => (
                       <Box
                         key={key}
@@ -661,10 +660,10 @@ const FacultyDashboard = () => {
                         {key}
                       </Box>
                     ))}
-                  </Box>
+                  </Box> */}
 
                   {/* Graph 1: Dept Ranks over Years */}
-                  <Heading size="sm" mb={2}>Department Ranks over Years</Heading>
+                  {/* <Heading size="sm" mb={2}>Department Ranks over Years</Heading>
                   <LineChart width={900} height={400} data={facultyData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="Year" />
@@ -680,10 +679,10 @@ const FacultyDashboard = () => {
                         stroke={color}
                       />
                     ))}
-                  </LineChart>
+                  </LineChart> */}
 
                   {/* Graph 2: Institute Top % (3-Year Combined) */}
-                  <Heading size="sm" mt={6} mb={2}>Institute Top % (3-Year Combined)</Heading>
+                  {/* <Heading size="sm" mt={6} mb={2}>Institute Top % (3-Year Combined)</Heading>
                   <BarChart width={900} height={400} data={[combinedFaculty]}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="Faculty" />
@@ -698,7 +697,7 @@ const FacultyDashboard = () => {
                         fill={color}
                       />
                     ))}
-                  </BarChart>
+                  </BarChart>  */}
 
                   {/* Graph 3: Percentage Contribution to Department (3-Year Combined) */}
                   <Heading size="sm" mt={6} mb={2}>Percentage Contribution to Department (3-Year Combined)</Heading>
