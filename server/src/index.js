@@ -31,7 +31,7 @@ app.use(
 "https://cipher2026.com",
 "https://vistanitj.com",
 "https://vistaece.netlify.app",
-
+"https://projectipecon.netlify.app",
 
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
