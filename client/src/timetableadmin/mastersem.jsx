@@ -30,7 +30,7 @@ function MasterSemester() {
     type: "",
     dept: "",
     degree: "",
-    year:"",
+    year: "",
   });
   const [editSemesterId, setEditSemesterId] = useState(null);
   const [isAddSemesterFormVisible, setIsAddSemesterFormVisible] =
@@ -59,7 +59,7 @@ function MasterSemester() {
       type: "",
       dept: "",
       degree: "",
-      year:"",
+      year: "",
     });
     setIsAddSemesterFormVisible(true);
   };
@@ -130,7 +130,7 @@ function MasterSemester() {
               type: "",
               dept: "",
               degree: "",
-              year:"",
+              year: "",
             });
           })
           .catch((error) => {
@@ -226,7 +226,7 @@ function MasterSemester() {
         {isAddSemesterFormVisible ? (
           <FormControl>
             <Box>
-              <FormLabel>Semester: <span>*</span></FormLabel>
+              <FormLabel>SEMESTER: <span>*</span></FormLabel>
               <Input
                 type="text"
                 value={editedSemester.sem}
@@ -298,11 +298,11 @@ function MasterSemester() {
         )}
       </Box>
 
-<TableContainer>
+      <TableContainer>
         <Text as='b' >Master Semesters Data (Total Entries: {masterSems.length}):</Text>
-        <Table 
-        mt='2'
-        variant='striped'
+        <Table
+          mt='2'
+          variant='striped'
         >
           <Thead>
             <Tr>
@@ -335,103 +335,103 @@ function MasterSemester() {
                   )}</Center>
                 </Td>
                 <Td><Center>
-                    {editSemesterId === semester._id ? (
-                      <input
-                        type="text"
-                        value={editedSemester.type}
-                        onChange={(e) =>
-                          setEditedSemester({
-                            ...editedSemester,
-                            type: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      semester.type
-                    )}
+                  {editSemesterId === semester._id ? (
+                    <input
+                      type="text"
+                      value={editedSemester.type}
+                      onChange={(e) =>
+                        setEditedSemester({
+                          ...editedSemester,
+                          type: e.target.value,
+                        })
+                      }
+                    />
+                  ) : (
+                    semester.type
+                  )}
                 </Center>
                 </Td>
                 <Td><Center>
-                  
-                    {editSemesterId === semester._id ? (
-                      <input
-                        type="text"
-                        value={editedSemester.dept}
-                        onChange={(e) =>
-                          setEditedSemester({
-                            ...editedSemester,
-                            dept: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      semester.dept
-                    )}
+
+                  {editSemesterId === semester._id ? (
+                    <input
+                      type="text"
+                      value={editedSemester.dept}
+                      onChange={(e) =>
+                        setEditedSemester({
+                          ...editedSemester,
+                          dept: e.target.value,
+                        })
+                      }
+                    />
+                  ) : (
+                    semester.dept
+                  )}
                 </Center>
                 </Td>
                 <Td><Center>
-                  
-                    {editSemesterId === semester._id ? (
-                      <input
-                        type="text"
-                        value={editedSemester.degree}
-                        onChange={(e) =>
-                          setEditedSemester({
-                            ...editedSemester,
-                            degree: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      semester.degree
-                    )}
+
+                  {editSemesterId === semester._id ? (
+                    <input
+                      type="text"
+                      value={editedSemester.degree}
+                      onChange={(e) =>
+                        setEditedSemester({
+                          ...editedSemester,
+                          degree: e.target.value,
+                        })
+                      }
+                    />
+                  ) : (
+                    semester.degree
+                  )}
                 </Center>
                 </Td>
                 <Td><Center>
-                  
-                    {editSemesterId === semester._id ? (
-                      <input
-                        type="text"
-                        value={editedSemester.year}
-                        onChange={(e) =>
-                          setEditedSemester({
-                            ...editedSemester,
-                            year: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      semester.year
-                    )}
+
+                  {editSemesterId === semester._id ? (
+                    <input
+                      type="text"
+                      value={editedSemester.year}
+                      onChange={(e) =>
+                        setEditedSemester({
+                          ...editedSemester,
+                          year: e.target.value,
+                        })
+                      }
+                    />
+                  ) : (
+                    semester.year
+                  )}
                 </Center>
                 </Td>
                 <Td><Center>
-                  
-                    {editSemesterId === semester._id ? (
-                      <CustomBlueButton onClick={handleSaveEdit}>
-                        Save
+
+                  {editSemesterId === semester._id ? (
+                    <CustomBlueButton onClick={handleSaveEdit}>
+                      Save
+                    </CustomBlueButton>
+                  ) : (
+                    <>
+                      <CustomBlueButton
+                        onClick={() => handleEditClick(semester._id)}
+                      >
+                        Edit
                       </CustomBlueButton>
-                    ) : (
-                      <>
-                        <CustomBlueButton
-                          onClick={() => handleEditClick(semester._id)}
-                        >
-                          Edit
-                        </CustomBlueButton>
-                        <CustomDeleteButton
-                          onClick={() => handleDelete(semester._id)}
-                        >
-                          Delete
-                        </CustomDeleteButton>
-                      </>
-                    )}
+                      <CustomDeleteButton
+                        onClick={() => handleDelete(semester._id)}
+                      >
+                        Delete
+                      </CustomDeleteButton>
+                    </>
+                  )}
                 </Center>
                 </Td>
               </Tr>
             ))}
           </Tbody>
         </Table>
-</TableContainer>
+      </TableContainer>
     </Container>
   );
 }
