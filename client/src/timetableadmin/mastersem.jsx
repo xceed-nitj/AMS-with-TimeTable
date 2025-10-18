@@ -226,7 +226,7 @@ function MasterSemester() {
         {isAddSemesterFormVisible ? (
           <FormControl>
             <Box>
-              <FormLabel>Semester: <span>*</span></FormLabel>
+              <FormLabel><b>Semester:</b> <span>*</span></FormLabel>
               <Input
                 type="text"
                 value={editedSemester.sem}
@@ -236,7 +236,7 @@ function MasterSemester() {
               />
             </Box>
             <Box mt="3">
-              <FormLabel>Type: <span>*</span></FormLabel>
+              <FormLabel><b>Type:</b> <span>*</span></FormLabel>
               <Input
                 type="text"
                 value={editedSemester.type}
@@ -247,7 +247,7 @@ function MasterSemester() {
               />
             </Box>
             <Box mt="3">
-              <FormLabel>Department: <span>*</span></FormLabel>
+              <FormLabel><b>Department:</b> <span>*</span></FormLabel>
               <Input
                 type="text"
                 value={editedSemester.dept}
@@ -257,7 +257,7 @@ function MasterSemester() {
               />
             </Box>
             <Box mt="3">
-              <FormLabel>Degree: <span>*</span></FormLabel>
+              <FormLabel><b>Degree:</b> <span>*</span></FormLabel>
               <Input
                 type="text"
                 value={editedSemester.degree}
@@ -270,7 +270,7 @@ function MasterSemester() {
               />
             </Box>
             <Box mt="3">
-              <FormLabel>Year:</FormLabel>
+              <FormLabel><b>Year:</b> <span>*</span></FormLabel>
               <Input
                 type="text"
                 value={editedSemester.year}
