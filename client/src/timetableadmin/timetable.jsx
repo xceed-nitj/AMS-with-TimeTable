@@ -529,7 +529,7 @@ const Timetable = () => {
 
   const handleLockTT = async () => {
     const isConfirmed = window.confirm('Are you sure you want to lock the timetable?');
-
+    const toInform = window.confirm('Do you want to inform the teachers about the timetable changes?');
     if (isConfirmed) {
       setMessage("Data is being saved....");
       setMessage("Data saved. Commencing lock");
@@ -540,7 +540,7 @@ const Timetable = () => {
         const response = await fetch(Url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code, toInform }),
           credentials: "include",
         });
 
@@ -554,6 +554,7 @@ const Timetable = () => {
             isClosable: true,
             position: 'top',
           });
+          console.log(data);
         } else {
           console.error("Failed to send data to the backend. HTTP status:", response.status);
         }
