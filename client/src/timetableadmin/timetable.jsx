@@ -477,7 +477,10 @@ const Timetable = () => {
   const handleViewSummary = () => navigate(`${currentPathname}/lockedsummary`);
   const handleEditFaculty = () => navigate(`${currentPathname}/editmasterfaculty`);
   const handleImportData = () => navigate(`${currentPathname}/importttdata`);
-
+  const handleDownloadClick = () => {
+    const pdfUrl = `${currentPathname}/generatepdf`;
+    window.location.href = pdfUrl;
+  };
   const saveSlotData = async (day, slot, slotData) => {
     const Url = `${apiUrl}/timetablemodule/tt/saveslot/${day}/${slot}`;
     const code = currentCode;
@@ -680,36 +683,49 @@ const Timetable = () => {
         </Button>
       </Box>
 
-      <Box display="flex" justifyContent="space-between">
-        <Box ml='-1.5'>
-          <Button m="1 auto" colorScheme="teal" onClick={handleAddSem}>
+      <Box display="flex" justifyContent="space-between" flexWrap="wrap" mb={4}>
+       
+        <Box ml='-1.5' display="flex" flexWrap="wrap">
+          <Button m={1} colorScheme="teal" onClick={handleAddSem}>
             Add Semester
           </Button>
-          <Button m="1 auto" colorScheme="teal" onClick={handleAddSubject}>
+          <Button m={1} colorScheme="teal" onClick={handleAddSubject}>
             Add Subject
           </Button>
-          <Button m="1 auto" colorScheme="teal" onClick={handleAddRoom}>
+          <Button m={1} colorScheme="teal" onClick={handleAddRoom}>
             Add Room
           </Button>
-          <Button m="1 auto" colorScheme="teal" onClick={handleAddFaculty}>
+          <Button m={1} colorScheme="teal" onClick={handleAddFaculty}>
             Add Faculty
           </Button>
-          <Button m="1 auto" colorScheme="teal" onClick={handleAddNote}>
+          <Button m={1} colorScheme="teal" onClick={handleAddNote}>
             Add Note
           </Button>
-          <Button m="1 auto" colorScheme="teal" onClick={handleAddCommonLoad}>
+          <Button m={1} colorScheme="teal" onClick={handleAddCommonLoad}>
             Add Common Load
           </Button>
-          <Button m="1 auto" colorScheme="teal" onClick={handleAddLunchSlot}>
+          <Button m={1} colorScheme="teal" onClick={handleAddLunchSlot}>
             Add Lunch slots
           </Button>
         </Box>
-        <Box mr='-1.5'>
-          <Button m="1 auto" colorScheme="orange" onClick={handleLockTT}>
+        
+    
+        <Box 
+          mr='-1.5' 
+          display="flex" 
+          justifyContent="flex-end" 
+          flexWrap="wrap" 
+          alignItems="center"
+          mt={{ base: 2, md: 0 }} 
+        >
+          <Button m={1} colorScheme="orange" onClick={handleLockTT}>
             Lock TT
           </Button>
-          <Button m="1 auto" colorScheme="orange" onClick={handleViewSummary}>
+          <Button m={1} colorScheme="orange" onClick={handleViewSummary}>
             View Locked TT
+          </Button>
+          <Button m={1} colorScheme="orange" onClick={handleDownloadClick}>
+            Click here for Batch Download
           </Button>
         </Box>
       </Box>
