@@ -269,8 +269,6 @@ class LockTimeTableController {
       res.status(200).json({
         message: "Data Locked successfully!",
         updatedTime: formattedtime,
-        preventries,
-        newentries,
       });
 
       // Execute MasterTable logic asynchronously
