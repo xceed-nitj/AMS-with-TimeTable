@@ -34,7 +34,6 @@ const ViewAllotmentPage = () => {
   const fetchExistingData = async (currentCode) => {
     try {
       console.log(currentCode);
-      console.log("API Response:", data);
       const response = await fetch(`${apiUrl}/timetablemodule/allotment?code=${currentCode}`, {
         method: 'GET',
         headers: {
