@@ -15,11 +15,27 @@ const sendMail = async (
     const transporter = nodemailer.createTransport({
       host,
       port,
-      secure: false,
+      secure: port === 465, // true for port 465, false for other ports
       auth: {
         user,
         pass
-      }
+      },
+      // Increased timeout settings
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000,   // 30 seconds
+      socketTimeout: 60000,     // 60 seconds
+      // TLS configuration for better compatibility
+      tls: {
+        rejectUnauthorized: false, // Accept self-signed certificates
+        minVersion: 'TLSv1.2'
+      },
+      // Additional options for stability
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 10,
+      requireTLS: port === 587, // Require TLS for port 587
+      logger: process.env.NODE_ENV === 'development', // Enable logging in dev
+      debug: process.env.NODE_ENV === 'development'   // Enable debug in dev
     });
 
     let mailOptions = {
@@ -34,9 +50,17 @@ const sendMail = async (
       mailOptions = { ...mailOptions, attachments };
     }
 
-    await transporter.sendMail(mailOptions);
+    // Verify connection before sending
+    await transporter.verify();
+    console.log('SMTP connection verified successfully');
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
+    
+    return info;
   } catch (e) {
-    throw new Error(e);
+    console.error('Email sending error:', e.message);
+    throw new Error(`Failed to send email: ${e.message}`);
   }
 };
 
