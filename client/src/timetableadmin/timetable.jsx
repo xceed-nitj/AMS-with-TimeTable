@@ -299,6 +299,7 @@ const Timetable = () => {
         }
         const responseData = await response.json();
         setCurrentSessionCode(responseData.code);
+        console.log("Current session code: ", responseData.code);
       } catch (error) {
         console.error('Error setting current session:', error.message);
       }
@@ -595,6 +596,25 @@ const Timetable = () => {
 
         if (response.ok) {
           const data = await response.json();
+          const { results } = data;
+          if (toInform) {
+            let successMsg = '✔ Successful Emails:\n';
+            let failedMsg = '✘ Failed Emails:\n';
+
+            results.forEach((item) => {
+              if (item.success) {
+                successMsg += `• ${item.email}\n`;
+              } else {
+                failedMsg += `• ${item.faculty} (${
+                  item.email || 'No Email'
+                }) → ${item.error}\n`;
+              }
+            });
+
+            // Show alerts
+            if (results.some((r) => r.success)) alert(successMsg);
+            if (results.some((r) => !r.success)) alert(failedMsg);
+          }
           setMessage('');
           toast({
             title: 'Timetable Locked',

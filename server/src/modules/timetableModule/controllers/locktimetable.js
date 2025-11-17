@@ -152,31 +152,54 @@ function generateFacultyChangeEmails(oldData, newData) {
 
 async function sendFacultyChangeEmails(facultyChanges) {
   const emailTitle = "Timetable Update Notification";
+  const results = [];
 
   for (const change of facultyChanges) {
-    const { faculty, emailBody, changes } = change;
+    const { faculty, emailBody } = change;
 
     // Fetch faculty email from DB
     const facultyDoc = await Faculty.findOne({ name: faculty }).lean();
     if (!facultyDoc || !facultyDoc.email) {
       console.warn(`No email found for faculty: ${faculty}`);
+      results.push({
+        email: null,
+        faculty,
+        success: false,
+        error: "Email not found",
+      });
       continue;
     }
 
     try {
       await mailSender(facultyDoc.email, emailTitle, emailBody);
       console.log(`Email sent to: ${facultyDoc.email}`);
+
+      results.push({
+        email: facultyDoc.email,
+        faculty,
+        success: true,
+      });
     } catch (err) {
       console.error(`Failed to send email to ${facultyDoc.email}:`, err);
+
+      results.push({
+        email: facultyDoc.email,
+        faculty,
+        success: false,
+        error: err.message || "Unknown error",
+      });
     }
   }
+
+  return results;
 }
+
 
 class LockTimeTableController {
   async locktt(req, res) {
     try {
       const { code, toInform } = req.body;
-
+      var results = [];
       // Delete all existing records in 'LockSem' for the given code
       if (toInform) {
         const oldData = await LockSem.aggregate([
@@ -237,7 +260,7 @@ class LockTimeTableController {
             },
           },
         ]);
-        await sendFacultyChangeEmails(
+        results = await sendFacultyChangeEmails(
           generateFacultyChangeEmails(oldData, newData)
         );
       }
@@ -269,6 +292,7 @@ class LockTimeTableController {
       res.status(200).json({
         message: "Data Locked successfully!",
         updatedTime: formattedtime,
+        results
       });
 
       // Execute MasterTable logic asynchronously
