@@ -21,6 +21,10 @@ const getIndianTime = require("../helper/getIndianTime");
 const mailSender = require("../../mailsender");
 const Faculty = require("../../../models/faculty");
 
+/* ──────────────────────────────────────────────── */
+/* Utility Helpers                                  */
+/* ──────────────────────────────────────────────── */
+
 function indexEntriesByKey(entries) {
   const map = {};
   for (const e of entries) {
@@ -38,7 +42,6 @@ function detectChangesForFaculty(oldEntries, newEntries) {
   const removed = [];
   const updated = [];
 
-  // Check for updated or removed entries
   for (const key of Object.keys(oldMap)) {
     const oldE = oldMap[key];
     const newE = newMap[key];
@@ -48,7 +51,6 @@ function detectChangesForFaculty(oldEntries, newEntries) {
       continue;
     }
 
-    // Check field-by-field changes
     const changes = {};
     ["subject", "room", "slot", "day"].forEach((field) => {
       if (oldE[field] !== newE[field]) {
@@ -66,7 +68,6 @@ function detectChangesForFaculty(oldEntries, newEntries) {
     }
   }
 
-  // Check for added entries
   for (const key of Object.keys(newMap)) {
     if (!oldMap[key]) {
       added.push(newMap[key]);
@@ -83,7 +84,7 @@ function generateEmail(faculty, { added, removed, updated }) {
   let body = `
 <p>Dear ${faculty},</p>
 
-<p>This email is to inform you that changes have been made to your teaching timetable. Please find the changes below:</p>
+<p>This email is to inform you that changes have been made to your teaching timetable. Please find the details below:</p>
 `;
 
   if (added.length > 0) {
@@ -115,21 +116,19 @@ function generateEmail(faculty, { added, removed, updated }) {
   }
 
   body += `
-<p>If you have any questions or require clarification, please feel free to contact the department timetable coordinator.</p>
+<p>If you have any questions or need clarification, please contact the timetable coordinator.</p>
 
-<p>Warm regards,<br> Team XCEED</p>
+<p>Warm regards,<br>Team XCEED</p>
 `;
 
   return body;
 }
-
 
 function generateFacultyChangeEmails(oldData, newData) {
   const oldMap = Object.fromEntries(oldData.map((f) => [f._id, f.entries]));
   const newMap = Object.fromEntries(newData.map((f) => [f._id, f.entries]));
 
   const results = [];
-
   const allFaculty = new Set([...Object.keys(oldMap), ...Object.keys(newMap)]);
 
   for (const faculty of allFaculty) {
@@ -158,7 +157,6 @@ async function sendFacultyChangeEmails(facultyChanges) {
   for (const change of facultyChanges) {
     const { faculty, emailBody } = change;
 
-    // Fetch faculty email from DB
     const facultyDoc = await Faculty.findOne({ name: faculty }).lean();
     if (!facultyDoc || !facultyDoc.email) {
       console.warn(`No email found for faculty: ${faculty}`);
@@ -195,26 +193,21 @@ async function sendFacultyChangeEmails(facultyChanges) {
   return results;
 }
 
+/* ──────────────────────────────────────────────── */
+/* Controller Class                                 */
+/* ──────────────────────────────────────────────── */
 
 class LockTimeTableController {
   async locktt(req, res) {
     try {
       const { code, toInform } = req.body;
-      var results = [];
-      // Delete all existing records in 'LockSem' for the given code
+      let results = [];
+
       if (toInform) {
         const oldData = await LockSem.aggregate([
-          {
-            $match: { code },
-          },
-          {
-            $unwind: "$slotData",
-          },
-          {
-            $match: {
-              "slotData.faculty": { $exists: true, $ne: "" },
-            },
-          },
+          { $match: { code } },
+          { $unwind: "$slotData" },
+          { $match: { "slotData.faculty": { $exists: true, $ne: "" } } },
           {
             $group: {
               _id: "$slotData.faculty",
@@ -232,18 +225,11 @@ class LockTimeTableController {
             },
           },
         ]);
+
         const newData = await ClassTable.aggregate([
-          {
-            $match: { code },
-          },
-          {
-            $unwind: "$slotData",
-          },
-          {
-            $match: {
-              "slotData.faculty": { $exists: true, $ne: "" },
-            },
-          },
+          { $match: { code } },
+          { $unwind: "$slotData" },
+          { $match: { "slotData.faculty": { $exists: true, $ne: "" } } },
           {
             $group: {
               _id: "$slotData.faculty",
@@ -261,13 +247,14 @@ class LockTimeTableController {
             },
           },
         ]);
+
         results = await sendFacultyChangeEmails(
           generateFacultyChangeEmails(oldData, newData)
         );
       }
+
       await LockSem.deleteMany({ code });
 
-      // Fetch data from 'ClassTable' based on the code
       const classTableData = await ClassTable.find({ code });
       if (!classTableData.length) {
         return res
@@ -275,35 +262,39 @@ class LockTimeTableController {
           .json({ error: "No data found for the provided code." });
       }
 
-      // Prepare bulk insert operations
       const bulkOperations = classTableData.map((dataItem) => ({
         insertOne: { document: dataItem.toObject() },
       }));
 
-      // Perform bulk insert
       if (bulkOperations.length > 0) {
         await LockSem.bulkWrite(bulkOperations);
       }
 
-      // Get the current Indian time
       const timenow = Date.now();
       const formattedtime = getIndianTime(timenow);
 
-      // Send response first to avoid UI delay
+      // **SEND ONLY ONE RESPONSE**
       res.status(200).json({
         message: "Data Locked successfully!",
         updatedTime: formattedtime,
-        results
+        results,
       });
 
-      // Execute MasterTable logic asynchronously
-      await MasterClassTableController.createMasterTable(req.body);
+      // **Run master table logic WITHOUT using res**
+      MasterClassTableController.createMasterTable(req.body)
+        .catch((err) =>
+          console.error("Error in createMasterTable:", err.message || err)
+        );
+
     } catch (err) {
       console.error("Error in locktt:", err);
-      res.status(500).json({ error: "An error occurred" });
+      return res.status(500).json({ error: "An error occurred" });
     }
   }
 
+  /* ─────────────────────────────── */
+  /*         CLASS TIMETABLE         */
+  /* ─────────────────────────────── */
   async classtt(req, res) {
     try {
       const code = req.params.code;
@@ -311,15 +302,12 @@ class LockTimeTableController {
 
       const records = await LockSem.find({ sem, code });
       const timetableData = {};
+
       records.forEach((record) => {
         const { day, slot, slotData } = record;
-        if (!timetableData[day]) {
-          timetableData[day] = {};
-        }
 
-        if (!timetableData[day][slot]) {
-          timetableData[day][slot] = [];
-        }
+        if (!timetableData[day]) timetableData[day] = {};
+        if (!timetableData[day][slot]) timetableData[day][slot] = [];
 
         const formattedSlotData = slotData.map(
           ({ subject, faculty, room }) => ({
@@ -333,54 +321,51 @@ class LockTimeTableController {
         timetableData.sem = sem;
         timetableData.code = code;
       });
+
       const notes = await Notecontroller.getNoteByCode(code, "sem", sem);
+
       res.status(200).json({ timetableData, notes });
     } catch (error) {
       console.error(error);
-      throw new Error("Error fetching and formatting data from the database");
+      res
+        .status(500)
+        .json({ error: "Error fetching and formatting data from database" });
     }
   }
 
+  /* ─────────────────────────────── */
+  /*         FACULTY TIMETABLE       */
+  /* ─────────────────────────────── */
   async facultytt(req, res) {
     const code = req.params.code;
     let session = "";
     const facultyname = req.params.faculty;
+
     try {
       if (!req.params.session) {
         session = await TimeTableDto.getSessionByCode(req.params.code);
       } else {
         session = req.params.session;
-        // const facultyId=req.params.facultyId;
-        // facultyname = await findFacultyById(facultyId);
       }
+
       const records = await LockTimeTableDto.findFacultyDataWithSession(
         session,
         facultyname
       );
+
       const updatedTime = await ClassTimeTableDto.getLastUpdatedTime(records);
-      // Create an empty timetable data object
       const timetableData = {};
 
-      // Iterate through the records and format the data
       records.forEach((record) => {
-        // Extract relevant data from the record
         const { day, slot, slotData, sem } = record;
 
-        // Create or initialize the day in the timetableData
-        if (!timetableData[day]) {
-          timetableData[day] = {};
-        }
+        if (!timetableData[day]) timetableData[day] = {};
+        if (!timetableData[day][slot]) timetableData[day][slot] = [];
 
-        // Create or initialize the slot in the day
-        if (!timetableData[day][slot]) {
-          timetableData[day][slot] = [];
-        }
-        // Iterate through the slotData array and filter based on faculty name
         const matchingSlotData = slotData.filter(
           (slotItem) => slotItem.faculty === facultyname
         );
 
-        // Access the matching values from the filtered slotData and push them
         const formattedSlotData = matchingSlotData.map(({ subject, room }) => ({
           subject,
           sem,
@@ -388,9 +373,8 @@ class LockTimeTableController {
         }));
 
         timetableData[day][slot].push(formattedSlotData);
-        // Set the sem and code for the timetable
       });
-      // console.log(timetableData)
+
       const notes = await Notecontroller.getNoteByCode(
         code,
         "faculty",
@@ -404,12 +388,16 @@ class LockTimeTableController {
     }
   }
 
+  /* ─────────────────────────────── */
+  /*            ROOM TIMETABLE       */
+  /* ─────────────────────────────── */
   async roomtt(req, res) {
     const roomno = req.params.room;
     const code = req.params.code;
-    // console.log('room no:', roomno);
+
     try {
       let session = "";
+
       if (!req.params.session) {
         session = await TimeTableDto.getSessionByCode(code);
       } else {
@@ -420,18 +408,16 @@ class LockTimeTableController {
         session,
         roomno
       );
+
       const updatedTime = await ClassTimeTableDto.getLastUpdatedTime(records);
       const timetableData = {};
+
       records.forEach((record) => {
         const { day, slot, slotData, sem } = record;
-        if (!timetableData[day]) {
-          timetableData[day] = {};
-        }
-        if (!timetableData[day][slot]) {
-          timetableData[day][slot] = [];
-        }
 
-        // Iterate through the slotData array and filter based on faculty name
+        if (!timetableData[day]) timetableData[day] = {};
+        if (!timetableData[day][slot]) timetableData[day][slot] = [];
+
         const matchingSlotData = slotData.filter(
           (slotItem) => slotItem.room === roomno
         );
@@ -445,11 +431,10 @@ class LockTimeTableController {
         );
 
         timetableData[day][slot].push(formattedSlotData);
-        // Set the sem and code for the timetable
       });
+
       const notes = await Notecontroller.getNoteByCode(code, "room", roomno);
 
-      // console.log('rooom data',timetableData)
       res.status(200).json({ timetableData, updatedTime, notes });
     } catch (error) {
       console.error(error);
@@ -457,6 +442,9 @@ class LockTimeTableController {
     }
   }
 
+  /* ─────────────────────────────── */
+  /*      LAST UPDATED TIME API      */
+  /* ─────────────────────────────── */
   async getLastUpdatedTimeByCode(code) {
     const lockTime = await LockSem.find({ code })
       .sort({ updated_at: -1 })
@@ -474,15 +462,15 @@ class LockTimeTableController {
         ? await getIndianTime(new Date(saveTime[0].updated_at))
         : null;
 
-    console.log(lockTimeIST);
-    console.log(saveTimeIST);
-
     return {
       lockTimeIST,
       saveTimeIST,
     };
   }
 
+  /* ─────────────────────────────── */
+  /*            DELETE LOCK          */
+  /* ─────────────────────────────── */
   async deleteLockedTableByCode(code) {
     try {
       await LockSem.deleteMany({ code });
@@ -491,4 +479,5 @@ class LockTimeTableController {
     }
   }
 }
+
 module.exports = LockTimeTableController;
