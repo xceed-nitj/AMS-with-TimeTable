@@ -790,7 +790,7 @@ const Timetable = () => {
         </Box>
 
         <Box
-          mr="-1.5"
+          mr="-3.5"
           display="flex"
           justifyContent="flex-end"
           flexWrap="wrap"
@@ -804,7 +804,7 @@ const Timetable = () => {
             View Locked TT
           </Button>
           <Button m={1} colorScheme="orange" onClick={handleDownloadClick}>
-            Click here for Batch Download
+            Download
           </Button>
         </Box>
       </Box>
