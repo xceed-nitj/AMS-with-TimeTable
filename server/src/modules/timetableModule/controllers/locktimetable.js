@@ -81,47 +81,48 @@ function generateEmail(faculty, { added, removed, updated }) {
     return null;
 
   let body = `
-Dear ${faculty},
+<p>Dear ${faculty},</p>
 
-I hope you are doing well. This email is to inform you that updates have been made to your teaching timetable. Please review the changes summarized below:
-
+<p>This email is to inform you that changes have been made to your teaching timetable. Please find the changes below:</p>
 `;
 
   if (added.length > 0) {
-    body += `\n--- Added Sessions ---\n`;
+    body += `<p><strong>📌 Added Slots</strong><br>`;
     added.forEach((e) => {
-      body += `• ${e.day}, ${e.slot} – ${e.subject} in ${e.room}\n`;
+      body += `• ${e.day}, ${e.slot} – ${e.subject} in ${e.room}<br>`;
     });
+    body += `</p>`;
   }
 
   if (removed.length > 0) {
-    body += `\n--- Removed Sessions ---\n`;
+    body += `<p><strong>❌ Removed Slots</strong><br>`;
     removed.forEach((e) => {
-      body += `• ${e.day}, ${e.slot} – ${e.subject} (Room: ${e.room})\n`;
+      body += `• ${e.day}, ${e.slot} – ${e.subject} (Room: ${e.room})<br>`;
     });
+    body += `</p>`;
   }
 
   if (updated.length > 0) {
-    body += `\n--- Updated Sessions ---\n`;
+    body += `<p><strong>🔄 Updated Slots</strong><br>`;
     updated.forEach((u) => {
-      body += `• ${u.old.day}, ${u.old.slot}\n`;
+      body += `• ${u.old.day}, ${u.old.slot}<br>`;
       for (const field of Object.keys(u.changes)) {
         const ch = u.changes[field];
-        body += `   - ${field.toUpperCase()}: ${ch.from} → ${ch.to}\n`;
+        body += `&nbsp;&nbsp;&nbsp;- <strong>${field.toUpperCase()}</strong>: ${ch.from} → ${ch.to}<br>`;
       }
     });
+    body += `</p>`;
   }
 
   body += `
+<p>If you have any questions or require clarification, please feel free to contact the department timetable coordinator.</p>
 
-If you have any questions or require clarification, please feel free to contact the department.
-
-Warm regards,
-Xceed
+<p>Warm regards,<br> Team XCEED</p>
 `;
 
-  return body.trim();
+  return body;
 }
+
 
 function generateFacultyChangeEmails(oldData, newData) {
   const oldMap = Object.fromEntries(oldData.map((f) => [f._id, f.entries]));
