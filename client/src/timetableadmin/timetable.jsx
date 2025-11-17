@@ -299,7 +299,7 @@ const Timetable = () => {
         }
         const responseData = await response.json();
         setCurrentSessionCodes(responseData.codes);
-        console.log("Current session codes: ", responseData.codes);
+        // console.log("Current session codes: ", responseData.codes);
       } catch (error) {
         console.error('Error setting current session:', error.message);
       }
