@@ -201,6 +201,7 @@ class LockTimeTableController {
     try {
       const { code, toInform } = req.body;
       var results = [];
+      
       // Delete all existing records in 'LockSem' for the given code
       if (toInform) {
         const oldData = await LockSem.aggregate([
@@ -232,6 +233,7 @@ class LockTimeTableController {
             },
           },
         ]);
+        
         const newData = await ClassTable.aggregate([
           {
             $match: { code },
@@ -261,10 +263,12 @@ class LockTimeTableController {
             },
           },
         ]);
+        
         results = await sendFacultyChangeEmails(
           generateFacultyChangeEmails(oldData, newData)
         );
       }
+      
       await LockSem.deleteMany({ code });
 
       // Fetch data from 'ClassTable' based on the code
@@ -296,11 +300,19 @@ class LockTimeTableController {
         results
       });
 
-      // Execute MasterTable logic asynchronously
-      await MasterClassTableController.createMasterTable(req.body);
+      // Execute MasterTable logic asynchronously (fire-and-forget)
+      MasterClassTableController.createMasterTable(req.body)
+        .catch(err => {
+          console.error("Background MasterTable creation failed:", err);
+          // Optionally: Send to error monitoring service (e.g., Sentry)
+        });
+        
     } catch (err) {
       console.error("Error in locktt:", err);
-      res.status(500).json({ error: "An error occurred" });
+      // Only send error response if headers haven't been sent yet
+      if (!res.headersSent) {
+        res.status(500).json({ error: "An error occurred" });
+      }
     }
   }
 
@@ -491,4 +503,5 @@ class LockTimeTableController {
     }
   }
 }
+
 module.exports = LockTimeTableController;
