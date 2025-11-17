@@ -19,7 +19,7 @@ const ViewAllotmentPage = () => {
     session: '',
     centralisedAllotments: [],
     openElectiveAllotments: [],
-    message:'',
+    message: '',
   });
 
   const apiUrl = getEnvironment();
@@ -34,6 +34,7 @@ const ViewAllotmentPage = () => {
   const fetchExistingData = async (currentCode) => {
     try {
       console.log(currentCode);
+      console.log("API Response:", data);
       const response = await fetch(`${apiUrl}/timetablemodule/allotment?code=${currentCode}`, {
         method: 'GET',
         headers: {
@@ -52,7 +53,7 @@ const ViewAllotmentPage = () => {
           session: allotmentData.session,
           centralisedAllotments: allotmentData.centralisedAllotments,
           openElectiveAllotments: allotmentData.openElectiveAllotments,
-          message:allotmentData.message
+          message: allotmentData.message
         });
       } else {
         console.error('Failed to fetch existing data');
@@ -61,33 +62,35 @@ const ViewAllotmentPage = () => {
       console.error('Error:', error);
     }
   };
+  const renderSlot = (value) => (
+    <Text color={value ? "green.500" : "red.500"} fontWeight="bold">
+      {value ? "Yes" : "No"}
+    </Text>
+  );
 
   return (
     <Container maxW="5xl">
       {/* <Heading >Alloted Room For the Current Session</Heading> */}
       <div>
-      <Header title="Alloted Rooms "></Header>
+        <Header title="Alloted Rooms "></Header>
       </div>
-      <Text fontWeight="bold" fontSize="lg">Message from ITTC: </Text>
-      <Text color="red">
-    {formData.message}
-  </Text> {/* Centralised Room Table */}
+      {/* Centralised Room Table */}
       <Table variant="striped" colorScheme="gray" style={{ marginBottom: '20px' }}>
-      <caption > <Text fontWeight="bold" fontSize="lg">Centralised Room Allotment  (Total Entries: {formData.centralisedAllotments.length})</Text></caption>
+        <caption > <Text fontWeight="bold" fontSize="lg">Centralised Room Allotment  (Total Entries: {formData.centralisedAllotments.length})</Text></caption>
         <Thead>
           <Tr>
             <Th bg="teal.300"
-                  color="white"
-                  borderWidth="2px">Department</Th>
+              color="white"
+              borderWidth="2px">Department</Th>
             <Th bg="teal.300"
-                  color="white"
-                  borderWidth="2px">Rooms</Th>
+              color="white"
+              borderWidth="2px">Rooms</Th>
             <Th bg="teal.300"
-                  color="white"
-                  borderWidth="2px">Morning Slot</Th>
+              color="white"
+              borderWidth="2px">Morning Slot</Th>
             <Th bg="teal.300"
-                  color="white"
-                  borderWidth="2px">Afternoon Slot</Th>
+              color="white"
+              borderWidth="2px">Afternoon Slot</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -104,14 +107,14 @@ const ViewAllotmentPage = () => {
               <Td>
                 {dept.rooms.map((room, roomIndex) => (
                   <React.Fragment key={`centralisedRoom-${deptIndex}-${roomIndex}`}>
-                    <div>{room.morningSlot ? 'Yes' : 'No'}</div>
+                    <div>{renderSlot(room.morningSlot)}</div>
                   </React.Fragment>
                 ))}
               </Td>
               <Td>
                 {dept.rooms.map((room, roomIndex) => (
                   <React.Fragment key={`centralisedRoom-${deptIndex}-${roomIndex}`}>
-                    <div>{room.afternoonSlot ? 'Yes' : 'No'}</div>
+                    <div>{renderSlot(room.afternoonSlot)}</div>
                   </React.Fragment>
                 ))}
               </Td>
@@ -123,15 +126,15 @@ const ViewAllotmentPage = () => {
       {/* Open Elective Allotment Table */}
       <Table variant="striped" colorScheme="gray" style={{ marginBottom: '20px' }}>
 
-      <caption > <Text fontWeight="bold" fontSize="lg">Open Elective Room Allotment  (Total Entries: {formData.openElectiveAllotments.length})</Text></caption>
-             <Thead>
+        <caption > <Text fontWeight="bold" fontSize="lg">Open Elective Room Allotment  (Total Entries: {formData.openElectiveAllotments.length})</Text></caption>
+        <Thead>
           <Tr>
             <Th bg="teal.300"
-                  color="white"
-                  borderWidth="2px">Department</Th>
+              color="white"
+              borderWidth="2px">Department</Th>
             <Th bg="teal.300"
-                  color="white"
-                  borderWidth="2px">Rooms</Th>
+              color="white"
+              borderWidth="2px">Rooms</Th>
           </Tr>
         </Thead>
         <Tbody>
