@@ -40,7 +40,7 @@ const Timetable = () => {
   const [timetableData, setTimetableData] = useState({});
   const [viewData, setViewData] = useState({});
   const [viewFacultyData, setViewFacultyData] = useState({});
-  const [currentSessionCode, setCurrentSessionCode] = useState('');
+  const [currentSessionCodes, setCurrentSessionCodes] = useState([]);
   const [viewRoomData, setViewRoomData] = useState({});
   const [message, setMessage] = useState();
   const [availableSubjects, setAvailableSubjects] = useState([]);
@@ -298,15 +298,15 @@ const Timetable = () => {
           throw new Error('Failed to get current session');
         }
         const responseData = await response.json();
-        setCurrentSessionCode(responseData.code);
-        console.log("Current session code: ", responseData.code);
+        setCurrentSessionCodes(responseData.codes);
+        console.log("Current session codes: ", responseData.codes);
       } catch (error) {
         console.error('Error setting current session:', error.message);
       }
     };
     fetchCurrentSession();
     return () => {};
-  }, [currentSessionCode]);
+  }, [currentSessionCodes]);
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -576,7 +576,7 @@ const Timetable = () => {
       'Are you sure you want to lock the timetable?'
     );
     var toInform = false;
-    if (currentCode == currentSessionCode)
+    if (currentSessionCodes.includes(currentCode))
       toInform = window.confirm(
         'Do you want to inform the teachers about the timetable changes?'
       );

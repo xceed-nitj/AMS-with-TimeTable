@@ -278,20 +278,17 @@ class TableController {
 
     try {
       await TimeTable.updateMany({}, { $set: { currentSession: false } });
-
-      const updatedSession = await TimeTable.findOneAndUpdate(
+      const updatedSessions = await TimeTable.updateMany(
         { session },
-        { $set: { currentSession: true } },
-        { new: true }
+        { $set: { currentSession: true } }
       );
-
-      if (!updatedSession) {
+      if (!updatedSessions) {
         return res.status(404).json({ error: "Session not found" });
       }
 
       res.json({
         message: "Current session updated successfully",
-        updatedSession,
+        updatedSessions,
       });
     } catch (error) {
       console.error("Error updating current session:", error);
@@ -300,13 +297,13 @@ class TableController {
   }
   async getCurrentSession(req, res) {
     try {
-      const session = await TimeTable.findOne({ currentSession: true });
+      const sessions = await TimeTable.find({ currentSession: true });
 
-      if (!session) {
-        return res.status(404).json({ message: "No active session found" });
+      if (!sessions || sessions.length === 0) {
+        return res.status(404).json({ message: "No active sessions found" });
       }
-      console.log(session.code);
-      res.json({ code: session.code });
+      const codes = sessions.map(s => s.code);
+      res.json({ codes });
     } catch (error) {
       console.error("Error updating current session:", error);
       res.status(500).json({ error: "Internal Server Error" });
