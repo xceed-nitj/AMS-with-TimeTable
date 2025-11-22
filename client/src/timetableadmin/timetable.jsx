@@ -739,16 +739,15 @@ const Timetable = () => {
         </ul>
       </Box>
 
-      {clashFlag !== false && (
-        <Box display="flex" justifyContent="space-between" mb="4">
-          <Text fontSize="xl" color="red" id="saveTime">
-            Last saved on: {savedTime ? savedTime : "Not saved yet"}
-          </Text>
-          <Text fontSize="xl" color="red" id="lockTime">
-            Last locked on: {lockedTime ? lockedTime : "Not Locked yet"}
-          </Text>
-        </Box>
-      )}
+      <Box display="flex" justifyContent="space-between" mb="4">
+        <Text fontSize="xl" color="red" id="saveTime">
+          Last saved on: {savedTime ? savedTime : "Not saved yet"}
+        </Text>
+        <Text fontSize="xl" color="red" id="lockTime">
+          Last locked on: {lockedTime ? lockedTime : "Not Locked yet"}
+        </Text>
+      </Box>
+
 
       <Portal>
         <Box
