@@ -716,22 +716,39 @@ const Timetable = () => {
 
       <Box padding="6px" borderRadius="6px">
         <ul className="tw-flex tw-flex-wrap tw-w-fit">
-          {clashFlag == true ? clash.length == 0 ? "No Clashes" : clash.map((elem, index) => (
-            <li key={index} className="tw-h-10 tw-p-2 tw-mx-3 tw-w-1/3 tw-content-center tw-text-red-700 tw-font-normal tw-rounded-md">
-              Check {elem["name"]}'s slot on {elem["day"]} at {elem["period"]}
-            </li>
-          )) : "searching for clashes..."}
+          {
+            clashFlag == true
+              ? (
+                clash.length == 0
+                  ? <div className="tw-bg-green-100 tw-text-green-700 tw-font-semibold tw-px-4 tw-py-2 tw-rounded-md tw-shadow-sm tw-w-64">
+                    No Clashes Found
+                  </div>
+                  : clash.map((elem, index) => (
+                    <li
+                      key={index}
+                      className="tw-bg-red-100 tw-border tw-border-red-300 tw-text-red-700 tw-font-medium tw-p-3 tw-m-2 tw-rounded-lg tw-shadow-sm tw-w-1/3"
+                    >
+                      Check {elem["name"]}'s slot on {elem["day"]} at {elem["period"]}
+                    </li>
+                  ))
+              )
+              : <div className="tw-bg-yellow-100 tw-text-yellow-700 tw-font-medium tw-px-4 tw-py-2 tw-rounded-md tw-shadow-sm">
+                Searching for clashes…
+              </div>
+          }
         </ul>
       </Box>
 
-      <Box display="flex" justifyContent="space-between" mb="4">
-        <Text fontSize="xl" color="red" id="saveTime">
-          Last saved on: {savedTime ? savedTime : "Not saved yet"}
-        </Text>
-        <Text fontSize="xl" color="red" id="lockTime">
-          Last locked on: {lockedTime ? lockedTime : "Not Locked yet"}
-        </Text>
-      </Box>
+      {clashFlag !== false && (
+        <Box display="flex" justifyContent="space-between" mb="4">
+          <Text fontSize="xl" color="red" id="saveTime">
+            Last saved on: {savedTime ? savedTime : "Not saved yet"}
+          </Text>
+          <Text fontSize="xl" color="red" id="lockTime">
+            Last locked on: {lockedTime ? lockedTime : "Not Locked yet"}
+          </Text>
+        </Box>
+      )}
 
       <Portal>
         <Box
