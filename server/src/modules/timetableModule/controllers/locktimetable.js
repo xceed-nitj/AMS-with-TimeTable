@@ -20,7 +20,7 @@ const MasterClassTableController = new MasterclasstableController();
 const getIndianTime = require("../helper/getIndianTime");
 const mailSender = require("../../mailsender");
 const Faculty = require("../../../models/faculty");
-
+const getEnvironmentURL = require("../../../getEnvironmentURL");
 function indexEntriesByKey(entries) {
   const map = {};
   for (const e of entries) {
@@ -76,10 +76,7 @@ function detectChangesForFaculty(oldEntries, newEntries) {
   return { added, removed, updated };
 }
 
-function generateEmail(faculty, { added, removed, updated }) {
-  if (added.length === 0 && removed.length === 0 && updated.length === 0)
-    return null;
-
+function generateEmail(faculty, { added, removed, updated }, timetableLink) {
   let body = `
 <p>Dear ${faculty},</p>
 
@@ -115,21 +112,25 @@ function generateEmail(faculty, { added, removed, updated }) {
   }
 
   body += `
+<p>
+Please review the <strong>detailed updated timetable</strong> using the link below:<br>
+<a href="${timetableLink}" target="_blank">${timetableLink}</a>
+</p>
+
 <p>If you have any questions or require clarification, please feel free to contact the department timetable coordinator.</p>
 
-<p>Warm regards,<br> Team XCEED</p>
+<p>Warm regards,<br>Team XCEED</p>
 `;
 
   return body;
 }
-
 
 function generateFacultyChangeEmails(oldData, newData) {
   const oldMap = Object.fromEntries(oldData.map((f) => [f._id, f.entries]));
   const newMap = Object.fromEntries(newData.map((f) => [f._id, f.entries]));
 
   const results = [];
-
+  const base_url = getEnvironmentURL();
   const allFaculty = new Set([...Object.keys(oldMap), ...Object.keys(newMap)]);
 
   for (const faculty of allFaculty) {
@@ -137,12 +138,13 @@ function generateFacultyChangeEmails(oldData, newData) {
     const newEntries = newMap[faculty] || [];
 
     const changes = detectChangesForFaculty(oldEntries, newEntries);
-    const emailBody = generateEmail(faculty, changes);
 
-    if (emailBody) {
+    if (!(changes.added.length === 0 && changes.removed.length === 0 && changes.updated.length === 0)) {
       results.push({
         faculty,
-        emailBody,
+        emailBody: (facultyid) => {
+          return generateEmail(faculty, changes, `${base_url}/faculty/${facultyid}`)
+        },
         changes,
       });
     }
@@ -152,19 +154,22 @@ function generateFacultyChangeEmails(oldData, newData) {
 }
 
 async function sendFacultyChangeEmails(facultyChanges) {
-  const emailTitle = "Timetable Update Notification";
+  const today = new Date();
+  const day = String(today.getDate()).padStart(2, '0');
+  const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const year = today.getFullYear();
+  const emailTitle = `Timetable Update Notification [${day} ${month} ${year}]`;
   const results = [];
 
   for (const change of facultyChanges) {
-    const { faculty, emailBody } = change;
-
+    
     // Fetch faculty email from DB
-    const facultyDoc = await Faculty.findOne({ name: faculty }).lean();
+    const facultyDoc = await Faculty.findOne({ name: change.faculty }).lean();
     if (!facultyDoc || !facultyDoc.email) {
-      console.warn(`No email found for faculty: ${faculty}`);
+      console.warn(`No email found for faculty: ${change.faculty}`);
       results.push({
         email: null,
-        faculty,
+        faculty: change.faculty,
         success: false,
         error: "Email not found",
       });
@@ -172,12 +177,13 @@ async function sendFacultyChangeEmails(facultyChanges) {
     }
 
     try {
-      await mailSender(facultyDoc.email, emailTitle, emailBody);
+      // await mailSender(facultyDoc.email, emailTitle, emailBody(facultyDoc._id.toString()));
       console.log(`Email sent to: ${facultyDoc.email}`);
+      console.log(facultyDoc._id);
 
       results.push({
         email: facultyDoc.email,
-        faculty,
+        faculty: change.faculty,
         success: true,
       });
     } catch (err) {
@@ -185,7 +191,7 @@ async function sendFacultyChangeEmails(facultyChanges) {
 
       results.push({
         email: facultyDoc.email,
-        faculty,
+        faculty: change.faculty,
         success: false,
         error: err.message || "Unknown error",
       });
