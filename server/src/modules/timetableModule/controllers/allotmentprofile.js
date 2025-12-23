@@ -3,6 +3,7 @@ const AddAllotment = require("../../../models/allotment");
 const addRoom=require("../../../models/addroom");
 
 const TimeTabledto = require("../dto/timetable");
+const TimeTable = require("../../../models/timetable"); 
 const TimeTableDto = new TimeTabledto();
 
 const AddRoomController = require("../controllers/addroomprofile");
@@ -98,7 +99,31 @@ class AllotmentController {
           throw error;
         }
       }
-      
+      // Add these methods to your AllotmentController class
+async setCurrentSession(req, res) {
+  const { session } = req.body;
+  try {
+    // 1. Reset: Set currentSession to false for all entries
+    await TimeTable.updateMany({}, { $set: { currentSession: false } });
+    
+    // 2. Set: Mark all entries matching the chosen session string as true
+    await TimeTable.updateMany({ session: session }, { $set: { currentSession: true } });
+
+    res.status(200).json({ message: `Session ${session} is now current.` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async getCurrentStatus(req, res) {
+  try {
+    // Look for any record marked as current to retrieve the session string
+    const currentEntry = await TimeTable.findOne({ currentSession: true }, { session: 1 });
+    res.status(200).json({ currentSession: currentEntry ? currentEntry.session : null });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
       async getAllotmentById(id) {
         if (!id) {
