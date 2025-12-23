@@ -103,10 +103,11 @@ class AllotmentController {
 async setCurrentSession(req, res) {
   const { session } = req.body;
   try {
-    // 1. Reset: Set currentSession to false for all entries
+    // 1. Reset: Set currentSession to false for EVERY record in the collection
     await TimeTable.updateMany({}, { $set: { currentSession: false } });
     
-    // 2. Set: Mark all entries matching the chosen session string as true
+    // 2. Set: Mark ALL entries for the chosen session as true
+    // This ensures every department sees the same "current" session
     await TimeTable.updateMany({ session: session }, { $set: { currentSession: true } });
 
     res.status(200).json({ message: `Session ${session} is now current.` });

@@ -29,7 +29,7 @@ const AdminPage = () => {
   useEffect(() => {
     fetchSessions();
     fetchSessionsWithTT();
-    fetchCurrentStatus(); // Fetches which string should have the tag
+    fetchCurrentStatus();
   }, []);
 
   const fetchSessions = async () => {
@@ -56,6 +56,7 @@ const AdminPage = () => {
       if (response.ok) {
         const data = await response.json();
         // data.currentSession is a string like "2025-2026"
+        
         setCurrentSessionName(data.currentSession); 
       }
     } catch (error) {
@@ -208,12 +209,12 @@ const AdminPage = () => {
                     {editingSessionId === session ? (
                       <Input value={editingSessionValue} onChange={(e) => setEditingSessionValue(e.target.value)} />
                     ) : (
-                      <Text fontWeight={session === currentSessionName ? "bold" : "normal"}>
+                      <Text fontWeight={session.trim() === currentSessionName.trim() ? "bold" : "normal"}>
                         {session}
                       </Text>
                     )}
                     {/* The "Current" tag appears if the session string matches currentSessionName */}
-                    {session === currentSessionName && (
+                    {session.trim() === currentSessionName.trim() && (
                       <Tag size="sm" colorScheme="green" variant="solid" borderRadius="full">
                         current
                       </Tag>
