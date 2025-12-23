@@ -17,6 +17,17 @@ class TimeTabledto {
           throw err; // Re-throw the error to propagate it to the calling function
         }
       }
+
+      async getCurrentSession() {
+  try {
+    // We use the exact field name from your model: currentSession
+    const currentTT = await TimeTable.findOne({ currentSession: true }).exec();
+    return currentTT ? currentTT.session : null;
+  } catch (err) {
+    console.error('Error fetching current session:', err);
+    return null;
+  }
+}
       async getTTdetailsByCode(code) {
         try {
           const timetable = await TimeTable.findOne({ code: code }).exec();

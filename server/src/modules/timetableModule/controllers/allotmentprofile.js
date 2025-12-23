@@ -75,30 +75,28 @@ class AllotmentController {
         }
       }
 
-      async getSessions() {
-        try {
-          // Step 1: Get distinct sessions
-          const uniqueSessions = await AddAllotment.distinct('session');
-          
-          if (uniqueSessions.length === 0) {
-            return [];
-          }
-      
-          // Step 2: Fetch sessions with their creation times
-          const sessionsWithCreationTimes = await AddAllotment.find(
-            { session: { $in: uniqueSessions } },
-            { session: 1, created_at: 1 }
-          ).sort({ created_at: -1 }); // Step 3: Sort by creation time in descending order
-      
-          // Extract unique sessions in sorted order
-          const sortedSessions = sessionsWithCreationTimes.map(doc => doc.session);
-      
-          return sortedSessions;
-        } catch (error) {
-          throw error;
-        }
-      }
-      
+ async getSessions() {
+  try {
+    const uniqueSessions = await AddAllotment.distinct('session');
+    if (uniqueSessions.length === 0) return [];
+
+    const sessionsWithCreationTimes = await AddAllotment.find(
+      { session: { $in: uniqueSessions } },
+      { session: 1, created_at: 1 }
+    ).sort({ created_at: -1 });
+
+    // Call the new DTO method
+    const currentSessionName = await TimeTableDto.getCurrentSession(); 
+
+    // Return objects to the frontend
+    return sessionsWithCreationTimes.map(doc => ({
+      session: doc.session,
+      isCurrent: doc.session === currentSessionName // Result is true or false
+    }));
+  } catch (error) {
+    throw error;
+  }
+}
 
       async getAllotmentById(id) {
         if (!id) {

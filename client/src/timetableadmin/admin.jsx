@@ -107,7 +107,7 @@ const AdminPage = () => {
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-      setSessions(prevSessions => prevSessions.filter(item => item !== session));
+     setSessions(prev => prev.filter(item => item.session !== session));
     } catch (error) {
       console.error('Error deleting allotment:', error.message);
     }
@@ -160,26 +160,28 @@ const AdminPage = () => {
     setEditingSessionValue(e.target.value);
   };
 
-  const handleSave = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${editingSessionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ session: editingSessionValue }),
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      setSessions(prevSessions => prevSessions.map(item => item === editingSessionId ? editingSessionValue : item));
-      setEditingSessionId(null);
-      setEditingSessionValue('');
-    } catch (error) {
-      console.error('Error editing allotment:', error.message);
-    }
-  };
+ const handleSave = async () => {
+  try {
+    const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${editingSessionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session: editingSessionValue }),
+      credentials: 'include',
+    });
+
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    // Step C: Map through objects and update the 'session' string for the specific ID
+    setSessions(prevSessions => prevSessions.map(item => 
+      item.session === editingSessionId ? { ...item, session: editingSessionValue } : item
+    ));
+
+    setEditingSessionId(null);
+    setEditingSessionValue('');
+  } catch (error) {
+    console.error('Error editing allotment:', error.message);
+  }
+};
 
   //handels the setting of current session and make a request to /timetable/set-current-session and gives an alert message
   const handleSetCurrentSession = async (session) => {
@@ -299,47 +301,64 @@ const AdminPage = () => {
 
       <Table variant="striped">
   <Thead>
-    <Tr>
-      <Th>Session</Th>
-      <Th>Edit</Th>
-      <Th>Delete</Th>
-      <Th>Make current</Th>
-    </Tr>
-  </Thead>
-  <Tbody>
-  {sessions.map((session, index) => (  
-  <Tr key={index}>
-    <Td>
-      {editingSessionId === session ? (
-        <Input
-          type='text'
-          value={editingSessionValue}
-          onChange={handleChange1}
-        />
-      ) : (
-        session
-      )}
-    </Td>
-    <Td>
-      {editingSessionId === session ? (
-        <Button onClick={handleSave}>Save</Button>
-      ) : (
-        <CustomTealButton onClick={() => handleEdit(session)}>Edit</CustomTealButton>
-      )}
-    </Td>
-    <Td>
-      <CustomDeleteButton onClick={() => handleDelete(session)}>Delete</CustomDeleteButton>
-    </Td>
-    <Td>
-      {sessionsWithTT.includes(session) ? (
-        (
-          <CustomBlueButton onClick={() => handleSetCurrentSession(session)}>Make Current</CustomBlueButton>
-        )
-      ) :("N/A") }
-    </Td>
+  <Tr>
+    <Th>Session</Th>
+    <Th>Edit</Th>
+    <Th>Delete</Th>
+    {/* REMOVED: <Th>Make current</Th> */}
   </Tr>
-))}
+</Thead>
+<Tbody>
+  {sessions.map((sessionObj, index) => (
+    <Tr key={index}>
+      {/* 1. Session Name Column with 'current' tag */}
+      <Td>
+        <Flex align="center">
+          <Text fontWeight="medium">
+            {editingSessionId === sessionObj.session ? (
+              <Input 
+                size="sm"
+                value={editingSessionValue} 
+                onChange={handleChange1} 
+              />
+            ) : (
+              sessionObj.session
+            )}
+          </Text>
 
+          {/* Tag Logic */}
+          {sessionObj.isCurrent && (
+            <Box 
+              ml={3} 
+              px={2} 
+              py={0.5} 
+              bg="green.500" 
+              color="white" 
+              borderRadius="full" 
+              fontSize="xs" 
+              fontWeight="bold"
+            >
+              current
+            </Box>
+          )}
+        </Flex>
+      </Td>
+
+      {/* 2. Restored Edit Column */}
+      <Td>
+        {editingSessionId === sessionObj.session ? (
+          <Button size="sm" colorScheme="blue" onClick={handleSave}>Save</Button>
+        ) : (
+          <CustomTealButton onClick={() => handleEdit(sessionObj.session)}>Edit</CustomTealButton>
+        )}
+      </Td>
+
+      {/* 3. Restored Delete Column */}
+      <Td>
+        <CustomDeleteButton onClick={() => handleDelete(sessionObj.session)}>Delete</CustomDeleteButton>
+      </Td>
+    </Tr>
+  ))}
 </Tbody>
 </Table>
 </Container>
