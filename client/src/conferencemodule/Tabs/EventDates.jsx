@@ -133,7 +133,6 @@ const IdConf = params.confid;
 
         })
             .then(res => {
-                console.log(new Date(res.data.date).toLocaleDateString('en-CA'))
                 const parsedData ={
                     ...res.data,
                     date: new Date(res.data.date).toLocaleDateString('en-CA'),
