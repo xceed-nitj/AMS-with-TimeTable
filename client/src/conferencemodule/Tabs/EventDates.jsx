@@ -32,7 +32,7 @@ const IdConf = params.confid;
         "sequence": "",
         "extended": false,
         "newDate": "",
-        "completed": true,
+        "completed": false,
         "featured": true
     }
     const [formData, setFormData] = useState(initialData);
@@ -133,7 +133,13 @@ const IdConf = params.confid;
 
         })
             .then(res => {
-                setFormData(res.data);
+                console.log(new Date(res.data.date).toLocaleDateString('en-CA'))
+                const parsedData ={
+                    ...res.data,
+                    date: new Date(res.data.date).toLocaleDateString('en-CA'),
+                    newDate: new Date(res.data.newDate).toLocaleDateString('en-CA')
+                }
+                setFormData(parsedData);
             })
             .catch(err => console.log(err));
     };
@@ -284,11 +290,10 @@ const IdConf = params.confid;
                                 {data.length > 0 ? (data.map((item) => (
                                     <Tr key={item._id}>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.title}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.date}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{new Date(item.date).toLocaleDateString()}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.extended ? 'Yes' : 'No'}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.completed ? 'Yes' : 'No'}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.newDate}</Td>
-
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{new Date(item.newDate).toLocaleDateString()}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.featured?"Yes":"No"}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
 
