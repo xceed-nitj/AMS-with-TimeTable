@@ -31,7 +31,7 @@ const IdConf = params.confid;
         "date": "",
         "sequence": "",
         "extended": false,
-        "newDate": "",
+        "newDate": null,
         "completed": false,
         "featured": true
     }
@@ -136,7 +136,8 @@ const IdConf = params.confid;
                 const parsedData ={
                     ...res.data,
                     date: new Date(res.data.date).toLocaleDateString('en-CA'),
-                    newDate: new Date(res.data.newDate).toLocaleDateString('en-CA')
+                    newDate: res.data.newDate ? new Date(res.data.newDate).toLocaleDateString('en-CA') : "",
+                    sequence: res.data.sequence? res.data.sequence : "",
                 }
                 setFormData(parsedData);
             })
@@ -292,7 +293,7 @@ const IdConf = params.confid;
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{new Date(item.date).toLocaleDateString()}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.extended ? 'Yes' : 'No'}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.completed ? 'Yes' : 'No'}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{new Date(item.newDate).toLocaleDateString()}</Td>
+                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.newDate ? new Date(item.newDate).toLocaleDateString() : null}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.featured?"Yes":"No"}</Td>
                                         <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
 

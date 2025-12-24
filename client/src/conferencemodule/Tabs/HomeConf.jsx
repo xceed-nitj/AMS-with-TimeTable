@@ -67,8 +67,8 @@ const HomeConf = () => {
     const { confName, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
      regLink,flyerLink,brochureLink,posterLink } = formData;
     
-     const confStartDate = new Date(formData.confStartDate).toLocaleDateString('en-CA');
-     const confEndDate = new Date(formData.confEndDate).toLocaleDateString('en-CA');
+     const confStartDate = formData.confStartDate ? new Date(formData.confStartDate).toLocaleDateString('en-CA') : null;
+     const confEndDate = formData.confEndDate ? new Date(formData.confEndDate).toLocaleDateString('en-CA') : null;
 
     const parseHtmlTables = (html) => {
         const parser = new DOMParser();
