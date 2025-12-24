@@ -64,8 +64,11 @@ const HomeConf = () => {
     const isMobile = useBreakpointValue({ base: true, md: false });
     const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
 
-    const { confName, confStartDate, confEndDate, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
+    const { confName, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
      regLink,flyerLink,brochureLink,posterLink } = formData;
+    
+     const confStartDate = formData.confStartDate ? new Date(formData.confStartDate).toLocaleDateString('en-CA') : null;
+     const confEndDate = formData.confEndDate ? new Date(formData.confEndDate).toLocaleDateString('en-CA') : null;
 
     const parseHtmlTables = (html) => {
         const parser = new DOMParser();
