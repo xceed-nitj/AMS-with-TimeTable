@@ -92,7 +92,8 @@ export default function Navbar() {
     const isPublicPath =
       publicPaths.includes(location.pathname) ||
       location.pathname.startsWith('/services/') ||
-      location.pathname.startsWith('/cm/c/');
+      location.pathname.startsWith('/cm/c/') ||
+      location.pathname.startsWith('/timetable/faculty/');
 
     if (!isLoading && !isAuthenticated && !isPublicPath) {
       navigate('/login');

@@ -346,15 +346,7 @@ function LockedSummary() {
 
   // const navigate = useNavigate();
 
-  const handleDownloadClick = () => {
-    const pathArray = window.location.pathname
-      .split("/")
-      .filter((part) => part !== "");
-    const pathExceptLastPart = `/${pathArray.slice(0, -1).join("/")}`;
-    const pdfUrl = `${pathExceptLastPart}/generatepdf`;
-    window.location.href = pdfUrl;
-  };
-
+ 
 
   const [subjectData, setSubjectData] = useState([]); // Initialize as an empty array
   const [TTData, setTTData] = useState([]); // Initialize as an empty array
@@ -403,7 +395,7 @@ function LockedSummary() {
   return (
     <Container maxW="6xl">
       <Header title="Locked TimeTable Summary"></Header>
-      <Button colorScheme="orange" onClick={handleDownloadClick}>Click here for Batch Download</Button>
+     
       {/* <Box mb='6' display='flex' justifyContent='right' onClick={handleDownloadClick}>
         <BUtton color='blue'>
           click here for Batch Download 

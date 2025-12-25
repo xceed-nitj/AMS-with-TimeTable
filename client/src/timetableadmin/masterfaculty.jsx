@@ -3,7 +3,7 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
 import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from '../styles/customStyles';
-import { Box, Center, Button, Container, Input, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
+import { Box, Center, Button, Container, Input, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, Select } from '@chakra-ui/react';
 import Header from '../components/header';
 import { Parser } from '@json2csv/plainjs/index.js';
 
@@ -12,6 +12,7 @@ function Subject() {
   const [tableData, setTableData] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
   const [isAddFacultyFormVisible, setIsAddFacultyFormVisible] = useState(false);
+  const [departments, setDepartments] = useState([]);
   const [editedData, setEditedData] = useState({
     facultyID: '',
     name: '',
@@ -24,6 +25,7 @@ function Subject() {
   const apiUrl = getEnvironment();
   useEffect(() => {
     fetchData();
+    fetchDepartments();
   }, []);
 
   const fetchData = () => {
@@ -247,6 +249,37 @@ function Subject() {
     }
   };
 
+  const fetchDepartments = () => {
+    fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then(response => response.json())
+      .then((data) => {
+        setDepartments(data);
+      })
+      .catch((error) => {
+        console.error('Error fetching departments:', error);
+      });
+  };
+
+  const DepartmentSelect = () => (
+    <Select
+      placeholder='Select department'
+      value={editedData.dept}
+      onChange={(e) =>
+        setEditedData({ ...editedData, dept: e.target.value })
+      }
+    >
+      {departments.map((item, key) => (
+        <option key={key} value={item}>
+          {item}
+        </option>
+      ))}
+    </Select>
+  );
+
+
   return (
     <Container maxW="7xl">
       {/* <h1>Master Faculty </h1> */}
@@ -308,14 +341,7 @@ function Subject() {
             </Box>
             <Box>
               <Text mb='1'>Dept: <span>*</span></Text>
-              <Input
-               mb='2'
-                type="text"
-                value={editedData.dept}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, dept: e.target.value })
-                }
-              />
+              {DepartmentSelect()}
             </Box>
             <Box>
               <Text mb='1'>Type: </Text>
@@ -443,13 +469,7 @@ function Subject() {
                 <Td><Center>
                   
                     {editRowId === row._id ? (
-                      <Input
-                        type="text"
-                        value={editedData.dept}
-                        onChange={(e) =>
-                          setEditedData({ ...editedData, dept: e.target.value })
-                        }
-                      />
+                      DepartmentSelect()
                     ) : (
                       row.dept
                     )}

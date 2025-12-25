@@ -5,206 +5,210 @@ const User = require("../../../models/usermanagement/user");
 
 const generateUniqueLink = require("../helper/createlink");
 const HttpException = require("../../../models/http-exception");
-const getRoomByDepartment =require("./masterroomprofile");
+const getRoomByDepartment = require("./masterroomprofile");
 const masterroomprofile = require("./masterroomprofile");
-const AddAllotment = require("../../../models/allotment")
+const AddAllotment = require("../../../models/allotment");
 const MasterRoomProfile = new masterroomprofile();
 
-
 class TableController {
-    async createTable(req,res) 
-    {
-      const data = req.body;
-      const userId=req.user.id;
-      const existingTimeTable = await TimeTable.findOne({ user: userId, session: data.session });
+  async createTable(req, res) {
+    const data = req.body;
+    const userId = req.user.id;
+    const existingTimeTable = await TimeTable.findOne({
+      user: userId,
+      session: data.session,
+    });
 
     if (existingTimeTable) {
       // If a timetable already exists, you can choose to return an error or update the existing one
       // In this example, we return an error
-      return res.status(400).json({ error: "Timetable already exists for this session" });
+      return res
+        .status(400)
+        .json({ error: "Timetable already exists for this session" });
     }
-      try {
-        const newCode = await generateUniqueLink();
-        console.log(newCode);
-        //const userObject = await User.findById(userId)
-        const newTimeTable = new TimeTable({
-          ...data,
-          code: newCode, 
-          user: userId
-        });
-        const createdTT = await newTimeTable.save(); 
-        const deptrooms= await MasterRoomProfile.getRoomByDepartment(data.dept);
-        if (deptrooms)
-        {
+    try {
+      const newCode = await generateUniqueLink();
+      console.log(newCode);
+      //const userObject = await User.findById(userId)
+      const newTimeTable = new TimeTable({
+        ...data,
+        code: newCode,
+        user: userId,
+      });
+      const createdTT = await newTimeTable.save();
+      const deptrooms = await MasterRoomProfile.getRoomByDepartment(data.dept);
+      if (deptrooms) {
         for (const room of deptrooms) {
-          await addRoom.create({ room: room.room, code: newCode, type:room.type });
+          await addRoom.create({
+            room: room.room,
+            code: newCode,
+            type: room.type,
+          });
         }
       }
-        
-          const roomdata= await AddAllotment.find({session: data.session})
-          console.log(roomdata);
-          const centralisedAllotments = roomdata[0].centralisedAllotments;
-          const openElectiveAllotments = roomdata[0].openElectiveAllotments;
 
-  // Search in centralised allotments
-          const centralisedDept = centralisedAllotments.find((item) => item.dept === data.dept) || { rooms: [] };
+      const roomdata = await AddAllotment.find({ session: data.session });
+      console.log(roomdata);
+      const centralisedAllotments = roomdata[0].centralisedAllotments;
+      const openElectiveAllotments = roomdata[0].openElectiveAllotments;
 
-  // Search in open elective allotments
-          const electiveDept = openElectiveAllotments.find((item) => item.dept === data.dept) || { rooms: [] };
+      // Search in centralised allotments
+      const centralisedDept = centralisedAllotments.find(
+        (item) => item.dept === data.dept
+      ) || { rooms: [] };
 
-  // Combine rooms from both allotments
-          const combinedRooms = [...centralisedDept.rooms, ...electiveDept.rooms];
-          if(combinedRooms)
-          {
-          for (const room of combinedRooms) {
-            await addRoom.create({ room: room.room, code: newCode, type:'Centralised Classroom' });
-          }
+      // Search in open elective allotments
+      const electiveDept = openElectiveAllotments.find(
+        (item) => item.dept === data.dept
+      ) || { rooms: [] };
+
+      // Combine rooms from both allotments
+      const combinedRooms = [...centralisedDept.rooms, ...electiveDept.rooms];
+      if (combinedRooms) {
+        for (const room of combinedRooms) {
+          await addRoom.create({
+            room: room.room,
+            code: newCode,
+            type: "Centralised Classroom",
+          });
         }
-  
-        res.json(createdTT);
-      } 
-      catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
-        }
+      }
+
+      res.json(createdTT);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
     }
+  }
 
-    async savett(req, res) 
-    {
-      const timetableData =req.body;
-      // console.log(timetableData);
-      try {
-        for (const day of Object.keys(timetableData.timetableData)) {
-          const dayData = timetableData.timetableData[day];
-        
-          // Iterate through the periods (e.g., "period1", "period2", etc.) for each day
-          for (const slot of Object.keys(dayData)) {
-            const slotData = dayData[slot];
-        
-            // Create a new ClassTable instance with the data from the JSON
-            const classTableInstance = new ClassTable({
-              day,  // Set the day from the JSON
-              slot, // Set the slot from the JSON
-              sub: slotData.subject,     // Set subject from the JSON
-              faculty: slotData.faculty, // Set faculty from the JSON
-              room: slotData.room,       // Set room from the JSON
-              code: timetableData.code || ""  // Set code from the JSON (optional)
-            });
-        
-            // Save the ClassTable instance to the MongoDB database
-            classTableInstance.save((err) => {
-              if (err) {
-                console.error(`Error saving class table data: ${err}`);
-              } else {
-                console.log(`Saved class table data for ${day} - ${slot}`);
-              }
-            });
-          }
+  async savett(req, res) {
+    const timetableData = req.body;
+    // console.log(timetableData);
+    try {
+      for (const day of Object.keys(timetableData.timetableData)) {
+        const dayData = timetableData.timetableData[day];
+
+        // Iterate through the periods (e.g., "period1", "period2", etc.) for each day
+        for (const slot of Object.keys(dayData)) {
+          const slotData = dayData[slot];
+
+          // Create a new ClassTable instance with the data from the JSON
+          const classTableInstance = new ClassTable({
+            day, // Set the day from the JSON
+            slot, // Set the slot from the JSON
+            sub: slotData.subject, // Set subject from the JSON
+            faculty: slotData.faculty, // Set faculty from the JSON
+            room: slotData.room, // Set room from the JSON
+            code: timetableData.code || "", // Set code from the JSON (optional)
+          });
+
+          // Save the ClassTable instance to the MongoDB database
+          classTableInstance.save((err) => {
+            if (err) {
+              console.error(`Error saving class table data: ${err}`);
+            } else {
+              console.log(`Saved class table data for ${day} - ${slot}`);
+            }
+          });
         }
-        } catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
-        }
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
     }
+  }
 
-    async getUserTable(req, res) 
-    {
-      const userId=req.user.id;
-      try {
-          const TableField = await TimeTable.find({user: userId});
-          res.json(TableField)
-          return;
-        } catch (error) {
-          console.error(error); 
-          res.status(500).json({ error: "Internal server error" });
-        }
+  async getUserTable(req, res) {
+    const userId = req.user.id;
+    try {
+      const TableField = await TimeTable.find({ user: userId });
+      res.json(TableField);
+      return;
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
     }
+  }
 
-    // async getTableByCode(code) 
-    // {
-    //   // const code=req.params.code;
-    //   try {
-    //       const TableField = await TimeTable.find({code});
-    //       return TableField;
-    //     } catch (error) {
-    //       console.error(error); 
-    //       res.status(500).json({ error: "Internal server error" });
-    //     }
+  // async getTableByCode(code)
+  // {
+  //   // const code=req.params.code;
+  //   try {
+  //       const TableField = await TimeTable.find({code});
+  //       return TableField;
+  //     } catch (error) {
+  //       console.error(error);
+  //       res.status(500).json({ error: "Internal server error" });
+  //     }
+  // }
+
+  //newcode
+  async getTableByCode(code) {
+    try {
+      if (typeof code !== "string") {
+        console.error("Invalid code received:", code);
+        throw new HttpException(400, "Invalid code format");
+      }
+
+      console.log("Fetching timetable details for code:", code);
+
+      const TableField = await TimeTable.findOne({ code });
+      console.log("Fetched timetable details:", TableField);
+
+      if (!TableField) {
+        throw new HttpException(404, "Timetable not found for the given code");
+      }
+
+      return TableField;
+    } catch (error) {
+      console.error("Error fetching timetable by code:", error);
+      throw new HttpException(500, error.message || "Internal server error");
+    }
+  }
+
+  async getTableById(id) {
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    try {
+      const data = await TimeTable.findById(id);
+
+      if (!data) throw new HttpException(400, "data does not exists");
+
+      return data;
+    } catch (e) {
+      throw new HttpException(500, e.message || "Internal Server Error");
+    }
+  }
+
+  async updateID(id, announcement) {
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
+    }
+    // if (!isValidAnnouncement(announcement)) {
+    //   return res.status(400).json({ error: "Invalid Announcement data" });
     // }
-
-    //newcode
-    async getTableByCode(code) {
-      try {
-        if (typeof code !== "string") {
-          console.error("Invalid code received:", code); 
-          throw new HttpException(400, "Invalid code format");
-        }
-    
-        console.log("Fetching timetable details for code:", code);  
-    
-        const TableField = await TimeTable.findOne({ code }); 
-        console.log("Fetched timetable details:", TableField);
-        
-        if (!TableField) {
-          throw new HttpException(404, "Timetable not found for the given code");
-        }
-    
-        return TableField;
-      } catch (error) {
-        console.error("Error fetching timetable by code:", error);
-        throw new HttpException(500, error.message || "Internal server error");
-      }
+    try {
+      await TimeTable.findByIdAndUpdate(id, announcement);
+    } catch (e) {
+      throw new HttpException(500, e.message || "Internal Server Error");
     }
-    
-    
+  }
 
-
-    async getTableById(id) {
-      if (!id) {
-        throw new HttpException(400, "Invalid Id");
-      }
-      try {
-        const data = await TimeTable.findById(id);
-  
-        if (!data) throw new HttpException(400, "data does not exists");
-  
-        return data;
-      } catch (e) {
-        throw new HttpException(500, e.message || "Internal Server Error");
-      }
+  async deleteId(id) {
+    if (!id) {
+      throw new HttpException(400, "Invalid Id");
     }
-
-    async updateID(id, announcement) {
-      if (!id) {
-        throw new HttpException(400, "Invalid Id");
-      }
-      // if (!isValidAnnouncement(announcement)) {
-      //   return res.status(400).json({ error: "Invalid Announcement data" });
-      // }
-      try {
-        await TimeTable.findByIdAndUpdate(id, announcement);
-      } catch (e) {
-        throw new HttpException(500, e.message || "Internal Server Error");
-      }
+    try {
+      await TimeTable.findByIdAndDelete(id);
+    } catch (e) {
+      throw new HttpException(500, e.message || "Internal Server Error");
     }
+  }
 
-    async deleteId(id) {
-      if (!id) {
-        throw new HttpException(400, "Invalid Id");
-      }
-      try {
-        await TimeTable.findByIdAndDelete(id);
-      } catch (e) {
-        throw new HttpException(500, e.message || "Internal Server Error");
-      }
-    }
-
-    
   async deleteTableByCode(code) {
     try {
-
       await TimeTable.deleteMany({ code });
-
     } catch (error) {
       throw new Error("Failed to delete by code");
     }
@@ -217,7 +221,7 @@ class TableController {
         {},
         { session: 1, created_at: 1, currentSession: 1 }
       ).sort({ created_at: -1 });
-  
+
       // Extract unique sessions and sort them by creation time
       // const uniqueSessions = sessionsWithCreationTimes.map(doc => ({
       //   session: doc.session,
@@ -227,39 +231,41 @@ class TableController {
       //this will prevent duplicacy
       const uniqueSessions = Array.from(
         new Map(
-          sessionsWithCreationTimes.map(doc => [doc.session, { 
-            session: doc.session, 
-            currentSession: doc.currentSession 
-          }])
+          sessionsWithCreationTimes.map((doc) => [
+            doc.session,
+            {
+              session: doc.session,
+              currentSession: doc.currentSession,
+            },
+          ])
         ).values()
       );
       // console.log(uniqueSessions);
-      
+
       // Step 2: Get distinct departments
-      const uniqueDept = await TimeTable.distinct('dept');
-      
+      const uniqueDept = await TimeTable.distinct("dept");
+
       // Step 3: Sort departments alphabetically
       uniqueDept.sort((a, b) => a.localeCompare(b));
-  
+
       return { uniqueSessions, uniqueDept };
     } catch (error) {
       throw error;
     }
   }
-  
+
   async getCodeOfDept(dept, session) {
     try {
-      const code= await TimeTable.findOne({dept, session});
+      const code = await TimeTable.findOne({ dept, session });
       return code;
     } catch (error) {
-      throw error; 
+      throw error;
     }
   }
 
-
   async getAllCodes(session) {
     try {
-      const codes = await TimeTable.find({ session});
+      const codes = await TimeTable.find({ session });
       // console.log(codes);
       return codes;
     } catch (error) {
@@ -269,33 +275,39 @@ class TableController {
 
   async setCurrentSession(req, res) {
     const { session } = req.body;
-  
+
     try {
-      
       await TimeTable.updateMany({}, { $set: { currentSession: false } });
-  
-      
-      const updatedSession = await TimeTable.findOneAndUpdate(
+      const updatedSessions = await TimeTable.updateMany(
         { session },
-        { $set: { currentSession: true } },
-        { new: true }
+        { $set: { currentSession: true } }
       );
-  
-      if (!updatedSession) {
+      if (!updatedSessions) {
         return res.status(404).json({ error: "Session not found" });
       }
-  
-      res.json({ message: "Current session updated successfully", updatedSession });
+
+      res.json({
+        message: "Current session updated successfully",
+        updatedSessions,
+      });
     } catch (error) {
       console.error("Error updating current session:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
+  async getCurrentSession(req, res) {
+    try {
+      const sessions = await TimeTable.find({ currentSession: true });
 
-  
-
-
+      if (!sessions || sessions.length === 0) {
+        return res.status(404).json({ message: "No active sessions found" });
+      }
+      const codes = sessions.map(s => s.code);
+      res.json({ codes });
+    } catch (error) {
+      console.error("Error updating current session:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
 }
 module.exports = TableController;
-
-
