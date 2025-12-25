@@ -45,7 +45,7 @@ const fileUploads = () => {
       if (response.ok) {
         console.log("File uploaded successfully");
         const data = await response.json();
-        setUploads([...uploads, data.link]);
+        setUploads([data.link, ...uploads]);
         toast({
           title: "File uploaded successfully",
           status: "success",
