@@ -74,6 +74,13 @@ allotmentRouter.post("/", async (req, res) => {
           .json({ error: e?.message || "Internal Server Error" });
       }
     });
+ allotmentRouter.post("/set-current-session", async (req, res) => {
+  await allotmentController.setCurrentSession(req, res);
+});
+
+allotmentRouter.get("/current-status", async (req, res) => {
+  await allotmentController.getCurrentStatus(req, res);
+});
 
     allotmentRouter.delete("/session/:session", async (req, res) => {
       try {

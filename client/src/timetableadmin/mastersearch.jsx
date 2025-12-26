@@ -67,7 +67,7 @@ function MasterView({ autofill = false }) {
   const apiUrl = getEnvironment();
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
-  const autofillname = parts[parts.length - 1];
+  const autofillid = parts[parts.length - 1];
   // const autofilltype = parts[parts.length - 2];
 
   const [availableSems, setAvailableSems] = useState([]);
@@ -709,18 +709,26 @@ function MasterView({ autofill = false }) {
 
   // Autofill input from URL when the page first loads (if present)
   useEffect(() => {
-    try {
-      const name = decodeURIComponent(autofillname || '').trim();
-      if (name) {
-        setQuery(name);
-        // trigger suggestions for the autofilled name
-        fetchSuggestions(name);
+    const fetchAndAutofill = async () => {
+      try {
+        const id = decodeURIComponent(autofillid || '').trim();
+        if (id) {
+          const response = await fetch(`${apiUrl}/timetablemodule/faculty/id/${id}`, { credentials: 'include' });
+          if (response.ok) {
+            const faculty = await response.json();
+            // Assuming faculty has name and dept
+            handleFacultyClick({ name: faculty.name, dept: faculty.dept });
+          } else {
+            console.error('Failed to fetch faculty by ID');
+          }
+        }
+      } catch (e) {
+        console.error('Error in autofill:', e);
       }
-    } catch (e) {
-      // ignore malformed URI component
-    }
-    // We depend on autofillname which is derived from the pathname
-  }, [autofillname]);
+    };
+    fetchAndAutofill();
+    // We depend on autofillid which is derived from the pathname
+  }, [autofillid]);
 
   // map any dept string to the exact option in availableDepts (case/space tolerant)
   const canonDept = (name) => {
