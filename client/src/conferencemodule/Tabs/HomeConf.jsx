@@ -45,11 +45,11 @@ const HomeConf = () => {
         "twitterLink": "",
         "logo": "",
         "shortName": "",
-        "abstractLink" : "",
-        "paperLink" : "",
-        "regLink" : "",
-        "flyerLink" : "",
-        "brochureLink" : "",
+        "abstractLink": "",
+        "paperLink": "",
+        "regLink": "",
+        "flyerLink": "",
+        "brochureLink": "",
         "posterLink": "",
     }
     const [formData, setFormData] = useState(initialData);
@@ -64,20 +64,20 @@ const HomeConf = () => {
     const isMobile = useBreakpointValue({ base: true, md: false });
     const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
 
-    const { confName, confStartDate, confEndDate, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
-     regLink,flyerLink,brochureLink,posterLink } = formData;
+    const { confName, confStartDate, confEndDate, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName, abstractLink, paperLink,
+        regLink, flyerLink, brochureLink, posterLink } = formData;
 
     const parseHtmlTables = (html) => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const tables = doc.querySelectorAll('table:not(.quill-better-table)');
-        
+
         tables.forEach(table => {
             const generateId = () => Math.random().toString(36).substr(2, 4);
-            
+
             const rows = table.querySelectorAll('tr');
             if (rows.length === 0) return;
-            
+
             let maxCols = 0;
             rows.forEach(row => {
                 let colCount = 0;
@@ -88,13 +88,13 @@ const HomeConf = () => {
                 });
                 maxCols = Math.max(maxCols, colCount);
             });
-            
+
             const wrapper = doc.createElement('div');
             wrapper.className = 'quill-better-table-wrapper';
-            
+
             const newTable = doc.createElement('table');
             newTable.className = 'quill-better-table';
-            
+
             const colgroup = doc.createElement('colgroup');
             for (let i = 0; i < maxCols; i++) {
                 const col = doc.createElement('col');
@@ -102,26 +102,26 @@ const HomeConf = () => {
                 colgroup.appendChild(col);
             }
             newTable.appendChild(colgroup);
-            
+
             const tbody = doc.createElement('tbody');
-            
+
             rows.forEach(row => {
                 const newRow = doc.createElement('tr');
                 const rowId = `row-${generateId()}`;
                 newRow.setAttribute('data-row', rowId);
-                
+
                 const cells = row.querySelectorAll('td, th');
                 cells.forEach(cell => {
                     const newCell = doc.createElement('td');
                     const cellId = `cell-${generateId()}`;
-                    
+
                     const colspan = cell.getAttribute('colspan') || '1';
                     const rowspan = cell.getAttribute('rowspan') || '1';
-                    
+
                     newCell.setAttribute('data-row', rowId);
                     newCell.setAttribute('rowspan', rowspan);
                     newCell.setAttribute('colspan', colspan);
-                    
+
                     const cellContent = cell.innerHTML.trim();
                     if (cellContent) {
                         const p = doc.createElement('p');
@@ -130,7 +130,7 @@ const HomeConf = () => {
                         p.setAttribute('data-cell', cellId);
                         p.setAttribute('data-rowspan', rowspan);
                         p.setAttribute('data-colspan', colspan);
-                        
+
                         p.innerHTML = cellContent;
                         newCell.appendChild(p);
                     } else {
@@ -143,33 +143,33 @@ const HomeConf = () => {
                         p.innerHTML = '<br>';
                         newCell.appendChild(p);
                     }
-                    
+
                     newRow.appendChild(newCell);
                 });
-                
+
                 tbody.appendChild(newRow);
             });
-            
+
             newTable.appendChild(tbody);
             wrapper.appendChild(newTable);
-            
+
             table.parentNode.replaceChild(wrapper, table);
         });
-        
+
         return doc.body.innerHTML;
     };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
-    
+
     const handleArrayChange = (e, index) => {
         const { name, value } = e.target;
         const newAboutIns = [...about];
         newAboutIns[index][name] = value;
         setAbout(newAboutIns);
     };
-    
+
     const handleDelete = (deleteID) => {
         setDeleteItemId(deleteID);
         setShowDeleteConfirmation(true);
@@ -178,13 +178,13 @@ const HomeConf = () => {
     const handleAboutTabClick = (index) => {
         setActiveAboutTab(index);
         setShowAboutSection(true);
-        setShowHtml(false); 
+        setShowHtml(false);
     };
 
     const handleBackToForm = () => {
         setShowAboutSection(false);
         setActiveAboutTab(null);
-        setShowHtml(false); 
+        setShowHtml(false);
     };
 
     const handleDeleteAbout = (indexToRemove) => {
@@ -209,16 +209,16 @@ const HomeConf = () => {
         if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
             try {
                 const parsedHtml = parseHtmlTables(editableHtmlContent);
-                
+
                 quillInstances.current[activeAboutTab].setHTML(parsedHtml);
-                
+
                 const newAbout = [...about];
                 newAbout[activeAboutTab].description = parsedHtml;
                 setAbout(newAbout);
-                
+
                 setHtmlContent(parsedHtml);
                 setEditableHtmlContent(parsedHtml);
-                
+
                 console.log('HTML content applied successfully with table parsing');
             } catch (error) {
                 console.error('Error applying HTML content:', error);
@@ -246,7 +246,7 @@ const HomeConf = () => {
         const indexToRemove = deleteAboutIndex;
         if (about.length > 1) {
             const aboutToDelete = about[indexToRemove];
-            
+
             if (aboutToDelete._id) {
                 try {
                     await axios.delete(`${apiUrl}/conferencemodule/home/about/${IdConf}/${aboutToDelete._id}`, {
@@ -261,17 +261,17 @@ const HomeConf = () => {
                     return;
                 }
             }
-            
+
             const newAbout = about.filter((_, index) => index !== indexToRemove);
             setAbout(newAbout);
-            
+
             if (quillInstances.current[indexToRemove]) {
                 quillInstances.current[indexToRemove] = null;
             }
             quillInstances.current = quillInstances.current.filter((_, index) => index !== indexToRemove);
             editorRefs.current = editorRefs.current.filter((_, index) => index !== indexToRemove);
             initializedTabs.current.delete(indexToRemove);
-            
+
             if (activeAboutTab >= newAbout.length) {
                 setActiveAboutTab(newAbout.length - 1);
             } else if (activeAboutTab > indexToRemove) {
@@ -288,18 +288,18 @@ const HomeConf = () => {
 
     const handleDescriptionChange = (value, index) => {
         if (isUpdatingDescription.current) return;
-        
+
         isUpdatingDescription.current = true;
         const newAboutIns = [...about];
         newAboutIns[index].description = value;
         console.log('Description updated for index:', index, 'Value:', value);
         setAbout(newAboutIns);
-        
+
         if (showHtml && activeAboutTab === index) {
             setHtmlContent(value);
             setEditableHtmlContent(value);
         }
-        
+
         setTimeout(() => {
             isUpdatingDescription.current = false;
         }, 100);
@@ -311,7 +311,7 @@ const HomeConf = () => {
             const response = await axios.get(`${apiUrl}/conferencemodule/home/about/${IdConf}`, {
                 withCredentials: true
             });
-            
+
             if (response.data && response.data.length > 0) {
                 console.log('Fetched about sections:', response.data);
                 setAbout(response.data);
@@ -337,7 +337,7 @@ const HomeConf = () => {
     const handleAboutUpdate = async () => {
         try {
             const aboutData = { about: about };
-            
+
             try {
                 await axios.put(`${apiUrl}/conferencemodule/home/about/${IdConf}`, aboutData, {
                     withCredentials: true
@@ -349,8 +349,8 @@ const HomeConf = () => {
                 });
                 console.log('About sections created successfully');
             }
-            
-            fetchAboutSections(); 
+
+            fetchAboutSections();
         } catch (err) {
             console.error('Error updating about sections:', err);
             window.alert('Error updating about sections');
@@ -358,113 +358,113 @@ const HomeConf = () => {
     };
 
     useEffect(() => {
-    if (!isQuillRegistered.current) {
-        try {
-            Quill.register(
-                {
-                    "modules/better-table": QuillBetterTable,
-                },
-                true
-            );
-            isQuillRegistered.current = true;
-        } catch (error) {
-            console.log("Quill modules already registered");
-        }
-    }
-
-    const initializeQuill = (index) => {
-        if (!editorRefs.current[index] || !about[index] || aboutLoading) {
-            return;
+        if (!isQuillRegistered.current) {
+            try {
+                Quill.register(
+                    {
+                        "modules/better-table": QuillBetterTable,
+                    },
+                    true
+                );
+                isQuillRegistered.current = true;
+            } catch (error) {
+                console.log("Quill modules already registered");
+            }
         }
 
-        console.log("Initializing Quill for index:", index);
-        console.log("About data for index:", about[index]);
-        console.log("Description:", about[index]?.description);
+        const initializeQuill = (index) => {
+            if (!editorRefs.current[index] || !about[index] || aboutLoading) {
+                return;
+            }
 
-        editorRefs.current[index].innerHTML = "";
+            console.log("Initializing Quill for index:", index);
+            console.log("About data for index:", about[index]);
+            console.log("Description:", about[index]?.description);
 
-        const modules = {
-            toolbar: [
-                [{ header: [1, 2, 3, false] }],
-                ["bold", "italic", "underline", "strike"],
-                [{ color: [] }, { background: [] }],
-                [{ script: "sub" }, { script: "super" }],
-                ["blockquote", "code-block"],
-                [{ list: "ordered" }, { list: "bullet" }],
-                [{ indent: "-1" }, { indent: "+1" }],
-                [{ align: [] }],
-                ["link", "image", "video"],
-                ["clean"],
-            ],
-            clipboard: { matchVisual: false },
-            "better-table": {
-                operationMenu: {
-                    items: {
-                        insertColumnRight: { text: "Insert Column Right" },
-                        insertColumnLeft: { text: "Insert Column Left" },
-                        insertRowUp: { text: "Insert Row Above" },
-                        insertRowDown: { text: "Insert Row Below" },
-                        mergeCells: { text: "Merge Cells" },
-                        unmergeCells: { text: "Unmerge Cells" },
-                        deleteColumn: { text: "Delete Column" },
-                        deleteRow: { text: "Delete Row" },
-                        deleteTable: { text: "Delete Table" },
+            editorRefs.current[index].innerHTML = "";
+
+            const modules = {
+                toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline", "strike"],
+                    [{ color: [] }, { background: [] }],
+                    [{ script: "sub" }, { script: "super" }],
+                    ["blockquote", "code-block"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    [{ indent: "-1" }, { indent: "+1" }],
+                    [{ align: [] }],
+                    ["link", "image", "video"],
+                    ["clean"],
+                ],
+                clipboard: { matchVisual: false },
+                "better-table": {
+                    operationMenu: {
+                        items: {
+                            insertColumnRight: { text: "Insert Column Right" },
+                            insertColumnLeft: { text: "Insert Column Left" },
+                            insertRowUp: { text: "Insert Row Above" },
+                            insertRowDown: { text: "Insert Row Below" },
+                            mergeCells: { text: "Merge Cells" },
+                            unmergeCells: { text: "Unmerge Cells" },
+                            deleteColumn: { text: "Delete Column" },
+                            deleteRow: { text: "Delete Row" },
+                            deleteTable: { text: "Delete Table" },
+                        },
                     },
                 },
-            },
-            keyboard: { bindings: QuillBetterTable.keyboardBindings },
+                keyboard: { bindings: QuillBetterTable.keyboardBindings },
+            };
+
+            quillInstances.current[index] = new Quill(editorRefs.current[index], {
+                theme: "snow",
+                modules,
+                placeholder: "Start writing here...",
+            });
+
+            quillInstances.current[index].setHTML = (html) => {
+                quillInstances.current[index].root.innerHTML = html;
+            };
+
+            quillInstances.current[index].getHTML = () => {
+                return quillInstances.current[index].root.innerHTML;
+            };
+
+            const description = about[index]?.description || "";
+            console.log("Setting description:", description);
+            quillInstances.current[index].setHTML(description);
+
+            quillInstances.current[index].on("text-change", () => {
+                console.log("Current HTML content:", quillInstances.current[index].getHTML());
+                if (!isUpdatingDescription.current) {
+                    handleDescriptionChange(quillInstances.current[index].getHTML(), index);
+                }
+            });
+
+            console.log("Quill initialized for index:", index);
         };
 
-        quillInstances.current[index] = new Quill(editorRefs.current[index], {
-            theme: "snow",
-            modules,
-            placeholder: "Start writing here...",
-        });
-
-        quillInstances.current[index].setHTML = (html) => {
-            quillInstances.current[index].root.innerHTML = html;
-        };
-
-        quillInstances.current[index].getHTML = () => {
-            return quillInstances.current[index].root.innerHTML;
-        };
-
-        const description = about[index]?.description || "";
-        console.log("Setting description:", description);
-        quillInstances.current[index].setHTML(description);
-
-        quillInstances.current[index].on("text-change", () => {
-            console.log("Current HTML content:", quillInstances.current[index].getHTML());
-            if (!isUpdatingDescription.current) {
-                handleDescriptionChange(quillInstances.current[index].getHTML(), index);
+        const reinitializeQuillIfNeeded = (index) => {
+            if (!quillInstances.current[index]) {
+                console.log("Reinitializing Quill for index:", index);
+                initializeQuill(index);
             }
-        });
+        };
 
-        console.log("Quill initialized for index:", index);
-    };
+        const timeoutId = setTimeout(() => {
+            if (!aboutLoading && about && about[activeAboutTab] && showAboutSection) {
+                reinitializeQuillIfNeeded(activeAboutTab);
+            }
+        }, 300);
 
-    const reinitializeQuillIfNeeded = (index) => {
-        if (!quillInstances.current[index]) {
-            console.log("Reinitializing Quill for index:", index);
-            initializeQuill(index);
-        }
-    };
+        return () => {
+            clearTimeout(timeoutId);
 
-    const timeoutId = setTimeout(() => {
-        if (!aboutLoading && about && about[activeAboutTab] && showAboutSection) {
-            reinitializeQuillIfNeeded(activeAboutTab);
-        }
-    }, 300);
-
-    return () => {
-        clearTimeout(timeoutId);
-
-        if (quillInstances.current[activeAboutTab]) {
-            quillInstances.current[activeAboutTab].off("text-change");
-            quillInstances.current[activeAboutTab] = null;
-        }
-    };
-}, [activeAboutTab, aboutLoading, showAboutSection]);
+            if (quillInstances.current[activeAboutTab]) {
+                quillInstances.current[activeAboutTab].off("text-change");
+                quillInstances.current[activeAboutTab] = null;
+            }
+        };
+    }, [activeAboutTab, aboutLoading, showAboutSection]);
 
     const insertTable = (index) => {
         if (quillInstances.current[index]) {
@@ -478,21 +478,21 @@ const HomeConf = () => {
             const conferenceResponse = await axios.put(`${apiUrl}/conferencemodule/home/${editID}`, formData, {
                 withCredentials: true
             });
-            
+
             await handleAboutUpdate();
-            
+
             setData(conferenceResponse.data);
             setRefresh(refresh + 1);
             console.log('Both conference and about data updated successfully');
-            
+
         } catch (err) {
             console.error('Error updating conference and about data:', err);
         }
     };
-    
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         if (data && !editID) {
             window.alert('You cannot Add multiple values of this for one conference');
             return;
@@ -514,14 +514,14 @@ const HomeConf = () => {
                 });
         }
     };
-    
+
     const handleEditorChange = (value, fieldName) => {
         setFormData({
             ...formData,
             [fieldName]: value,
         });
     };
-    
+
     const handleUpdate = () => {
         axios.put(`${apiUrl}/conferencemodule/home/${editID}`, formData, {
             withCredentials: true
@@ -576,10 +576,10 @@ const HomeConf = () => {
     };
 
     const LivePreviewSection = () => (
-        <Box 
-            className="tw-rounded-lg" 
-            p={4} 
-            bg="gray.50" 
+        <Box
+            className="tw-rounded-lg"
+            p={4}
+            bg="gray.50"
             mb={6}
         >
             <Container maxW='full'>
@@ -588,12 +588,12 @@ const HomeConf = () => {
                         Live Preview
                     </Heading>
                 </Center>
-                
+
                 <Box bg="white" p={4} borderRadius="md" boxShadow="sm">
                     <Heading as="h2" size="lg" mb={4} color="gray.700">
                         About Section Preview
                     </Heading>
-                    
+
                     {showAboutSection && activeAboutTab !== null && about[activeAboutTab] && (
                         <Box mb={6} p={4} border="1px solid" borderColor="gray.200" borderRadius="md">
                             <Heading as="h3" size="md" mb={3} color="blue.600">
@@ -601,13 +601,13 @@ const HomeConf = () => {
                             </Heading>
                             <Box
                                 className="tw-prose tw-max-w-none tw-min-h-[100px] tw-p-2 tw-border tw-rounded tw-bg-gray-50"
-                                dangerouslySetInnerHTML={{ 
-                                    __html: about[activeAboutTab].description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>' 
+                                dangerouslySetInnerHTML={{
+                                    __html: about[activeAboutTab].description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>'
                                 }}
                             />
                         </Box>
                     )}
-                    
+
                     {!showAboutSection && (
                         <Box textAlign="center" py={8} color="gray.500">
                             <p>Select an about tab to see the live preview</p>
@@ -624,7 +624,6 @@ const HomeConf = () => {
         if (!currentURL.includes("/cf/" + IdConf + "/home")) {
             navigate("/cf/" + IdConf + "/home")
         }
-
         setLoading(true);
         axios.get(`${apiUrl}/conferencemodule/home/conf/${IdConf}`, {
             withCredentials: true
@@ -633,10 +632,18 @@ const HomeConf = () => {
                 if (res.data) {
                     setData(res.data);
                     setEditID(res.data._id);
+                    //check date exist and convert to html format
                     setFormData({
                         ...res.data,
-                        confId: IdConf
+                        confId: IdConf,
+                        confStartDate: res.data.confStartDate
+                            ? formatDate(res.data.confStartDate)
+                            : "",
+                        confEndDate: res.data.confEndDate
+                            ? formatDate(res.data.confEndDate)
+                            : ""
                     });
+
                 } else {
                     setData(null);
                     setEditID("");
@@ -650,7 +657,6 @@ const HomeConf = () => {
                 setFormData(initialData);
             })
             .finally(() => setLoading(false));
-
         fetchAboutSections();
     }, [refresh]);
 
@@ -664,14 +670,14 @@ const HomeConf = () => {
                 <Flex direction={{ base: "column", md: "row" }}>
                     {!isMobile && (
                         <Box
-                            width="15%" 
+                            width="15%"
                             minWidth="180px"
                             maxWidth="250px"
                             bg="gray.100"
                             p={4}
                             borderRadius="none"
                             boxShadow="md"
-                            height="100vh" 
+                            height="100vh"
                             position="sticky"
                             top={0}
                             display="flex"
@@ -685,14 +691,14 @@ const HomeConf = () => {
                             <Button colorScheme="blue" onClick={addNewAbout} mb="4" width="100%" size="sm">
                                 Add New About
                             </Button>
-                            
+
                             {/* Back to Form Button */}
                             {showAboutSection && (
                                 <Button colorScheme="gray" onClick={handleBackToForm} mb="4" width="100%" size="sm">
                                     Conference Details
                                 </Button>
                             )}
-                            
+
                             {/* About Tabs */}
                             <Box width="100%" mb={4}>
                                 <Heading as="h3" size="sm" mb={2} color="gray.600">
@@ -752,7 +758,7 @@ const HomeConf = () => {
                                 </Center>
 
                                 <form onSubmit={handleSubmit}>
-                                    
+
                                     {!showAboutSection && (
                                         <>
                                             <FormControl isRequired={true} mb='3' >
@@ -834,8 +840,8 @@ const HomeConf = () => {
                                                 </Box>
                                             )}
 
-                                            
-                                        <FormControl isRequired={true} mb='3' >
+
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >You Tube Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -846,9 +852,9 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            
-                                            
-                                            <FormControl isRequired={true} mb='3' >
+
+
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Instagram Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -859,7 +865,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >FaceBook Link:</FormLabel>
                                                 <Input
                                                     type="text"
@@ -871,7 +877,7 @@ const HomeConf = () => {
                                                 />
                                             </FormControl>
 
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Twitter Link:</FormLabel>
                                                 <Input
                                                     type="text"
@@ -882,7 +888,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Logo:</FormLabel>
                                                 <Input
                                                     type="text"
@@ -893,7 +899,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Short Name of Conference :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -904,7 +910,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Abstract Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -915,7 +921,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Registration Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -926,7 +932,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Flyer Link of Conference :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -937,7 +943,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Brochure Link of Conference :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -948,7 +954,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Poster Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -959,8 +965,8 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                        
-                                   
+
+
                                             <Center>
                                                 <Button colorScheme="blue" type="submit">
                                                     {editID ? 'Update Conference Info' : 'Add Conference Info'}
@@ -974,9 +980,9 @@ const HomeConf = () => {
                                         <div key={`about-${activeAboutTab}`}>
                                             {isMobile && (
                                                 <Center mb="4">
-                                                    <Button 
-                                                        colorScheme="gray" 
-                                                        onClick={handleBackToForm} 
+                                                    <Button
+                                                        colorScheme="gray"
+                                                        onClick={handleBackToForm}
                                                         width="100%"
                                                         size="sm"
                                                     >
@@ -984,7 +990,7 @@ const HomeConf = () => {
                                                     </Button>
                                                 </Center>
                                             )}
-                                            
+
                                             <FormControl mb='3'>
                                                 <p>Title:</p>
                                                 <Input
@@ -1026,7 +1032,7 @@ const HomeConf = () => {
                                                         background: "#fff"
                                                     }}
                                                 ></div>
-                                                
+
                                                 {/* HTML Display Area */}
                                                 {showHtml && (
                                                     <Box
@@ -1075,11 +1081,11 @@ const HomeConf = () => {
                                                     </Box>
                                                 )}
                                             </FormControl>
-                                            
+
                                             {/* About Section Update Button */}
                                             <Center mb="4">
-                                                <Button 
-                                                    colorScheme="green" 
+                                                <Button
+                                                    colorScheme="green"
                                                     onClick={handleAboutUpdate}
                                                     size="md"
                                                     isLoading={aboutLoading}
@@ -1088,8 +1094,8 @@ const HomeConf = () => {
                                                     Update About Section
                                                 </Button>
                                                 {about.length > 1 && (
-                                                    <Button 
-                                                        colorScheme="red" 
+                                                    <Button
+                                                        colorScheme="red"
                                                         onClick={() => handleDeleteAbout(activeAboutTab)}
                                                         size="md"
                                                     >
@@ -1110,13 +1116,13 @@ const HomeConf = () => {
                         </Box>
 
                         {/* Desktop Live Preview Section*/}
-                        <Box 
-                            width={{ base: "100%", lg: "50%" }} 
-                            p={4} 
-                            bg="gray.50" 
-                            overflowY="auto" 
-                            height={{ lg: "100vh" }} 
-                            position={{ lg: "sticky" }} 
+                        <Box
+                            width={{ base: "100%", lg: "50%" }}
+                            p={4}
+                            bg="gray.50"
+                            overflowY="auto"
+                            height={{ lg: "100vh" }}
+                            position={{ lg: "sticky" }}
                             top={0}
                             display={{ base: "none", lg: "block" }}
                         >
@@ -1179,7 +1185,7 @@ const HomeConf = () => {
                         </div>
                     </div>
                 </div>
-            )}     
+            )}
         </main>
     );
 };
