@@ -324,8 +324,8 @@ const [selectedFaculties, setSelectedFaculties] = useState([]);
                           isLoading={
                             isLoading.state && isLoading.id == faculty._id
                           }
-                          bg="teal"
-                          color="white"
+                           colorScheme="red"
+                           variant="solid"
                           onClick={() =>
                             handleDelete(faculty._id, individualFaculty)
                           }

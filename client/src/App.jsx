@@ -252,7 +252,10 @@ function App() {
         <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
 
         {/* Same link */}
-        <Route path="timetable" element={<MasterView />} />
+        <Route path="/timetable">
+          <Route index element={<MasterView />} />
+          <Route path="faculty/:facultyname" element={<MasterView autofill />} />
+        </Route>
         {/* Same link */}
 
         <Route path="/tt/admin/view" element={<View />} />
