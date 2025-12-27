@@ -6,12 +6,15 @@ import {
   Text,
   VStack,
   Spinner,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
+  SimpleGrid,
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Heading,
+  Button,
+  Badge,
+  Flex,
   Link as ChakraLink,
 } from '@chakra-ui/react';
 import getEnvironment from '../getenvironment';
@@ -98,127 +101,142 @@ const AllocatedRolesPage = () => {
   }
   return (
     <ChakraProvider>
-      <Container maxW="container.lg">
+      <Container maxW="container.xl" py={8}>
         <Box p={4}>
           {isLoading ? (
             <Spinner />
           ) : (
-            <VStack spacing={4} align="center">
+            <VStack spacing={6} align="stretch">
               {user && (
-                <>
-                  <Text fontSize="xl">Welcome, {user.email}!</Text>
-                </>
+                <Box textAlign="center" mb={4}>
+                  <Heading size="lg" mb={2}>Welcome, {user.email}!</Heading>
+                  <Text color="gray.600" fontSize="md">Select a role to access your dashboard</Text>
+                </Box>
               )}
-              <Table variant="striped" colorScheme="teal" size="md">
-                <Thead>
-                  <Tr>
-                    <Th>S.No</Th>
-                    <Th>Role Allotted</Th>
-                    <Th>Action</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {allocatedRoles.map((role, index) => (
-                    <Tr key={index}>
-                      <Td>{index + 1}</Td>
-                      <Td>
-                        {role === 'ITTC' && (
-                          <Text>Institute Time Table Coordinator</Text>
-                        )}
-                        {role === 'DTTI' && (
-                          <Text>Department Time Table Coordinator</Text>
-                        )}
-                        {role === 'CM' && (
-                          <Text>Event Certificate Manager</Text>
-                        )}
-                        {role === 'admin' && <Text>XCEED Super User</Text>}
-                        {role === 'EO' && <Text>Event Organiser</Text>}
-                        {role === 'editor' && (
-                          <Text>Paper Review Management</Text>
-                        )}
-                        {role === 'PRM' && <Text>PRM</Text>}
-                        {role === 'FACULTY' && <Text>Faculty</Text>}
-                        {role === 'doctor' && (
-                          <Text>Diabetics Module Doctor</Text>
-                        )}
-                        {role === 'patient' && (
-                          <Text>Diabetics Module Patient</Text>
-                        )}
-                        {role === 'dm-admin' && (
-                          <Text>Diabetics Module Admin</Text>
-                        )}
-                      </Td>
-                      <Td>
-                        {role === 'ITTC' && (
-                          <ChakraLink href="/tt/admin" color="teal.500">
-                            ITTC Admin Page
-                          </ChakraLink>
-                        )}
-                        {role === 'DTTI' && (
-                          <ChakraLink href="/tt/dashboard" color="teal.500">
-                            Time Table Dashboard
-                          </ChakraLink>
-                        )}
-                        {role === 'CM' && (
-                          <ChakraLink href="/cm/dashboard" color="teal.500">
-                            Certificate Management Dashboard
-                          </ChakraLink>
-                        )}
-                        {role === 'admin' && (
-                          <ChakraLink href="/superadmin" color="teal.500">
-                            XCEED Admin Dashboard
-                          </ChakraLink>
-                        )}
-                        {role === 'EO' && (
-                          <ChakraLink href="/cf/dashboard" color="teal.500">
-                            Event Manager
-                          </ChakraLink>
-                        )}
-                        {role === 'editor' && (
-                          <ChakraLink href="/prm/dashboard" color="teal.500">
-                            Review Manager
-                          </ChakraLink>
-                        )}
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                {allocatedRoles.map((role, index) => {
+                  // Define role details
+                  let roleName = '';
+                  let roleLink = '';
+                  let roleDescription = '';
+                  let roleColor = 'teal';
 
-                        {role === 'FACULTY' && (
-                          <ChakraLink href="/prm/home" color="teal.500">
-                            Faculty
-                          </ChakraLink>
-                        )}
-                        {role === 'PRM' && (
-                          <ChakraLink href="/prm/home" color="teal.500">
-                            PRM Home
-                          </ChakraLink>
-                        )}
-                        {role === 'doctor' && (
-                          <ChakraLink
-                            href="/dm/doctor/dashboard"
-                            color="teal.500"
-                          >
-                            Doctor Dashboard
-                          </ChakraLink>
-                        )}
-                        {role === 'patient' && (
-                          <ChakraLink
-                            href="/dm/patient/dashboard"
-                            color="teal.500"
-                          >
-                            Patient Dashboard
-                          </ChakraLink>
-                        )}
-                        {role === 'dm-admin' && (
-                          <ChakraLink
-                            href="/dm/admin/dashboard"
-                            color="teal.500"
-                          >
-                            Diabetics Admin Dashboard
-                          </ChakraLink>
-                        )}
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
+                  switch(role) {
+                    case 'ITTC':
+                      roleName = 'Institute Time Table Coordinator';
+                      roleLink = '/tt/admin';
+                      roleDescription = 'Manage institute-wide timetables';
+                      roleColor = 'blue';
+                      break;
+                    case 'DTTI':
+                      roleName = 'Department Time Table Coordinator';
+                      roleLink = '/tt/dashboard';
+                      roleDescription = 'Manage department timetables';
+                      roleColor = 'blue';
+                      break;
+                    case 'CM':
+                      roleName = 'Event Certificate Manager';
+                      roleLink = '/cm/dashboard';
+                      roleDescription = 'Create and manage certificates';
+                      roleColor = 'blue';
+                      break;
+                    case 'admin':
+                      roleName = 'XCEED Super User';
+                      roleLink = '/superadmin';
+                      roleDescription = 'Full system administration';
+                      roleColor = 'blue';
+                      break;
+                    case 'EO':
+                      roleName = 'Event Organiser';
+                      roleLink = '/cf/dashboard';
+                      roleDescription = 'Organize and manage events';
+                      roleColor = 'blue';
+                      break;
+                    case 'editor':
+                      roleName = 'Paper Review Management';
+                      roleLink = '/prm/dashboard';
+                      roleDescription = 'Manage paper reviews';
+                      roleColor = 'blue';
+                      break;
+                    case 'PRM':
+                      roleName = 'PRM';
+                      roleLink = '/prm/home';
+                      roleDescription = 'Paper Review Management';
+                      roleColor = 'blue';
+                      break;
+                    case 'FACULTY':
+                      roleName = 'Faculty';
+                      roleLink = '/prm/home';
+                      roleDescription = 'Faculty dashboard';
+                      roleColor = 'blue';
+                      break;
+                    case 'doctor':
+                      roleName = 'Diabetics Module Doctor';
+                      roleLink = '/dm/doctor/dashboard';
+                      roleDescription = 'Patient management';
+                      roleColor = 'blue';
+                      break;
+                    case 'patient':
+                      roleName = 'Diabetics Module Patient';
+                      roleLink = '/dm/patient/dashboard';
+                      roleDescription = 'Track your health';
+                      roleColor = 'blue';
+                      break;
+                    case 'dm-admin':
+                      roleName = 'Diabetics Module Admin';
+                      roleLink = '/dm/admin/dashboard';
+                      roleDescription = 'Manage diabetics module';
+                      roleColor = 'blue';
+                      break;
+                    default:
+                      roleName = role;
+                      roleLink = '#';
+                      roleDescription = 'Access your dashboard';
+                      roleColor = 'blue';
+                  }
+
+                  return (
+                    <Card 
+                      key={index}
+                      variant="elevated"
+                      size="md"
+                      _hover={{
+                        transform: 'translateY(-4px)',
+                        shadow: 'xl',
+                        transition: 'all 0.3s ease',
+                      }}
+                      transition="all 0.2s ease"
+                    >
+                      <CardHeader pb={2}>
+                        <Flex justifyContent="space-between" alignItems="center">
+                          <Badge colorScheme={roleColor} fontSize="sm" px={3} py={1} borderRadius="full">
+                            Role #{index + 1}
+                          </Badge>
+                        </Flex>
+                      </CardHeader>
+                      <CardBody py={3}>
+                        <Heading size="md" mb={2} color={`${roleColor}.600`}>
+                          {roleName}
+                        </Heading>
+                        <Text color="gray.600" fontSize="sm">
+                          {roleDescription}
+                        </Text>
+                      </CardBody>
+                      <CardFooter pt={0}>
+                        <Button
+                          as={ChakraLink}
+                          href={roleLink}
+                          colorScheme={roleColor}
+                          width="full"
+                          _hover={{ textDecoration: 'none' }}
+                        >
+                          Access Dashboard
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
+              </SimpleGrid>
             </VStack>
           )}
         </Box>
