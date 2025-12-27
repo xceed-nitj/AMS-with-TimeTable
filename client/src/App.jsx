@@ -51,6 +51,7 @@ import TimetableMasterView from './timetableadmin/masterview';
 import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
+import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
@@ -258,7 +259,7 @@ function App() {
         <Route path="/tt/admin/instituteload" element={<InstituteLoad />} />
         <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} />
         <Route path="/tt/masterload" element={<MasterLoadDataTable />} />
-
+        <Route path="/tt/admin/clashes" element={<AdminClash />} />
         <Route
           path="/tt/:generatedLink/generatepdf/mergepdf"
           element={<MergePDFComponent />}
