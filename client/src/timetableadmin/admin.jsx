@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Button, VStack, Input, Heading, Table, Thead, Tbody, Tr, Th, Td, 
-  Container, Select, Box, Text, Flex, Link as ChakraLink, Tag 
+  Container, Select, Box, Text, Flex, Link as ChakraLink, Tag,
+  Card, CardBody, CardHeader, SimpleGrid, Icon, HStack, Divider,
+  useToast, IconButton, Badge, InputGroup, InputLeftElement, Stack,
+  useColorModeValue, Avatar, AvatarGroup, Tooltip, Progress
 } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
+import { FiEdit2, FiTrash2, FiSave, FiPlus, FiCalendar, FiCheck, FiStar, FiUsers, FiBook, FiHome, FiSettings, FiMessageSquare, FiAlertCircle, FiBarChart2, FiFileText } from 'react-icons/fi';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
 import {
@@ -16,15 +19,16 @@ const AdminPage = () => {
   const [formData, setFormData] = useState({ session: '' });
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingSessionValue, setEditingSessionValue] = useState('');
-  
-  // These two work together: sessions is the list of strings, 
-  // currentSessionName is the specific string that gets the tag.
   const [sessions, setSessions] = useState([]); 
   const [currentSessionName, setCurrentSessionName] = useState(""); 
-  
   const [selectedSession, setSelectedSession] = useState("");
   const [sessionsWithTT, setSessionsWithTT] = useState([]);
   const apiUrl = getEnvironment();
+  const toast = useToast();
+
+  const bgGradient = useColorModeValue('linear(to-br, blue.50, purple.50, pink.50)', 'gray.900');
+  const cardBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'gray.800');
+  const borderColor = useColorModeValue('gray.300', 'gray.700');
 
   useEffect(() => {
     fetchSessions();
@@ -41,7 +45,7 @@ const AdminPage = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setSessions(data); // data is ["2025-2026", "2024-2025"]
+        setSessions(data);
       }
     } catch (error) {
       console.error("Error fetching sessions:", error);
@@ -55,8 +59,6 @@ const AdminPage = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // data.currentSession is a string like "2025-2026"
-        
         setCurrentSessionName(data.currentSession); 
       }
     } catch (error) {
@@ -66,7 +68,13 @@ const AdminPage = () => {
 
   const handleSetCurrentSession = async (session) => {
     if (!session) {
-      alert("Please select a session first.");
+      toast({
+        title: "⚠️ Please select a session",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+        position: "top"
+      });
       return;
     }
     try {
@@ -77,8 +85,15 @@ const AdminPage = () => {
         credentials: 'include',
       });
       if (response.ok) {
-        alert(`Session "${session}" is now the current session.`);
-        setCurrentSessionName(session); // Update the state so the tag moves immediately
+        toast({
+          title: "🎉 Success!",
+          description: `Session "${session}" is now active`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+          position: "top"
+        });
+        setCurrentSessionName(session);
       }
     } catch (error) {
       console.error('Error setting current session:', error.message);
@@ -95,14 +110,30 @@ const AdminPage = () => {
       });
       if (response.ok) {
         setSessions(prev => prev.filter(item => item !== session));
+        toast({
+          title: "🗑️ Session deleted",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+          position: "top"
+        });
       }
     } catch (error) {
       console.error('Error deleting:', error.message);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    if (!formData.session.trim()) {
+      toast({
+        title: "⚠️ Please enter a session name",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+        position: "top"
+      });
+      return;
+    }
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
         method: 'POST',
@@ -113,6 +144,13 @@ const AdminPage = () => {
       if (response.ok) {
         await fetchSessions();
         setFormData({ session: '' });
+        toast({
+          title: "✨ Session created!",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+          position: "top"
+        });
       }
     } catch (error) {
       console.error('Error creating:', error.message);
@@ -134,11 +172,17 @@ const AdminPage = () => {
       });
       if (response.ok) {
         setSessions(prev => prev.map(item => item === editingSessionId ? editingSessionValue : item));
-        // If we renamed the current session, update the tag state too
         if (editingSessionId === currentSessionName) {
           setCurrentSessionName(editingSessionValue);
         }
         setEditingSessionId(null);
+        toast({
+          title: "💾 Session updated",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+          position: "top"
+        });
       }
     } catch (error) {
       console.error('Error editing:', error.message);
@@ -157,107 +201,646 @@ const AdminPage = () => {
     }
   };
 
+  const navigationItems = [
+    { path: "/tt/mastersem", label: "Master Semester", icon: FiBook, gradient: "linear(to-br, blue.600, blue.800)", textColor: "white" },
+    { path: "/tt/masterfaculty", label: "Master Faculty", icon: FiUsers, gradient: "linear(to-br, green.600, teal.800)", textColor: "white" },
+    { path: "/tt/masterroom", label: "Master Room", icon: FiHome, gradient: "linear(to-br, orange.600, red.700)", textColor: "white" },
+    { path: "/tt/masterdelete", label: "Delete Records", icon: FiTrash2, gradient: "linear(to-br, red.600, pink.800)", textColor: "white" },
+    { path: "/tt/allotment", label: "Room Allotment", icon: FiFileText, gradient: "linear(to-br, purple.600, purple.800)", textColor: "white" },
+    { path: "/tt/admin/adminview", label: "Edit Timetable", icon: FiEdit2, gradient: "linear(to-br, gray.600, gray.800)", textColor: "white" },
+    { path: "/tt/admin/clashes", label: "View Clashes", icon: FiAlertCircle, gradient: "linear(to-br, orange.500, orange.700)", textColor: "white" },
+    { path: "/tt/viewinstituteload", label: "Department Load", icon: FiBarChart2, gradient: "linear(to-br, pink.600, pink.800)", textColor: "white" },
+    { path: "/tt/messages", label: "Messages", icon: FiMessageSquare, gradient: "linear(to-br, cyan.600, blue.800)", textColor: "white" }
+  ];
+
   return (
-    <VStack spacing={4} align="stretch">
-      <Container maxW="5xl">
-        <Header title="Timetable Admin Page" />
-        
-        <Flex wrap="wrap" justify="center" gap={4} mt={4}>
-          {[
-            { path: "/tt/mastersem", label: "Master Sem", bg: "blue.500" },
-            { path: "/tt/masterfaculty", label: "Master Faculty", bg: "green.500" },
-            { path: "/tt/masterroom", label: "Master Room", bg: "orange.500" },
-            { path: "/tt/masterdelete", label: "Admin Delete Page", bg: "red.500" },
-            { path: "/tt/allotment", label: "Room Allotment", bg: "purple.500" },
-            { path: "/tt/admin/adminview", label: "Edit Any Department Timetable", bg: "gray.500" },
-            // { path: "/tt/admin/instituteload", label: "Calculate Departwise Load", bg: "gray.700" },
-             { path: "/tt/admin/clashes", label: "View All Dept Clashes", bg: "cyan.600" },
-            { path: "/tt/viewinstituteload", label: "View Departwise Load", bg: "pink.500" },
-            { path: "/tt/messages" , label:"Messages", bg:"yellow.400" }
-          ].map(({ path, label, bg }) => (
-            <ChakraLink as={Link} to={path} key={path} bg={bg} color="white" px={4} py={2} minW="180px" textAlign="center" borderRadius="md" _hover={{ bg: "gray.600" }}>
-              {label}
-            </ChakraLink>
-          ))}
-        </Flex>
+    <Box bgGradient={bgGradient} minH="100vh" pb={16}>
+      {/* Hero Section */}
+      <Box 
+        bgGradient="linear(to-r, purple.600, blue.600, teal.500)"
+        pt={8}
+        pb={20}
+        position="relative"
+        overflow="hidden"
+      >
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          opacity="0.1"
+          bgImage="radial-gradient(circle, white 1px, transparent 1px)"
+          bgSize="30px 30px"
+        />
+        <Container maxW="7xl" position="relative">
+          <VStack spacing={3} align="start">
+            <Badge colorScheme="whiteAlpha" fontSize="sm" px={3} py={1} borderRadius="full">
+              Admin Dashboard
+            </Badge>
+            <Heading size="2xl" color="white" fontWeight="bold">
+              Timetable Management Center
+            </Heading>
+            <Text color="whiteAlpha.900" fontSize="lg" maxW="2xl">
+              Manage academic sessions, configure timetables, and oversee all scheduling operations from one place.
+            </Text>
+          </VStack>
+        </Container>
+      </Box>
 
-        <Heading textAlign="center" mt={6} mb={4}>Create New Session</Heading>
-        <form onSubmit={handleSubmit}>
-          <Flex gap={2}>
-            <Input
-              type="text"
-              name="session"
-              value={formData.session}
-              onChange={(e) => setFormData({ session: e.target.value })}
-              placeholder="Enter New Session"
-            />
-            <Button type="submit" colorScheme="teal">Create Session</Button>
-          </Flex>
-        </form>
+      <Container maxW="7xl" mt={-12} position="relative" zIndex={1}>
+        {/* Quick Actions Navigation */}
+        <Box 
+          bg={cardBg}
+          borderRadius="2xl"
+          shadow="2xl"
+          p={8}
+          mb={8}
+          border="1px"
+          borderColor={borderColor}
+        >
+          <HStack justify="space-between" mb={6}>
+            <VStack align="start" spacing={1}>
+              <Heading size="lg" bgGradient="linear(to-r, purple.600, blue.600)" bgClip="text">
+                Quick Actions
+              </Heading>
+              <Text color="gray.600" fontSize="sm">Access key management features</Text>
+            </VStack>
+            <Badge colorScheme="purple" fontSize="md" px={3} py={2} borderRadius="lg">
+              {navigationItems.length} Tools
+            </Badge>
+          </HStack>
 
-        <Table variant="striped" mt={8}>
-          <Thead>
-            <Tr>
-              <Th>Session</Th>
-              <Th>Edit</Th>
-              <Th>Delete</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {sessions.map((session, index) => (
-              <Tr key={index}>
-                <Td>
-                  <Flex align="center" gap={2}>
-                    {editingSessionId === session ? (
-                      <Input value={editingSessionValue} onChange={(e) => setEditingSessionValue(e.target.value)} />
-                    ) : (
-                      <Text fontWeight={session.trim() === currentSessionName.trim() ? "bold" : "normal"}>
-                        {session}
-                      </Text>
-                    )}
-                    {/* The "Current" tag appears if the session string matches currentSessionName */}
-                    {session.trim() === currentSessionName.trim() && (
-                      <Tag size="sm" colorScheme="green" variant="solid" borderRadius="full">
-                        current
-                      </Tag>
-                    )}
-                  </Flex>
-                </Td>
-                <Td>
-                  {editingSessionId === session ? (
-                    <Button onClick={handleSave}>Save</Button>
-                  ) : (
-                    <CustomTealButton onClick={() => handleEdit(session)}>Edit</CustomTealButton>
-                  )}
-                </Td>
-                <Td>
-                  <CustomDeleteButton onClick={() => handleDelete(session)}>Delete</CustomDeleteButton>
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </Container>
+          {/* Centralized Data Entry */}
+          <VStack align="stretch" spacing={6} mb={6}>
+            <Heading size="md" color="gray.700">Centralized Data Entry</Heading>
+            <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
+              {navigationItems.slice(0, 3).map(({ path, label, icon, gradient, textColor }) => (
+                <Box
+                  key={path}
+                  as="a"
+                  href={path}
+                  bgGradient={gradient}
+                  p={6}
+                  borderRadius="xl"
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  cursor="pointer"
+                  position="relative"
+                  overflow="hidden"
+                  border="2px solid"
+                  borderColor="whiteAlpha.300"
+                  shadow="lg"
+                  _hover={{ 
+                    transform: 'translateY(-8px) scale(1.02)',
+                    shadow: '2xl',
+                    borderColor: 'whiteAlpha.500',
+                  }}
+                  _before={{
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bg: 'blackAlpha.100',
+                    opacity: 0,
+                    transition: 'opacity 0.3s',
+                  }}
+                  _hover_before={{
+                    opacity: 1,
+                  }}
+                >
+                  <VStack spacing={3} position="relative" zIndex={1}>
+                    <Box
+                      bg="whiteAlpha.400"
+                      p={3}
+                      borderRadius="lg"
+                      backdropFilter="blur(10px)"
+                      border="2px solid"
+                      borderColor="whiteAlpha.500"
+                      shadow="md"
+                    >
+                      <Icon as={icon} boxSize={6} color={textColor} />
+                    </Box>
+                    <Text 
+                      color={textColor}
+                      fontWeight="bold" 
+                      fontSize="md"
+                      textAlign="center"
+                      lineHeight="1.4"
+                      textShadow="0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)"
+                    >
+                      {label}
+                    </Text>
+                  </VStack>
+                </Box>
+              ))}
+            </SimpleGrid>
+          </VStack>
 
-      <Container maxW="5xl">
-        <Heading size="md" mt={10}>Mark a Session as Current</Heading>
-        <Flex mt={4} gap={4} align="center">
-          <Select
-            placeholder="Select a session"
-            value={selectedSession}
-            onChange={(e) => setSelectedSession(e.target.value)}
-            width="300px"
+          {/* Centralized Room Allotment */}
+          <VStack align="stretch" spacing={6} mb={6}>
+            <Heading size="md" color="gray.700">Centralized Room Allotment</Heading>
+            <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
+              {navigationItems.slice(4, 5).map(({ path, label, icon, gradient, textColor }) => (
+                <Box
+                  key={path}
+                  as="a"
+                  href={path}
+                  bgGradient={gradient}
+                  p={6}
+                  borderRadius="xl"
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  cursor="pointer"
+                  position="relative"
+                  overflow="hidden"
+                  border="2px solid"
+                  borderColor="whiteAlpha.300"
+                  shadow="lg"
+                  _hover={{ 
+                    transform: 'translateY(-8px) scale(1.02)',
+                    shadow: '2xl',
+                    borderColor: 'whiteAlpha.500',
+                  }}
+                  _before={{
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bg: 'blackAlpha.100',
+                    opacity: 0,
+                    transition: 'opacity 0.3s',
+                  }}
+                  _hover_before={{
+                    opacity: 1,
+                  }}
+                >
+                  <VStack spacing={3} position="relative" zIndex={1}>
+                    <Box
+                      bg="whiteAlpha.400"
+                      p={3}
+                      borderRadius="lg"
+                      backdropFilter="blur(10px)"
+                      border="2px solid"
+                      borderColor="whiteAlpha.500"
+                      shadow="md"
+                    >
+                      <Icon as={icon} boxSize={6} color={textColor} />
+                    </Box>
+                    <Text 
+                      color={textColor}
+                      fontWeight="bold" 
+                      fontSize="md"
+                      textAlign="center"
+                      lineHeight="1.4"
+                      textShadow="0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)"
+                    >
+                      {label}
+                    </Text>
+                  </VStack>
+                </Box>
+              ))}
+            </SimpleGrid>
+          </VStack>
+
+          {/* Timetable Modifications */}
+          <VStack align="stretch" spacing={6} mb={6}>
+            <Heading size="md" color="gray.700">Timetable Modifications</Heading>
+            <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={4}>
+              {[navigationItems[3], ...navigationItems.slice(5, 8)].map(({ path, label, icon, gradient, textColor }) => (
+                <Box
+                  key={path}
+                  as="a"
+                  href={path}
+                  bgGradient={gradient}
+                  p={6}
+                  borderRadius="xl"
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  cursor="pointer"
+                  position="relative"
+                  overflow="hidden"
+                  border="2px solid"
+                  borderColor="whiteAlpha.300"
+                  shadow="lg"
+                  _hover={{ 
+                    transform: 'translateY(-8px) scale(1.02)',
+                    shadow: '2xl',
+                    borderColor: 'whiteAlpha.500',
+                  }}
+                  _before={{
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bg: 'blackAlpha.100',
+                    opacity: 0,
+                    transition: 'opacity 0.3s',
+                  }}
+                  _hover_before={{
+                    opacity: 1,
+                  }}
+                >
+                  <VStack spacing={3} position="relative" zIndex={1}>
+                    <Box
+                      bg="whiteAlpha.400"
+                      p={3}
+                      borderRadius="lg"
+                      backdropFilter="blur(10px)"
+                      border="2px solid"
+                      borderColor="whiteAlpha.500"
+                      shadow="md"
+                    >
+                      <Icon as={icon} boxSize={6} color={textColor} />
+                    </Box>
+                    <Text 
+                      color={textColor}
+                      fontWeight="bold" 
+                      fontSize="md"
+                      textAlign="center"
+                      lineHeight="1.4"
+                      textShadow="0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)"
+                    >
+                      {label}
+                    </Text>
+                  </VStack>
+                </Box>
+              ))}
+            </SimpleGrid>
+          </VStack>
+
+          {/* Others */}
+          <VStack align="stretch" spacing={6}>
+            <Heading size="md" color="gray.700">Others</Heading>
+            <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
+              {navigationItems.slice(8).map(({ path, label, icon, gradient, textColor }) => (
+                <Box
+                  key={path}
+                  as="a"
+                  href={path}
+                  bgGradient={gradient}
+                  p={6}
+                  borderRadius="xl"
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  cursor="pointer"
+                  position="relative"
+                  overflow="hidden"
+                  border="2px solid"
+                  borderColor="whiteAlpha.300"
+                  shadow="lg"
+                  _hover={{ 
+                    transform: 'translateY(-8px) scale(1.02)',
+                    shadow: '2xl',
+                    borderColor: 'whiteAlpha.500',
+                  }}
+                  _before={{
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bg: 'blackAlpha.100',
+                    opacity: 0,
+                    transition: 'opacity 0.3s',
+                  }}
+                  _hover_before={{
+                    opacity: 1,
+                  }}
+                >
+                  <VStack spacing={3} position="relative" zIndex={1}>
+                    <Box
+                      bg="whiteAlpha.400"
+                      p={3}
+                      borderRadius="lg"
+                      backdropFilter="blur(10px)"
+                      border="2px solid"
+                      borderColor="whiteAlpha.500"
+                      shadow="md"
+                    >
+                      <Icon as={icon} boxSize={6} color={textColor} />
+                    </Box>
+                    <Text 
+                      color={textColor}
+                      fontWeight="bold" 
+                      fontSize="md"
+                      textAlign="center"
+                      lineHeight="1.4"
+                      textShadow="0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)"
+                    >
+                      {label}
+                    </Text>
+                  </VStack>
+                </Box>
+              ))}
+            </SimpleGrid>
+          </VStack>
+        </Box>
+
+        {/* Session Management Grid */}
+        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} mb={8}>
+          {/* Create New Session */}
+          <Box
+            bg={cardBg}
+            borderRadius="2xl"
+            shadow="xl"
+            overflow="hidden"
+            border="1px"
+            borderColor={borderColor}
+            transition="all 0.3s"
+            _hover={{ shadow: '2xl' }}
           >
-            {sessionsWithTT.map((session, index) => (
-              <option key={index} value={session}>{session}</option>
-            ))}
-          </Select>
-          <Button colorScheme="teal" onClick={() => handleSetCurrentSession(selectedSession)}>
-            Mark as Current
-          </Button>
-        </Flex>
+            <Box 
+              bgGradient="linear(to-r, teal.400, green.400)"
+              p={6}
+              position="relative"
+              overflow="hidden"
+            >
+              <Box
+                position="absolute"
+                top="-20px"
+                right="-20px"
+                opacity="0.2"
+              >
+                <Icon as={FiPlus} boxSize={32} color="white" />
+              </Box>
+              <HStack spacing={3} position="relative">
+                <Box bg="whiteAlpha.300" p={2} borderRadius="lg">
+                  <Icon as={FiCalendar} boxSize={6} color="white" />
+                </Box>
+                <VStack align="start" spacing={0}>
+                  <Heading size="md" color="white">Create Session</Heading>
+                  <Text color="whiteAlpha.900" fontSize="sm">Add a new academic year</Text>
+                </VStack>
+              </HStack>
+            </Box>
+            
+            <Box p={6}>
+              <VStack spacing={4} align="stretch">
+                <InputGroup size="lg">
+                  <InputLeftElement pointerEvents="none">
+                    <Icon as={FiCalendar} color="gray.400" />
+                  </InputLeftElement>
+                  <Input
+                    value={formData.session}
+                    onChange={(e) => setFormData({ session: e.target.value })}
+                    placeholder="e.g., 2025-2026"
+                    bg="gray.50"
+                    border="2px"
+                    borderColor="gray.200"
+                    _hover={{ borderColor: 'teal.300' }}
+                    _focus={{ borderColor: 'teal.400', bg: 'white' }}
+                    fontSize="md"
+                  />
+                </InputGroup>
+                <Button
+                  onClick={handleSubmit}
+                  size="lg"
+                  bgGradient="linear(to-r, teal.400, green.400)"
+                  color="white"
+                  leftIcon={<Icon as={FiPlus} />}
+                  _hover={{ bgGradient: "linear(to-r, teal.500, green.500)", transform: 'translateY(-2px)', shadow: 'lg' }}
+                  transition="all 0.3s"
+                  fontWeight="bold"
+                >
+                  Create New Session
+                </Button>
+              </VStack>
+            </Box>
+          </Box>
+
+          {/* Set Current Session */}
+          <Box
+            bg={cardBg}
+            borderRadius="2xl"
+            shadow="xl"
+            overflow="hidden"
+            border="1px"
+            borderColor={borderColor}
+            transition="all 0.3s"
+            _hover={{ shadow: '2xl' }}
+          >
+            <Box 
+              bgGradient="linear(to-r, blue.400, purple.500)"
+              p={6}
+              position="relative"
+              overflow="hidden"
+            >
+              <Box
+                position="absolute"
+                top="-20px"
+                right="-20px"
+                opacity="0.2"
+              >
+                <Icon as={FiStar} boxSize={32} color="white" />
+              </Box>
+              <HStack spacing={3} position="relative">
+                <Box bg="whiteAlpha.300" p={2} borderRadius="lg">
+                  <Icon as={FiCheck} boxSize={6} color="white" />
+                </Box>
+                <VStack align="start" spacing={0}>
+                  <Heading size="md" color="white">Set Current Session</Heading>
+                  <Text color="whiteAlpha.900" fontSize="sm">Mark the active academic year</Text>
+                </VStack>
+              </HStack>
+            </Box>
+            
+            <Box p={6}>
+              <VStack spacing={4} align="stretch">
+                {currentSessionName && (
+                  <HStack 
+                    bg="green.50" 
+                    p={3} 
+                    borderRadius="lg" 
+                    border="2px" 
+                    borderColor="green.200"
+                    justify="space-between"
+                  >
+                    <HStack>
+                      <Icon as={FiStar} color="green.600" />
+                      <Text fontWeight="bold" color="green.700">Current Session:</Text>
+                    </HStack>
+                    <Badge colorScheme="green" fontSize="md" px={3} py={1}>
+                      {currentSessionName}
+                    </Badge>
+                  </HStack>
+                )}
+                <Select
+                  value={selectedSession}
+                  onChange={(e) => setSelectedSession(e.target.value)}
+                  size="lg"
+                  placeholder="Select session..."
+                  bg="gray.50"
+                  border="2px"
+                  borderColor="gray.200"
+                  _hover={{ borderColor: 'blue.300' }}
+                  _focus={{ borderColor: 'blue.400', bg: 'white' }}
+                  icon={<Icon as={FiCalendar} />}
+                >
+                  {sessionsWithTT.map((session, index) => (
+                    <option key={index} value={session}>{session}</option>
+                  ))}
+                </Select>
+                <Button
+                  onClick={() => handleSetCurrentSession(selectedSession)}
+                  size="lg"
+                  bgGradient="linear(to-r, blue.400, purple.500)"
+                  color="white"
+                  leftIcon={<Icon as={FiCheck} />}
+                  _hover={{ bgGradient: "linear(to-r, blue.500, purple.600)", transform: 'translateY(-2px)', shadow: 'lg' }}
+                  transition="all 0.3s"
+                  fontWeight="bold"
+                >
+                  Mark as Current
+                </Button>
+              </VStack>
+            </Box>
+          </Box>
+        </SimpleGrid>
+
+        {/* Sessions List */}
+        <Box
+          bg={cardBg}
+          borderRadius="2xl"
+          shadow="xl"
+          overflow="hidden"
+          border="1px"
+          borderColor={borderColor}
+        >
+          <Box 
+            bgGradient="linear(to-r, gray.700, gray.800)"
+            p={6}
+          >
+            <HStack justify="space-between">
+              <HStack spacing={3}>
+                <Box bg="whiteAlpha.200" p={2} borderRadius="lg">
+                  <Icon as={FiSettings} boxSize={5} color="white" />
+                </Box>
+                <VStack align="start" spacing={0}>
+                  <Heading size="md" color="white">All Sessions</Heading>
+                  <Text color="whiteAlpha.800" fontSize="sm">{sessions.length} total sessions</Text>
+                </VStack>
+              </HStack>
+              {currentSessionName && (
+                <Badge colorScheme="green" fontSize="sm" px={3} py={2} borderRadius="lg">
+                  Active: {currentSessionName}
+                </Badge>
+              )}
+            </HStack>
+          </Box>
+
+          <Box overflowX="auto">
+            <Table variant="simple" size="md">
+              <Thead bg="gray.50">
+                <Tr>
+                  <Th fontSize="xs" textTransform="uppercase" color="gray.600" py={4}>
+                    Session Details
+                  </Th>
+                  <Th fontSize="xs" textTransform="uppercase" color="gray.600" textAlign="right" py={4}>
+                    Actions
+                  </Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {sessions.map((session, index) => {
+                  const isCurrent = session.trim() === currentSessionName.trim();
+                  return (
+                    <Tr 
+                      key={index} 
+                      _hover={{ bg: 'gray.50' }}
+                      transition="all 0.2s"
+                    >
+                      <Td py={5}>
+                        {editingSessionId === session ? (
+                          <Input 
+                            value={editingSessionValue} 
+                            onChange={(e) => setEditingSessionValue(e.target.value)}
+                            size="md"
+                            autoFocus
+                            bg="blue.50"
+                            border="2px"
+                            borderColor="blue.300"
+                          />
+                        ) : (
+                          <HStack spacing={4}>
+                            <Box
+                              bg={isCurrent ? 'green.100' : 'gray.100'}
+                              p={3}
+                              borderRadius="lg"
+                            >
+                              <Icon 
+                                as={isCurrent ? FiStar : FiCalendar} 
+                                color={isCurrent ? 'green.600' : 'gray.600'} 
+                                boxSize={5}
+                              />
+                            </Box>
+                            <VStack align="start" spacing={1}>
+                              <Text 
+                                fontSize="lg"
+                                fontWeight={isCurrent ? "bold" : "semibold"}
+                                color={isCurrent ? "green.700" : "gray.800"}
+                              >
+                                {session}
+                              </Text>
+                              {isCurrent && (
+                                <Badge colorScheme="green" fontSize="xs" borderRadius="full">
+                                  ✓ Currently Active
+                                </Badge>
+                              )}
+                            </VStack>
+                          </HStack>
+                        )}
+                      </Td>
+                      <Td py={5}>
+                        <HStack spacing={2} justify="flex-end">
+                          {editingSessionId === session ? (
+                            <Button
+                              size="sm"
+                              colorScheme="green"
+                              leftIcon={<Icon as={FiSave} />}
+                              onClick={handleSave}
+                              shadow="sm"
+                            >
+                              Save
+                            </Button>
+                          ) : (
+                            <>
+                              <Tooltip label="Edit session" placement="top">
+                                <IconButton
+                                  icon={<Icon as={FiEdit2} />}
+                                  size="sm"
+                                  colorScheme="blue"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(session)}
+                                  _hover={{ bg: 'blue.50' }}
+                                />
+                              </Tooltip>
+                              <Tooltip label="Delete session" placement="top">
+                                <IconButton
+                                  icon={<Icon as={FiTrash2} />}
+                                  size="sm"
+                                  colorScheme="red"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(session)}
+                                  _hover={{ bg: 'red.50' }}
+                                />
+                              </Tooltip>
+                            </>
+                          )}
+                        </HStack>
+                      </Td>
+                    </Tr>
+                  );
+                })}
+              </Tbody>
+            </Table>
+          </Box>
+        </Box>
       </Container>
-    </VStack>
+    </Box>
   );
 };
 
