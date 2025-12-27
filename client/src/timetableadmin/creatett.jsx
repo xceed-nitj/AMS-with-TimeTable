@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import getEnvironment from "../getenvironment";
 import { Container } from "@chakra-ui/layout";
-import { FormControl, FormLabel, Heading, Input, Select ,useDisclosure} from '@chakra-ui/react';
-import {CustomTh, CustomLink,CustomBlueButton} from '../styles/customStyles'
+import { FormControl, FormLabel, Heading, Input, Select, useDisclosure } from '@chakra-ui/react';
+import { CustomTh, CustomLink, CustomBlueButton } from '../styles/customStyles'
 import {
   Table,
   TableContainer,
@@ -24,7 +24,7 @@ import {
   MenuGroup,
   MenuDivider,
   IconButton,
-  
+
   Modal,
   ModalOverlay,
   ModalContent,
@@ -54,9 +54,9 @@ function CreateTimetable() {
   const [departments, setDepartments] = useState([]);
   const [messages, setMessages] = useState([]);
   const [currUser, setCurrUser] = useState(null);
-  const [unReadCount,setUnreadCount] = useState(0);
+  const [unReadCount, setUnreadCount] = useState(0);
 
-  
+
   const [selectedMessage, setSelectedMessage] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -79,7 +79,7 @@ function CreateTimetable() {
   //       console.log("Fetched messages data:", data); // Log the fetched data
   //       setMessages(data.data.messages || []);
   //       setCurrUser(data.user);
-        
+
   //       console.log("Fetched messages:", messages); // Log the fetched messages
   //     } else {
   //       console.error("Failed to fetch messages");
@@ -88,46 +88,46 @@ function CreateTimetable() {
   //     console.error("Error fetching messages:", error);
   //   }
   // };
-const fetchMessages = async () => {
-  try {
-    const res = await fetch(
-      `${apiUrl}/timetablemodule/message/myMessages`,
-      { credentials: "include" }
-    );
-    if (!res.ok) throw new Error("Failed to fetch messages");
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch(
+        `${apiUrl}/timetablemodule/message/myMessages`,
+        { credentials: "include" }
+      );
+      if (!res.ok) throw new Error("Failed to fetch messages");
 
-    const json = await res.json();
-    const msgs = Array.isArray(json.data.messages) ? json.data.messages : [];
-    const user = json.user || {};
+      const json = await res.json();
+      const msgs = Array.isArray(json.data.messages) ? json.data.messages : [];
+      const user = json.user || {};
 
-   
-    const unread = msgs.filter(m => {
-      if (!Array.isArray(m.readBy) || m.readBy.length === 0) {
-        // nobody has read it yet
-        return true;
-      }
-      
-      const hasRead = m.readBy.some(entry => entry.user === user._id);
-      return !hasRead;
-    }).length;
 
-    setMessages(msgs);
-    setCurrUser(user);
-    setUnreadCount(unread);
+      const unread = msgs.filter(m => {
+        if (!Array.isArray(m.readBy) || m.readBy.length === 0) {
+          // nobody has read it yet
+          return true;
+        }
 
-    console.log("Fetched", msgs.length, "messages for user", user._id);
-    console.log("Computed unread count:", unread);
-  } catch (err) {
-    console.error("Error in fetchMessages:", err);
-  }
-};
+        const hasRead = m.readBy.some(entry => entry.user === user._id);
+        return !hasRead;
+      }).length;
+
+      setMessages(msgs);
+      setCurrUser(user);
+      setUnreadCount(unread);
+
+      console.log("Fetched", msgs.length, "messages for user", user._id);
+      console.log("Computed unread count:", unread);
+    } catch (err) {
+      console.error("Error in fetchMessages:", err);
+    }
+  };
 
 
 
   useEffect(() => {
     fetchMessages();
   }, []);
-  
+
   // useEffect(() => {
   //   if (!currUser?._id) return;
   //   const userId = currUser?._id;
@@ -152,13 +152,13 @@ const fetchMessages = async () => {
             headers: {
               "Content-Type": "application/json",
             },
-          credentials: 'include',
+            credentials: 'include',
           }
         );
         if (response.ok) {
           const data = await response.json();
           setSessions(data);
-          
+
         } else {
           console.error("Failed to fetch sessions");
         }
@@ -191,7 +191,7 @@ const fetchMessages = async () => {
     fetchDepartments();
   }, [apiUrl]);
 
- 
+
 
   const fetchTimetables = async () => {
     try {
@@ -202,16 +202,38 @@ const fetchMessages = async () => {
         },
         credentials: "include",
       });
-      if (response.ok) {
-        const data = await response.json();
-        setTable(data);
-      } else {
-        console.error("Failed to fetch timetables");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch timetables");
       }
+
+      const data = await response.json();
+
+
+      const sortedData = Array.isArray(data)
+        ? data.sort((a, b) => {
+
+          if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          }
+
+
+          if (a.session && b.session) {
+            const yearA = parseInt(a.session.split("-")[0]);
+            const yearB = parseInt(b.session.split("-")[0]);
+            return yearB - yearA;
+          }
+
+          return 0;
+        })
+        : [];
+
+      setTable(sortedData);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching timetables:", error);
     }
   };
+
 
   useEffect(() => {
     fetchTimetables();
@@ -250,19 +272,19 @@ const fetchMessages = async () => {
   const urlParts = currentUrl.split("/");
   const domainName = urlParts[2];
 
-  
+
   // console.log("unReadCount",unReadCount);
 
   return (
     <Container maxW='5xl'>
-      
-       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 
-       <Heading as="h1" size="xl" mt="6" mb="6">
-        Create Time Table
-      </Heading>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 
-       
+        <Heading as="h1" size="xl" mt="6" mb="6">
+          Create Time Table
+        </Heading>
+
+
         {/* <Menu>
           
           <MenuButton
@@ -289,29 +311,29 @@ const fetchMessages = async () => {
         {/* <Button colorScheme="teal" onClick={() => navigate("/tt/viewmessages")}>View Messages</Button> */}
 
         <Box position="relative" display="inline-block">
-  <Button colorScheme="teal" onClick={() => navigate("/tt/viewmessages")}>
-    View Messages
-  </Button>
-  {unReadCount > 0 && (
-    <Box
-      position="absolute"
-      top="-1"
-      right="-1"
-      bg="red.500"
-      color="white"
-      borderRadius="full"
-      px={2}
-      fontSize="xs"
-    >
-      {unReadCount}
-    </Box>
-  )}
-</Box>
+          <Button colorScheme="teal" onClick={() => navigate("/tt/viewmessages")}>
+            View Messages
+          </Button>
+          {unReadCount > 0 && (
+            <Box
+              position="absolute"
+              top="-1"
+              right="-1"
+              bg="red.500"
+              color="white"
+              borderRadius="full"
+              px={2}
+              fontSize="xs"
+            >
+              {unReadCount}
+            </Box>
+          )}
+        </Box>
 
-      
 
-      {/* Modal for selected message */}
-      {/* <Modal  isOpen={isOpen} onClose={onClose} isCentered size={"xl"} >
+
+        {/* Modal for selected message */}
+        {/* <Modal  isOpen={isOpen} onClose={onClose} isCentered size={"xl"} >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{selectedMessage?.title}</ModalHeader>
@@ -322,57 +344,57 @@ const fetchMessages = async () => {
         </ModalContent>
       </Modal> */}
 
-      
-       
-       
-       </div>
+
+
+
+      </div>
 
 
       <FormControl isRequired mb='3' >
-      <FormLabel >Name of the Time Table Coordinator :</FormLabel>
-          <Input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            placeholder="Name"
-            mb='2.5'
-          />
+        <FormLabel >Name of the Time Table Coordinator :</FormLabel>
+        <Input
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleInputChange}
+          placeholder="Name"
+          mb='2.5'
+        />
 
-          <FormLabel>Department:</FormLabel>
-          <Select name="dept" value={formData.dept} onChange={handleInputChange} mb='2.5'>
-            <option value="">Select a Department</option>
-            {departments.map((department, index) => (
-              <option key={index} value={department}>
-                {department}
-              </option>
-            ))}
-          </Select>
+        <FormLabel>Department:</FormLabel>
+        <Select name="dept" value={formData.dept} onChange={handleInputChange} mb='2.5'>
+          <option value="">Select a Department</option>
+          {departments.map((department, index) => (
+            <option key={index} value={department}>
+              {department}
+            </option>
+          ))}
+        </Select>
 
-          <FormLabel>Session:</FormLabel>
-          <Select
-            name="session"
-            value={formData.session}
-            onChange={handleInputChange}
-          >
-            <option value="">Select a Session</option>
-            {sessions.map((session, index) => (
-              <option key={index} value={session}>
-                {session}
-              </option>
-            ))}
-          </Select>
-          <CustomBlueButton type="submit" ml='0' width='200px' onClick={handleSubmit}>Submit</CustomBlueButton>
-      
+        <FormLabel>Session:</FormLabel>
+        <Select
+          name="session"
+          value={formData.session}
+          onChange={handleInputChange}
+        >
+          <option value="">Select a Session</option>
+          {sessions.map((session, index) => (
+            <option key={index} value={session}>
+              {session}
+            </option>
+          ))}
+        </Select>
+        <CustomBlueButton type="submit" ml='0' width='200px' onClick={handleSubmit}>Submit</CustomBlueButton>
+
       </FormControl>
 
 
       <TableContainer>
         <p>Total Entries: {table.length}</p>
         <Table
-        variant='striped'
-        size="md" 
-        mt="1"
+          variant='striped'
+          size="md"
+          mt="1"
         >
           <Thead>
             <Tr>
@@ -389,12 +411,12 @@ const fetchMessages = async () => {
                 <Td><Center>{timetable.session}</Center></Td>
                 <Td><Center>{timetable.dept}</Center></Td>
                 <Td><Center>
-                <CustomLink
-                href={`http://${domainName}/tt/${timetable.code}`}
-                target="_blank" // Optional: If you want to open the link in a new tab
-              >
-                {timetable.code}
-              </CustomLink></Center>
+                  <CustomLink
+                    href={`http://${domainName}/tt/${timetable.code}`}
+                    target="_blank" // Optional: If you want to open the link in a new tab
+                  >
+                    {timetable.code}
+                  </CustomLink></Center>
                 </Td>
               </Tr>
             ))}

@@ -627,7 +627,6 @@ const HomeConf = () => {
         if (!currentURL.includes("/cf/" + IdConf + "/home")) {
             navigate("/cf/" + IdConf + "/home")
         }
-
         setLoading(true);
         axios.get(`${apiUrl}/conferencemodule/home/conf/${IdConf}`, {
             withCredentials: true
@@ -838,7 +837,7 @@ const HomeConf = () => {
                                             )}
 
                                             
-                                        <FormControl isRequired={true} mb='3' >
+                                        <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >You Tube Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -851,7 +850,7 @@ const HomeConf = () => {
                                             </FormControl>
                                             
                                             
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Instagram Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -862,7 +861,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >FaceBook Link:</FormLabel>
                                                 <Input
                                                     type="text"
@@ -874,7 +873,7 @@ const HomeConf = () => {
                                                 />
                                             </FormControl>
 
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Twitter Link:</FormLabel>
                                                 <Input
                                                     type="text"
@@ -885,7 +884,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Logo:</FormLabel>
                                                 <Input
                                                     type="text"
@@ -896,7 +895,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Short Name of Conference :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -907,7 +906,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Abstract Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -918,7 +917,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Registration Link :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -929,7 +928,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Flyer Link of Conference :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -940,7 +939,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Brochure Link of Conference :</FormLabel>
                                                 <Input
                                                     type="text"
@@ -951,7 +950,7 @@ const HomeConf = () => {
                                                     mb='2.5'
                                                 />
                                             </FormControl>
-                                            <FormControl isRequired={true} mb='3' >
+                                            <FormControl isRequired={false} mb='3' >
                                                 <FormLabel >Poster Link :</FormLabel>
                                                 <Input
                                                     type="text"
