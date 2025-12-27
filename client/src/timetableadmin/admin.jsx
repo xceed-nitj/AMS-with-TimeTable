@@ -170,6 +170,11 @@ const AdminPage = () => {
             { path: "/tt/masterdelete", label: "Admin Delete Page", bg: "red.500" },
             { path: "/tt/allotment", label: "Room Allotment", bg: "purple.500" },
             { path: "/tt/admin/adminview", label: "Edit Any Department Timetable", bg: "gray.500" },
+<<<<<<< HEAD
+            // { path: "/tt/admin/instituteload", label: "Calculate Departwise Load", bg: "gray.700" },
+             { path: "/tt/admin/clashes", label: "View All Dept Clashes", bg: "cyan.600" },
+=======
+>>>>>>> main
             { path: "/tt/viewinstituteload", label: "View Departwise Load", bg: "pink.500" },
             { path: "/tt/messages" , label:"Messages", bg:"yellow.400" }
           ].map(({ path, label, bg }) => (
