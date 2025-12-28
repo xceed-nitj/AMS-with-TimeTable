@@ -18,13 +18,13 @@ const mailSender = require("../../mailsender");
 dotenv.config();
 
 exports.register = async (req, res, next) => {
-  const { email, password,roles } = req.body;
+  const { email, password, roles } = req.body;
   console.log(req);
 
-  const existingUser = await User.findOne({email:email})
-  if(existingUser!==null){
-    if(existingUser.email.includes(email)){
-      return res.status(400).json({message: "User already exists, use forgot password to reset your password"})
+  const existingUser = await User.findOne({ email: email })
+  if (existingUser !== null) {
+    if (existingUser.email.includes(email)) {
+      return res.status(400).json({ message: "User already exists, use forgot password to reset your password" })
     }
   }
 
@@ -46,8 +46,8 @@ exports.register = async (req, res, next) => {
           name: email,
           email: email,
           password: hash,
-          role:roles,
-          isEmailVerified:false,
+          role: roles,
+          isEmailVerified: false,
           isFirstLogin: false,
         });
 
@@ -88,9 +88,9 @@ exports.register = async (req, res, next) => {
 };
 
 //verifying otp entered
-exports.verification = async(req,res)=>{
+exports.verification = async (req, res) => {
   try {
-    const {email,otp} = req.body;
+    const { email, otp } = req.body;
     const validOTP = await OTP.findOne({ email, otp });
     console.log(validOTP);
     if (!validOTP) {
@@ -100,13 +100,13 @@ exports.verification = async(req,res)=>{
       });
     }
 
-    await OTP.deleteOne({ email, otp }); 
+    await OTP.deleteOne({ email, otp });
     const update = {
       $set: { isEmailVerified: true }
     };
     const user = await User.findOneAndUpdate(
-      {email: email}, 
-      update, 
+      { email: email },
+      update,
       { returnOriginal: false }
     )
     res.status(200).json({
@@ -210,7 +210,7 @@ exports.update = async (req, res, next) => {
 
 
     const newUser = await User.findOneAndUpdate(
-      {email: email},
+      { email: email },
       updatebody,
       { returnOriginal: false },
     )
@@ -256,7 +256,7 @@ const sendOTP = async (email) => {
     const renderedHTML = ejs.render(otpBody, otpInfo);
 
     // Add await here
-    await mailSender(email, "Sign Up verification", renderedHTML);
+    await mailSender(email, "Password reset OTP", renderedHTML);
     return {
       success: true,
       message: "OTP sent successfully",
@@ -270,7 +270,7 @@ const sendOTP = async (email) => {
   }
 };
 
-exports.otp = async (req,res) => {
+exports.otp = async (req, res) => {
   const email = req.body.email;
   const otp = await sendOTP(email);
   res.status(201).json({

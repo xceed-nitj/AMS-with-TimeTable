@@ -160,8 +160,10 @@ const ConferencePage = () => {
                             </Tr>
                         </Thead>
                         <Tbody>
-                            {data.length > 0 ? (data.map((item) => (
-                                <Tr key={item._id}>
+                            {data.length > 0 ? (data
+                                .sort((a, b) => b._id.localeCompare(a._id))
+                                .map((item) => (
+                                    <Tr key={item._id}>
                                     <Td><Center>{item.name}</Center></Td>
                                     <Td><Center>{item.email}</Center></Td>
                                     <Td><Center>
