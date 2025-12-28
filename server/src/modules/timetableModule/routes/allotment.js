@@ -13,15 +13,18 @@ allotmentRouter.post("/", async (req, res) => {
     }
   });
 
+  // FIXED: Remove the duplicate response
   allotmentRouter.get("/", async (req, res) => {
     try {
-      const list=await allotmentController.getAllotment(req,res) ;
-      console.log(list)
-      res.status(200).json(list);
+      await allotmentController.getAllotment(req, res);
+      // REMOVED: res.status(200).json(list); 
+      // The controller already sends the response
     } catch (e) {
-      res
-        .status(e?.status || 500)
-        .json({ error: e?.message || "Internal Server Error" });
+      if (!res.headersSent) {
+        res
+          .status(e?.status || 500)
+          .json({ error: e?.message || "Internal Server Error" });
+      }
     }
   });
 
@@ -74,6 +77,7 @@ allotmentRouter.post("/", async (req, res) => {
           .json({ error: e?.message || "Internal Server Error" });
       }
     });
+
  allotmentRouter.post("/set-current-session", async (req, res) => {
   await allotmentController.setCurrentSession(req, res);
 });
