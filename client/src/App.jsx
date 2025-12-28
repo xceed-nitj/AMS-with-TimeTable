@@ -171,6 +171,7 @@ import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 
 // import fileUpload
 import FileUpload from './fileUpload/fileUploads.jsx'
+import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
 
 
 //import faculty rankings
@@ -287,6 +288,8 @@ function App() {
           path="/cm/userimages/signatures/:userId"
           element={<UserSignatures />}
         />
+        <Route path="/payment-portal" element={<PaymentPortal/>} />
+
 
         {/* Review management routes*/}
         <Route path="/prm/login" element={<ReviewLogin />} />
