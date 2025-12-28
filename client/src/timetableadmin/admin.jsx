@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Button, VStack, Input, Heading, Table, Thead, Tbody, Tr, Th, Td, 
-  Container, Select, Box, Text, Flex, Link as ChakraLink, Tag,
-  Card, CardBody, CardHeader, SimpleGrid, Icon, HStack, Divider,
-  useToast, IconButton, Badge, InputGroup, InputLeftElement, Stack,
-  useColorModeValue, Avatar, AvatarGroup, Tooltip, Progress
+  Container, Select, Box, Text, Flex, Tag, Card, CardBody, CardHeader, 
+  SimpleGrid, Icon, HStack, useToast, IconButton, Badge, InputGroup, 
+  InputLeftElement, Tooltip, useColorModeValue
 } from '@chakra-ui/react';
 import { FiEdit2, FiTrash2, FiSave, FiPlus, FiCalendar, FiCheck, FiStar, FiUsers, FiBook, FiHome, FiSettings, FiMessageSquare, FiAlertCircle, FiBarChart2, FiFileText } from 'react-icons/fi';
 import getEnvironment from '../getenvironment';
@@ -22,7 +21,7 @@ const AdminPage = () => {
   const [sessions, setSessions] = useState([]); 
   const [currentSessionName, setCurrentSessionName] = useState(""); 
   const [selectedSession, setSelectedSession] = useState("");
-  const [sessionsWithTT, setSessionsWithTT] = useState([]);
+
   const apiUrl = getEnvironment();
   const toast = useToast();
 
@@ -32,7 +31,6 @@ const AdminPage = () => {
 
   useEffect(() => {
     fetchSessions();
-    fetchSessionsWithTT();
     fetchCurrentStatus();
   }, []);
 
@@ -54,12 +52,13 @@ const AdminPage = () => {
 
   const fetchCurrentStatus = async () => {
     try {
-      const response = await fetch(`${apiUrl}/timetablemodule/allotment/current-status`, { 
+      // CHANGED: Using query parameter approach
+      const response = await fetch(`${apiUrl}/timetablemodule/allotment?action=current-status`, { 
         credentials: 'include' 
       });
       if (response.ok) {
         const data = await response.json();
-        setCurrentSessionName(data.currentSession); 
+        setCurrentSessionName(data.currentSession || ""); 
       }
     } catch (error) {
       console.error("Error fetching status:", error);
@@ -69,7 +68,7 @@ const AdminPage = () => {
   const handleSetCurrentSession = async (session) => {
     if (!session) {
       toast({
-        title: "⚠️ Please select a session",
+        title: "Please select a session first.",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -78,7 +77,8 @@ const AdminPage = () => {
       return;
     }
     try {
-      const response = await fetch(`${apiUrl}/timetablemodule/allotment/set-current-session`, {
+      // CHANGED: Using query parameter approach with POST to base endpoint
+      const response = await fetch(`${apiUrl}/timetablemodule/allotment?action=set-current-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session }),
@@ -86,17 +86,35 @@ const AdminPage = () => {
       });
       if (response.ok) {
         toast({
-          title: "🎉 Success!",
-          description: `Session "${session}" is now active`,
+          title: `Session "${session}" is now the current session.`,
           status: "success",
           duration: 3000,
           isClosable: true,
           position: "top"
         });
         setCurrentSessionName(session);
+        setSelectedSession("");
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Failed to set current session",
+          description: errorData.error || "Please ensure TimeTable schema has 'currentSession' field",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position: "top"
+        });
       }
     } catch (error) {
       console.error('Error setting current session:', error.message);
+      toast({
+        title: "Error setting current session",
+        description: "Please check if TimeTable model has 'currentSession' field",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "top"
+      });
     }
   };
 
@@ -104,14 +122,21 @@ const AdminPage = () => {
     try {
       const confirmed = window.confirm(`Are you sure you want to delete session "${session}"?`);
       if (!confirmed) return;
+      
       const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${session}`, {
         method: 'DELETE',
         credentials: 'include',
       });
+      
       if (response.ok) {
         setSessions(prev => prev.filter(item => item !== session));
+        
+        if (session.trim() === currentSessionName.trim()) {
+          setCurrentSessionName("");
+        }
+        
         toast({
-          title: "🗑️ Session deleted",
+          title: "Session deleted",
           status: "success",
           duration: 3000,
           isClosable: true,
@@ -126,7 +151,7 @@ const AdminPage = () => {
   const handleSubmit = async () => {
     if (!formData.session.trim()) {
       toast({
-        title: "⚠️ Please enter a session name",
+        title: "Please enter a session name",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -145,7 +170,7 @@ const AdminPage = () => {
         await fetchSessions();
         setFormData({ session: '' });
         toast({
-          title: "✨ Session created!",
+          title: "Session created successfully",
           status: "success",
           duration: 3000,
           isClosable: true,
@@ -163,6 +188,17 @@ const AdminPage = () => {
   };
 
   const handleSave = async () => {
+    if (!editingSessionValue.trim()) {
+      toast({
+        title: "Session name cannot be empty",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+        position: "top"
+      });
+      return;
+    }
+
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/allotment/session/${editingSessionId}`, {
         method: 'PUT',
@@ -170,14 +206,19 @@ const AdminPage = () => {
         body: JSON.stringify({ session: editingSessionValue }),
         credentials: 'include',
       });
+      
       if (response.ok) {
         setSessions(prev => prev.map(item => item === editingSessionId ? editingSessionValue : item));
-        if (editingSessionId === currentSessionName) {
+        
+        if (editingSessionId.trim() === currentSessionName.trim()) {
           setCurrentSessionName(editingSessionValue);
         }
+        
         setEditingSessionId(null);
+        setEditingSessionValue('');
+        
         toast({
-          title: "💾 Session updated",
+          title: "Session updated",
           status: "success",
           duration: 3000,
           isClosable: true,
@@ -189,33 +230,22 @@ const AdminPage = () => {
     }
   };
 
-  const fetchSessionsWithTT = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/timetablemodule/timetable/sess/allsessanddept`, { credentials: "include" });
-      if (response.ok) {
-        const data = await response.json();
-        setSessionsWithTT(data.uniqueSessions.map(s => s.session));
-      }
-    } catch (error) {
-      console.error("Error fetching TT sessions:", error);
-    }
-  };
+
 
   const navigationItems = [
-    { path: "/tt/mastersem", label: "Master Semester", icon: FiBook, gradient: "linear(to-br, blue.600, blue.800)", textColor: "white" },
-    { path: "/tt/masterfaculty", label: "Master Faculty", icon: FiUsers, gradient: "linear(to-br, green.600, teal.800)", textColor: "white" },
-    { path: "/tt/masterroom", label: "Master Room", icon: FiHome, gradient: "linear(to-br, orange.600, red.700)", textColor: "white" },
-    { path: "/tt/masterdelete", label: "Delete Records", icon: FiTrash2, gradient: "linear(to-br, red.600, pink.800)", textColor: "white" },
-    { path: "/tt/allotment", label: "Room Allotment", icon: FiFileText, gradient: "linear(to-br, purple.600, purple.800)", textColor: "white" },
-    { path: "/tt/admin/adminview", label: "Edit Timetable", icon: FiEdit2, gradient: "linear(to-br, gray.600, gray.800)", textColor: "white" },
-    { path: "/tt/admin/clashes", label: "View Clashes", icon: FiAlertCircle, gradient: "linear(to-br, orange.500, orange.700)", textColor: "white" },
-    { path: "/tt/viewinstituteload", label: "Department Load", icon: FiBarChart2, gradient: "linear(to-br, pink.600, pink.800)", textColor: "white" },
-    { path: "/tt/messages", label: "Messages", icon: FiMessageSquare, gradient: "linear(to-br, cyan.600, blue.800)", textColor: "white" }
+    { path: "/tt/mastersem", label: "Master Semester", icon: FiBook, gradient: "linear(to-br, blue.600, blue.800)" },
+    { path: "/tt/masterfaculty", label: "Master Faculty", icon: FiUsers, gradient: "linear(to-br, green.600, teal.800)" },
+    { path: "/tt/masterroom", label: "Master Room", icon: FiHome, gradient: "linear(to-br, orange.600, red.700)" },
+    { path: "/tt/masterdelete", label: "Delete Records", icon: FiTrash2, gradient: "linear(to-br, red.600, pink.800)" },
+    { path: "/tt/allotment", label: "Room Allotment", icon: FiFileText, gradient: "linear(to-br, purple.600, purple.800)" },
+    { path: "/tt/admin/adminview", label: "Edit Timetable", icon: FiEdit2, gradient: "linear(to-br, gray.600, gray.800)" },
+    { path: "/tt/admin/clashes", label: "View Clashes", icon: FiAlertCircle, gradient: "linear(to-br, orange.500, orange.700)" },
+    { path: "/tt/viewinstituteload", label: "Department Load", icon: FiBarChart2, gradient: "linear(to-br, pink.600, pink.800)" },
+    { path: "/tt/messages", label: "Messages", icon: FiMessageSquare, gradient: "linear(to-br, cyan.600, blue.800)" }
   ];
 
   return (
     <Box bgGradient={bgGradient} minH="100vh" pb={16}>
-      {/* Hero Section */}
       <Box 
         bgGradient="linear(to-r, purple.600, blue.600, teal.500)"
         pt={8}
@@ -249,7 +279,6 @@ const AdminPage = () => {
       </Box>
 
       <Container maxW="7xl" mt={-12} position="relative" zIndex={1}>
-        {/* Quick Actions Navigation */}
         <Box 
           bg={cardBg}
           borderRadius="2xl"
@@ -271,11 +300,10 @@ const AdminPage = () => {
             </Badge>
           </HStack>
 
-          {/* Centralized Data Entry */}
           <VStack align="stretch" spacing={6} mb={6}>
             <Heading size="md" color="gray.700">Centralized Data Entry</Heading>
             <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
-              {navigationItems.slice(0, 3).map(({ path, label, icon, gradient, textColor }) => (
+              {navigationItems.slice(0, 3).map(({ path, label, icon, gradient }) => (
                 <Box
                   key={path}
                   as="a"
@@ -283,53 +311,18 @@ const AdminPage = () => {
                   bgGradient={gradient}
                   p={6}
                   borderRadius="xl"
-                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  transition="all 0.3s"
                   cursor="pointer"
-                  position="relative"
-                  overflow="hidden"
                   border="2px solid"
                   borderColor="whiteAlpha.300"
                   shadow="lg"
-                  _hover={{ 
-                    transform: 'translateY(-8px) scale(1.02)',
-                    shadow: '2xl',
-                    borderColor: 'whiteAlpha.500',
-                  }}
-                  _before={{
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    bg: 'blackAlpha.100',
-                    opacity: 0,
-                    transition: 'opacity 0.3s',
-                  }}
-                  _hover_before={{
-                    opacity: 1,
-                  }}
+                  _hover={{ transform: 'translateY(-8px)', shadow: '2xl' }}
                 >
-                  <VStack spacing={3} position="relative" zIndex={1}>
-                    <Box
-                      bg="whiteAlpha.400"
-                      p={3}
-                      borderRadius="lg"
-                      backdropFilter="blur(10px)"
-                      border="2px solid"
-                      borderColor="whiteAlpha.500"
-                      shadow="md"
-                    >
-                      <Icon as={icon} boxSize={6} color={textColor} />
+                  <VStack spacing={3}>
+                    <Box bg="whiteAlpha.400" p={3} borderRadius="lg" border="2px solid" borderColor="whiteAlpha.500">
+                      <Icon as={icon} boxSize={6} color="white" />
                     </Box>
-                    <Text 
-                      color={textColor}
-                      fontWeight="bold" 
-                      fontSize="md"
-                      textAlign="center"
-                      lineHeight="1.4"
-                      textShadow="0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)"
-                    >
+                    <Text color="white" fontWeight="bold" fontSize="md" textAlign="center" textShadow="0 2px 10px rgba(0,0,0,0.6)">
                       {label}
                     </Text>
                   </VStack>
@@ -338,11 +331,10 @@ const AdminPage = () => {
             </SimpleGrid>
           </VStack>
 
-          {/* Centralized Room Allotment */}
           <VStack align="stretch" spacing={6} mb={6}>
             <Heading size="md" color="gray.700">Centralized Room Allotment</Heading>
             <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
-              {navigationItems.slice(4, 5).map(({ path, label, icon, gradient, textColor }) => (
+              {navigationItems.slice(4, 5).map(({ path, label, icon, gradient }) => (
                 <Box
                   key={path}
                   as="a"
@@ -350,53 +342,18 @@ const AdminPage = () => {
                   bgGradient={gradient}
                   p={6}
                   borderRadius="xl"
-                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  transition="all 0.3s"
                   cursor="pointer"
-                  position="relative"
-                  overflow="hidden"
                   border="2px solid"
                   borderColor="whiteAlpha.300"
                   shadow="lg"
-                  _hover={{ 
-                    transform: 'translateY(-8px) scale(1.02)',
-                    shadow: '2xl',
-                    borderColor: 'whiteAlpha.500',
-                  }}
-                  _before={{
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    bg: 'blackAlpha.100',
-                    opacity: 0,
-                    transition: 'opacity 0.3s',
-                  }}
-                  _hover_before={{
-                    opacity: 1,
-                  }}
+                  _hover={{ transform: 'translateY(-8px)', shadow: '2xl' }}
                 >
-                  <VStack spacing={3} position="relative" zIndex={1}>
-                    <Box
-                      bg="whiteAlpha.400"
-                      p={3}
-                      borderRadius="lg"
-                      backdropFilter="blur(10px)"
-                      border="2px solid"
-                      borderColor="whiteAlpha.500"
-                      shadow="md"
-                    >
-                      <Icon as={icon} boxSize={6} color={textColor} />
+                  <VStack spacing={3}>
+                    <Box bg="whiteAlpha.400" p={3} borderRadius="lg" border="2px solid" borderColor="whiteAlpha.500">
+                      <Icon as={icon} boxSize={6} color="white" />
                     </Box>
-                    <Text 
-                      color={textColor}
-                      fontWeight="bold" 
-                      fontSize="md"
-                      textAlign="center"
-                      lineHeight="1.4"
-                      textShadow="0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)"
-                    >
+                    <Text color="white" fontWeight="bold" fontSize="md" textAlign="center" textShadow="0 2px 10px rgba(0,0,0,0.6)">
                       {label}
                     </Text>
                   </VStack>
@@ -405,11 +362,10 @@ const AdminPage = () => {
             </SimpleGrid>
           </VStack>
 
-          {/* Timetable Modifications */}
           <VStack align="stretch" spacing={6} mb={6}>
             <Heading size="md" color="gray.700">Timetable Modifications</Heading>
             <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={4}>
-              {[navigationItems[3], ...navigationItems.slice(5, 8)].map(({ path, label, icon, gradient, textColor }) => (
+              {[navigationItems[3], ...navigationItems.slice(5, 8)].map(({ path, label, icon, gradient }) => (
                 <Box
                   key={path}
                   as="a"
@@ -417,53 +373,18 @@ const AdminPage = () => {
                   bgGradient={gradient}
                   p={6}
                   borderRadius="xl"
-                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  transition="all 0.3s"
                   cursor="pointer"
-                  position="relative"
-                  overflow="hidden"
                   border="2px solid"
                   borderColor="whiteAlpha.300"
                   shadow="lg"
-                  _hover={{ 
-                    transform: 'translateY(-8px) scale(1.02)',
-                    shadow: '2xl',
-                    borderColor: 'whiteAlpha.500',
-                  }}
-                  _before={{
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    bg: 'blackAlpha.100',
-                    opacity: 0,
-                    transition: 'opacity 0.3s',
-                  }}
-                  _hover_before={{
-                    opacity: 1,
-                  }}
+                  _hover={{ transform: 'translateY(-8px)', shadow: '2xl' }}
                 >
-                  <VStack spacing={3} position="relative" zIndex={1}>
-                    <Box
-                      bg="whiteAlpha.400"
-                      p={3}
-                      borderRadius="lg"
-                      backdropFilter="blur(10px)"
-                      border="2px solid"
-                      borderColor="whiteAlpha.500"
-                      shadow="md"
-                    >
-                      <Icon as={icon} boxSize={6} color={textColor} />
+                  <VStack spacing={3}>
+                    <Box bg="whiteAlpha.400" p={3} borderRadius="lg" border="2px solid" borderColor="whiteAlpha.500">
+                      <Icon as={icon} boxSize={6} color="white" />
                     </Box>
-                    <Text 
-                      color={textColor}
-                      fontWeight="bold" 
-                      fontSize="md"
-                      textAlign="center"
-                      lineHeight="1.4"
-                      textShadow="0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)"
-                    >
+                    <Text color="white" fontWeight="bold" fontSize="md" textAlign="center" textShadow="0 2px 10px rgba(0,0,0,0.6)">
                       {label}
                     </Text>
                   </VStack>
@@ -472,11 +393,10 @@ const AdminPage = () => {
             </SimpleGrid>
           </VStack>
 
-          {/* Others */}
           <VStack align="stretch" spacing={6}>
             <Heading size="md" color="gray.700">Others</Heading>
             <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
-              {navigationItems.slice(8).map(({ path, label, icon, gradient, textColor }) => (
+              {navigationItems.slice(8).map(({ path, label, icon, gradient }) => (
                 <Box
                   key={path}
                   as="a"
@@ -484,53 +404,18 @@ const AdminPage = () => {
                   bgGradient={gradient}
                   p={6}
                   borderRadius="xl"
-                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  transition="all 0.3s"
                   cursor="pointer"
-                  position="relative"
-                  overflow="hidden"
                   border="2px solid"
                   borderColor="whiteAlpha.300"
                   shadow="lg"
-                  _hover={{ 
-                    transform: 'translateY(-8px) scale(1.02)',
-                    shadow: '2xl',
-                    borderColor: 'whiteAlpha.500',
-                  }}
-                  _before={{
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    bg: 'blackAlpha.100',
-                    opacity: 0,
-                    transition: 'opacity 0.3s',
-                  }}
-                  _hover_before={{
-                    opacity: 1,
-                  }}
+                  _hover={{ transform: 'translateY(-8px)', shadow: '2xl' }}
                 >
-                  <VStack spacing={3} position="relative" zIndex={1}>
-                    <Box
-                      bg="whiteAlpha.400"
-                      p={3}
-                      borderRadius="lg"
-                      backdropFilter="blur(10px)"
-                      border="2px solid"
-                      borderColor="whiteAlpha.500"
-                      shadow="md"
-                    >
-                      <Icon as={icon} boxSize={6} color={textColor} />
+                  <VStack spacing={3}>
+                    <Box bg="whiteAlpha.400" p={3} borderRadius="lg" border="2px solid" borderColor="whiteAlpha.500">
+                      <Icon as={icon} boxSize={6} color="white" />
                     </Box>
-                    <Text 
-                      color={textColor}
-                      fontWeight="bold" 
-                      fontSize="md"
-                      textAlign="center"
-                      lineHeight="1.4"
-                      textShadow="0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(0,0,0,0.4)"
-                    >
+                    <Text color="white" fontWeight="bold" fontSize="md" textAlign="center" textShadow="0 2px 10px rgba(0,0,0,0.6)">
                       {label}
                     </Text>
                   </VStack>
@@ -540,34 +425,10 @@ const AdminPage = () => {
           </VStack>
         </Box>
 
-        {/* Session Management Grid */}
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} mb={8}>
-          {/* Create New Session */}
-          <Box
-            bg={cardBg}
-            borderRadius="2xl"
-            shadow="xl"
-            overflow="hidden"
-            border="1px"
-            borderColor={borderColor}
-            transition="all 0.3s"
-            _hover={{ shadow: '2xl' }}
-          >
-            <Box 
-              bgGradient="linear(to-r, teal.400, green.400)"
-              p={6}
-              position="relative"
-              overflow="hidden"
-            >
-              <Box
-                position="absolute"
-                top="-20px"
-                right="-20px"
-                opacity="0.2"
-              >
-                <Icon as={FiPlus} boxSize={32} color="white" />
-              </Box>
-              <HStack spacing={3} position="relative">
+          <Box bg={cardBg} borderRadius="2xl" shadow="xl" overflow="hidden" border="1px" borderColor={borderColor}>
+            <Box bgGradient="linear(to-r, teal.400, green.400)" p={6}>
+              <HStack spacing={3}>
                 <Box bg="whiteAlpha.300" p={2} borderRadius="lg">
                   <Icon as={FiCalendar} boxSize={6} color="white" />
                 </Box>
@@ -577,13 +438,10 @@ const AdminPage = () => {
                 </VStack>
               </HStack>
             </Box>
-            
             <Box p={6}>
               <VStack spacing={4} align="stretch">
                 <InputGroup size="lg">
-                  <InputLeftElement pointerEvents="none">
-                    <Icon as={FiCalendar} color="gray.400" />
-                  </InputLeftElement>
+                  <InputLeftElement><Icon as={FiCalendar} color="gray.400" /></InputLeftElement>
                   <Input
                     value={formData.session}
                     onChange={(e) => setFormData({ session: e.target.value })}
@@ -591,9 +449,6 @@ const AdminPage = () => {
                     bg="gray.50"
                     border="2px"
                     borderColor="gray.200"
-                    _hover={{ borderColor: 'teal.300' }}
-                    _focus={{ borderColor: 'teal.400', bg: 'white' }}
-                    fontSize="md"
                   />
                 </InputGroup>
                 <Button
@@ -602,9 +457,7 @@ const AdminPage = () => {
                   bgGradient="linear(to-r, teal.400, green.400)"
                   color="white"
                   leftIcon={<Icon as={FiPlus} />}
-                  _hover={{ bgGradient: "linear(to-r, teal.500, green.500)", transform: 'translateY(-2px)', shadow: 'lg' }}
-                  transition="all 0.3s"
-                  fontWeight="bold"
+                  _hover={{ bgGradient: "linear(to-r, teal.500, green.500)" }}
                 >
                   Create New Session
                 </Button>
@@ -612,32 +465,9 @@ const AdminPage = () => {
             </Box>
           </Box>
 
-          {/* Set Current Session */}
-          <Box
-            bg={cardBg}
-            borderRadius="2xl"
-            shadow="xl"
-            overflow="hidden"
-            border="1px"
-            borderColor={borderColor}
-            transition="all 0.3s"
-            _hover={{ shadow: '2xl' }}
-          >
-            <Box 
-              bgGradient="linear(to-r, blue.400, purple.500)"
-              p={6}
-              position="relative"
-              overflow="hidden"
-            >
-              <Box
-                position="absolute"
-                top="-20px"
-                right="-20px"
-                opacity="0.2"
-              >
-                <Icon as={FiStar} boxSize={32} color="white" />
-              </Box>
-              <HStack spacing={3} position="relative">
+          <Box bg={cardBg} borderRadius="2xl" shadow="xl" overflow="hidden" border="1px" borderColor={borderColor}>
+            <Box bgGradient="linear(to-r, blue.400, purple.500)" p={6}>
+              <HStack spacing={3}>
                 <Box bg="whiteAlpha.300" p={2} borderRadius="lg">
                   <Icon as={FiCheck} boxSize={6} color="white" />
                 </Box>
@@ -647,25 +477,15 @@ const AdminPage = () => {
                 </VStack>
               </HStack>
             </Box>
-            
             <Box p={6}>
               <VStack spacing={4} align="stretch">
                 {currentSessionName && (
-                  <HStack 
-                    bg="green.50" 
-                    p={3} 
-                    borderRadius="lg" 
-                    border="2px" 
-                    borderColor="green.200"
-                    justify="space-between"
-                  >
+                  <HStack bg="green.50" p={3} borderRadius="lg" border="2px" borderColor="green.200" justify="space-between">
                     <HStack>
                       <Icon as={FiStar} color="green.600" />
-                      <Text fontWeight="bold" color="green.700">Current Session:</Text>
+                      <Text fontWeight="bold" color="green.700">Current:</Text>
                     </HStack>
-                    <Badge colorScheme="green" fontSize="md" px={3} py={1}>
-                      {currentSessionName}
-                    </Badge>
+                    <Badge colorScheme="green" fontSize="md" px={3} py={1}>{currentSessionName}</Badge>
                   </HStack>
                 )}
                 <Select
@@ -676,11 +496,8 @@ const AdminPage = () => {
                   bg="gray.50"
                   border="2px"
                   borderColor="gray.200"
-                  _hover={{ borderColor: 'blue.300' }}
-                  _focus={{ borderColor: 'blue.400', bg: 'white' }}
-                  icon={<Icon as={FiCalendar} />}
                 >
-                  {sessionsWithTT.map((session, index) => (
+                  {sessions.map((session, index) => (
                     <option key={index} value={session}>{session}</option>
                   ))}
                 </Select>
@@ -690,9 +507,7 @@ const AdminPage = () => {
                   bgGradient="linear(to-r, blue.400, purple.500)"
                   color="white"
                   leftIcon={<Icon as={FiCheck} />}
-                  _hover={{ bgGradient: "linear(to-r, blue.500, purple.600)", transform: 'translateY(-2px)', shadow: 'lg' }}
-                  transition="all 0.3s"
-                  fontWeight="bold"
+                  _hover={{ bgGradient: "linear(to-r, blue.500, purple.600)" }}
                 >
                   Mark as Current
                 </Button>
@@ -701,19 +516,8 @@ const AdminPage = () => {
           </Box>
         </SimpleGrid>
 
-        {/* Sessions List */}
-        <Box
-          bg={cardBg}
-          borderRadius="2xl"
-          shadow="xl"
-          overflow="hidden"
-          border="1px"
-          borderColor={borderColor}
-        >
-          <Box 
-            bgGradient="linear(to-r, gray.700, gray.800)"
-            p={6}
-          >
+        <Box bg={cardBg} borderRadius="2xl" shadow="xl" overflow="hidden" border="1px" borderColor={borderColor}>
+          <Box bgGradient="linear(to-r, gray.700, gray.800)" p={6}>
             <HStack justify="space-between">
               <HStack spacing={3}>
                 <Box bg="whiteAlpha.200" p={2} borderRadius="lg">
@@ -724,68 +528,52 @@ const AdminPage = () => {
                   <Text color="whiteAlpha.800" fontSize="sm">{sessions.length} total sessions</Text>
                 </VStack>
               </HStack>
-              {currentSessionName && (
-                <Badge colorScheme="green" fontSize="sm" px={3} py={2} borderRadius="lg">
-                  Active: {currentSessionName}
-                </Badge>
-              )}
             </HStack>
           </Box>
 
           <Box overflowX="auto">
-            <Table variant="simple" size="md">
+            <Table variant="simple">
               <Thead bg="gray.50">
                 <Tr>
-                  <Th fontSize="xs" textTransform="uppercase" color="gray.600" py={4}>
-                    Session Details
-                  </Th>
-                  <Th fontSize="xs" textTransform="uppercase" color="gray.600" textAlign="right" py={4}>
-                    Actions
-                  </Th>
+                  <Th>Session Details</Th>
+                  <Th textAlign="right">Actions</Th>
                 </Tr>
               </Thead>
               <Tbody>
-                {sessions.map((session, index) => {
-                  const isCurrent = session.trim() === currentSessionName.trim();
-                  return (
-                    <Tr 
-                      key={index} 
-                      _hover={{ bg: 'gray.50' }}
-                      transition="all 0.2s"
-                    >
+                {sessions.length === 0 ? (
+                  <Tr>
+                    <Td colSpan={2} textAlign="center" py={8}>
+                      <Text color="gray.500">No sessions found. Create one to get started!</Text>
+                    </Td>
+                  </Tr>
+                ) : (
+                  sessions.map((session, index) => (
+                    <Tr key={index} _hover={{ bg: 'gray.50' }}>
                       <Td py={5}>
                         {editingSessionId === session ? (
                           <Input 
                             value={editingSessionValue} 
                             onChange={(e) => setEditingSessionValue(e.target.value)}
-                            size="md"
                             autoFocus
-                            bg="blue.50"
-                            border="2px"
-                            borderColor="blue.300"
                           />
                         ) : (
                           <HStack spacing={4}>
-                            <Box
-                              bg={isCurrent ? 'green.100' : 'gray.100'}
-                              p={3}
-                              borderRadius="lg"
-                            >
+                            <Box bg={session.trim() === currentSessionName.trim() ? 'green.100' : 'gray.100'} p={3} borderRadius="lg">
                               <Icon 
-                                as={isCurrent ? FiStar : FiCalendar} 
-                                color={isCurrent ? 'green.600' : 'gray.600'} 
+                                as={session.trim() === currentSessionName.trim() ? FiStar : FiCalendar} 
+                                color={session.trim() === currentSessionName.trim() ? 'green.600' : 'gray.600'} 
                                 boxSize={5}
                               />
                             </Box>
                             <VStack align="start" spacing={1}>
                               <Text 
                                 fontSize="lg"
-                                fontWeight={isCurrent ? "bold" : "semibold"}
-                                color={isCurrent ? "green.700" : "gray.800"}
+                                fontWeight={session.trim() === currentSessionName.trim() ? "bold" : "semibold"}
+                                color={session.trim() === currentSessionName.trim() ? "green.700" : "gray.800"}
                               >
                                 {session}
                               </Text>
-                              {isCurrent && (
+                              {session.trim() === currentSessionName.trim() && (
                                 <Badge colorScheme="green" fontSize="xs" borderRadius="full">
                                   ✓ Currently Active
                                 </Badge>
@@ -797,44 +585,32 @@ const AdminPage = () => {
                       <Td py={5}>
                         <HStack spacing={2} justify="flex-end">
                           {editingSessionId === session ? (
-                            <Button
-                              size="sm"
-                              colorScheme="green"
-                              leftIcon={<Icon as={FiSave} />}
-                              onClick={handleSave}
-                              shadow="sm"
-                            >
-                              Save
-                            </Button>
+                            <>
+                              <Button size="sm" colorScheme="green" leftIcon={<Icon as={FiSave} />} onClick={handleSave}>
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => {
+                                setEditingSessionId(null);
+                                setEditingSessionValue('');
+                              }}>
+                                Cancel
+                              </Button>
+                            </>
                           ) : (
                             <>
-                              <Tooltip label="Edit session" placement="top">
-                                <IconButton
-                                  icon={<Icon as={FiEdit2} />}
-                                  size="sm"
-                                  colorScheme="blue"
-                                  variant="ghost"
-                                  onClick={() => handleEdit(session)}
-                                  _hover={{ bg: 'blue.50' }}
-                                />
+                              <Tooltip label="Edit session">
+                                <IconButton icon={<Icon as={FiEdit2} />} size="sm" colorScheme="blue" variant="ghost" onClick={() => handleEdit(session)} />
                               </Tooltip>
-                              <Tooltip label="Delete session" placement="top">
-                                <IconButton
-                                  icon={<Icon as={FiTrash2} />}
-                                  size="sm"
-                                  colorScheme="red"
-                                  variant="ghost"
-                                  onClick={() => handleDelete(session)}
-                                  _hover={{ bg: 'red.50' }}
-                                />
+                              <Tooltip label="Delete session">
+                                <IconButton icon={<Icon as={FiTrash2} />} size="sm" colorScheme="red" variant="ghost" onClick={() => handleDelete(session)} />
                               </Tooltip>
                             </>
                           )}
                         </HStack>
                       </Td>
                     </Tr>
-                  );
-                })}
+                  ))
+                )}
               </Tbody>
             </Table>
           </Box>
