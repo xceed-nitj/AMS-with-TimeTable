@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import getEnvironment from "../../getenvironment";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import getEnvironment from '../../getenvironment';
 import {
   Container,
   Table,
@@ -14,9 +14,15 @@ import {
   Center,
   useToast,
 } from '@chakra-ui/react';
-import Header from "../../components/header";
-import { useDisclosure } from "@chakra-ui/hooks";
-import { CustomTh, CustomLink, CustomTealButton } from '../../styles/customStyles';
+import { Tooltip, IconButton, Text } from '@chakra-ui/react';
+import { FiEdit, FiUsers, FiLock } from 'react-icons/fi';
+import Header from '../../components/header';
+import { useDisclosure } from '@chakra-ui/hooks';
+import {
+  CustomTh,
+  CustomLink,
+  CustomTealButton,
+} from '../../styles/customStyles';
 
 function CMDashboard() {
   const navigate = useNavigate();
@@ -31,13 +37,15 @@ function CMDashboard() {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch(`${apiUrl}/certificatemodule/addevent/getevents`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      }
+      const response = await fetch(
+        `${apiUrl}/certificatemodule/addevent/getevents`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        }
       );
 
       if (response.ok) {
@@ -45,19 +53,24 @@ function CMDashboard() {
         setTable(data);
         try {
           for (let i = 0; i < data.length; i++) {
-            const response = await fetch(`${apiUrl}/certificatemodule/addevent/getCertificateCount/${data[i]._id}`, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              credentials: "include",
-            })
-            const {issuedCount,totalCount} = await response.json();
+            const response = await fetch(
+              `${apiUrl}/certificatemodule/addevent/getCertificateCount/${data[i]._id}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+              }
+            );
+            const { issuedCount, totalCount } = await response.json();
             data[i].totalCertificates = totalCount;
             data[i].certificatesIssued = issuedCount;
-            setTable(data)
+            setTable(data);
           }
-        } catch (error) { /* empty */ }
+        } catch (error) {
+          /* empty */
+        }
 
         if (data.length > 0) {
           const lastEventLocked = data[data.length - 1].lock;
@@ -71,42 +84,46 @@ function CMDashboard() {
           setAllEventsLocked(true);
         }
       } else {
-        console.error("Failed to fetch events");
+        console.error('Failed to fetch events');
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
   const lockEvent = async (id) => {
     try {
-      const confirmed = window.confirm('Sure? You wont be able to edit any content once locked!');
+      const confirmed = window.confirm(
+        'Sure? You wont be able to edit any content once locked!'
+      );
 
       if (!confirmed) {
         // If the user cancels, do nothing
         return;
       }
 
-      const response = await fetch(`${apiUrl}/certificatemodule/addevent/lock/${id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ lock: true }),
-      }
+      const response = await fetch(
+        `${apiUrl}/certificatemodule/addevent/lock/${id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ lock: true }),
+        }
       );
 
       if (response.ok) {
         // Find the index of the event to lock
-        const eventIndex = table.findIndex(event => event._id === id);
+        const eventIndex = table.findIndex((event) => event._id === id);
         if (eventIndex !== -1) {
           const updatedTable = [...table];
           updatedTable[eventIndex].lock = true;
           setTable(updatedTable);
 
           // Update the state for whether all events are locked
-          const allLocked = updatedTable.every(event => event.lock);
+          const allLocked = updatedTable.every((event) => event.lock);
           setAllEventsLocked(allLocked);
 
           toast({
@@ -150,18 +167,113 @@ function CMDashboard() {
   const domainName = urlParts[2];
 
   return (
+    // <Container maxW="7xl">
+    //   <Button
+    //     colorScheme="teal"
+    //     onClick={handleAddEvent}
+    //     mb={4}
+    //     isDisabled={!(table.length === 0 || areAllEventsLocked)} // Button is enabled when there are no events or all events are locked
+    //     float="right"
+    //   >
+    //     Add New Event
+    //   </Button>
+
+    //   <Header title="List of Events"></Header>
+
+    //   <TableContainer>
+    //     <Table variant="striped" size="md" mt="1">
+    //       <Thead>
+    //         <Tr>
+    //           <CustomTh>Event Name</CustomTh>
+    //           <CustomTh>Event Date</CustomTh>
+    //           <CustomTh>Edit certificate details</CustomTh>
+    //           <CustomTh>Edit participant details</CustomTh>
+    //           <CustomTh>Total Certificates</CustomTh>
+    //           <CustomTh>Certificates Issued</CustomTh>
+    //           <CustomTh>Lock Status</CustomTh>
+    //         </Tr>
+    //       </Thead>
+    //       <Tbody>
+    //         {table.map((event) => (
+    //           <Tr key={event._id}>
+    //             <Td>
+    //               <Center>{event.name}</Center>
+    //             </Td>
+    //             <Td>
+    //               <Center>
+    //                 {new Date(event.ExpiryDate).toLocaleDateString('en-GB')}
+    //               </Center>
+    //             </Td>
+    //             {!event.lock ? (
+    //               <Td>
+    //                 <Center>
+    //                   <CustomLink href={`http://${domainName}/cm/${event._id}`}>
+    //                     {event.name} Certificates
+    //                   </CustomLink>
+    //                 </Center>
+    //               </Td>
+    //             ) : (
+    //               <Td>
+    //                 <Center>Certificates Locked</Center>
+    //               </Td>
+    //             )}
+    //             <Td>
+    //               {!event.lock ? (
+    //                 <Center>
+    //                   <CustomLink
+    //                     href={`http://${domainName}/cm/${event._id}/addparticipant`}
+    //                   >
+    //                     {event.name} participants
+    //                   </CustomLink>
+    //                 </Center>
+    //               ) : (
+    //                 <Center>Participants Locked</Center>
+    //               )}
+    //             </Td>
+    //             <Td>
+    //               <Center>{event.totalCertificates}</Center>
+    //             </Td>
+    //             <Td>
+    //               <Center>{event.certificatesIssued}</Center>
+    //             </Td>
+    //             <Td>
+    //               <Center>
+    //                 {!event.lock ? (
+    //                   <CustomTealButton
+    //                     onClick={() => lockEvent(event._id)}
+    //                     disabled={isEventLocked}
+    //                   >
+    //                     Lock The Event
+    //                   </CustomTealButton>
+    //                 ) : (
+    //                   <span>
+    //                     Locked on{' '}
+    //                     {new Date(event.updated_at).toLocaleDateString('en-GB')}
+    //                   </span>
+    //                 )}
+    //               </Center>
+    //             </Td>
+    //           </Tr>
+    //         ))}
+    //       </Tbody>
+    //     </Table>
+    //   </TableContainer>
+    //   {loading && <p>Loading...</p>}
+    // </Container>
+
+    //CHANGED UI
     <Container maxW="7xl">
       <Button
         colorScheme="teal"
         onClick={handleAddEvent}
         mb={4}
-        isDisabled={!(table.length === 0 || areAllEventsLocked)} // Button is enabled when there are no events or all events are locked
+        isDisabled={!(table.length === 0 || areAllEventsLocked)}
         float="right"
       >
         Add New Event
       </Button>
 
-      <Header title="List of Events"></Header>
+      <Header title="List of Events" />
 
       <TableContainer>
         <Table variant="striped" size="md" mt="1">
@@ -169,70 +281,99 @@ function CMDashboard() {
             <Tr>
               <CustomTh>Event Name</CustomTh>
               <CustomTh>Event Date</CustomTh>
-              <CustomTh>Edit certificate details</CustomTh>
-              <CustomTh>Edit participant details</CustomTh>
-              <CustomTh>Total Certificates</CustomTh>
-              <CustomTh>Certificates Issued</CustomTh>
-              <CustomTh>Lock Status</CustomTh>
+              <CustomTh>Certificates</CustomTh>
+              <CustomTh>Participants</CustomTh>
+              <CustomTh>Total</CustomTh>
+              <CustomTh>Issued</CustomTh>
+              <CustomTh>Status</CustomTh>
             </Tr>
           </Thead>
+
           <Tbody>
             {table.map((event) => (
               <Tr key={event._id}>
                 <Td>
                   <Center>{event.name}</Center>
                 </Td>
+
                 <Td>
                   <Center>
                     {new Date(event.ExpiryDate).toLocaleDateString('en-GB')}
                   </Center>
                 </Td>
-                {!event.lock ? (
-                  <Td>
-                    <Center>
-                      <CustomLink href={`http://${domainName}/cm/${event._id}`}>
-                        {event.name} Certificates
-                      </CustomLink>
-                    </Center>
-                  </Td>
-                ) : (
-                  <Td>
-                    <Center>Certificates Locked</Center>
-                  </Td>
-                )}
+
+                {/* Certificates */}
                 <Td>
-                  {!event.lock ? (
-                    <Center>
-                      <CustomLink
-                        href={`http://${domainName}/cm/${event._id}/addparticipant`}
-                      >
-                        {event.name} participants
-                      </CustomLink>
-                    </Center>
-                  ) : (
-                    <Center>Participants Locked</Center>
-                  )}
+                  <Center>
+                    {!event.lock ? (
+                      <Tooltip label="Edit certificate details" hasArrow>
+                        <IconButton
+                          icon={<FiEdit />}
+                          variant="ghost"
+                          colorScheme="teal"
+                          size={'lg'}
+                          aria-label="Edit certificates"
+                          as="a"
+                          href={`http://${domainName}/cm/${event._id}`}
+                        />
+                      </Tooltip>
+                    ) : (
+                      <Text fontSize="sm" color="gray.500">
+                        Locked
+                      </Text>
+                    )}
+                  </Center>
                 </Td>
+
+                {/* Participants */}
+                <Td>
+                  <Center>
+                    {!event.lock ? (
+                      <Tooltip label="Edit participant details" hasArrow>
+                        <IconButton
+                          icon={<FiUsers />}
+                          variant="ghost"
+                          colorScheme="teal"
+                          aria-label="Edit participants"
+                          size={'lg'}
+                          as="a"
+                          href={`http://${domainName}/cm/${event._id}/addparticipant`}
+                        />
+                      </Tooltip>
+                    ) : (
+                      <Text fontSize="sm" color="gray.500">
+                        Locked
+                      </Text>
+                    )}
+                  </Center>
+                </Td>
+
                 <Td>
                   <Center>{event.totalCertificates}</Center>
                 </Td>
                 <Td>
                   <Center>{event.certificatesIssued}</Center>
                 </Td>
+
+                {/* Lock Status */}
                 <Td>
                   <Center>
                     {!event.lock ? (
-                      <CustomTealButton
-                        onClick={() => lockEvent(event._id)}
-                        disabled={isEventLocked}
-                      >
-                        Lock The Event
-                      </CustomTealButton>
+                      <Tooltip label="Lock this event" hasArrow>
+                        <IconButton
+                          icon={<FiLock />}
+                          colorScheme="red"
+                          variant="outline"
+                          aria-label="Lock event"
+                          onClick={() => lockEvent(event._id)}
+                          isDisabled={isEventLocked}
+                        />
+                      </Tooltip>
                     ) : (
-                      <span>
+                      <Text fontSize="sm" color="gray.600">
                         Locked on{' '}
                         {new Date(event.updated_at).toLocaleDateString('en-GB')}
-                      </span>
+                      </Text>
                     )}
                   </Center>
                 </Td>
@@ -241,6 +382,7 @@ function CMDashboard() {
           </Tbody>
         </Table>
       </TableContainer>
+
       {loading && <p>Loading...</p>}
     </Container>
   );
