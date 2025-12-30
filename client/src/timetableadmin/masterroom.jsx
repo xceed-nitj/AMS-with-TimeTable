@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
-import { DEPARTMENTS } from '../constants/departments';
 
 import { CustomTh, CustomLink, CustomBlueButton, CustomTealButton, CustomDeleteButton } from '../styles/customStyles';
 import { Box, Center, Container, FormControl, FormLabel, Input, Select, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
@@ -10,6 +9,7 @@ import Header from '../components/header';
 function MasterRoom() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [masterRooms, setMasterRooms] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [editedRoom, setEditedRoom] = useState({
     room: '',
     type: '',
@@ -25,6 +25,7 @@ function MasterRoom() {
 
   useEffect(() => {
     fetchMasterRooms();
+    fetchDepartments();
   }, []);
 
 
@@ -33,6 +34,26 @@ function MasterRoom() {
       .then((response) => response.json())
       .then((data) => setMasterRooms(data.reverse()))
       .catch((error) => console.error('Error:', error));
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data);
+      } else {
+        console.error('Failed to fetch departments');
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
   };
   
   const handleAddRoom = () => {
@@ -248,7 +269,7 @@ function MasterRoom() {
                 value={editedRoom.dept}
                 onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
               >
-                {DEPARTMENTS.map((dept) => (
+                {departments.map((dept) => (
                   <option key={dept} value={dept}>
                     {dept}
                   </option>
@@ -350,10 +371,11 @@ function MasterRoom() {
                   
                     {editRoomId === room._id ? (
                       <Select
+                        placeholder='Select department'
                         value={editedRoom.dept}
                         onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
                       >
-                        {DEPARTMENTS.map((dept) => (
+                        {departments.map((dept) => (
                           <option key={dept} value={dept}>
                             {dept}
                           </option>
