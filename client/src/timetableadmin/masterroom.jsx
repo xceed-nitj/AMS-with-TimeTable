@@ -3,12 +3,13 @@ import getEnvironment from '../getenvironment';
 import FileDownloadButton from '../filedownload/filedownload';
 
 import { CustomTh, CustomLink, CustomBlueButton, CustomTealButton, CustomDeleteButton } from '../styles/customStyles';
-import { Box, Center, Container, FormControl, FormLabel, Input, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
+import { Box, Center, Container, FormControl, FormLabel, Input, Select, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
 import Header from '../components/header';
 
 function MasterRoom() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [masterRooms, setMasterRooms] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [editedRoom, setEditedRoom] = useState({
     room: '',
     type: '',
@@ -16,7 +17,6 @@ function MasterRoom() {
     floor: '',
     dept: '',
     landMark: '',
-    imageUrl: '',
   });
   const [editRoomId, setEditRoomId] = useState(null);
   const [isAddRoomFormVisible, setIsAddRoomFormVisible] = useState(false);
@@ -25,6 +25,7 @@ function MasterRoom() {
 
   useEffect(() => {
     fetchMasterRooms();
+    fetchDepartments();
   }, []);
 
 
@@ -33,6 +34,26 @@ function MasterRoom() {
       .then((response) => response.json())
       .then((data) => setMasterRooms(data.reverse()))
       .catch((error) => console.error('Error:', error));
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data);
+      } else {
+        console.error('Failed to fetch departments');
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
   };
   
   const handleAddRoom = () => {
@@ -43,7 +64,6 @@ function MasterRoom() {
       floor: '',
       dept: '',
       landMark: '',
-      imageUrl: '',
     });
     setIsAddRoomFormVisible(true);
   };
@@ -54,7 +74,7 @@ function MasterRoom() {
 
   const handleSaveNewRoom = () => {
     // Check if required fields are filled
-    const requiredFields = ['room', 'type', 'building'];
+    const requiredFields = ['room', 'type', 'building', 'floor', 'dept', 'landMark'];
     const missingFields = requiredFields.filter((field) => !editedRoom[field]);
   
     if (missingFields.length > 0) {
@@ -126,7 +146,6 @@ function MasterRoom() {
               floor: '',
               dept: '',
               landMark: '',
-              imageUrl: '',
             });
           })
           .catch((error) => {
@@ -236,7 +255,7 @@ function MasterRoom() {
               />
             </Box>
             <Box  mt='3'>
-              <FormLabel>Floor:</FormLabel>
+              <FormLabel>Floor: <span>*</span></FormLabel>
               <Input
                 type='text'
                 value={editedRoom.floor}
@@ -244,27 +263,26 @@ function MasterRoom() {
               />
             </Box>
             <Box mt='3'>
-              <FormLabel>Department:</FormLabel>
-              <Input
-                type='text'
+              <FormLabel>Department: <span>*</span></FormLabel>
+              <Select
+                placeholder='Select department'
                 value={editedRoom.dept}
                 onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
-              />
+              >
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </Select>
             </Box>
             <Box mt='3'>
-              <FormLabel>Landmark:</FormLabel>
+              <FormLabel>Google Map Location: <span>*</span></FormLabel>
               <Input
                 type='text'
+                placeholder='Enter Google Maps URL'
                 value={editedRoom.landMark}
                 onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
-              />
-            </Box>
-            <Box mt='3'>
-              <FormLabel>Image URL:</FormLabel>
-              <Input
-                type='text'
-                value={editedRoom.imageUrl}
-                onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
               />
             </Box>
             <Box display='flex' justifyContent='space-between'>
@@ -290,8 +308,7 @@ function MasterRoom() {
               <Th><Center>Building</Center></Th>
               <Th><Center>Floor</Center></Th>
               <Th><Center>Department</Center></Th>
-              <Th><Center>Landmark</Center></Th>
-              <Th><Center>Image URL</Center></Th>
+              <Th><Center>Google Map Location</Center></Th>
               <Th><Center>Action</Center></Th>
             </Tr>
           </Thead>
@@ -353,11 +370,17 @@ function MasterRoom() {
                 <Td><Center>
                   
                     {editRoomId === room._id ? (
-                      <Input
-                        type='text'
+                      <Select
+                        placeholder='Select department'
                         value={editedRoom.dept}
                         onChange={(e) => setEditedRoom({ ...editedRoom, dept: e.target.value })}
-                      />
+                      >
+                        {departments.map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
+                      </Select>
                     ) : (
                       room.dept
                     )}
@@ -368,24 +391,12 @@ function MasterRoom() {
                     {editRoomId === room._id ? (
                       <Input
                         type='text'
+                        placeholder='Google Maps URL'
                         value={editedRoom.landMark}
                         onChange={(e) => setEditedRoom({ ...editedRoom, landMark: e.target.value })}
                       />
                     ) : (
                       room.landMark
-                    )}
-                </Center>
-                </Td>
-                <Td><Center>
-                  
-                    {editRoomId === room._id ? (
-                      <Input
-                        type='text'
-                        value={editedRoom.imageUrl}
-                        onChange={(e) => setEditedRoom({ ...editedRoom, imageUrl: e.target.value })}
-                      />
-                    ) : (
-                      room.imageUrl
                     )}
                 </Center>
                 </Td>
