@@ -51,6 +51,7 @@ import TimetableMasterView from './timetableadmin/masterview';
 import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
+import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
@@ -171,6 +172,7 @@ import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 
 // import fileUpload
 import FileUpload from './fileUpload/fileUploads.jsx'
+import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
 
 
 //import faculty rankings
@@ -261,7 +263,7 @@ function App() {
         <Route path="/tt/admin/instituteload" element={<InstituteLoad />} />
         <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} />
         <Route path="/tt/masterload" element={<MasterLoadDataTable />} />
-
+        <Route path="/tt/admin/clashes" element={<AdminClash />} />
         <Route
           path="/tt/:generatedLink/generatepdf/mergepdf"
           element={<MergePDFComponent />}
@@ -287,6 +289,8 @@ function App() {
           path="/cm/userimages/signatures/:userId"
           element={<UserSignatures />}
         />
+        <Route path="/payment-portal" element={<PaymentPortal/>} />
+
 
         {/* Review management routes*/}
         <Route path="/prm/login" element={<ReviewLogin />} />
