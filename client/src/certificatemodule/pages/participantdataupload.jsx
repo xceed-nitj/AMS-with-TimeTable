@@ -598,75 +598,93 @@ function Participant() {
           flexDirection="column"
           gap={4}
         >
-          {/* Header + Batch Upload */}
-          <Box
-            display="flex"
-            alignItems={{ base: 'flex-start', md: 'center' }}
-            gap="4"
-            flexWrap="wrap"
-            flexDirection={{ base: 'column', md: 'row' }}
-          >
-            <h1 className="tw-text-[18px] tw-font-medium">Batch Upload:</h1>
-
+          <Box display={'flex'} flexDirection={{base:'column',md:'row'}} gap={2} >
             <Box
               display="flex"
-              alignItems="center"
-              gap="3"
-              border="1px solid"
-              borderColor="gray.300"
-              borderRadius="md"
-              px="3"
-              py="2"
-              bg="white"
-              width={{ base: '100%', md: 'auto' }}
+              alignItems={{ base: 'flex-start', md: 'center' }}
+              gap="4"
               flexWrap="wrap"
+              flexDirection={{ base: 'column', md: 'row' }}
             >
-              <Input
-                type="file"
-                accept=".xlsx"
-                onChange={handleFileChange}
-                name="XlsxFile"
-                variant="unstyled"
-                width={{ base: '100%', md: '260px' }}
-                cursor="pointer"
-                sx={{
-                  '::file-selector-button': {
-                    border: 'none',
-                    bg: 'purple.50',
-                    color: 'purple.600',
-                    px: '3',
-                    py: '1',
-                    mr: '3',
-                    borderRadius: 'md',
-                    cursor: 'pointer',
-                    fontWeight: '500',
-                  },
-                  '::file-selector-button:hover': {
-                    bg: 'purple.100',
-                  },
-                }}
-              />
+              <h1 className="tw-text-[18px] tw-font-medium">Batch Upload:</h1>
 
               <Box
-                as={CustomTealButton}
-                onClick={handleUpload}
-                p="8px"
+                display="flex"
+                alignItems="center"
+                gap="3"
+                border="1px solid"
+                borderColor="gray.300"
                 borderRadius="md"
-                cursor="pointer"
-                bgColor="purple.500"
-                _hover={{ bg: 'purple.700' }}
-                flexShrink={0}
+                px="3"
+                py="2"
+                bg="white"
+                width={{ base: '100%', md: 'auto' }}
+                flexWrap="wrap"
               >
-                <FaUpload style={{ height: 18, width: 18, color: 'white' }} />
+                <Input
+                  type="file"
+                  accept=".xlsx"
+                  onChange={handleFileChange}
+                  name="XlsxFile"
+                  variant="unstyled"
+                  width={{ base: '100%', md: '260px' }}
+                  cursor="pointer"
+                  sx={{
+                    '::file-selector-button': {
+                      border: 'none',
+                      bg: 'purple.50',
+                      color: 'purple.600',
+                      px: '3',
+                      py: '1',
+                      mr: '3',
+                      borderRadius: 'md',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                    },
+                    '::file-selector-button:hover': {
+                      bg: 'purple.100',
+                    },
+                  }}
+                />
+
+                <Box
+                  as={CustomTealButton}
+                  onClick={handleUpload}
+                  p="8px"
+                  borderRadius="md"
+                  cursor="pointer"
+                  bgColor="purple.500"
+                  _hover={{ bg: 'purple.700' }}
+                  flexShrink={0}
+                >
+                  <FaUpload style={{ height: 18, width: 18, color: 'white' }} />
+                </Box>
               </Box>
+
+              {uploadMessage && (
+                <Box fontSize="sm" color="gray.600">
+                  {uploadMessage}
+                </Box>
+              )}
             </Box>
 
-            {uploadMessage && (
-              <Box fontSize="sm" color="gray.600">
-                {uploadMessage}
-              </Box>
-            )}
+            <Tooltip
+              label="Download participants Excel template"
+              hasArrow
+              placement="bottom"
+            >
+              <IconButton
+                aria-label="Download participant template"
+                icon={<FiDownload />}
+                variant="ghost"
+                size="lg"
+                onClick={() =>
+                  window.open('/participant_template.xlsx', '_blank')
+                }
+              />
+            </Tooltip>
           </Box>
+          {/* Header + Batch Upload */}
 
           {/* Form / Manual Add */}
           <Box>
@@ -920,22 +938,22 @@ function Participant() {
               Participants Data
             </Text>
 
-            <Box display="flex" alignItems="center" gap="2">
-              <Tooltip
-                label="Send email to all participants"
-                hasArrow
-                placement="bottom"
-              >
-                <IconButton
-                  aria-label="Send email to all participants"
-                  icon={<FiMail />}
-                  onClick={handleBatchMail}
-                  variant="ghost"
-                  size="lg"
-                />
-              </Tooltip>
+            {/* <Box display="flex" alignItems="center" gap="2"> */}
+            <Tooltip
+              label="Send email to all participants"
+              hasArrow
+              placement="bottom"
+            >
+              <IconButton
+                aria-label="Send email to all participants"
+                icon={<FiMail />}
+                onClick={handleBatchMail}
+                variant="ghost"
+                size="lg"
+              />
+            </Tooltip>
 
-              <Tooltip
+            {/* <Tooltip
                 label="Download participants Excel template"
                 hasArrow
                 placement="bottom"
@@ -949,8 +967,8 @@ function Participant() {
                     window.open('/participant_template.xlsx', '_blank')
                   }
                 />
-              </Tooltip>
-            </Box>
+              </Tooltip> */}
+            {/* </Box> */}
           </Box>
 
           <TableContainer mt={4} overflowX="auto">
