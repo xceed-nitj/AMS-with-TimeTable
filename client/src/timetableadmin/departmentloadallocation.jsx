@@ -582,68 +582,53 @@ const Departmentloadallocation = () => {
   }
 
   const fetchDeptLoadAllocation = async () => {
-    console.log("start")
-    const subjectData = await fetchSubjectData(currentCode);
+    try {
+      console.log("Fetching process started...");
+      const subjectData = await fetchSubjectData(currentCode);
+      const fetchedttdetails = await fetchTTData(currentCode);
+      const filteredFaculties = await fetchDeptFaculty(currentCode);
 
-    const allFacultySummaries = [];
-    const fetchedttdetails = await fetchTTData(currentCode);
+      // Map each faculty to a Promise so we can fetch in parallel
+      const facultyDataPromises = filteredFaculties.map(async (faculty) => {
+        try {
+          const facultyName = faculty.name;
+          // Concurrent fetches for specific faculty data and common load
+          const [ttResult, projectLoad] = await Promise.all([
+            fetchFacultyData(currentCode, facultyName),
+            fetchCommonLoad(currentCode, facultyName)
+          ]);
 
-    const filteredFaculties = await fetchDeptFaculty(currentCode);
-    const facultyNames = [];
+          const summaryData = generateSummary(
+            ttResult.initialData, 
+            subjectData, 
+            'faculty', 
+            facultyName, 
+            projectLoad
+          );
 
-    for (const faculty of filteredFaculties) {
-      facultyNames.push(faculty.name);
+          return { faculty: facultyName, summaryData };
+        } catch (err) {
+          console.error(`Error processing faculty ${faculty.name}:`, err);
+          return null; // Skip failed fetches
+        }
+      });
+
+      const results = await Promise.all(facultyDataPromises);
+      const allFacultySummaries = results.filter(res => res !== null);
+
+      // Update state all at once to prevent multiple re-renders
+      setTable(allFacultySummaries);
+      setDupTable(allFacultySummaries);
+      
+      semDropDown(allFacultySummaries);
+      codeDropDown(allFacultySummaries);
+      typeDropDown(allFacultySummaries);
+      nameDropDown(allFacultySummaries);
+      
+      console.log("Fetching complete.");
+    } catch (error) {
+      console.error("Critical error in fetchDeptLoadAllocation:", error);
     }
-    for (const faculty of facultyNames) {
-      // console.log(faculty);        
-      const { initialData, updateTime, notes } = await fetchFacultyData(currentCode, faculty);
-      const fetchedttdata = initialData;
-      const facultyNotes = notes;
-      // console.log('dataaaa faculty',fetchedttdata);        
-      const projectLoad = await fetchCommonLoad(currentCode, faculty)
-      // const projectLoad='';            
-      const summaryData = generateSummary(fetchedttdata, subjectData, 'faculty', faculty, projectLoad);
-      allFacultySummaries.push({ faculty, summaryData }); // Store the summary data in the array
-
-      console.log(summaryData)
-      const lockTime = updateTime;
-      setHeaderStatus("fetchingHeadersFooters")
-      const postData = {
-        session: fetchedttdetails.session,
-        name: faculty,
-        type: 'faculty',
-        timeTableData: fetchedttdata,
-        summaryData: summaryData,
-        updatedTime: lockTime,
-        TTData: fetchedttdetails,
-        headTitle: faculty,
-      };
-      // console.log(postData);
-      // console.log('All Faculty Summaries:', allFacultySummaries);
-      // setNoteStatus("fetchingNotes")
-
-
-      // setTimetableData(fetchedttdata);
-      // setSummaryData(summaryData);
-      setType(type);
-      // setUpdatedTime(lockTime);
-      setHeadTitle(faculty);
-
-    }
-    console.log(allFacultySummaries)
-    console.log("set")
-    setTable(allFacultySummaries)
-    setDupTable(allFacultySummaries)
-    console.log("dup: ", dupTable)
-    console.log("origin: ", table)
-    semDropDown(allFacultySummaries)
-    codeDropDown(allFacultySummaries)
-    typeDropDown(allFacultySummaries)
-    nameDropDown(allFacultySummaries)
-    console.log(semDrop)
-    // generateSummaryTablePDF(allFacultySummaries, filteredFaculties, fetchedttdetails[0].session, fetchedttdetails[0].dept)
-
-
   };
   function getDesignation(name) {
     let desig = ""
@@ -863,20 +848,39 @@ const Departmentloadallocation = () => {
     console.log(dupTable)
     setTable(newTable)
   }
-  function downloadCSV(e){
+  function downloadCSV(e) {
     const newTab = table;
-    let csv_data = [["Faculty Name","Designation","Semester","Subject Code","Subject Name","Type",'Hours']];
+    // Added "Total Hours" to header to match UI
+    let csv_data = [["Faculty Name", "Designation", "Semester", "Subject Code", "Subject Name", "Type", "Hours", "Total Hours"]];
+    
     newTab.forEach((elem) => {
-      for (let i in elem.summaryData) {
-        let csv_row = [elem.faculty,getDesignation(elem.faculty),elem.summaryData[i]?.subSem,elem.summaryData[i]?.subCode,elem.summaryData[i]?.subjectFullName,elem.summaryData[i]?.subType,elem.summaryData[i]?.count]
-        csv_data.push(csv_row.join(","))
-      }
-    })
-    csv_data=csv_data.join("\n")
-    console.log(csv_data)
-    let CSVFile = new Blob([csv_data], { type: "text/csv" });
+      const summaryArray = returnValue(elem.summaryData);
+      
+      summaryArray.forEach((summaryRow, index) => {
+       
+        const facultyName = index === 0 ? elem.faculty : "";
+        const designation = index === 0 ? getDesignation(elem.faculty) : "";
+        const totalHours = index === 0 ? summaryRow.Tcount : "";
+
+        const csv_row = [
+          `"${facultyName}"`,
+          `"${designation}"`,
+          `"${summaryRow?.subSem || ""}"`,
+          `"${summaryRow?.subCode || ""}"`,
+          `"${summaryRow?.subjectFullName || ""}"`,
+          `"${summaryRow?.subType || ""}"`,
+          `"${summaryRow?.count || 0}"`,
+          `"${totalHours}"`
+        ];
+        
+        csv_data.push(csv_row.join(","));
+      });
+    });
+
+    const csv_string = csv_data.join("\n");
+    let CSVFile = new Blob([csv_string], { type: "text/csv;charset=utf-8;" });
     let temp_link = document.createElement('a');
-    temp_link.download = "Dept Load Allocation.csv";
+    temp_link.download = "Dept_Load_Allocation.csv";
     let url = window.URL.createObjectURL(CSVFile);
     temp_link.href = url;
     temp_link.style.display = "none";

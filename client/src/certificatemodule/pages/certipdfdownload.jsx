@@ -1,7 +1,10 @@
 import html2pdf from 'html2pdf.js';
 
-export default function downloadCertificatePDF() {
+export default async function downloadCertificatePDF() {
   const graph = document.getElementsByClassName("svg-img")[0];
+
+    // FORCE font loading
+   await document.fonts.ready;
 
   // Ensure that anchor elements have href attributes for hyperlinks
   const anchorElements = graph.getElementsByTagName("a");
