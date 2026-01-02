@@ -273,7 +273,7 @@ function App() {
           element={<Departmentloadallocation />}
         />
         <Route
-          path="/tt/:generatedLink/generatepdf/facultyhourload"
+          path="/tt/:generatedLink/generatepdf/hourlyload"
           element={<FacultyHourLoad />}
         />
 
