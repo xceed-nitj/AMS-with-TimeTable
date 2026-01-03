@@ -20,6 +20,7 @@ router.use('/commonLoad', require("./commonLoad"));
 router.use('/instituteLoad', require("./instituteLoad")); 
 router.use('/mastertable', require("./masterclasstable")); 
 router.use('/message', require("./message"));
+router.use('/adminclash', require("./adminClash"));
 
 module.exports = router;
 
