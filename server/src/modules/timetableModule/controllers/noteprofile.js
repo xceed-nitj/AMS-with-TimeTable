@@ -3,10 +3,29 @@ const Note = require("../../../models/note");
 
 class NoteController {
   async createNote(req, res) {
-    const newNote = req.body;
+    const { sem, room, faculty, note, code } = req.body;
+    const noteContent = Array.isArray(note) ? note : [note];
+    const notesToCreate = [];
+    if (sem && sem.trim() !== "") {
+        notesToCreate.push({ sem, note: noteContent, code });
+    }
+    if (faculty && faculty.trim() !== "") {
+        notesToCreate.push({ faculty, note: noteContent, code });
+    }
+
+    if (room && room.trim() !== "") {
+        notesToCreate.push({ room, note: noteContent, code });
+    }
+
     try {
-      const createdNote = await Note.create(newNote);
-      res.json(createdNote);
+      if (notesToCreate.length > 0) {
+          const createdNotes = await Note.insertMany(notesToCreate);
+          res.json(createdNotes);
+      } else {
+          const fallbackData = { ...req.body, note: noteContent };
+          const createdNote = await Note.create(fallbackData);
+          res.json(createdNote);
+      }
       return;
     } catch (error) {
       console.error(error);
@@ -39,7 +58,7 @@ class NoteController {
       const query = { code: code };
       query[fieldName] = fieldValue;
   
-      const notes = await Note.find(query).select('note'); // Use the select method to retrieve only the 'note' field
+      const notes = await Note.find(query).select('note'); 
       const noteArray = notes.map(note => note.note);
   
       return noteArray;
