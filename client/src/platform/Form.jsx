@@ -75,6 +75,16 @@ const FormComponent = () => {
           ...new Set([...prevAreas, ...(response.data[0].researchArea || [])]),
         ]);
       }
+      // Also fetch dedicated exempted links endpoint to ensure sync
+      try {
+        const resLinks = await axios.get(`${apiUrl}/platform/get-exempted-links`);
+        setExemptedLinks((prev) => [
+          ...new Set([...(prev || []), ...(resLinks.data || [])]),
+        ]);
+      } catch (err) {
+        // ignore; we already have some data from getplatform
+        console.debug('Failed to fetch dedicated exempted links', err?.message || err);
+      }
     } catch (error) {
       toast({
         title: 'Failed to fetch data',
@@ -99,7 +109,7 @@ const FormComponent = () => {
     setNewRole('');
   };
 
-  const handleAddExemptedLink = () => {
+  const handleAddExemptedLink = async () => {
     if (!newExemptedLink) {
       toast({
         title: 'Exempted Link cannot be empty',
@@ -109,10 +119,30 @@ const FormComponent = () => {
       });
       return;
     }
-    setExemptedLinks((prevLinks) => [
-      ...new Set([...prevLinks, newExemptedLink]),
-    ]);
-    setNewExemptedLink('');
+
+    try {
+      const response = await axios.post(`${apiUrl}/platform/add-exempted-link`, {
+        link: newExemptedLink,
+      });
+      // response.data is expected to be the updated exemptedLinks array
+      setExemptedLinks((prevLinks) => [
+        ...new Set([...(prevLinks || []), ...(response.data || [])]),
+      ]);
+      setNewExemptedLink('');
+      toast({
+        title: 'Link added',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: 'Failed to add exempted link',
+        status: 'error',
+        duration: 2000,
+        isClosable: true,
+      });
+    }
   };
 
   const handleAddResearchArea = () => {

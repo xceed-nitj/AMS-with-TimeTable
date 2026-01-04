@@ -34,8 +34,8 @@ const GrowthTree = () => {
     const fetchModules = async () => {
 
       try {
-        const response = await axios.get(`${apiUrl}/platform/get-modules` ,  {
-          credentials: 'include'
+        const response = await axios.get(`${apiUrl}/platform/get-modules`, {
+          withCredentials: true,
         });
 
         let fetchedModules = response.data;

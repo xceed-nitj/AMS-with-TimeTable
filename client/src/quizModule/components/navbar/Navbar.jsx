@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useParams, useNavigate } from 'react-router-dom';
+import useExemptedLinks from '../../../../hooks/useExemptedLinks';
 import './navbar.css';
 // import jwt from 'jsonwebtoken';
 import aim2CrackLogo from '../../assets/images/navbar/Aim2Crack-logo.png';
@@ -24,6 +25,7 @@ function Navbar() {
 
   // const [user, setUser] = useState(null);
   const [tokenState,setTokenState]=useState(false);
+  const { exemptedLinks = [] } = useExemptedLinks();
   // const [loading, setLoading] = useState(true); // Add loading state
 
   const token = localStorage.getItem('token');
@@ -37,7 +39,9 @@ useEffect(() => {
 
 
   const location = useLocation();
-  const isExcludedPath = excludedPaths.includes(location.pathname);
+  const isExcludedPath =
+    excludedPaths.includes(location.pathname) ||
+    (exemptedLinks || []).some((link) => location.pathname.startsWith(link));
 
     const openNav = () => {
     // Implement your logic for opening the navigation menu

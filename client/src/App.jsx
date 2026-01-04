@@ -171,6 +171,8 @@ import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 
 // import fileUpload
 import FileUpload from './fileUpload/fileUploads.jsx'
+// removel the hardcoded links for login
+import ProtectedRoute from './components/login/Protectedroutes';
 
 
 //import faculty rankings
@@ -178,7 +180,7 @@ import FileUpload from './fileUpload/fileUploads.jsx'
 import FacultyDashboard from './instituterankings/facultydashboard.jsx';
 function App() {
   return (
-    <Router>
+    <Router >
       {/* <div className="app"> */}
 
       {/* <h1>XCEED-Timetable Module</h1>  */}

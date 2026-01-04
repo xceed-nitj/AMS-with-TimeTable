@@ -65,6 +65,44 @@ const deletePlatform = async (req, res) => {
     }
 };
 
+
+// GET /api/platform/exempted-links
+const getExemptedLinks = async (req, res) => {
+  try {
+    const platform = await Platform.findOne({});
+    const links = (platform?.exemptedLinks || []).map(l => {
+      let s = String(l).trim(); if (!s.startsWith('/')) s = '/' + s; if (s.length>1 && s.endsWith('/')) s = s.slice(0,-1); return s;
+    });
+    res.status(200).json(links);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+// POST /api/platform/exempted-links
+const addExemptedLink = async (req, res) => {
+  let { link } = req.body;
+  if (!link) return res.status(400).json({
+     message: "Link is required" 
+    });
+
+  // normalize
+  link = String(link).trim();
+  if (!link.startsWith('/')) link = '/' + link;
+  if (link.length > 1 && link.endsWith('/')) link = link.slice(0, -1);
+
+  try {
+    const updated = await Platform.findOneAndUpdate(
+      {}, 
+      { $addToSet: { exemptedLinks: link } },
+      { new: true, upsert: true } // upsert creates Platform if missing
+    );
+    const normalized = (updated.exemptedLinks || []).map(l => String(l).trim());
+    res.status(200).json(normalized);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // const addModule = async (req, res) => {
 
 //   try {
@@ -321,5 +359,5 @@ const deleteModule = async (req, res) => {
   }
 };
 
-module.exports = {addPlatform,getPlatform,getPlatformById,updatePlatform,deletePlatform,addModule, getModules, getModuleById, updateModule, deleteModule};
+module.exports = {addPlatform,getPlatform,getPlatformById,updatePlatform,deletePlatform,addModule, getModules, getModuleById, updateModule, deleteModule,getExemptedLinks,addExemptedLink};
 
