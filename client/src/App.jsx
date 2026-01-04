@@ -51,6 +51,8 @@ import TimetableMasterView from './timetableadmin/masterview';
 import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
+import FacultyHourLoad from './timetableadmin/facultyhourload.jsx';
+
 import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
@@ -277,6 +279,11 @@ function App() {
           path="/tt/:generatedLink/generatepdf/loadallocation"
           element={<Departmentloadallocation />}
         />
+        <Route
+          path="/tt/:generatedLink/generatepdf/hourlyload"
+          element={<FacultyHourLoad />}
+        />
+
 
         <Route path="/cm/addevent" element={<EventRegistration />} />
         <Route path="/cm/dashboard" element={<CMDashboard />} />

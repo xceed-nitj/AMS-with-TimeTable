@@ -14,10 +14,15 @@ import {
   position,
   Checkbox,
   Image,
+  Heading,
+  Center,
+  Tooltip,
+  Switch,
 } from '@chakra-ui/react';
 import { AddIcon, CloseIcon, EditIcon, InfoIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
-import Header from '../../components/header';
+// import Header from '../../components/header';
+import Header from '../components/Header';
 import { useToast } from '@chakra-ui/react';
 import CertificateContent from './certificatetemplates/basic01';
 import SelectCertficate from './SelectCertficate';
@@ -38,8 +43,10 @@ const CertificateForm = () => {
   const [type, setType] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const date = new Date();
-  const a = date.getMonth() > 8 ? "" : 0
-  const defaultDate = `${date.getFullYear()}-${a}${date.getMonth() + 1}-${date.getDate()}`
+  const a = date.getMonth() > 8 ? '' : 0;
+  const defaultDate = `${date.getFullYear()}-${a}${
+    date.getMonth() + 1
+  }-${date.getDate()}`;
   const [formData, setFormData] = useState({
     logos: [{ url: '', height: 80, width: 80 }],
     header: [
@@ -118,7 +125,7 @@ const CertificateForm = () => {
         fontColor: 'black',
       },
     ],
-    verifiableLink: false,
+    verifiableLink: true,
     certificateOf: {
       certificateOf: 'CERTIFICATE OF APPRECIATION',
       fontSize: 32,
@@ -135,6 +142,9 @@ const CertificateForm = () => {
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 1];
 
+  {
+    /* Purpose: Resets form when certificate type changes and fetches existing certificate data from the API*/
+  }
   useEffect(() => {
     const certType = formData.certiType;
     setSelectedFiles([]);
@@ -216,7 +226,7 @@ const CertificateForm = () => {
           fontColor: 'black',
         },
       ],
-      verifiableLink: false,
+      verifiableLink: true,
       certificateOf: {
         certificateOf: 'CERTIFICATE OF APPRECIATION',
         fontSize: 32,
@@ -259,7 +269,7 @@ const CertificateForm = () => {
               verifiableLink,
             } = responseData[0];
             let Signatures = [];
-            if (signatures[0].name.name || signatures[0].name.name == "") {
+            if (signatures[0].name.name || signatures[0].name.name == '') {
               Signatures = signatures;
               if (!signatures[0].url.url) {
                 signatures.forEach((elem, index) => {
@@ -292,7 +302,7 @@ const CertificateForm = () => {
             }
             //for logos
             let Logos = [];
-            if (logos[0].url || logos[0].url == "") {
+            if (logos[0].url || logos[0].url == '') {
               Logos = logos;
             } else {
               logos.forEach((element) => {
@@ -306,7 +316,7 @@ const CertificateForm = () => {
             }
             //for header
             let Header = [];
-            if (header[0].header || header[0].header == "") {
+            if (header[0].header || header[0].header == '') {
               Header = header;
             } else {
               header.forEach((element) => {
@@ -335,8 +345,8 @@ const CertificateForm = () => {
             //for certificateOf
             let CertificateOf = {};
             console.log(!certificateOf);
-            if (!certificateOf || certificateOf == "") {
-              console.log("hey");
+            if (!certificateOf || certificateOf == '') {
+              console.log('hey');
               CertificateOf = formData.certificateOf;
             } else {
               CertificateOf = certificateOf;
@@ -344,7 +354,7 @@ const CertificateForm = () => {
             console.log(CertificateOf);
             // for body
             let Body = formData.body;
-            if (body.body || body.body == "") {
+            if (body.body || body.body == '') {
               Body = body;
             } else {
               Body.body = body;
@@ -352,8 +362,8 @@ const CertificateForm = () => {
             // console.log(title)
             //for title
             let Title = [];
-            if (title[0] || title[0] == "") {
-              if (title[0][0] || title[0][0] == "") {
+            if (title[0] || title[0] == '') {
+              if (title[0][0] || title[0][0] == '') {
                 title.forEach((element) => {
                   let str = '';
                   for (let key in element) {
@@ -371,7 +381,7 @@ const CertificateForm = () => {
                   };
                   Title.push(obj);
                 });
-              } else if (title[0]['name'] || title[0]['name'] == "") {
+              } else if (title[0]['name'] || title[0]['name'] == '') {
                 Title = title;
               }
             } else {
@@ -870,13 +880,12 @@ const CertificateForm = () => {
   };
 
   function copyVariable(text) {
-
     if (!navigator.clipboard) {
       return Promise.reject('Clipboard API not supported');
     }
     toast({
       title: 'Variable copied',
-      status: "success",
+      status: 'success',
       duration: 1000,
       isClosable: true,
     });
@@ -887,58 +896,63 @@ const CertificateForm = () => {
   for (let i = 6; i <= 60; i = i + 2) {
     fontsizeopt.push(i);
   }
+  // const fontStyleopt = [
+  //   'fantasy',
+  //   'monospace',
+  //   'sans-serif',
+  //   'serif',
+  //   'cursive',
+  // ];
   const fontStyleopt = [
     'fantasy',
-    "monospace",
-    "sans-serif",
+    'monospace',
+    'sans-serif',
     'serif',
     'cursive',
+    'Playfair Display',
+    'Euphoria Script',
+    'Cookie',
+    'UnifrakturCook',
+    'Allura',
+    'Alex Brush',
+    'Libre Caslon Display',
+    'Special Elite',
+    'Monoton',
+    'Dancing Script',
+    'Playwrite DE Grund',
+    'Noto Serif Devanagari',
+    'Ingrid Darling',
+    'Grey Qo',
+    'Kings',
+    'Ole',
+    'Rubik Maze',
+    'Rubik Burned',
+    'Rubik Marker Hatch',
+    'Rubik Microbe',
+    'Blaka Ink',
+    'Noto Serif Grantha',
+    'Rubik Spray Paint',
+    'Rubik Wet Paint',
+    'Finger Paint',
+    'Rubik Bubbles',
+    'Oleo Script',
+    'Neuton',
+    'Merienda',
+    'Concert One',
+    'Permanent Marker',
+    'Abril Fatface',
+    'Rowdies',
+    'Lobster',
+    'Pacifico',
+    'Anton SC',
+    'Ga Maamli',
+    'Libre Baskerville',
+    'Libre Baskerville',
+    'Merriweather',
+    'Roboto Slab',
+    'Roboto',
+    'Oswald',
   ];
-  // const fontStyleopt = [
-  //   'Playfair Display',
-  //   'Euphoria Script',
-  //   'Cookie',
-  //   'UnifrakturCook',
-  //   'Allura',
-  //   'Alex Brush',
-  //   'Libre Caslon Display',
-  //   'Special Elite',
-  //   'Monoton',
-  //   'Dancing Script',
-  //   'Playwrite DE Grund',
-  //   'Noto Serif Devanagari',
-  //   'Ingrid Darling',
-  //   'Grey Qo',
-  //   'Kings',
-  //   'Ole',
-  //   'Rubik Maze',
-  //   'Rubik Burned',
-  //   'Rubik Marker Hatch',
-  //   'Rubik Microbe',
-  //   'Blaka Ink',
-  //   'Noto Serif Grantha',
-  //   'Rubik Spray Paint',
-  //   'Rubik Wet Paint',
-  //   'Finger Paint',
-  //   'Rubik Bubbles',
-  //   'Oleo Script',
-  //   'Neuton',
-  //   'Merienda',
-  //   'Concert One',
-  //   'Permanent Marker',
-  //   'Abril Fatface',
-  //   'Rowdies',
-  //   'Lobster',
-  //   'Pacifico',
-  //   'Anton SC',
-  //   'Ga Maamli',
-  //   'Libre Baskerville',
-  //   'Libre Baskerville',
-  //   'Merriweather',
-  //   'Roboto Slab',
-  //   'Roboto',
-  //   'Oswald',
-  // ];
   return (
     <Flex
       style={{
@@ -955,165 +969,260 @@ const CertificateForm = () => {
           overflowY: 'scroll',
           // clipPath: 'content-box',
         }}
+        width={'100%'}
       >
         <Header title="Enter Certificate Details"></Header>
 
-        <form id="form" onSubmit={handleSubmit}>
-          <VStack spacing={4} align="start">
-            <Text className='tw-font-bold'>Select Certificate Type:</Text>
-            <Select
-              name="certiType"
-              value={formData.certiType}
-              onChange={(e) => handleChange(e, 'certiType', null)}
-              placeholder="Select Certificate Type"
+        <Box
+          as="form"
+          id="form"
+          onSubmit={handleSubmit}
+          borderRadius="15px"
+          padding={4}
+          marginBottom={7}
+          borderColor="gray"
+          boxShadow="0 0 15px rgba(0, 0, 0, 0.15)"
+        >
+          <VStack spacing={4} align="start" className="tw-mb-10">
+            {/* Certificate Type Selection */}
+            <Box
+              width="100%"
+              className="tw-flex tw-flex-row tw-gap-3 tw-items-center tw-justify-between tw-px-2"
             >
-              <option value="winner">Winner</option>
-              <option value="participant">Participant</option>
-              <option value="speaker">Speaker</option>
-              <option value="organizer">Organizer</option>
-            </Select>
+              <Text className="tw-font-bold tw-text-[17px] ">
+                Certificate Type:
+              </Text>
+              <Select
+                name="certiType"
+                value={formData.certiType}
+                onChange={(e) => handleChange(e, 'certiType', null)}
+                placeholder="Select Certificate Type"
+                maxWidth="220px"
+                borderWidth="1px"
+                borderColor="gray.300"
+                textColor="gray.700"
+                borderRadius="7px"
+              >
+                <option value="winner">Winner</option>
+                <option value="participant">Participant</option>
+                <option value="speaker">Speaker</option>
+                <option value="organizer">Organizer</option>
+              </Select>
+            </Box>
 
             {/* Title Fields */}
-            <Text className='tw-font-bold'>Enter the name of Institute</Text>
+            <Box
+              width="100%"
+              className="tw-flex tw-flex-col tw-gap-3 tw-my-5 tw-px-2 tw-align-center"
+            >
+              <Text className="tw-font-bold tw-mb-1">
+                Name of the Institute:
+              </Text>
 
-            {formData.title.length == 0
-              ? (formData.title = [''])
-              : formData.title.map((title, index) => (
-                <HStack key={index} alignItems="flex-start" width="100%">
-                  <Accordion width="100%" allowMultiple>
-                    <AccordionItem
-                      border="none"
-                      alignItems="center"
-                      width="96%"
-                    >
-                      <HStack alignItems="center" width="100%">
-                        <Input
-                          name={`title[${index}].name`}
-                          value={title.name}
-                          onChange={(e) => handleChange(e, 'title', index)}
-                          placeholder="Title"
+              {formData.title.length == 0
+                ? (formData.title = [''])
+                : formData.title.map((title, index) => (
+                    <HStack key={index} alignItems="flex-start" width="100%">
+                      <Accordion width="100%" allowMultiple>
+                        <AccordionItem
+                          border="none"
+                          alignItems="center"
                           width="100%"
-                        />
-                        <AccordionButton
-                          height="30px"
-                          width="30px"
-                          justifyContent="center"
                         >
-                          <EditIcon
-                            color="blue"
-                            height="25px"
-                            width="25px"
-                            justifyContent="center"
-                          />
-                        </AccordionButton>
-                        {index > 0 && (
-                          <IconButton
-                            width="30px"
-                            icon={<CloseIcon color="red" width="20px" height="20px" />}
-                            onClick={() => handleDelete('title', index)}
-                          />
-                        )}
-                        {index === formData.title.length - 1 && (
-                          <IconButton
-                            icon={<AddIcon color="green" width="20px" height="20px" />}
-                            onClick={() => addField('title')}
-                          />
-                        )}
-                      </HStack>
-                      <AccordionPanel width="100%" position="relative">
-                        <HStack spacing={'8'}>
-                          <VStack>
-                            <Select
-                              name={`title[${index}].fontSize`}
-                              value={title.fontSize}
-                              onChange={(e) =>
-                                handleChange(e, 'title', index)
-                              }
-                              placeholder="Size"
-                            // width="30%"
-                            >
-                              {fontsizeopt.map((item, key) => {
-                                return (
-                                  <option key={key} value={`${item}`}>
-                                    {item}
-                                  </option>
-                                );
-                              })}
-                            </Select>
-                            <Select
-                              name={`title[${index}].fontFamily`}
-                              value={title.fontFamily}
-                              onChange={(e) =>
-                                handleChange(e, 'title', index)
-                              }
-                              placeholder="Style"
-                            // width="29%"
-                            >
-                              {fontStyleopt.map((item, key) => {
-                                return (
-                                  <option key={key} value={`${item}`}>
-                                    {item}
-                                  </option>
-                                );
-                              })}
-                            </Select>
+                          <HStack alignItems="center" width="100%">
                             <Input
-                              name={`title[${index}].fontColor`}
-                              value={title.fontColor}
-                              onChange={(e) =>
-                                handleChange(e, 'title', index)
-                              }
-                              placeholder="Color eg. red"
-                            ></Input>
-                            <HStack>
-                              <Checkbox
-                                name={`title[${index}].bold`}
-                                value={title.bold}
-                                isChecked={
-                                  title.bold == 'bold' ? true : false
+                              name={`title[${index}].name`}
+                              value={title.name}
+                              onChange={(e) => handleChange(e, 'title', index)}
+                              placeholder="Title"
+                              width="100%"
+                              borderWidth="1px"
+                              borderColor="gray.300"
+                              textColor="gray.700"
+                              borderRadius="7px"
+                            />
+                            <AccordionButton
+                              height="34px"
+                              width="34px"
+                              justifyContent="center"
+                              borderRadius="8px"
+                              _hover={{ bg: 'blue.50' }}
+                            >
+                              <EditIcon color="blue.500" boxSize="18px" />
+                            </AccordionButton>
+
+                            {index > 1 && (
+                              <IconButton
+                                size="sm"
+                                icon={<CloseIcon color="red" boxSize="14px" />}
+                                onClick={() => handleDelete('title', index)}
+                              />
+                            )}
+
+                            {/*Add Another button is added below, so no need of it */}
+                            {/* {index === formData.title.length - 1 && (
+                              <IconButton
+                                icon={
+                                  <AddIcon
+                                    color="green"
+                                    width="20px"
+                                    height="20px"
+                                  />
                                 }
-                                onChange={(e) =>
-                                  handleChangeStyle(e, 'title', index)
-                                }
-                              >
-                                Bold
-                              </Checkbox>
-                              <Checkbox
-                                name={`title[${index}].italic`}
-                                value={title.italic}
-                                isChecked={title.italic == 'italic'}
-                                onChange={(e) =>
-                                  handleChangeStyle(e, 'title', index)
-                                }
-                              >
-                                Italic
-                              </Checkbox>
+                                onClick={() => addField('title')}
+                              />
+                            )} */}
+                          </HStack>
+
+                          {/* ACCORDION PANEL FOR TEXT SETTINGS */}
+                          <AccordionPanel
+                            bg="gray.50"
+                            borderRadius="md"
+                            p={3}
+                            mt={2}
+                          >
+                            <HStack spacing="6" align="flex-start">
+                              {/* LEFT: Text / Font Settings */}
+                              <VStack spacing="3" align="stretch" flex="1">
+                                <Text fontSize="sm" color="gray.600">
+                                  Text settings
+                                </Text>
+
+                                <Select
+                                  name={`title[${index}].fontSize`}
+                                  value={title.fontSize}
+                                  onChange={(e) =>
+                                    handleChange(e, 'title', index)
+                                  }
+                                  placeholder="Size"
+                                >
+                                  {fontsizeopt.map((item, key) => (
+                                    <option key={key} value={item}>
+                                      {item}
+                                    </option>
+                                  ))}
+                                </Select>
+
+                                <Select
+                                  name={`title[${index}].fontFamily`}
+                                  value={title.fontFamily}
+                                  onChange={(e) =>
+                                    handleChange(e, 'title', index)
+                                  }
+                                  placeholder="Style"
+                                >
+                                  {fontStyleopt.map((item, key) => (
+                                    <option key={key} value={item}>
+                                      {item}
+                                    </option>
+                                  ))}
+                                </Select>
+
+                                <Input
+                                  name={`title[${index}].fontColor`}
+                                  value={title.fontColor}
+                                  onChange={(e) =>
+                                    handleChange(e, 'title', index)
+                                  }
+                                  placeholder="Color eg. black"
+                                />
+
+                                <HStack spacing="4" pt="1">
+                                  <Checkbox
+                                    name={`title[${index}].bold`}
+                                    value={title.bold}
+                                    isChecked={title.bold === 'bold'}
+                                    onChange={(e) =>
+                                      handleChangeStyle(e, 'title', index)
+                                    }
+                                  >
+                                    Bold
+                                  </Checkbox>
+
+                                  <Checkbox
+                                    name={`title[${index}].italic`}
+                                    value={title.italic}
+                                    isChecked={title.italic === 'italic'}
+                                    onChange={(e) =>
+                                      handleChangeStyle(e, 'title', index)
+                                    }
+                                  >
+                                    Italic
+                                  </Checkbox>
+                                </HStack>
+                              </VStack>
+
+                              {/* DIVIDER */}
+                              <Box
+                                width="1px"
+                                bg="gray.200"
+                                alignSelf="stretch"
+                              />
+
+                              {/* RIGHT: Color Picker */}
+                              <VStack spacing="2">
+                                <Text fontSize="sm" color="gray.600">
+                                  Color
+                                </Text>
+
+                                <Box
+                                  border="1px solid"
+                                  borderColor="gray.200"
+                                  borderRadius="md"
+                                  p="2"
+                                >
+                                  <HexAlphaColorPicker
+                                    value={title.fontColor || '#000000'}
+                                    onChange={(e) =>
+                                      handleChangec(
+                                        e,
+                                        'title',
+                                        `title[${index}].fontColor`,
+                                        index
+                                      )
+                                    }
+                                    style={{ width: '180px', height: '180px' }}
+                                  />
+                                </Box>
+                              </VStack>
                             </HStack>
-                          </VStack>
-                          <HexAlphaColorPicker
-                            name={`title[${index}].fontColor`}
-                            value={title.fontColor}
-                            onChange={(e) =>
-                              handleChangec(
-                                e,
-                                'title',
-                                `title[${index}].fontColor`,
-                                index
-                              )
-                            }
-                          />
-                        </HStack>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </Accordion>
-                </HStack>
-              ))}
+                          </AccordionPanel>
+                        </AccordionItem>
+                      </Accordion>
+                    </HStack>
+                  ))}
+
+              {/* Add Another button */}
+              <Button
+                onClick={() => addField('title')}
+                width="100%"
+                height="45px"
+                border="2px dashed"
+                borderColor="green.400"
+                color="green.500"
+                bg="transparent"
+                leftIcon={<AddIcon />}
+                _hover={{ bg: 'green.50' }}
+              >
+                Add another
+              </Button>
+            </Box>
 
             {/* Template Selection */}
-            <Box>
-              <Text className='tw-font-bold'>Select Certificate Template Design:</Text>
-              <Box overflowX="auto" whiteSpace="nowrap" padding="10px 0">
-                <HStack maxW={450} spacing={4} overflow={'scroll'}>
+            <Box
+              width="100%"
+              className="tw-px-2 tw-my-5 tw-flex tw-flex-col tw-gap-3"
+            >
+              <Text className="tw-font-bold">Select Certificate Template:</Text>
+              <Box
+                overflowX="auto"
+                whiteSpace="nowrap"
+                padding="10px 0"
+                borderWidth={'2px'}
+                borderRadius={'8px'}
+                borderColor={'gray.300'}
+              >
+                <HStack maxW={450} spacing={4} overflowX={'scroll'}>
                   {templateOptions.map((template) => (
                     <Box
                       key={template.id}
@@ -1143,732 +1252,1086 @@ const CertificateForm = () => {
               display="none"
             />
 
-
             {/* Logos Fields */}
-            <Text className='tw-font-bold'>Logos:</Text>
-
-            {formData.logos.map((logo, index) => (
-              <HStack width='100%' key={index}>
-                <Accordion width='100%' allowMultiple><AccordionItem border="none" width='100%'><HStack width='100%'>
-
-                  <Input
-                    name={`logos[${index}].url`}
-                    value={logo.url}
-                    onChange={(e) => handleChange(e, 'logos', index)}
-                    placeholder="Logo"
-                    display="none"
+            <Box
+              width="100%"
+              className="tw-flex tw-flex-col tw-gap-2 tw-px-2 tw-my-2"
+            >
+              {/* Header */}
+              <HStack align="center" spacing={1}>
+                <Text fontWeight="bold">Logos: </Text>
+                <Tooltip
+                  label="Only JPG/PNG allowed. Maximum 4 logos."
+                  placement="right"
+                  hasArrow
+                  fontSize="sm"
+                >
+                  <InfoIcon
+                    color="gray.500"
+                    cursor="pointer"
+                    boxSize="14px"
+                    _hover={{ color: 'gray.700' }}
                   />
-                  <Text
-                    width="100%">
-                    Upload Logo image (jpg/png):
-                  </Text>
-                  <label style={{ height: "30px", width: "30px" }} className="tw-flex tw-flex-col tw-justify-center tw-ml-2 hover:tw-cursor-pointer" htmlFor={`logo${index}`}><FaUpload style={{ height: "25px", width: "25px", color: "purple" }} /></label>
-                  <Input
-                    id={`logo${index}`}
-                    name={`logos[${index}].url`}
-                    onChange={(e) => handleFileChange(e, 'logos', index)}
-                    type='file'
-                    accept='image/jpeg , image/png'
-                    style={{ width: "0px", height: "0px", margin: "0px", padding: "0px" }}
-                  />
-                  <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon color="blue" height="25px" width="25px" justifyContent="center" /></AccordionButton>
-
-
-                  {index > 0 && (
-                    <IconButton
-                      icon={<CloseIcon color="red" width="20px" height="20px" />}
-                      onClick={() => handleDelete('logos', index)}
-                    />
-                  )}
-                  {index === formData.logos.length - 1 && (
-                    <IconButton
-                      icon={<AddIcon color="green" width="20px" height="20px" />}
-                      onClick={() => addField('logos')}
-                    />
-                  )}</HStack>
-                  <AccordionPanel> <HStack border="none" width="100%">
-                    <HStack width="60%"><Text>Vertical Position:</Text><input
-                      type="number"
-                      name={`logos[${index}].height`}
-                      value={logo.height}
-                      onChange={(e) => handleChange(e, 'logos', index)}
-                      placeholder="height"
-                      style={{ width: "55px", textAlign: "center", border: "1px solid #e2e8f0", borderRadius: "2px" }}
-                    /></HStack>
-                    <HStack width="40%"><Text>Size:</Text><input
-                      type="number"
-                      name={`logos[${index}].width`}
-                      value={logo.width}
-                      onChange={(e) => handleChange(e, 'logos', index)}
-                      placeholder="width"
-                      style={{ width: "55px", textAlign: "center" }}
-                    /></HStack>
-                  </HStack>
-
-                  </AccordionPanel></AccordionItem></Accordion>
-
-
+                </Tooltip>
               </HStack>
-            ))}
 
-            {/* Header Fields */}
-            <Text className='tw-font-bold'>Enter Department or Club data:</Text>
-
-            {formData.header.map((header, index) => (
-              <HStack width="100%" key={index}>
-                <Accordion width="100%" allowMultiple>
-                  <AccordionItem border="none" alignItems="center" width="96%">
-                    <HStack alignItems="center" width="100%">
-                      <Input
-                        name={`header[${index}].header`}
-                        value={header.header}
-                        onChange={(e) => handleChange(e, 'header', index)}
-                        placeholder="Header"
+              {formData.logos.map((logo, index) => (
+                <Box
+                  key={index}
+                  width="100%"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  borderRadius="8px"
+                  px={3}
+                  py={1}
+                  _hover={{ borderColor: 'blue.200' }}
+                >
+                  <Accordion allowMultiple>
+                    <AccordionItem border="none">
+                      {/* Top Row */}
+                      <HStack
                         width="100%"
+                        justify="space-between"
+                        align="center"
+                      >
+                        <Input
+                          name={`logos[${index}].url`}
+                          value={logo.url}
+                          onChange={(e) => handleChange(e, 'logos', index)}
+                          display="none"
+                        />
+
+                        <Text fontSize="sm">
+                          Upload Logo : <b>Logo {index + 1}</b>
+                        </Text>
+
+                        <HStack spacing={2}>
+                          {/* Upload */}
+                          <Box
+                            as="label"
+                            htmlFor={`logo${index}`}
+                            p="5px"
+                            borderRadius="md"
+                            _hover={{ bg: 'purple.50' }}
+                            cursor="pointer"
+                          >
+                            <FaUpload
+                              style={{ height: 22, width: 22, color: 'purple' }}
+                            />
+                          </Box>
+
+                          <Input
+                            id={`logo${index}`}
+                            name={`logos[${index}].url`}
+                            onChange={(e) =>
+                              handleFileChange(e, 'logos', index)
+                            }
+                            type="file"
+                            accept="image/jpeg , image/png"
+                            style={{
+                              width: 0,
+                              height: 0,
+                              padding: 0,
+                              margin: 0,
+                            }}
+                          />
+
+                          {/* Edit */}
+                          <AccordionButton
+                            height="32px"
+                            width="32px"
+                            borderRadius="md"
+                            _hover={{ bg: 'blue.50' }}
+                            justifyContent="center"
+                          >
+                            <EditIcon color="blue.500" boxSize="20px" />
+                          </AccordionButton>
+
+                          {/* Delete */}
+                          {index > 0 && (
+                            <IconButton
+                              size="sm"
+                              icon={<CloseIcon color="red" boxSize="14px" />}
+                              onClick={() => handleDelete('logos', index)}
+                            />
+                          )}
+                        </HStack>
+                      </HStack>
+
+                      {/* Advanced Settings */}
+                      <AccordionPanel pt={2}>
+                        <Box bg="gray.50" borderRadius="md" px={3} py={2}>
+                          <HStack width="100%" spacing={4}>
+                            <HStack width="60%">
+                              <Text fontSize="sm">Vertical Position:</Text>
+                              <input
+                                type="number"
+                                name={`logos[${index}].height`}
+                                value={logo.height}
+                                onChange={(e) =>
+                                  handleChange(e, 'logos', index)
+                                }
+                                style={{
+                                  width: '55px',
+                                  textAlign: 'center',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            </HStack>
+
+                            <HStack width="40%">
+                              <Text fontSize="sm">Size:</Text>
+                              <input
+                                type="number"
+                                name={`logos[${index}].width`}
+                                value={logo.width}
+                                onChange={(e) =>
+                                  handleChange(e, 'logos', index)
+                                }
+                                style={{
+                                  width: '55px',
+                                  textAlign: 'center',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            </HStack>
+                          </HStack>
+                        </Box>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                </Box>
+              ))}
+
+              {/* Add Button */}
+              {formData.logos.length < 4 && (
+                <Button
+                  onClick={() => addField('logos')}
+                  width="100%"
+                  height="45px"
+                  border="2px dashed"
+                  borderColor="green.400"
+                  color="green.500"
+                  bg="transparent"
+                  leftIcon={<AddIcon />}
+                  _hover={{ bg: 'green.50', borderColor: 'green.500' }}
+                >
+                  Add another
+                </Button>
+              )}
+            </Box>
+
+            {/* Department and Club Fields */}
+            <Box
+              width="100%"
+              className="tw-flex tw-flex-col tw-gap-2 tw-px-2 tw-my-3"
+            >
+              {/* Header */}
+              <Text fontWeight="bold">Enter Department or Club</Text>
+
+              {formData.header.map((header, index) => (
+                <Box key={index} width="100%">
+                  <Accordion allowMultiple>
+                    <AccordionItem border="none">
+                      {/* Top Row */}
+                      <HStack
+                        width="100%"
+                        justify="space-between"
+                        align="center"
+                      >
+                        <Input
+                          name={`header[${index}].header`}
+                          value={header.header}
+                          onChange={(e) => handleChange(e, 'header', index)}
+                          placeholder="Department or Club Name"
+                          borderWidth="2px"
+                          borderColor="gray.300"
+                          textColor="gray.700"
+                          borderRadius="7px"
+                        />
+
+                        <HStack spacing={2}>
+                          {/* Edit */}
+                          <AccordionButton
+                            height="32px"
+                            width="32px"
+                            borderRadius="md"
+                            _hover={{ bg: 'blue.50' }}
+                            justifyContent="center"
+                          >
+                            <EditIcon color="blue.500" boxSize="20px" />
+                          </AccordionButton>
+
+                          {/* Delete */}
+                          {index > 0 && (
+                            <IconButton
+                              size="sm"
+                              icon={<CloseIcon color="red" boxSize="14px" />}
+                              onClick={() => handleDelete('header', index)}
+                            />
+                          )}
+
+                          {/* Add */}
+                          {index === formData.header.length - 1 && (
+                            <IconButton
+                              size="sm"
+                              icon={<AddIcon color="green" boxSize="14px" />}
+                              onClick={() => addField('header')}
+                            />
+                          )}
+                        </HStack>
+                      </HStack>
+
+                      {/* Advanced Settings */}
+                      <AccordionPanel pt={3}>
+                        <Box bg="gray.50" borderRadius="md" px={3} py={3}>
+                          <HStack spacing={6} align="flex-start">
+                            <VStack align="start" spacing={3}>
+                              <Select
+                                name={`header[${index}].fontSize`}
+                                value={header.fontSize}
+                                onChange={(e) =>
+                                  handleChange(e, 'header', index)
+                                }
+                                placeholder="Font Size"
+                              >
+                                {fontsizeopt.map((item, key) => (
+                                  <option key={key} value={item}>
+                                    {item}
+                                  </option>
+                                ))}
+                              </Select>
+
+                              <Select
+                                name={`header[${index}].fontFamily`}
+                                value={header.fontFamily}
+                                onChange={(e) =>
+                                  handleChange(e, 'header', index)
+                                }
+                                placeholder="Font Style"
+                              >
+                                {fontStyleopt.map((item, key) => (
+                                  <option key={key} value={item}>
+                                    {item}
+                                  </option>
+                                ))}
+                              </Select>
+
+                              <Input
+                                name={`header[${index}].fontColor`}
+                                value={header.fontColor}
+                                onChange={(e) =>
+                                  handleChange(e, 'header', index)
+                                }
+                                placeholder="Color (eg. red / #000000)"
+                              />
+
+                              <HStack spacing={4}>
+                                <Checkbox
+                                  name={`header[${index}].bold`}
+                                  value={header.bold}
+                                  isChecked={header.bold === 'bold'}
+                                  onChange={(e) =>
+                                    handleChangeStyle(e, 'header', index)
+                                  }
+                                >
+                                  Bold
+                                </Checkbox>
+
+                                <Checkbox
+                                  name={`header[${index}].italic`}
+                                  value={header.italic}
+                                  isChecked={header.italic === 'italic'}
+                                  onChange={(e) =>
+                                    handleChangeStyle(e, 'header', index)
+                                  }
+                                >
+                                  Italic
+                                </Checkbox>
+                              </HStack>
+                            </VStack>
+
+                            {/* Color Picker */}
+                            <HexAlphaColorPicker
+                              name={`header[${index}].fontColor`}
+                              value={header.fontColor}
+                              onChange={(e) =>
+                                handleChangec(
+                                  e,
+                                  'header',
+                                  `header.fontColor`,
+                                  index
+                                )
+                              }
+                            />
+                          </HStack>
+                        </Box>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                </Box>
+              ))}
+            </Box>
+
+            {/* CERTIFICATE DETAILS */}
+            <Box
+              width="100%"
+              className="tw-px-2 tw-my-2 tw-mb-4 tw-flex tw-flex-col "
+            >
+              <Accordion width="100%" allowMultiple>
+                <AccordionItem width="100%" border="none">
+                  <HStack width="100%" justifyContent="space-between">
+                    <Text className="tw-font-bold">Certificate:</Text>
+                  </HStack>
+                  <VStack width="100%">
+                    <HStack width="100%">
+                      <Input
+                        name="certificateOf.certificateOf"
+                        // value={formData.certificateOf.certificateOf}
+                        onChange={(e) => handleChange(e, 'certificateOf', null)}
+                        placeholder="Type of Certificate (e.g., Certificate of Participation)"
+                        width="100%"
+                        borderWidth="2px"
+                        borderColor="gray.300"
+                        textColor="gray.700"
+                        borderRadius="7px"
                       />
                       <AccordionButton
-                        height="30px"
-                        width="30px"
+                        height="32px"
+                        width="32px"
+                        borderRadius="md"
+                        _hover={{ bg: 'blue.50' }}
                         justifyContent="center"
                       >
-                        <EditIcon
-                          color="blue"
-                          height="25px"
-                          width="25px"
-                          justifyContent="center"
-                        />
+                        <EditIcon color="blue.500" boxSize="20px" />
                       </AccordionButton>
-                      {index > 0 && (
-                        <IconButton
-                          icon={<CloseIcon color="red" width="20px" height="20px" />}
-                          onClick={() => handleDelete('header', index)}
-                        />
-                      )}
-                      {index === formData.header.length - 1 && (
-                        <IconButton
-                          icon={<AddIcon color="green" height="20px" width="20px" />}
-                          onClick={() => addField('header')}
-                        />
-                      )}
                     </HStack>
-                    <AccordionPanel width="100%">
-                      <HStack spacing={'8'}>
-                        <VStack>
-                          <Select
-                            name={`header[${index}].fontSize`}
-                            value={header.fontSize}
-                            onChange={(e) => handleChange(e, 'header', index)}
-                            placeholder="Size"
-                          // width="30%"
-                          >
-                            {fontsizeopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Select
-                            name={`header[${index}].fontFamily`}
-                            value={header.fontFamily}
-                            onChange={(e) => handleChange(e, 'header', index)}
-                            placeholder="Style"
-                          // width="29%"
-                          >
-                            {fontStyleopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Input
-                            name={`header[${index}].fontColor`}
-                            value={header.fontColor}
-                            onChange={(e) => handleChange(e, 'header', index)}
-                            placeholder="Color eg. red"
-                          ></Input>
-                          <HStack>
-                            <Checkbox
-                              name={`header[${index}].bold`}
-                              value={header.bold}
-                              isChecked={header.bold == 'bold'}
+                    <AccordionPanel>
+                      <VStack width="100%">
+                        <HStack>
+                          <VStack>
+                            <Select
+                              name={`certificateOf.fontSize`}
+                              value={formData.certificateOf.fontSize}
                               onChange={(e) =>
-                                handleChangeStyle(e, 'header', index)
+                                handleChange(e, 'certificateOf', null)
                               }
+                              placeholder="Size"
                             >
-                              Bold
-                            </Checkbox>
-                            <Checkbox
-                              name={`header[${index}].italic`}
-                              value={header.italic}
-                              isChecked={header.italic == 'italic'}
+                              {fontsizeopt.map((item, key) => {
+                                return (
+                                  <option key={key} value={`${item}`}>
+                                    {item}
+                                  </option>
+                                );
+                              })}
+                            </Select>
+                            <Select
+                              name={`certificateOf.fontFamily`}
+                              value={formData.certificateOf.fontFamily}
                               onChange={(e) =>
-                                handleChangeStyle(e, 'header', index)
+                                handleChange(e, 'certificateOf', null)
                               }
+                              placeholder="Style"
                             >
-                              Italic
-                            </Checkbox>
-                          </HStack>
-                        </VStack>
-                        <HexAlphaColorPicker
-                          name={`header[${index}].fontColor`}
-                          value={header.fontColor}
-                          onChange={(e) =>
-                            handleChangec(
-                              e,
-                              'header',
-                              `header.fontColor`,
-                              index
-                            )
-                          }
-                        />
-                      </HStack>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
-              </HStack>
-            ))}
-
-            {/* certificateOf */}
-            <Accordion width="100%" allowMultiple>
-              <AccordionItem width="100%" border="none">
-                <HStack width="100%" justifyContent="space-between">
-                  <Text className='tw-font-bold'>Certificate:</Text>
-                </HStack>
-                <VStack width="100%">
-                  <HStack width="100%">
-                    <Input
-                      name="certificateOf.certificateOf"
-                      value={formData.certificateOf.certificateOf}
-                      onChange={(e) => handleChange(e, 'certificateOf', null)}
-                      placeholder="Certificate Of Appreciation"
-                      width="100%"
-                    />
-                    <AccordionButton
-                      height="30px"
-                      width="30px"
-                      justifyContent="center"
-                    >
-                      <EditIcon
-                        color="blue"
-                        height="25px"
-                        width="25px"
-                        justifyContent="center"
-                      />
-                    </AccordionButton>
-                  </HStack>
-                  <AccordionPanel>
-                    <VStack width="100%">
-                      <HStack>
-                        <VStack>
-                          <Select
-                            name={`certificateOf.fontSize`}
-                            value={formData.certificateOf.fontSize}
-                            onChange={(e) =>
-                              handleChange(e, 'certificateOf', null)
-                            }
-                            placeholder="Size"
-                          >
-                            {fontsizeopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Select
-                            name={`certificateOf.fontFamily`}
-                            value={formData.certificateOf.fontFamily}
-                            onChange={(e) =>
-                              handleChange(e, 'certificateOf', null)
-                            }
-                            placeholder="Style"
-                          >
-                            {fontStyleopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Input
+                              {fontStyleopt.map((item, key) => {
+                                return (
+                                  <option key={key} value={`${item}`}>
+                                    {item}
+                                  </option>
+                                );
+                              })}
+                            </Select>
+                            <Input
+                              name={`certificateOf.fontColor`}
+                              value={formData.certificateOf.fontColor}
+                              onChange={(e) =>
+                                handleChange(e, 'certificateOf', null)
+                              }
+                              placeholder="Color eg. red"
+                            ></Input>
+                            <HStack>
+                              <Checkbox
+                                name={`certificateOf.bold`}
+                                value={formData.certificateOf.bold}
+                                isChecked={
+                                  formData.certificateOf.bold == 'bold'
+                                }
+                                onChange={(e) =>
+                                  handleChangeStyle(e, 'certificateOf', null)
+                                }
+                              >
+                                Bold
+                              </Checkbox>
+                              <Checkbox
+                                name={`certificateOf.italic`}
+                                value={formData.certificateOf.italic}
+                                isChecked={
+                                  formData.certificateOf.italic == 'italic'
+                                }
+                                onChange={(e) =>
+                                  handleChangeStyle(e, 'certificateOf', null)
+                                }
+                              >
+                                Italic
+                              </Checkbox>
+                            </HStack>
+                          </VStack>
+                          <HexAlphaColorPicker
                             name={`certificateOf.fontColor`}
                             value={formData.certificateOf.fontColor}
                             onChange={(e) =>
-                              handleChange(e, 'certificateOf', null)
+                              handleChangec(
+                                e,
+                                'certificateOf',
+                                `certificateOf.fontColor`,
+                                null
+                              )
                             }
-                            placeholder="Color eg. red"
-                          ></Input>
-                          <HStack>
-                            <Checkbox
-                              name={`certificateOf.bold`}
-                              value={formData.certificateOf.bold}
-                              isChecked={formData.certificateOf.bold == 'bold'}
-                              onChange={(e) =>
-                                handleChangeStyle(e, 'certificateOf', null)
-                              }
-                            >
-                              Bold
-                            </Checkbox>
-                            <Checkbox
-                              name={`certificateOf.italic`}
-                              value={formData.certificateOf.italic}
-                              isChecked={
-                                formData.certificateOf.italic == 'italic'
-                              }
-                              onChange={(e) =>
-                                handleChangeStyle(e, 'certificateOf', null)
-                              }
-                            >
-                              Italic
-                            </Checkbox>
-                          </HStack>
-                        </VStack>
-                        <HexAlphaColorPicker
-                          name={`certificateOf.fontColor`}
-                          value={formData.certificateOf.fontColor}
-                          onChange={(e) =>
-                            handleChangec(
-                              e,
-                              'certificateOf',
-                              `certificateOf.fontColor`,
-                              null
-                            )
-                          }
-                        />
-                      </HStack>
-                    </VStack>
-                  </AccordionPanel>
-                </VStack>
-              </AccordionItem>
-            </Accordion>
+                          />
+                        </HStack>
+                      </VStack>
+                    </AccordionPanel>
+                  </VStack>
+                </AccordionItem>
+              </Accordion>
+            </Box>
 
             {/* Body of the certificate */}
-            <Accordion width="100%" allowMultiple>
-              <AccordionItem width="100%" border="none">
-                <HStack width="100%" justifyContent="space-between"><Text className='tw-font-bold'>Body of the certificate <Button type='button' onClick={e => { document.getElementById("bodyVariables").style.display = document.getElementById("bodyVariables").style.display == "flex" ? "none" : "flex" }} className='tw-text-black tw-text-sm'>See variables </Button>{window.outerWidth > 768 && <InfoIcon color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('bodyinfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('bodyinfo').style.display = "block"} />}</Text>
-                  <AccordionButton height="30px" width="30px" justifyContent="center">
-                    <EditIcon height="25px" width="25px" justifyContent="center" color="blue" />
-                  </AccordionButton></HStack>
-                <div id="bodyVariables" className=' tw-flex-col tw-justify-center tw-items-center tw-hidden'>
-                  <div id="bodyinfo" className='tw-hidden tw-p-2 m-3 tw-max-w-fit tw-bg-orange-100 tw-rounded-md'>click to copy variable</div>
-                  <ul className='tw-list-none tw-gap-1 tw-flex-wrap tw-flex'>
-                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>name</Button>
-                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>department</Button>
-                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>college</Button>
-                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>teamName</Button>
-                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>position</Button>
-                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>title1</Button>
-                    <Button type='button' onClick={(e) => { copyVariable(`{{${e.target.innerText}}}`) }} className='tw-bg-slate-50 tw-border-2 tw-rounded tw-p-1'>title2</Button>
-                  </ul>
-                </div>
+            <Box
+              width="100%"
+              className="tw-px-2 tw-my-2 tw-mb-4 tw-flex tw-flex-col"
+            >
+              <Accordion width="100%" allowMultiple>
+                <AccordionItem width="100%" border="none">
+                  {/* Header */}
+                  <HStack width="100%" justifyContent="space-between" mb={2}>
+                    <HStack spacing={2}>
+                      <Text fontWeight="bold">Body of the certificate</Text>
 
-                <VStack width="100%">
-                  <Textarea
-                    name="body.body"
-                    value={formData.body.body}
-                    onChange={(e) => handleChange(e, 'body', null)}
-                    placeholder="Drag from bottom right corner to increase the text area"
-                    width="100%"
-                  />
-                  <AccordionPanel>
-                    <VStack width="100%">
-                      <HStack>
-                        <VStack>
-                          <Select
-                            name={`body.fontSize`}
-                            value={formData.body.fontSize}
-                            onChange={(e) => handleChange(e, 'body', null)}
-                            placeholder="Size"
-                          >
-                            {fontsizeopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Select
-                            name={`body.fontFamily`}
-                            value={formData.body.fontFamily}
-                            onChange={(e) => handleChange(e, 'body', null)}
-                            placeholder="Style"
-                          >
-                            {fontStyleopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Input
-                            name={`body.fontColor`}
-                            value={formData.body.fontColor}
-                            onChange={(e) => handleChange(e, 'body', null)}
-                            placeholder="Color eg. red"
-                          ></Input>
-                          <HStack>
-                            <Checkbox
-                              name={`body.bold`}
-                              value={formData.body.bold}
-                              isChecked={formData.body.bold == 'bold'}
-                              onChange={(e) =>
-                                handleChangeStyle(e, 'body', null)
-                              }
-                            >
-                              Bold
-                            </Checkbox>
-                            <Checkbox
-                              name={`body.italic`}
-                              value={formData.body.italic}
-                              isChecked={formData.body.italic == 'italic'}
-                              onChange={(e) =>
-                                handleChangeStyle(e, 'body', null)
-                              }
-                            >
-                              Italic
-                            </Checkbox>
-                          </HStack>
-                        </VStack>
-                        <HexAlphaColorPicker
-                          name={`body.fontColor`}
-                          value={formData.body.fontColor}
-                          onChange={(e) =>
-                            handleChangec(e, 'body', `body.fontColor`, null)
-                          }
-                        />
-                      </HStack>
-                    </VStack>
-                  </AccordionPanel>
-                </VStack>
-              </AccordionItem>
-            </Accordion>
-
-            <Text className='tw-font-bold'>Signatures:</Text>
-
-            {formData.signatures.map((signature, index) => (
-              <VStack width="100%" key={index}>
-                <HStack width="100%" justifyContent="space-between"><Text>Use existing signature with details </Text>
-                  <Signaturemodal
-                    eventId={eventId}
-                    formData={formData}
-                    setFormData={setFormData}
-                    index={index}
-                    handleFileChange={handleFileChange}
-                    signatures={formData.signatures}
-                    signature={signature}
-                    handleChange={handleChange}
-                    selectedFiles={selectedFiles} />
-                </HStack>
-                <Accordion width="100%" allowMultiple>
-                  <AccordionItem width="100%" border="none">
-                    <HStack width="100%">
-                      <Input
-                        name={`signatures[${index}].name.name`}
-                        value={signature.name.name}
-                        onChange={(e) => handleChange(e, 'signatures', index)}
-                        placeholder="Name"
-                      />
-
-                      <AccordionButton
-                        height="30px"
-                        width="30px"
-                        justifyContent="center"
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const el = document.getElementById('bodyVariables');
+                          el.style.display =
+                            el.style.display === 'flex' ? 'none' : 'flex';
+                        }}
                       >
-                        <EditIcon
-                          color="blue"
-                          height="25px"
-                          width="25px"
-                          justifyContent="center"
-                        />
-                      </AccordionButton>
+                        See variables
+                      </Button>
                     </HStack>
-                    <AccordionPanel>
-                      <HStack width="100%">
-                        <VStack>
-                          <Select
-                            name={`signatures[${index}].name.fontSize`}
-                            value={signature.name.fontSize}
-                            onChange={(e) =>
-                              handleChange(e, 'signatures', index)
-                            }
-                            placeholder="Size"
-                          >
-                            {fontsizeopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Select
-                            name={`signatures[${index}].name.fontFamily`}
-                            value={signature.name.fontFamily}
-                            onChange={(e) =>
-                              handleChange(e, 'signatures', index)
-                            }
-                            placeholder="Style"
-                          >
-                            {fontStyleopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Input
-                            name={`signatures[${index}].name.fontColor`}
-                            value={signature.name.fontColor}
-                            onChange={(e) =>
-                              handleChange(e, 'signatures', index)
-                            }
-                            placeholder="Color eg. red"
-                          ></Input>
-                          <HStack>
-                            <Checkbox
-                              name={`signatures[${index}].name.bold`}
-                              value={signature.name.bold}
-                              isChecked={signature.name.bold == 'bold'}
-                              onChange={(e) =>
-                                handleChangeStyle(e, 'signatures', index)
-                              }
-                            >
-                              Bold
-                            </Checkbox>
-                            <Checkbox
-                              name={`signatures[${index}].name.italic`}
-                              value={signature.name.italic}
-                              isChecked={signature.name.italic == 'italic'}
-                              onChange={(e) =>
-                                handleChangeStyle(e, 'signatures', index)
-                              }
-                            >
-                              Italic
-                            </Checkbox>
-                          </HStack>
-                        </VStack>
-                        <HexAlphaColorPicker
-                          name={`signatures[${index}].name.fontColor`}
-                          value={signature.name.fontColor}
-                          onChange={(e) =>
-                            handleChangec(
-                              e,
-                              'signatures',
-                              `signatures[${index}].name.fontColor`,
-                              index
-                            )
-                          }
-                        />
-                      </HStack>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
 
-                <Accordion width="100%" allowMultiple>
-                  <AccordionItem width="100%" border="none">
-                    <HStack width="100%">
-                      <Input
-                        name={`signatures[${index}].position.position`}
-                        value={signature.position.position}
-                        onChange={(e) => handleChange(e, 'signatures', index)}
-                        placeholder="Position"
-                      />
+                    <AccordionButton
+                      height="32px"
+                      width="32px"
+                      borderRadius="md"
+                      _hover={{ bg: 'blue.50' }}
+                      justifyContent="center"
+                    >
+                      <EditIcon color="blue.500" boxSize="20px" />
+                    </AccordionButton>
+                  </HStack>
 
-                      <AccordionButton
-                        height="30px"
-                        width="30px"
-                        justifyContent="center"
-                      >
-                        <EditIcon
-                          color="blue"
-                          height="25px"
-                          width="25px"
-                          justifyContent="center"
-                        />
-                      </AccordionButton>
-                    </HStack>
-                    <AccordionPanel>
-                      <HStack width="100%">
-                        <VStack>
-                          <Select
-                            name={`signatures[${index}].position.fontSize`}
-                            value={signature.position.fontSize}
-                            onChange={(e) =>
-                              handleChange(e, 'signatures', index)
-                            }
-                            placeholder="Size"
-                          >
-                            {fontsizeopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Select
-                            name={`signatures[${index}].position.fontFamily`}
-                            value={signature.position.fontFamily}
-                            onChange={(e) =>
-                              handleChange(e, 'signatures', index)
-                            }
-                            placeholder="Style"
-                          >
-                            {fontStyleopt.map((item, key) => {
-                              return (
-                                <option key={key} value={`${item}`}>
-                                  {item}
-                                </option>
-                              );
-                            })}
-                          </Select>
-                          <Input
-                            name={`signatures[${index}].position.fontColor`}
-                            value={signature.position.fontColor}
-                            onChange={(e) =>
-                              handleChange(e, 'signatures', index)
-                            }
-                            placeholder="Color eg. red"
-                          ></Input>
-                          <HStack>
-                            <Checkbox
-                              name={`signatures[${index}].position.bold`}
-                              value={signature.position.bold}
-                              isChecked={signature.position.bold == 'bold'}
-                              onChange={(e) =>
-                                handleChangeStyle(e, 'signatures', index)
-                              }
-                            >
-                              Bold
-                            </Checkbox>
-                            <Checkbox
-                              name={`signatures[${index}].position.italic`}
-                              value={signature.position.italic}
-                              isChecked={signature.position.italic == 'italic'}
-                              onChange={(e) =>
-                                handleChangeStyle(e, 'signatures', index)
-                              }
-                            >
-                              Italic
-                            </Checkbox>
-                          </HStack>
-                        </VStack>
-                        <HexAlphaColorPicker
-                          name={`signatures[${index}].position.fontColor`}
-                          value={signature.position.fontColor}
-                          onChange={(e) =>
-                            handleChangec(
-                              e,
-                              'signatures',
-                              `signatures[${index}].position.fontColor`,
-                              index
-                            )
-                          }
-                        />
-                      </HStack>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
-                <Accordion width="100%" allowMultiple>
-                  <AccordionItem width="100%" border="none" ><HStack width="100%">
-                    <Input
-                      name={`signatures[${index}].url.url`}
-                      value={signature.url.url}
-                      onChange={(e) => handleChange(e, 'signatures', index)}
-                      placeholder="URL"
-                      display="none"
-                    />
-                    <Text
-                    width="100%">Upload Signature image (jpg/png): </Text>
-                    <label className='tw-flex tw-justify-center tw-items-center tw-ml-2 hover:tw-cursor-pointer' htmlFor={`signatures[${index}].url.url`}  ><FaUpload style={{ height: "25px", width: "25px", color: 'purple' }} /></label>
-                    <input
-                      id={`signatures[${index}].url.url`}
-                      name={`signatures[${index}].url.url`}
-                      onChange={(e) => { handleFileChange(e, 'signatures', index); toast({ title: "Image uploaded", status: "success", duration: 2000, isClosable: true }) }}
-                      type='file'
-                      accept='image/jpeg , image/png'
-                      style={{ height: "0px", width: "0px" }}
-                    />
-                    <AccordionButton height="30px" width="30px" justifyContent="center"><EditIcon height="25px" width="25px" justifyContent="center" color="blue" /></AccordionButton></HStack>
+                  {/* Variables Panel */}
+                  <Box
+                    id="bodyVariables"
+                    display="none"
+                    mb={3}
+                    p={3}
+                    bg="gray.50"
+                    border="1px dashed"
+                    borderColor="gray.300"
+                    borderRadius="6px"
+                  >
+                    <Text fontSize="sm" color="gray.600" mb={2}>
+                      Click to copy variable
+                    </Text>
 
-                    <AccordionPanel>
-                      <HStack width="100%">
-                        <Text>Size:</Text>
-                        <Input
-                          name={`signatures[${index}].url.size`}
-                          value={signature.url.size}
-                          onChange={(e) => handleChange(e, 'signatures', index)}
-                          placeholder="Size"
-                          type="number"
-                        ></Input>
+                    <HStack wrap="wrap" spacing={2}>
+                      {[
+                        'name',
+                        'department',
+                        'college',
+                        'teamName',
+                        'position',
+                        'title1',
+                        'title2',
+                      ].map((item) => (
                         <Button
+                          key={item}
                           type="button"
-                          name={`signatures[${index}].url.url`}
-                          onClick={(e) => bgremove(e, 'signatures', index)}
-                          value={signature.url.url}
-                          style={{ color: 'black', width: '500px' }}
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) =>
+                            copyVariable(`{{${e.target.innerText}}}`)
+                          }
                         >
-                          Remove Backgound {window.outerWidth > 768 && <InfoIcon marginX="4px" color="brown" height={"18px"} width={"18px"} onMouseLeave={(e) => document.getElementById('signInfo').style.display = "none"} onMouseEnter={(e) => document.getElementById('signInfo').style.display = "block"} />}
+                          {item}
                         </Button>
-                        
-                      </HStack>
-                      <Text background="lightcyan" borderRadius="10%" display="none" id='signInfo'>Use white background only</Text>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
+                      ))}
+                    </HStack>
+                  </Box>
 
-                <HStack>
-                  {index > 0 && (
-                    <IconButton
-                      icon={<CloseIcon color="red" width="20px" height="20px" />}
-                      onClick={() => handleDelete('signatures', index)}
+                  {/* Body Text */}
+                  <VStack width="100%" spacing={3}>
+                    <Textarea
+                      name="body.body"
+                      value={formData.body.body}
+                      onChange={(e) => handleChange(e, 'body', null)}
+                      placeholder="Drag from bottom right corner to increase the text area"
+                      minH="120px"
+                      resize="vertical"
                     />
-                  )}
-                  {index === formData.signatures.length - 1 && (
-                    <IconButton
-                      icon={<AddIcon color="green" height="20px" width="20px" />}
-                      onClick={() => addField('signatures')}
-                    />
-                  )}
-                </HStack>
-              </VStack>
-            ))}
+
+                    {/* Advanced Settings */}
+                    <AccordionPanel pt={2} width="100%">
+                      <Box
+                        bg="gray.50"
+                        borderRadius="md"
+                        px={3}
+                        py={3}
+                        width="100%"
+                      >
+                        <HStack align="flex-start" spacing={6}>
+                          <VStack align="start" spacing={3}>
+                            <Select
+                              name="body.fontSize"
+                              value={formData.body.fontSize}
+                              onChange={(e) => handleChange(e, 'body', null)}
+                              placeholder="Font Size"
+                            >
+                              {fontsizeopt.map((item, key) => (
+                                <option key={key} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </Select>
+
+                            <Select
+                              name="body.fontFamily"
+                              value={formData.body.fontFamily}
+                              onChange={(e) => handleChange(e, 'body', null)}
+                              placeholder="Font Style"
+                            >
+                              {fontStyleopt.map((item, key) => (
+                                <option key={key} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </Select>
+
+                            <Input
+                              name="body.fontColor"
+                              value={formData.body.fontColor}
+                              onChange={(e) => handleChange(e, 'body', null)}
+                              placeholder="Color (eg. red / #000000)"
+                            />
+
+                            <HStack spacing={4}>
+                              <Checkbox
+                                name="body.bold"
+                                value={formData.body.bold}
+                                isChecked={formData.body.bold === 'bold'}
+                                onChange={(e) =>
+                                  handleChangeStyle(e, 'body', null)
+                                }
+                              >
+                                Bold
+                              </Checkbox>
+
+                              <Checkbox
+                                name="body.italic"
+                                value={formData.body.italic}
+                                isChecked={formData.body.italic === 'italic'}
+                                onChange={(e) =>
+                                  handleChangeStyle(e, 'body', null)
+                                }
+                              >
+                                Italic
+                              </Checkbox>
+                            </HStack>
+                          </VStack>
+
+                          {/* Color Picker */}
+                          <HexAlphaColorPicker
+                            name="body.fontColor"
+                            value={formData.body.fontColor}
+                            onChange={(e) =>
+                              handleChangec(e, 'body', 'body.fontColor', null)
+                            }
+                          />
+                        </HStack>
+                      </Box>
+                    </AccordionPanel>
+                  </VStack>
+                </AccordionItem>
+              </Accordion>
+            </Box>
+
+            {/* Signatures Fields */}
+            <Box
+              width="100%"
+              className="tw-px-2 tw-my-4 tw-flex tw-flex-col tw-gap-3"
+            >
+              {/* Section Header */}
+              <Text fontWeight="bold">Signatures</Text>
+
+              {formData.signatures.map((signature, index) => (
+                <Box
+                  key={index}
+                  width="100%"
+                  border="2px solid"
+                  borderColor="gray.200"
+                  borderRadius="8px"
+                  px={3}
+                  py={3}
+                  _hover={{ borderColor: 'blue.300' }}
+                >
+                  <VStack width="100%" spacing={3}>
+                    {/* Existing Signature */}
+                    <HStack width="100%" justifyContent="space-between">
+                      <Text fontSize="sm" color="gray.600">
+                        Use existing signature with details
+                      </Text>
+
+                      <Signaturemodal
+                        eventId={eventId}
+                        formData={formData}
+                        setFormData={setFormData}
+                        index={index}
+                        handleFileChange={handleFileChange}
+                        signatures={formData.signatures}
+                        signature={signature}
+                        handleChange={handleChange}
+                        selectedFiles={selectedFiles}
+                      />
+                    </HStack>
+
+                    {/* NAME */}
+                    <Accordion allowMultiple>
+                      <AccordionItem border="none">
+                        <HStack justify="space-between">
+                          <Input
+                            name={`signatures[${index}].name.name`}
+                            value={signature.name.name}
+                            onChange={(e) =>
+                              handleChange(e, 'signatures', index)
+                            }
+                            placeholder="Name"
+                          />
+
+                          <AccordionButton
+                            height="32px"
+                            width="32px"
+                            borderRadius="md"
+                            _hover={{ bg: 'blue.50' }}
+                          >
+                            <EditIcon color="blue.500" boxSize="18px" />
+                          </AccordionButton>
+                        </HStack>
+
+                        <AccordionPanel pt={2}>
+                          <Box bg="gray.50" p={3} borderRadius="md">
+                            <HStack spacing={6} align="flex-start">
+                              <VStack align="start" spacing={3}>
+                                <Select
+                                  name={`signatures[${index}].name.fontSize`}
+                                  value={signature.name.fontSize}
+                                  onChange={(e) =>
+                                    handleChange(e, 'signatures', index)
+                                  }
+                                  placeholder="Font Size"
+                                >
+                                  {fontsizeopt.map((item, key) => (
+                                    <option key={key} value={item}>
+                                      {item}
+                                    </option>
+                                  ))}
+                                </Select>
+
+                                <Select
+                                  name={`signatures[${index}].name.fontFamily`}
+                                  value={signature.name.fontFamily}
+                                  onChange={(e) =>
+                                    handleChange(e, 'signatures', index)
+                                  }
+                                  placeholder="Font Style"
+                                >
+                                  {fontStyleopt.map((item, key) => (
+                                    <option key={key} value={item}>
+                                      {item}
+                                    </option>
+                                  ))}
+                                </Select>
+
+                                <Input
+                                  name={`signatures[${index}].name.fontColor`}
+                                  value={signature.name.fontColor}
+                                  onChange={(e) =>
+                                    handleChange(e, 'signatures', index)
+                                  }
+                                  placeholder="Color"
+                                />
+
+                                <HStack spacing={4}>
+                                  <Checkbox
+                                    name={`signatures[${index}].name.bold`}
+                                    isChecked={signature.name.bold === 'bold'}
+                                    onChange={(e) =>
+                                      handleChangeStyle(e, 'signatures', index)
+                                    }
+                                  >
+                                    Bold
+                                  </Checkbox>
+
+                                  <Checkbox
+                                    name={`signatures[${index}].name.italic`}
+                                    isChecked={
+                                      signature.name.italic === 'italic'
+                                    }
+                                    onChange={(e) =>
+                                      handleChangeStyle(e, 'signatures', index)
+                                    }
+                                  >
+                                    Italic
+                                  </Checkbox>
+                                </HStack>
+                              </VStack>
+
+                              <HexAlphaColorPicker
+                                value={signature.name.fontColor}
+                                onChange={(e) =>
+                                  handleChangec(
+                                    e,
+                                    'signatures',
+                                    `signatures[${index}].name.fontColor`,
+                                    index
+                                  )
+                                }
+                              />
+                            </HStack>
+                          </Box>
+                        </AccordionPanel>
+                      </AccordionItem>
+                    </Accordion>
+
+                    {/* POSITION */}
+                    <Accordion allowMultiple>
+                      <AccordionItem border="none">
+                        <HStack justify="space-between">
+                          <Input
+                            name={`signatures[${index}].position.position`}
+                            value={signature.position.position}
+                            onChange={(e) =>
+                              handleChange(e, 'signatures', index)
+                            }
+                            placeholder="Position"
+                          />
+
+                          <AccordionButton
+                            height="32px"
+                            width="32px"
+                            borderRadius="md"
+                            _hover={{ bg: 'blue.50' }}
+                          >
+                            <EditIcon color="blue.500" boxSize="18px" />
+                          </AccordionButton>
+                        </HStack>
+
+                        <AccordionPanel pt={2}>
+                          <Box bg="gray.50" p={3} borderRadius="md">
+                            <HStack spacing={6} align="flex-start">
+                              <VStack align="start" spacing={3}>
+                                <Select
+                                  name={`signatures[${index}].position.fontSize`}
+                                  value={signature.position.fontSize}
+                                  onChange={(e) =>
+                                    handleChange(e, 'signatures', index)
+                                  }
+                                  placeholder="Font Size"
+                                >
+                                  {fontsizeopt.map((item, key) => (
+                                    <option key={key} value={item}>
+                                      {item}
+                                    </option>
+                                  ))}
+                                </Select>
+
+                                <Select
+                                  name={`signatures[${index}].position.fontFamily`}
+                                  value={signature.position.fontFamily}
+                                  onChange={(e) =>
+                                    handleChange(e, 'signatures', index)
+                                  }
+                                  placeholder="Font Style"
+                                >
+                                  {fontStyleopt.map((item, key) => (
+                                    <option key={key} value={item}>
+                                      {item}
+                                    </option>
+                                  ))}
+                                </Select>
+
+                                <Input
+                                  name={`signatures[${index}].position.fontColor`}
+                                  value={signature.position.fontColor}
+                                  onChange={(e) =>
+                                    handleChange(e, 'signatures', index)
+                                  }
+                                  placeholder="Color"
+                                />
+
+                                <HStack spacing={4}>
+                                  <Checkbox
+                                    isChecked={
+                                      signature.position.bold === 'bold'
+                                    }
+                                    onChange={(e) =>
+                                      handleChangeStyle(e, 'signatures', index)
+                                    }
+                                  >
+                                    Bold
+                                  </Checkbox>
+
+                                  <Checkbox
+                                    isChecked={
+                                      signature.position.italic === 'italic'
+                                    }
+                                    onChange={(e) =>
+                                      handleChangeStyle(e, 'signatures', index)
+                                    }
+                                  >
+                                    Italic
+                                  </Checkbox>
+                                </HStack>
+                              </VStack>
+
+                              <HexAlphaColorPicker
+                                value={signature.position.fontColor}
+                                onChange={(e) =>
+                                  handleChangec(
+                                    e,
+                                    'signatures',
+                                    `signatures[${index}].position.fontColor`,
+                                    index
+                                  )
+                                }
+                              />
+                            </HStack>
+                          </Box>
+                        </AccordionPanel>
+                      </AccordionItem>
+                    </Accordion>
+
+                    {/* IMAGE UPLOAD */}
+                    <Accordion allowMultiple>
+                      <AccordionItem border="none">
+                        <HStack justify="space-between">
+                          <Text fontSize="sm">
+                            Upload signature image (jpg/png)
+                          </Text>
+
+                          <HStack spacing={2}>
+                            <Box
+                              as="label"
+                              htmlFor={`signatures-${index}`}
+                              cursor="pointer"
+                              p={1}
+                              borderRadius="md"
+                              _hover={{ bg: 'purple.50' }}
+                            >
+                              <FaUpload
+                                style={{
+                                  height: 22,
+                                  width: 22,
+                                  color: 'purple',
+                                }}
+                              />
+                            </Box>
+
+                            <input
+                              id={`signatures-${index}`}
+                              type="file"
+                              accept="image/jpeg , image/png"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                handleFileChange(e, 'signatures', index);
+                                toast({
+                                  title: 'Image uploaded',
+                                  status: 'success',
+                                  duration: 2000,
+                                  isClosable: true,
+                                });
+                              }}
+                            />
+
+                            <AccordionButton
+                              height="32px"
+                              width="32px"
+                              borderRadius="md"
+                            >
+                              <EditIcon color="blue.500" boxSize="18px" />
+                            </AccordionButton>
+                          </HStack>
+                        </HStack>
+
+                        <AccordionPanel pt={2}>
+                          <Box bg="gray.50" p={3} borderRadius="md">
+                            <HStack spacing={4}>
+                              <Text>Size</Text>
+                              <Input
+                                type="number"
+                                value={signature.url.size}
+                                onChange={(e) =>
+                                  handleChange(e, 'signatures', index)
+                                }
+                              />
+
+                              <Button
+                                type="button"
+                                onClick={(e) =>
+                                  bgremove(e, 'signatures', index)
+                                }
+                              >
+                                Remove Background
+                              </Button>
+                            </HStack>
+                          </Box>
+                        </AccordionPanel>
+                      </AccordionItem>
+                    </Accordion>
+
+                    {/* Actions */}
+                    <HStack justify="flex-end">
+                      {index > 0 && (
+                        <IconButton
+                          icon={<CloseIcon color="red" />}
+                          onClick={() => handleDelete('signatures', index)}
+                        />
+                      )}
+                      {index === formData.signatures.length - 1 && (
+                        <IconButton
+                          icon={<AddIcon color="green" />}
+                          onClick={() => addField('signatures')}
+                        />
+                      )}
+                    </HStack>
+                  </VStack>
+                </Box>
+              ))}
+            </Box>
 
             {/* Verifible link */}
-            <Text className='tw-font-bold'>QR code with verifiable link:</Text>
-            <Select
-              name="verifiableLink"
-              value={formData.verifiableLink}
-              onChange={(e) => handleChange(e, 'verifiableLink', null)}
-            // placeholder="Select Required or not"
+            <Box
+              width="100%"
+              className="tw-my-4 tw-flex tw-flex-row tw-gap-2 tw-px-2 tw-items-center tw-justify-between"
             >
-              <option value={true}>Required</option>
-              <option value={false}>Not Required</option>
-            </Select>
-            <HStack width="100%">
-              <Text className='tw-font-bold' width="40%">Date of issue:</Text>
-              <Input
-                type="date"
-                name="footer.footer"
-                value={formData.footer.footer}
-                onChange={(e) => handleChange(e, 'footer', null)}
-              />
-            </HStack>
+              {/* Label */}
+              <Text className="tw-font-bold tw-text-[16px]">
+                QR code with verifiable link:
+              </Text>
 
-            <Button type="submit" colorScheme="blue">
-              Submit
-            </Button>
+              {/* Select box */}
+              {/* <Select
+                name="verifiableLink"
+                value={formData.verifiableLink}
+                onChange={(e) => handleChange(e, 'verifiableLink', null)}
+                height="42px"
+                width="160px"
+                borderRadius="8px"
+                borderWidth="2px"
+                borderColor="gray.300"
+                className="tw-flex tw-items-center"
+                _hover={{ borderColor: 'blue.400' }}
+                _focus={{ borderColor: 'blue.500', boxShadow: 'none' }}
+              >
+                <option value={true}>Required</option>
+                <option value={false}>Not Required</option>
+              </Select> */}
+
+              <Text
+                fontSize="sm"
+                fontWeight="500"
+                color="gray.600"
+                minW="90px"
+                textAlign="right"
+              >
+                {formData.verifiableLink ? '(Required)' : '(Not Required)'}
+              </Text>
+
+              {/*Toggle Switch with default value true */}
+              <Switch
+                isChecked={formData.verifiableLink === true}
+                onChange={(e) =>
+                  handleChange(
+                    { target: { value: e.target.checked } },
+                    'verifiableLink',
+                    null
+                  )
+                }
+                size="md"
+                sx={{
+                  '--switch-track-width': '48px',
+                  '--switch-track-height': '24px',
+                  '--switch-thumb-size': '20px',
+
+                  '.chakra-switch__track': {
+                    bg: 'gray.200',
+                    borderRadius: 'full',
+                    transition: 'background-color 0.2s ease',
+                    _checked: {
+                      bg: 'teal.500',
+                    },
+                  },
+
+                  '.chakra-switch__thumb': {
+                    bg: 'white',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                    transition: 'transform 0.2s ease',
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Date of issue */}
+            <Box
+              width="100%"
+              className="tw-my-2 tw-flex tw-flex-row tw-gap-2 tw-px-2 tw-items-center tw-justify-between"
+            >
+              <HStack width="100%">
+                <Text className="tw-font-bold" width="40%">
+                  Date of issue:
+                </Text>
+                <Input
+                  type="date"
+                  name="footer.footer"
+                  width="180px"
+                  borderWidth="2px"
+                  value={formData.footer.footer}
+                  onChange={(e) => handleChange(e, 'footer', null)}
+                />
+              </HStack>
+            </Box>
+
+            <Box width="100%" className="tw-px-2 tw-my-4">
+              <Button
+                type="submit"
+                width="100%"
+                height="44px"
+                borderRadius="12px"
+                colorScheme="blue"
+                fontSize="md"
+                fontWeight="semibold"
+              >
+                Save Changes
+              </Button>
+            </Box>
           </VStack>
-        </form>
+        </Box>
       </Container>
       <Box flex="1" p="4" style={{ margin: '0px', padding: '0px' }}>
         <SelectCertficate
