@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
-import useExemptedLinks from '../../hooks/useExemptedLinks';
 import { Text, Button, Flex } from '@chakra-ui/react';
 import NavBar from '../../reviewmodule/components/NavBar';
 import DMNavbar from '../../diabeticsModule/components/DMNavbar';
@@ -19,7 +18,6 @@ export default function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { exemptedLinks = [], loading: linksLoading } = useExemptedLinks();
 
   useEffect(() => {
     const getUserDetails = async () => {
@@ -32,38 +30,25 @@ export default function Navbar() {
           credentials: 'include',
         });
 
-        // Treat 401 as unauthenticated (not an application error)
-        if (response.status === 401) return null;
-
-        // For other non-OK responses, log and return null to avoid throwing
         if (!response.ok) {
-          console.error('Failed to fetch user details:', response.status, response.statusText);
-          return null;
+          throw new Error('Failed to fetch user details');
         }
 
         const userdetail = await response.json();
         return userdetail;
       } catch (error) {
-        // Network or unexpected error - log then return null
-        console.error('Error fetching user details:', error?.message || error);
-        return null;
+        console.error('Error fetching user details:', error.message);
+        throw error;
       }
     };
 
     const fetchUserDetails = async () => {
       try {
         const userDetails = await getUserDetails();
-        if (!userDetails) {
-          setIsAuthenticated(false);
-          setUserDetails(null);
-        } else {
-          setUserDetails(userDetails);
-          setIsAuthenticated(true);
-        }
+        setUserDetails(userDetails);
+        setIsAuthenticated(true);
       } catch (error) {
-        console.error('Unexpected error while fetching user details:', error?.message || error);
-        setIsAuthenticated(false);
-        setUserDetails(null);
+        // Handle error (e.g., display an error message or redirect to an error page)
       } finally {
         setIsLoading(false);
       }
@@ -104,10 +89,8 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    const normalizedExempted = exemptedLinks || [];
     const isPublicPath =
       publicPaths.includes(location.pathname) ||
-      normalizedExempted.some((link) => location.pathname.startsWith(link)) ||
       location.pathname.startsWith('/services/') ||
       location.pathname.startsWith('/cm/c/') ||
       location.pathname.startsWith('/timetable/faculty/');
@@ -119,9 +102,9 @@ export default function Navbar() {
 
   const excludedRoutes = ['/login', '/cm/c'];
 
-  const isExcluded =
-    excludedRoutes.some((route) => location.pathname.startsWith(route)) ||
-    (exemptedLinks || []).some((link) => location.pathname.startsWith(link));
+  const isExcluded = excludedRoutes.some((route) =>
+    location.pathname.startsWith(route)
+  );
 
   if (isLoading || isExcluded) {
     return null;
