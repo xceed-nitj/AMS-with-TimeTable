@@ -4,7 +4,6 @@ import clsx from 'clsx';
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import getEnvironment from '../../getenvironment';
-import useExemptedLinks from '../../hooks/useExemptedLinks';
 import { Text, Button, Flex, Spinner } from '@chakra-ui/react';
 
 function NavBar() {
@@ -15,8 +14,6 @@ function NavBar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const { exemptedLinks = [] } = useExemptedLinks();
 
   const excludedRoutes = ['/login', '/cm/c','/prm/register'];
   const excludedRoutesLogin = [/\/prm\/[a-zA-Z0-9]\/reviewer\/.*/,'/prm/register','/prm/emailverification'];
@@ -60,10 +57,9 @@ function NavBar() {
   }, [apiUrl]);
 
   useEffect(() => {
-    const isExcludedLogin =
-      excludedRoutesLogin.some((route) =>
-        route instanceof RegExp ? route.test(location.pathname) : location.pathname.startsWith(route)
-      ) || exemptedLinks.some((link) => location.pathname.startsWith(link));
+    const isExcludedLogin = excludedRoutesLogin.some((route) =>
+      route instanceof RegExp ? route.test(location.pathname) : location.pathname.startsWith(route)
+    );
 
     if (!isLoading && !isAuthenticated && !isExcludedLogin && location.pathname !== '/login') {
       navigate('/login');
@@ -86,9 +82,9 @@ function NavBar() {
     }
   };
 
-  const isExcluded =
-    excludedRoutes.some((route) => location.pathname.startsWith(route)) ||
-    (exemptedLinks || []).some((link) => location.pathname.startsWith(link));
+  const isExcluded = excludedRoutes.some((route) =>
+    location.pathname.startsWith(route)
+  );
 
   if ( isExcluded) {
     return null;
