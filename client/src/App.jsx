@@ -147,6 +147,11 @@ import UserManagement from './dashboard/userManagement';
 import UserEventRegistration from './certificatemodule/pages/addEvent';
 
 import Form from './platform/Form.jsx';
+import PlatformLayout from './platform/PlatformLayout.jsx';
+import PlatformDashboard from './platform/PlatformDashboard.jsx';
+import PlatformConfig from './platform/PlatformConfig.jsx';
+import PlatformModules from './platform/PlatformModules.jsx';
+import PlatformData from './platform/PlatformData.jsx';
 import AllForms from './reviewmodule/pages/AllForms.jsx';
 import Reviews from './reviewmodule/pages/Reviews.jsx';
 
@@ -504,14 +509,13 @@ function App() {
           }
         ></Route>
 
-        <Route
-          path="/platform"
-          element={
-            <>
-              <Form />
-            </>
-          }
-        />
+        {/* Platform Routes with Sidebar */}
+        <Route path="/platform" element={<PlatformLayout />}>
+          <Route index element={<PlatformDashboard />} />
+          <Route path="config" element={<PlatformConfig />} />
+          <Route path="modules" element={<PlatformModules />} />
+          <Route path="data" element={<PlatformData />} />
+        </Route>
 
         {/* Routes for Diabetics Module */}
         {/* Authentication */}
