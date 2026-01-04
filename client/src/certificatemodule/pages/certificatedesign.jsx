@@ -17,6 +17,7 @@ import {
   Heading,
   Center,
   Tooltip,
+  Switch,
 } from '@chakra-ui/react';
 import { AddIcon, CloseIcon, EditIcon, InfoIcon } from '@chakra-ui/icons';
 import getEnvironment from '../../getenvironment';
@@ -124,7 +125,7 @@ const CertificateForm = () => {
         fontColor: 'black',
       },
     ],
-    verifiableLink: false,
+    verifiableLink: true,
     certificateOf: {
       certificateOf: 'CERTIFICATE OF APPRECIATION',
       fontSize: 32,
@@ -225,7 +226,7 @@ const CertificateForm = () => {
           fontColor: 'black',
         },
       ],
-      verifiableLink: false,
+      verifiableLink: true,
       certificateOf: {
         certificateOf: 'CERTIFICATE OF APPRECIATION',
         fontSize: 32,
@@ -976,13 +977,11 @@ const CertificateForm = () => {
           as="form"
           id="form"
           onSubmit={handleSubmit}
-          borderWidth="1px"
           borderRadius="15px"
-          
           padding={4}
           marginBottom={7}
           borderColor="gray"
-          boxShadow={'2xl'}
+          boxShadow="0 0 15px rgba(0, 0, 0, 0.15)"
         >
           <VStack spacing={4} align="start" className="tw-mb-10">
             {/* Certificate Type Selection */}
@@ -1043,19 +1042,19 @@ const CertificateForm = () => {
                               borderRadius="7px"
                             />
                             <AccordionButton
-                  height="34px"
-                  width="34px"
-                  justifyContent="center"
-                  borderRadius="8px"
-                  _hover={{ bg: 'blue.50' }}
-                >
-                  <EditIcon color="blue.500" boxSize="18px" />
-                </AccordionButton>
+                              height="34px"
+                              width="34px"
+                              justifyContent="center"
+                              borderRadius="8px"
+                              _hover={{ bg: 'blue.50' }}
+                            >
+                              <EditIcon color="blue.500" boxSize="18px" />
+                            </AccordionButton>
 
                             {index > 1 && (
                               <IconButton
                                 size="sm"
-                              icon={<CloseIcon color="red" boxSize="14px" />}
+                                icon={<CloseIcon color="red" boxSize="14px" />}
                                 onClick={() => handleDelete('title', index)}
                               />
                             )}
@@ -2237,7 +2236,7 @@ const CertificateForm = () => {
               </Text>
 
               {/* Select box */}
-              <Select
+              {/* <Select
                 name="verifiableLink"
                 value={formData.verifiableLink}
                 onChange={(e) => handleChange(e, 'verifiableLink', null)}
@@ -2250,9 +2249,52 @@ const CertificateForm = () => {
                 _hover={{ borderColor: 'blue.400' }}
                 _focus={{ borderColor: 'blue.500', boxShadow: 'none' }}
               >
-                <option value={false}>Not Required</option>
                 <option value={true}>Required</option>
-              </Select>
+                <option value={false}>Not Required</option>
+              </Select> */}
+
+              <Text
+                fontSize="sm"
+                fontWeight="500"
+                color="gray.600"
+                minW="90px"
+                textAlign="right"
+              >
+                {formData.verifiableLink ? '(Required)' : '(Not Required)'}
+              </Text>
+
+              {/*Toggle Switch with default value true */}
+              <Switch
+                isChecked={formData.verifiableLink === true}
+                onChange={(e) =>
+                  handleChange(
+                    { target: { value: e.target.checked } },
+                    'verifiableLink',
+                    null
+                  )
+                }
+                size="md"
+                sx={{
+                  '--switch-track-width': '48px',
+                  '--switch-track-height': '24px',
+                  '--switch-thumb-size': '20px',
+
+                  '.chakra-switch__track': {
+                    bg: 'gray.200',
+                    borderRadius: 'full',
+                    transition: 'background-color 0.2s ease',
+                    _checked: {
+                      bg: 'teal.500',
+                    },
+                  },
+
+                  '.chakra-switch__thumb': {
+                    bg: 'white',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                    transition: 'transform 0.2s ease',
+                  },
+                }}
+              />
             </Box>
 
             {/* Date of issue */}
