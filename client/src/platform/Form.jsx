@@ -25,7 +25,6 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import getEnvironment from '../getenvironment';
-import TreeForm from './treeForm';
 
 const FormComponent = () => {
   const [roles, setRoles] = useState([
@@ -42,14 +41,11 @@ const FormComponent = () => {
     'register',
     'verify',
   ]); // Default values
-  const [researchArea, setResearchArea] = useState(['ECE', 'IT', 'EE', 'ME']); // Default values
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedExemptedLinks, setSelectedExemptedLinks] = useState([]);
-  const [selectedResearchArea, setSelectedResearchArea] = useState([]);
   const [data, setData] = useState([]);
   const [newRole, setNewRole] = useState('');
   const [newExemptedLink, setNewExemptedLink] = useState('');
-  const [newResearchArea, setNewResearchArea] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
   const toast = useToast();
@@ -70,9 +66,6 @@ const FormComponent = () => {
         ]);
         setExemptedLinks((prevLinks) => [
           ...new Set([...prevLinks, ...(response.data[0].exemptedLinks || [])]),
-        ]);
-        setResearchArea((prevAreas) => [
-          ...new Set([...prevAreas, ...(response.data[0].researchArea || [])]),
         ]);
       }
       // Also fetch dedicated exempted links endpoint to ensure sync
@@ -145,27 +138,10 @@ const FormComponent = () => {
     }
   };
 
-  const handleAddResearchArea = () => {
-    if (!newResearchArea) {
-      toast({
-        title: 'Research Area cannot be empty',
-        status: 'error',
-        duration: 2000,
-        isClosable: true,
-      });
-      return;
-    }
-    setResearchArea((prevAreas) => [
-      ...new Set([...prevAreas, newResearchArea]),
-    ]);
-    setNewResearchArea('');
-  };
-
   const handleCreatePlatform = async () => {
     if (
       !selectedRoles.length ||
-      !selectedExemptedLinks.length ||
-      !selectedResearchArea.length
+      !selectedExemptedLinks.length
     ) {
       toast({
         title: 'All fields are required',
@@ -180,12 +156,10 @@ const FormComponent = () => {
       const response = await axios.post(`${apiUrl}/platform/add`, {
         roles: selectedRoles,
         exemptedLinks: selectedExemptedLinks,
-        researchArea: selectedResearchArea,
       });
       setData((prevData) => [...prevData, response.data]);
       setSelectedRoles([]);
       setSelectedExemptedLinks([]);
-      setSelectedResearchArea([]);
       toast({
         title: 'Platform created successfully',
         status: 'success',
@@ -208,7 +182,6 @@ const FormComponent = () => {
       const item = response.data;
       setSelectedRoles(item[0].roles || []);
       setSelectedExemptedLinks(item[0].exemptedLinks || []);
-      setSelectedResearchArea(item[0].researchArea || []);
       setIsEditing(true);
       setCurrentId(id);
     } catch (error) {
@@ -230,7 +203,6 @@ const FormComponent = () => {
         {
           roles: selectedRoles,
           exemptedLinks: selectedExemptedLinks,
-          researchArea: selectedResearchArea,
         }
       );
       setData((prevData) =>
@@ -238,7 +210,6 @@ const FormComponent = () => {
       );
       setSelectedRoles([]);
       setSelectedExemptedLinks([]);
-      setSelectedResearchArea([]);
       setIsEditing(false);
       setCurrentId(null);
       toast({
@@ -366,25 +337,33 @@ const FormComponent = () => {
   );
 
   return (
-    <Box p={6} bg="gray.50" minHeight="100vh">
+    <Box 
+      bg="rgba(255, 255, 255, 0.95)"
+      borderRadius="2xl"
+      shadow="2xl"
+      p={8}
+      border="1px"
+      borderColor="gray.300"
+    >
       <VStack spacing={8} align="stretch">
-        <Box textAlign="center" py={6}>
-          <Heading
-            size="xl"
-            bgGradient="linear(to-r, blue.600, purple.600, pink.500)"
-            bgClip="text"
-            mb={2}
-          >
-            Platform Form
-          </Heading>
+        <Box>
+          <HStack justify="space-between" mb={2}>
+            <VStack align="start" spacing={1}>
+              <Heading
+                size="lg"
+                bgGradient="linear(to-r, blue.600, purple.600)"
+                bgClip="text"
+              >
+                Platform Configuration
+              </Heading>
+              <Text color="gray.600" fontSize="sm">Configure roles and exempted links</Text>
+            </VStack>
+          </HStack>
         </Box>
 
         <SimpleGrid
-          columns={{ base: 1, md: 3 }}
-          spacing={9}
-          maxW="1420px"
-          paddingLeft="30px"
-          position="relative"
+          columns={{ base: 1, md: 2 }}
+          spacing={6}
         >
           <FormCard
             title="Roles"
@@ -564,96 +543,6 @@ const FormComponent = () => {
               </Box>
             </Box>
           </FormCard>
-
-          <FormCard
-            title="Research Areas"
-            color="pink"
-            gradient={{ from: '#fdf2f8', to: '#fce7f3' }}
-          >
-            <Box
-              bg="white"
-              p={5}
-              borderRadius="xl"
-              shadow="md"
-              border="1px"
-              borderColor="pink.50"
-            >
-              <ScrollableBox>
-                <VStack align="stretch" spacing={3} p={2}>
-                  <Text/>
-                  {researchArea.map((area, index) => (
-                    <Box
-                      key={area}
-                      p={3}
-                      borderRadius="lg"
-                      bg={
-                        selectedResearchArea.includes(area)
-                          ? 'pink.50'
-                          : 'gray.50'
-                      }
-                      border="1px"
-                      borderColor={
-                        selectedResearchArea.includes(area)
-                          ? 'pink.200'
-                          : 'gray.100'
-                      }
-                      transition="all 0.2s"
-                      _hover={{ shadow: 'sm', transform: 'translateY(-1px)' }}
-                    >
-                      <Checkbox
-                        isChecked={selectedResearchArea.includes(area)}
-                        onChange={(e) => {
-                          const updatedAreas = e.target.checked
-                            ? [...selectedResearchArea, area]
-                            : selectedResearchArea.filter((a) => a !== area);
-                          setSelectedResearchArea(updatedAreas);
-                        }}
-                        colorScheme="pink"
-                        size="md"
-                        fontWeight="500"
-                        color="gray.700"
-                        alignItems="flex-start"
-                      >
-                        <Text>{area}</Text>
-                      </Checkbox>
-                    </Box>
-                  ))}
-                </VStack>
-              </ScrollableBox>
-
-              <Box mt={5} pt={4} borderTop="1px" borderColor="gray.100">
-                <Text fontSize="sm" fontWeight="600" color="gray.600" mb={3}>
-                  Add Research Area
-                </Text>
-                <VStack spacing={3}>
-                  <Textarea
-                    placeholder="Enter research area..."
-                    value={newResearchArea}
-                    onChange={(e) => setNewResearchArea(e.target.value)}
-                    resize="none"
-                    rows={2}
-                    borderColor="pink.200"
-                    _focus={{
-                      borderColor: 'pink.400',
-                      boxShadow: '0 0 0 1px #d53f8c',
-                    }}
-                    bg="pink.25"
-                  />
-                  <Button
-                    onClick={handleAddResearchArea}
-                    colorScheme="pink"
-                    size="sm"
-                    width="full"
-                    fontWeight="600"
-                    _hover={{ transform: 'translateY(-1px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    Add Area
-                  </Button>
-                </VStack>
-              </Box>
-            </Box>
-          </FormCard>
         </SimpleGrid>
 
         <Box textAlign="center" pt={6}>
@@ -760,18 +649,6 @@ const FormComponent = () => {
                     borderBottom="2px solid"
                     borderColor="gray.300"
                   >
-                    Research Area
-                  </Th>
-                  <Th
-                    color="#4b5563"
-                    fontWeight="semibold"
-                    fontSize="sm"
-                    textTransform="uppercase"
-                    letterSpacing="wide"
-                    py={4}
-                    borderBottom="2px solid"
-                    borderColor="gray.300"
-                  >
                     Actions
                   </Th>
                 </Tr>
@@ -809,17 +686,6 @@ const FormComponent = () => {
                       >
                         <Text isTruncated maxWidth="250px">
                           {item.exemptedLinks.join(', ')}
-                        </Text>
-                      </Td>
-                      <Td
-                        py={4}
-                        fontSize="sm"
-                        color="gray.700"
-                        borderBottom="1px solid"
-                        borderColor="gray.200"
-                      >
-                        <Text isTruncated maxWidth="200px">
-                          {item.researchArea.join(', ')}
                         </Text>
                       </Td>
                       <Td
@@ -908,8 +774,6 @@ const FormComponent = () => {
             </Table>
           </Box>
         </Box>
-
-        <TreeForm />
       </VStack>
     </Box>
   );

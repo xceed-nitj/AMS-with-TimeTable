@@ -282,7 +282,7 @@ const CertificateContent = ({
           </Text>
         </foreignObject>
       </>
-      );
+     
     </svg>
   );
 };

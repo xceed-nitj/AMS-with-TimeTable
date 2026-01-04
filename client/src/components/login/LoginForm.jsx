@@ -132,5 +132,5 @@ const LoginForm = () => {
     </Flex>
   )
 }
-
 export default LoginForm;
+

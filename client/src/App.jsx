@@ -51,6 +51,9 @@ import TimetableMasterView from './timetableadmin/masterview';
 import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
+import FacultyHourLoad from './timetableadmin/facultyhourload.jsx';
+
+import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
@@ -146,6 +149,11 @@ import UserManagement from './dashboard/userManagement';
 import UserEventRegistration from './certificatemodule/pages/addEvent';
 
 import Form from './platform/Form.jsx';
+import PlatformLayout from './platform/PlatformLayout.jsx';
+import PlatformDashboard from './platform/PlatformDashboard.jsx';
+import PlatformConfig from './platform/PlatformConfig.jsx';
+import PlatformModules from './platform/PlatformModules.jsx';
+import PlatformData from './platform/PlatformData.jsx';
 import AllForms from './reviewmodule/pages/AllForms.jsx';
 import Reviews from './reviewmodule/pages/Reviews.jsx';
 
@@ -171,8 +179,6 @@ import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 
 // import fileUpload
 import FileUpload from './fileUpload/fileUploads.jsx'
-// removel the hardcoded links for login
-import ProtectedRoute from './components/login/Protectedroutes';
 
 
 //import faculty rankings
@@ -263,7 +269,7 @@ function App() {
         <Route path="/tt/admin/instituteload" element={<InstituteLoad />} />
         <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} />
         <Route path="/tt/masterload" element={<MasterLoadDataTable />} />
-
+        <Route path="/tt/admin/clashes" element={<AdminClash />} />
         <Route
           path="/tt/:generatedLink/generatepdf/mergepdf"
           element={<MergePDFComponent />}
@@ -272,6 +278,11 @@ function App() {
           path="/tt/:generatedLink/generatepdf/loadallocation"
           element={<Departmentloadallocation />}
         />
+        <Route
+          path="/tt/:generatedLink/generatepdf/hourlyload"
+          element={<FacultyHourLoad />}
+        />
+
 
         <Route path="/cm/addevent" element={<EventRegistration />} />
         <Route path="/cm/dashboard" element={<CMDashboard />} />
@@ -289,6 +300,8 @@ function App() {
           path="/cm/userimages/signatures/:userId"
           element={<UserSignatures />}
         />
+        <Route path="/payment-portal" element={<PaymentPortal/>} />
+
 
         {/* Review management routes*/}
         <Route path="/prm/login" element={<ReviewLogin />} />
@@ -502,14 +515,13 @@ function App() {
           }
         ></Route>
 
-        <Route
-          path="/platform"
-          element={
-            <>
-              <Form />
-            </>
-          }
-        />
+        {/* Platform Routes with Sidebar */}
+        <Route path="/platform" element={<PlatformLayout />}>
+          <Route index element={<PlatformDashboard />} />
+          <Route path="config" element={<PlatformConfig />} />
+          <Route path="modules" element={<PlatformModules />} />
+          <Route path="data" element={<PlatformData />} />
+        </Route>
 
         {/* Routes for Diabetics Module */}
         {/* Authentication */}
