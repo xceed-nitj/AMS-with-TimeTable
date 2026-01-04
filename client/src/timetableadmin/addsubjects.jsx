@@ -111,6 +111,47 @@ function Subject() {
       setTableData([]);
     }
   };
+  const downloadCSV = () => {
+    if (tableData.length === 0) {
+      alert("No data available to download.");
+      return;
+    }
+
+    // Template headers exactly as per image_04dcfb.png
+    const headers = [
+      "subjectFullName",
+      "type",
+      "subCode",
+      "subName",
+      "studentCount",
+      "sem",
+      "degree",
+      "dept",
+      "credits"
+    ];
+
+    const csvRows = tableData.map(row => [
+      `"${row.subjectFullName || ""}"`,
+      `"${row.type || ""}"`,
+      `"${row.subCode || ""}"`,
+      `"${row.subName || ""}"`,
+      `"${row.studentCount || ""}"`,
+      `"${row.sem || ""}"`,
+      `"${row.degree || ""}"`,
+      `"${row.dept || ""}"`,
+      `"${row.credits || ""}"`
+    ].join(","));
+
+    const csvString = [headers.join(","), ...csvRows].join("\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Subject_Data_Template_${currentCode}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -618,9 +659,17 @@ function Subject() {
             </Box>
           </FormControl>
         ) : (
-          <CustomTealButton  w='150px' mb='5' mt='3' onClick={handleAddSubject}>
-            Add Subject
-          </CustomTealButton>
+         <Box display="flex" gap="3" mb="5">
+            {/* 1. Add Subject Button */}
+            <CustomTealButton w='150px' onClick={handleAddSubject}>
+              Add Subject
+            </CustomTealButton>
+
+            {/* 2. Download CSV Button - PLACED HERE */}
+            <CustomTealButton w='150px' onClick={downloadCSV}>
+              Download CSV
+            </CustomTealButton>
+          </Box>
 
         )}
       </Box>
