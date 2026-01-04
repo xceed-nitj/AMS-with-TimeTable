@@ -86,6 +86,8 @@ import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
+import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
+
 
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
