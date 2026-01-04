@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-const {addPlatform,getPlatform,updatePlatform,deletePlatform,getPlatformById,addModule, getModules, getModuleById, updateModule, deleteModule,} = require('../platform/controller');
+const {addPlatform,getPlatform,updatePlatform,deletePlatform,getPlatformById,addModule, getModules, getModuleById, updateModule, deleteModule,getExemptedLinks,addExemptedLink} = require('../platform/controller');
 
 router.post("/add", addPlatform);
 router.get("/getplatform", getPlatform);
@@ -34,6 +34,10 @@ router.get("/get-modules", getModules);
 router.get("/get-modules/:id", getModuleById);
 router.put("/update-module/:id", updateModule);
 router.delete("/delete-module/:id", deleteModule);
+router.get("/get-exempted-links", getExemptedLinks);
+router.post("/add-exempted-link", addExemptedLink);
 
 
 module.exports = router;
+
+

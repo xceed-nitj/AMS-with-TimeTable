@@ -75,7 +75,8 @@ mongoose.connection.on("connected", () => {
   });
 });
 
-
+require("dotenv").config();
+console.log("ENV CHECK:", process.env.MONGO_URI);
 
 // default route
 // app.get('/', (req, res) => {
@@ -126,22 +127,16 @@ app.get("/*", (req, res) => {
 });
 
 // Connect to MongoDB and listen for events
+app.listen(process.env.PORT || 5000, () => {
+  console.log(`🚀 Backend running on port ${process.env.PORT || 5000}`);
+});
 
-mongoose
-  .connect(process.env.MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("Connected to MongoDB");
-    // Start the Express server once connected to MongoDB
-    app.listen(8010, () => {
-      console.log("Server started on port 8010");
-    });
-  })
-  .catch((err) => {
-    console.error("Error connecting to MongoDB:", err);
-  });
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB connected"))
+.catch(err => console.error("❌ MongoDB error:", err));
 
 // Handle MongoDB connection events
 mongoose.connection.on("connected", () => {
@@ -155,3 +150,4 @@ mongoose.connection.on("error", (err) => {
 mongoose.connection.on("disconnected", () => {
   console.log("Mongoose disconnected from MongoDB");
 });
+
