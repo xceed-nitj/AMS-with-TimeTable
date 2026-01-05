@@ -163,4 +163,24 @@ TableRouter.post("/get-current-session", async (req, res) => {
   }
 });
 
+TableRouter.put("/publish/:id", protectRoute, async (req, res) => {
+  try {
+    await tableController.publishTimetable(req, res);
+  } catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+TableRouter.put("/publish-session", protectRoute, async (req, res) => {
+  try {
+    await tableController.publishSession(req, res);
+  } catch (e) {
+    res
+      .status(e?.status || 500)
+      .json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
 module.exports = TableRouter;
