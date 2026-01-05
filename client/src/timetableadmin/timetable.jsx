@@ -913,8 +913,8 @@ const Timetable = () => {
 
         {/* Enhanced Edit Section */}
         <Card borderRadius="2xl" boxShadow="2xl" mb={6} overflow="hidden">
-          <CardHeader 
-            bgGradient="linear(to-r, purple.500, blue.500)" 
+          <CardHeader
+            bgGradient="linear(to-r, purple.500, blue.500)"
             py={6}
           >
             <Flex align="center" gap={4}>
@@ -922,28 +922,35 @@ const Timetable = () => {
                 <EditIcon color="white" boxSize={7} />
               </Box>
               <Box>
-                <Heading size="lg" color="white" mb={1}>Edit Timetable</Heading>
-                <Text fontSize="sm" color="whiteAlpha.900">Modify schedules and assignments</Text>
+                <Heading size="lg" color="white" mb={1}>
+                  Edit Timetable
+                </Heading>
+                <Text fontSize="sm" color="whiteAlpha.900">
+                  Modify schedules and assignments
+                </Text>
               </Box>
             </Flex>
           </CardHeader>
+
           <CardBody p={8}>
             <Flex align="center" gap={4} mb={6} bg="purple.50" p={4} borderRadius="xl">
               <Text fontWeight="bold" fontSize="lg" minW="120px" color="purple.800">
                 Select Semester:
               </Text>
-              <Select 
-                value={selectedSemester} 
-                onChange={(e) => setSelectedSemester(e.target.value)} 
-                size="lg" 
-                borderColor="purple.400" 
-                maxW="400px" 
+              <Select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                size="lg"
+                borderColor="purple.400"
+                maxW="400px"
                 borderRadius="xl"
                 fontSize="md"
                 fontWeight="semibold"
                 _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px purple.500' }}
               >
-                {semesters.map((s, i) => <option key={i} value={s}>{s}</option>)}
+                {semesters.map((s, i) => (
+                  <option key={i} value={s}>{s}</option>
+                ))}
               </Select>
             </Flex>
 
@@ -951,7 +958,9 @@ const Timetable = () => {
               <Flex justify="center" align="center" minH="300px" bg="gray.50" borderRadius="2xl">
                 <VStack spacing={4}>
                   <RepeatIcon boxSize={12} color="purple.400" className="spin" />
-                  <Text fontSize="lg" color="gray.600" fontWeight="semibold">Loading Timetable...</Text>
+                  <Text fontSize="lg" color="gray.600" fontWeight="semibold">
+                    Loading Timetable...
+                  </Text>
                 </VStack>
               </Flex>
             ) : (
@@ -959,81 +968,76 @@ const Timetable = () => {
                 <Table size="lg" variant="striped">
                   <Thead bg="purple.600">
                     <Tr>
-                      <Th color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">DAY</Th>
-                      {[1,2,3,4,5,6,7,8].map(p => (
-                        <Th key={p} color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">
+                      <Th color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">
+                        DAY
+                      </Th>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
+                        <Th
+                          key={p}
+                          color="white"
+                          fontSize="md"
+                          p={4}
+                          textAlign="center"
+                          fontWeight="bold"
+                        >
                           Period {p}
                         </Th>
                       ))}
                     </Tr>
                   </Thead>
+
                   <Tbody>
                     {days.map((day, di) => (
-                      <Tr 
-                        key={day} 
-                        bg={di % 2 === 0 ? 'white' : 'gray.50'} 
+                      <Tr
+                        key={day}
+                        bg={di % 2 === 0 ? 'white' : 'gray.50'}
                         _hover={{ bg: 'purple.50' }}
                         transition="background 0.2s"
                       >
                         <Td fontWeight="bold" fontSize="md" color="purple.700" p={4}>
                           {day}
                         </Td>
-                        {[1,2,3,4,5,6,7,8].map(period => (
+
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(period => (
                           <Td key={period} p={3} verticalAlign="top">
                             {timetableData[day][`period${period}`].map((slot, si) => (
                               <Box key={si}>
                                 {slot.map((cell, ci) => (
-                                  <Box 
-                                    key={ci} 
-                                    mb={3} 
-                                    p={3} 
-                                    bg="white" 
-                                    borderRadius="lg" 
-                                    borderWidth="2px" 
+                                  <Box
+                                    key={ci}
+                                    mb={3}
+                                    p={3}
+                                    bg="white"
+                                    borderRadius="lg"
+                                    borderWidth="2px"
                                     borderColor="gray.200"
                                     boxShadow="sm"
                                     _hover={{ boxShadow: 'md', borderColor: 'purple.300' }}
                                     transition="all 0.2s"
                                   >
-                                    {cell.subject && (
-                                      <Box bg="blue.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">
-                                        <Text fontSize="sm" fontWeight="bold" color="blue.700" isTruncated title={cell.subject}>
-                                          📚 {cell.subject}
-                                        </Text>
-                                      </Box>
-                                    )}
-                                    <Select 
-                                      value={cell.subject} 
-                                      onChange={(e) => handleCellChange(day, period, si, ci, 'subject', e)} 
-                                      size="sm" 
-                                      borderColor="blue.300" 
-                                      fontSize="sm" 
+                                    <Select
+                                      value={cell.subject}
+                                      onChange={(e) =>
+                                        handleCellChange(day, period, si, ci, 'subject', e)
+                                      }
+                                      size="sm"
                                       mb={2}
-                                      borderRadius="md"
-                                      _focus={{ borderColor: 'blue.500' }}
                                     >
                                       <option value="">Select Subject</option>
                                       {availableSubjects.map(s => (
-                                        <option key={s._id} value={s.subName}>{s.subName}</option>
+                                        <option key={s._id} value={s.subName}>
+                                          {s.subName}
+                                        </option>
                                       ))}
                                     </Select>
 
-                                    {cell.room && (
-                                      <Box bg="green.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="green.500">
-                                        <Text fontSize="sm" fontWeight="bold" color="green.700">
-                                          🏢 {cell.room}
-                                        </Text>
-                                      </Box>
-                                    )}
-                                    <Select 
-                                      value={cell.room} 
-                                      onChange={(e) => handleCellChange(day, period, si, ci, 'room', e)} 
-                                      size="sm" 
-                                      borderColor="green.300" 
-                                      fontSize="sm" 
+                                    <Select
+                                      value={cell.room}
+                                      onChange={(e) =>
+                                        handleCellChange(day, period, si, ci, 'room', e)
+                                      }
+                                      size="sm"
                                       mb={2}
-                                      borderRadius="md"
-                                      _focus={{ borderColor: 'green.500' }}
                                     >
                                       <option value="">Select Room</option>
                                       {availableRooms.map(r => (
@@ -1041,22 +1045,13 @@ const Timetable = () => {
                                       ))}
                                     </Select>
 
-                                    {cell.faculty && (
-                                      <Box bg="purple.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="purple.500">
-                                        <Text fontSize="sm" fontWeight="bold" color="purple.700" isTruncated title={cell.faculty}>
-                                          👨‍🏫 {cell.faculty}
-                                        </Text>
-                                      </Box>
-                                    )}
-                                    <Select 
-                                      value={cell.faculty} 
-                                      onChange={(e) => handleCellChange(day, period, si, ci, 'faculty', e)} 
-                                      size="sm" 
-                                      borderColor="purple.300" 
-                                      fontSize="sm" 
+                                    <Select
+                                      value={cell.faculty}
+                                      onChange={(e) =>
+                                        handleCellChange(day, period, si, ci, 'faculty', e)
+                                      }
+                                      size="sm"
                                       mb={2}
-                                      borderRadius="md"
-                                      _focus={{ borderColor: 'purple.500' }}
                                     >
                                       <option value="">Select Faculty</option>
                                       {availableFaculties.map((f, i) => (
@@ -1064,29 +1059,26 @@ const Timetable = () => {
                                       ))}
                                     </Select>
 
-                                    <IconButton 
-                                      icon={<DeleteIcon />} 
-                                      size="sm" 
-                                      colorScheme="red" 
-                                      variant="outline" 
-                                      width="100%" 
-                                      onClick={() => handleDeleteCell(day, period, si, ci)}
-                                      borderRadius="md"
-                                      _hover={{ transform: 'scale(1.05)' }}
-                                      transition="all 0.2s"
+                                    <IconButton
+                                      icon={<DeleteIcon />}
+                                      size="sm"
+                                      colorScheme="red"
+                                      variant="outline"
+                                      width="100%"
+                                      onClick={() =>
+                                        handleDeleteCell(day, period, si, ci)
+                                      }
                                     />
                                   </Box>
                                 ))}
+
                                 {si === 0 && (
-                                  <Button 
-                                    leftIcon={<AddIcon />} 
-                                    size="sm" 
-                                    colorScheme="purple" 
-                                    width="100%" 
+                                  <Button
+                                    leftIcon={<AddIcon />}
+                                    size="sm"
+                                    colorScheme="purple"
+                                    width="100%"
                                     onClick={() => handleSplitCell(day, period, si)}
-                                    borderRadius="md"
-                                    _hover={{ transform: 'scale(1.05)' }}
-                                    transition="all 0.2s"
                                   >
                                     Add Slot
                                   </Button>
@@ -1101,24 +1093,6 @@ const Timetable = () => {
                 </Table>
               </Box>
             )}
-
-            <Button 
-              colorScheme="purple" 
-              size="xl" 
-              mt={6} 
-              width="100%" 
-              borderRadius="xl" 
-              leftIcon={<DownloadIcon />} 
-              onClick={handleSubmit} 
-              fontSize="lg" 
-              fontWeight="bold"
-              h="60px"
-              boxShadow="lg"
-              _hover={{ transform: 'translateY(-2px)', boxShadow: '2xl' }}
-              transition="all 0.3s"
-            >
-              💾 Save Timetable
-            </Button>
           </CardBody>
         </Card>
 
