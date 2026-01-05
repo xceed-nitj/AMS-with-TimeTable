@@ -1,8 +1,11 @@
 import React from 'react';
-import { Box, Heading, Text, Container, Badge, VStack, useColorModeValue } from '@chakra-ui/react';
+import { Box, Heading, Text, Container, Badge, VStack, useColorModeValue, Button, HStack } from '@chakra-ui/react';
+import { FiArrowLeft } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import FormComponent from './Form';
 
 const PlatformConfig = () => {
+  const navigate = useNavigate();
   const bgGradient = useColorModeValue('linear(to-br, blue.50, purple.50, pink.50)', 'gray.900');
   
   return (
@@ -26,6 +29,16 @@ const PlatformConfig = () => {
         />
         <Container maxW="7xl" position="relative">
           <VStack spacing={3} align="start">
+            <Button
+              leftIcon={<FiArrowLeft />}
+              onClick={() => navigate('/platform')}
+              colorScheme="whiteAlpha"
+              variant="solid"
+              size="sm"
+              mb={2}
+            >
+              Back to Dashboard
+            </Button>
             <Badge colorScheme="whiteAlpha" fontSize="sm" px={3} py={1} borderRadius="full">
               Platform Configuration
             </Badge>

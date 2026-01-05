@@ -36,9 +36,12 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon } from '@chakra-ui/icons';
+import { FiArrowLeft } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 
 const PlatformData = () => {
+  const navigate = useNavigate();
   const [platformData, setPlatformData] = useState([]);
   const [moduleData, setModuleData] = useState([]);
   const [selectedModule, setSelectedModule] = useState(null);
@@ -112,6 +115,16 @@ const PlatformData = () => {
         />
         <Container maxW="7xl" position="relative">
           <VStack spacing={3} align="start">
+            <Button
+              leftIcon={<FiArrowLeft />}
+              onClick={() => navigate('/platform')}
+              colorScheme="whiteAlpha"
+              variant="solid"
+              size="sm"
+              mb={2}
+            >
+              Back to Dashboard
+            </Button>
             <Badge colorScheme="whiteAlpha" fontSize="sm" px={3} py={1} borderRadius="full">
               Data Management
             </Badge>
