@@ -147,6 +147,7 @@ function TimetableMasterView() {
                 <Th>Code</Th>
                 <Th>Last Saved Time</Th>
                 <Th>Last Locked Time</Th>
+                <Th>Published</Th>
                 <Th>View Timetable</Th>
                 <Th>Download PDF</Th>
               </Tr>
@@ -158,6 +159,11 @@ function TimetableMasterView() {
                   <Td>{item.code}</Td>
                   <Td>{savedTimes[item.code] !== null ? savedTimes[item.code] : 'Table not saved yet'}</Td>
                   <Td>{lockedTimes[item.code] !== null ? lockedTimes[item.code] : 'Table not locked yet'}</Td>
+                  <Td>
+              {item.publish
+                    ? `Yes (${new Date(item.datePublished).toLocaleDateString()})`
+                    : 'No'}
+                     </Td>
                   <Td>
                   <Link
           href={`${window.location.origin}/tt/${item.code}`}

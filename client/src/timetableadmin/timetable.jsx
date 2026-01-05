@@ -79,10 +79,9 @@ const Timetable = () => {
   const [selectedSemester, setSelectedSemester] = useState(availableSems[0] || '');
   const [clash, setClash] = useState([]);
   const [clashFlag, setClashFlag] = useState(false);
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
+ 
   const [subjectData, setSubjectData] = useState([]);
-  const [TTData, setTTData] = useState([]);
+  const [TTData, setTTData] = useState(null);
   const [showMessage, setShowMessage] = useState(true);
 
   const navigate = useNavigate();
@@ -94,17 +93,24 @@ const Timetable = () => {
   const apiUrl = getEnvironment();
   const toast = useToast();
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+ 
+  const [publishedTime, setPublishedTime] = useState();
+  const fetchTime = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`, { credentials: 'include' });
+        const data = await response.json();
+        setLockedTime(data.updatedTime.lockTimeIST);
+        setSavedTime(data.updatedTime.saveTimeIST);
+        setPublishedTime(data.updatedTime.publishTimeIST);
+      } catch (error) {
+        console.error('Error fetching existing timetable data:', error);
+      }
+    };
+
+
 
   // Auto-hide notification
-  useEffect(() => {
-    if (showNotification) {
-      const timer = setTimeout(() => {
-        setShowNotification(false);
-        setNotificationMessage('');
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showNotification]);
+ 
 
   // Auto-clear message
   useEffect(() => {
@@ -114,10 +120,7 @@ const Timetable = () => {
     }
   }, [message]);
 
-  const showToastNotification = (msg) => {
-    setNotificationMessage(msg);
-    setShowNotification(true);
-  };
+ 
 
   // Fetch semester data
   useEffect(() => {
@@ -151,16 +154,7 @@ const Timetable = () => {
       }
     };
 
-    const fetchTime = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`, { credentials: 'include' });
-        const data = await response.json();
-        setLockedTime(data.updatedTime.lockTimeIST);
-        setSavedTime(data.updatedTime.saveTimeIST);
-      } catch (error) {
-        console.error('Error fetching existing timetable data:', error);
-      }
-    };
+    
 
     const fetchTimetableData = async (semester) => {
       const data = await fetchData(semester);
@@ -386,23 +380,82 @@ const Timetable = () => {
       }
     };
 
-    const fetchTTData = async (currentCode) => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        });
-        const data = await response.json();
-        setTTData(data);
-      } catch (error) {
-        console.error('Error fetching TTdata:', error);
-      }
-    };
+  const fetchTTData = async (currentCode) => {
+  try {
+    const response = await fetch(
+      `${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`,
+      { credentials: 'include' }
+    );
+
+    if (!response.ok) {
+      console.error("TTData API failed:", response.status);
+      return;
+    }
+
+    const data = await response.json();
+    console.log("Fetched TTData:", data); 
+    setTTData(data);
+  } catch (error) {
+    console.error('Error fetching TTdata:', error);
+  }
+};
+
+
 
     fetchSubjectData(currentCode);
     fetchTTData(currentCode);
+    
   }, []);
+  const handlePublishTT = async () => {
+  const timetableId = TTData?.timetable?._id;
+
+  if (!timetableId) {
+    toast({
+      title: "Timetable not loaded",
+      description: "Timetable ID missing",
+      status: "error",
+      duration: 3000,
+      isClosable: true,
+      position: "top-right",
+    });
+    return;
+  }
+
+  const confirm = window.confirm("Are you sure you want to publish this timetable?");
+  if (!confirm) return;
+
+  try {
+    const response = await fetch(
+      `${apiUrl}/timetablemodule/timetable/publish/${timetableId}`,
+      {
+        method: "PUT",
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) throw new Error();
+
+    await fetchTime(); // refresh timestamps
+
+    toast({
+      title: "Timetable Published",
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+      position: "top-right",
+    });
+  } catch (err) {
+    toast({
+      title: "Publish failed",
+      status: "error",
+      duration: 3000,
+      isClosable: true,
+      position: "top-right",
+    });
+  }
+};
+
+
 
   // Handler functions
   const handleCellChange = (day, period, slotIndex, cellIndex, type, event) => {
@@ -481,7 +534,14 @@ const Timetable = () => {
     const code = currentCode;
     const sem = selectedSemester;
 
-    showToastNotification('Data is being saved....');
+   toast({
+     title: "Saving timetable...",
+      status: "info",
+      duration: 2000,
+      isClosable: true,
+       position: "top-right",
+});
+
     try {
       const response = await fetch(Url, {
         method: 'POST',
@@ -491,61 +551,86 @@ const Timetable = () => {
       });
       if (!response.ok) {
         console.error('Failed to send data to the backend. HTTP status:', response.status);
-        showToastNotification('Failed to save data');
+        toast({
+  title: "Save failed",
+  status: "error",
+  duration: 3000,
+  isClosable: true,
+  position: "top-right",
+});
+
       } else {
-        showToastNotification('Data saved successfully');
+       toast({
+     title: "Timetable Saved",
+     status: "success",
+    duration: 3000,
+    isClosable: true,
+     position: "top-right",
+});
+
       }
     } catch (error) {
       console.error('Error sending data to the backend:', error);
-      showToastNotification('Error saving data');
+     toast({
+     title: "Error saving timetable",
+     description: "Something went wrong while saving. Please try again.",
+     status: "error",
+     duration: 3000,
+     isClosable: true,
+     position: "top-right",
+});
+
     }
   };
 
-  const handleLockTT = async () => {
-    const isConfirmed = window.confirm('Are you sure you want to lock the timetable?');
-    var toInform = false;
-    if (currentSessionCodes.includes(currentCode))
-      toInform = window.confirm('Do you want to inform the teachers about the timetable changes?');
-    if (isConfirmed) {
-      showToastNotification('Data is being saved....');
-      setTimeout(() => showToastNotification('Data saved. Commencing lock'), 1000);
-      setTimeout(() => showToastNotification('Data is being locked'), 2000);
-      const Url = `${apiUrl}/timetablemodule/lock/locktt`;
-      const code = currentCode;
-      try {
-        const response = await fetch(Url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, toInform }),
-          credentials: 'include',
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const { results } = data;
-          if (toInform) {
-            let successMsg = '✔ Successful Emails:\n';
-            let failedMsg = '✘ Failed Emails:\n';
-            results.forEach((item) => {
-              if (item.success) {
-                successMsg += `• ${item.email}\n`;
-              } else {
-                failedMsg += `• ${item.faculty} (${item.email || 'No Email'}) → ${item.error}\n`;
-              }
-            });
-            if (results.some((r) => r.success)) alert(successMsg);
-            if (results.some((r) => !r.success)) alert(failedMsg);
-          }
-          toast({ title: 'Timetable Locked', status: 'success', duration: 3000, isClosable: true, position: 'top' });
-        } else {
-          console.error('Failed to send data to the backend. HTTP status:', response.status);
-          toast({ title: 'Timetable Lock Failed', description: 'An error occurred while attempting to lock the timetable.', status: 'error', duration: 3000, isClosable: true, position: 'top' });
-        }
-      } catch (error) {
-        console.error('Error sending data to the backend:', error);
-        toast({ title: 'Timetable Lock Failed', description: 'An error occurred while attempting to lock the timetable.', status: 'error', duration: 3000, isClosable: true, position: 'top' });
-      }
-    }
-  };
+ const handleLockTT = async () => {
+  const isConfirmed = window.confirm('Are you sure you want to lock the timetable?');
+  let toInform = false;
+
+  if (currentSessionCodes.includes(currentCode)) {
+    toInform = window.confirm('Do you want to inform the teachers about the timetable changes?');
+  }
+
+  if (!isConfirmed) return;
+
+  toast({
+    title: "Locking timetable",
+    description: "Please wait...",
+    status: "info",
+    duration: 2000,
+    isClosable: true,
+    position: "top-right",
+  });
+
+  try {
+    const response = await fetch(`${apiUrl}/timetablemodule/lock/locktt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: currentCode, toInform }),
+      credentials: 'include',
+    });
+
+    if (!response.ok) throw new Error();
+
+    toast({
+      title: "Timetable Locked",
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+      position: "top-right",
+    });
+
+    await fetchTime(); // refresh timestamps
+  } catch (error) {
+    toast({
+      title: "Timetable Lock Failed",
+      status: "error",
+      duration: 3000,
+      isClosable: true,
+      position: "top-right",
+    });
+  }
+};
 
   // Scroll handler
   useEffect(() => {
@@ -628,6 +713,11 @@ const Timetable = () => {
     }
   }, [availableFaculties, availableRooms]);
 
+  useEffect(() => {
+  console.log("TTData updated:", TTData);
+}, [TTData]);
+
+
   // RENDER
   return (
     <Container maxW="full" p={0} bg="gray.50">
@@ -683,6 +773,19 @@ const Timetable = () => {
                     transition="all 0.3s"
                   />
                 </Tooltip>
+               <Tooltip label="Publish Timetable" hasArrow>
+                  <IconButton
+                       icon={<CheckCircleIcon />}
+                       onClick={handlePublishTT}
+                         colorScheme="purple"
+                         size="md"
+                          borderRadius="lg"
+                  isDisabled={!TTData?.timetable?._id || !!publishedTime}
+
+
+                 />
+              </Tooltip>
+
 
                 <Tooltip label="View Locked Summary" placement="top" hasArrow bg="purple.600" fontSize="sm">
                   <IconButton
@@ -903,7 +1006,9 @@ const Timetable = () => {
                     Published Date
                   </Text>
                   <Text fontSize="lg" fontWeight="bold" color="purple.700">
-                    {lockedTime || 'Not published yet'}
+                {publishedTime || 'Not published yet'}
+
+
                   </Text>
                 </Box>
               </Flex>
@@ -1274,30 +1379,8 @@ const Timetable = () => {
         </Box>
       </Container>
 
-      {/* Notification Toast */}
-      <Portal>
-        <Box
-          bg={showNotification ? 'purple.600' : 'transparent'}
-          color="white"
-          textAlign="center"
-          fontWeight="bold"
-          fontSize="md"
-          position="fixed"
-          top="100px"
-          left="50%"
-          transform="translateX(-50%)"
-          zIndex="9999"
-          borderRadius="xl"
-          p={4}
-          px={6}
-          opacity={showNotification ? 1 : 0}
-          transition="all 0.3s"
-          boxShadow="2xl"
-          minW="300px"
-        >
-          {notificationMessage}
-        </Box>
-      </Portal>
+     
+      
 
       {/* Message Toast */}
       <Portal>

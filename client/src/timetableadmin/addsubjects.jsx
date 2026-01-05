@@ -117,7 +117,7 @@ function Subject() {
       return;
     }
 
-    // Template headers exactly as per image_04dcfb.png
+    
     const headers = [
       "subjectFullName",
       "type",
@@ -665,7 +665,7 @@ function Subject() {
               Add Subject
             </CustomTealButton>
 
-            {/* 2. Download CSV Button - PLACED HERE */}
+           
             <CustomTealButton w='150px' onClick={downloadCSV}>
               Download CSV
             </CustomTealButton>
