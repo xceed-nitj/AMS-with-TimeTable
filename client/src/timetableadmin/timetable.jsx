@@ -1093,6 +1093,23 @@ const Timetable = () => {
                 </Table>
               </Box>
             )}
+            <Button
+              colorScheme="purple"
+              size="xl"
+              mt={6}
+              width="100%"
+              borderRadius="xl"
+              leftIcon={<DownloadIcon />}
+              onClick={handleSubmit}
+              fontSize="lg"
+              fontWeight="bold"
+              h="60px"
+              boxShadow="lg"
+              _hover={{ transform: 'translateY(-2px)', boxShadow: '2xl' }}
+              transition="all 0.3s"
+            >
+              💾 Save Timetable
+            </Button>
           </CardBody>
         </Card>
 
