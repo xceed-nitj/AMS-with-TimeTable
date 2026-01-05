@@ -52,6 +52,8 @@ import TimetableMasterView from './timetableadmin/masterview';
 import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
+import FacultyHourLoad from './timetableadmin/facultyhourload.jsx';
+
 import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
@@ -85,6 +87,7 @@ import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
+
 
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
@@ -148,6 +151,11 @@ import UserManagement from './dashboard/userManagement';
 import UserEventRegistration from './certificatemodule/pages/addEvent';
 
 import Form from './platform/Form.jsx';
+import PlatformLayout from './platform/PlatformLayout.jsx';
+import PlatformDashboard from './platform/PlatformDashboard.jsx';
+import PlatformConfig from './platform/PlatformConfig.jsx';
+import PlatformModules from './platform/PlatformModules.jsx';
+import PlatformData from './platform/PlatformData.jsx';
 import AllForms from './reviewmodule/pages/AllForms.jsx';
 import Reviews from './reviewmodule/pages/Reviews.jsx';
 
@@ -291,6 +299,11 @@ function App() {
           path="/tt/:generatedLink/generatepdf/loadallocation"
           element={<Departmentloadallocation />}
         />
+        <Route
+          path="/tt/:generatedLink/generatepdf/hourlyload"
+          element={<FacultyHourLoad />}
+        />
+
 
         <Route path="/cm/addevent" element={<EventRegistration />} />
         <Route path="/cm/dashboard" element={<CMDashboard />} />
@@ -523,14 +536,13 @@ function App() {
           }
         ></Route>
 
-        <Route
-          path="/platform"
-          element={
-            <>
-              <Form />
-            </>
-          }
-        />
+        {/* Platform Routes with Sidebar */}
+        <Route path="/platform" element={<PlatformLayout />}>
+          <Route index element={<PlatformDashboard />} />
+          <Route path="config" element={<PlatformConfig />} />
+          <Route path="modules" element={<PlatformModules />} />
+          <Route path="data" element={<PlatformData />} />
+        </Route>
 
         {/* Routes for Diabetics Module */}
         {/* Authentication */}
