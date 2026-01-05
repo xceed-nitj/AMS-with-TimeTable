@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom';
 import Lottie from 'lottie-react';
 import Timetable from './timetableadmin/timetable';
+import Timetable2 from './timetableadmin/timetable2.jsx';
 import CreateTimetable from './timetableadmin/creatett';
 import MasterFaculty from './timetableadmin/masterfaculty';
 import AddFaculty from './timetableadmin/addfaculty';
@@ -51,6 +52,8 @@ import TimetableMasterView from './timetableadmin/masterview';
 import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
+import FacultyHourLoad from './timetableadmin/facultyhourload.jsx';
+
 import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
@@ -84,6 +87,7 @@ import NavbarConf from './conferencemodule/Tabs/NavbarConf';
 import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
+
 
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
@@ -225,27 +229,45 @@ function App() {
           <Route path="messages" element={<Messages />} />
         </Route>
 
-        <Route path="/tt/:generatedLink">
-          <Route index element={<Timetable />}></Route>
+        {/* Original Routes */}
+<Route path="/tt/:generatedLink">
+  <Route index element={<Timetable />}></Route>
+  <Route path="addfaculty" element={<AddFaculty />} />
+  <Route path="importttdata" element={<ImportTT />} />
+  <Route path="addroom" element={<AddRoom />} />
+  <Route path="addcommonload" element={<CommonLoad />} />
+  <Route path="addlunchload" element={<LunchLoad />} />
+  <Route path="addsubjects" element={<Subjects />} />
+  <Route path="addsem" element={<AddSem />} />
+  <Route path="addnote" element={<Note />} />
+  <Route path="firstyearload" element={<FirstYearLoad />} />
+  <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
+  <Route path="lockedsummary" element={<LockedSummary />} />
+  <Route path="generatepdf" element={<PrintSummary />} />
+  <Route path="loaddistribution" element={<LoadDistribution />} />
+  <Route path="roomallotment" element={<ViewAllotmentPage />} />
+  <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
+</Route>
 
-          <Route path="addfaculty" element={<AddFaculty />} />
-          <Route path="importttdata" element={<ImportTT />} />
-
-          <Route path="addroom" element={<AddRoom />} />
-          <Route path="addcommonload" element={<CommonLoad />} />
-          <Route path="addlunchload" element={<LunchLoad />} />
-          <Route path="addsubjects" element={<Subjects />} />
-          <Route path="addsem" element={<AddSem />} />
-          <Route path="addnote" element={<Note />} />
-          <Route path="firstyearload" element={<FirstYearLoad />} />
-          <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
-          <Route path="lockedsummary" element={<LockedSummary />} />
-          <Route path="generatepdf" element={<PrintSummary />} />
-          <Route path="loaddistribution" element={<LoadDistribution />} />
-          <Route path="roomallotment" element={<ViewAllotmentPage />} />
-          <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
-        </Route>
-
+{/* Backup Routes - v1 */}
+<Route path="/tt/:generatedLink/dashboard/v1">
+  <Route index element={<Timetable2 />}></Route>
+  <Route path="addfaculty" element={<AddFaculty />} />
+  <Route path="importttdata" element={<ImportTT />} />
+  <Route path="addroom" element={<AddRoom />} />
+  <Route path="addcommonload" element={<CommonLoad />} />
+  <Route path="addlunchload" element={<LunchLoad />} />
+  <Route path="addsubjects" element={<Subjects />} />
+  <Route path="addsem" element={<AddSem />} />
+  <Route path="addnote" element={<Note />} />
+  <Route path="firstyearload" element={<FirstYearLoad />} />
+  <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
+  <Route path="lockedsummary" element={<LockedSummary />} />
+  <Route path="generatepdf" element={<PrintSummary />} />
+  <Route path="loaddistribution" element={<LoadDistribution />} />
+  <Route path="roomallotment" element={<ViewAllotmentPage />} />
+  <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
+</Route>
         {/* Same link */}
         <Route path="classrooms" element={<ViewMRooms />} />
         {/* Same link */}
@@ -277,6 +299,11 @@ function App() {
           path="/tt/:generatedLink/generatepdf/loadallocation"
           element={<Departmentloadallocation />}
         />
+        <Route
+          path="/tt/:generatedLink/generatepdf/hourlyload"
+          element={<FacultyHourLoad />}
+        />
+
 
         <Route path="/cm/addevent" element={<EventRegistration />} />
         <Route path="/cm/dashboard" element={<CMDashboard />} />
