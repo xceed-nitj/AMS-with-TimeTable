@@ -95,6 +95,23 @@ const Timetable = () => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
  
   const [publishedTime, setPublishedTime] = useState();
+
+  const formatDateTime = (dateString) => {
+      if (!dateString) return 'Not published yet';
+
+           const date = new Date(dateString);
+
+        return date.toLocaleString('en-IN', {
+           day: '2-digit',
+           month: '2-digit',
+           year: 'numeric',
+           hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+         hour12: true,
+  });
+};
+  
   const fetchTime = async () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`, { credentials: 'include' });
@@ -107,7 +124,7 @@ const Timetable = () => {
       }
     };
 
-
+  
 
   // Auto-hide notification
  
@@ -417,7 +434,7 @@ const Timetable = () => {
       status: "error",
       duration: 3000,
       isClosable: true,
-      position: "top-right",
+      position: "bottom",
     });
     return;
   }
@@ -443,7 +460,7 @@ const Timetable = () => {
       status: "success",
       duration: 3000,
       isClosable: true,
-      position: "top-right",
+      position: "bottom",
     });
   } catch (err) {
     toast({
@@ -451,7 +468,7 @@ const Timetable = () => {
       status: "error",
       duration: 3000,
       isClosable: true,
-      position: "top-right",
+      position: "bottom",
     });
   }
 };
@@ -490,6 +507,7 @@ const Timetable = () => {
       return { ...updated };
     });
   };
+
 
   const handleAddSubject = () => navigate(`${currentPathname}/addsubjects`);
   const handleAddFaculty = () => navigate(`${currentPathname}/addfaculty`);
@@ -676,6 +694,8 @@ const Timetable = () => {
           }
         }
       };
+
+    
 
       const facultyData = async (currentCode, faculty) => {
         try {
@@ -1006,7 +1026,8 @@ const Timetable = () => {
                     Published Date
                   </Text>
                 <Text fontSize="lg" fontWeight="bold" color="purple.700">
-  {TTData?.datePublished || 'Not published yet'}
+                    {formatDateTime(TTData?.datePublished)}
+
                 </Text>
 
                 </Box>
