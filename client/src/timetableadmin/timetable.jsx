@@ -407,7 +407,8 @@ const Timetable = () => {
     
   }, []);
   const handlePublishTT = async () => {
-  const timetableId = TTData?.timetable?._id;
+  const timetableId = TTData?._id;
+
 
   if (!timetableId) {
     toast({
@@ -774,16 +775,15 @@ const Timetable = () => {
                   />
                 </Tooltip>
                <Tooltip label="Publish Timetable" hasArrow>
-                  <IconButton
-                       icon={<CheckCircleIcon />}
-                       onClick={handlePublishTT}
-                         colorScheme="purple"
-                         size="md"
-                          borderRadius="lg"
-                  isDisabled={!TTData?.timetable?._id || !!publishedTime}
-
-
+                <IconButton
+                    icon={<CheckCircleIcon />}
+                    onClick={handlePublishTT}
+                    colorScheme="purple"
+                    size="md"
+                    borderRadius="lg"
+                    isDisabled={TTData?.publish === true}
                  />
+
               </Tooltip>
 
 
@@ -1005,11 +1005,10 @@ const Timetable = () => {
                   <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
                     Published Date
                   </Text>
-                  <Text fontSize="lg" fontWeight="bold" color="purple.700">
-                {publishedTime || 'Not published yet'}
+                <Text fontSize="lg" fontWeight="bold" color="purple.700">
+  {TTData?.datePublished || 'Not published yet'}
+                </Text>
 
-
-                  </Text>
                 </Box>
               </Flex>
             </CardBody>
