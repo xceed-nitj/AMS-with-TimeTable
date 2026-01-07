@@ -92,7 +92,7 @@ const Timetable = () => {
   const currentPathname = location.pathname;
   const apiUrl = getEnvironment();
   const toast = useToast();
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
  
   const [publishedTime, setPublishedTime] = useState();
 
@@ -330,7 +330,7 @@ const Timetable = () => {
   // Generate initial timetable data
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
     const periods = [1, 2, 3, 4, 5, 6, 7, 8, 'lunch'];
 
     for (const day of days) {
@@ -1097,7 +1097,7 @@ const Timetable = () => {
                       <Th color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">DAY</Th>
                       {[1,2,3,4,5,6,7,8].map(p => (
                         <Th key={p} color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">
-                          Period {p}
+                          {p}
                         </Th>
                       ))}
                     </Tr>
@@ -1110,18 +1110,18 @@ const Timetable = () => {
                         _hover={{ bg: 'purple.50' }}
                         transition="background 0.2s"
                       >
-                        <Td fontWeight="bold" fontSize="md" color="purple.700" p={4}>
+                        <Td fontWeight="bold" fontSize="md" color="purple.700" p={2}>
                           {day}
                         </Td>
                         {[1,2,3,4,5,6,7,8].map(period => (
-                          <Td key={period} p={3} verticalAlign="top">
+                          <Td key={period} p={1} verticalAlign="top">
                             {timetableData[day][`period${period}`].map((slot, si) => (
                               <Box key={si}>
                                 {slot.map((cell, ci) => (
                                   <Box 
                                     key={ci} 
-                                    mb={3} 
-                                    p={3} 
+                                    mb={1} 
+                                    p={1} 
                                     bg="white" 
                                     borderRadius="lg" 
                                     borderWidth="2px" 
@@ -1131,7 +1131,7 @@ const Timetable = () => {
                                     transition="all 0.2s"
                                   >
                                     {cell.subject && (
-                                      <Box bg="blue.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">
+                                      <Box bg="blue.50" px={1} py={1} mb={1} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">
                                         <Text fontSize="sm" fontWeight="bold" color="blue.700" isTruncated title={cell.subject}>
                                           📚 {cell.subject}
                                         </Text>
@@ -1143,18 +1143,18 @@ const Timetable = () => {
                                       size="sm" 
                                       borderColor="blue.300" 
                                       fontSize="sm" 
-                                      mb={2}
+                                      mb={1}
                                       borderRadius="md"
                                       _focus={{ borderColor: 'blue.500' }}
                                     >
-                                      <option value="">Select Subject</option>
+                                      <option value="">Subject</option>
                                       {availableSubjects.map(s => (
                                         <option key={s._id} value={s.subName}>{s.subName}</option>
                                       ))}
                                     </Select>
 
                                     {cell.room && (
-                                      <Box bg="green.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="green.500">
+                                      <Box bg="green.50" px={1} py={1} mb={1} borderRadius="md" borderLeftWidth="4px" borderLeftColor="green.500">
                                         <Text fontSize="sm" fontWeight="bold" color="green.700">
                                           🏢 {cell.room}
                                         </Text>
@@ -1170,14 +1170,14 @@ const Timetable = () => {
                                       borderRadius="md"
                                       _focus={{ borderColor: 'green.500' }}
                                     >
-                                      <option value="">Select Room</option>
+                                      <option value="">Room</option>
                                       {availableRooms.map(r => (
                                         <option key={r} value={r}>{r}</option>
                                       ))}
                                     </Select>
 
                                     {cell.faculty && (
-                                      <Box bg="purple.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="purple.500">
+                                      <Box bg="purple.50" px={1} py={1} mb={1} borderRadius="md" borderLeftWidth="4px" borderLeftColor="purple.500">
                                         <Text fontSize="sm" fontWeight="bold" color="purple.700" isTruncated title={cell.faculty}>
                                           👨‍🏫 {cell.faculty}
                                         </Text>
@@ -1193,7 +1193,7 @@ const Timetable = () => {
                                       borderRadius="md"
                                       _focus={{ borderColor: 'purple.500' }}
                                     >
-                                      <option value="">Select Faculty</option>
+                                      <option value="">Faculty</option>
                                       {availableFaculties.map((f, i) => (
                                         <option key={i} value={f}>{f}</option>
                                       ))}
@@ -1204,7 +1204,7 @@ const Timetable = () => {
                                       size="sm" 
                                       colorScheme="red" 
                                       variant="outline" 
-                                      width="100%" 
+                                      width="98%" 
                                       onClick={() => handleDeleteCell(day, period, si, ci)}
                                       borderRadius="md"
                                       _hover={{ transform: 'scale(1.05)' }}
@@ -1216,8 +1216,8 @@ const Timetable = () => {
                                   <Button 
                                     leftIcon={<AddIcon />} 
                                     size="sm" 
-                                    colorScheme="purple" 
-                                    width="100%" 
+                                    colorScheme="green" 
+                                    width="95%" 
                                     onClick={() => handleSplitCell(day, period, si)}
                                     borderRadius="md"
                                     _hover={{ transform: 'scale(1.05)' }}

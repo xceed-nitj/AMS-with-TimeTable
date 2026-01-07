@@ -250,7 +250,7 @@ function App() {
 </Route>
 
 {/* Backup Routes - v1 */}
-<Route path="/tt/:generatedLink/dashboard/v1">
+<Route path="/tt/:generatedLink/old">
   <Route index element={<Timetable2 />}></Route>
   <Route path="addfaculty" element={<AddFaculty />} />
   <Route path="importttdata" element={<ImportTT />} />
