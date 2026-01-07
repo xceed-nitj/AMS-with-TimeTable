@@ -92,7 +92,7 @@ const Timetable = () => {
   const currentPathname = location.pathname;
   const apiUrl = getEnvironment();
   const toast = useToast();
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
  
   const [publishedTime, setPublishedTime] = useState();
 
@@ -330,7 +330,7 @@ const Timetable = () => {
   // Generate initial timetable data
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const periods = [1, 2, 3, 4, 5, 6, 7, 8, 'lunch'];
 
     for (const day of days) {
@@ -1091,7 +1091,7 @@ const Timetable = () => {
               </Flex>
             ) : (
               <Box overflowX="auto" borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner">
-                <Table size="lg" variant="striped" w="100%" tableLayout="fixed">
+                <Table size="lg" variant="striped"  w="100%" overflow="hidden">
                   <Thead bg="purple.600">
                     <Tr>
                       <Th color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">DAY</Th>
@@ -1110,18 +1110,18 @@ const Timetable = () => {
                         _hover={{ bg: 'purple.50' }}
                         transition="background 0.2s"
                       >
-                        <Td fontWeight="bold" fontSize="md" color="purple.700" p={2}>
+                        <Td fontWeight="bold" fontSize="md" color="purple.700" p={4}>
                           {day}
                         </Td>
                         {[1,2,3,4,5,6,7,8].map(period => (
-                          <Td key={period} p={1} verticalAlign="top"  overflow="hidden">
+                          <Td key={period} p={3} verticalAlign="top">
                             {timetableData[day][`period${period}`].map((slot, si) => (
                               <Box key={si}>
                                 {slot.map((cell, ci) => (
                                   <Box 
                                     key={ci} 
-                                    mb={1} 
-                                    p={1} 
+                                    mb={3} 
+                                    p={3} 
                                     bg="white" 
                                     borderRadius="lg" 
                                     borderWidth="2px" 
@@ -1129,10 +1129,9 @@ const Timetable = () => {
                                     boxShadow="sm"
                                     _hover={{ boxShadow: 'md', borderColor: 'purple.300' }}
                                     transition="all 0.2s"
-                                    overflow="hidden"
                                   >
                                     {cell.subject && (
-                                      <Box bg="blue.50" px={1} py={1} mb={1} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">
+                                      <Box bg="blue.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">
                                         <Text fontSize="sm" fontWeight="bold" color="blue.700" isTruncated title={cell.subject}>
                                           📚 {cell.subject}
                                         </Text>
@@ -1144,7 +1143,7 @@ const Timetable = () => {
                                       size="sm" 
                                       borderColor="blue.300" 
                                       fontSize="sm" 
-                                      mb={1}
+                                      mb={2}
                                       borderRadius="md"
                                       _focus={{ borderColor: 'blue.500' }}
                                     >
@@ -1155,7 +1154,7 @@ const Timetable = () => {
                                     </Select>
 
                                     {cell.room && (
-                                      <Box bg="green.50" px={1} py={1} mb={1} borderRadius="md" borderLeftWidth="4px" borderLeftColor="green.500">
+                                      <Box bg="green.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="green.500">
                                         <Text fontSize="sm" fontWeight="bold" color="green.700">
                                           🏢 {cell.room}
                                         </Text>
@@ -1171,14 +1170,14 @@ const Timetable = () => {
                                       borderRadius="md"
                                       _focus={{ borderColor: 'green.500' }}
                                     >
-                                      <option value="">Room</option>
+                                      <option value=""> Room</option>
                                       {availableRooms.map(r => (
                                         <option key={r} value={r}>{r}</option>
                                       ))}
                                     </Select>
 
                                     {cell.faculty && (
-                                      <Box bg="purple.50" px={1} py={1} mb={1} borderRadius="md" borderLeftWidth="4px" borderLeftColor="purple.500">
+                                      <Box bg="purple.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="purple.500">
                                         <Text fontSize="sm" fontWeight="bold" color="purple.700" isTruncated title={cell.faculty}>
                                           👨‍🏫 {cell.faculty}
                                         </Text>
@@ -1190,6 +1189,7 @@ const Timetable = () => {
                                       size="sm" 
                                       borderColor="purple.300" 
                                       fontSize="sm" 
+                                      overflow="hidden"
                                       mb={2}
                                       borderRadius="md"
                                       _focus={{ borderColor: 'purple.500' }}
@@ -1205,7 +1205,7 @@ const Timetable = () => {
                                       size="sm" 
                                       colorScheme="red" 
                                       variant="outline" 
-                                      width="98%" 
+                                      width="100%" 
                                       onClick={() => handleDeleteCell(day, period, si, ci)}
                                       borderRadius="md"
                                       _hover={{ transform: 'scale(1.05)' }}
@@ -1217,8 +1217,8 @@ const Timetable = () => {
                                   <Button 
                                     leftIcon={<AddIcon />} 
                                     size="sm" 
-                                    colorScheme="green" 
-                                    width="95%" 
+                                    colorScheme="purple" 
+                                    width="100%" 
                                     onClick={() => handleSplitCell(day, period, si)}
                                     borderRadius="md"
                                     _hover={{ transform: 'scale(1.05)' }}
