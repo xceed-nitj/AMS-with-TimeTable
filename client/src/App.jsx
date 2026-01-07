@@ -230,7 +230,7 @@ function App() {
         </Route>
 
         {/* Original Routes */}
-<Route path="/tt/:generatedLink/v1">
+<Route path="/tt/v1/:generatedLink">
   <Route index element={<Timetable />}></Route>
   <Route path="addfaculty" element={<AddFaculty />} />
   <Route path="importttdata" element={<ImportTT />} />
