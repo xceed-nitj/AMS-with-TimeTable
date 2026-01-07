@@ -755,16 +755,16 @@ const Timetable = () => {
           <Box position="absolute" bottom="10%" left="40%" w="100px" h="100px" borderRadius="full" bg="white" />
         </Box>
         <Container maxW="8xl" position="relative" zIndex="1">
-          <VStack spacing={2} align="flex-start">
-            <Badge fontSize="xs" px={3} py={1} borderRadius="full" bg="whiteAlpha.400" color="white" fontWeight="bold" textTransform="uppercase">
-              Admin Dashboard
+          <VStack spacing={1} align="center">
+            <Badge fontSize="xl" px={3} py={0} borderRadius="full" bg="whiteAlpha.400" color="white" fontWeight="bold" textTransform="uppercase">
+              Dashboard -   Timetable Management System
             </Badge>
-            <Heading fontSize="4xl" color="white" fontWeight="900" letterSpacing="tight">
+            {/* <Heading fontSize="4xl" color="white" fontWeight="900" letterSpacing="tight">
               Timetable Management System
-            </Heading>
-            <Text fontSize="md" color="whiteAlpha.900" fontWeight="500">
-              Monitor and resolve timetable conflicts across all departments in real-time
-            </Text>
+            </Heading> */}
+            {/* <Text fontSize="md" color="whiteAlpha.900" fontWeight="500">
+              Create, Monitor and resolve timetable conflicts across all departments in real-time
+            </Text> */}
           </VStack>
         </Container>
       </Box>
@@ -773,73 +773,21 @@ const Timetable = () => {
         
         {/* Enhanced Quick Actions Card */}
         <Card bg="white" borderRadius="2xl" boxShadow="2xl" mb={6} border="1px" borderColor="gray.100">
-          <CardBody p={8}>
-            <Flex justify="space-between" align="center" mb={6}>
+          <CardBody p={3}>
+            <Flex justify="space-between" align="center" mb={2}>
               <Box>
-                <Heading size="lg" mb={1} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
+                <Heading size="md" mb={1} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
                   Quick Actions
                 </Heading>
-                <Text fontSize="sm" color="gray.600">Manage your timetable efficiently</Text>
+                {/* <Text fontSize="sm" color="gray.600">Manage your timetable efficiently</Text> */}
               </Box>
-              <HStack spacing={3}>
-                <Tooltip label="Lock Timetable" placement="top" hasArrow bg="orange.600" fontSize="sm">
-                  <IconButton
-                    icon={<LockIcon />}
-                    onClick={handleLockTT}
-                    colorScheme="orange"
-                    size="md"
-                    borderRadius="lg"
-                    boxShadow="md"
-                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
-                    transition="all 0.3s"
-                  />
-                </Tooltip>
-               <Tooltip label="Publish Timetable" hasArrow>
-                <IconButton
-                    icon={<CheckCircleIcon />}
-                    onClick={handlePublishTT}
-                    colorScheme="purple"
-                    size="md"
-                    borderRadius="lg"
-                    isDisabled={TTData?.publish === true}
-                 />
-
-              </Tooltip>
-
-
-                <Tooltip label="View Locked Summary" placement="top" hasArrow bg="purple.600" fontSize="sm">
-                  <IconButton
-                    icon={<ViewIcon />}
-                    onClick={handleViewSummary}
-                    colorScheme="purple"
-                    size="md"
-                    borderRadius="lg"
-                    boxShadow="md"
-                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
-                    transition="all 0.3s"
-                  />
-                </Tooltip>
-
-                <Tooltip label="Download PDF" placement="top" hasArrow bg="pink.600" fontSize="sm">
-                  <IconButton
-                    icon={<DownloadIcon />}
-                    onClick={handleDownloadClick}
-                    colorScheme="pink"
-                    size="md"
-                    borderRadius="lg"
-                    boxShadow="md"
-                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
-                    transition="all 0.3s"
-                  />
-                </Tooltip>
-              </HStack>
             </Flex>
 
-            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={4} mb={6}>
+            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={4} mb={3}>
               {[
-                { icon: TimeIcon, label: 'First Year', c: 'red', fn: handleFirstYear },
+                { icon: TimeIcon, label: 'First Year Allotment', c: 'red', fn: handleFirstYear },
                 { icon: CalendarIcon, label: 'Master View', c: 'blue', fn: handleMasterView },
-                { icon: ViewIcon, label: 'View Allotted Rooms', c: 'teal', fn: handleViewRoom },
+                { icon: ViewIcon, label: 'View Centrally Allotted Rooms', c: 'pink', fn: handleViewRoom },
                 { icon: EditIcon, label: 'Edit Faculty', c: 'cyan', fn: handleEditFaculty },
                 { icon: DownloadIcon, label: 'Import Data', c: 'yellow', fn: handleImportData },
               ].map((a, i) => (
@@ -861,13 +809,14 @@ const Timetable = () => {
                 </Button>
               ))}
             </SimpleGrid>
+          
 
-            <Divider mb={6} />
+            {/* <Divider mb={6} /> */}
 
             <Box>
-              <Text fontSize="sm" fontWeight="bold" color="gray.700" mb={3}>
-                Add New Items
-              </Text>
+              {/* <Text fontSize="sm" fontWeight="bold" color="gray.700" mb={3}>
+                Data Management: 
+              </Text> */}
               <SimpleGrid columns={{ base: 2, md: 7 }} spacing={3}>
                 {[
                   { l: 'Semester', fn: handleAddSem, icon: AddIcon },
@@ -898,9 +847,106 @@ const Timetable = () => {
         </Card>
 
         {/* Enhanced Status Dashboard */}
-        <SimpleGrid columns={{ base: 1, md: 4 }} spacing={5} mb={6}>
+        
+        {/* Enhanced Edit Section */}
+        <Card borderRadius="2xl" boxShadow="2xl" mb={2} overflow="hidden">
+          <CardHeader 
+            bgGradient="linear(to-r, purple.500, blue.500)" 
+            py={2}
+          >
+            <Flex align="center" gap={4}>
+              <Box bg="whiteAlpha.300" p={1} borderRadius="xl">
+                <EditIcon color="white" boxSize={7} />
+              </Box>
+              <Box>
+                <Heading size="md" color="white" mb={1}> Details</Heading>
+                {/* <Text fontSize="sm" color="whiteAlpha.900">Time Details</Text> */}
+              </Box>
+
+              <SimpleGrid columns={{ base: 1, md: 4 }} spacing={5} mb={2}>
           {/* Clash Detection */}
+         
+
+          {/* Saved Status */}
           <Card 
+            borderRadius="2xl" 
+            borderLeftWidth="6px" 
+            borderLeftColor="blue.500"
+            boxShadow="lg"
+            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+            transition="all 0.3s"
+          >
+            <CardBody p={2}>
+              <Flex align="center" gap={2}>
+                <Box bg="blue.100" p={4} borderRadius="xl" boxShadow="md">
+                  <TimeIcon boxSize={4} color="blue.600" />
+                </Box>
+                <Box flex="1">
+                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                    Last Saved Time
+                  </Text>
+                  <Text fontSize="lg" fontWeight="bold" color="blue.700">
+                    {savedTime || 'Not saved yet'}
+                  </Text>
+                </Box>
+              </Flex>
+            </CardBody>
+          </Card>
+
+          {/* Locked Status */}
+          <Card 
+            borderRadius="2xl" 
+            borderLeftWidth="6px" 
+            borderLeftColor="orange.500"
+            boxShadow="lg"
+            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+            transition="all 0.3s"
+          >
+            <CardBody p={2}>
+              <Flex align="center" gap={4}>
+                <Box bg="orange.100" p={4} borderRadius="xl" boxShadow="md">
+                  <LockIcon boxSize={8} color="orange.600" />
+                </Box>
+                <Box flex="1">
+                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                    Last Locked Time
+                  </Text>
+                  <Text fontSize="lg" fontWeight="bold" color="orange.700">
+                    {lockedTime || 'Not locked yet'}
+                  </Text>
+                </Box>
+              </Flex>
+            </CardBody>
+          </Card>
+
+          {/* Published Status */}
+          <Card 
+            borderRadius="2xl" 
+            borderLeftWidth="6px" 
+            borderLeftColor="purple.500"
+            boxShadow="lg"
+            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+            transition="all 0.3s"
+          >
+            <CardBody p={2}>
+              <Flex align="center" gap={4}>
+                <Box bg="purple.100" p={4} borderRadius="xl" boxShadow="md">
+                  <CheckCircleIcon boxSize={8} color="purple.600" />
+                </Box>
+                <Box flex="1">
+                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                    Published Date
+                  </Text>
+                <Text fontSize="lg" fontWeight="bold" color="purple.700">
+                    {formatDateTime(TTData?.datePublished)}
+
+                </Text>
+
+                </Box>
+              </Flex>
+            </CardBody>
+          </Card>
+             <Card 
             borderRadius="2xl" 
             borderWidth="3px" 
             borderColor={clash.length > 0 ? 'red.300' : 'green.300'}
@@ -908,12 +954,12 @@ const Timetable = () => {
             _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
             transition="all 0.3s"
           >
-            <CardBody p={6}>
+            <CardBody p={2}>
               <VStack align="stretch" spacing={3}>
                 <Flex align="center" gap={3}>
                   <Box 
                     bg={clash.length > 0 ? 'red.100' : 'green.100'} 
-                    p={4} 
+                    p={1} 
                     borderRadius="xl"
                     boxShadow="md"
                   >
@@ -954,106 +1000,13 @@ const Timetable = () => {
               </VStack>
             </CardBody>
           </Card>
-
-          {/* Saved Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="blue.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={6}>
-              <Flex align="center" gap={4}>
-                <Box bg="blue.100" p={4} borderRadius="xl" boxShadow="md">
-                  <TimeIcon boxSize={8} color="blue.600" />
-                </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Last Saved
-                  </Text>
-                  <Text fontSize="lg" fontWeight="bold" color="blue.700">
-                    {savedTime || 'Not saved yet'}
-                  </Text>
-                </Box>
-              </Flex>
-            </CardBody>
-          </Card>
-
-          {/* Locked Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="orange.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={6}>
-              <Flex align="center" gap={4}>
-                <Box bg="orange.100" p={4} borderRadius="xl" boxShadow="md">
-                  <LockIcon boxSize={8} color="orange.600" />
-                </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Last Locked
-                  </Text>
-                  <Text fontSize="lg" fontWeight="bold" color="orange.700">
-                    {lockedTime || 'Not locked yet'}
-                  </Text>
-                </Box>
-              </Flex>
-            </CardBody>
-          </Card>
-
-          {/* Published Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="purple.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={6}>
-              <Flex align="center" gap={4}>
-                <Box bg="purple.100" p={4} borderRadius="xl" boxShadow="md">
-                  <CheckCircleIcon boxSize={8} color="purple.600" />
-                </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Published Date
-                  </Text>
-                <Text fontSize="lg" fontWeight="bold" color="purple.700">
-                    {formatDateTime(TTData?.datePublished)}
-
-                </Text>
-
-                </Box>
-              </Flex>
-            </CardBody>
-          </Card>
         </SimpleGrid>
 
-        {/* Enhanced Edit Section */}
-        <Card borderRadius="2xl" boxShadow="2xl" mb={6} overflow="hidden">
-          <CardHeader 
-            bgGradient="linear(to-r, purple.500, blue.500)" 
-            py={6}
-          >
-            <Flex align="center" gap={4}>
-              <Box bg="whiteAlpha.300" p={3} borderRadius="xl">
-                <EditIcon color="white" boxSize={7} />
-              </Box>
-              <Box>
-                <Heading size="lg" color="white" mb={1}>Edit Timetable</Heading>
-                <Text fontSize="sm" color="whiteAlpha.900">Modify schedules and assignments</Text>
-              </Box>
+              
             </Flex>
           </CardHeader>
           <CardBody p={8}>
-            <Flex align="center" gap={4} mb={6} bg="purple.50" p={4} borderRadius="xl">
+            <Flex align="center" gap={4} mb={6} bg="purple.50" p={2} borderRadius="xl">
               <Text fontWeight="bold" fontSize="lg" minW="120px" color="purple.800">
                 Select Semester:
               </Text>
@@ -1070,7 +1023,64 @@ const Timetable = () => {
               >
                 {semesters.map((s, i) => <option key={i} value={s}>{s}</option>)}
               </Select>
+             <HStack spacing={3} ml="auto">
+
+                <Tooltip label="Lock Timetable" placement="top" hasArrow bg="orange.600" fontSize="sm">
+                  <IconButton
+                    icon={<LockIcon />}
+                    onClick={handleLockTT}
+                    colorScheme="orange"
+                    size="md"
+                    borderRadius="lg"
+                    boxShadow="md"
+                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
+                    transition="all 0.3s"
+                  />
+                </Tooltip>
+               <Tooltip label="Publish Timetable" hasArrow>
+                <IconButton
+                    icon={<CheckCircleIcon />}
+                    onClick={handlePublishTT}
+                    colorScheme="green"
+                    size="md"
+                    borderRadius="lg"
+                    isDisabled={TTData?.publish === true}
+                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
+                 />
+
+              </Tooltip>
+
+
+                <Tooltip label="View Locked Summary" placement="top" hasArrow bg="purple.600" fontSize="sm">
+                  <IconButton
+                    icon={<ViewIcon />}
+                    onClick={handleViewSummary}
+                    colorScheme="blue"
+                    size="md"
+                    borderRadius="lg"
+                    boxShadow="md"
+                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
+                    transition="all 0.3s"
+                  />
+                </Tooltip>
+
+                <Tooltip label="Download PDF" placement="top" hasArrow bg="pink.600" fontSize="sm">
+                  <IconButton
+                    icon={<DownloadIcon />}
+                    onClick={handleDownloadClick}
+                    colorScheme="pink"
+                    size="md"
+                    borderRadius="lg"
+                    boxShadow="md"
+                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
+                    transition="all 0.3s"
+                  />
+                </Tooltip>
+              </HStack>
+            
             </Flex>
+
+            
 
             {Object.keys(timetableData).length === 0 ? (
               <Flex justify="center" align="center" minH="300px" bg="gray.50" borderRadius="2xl">
@@ -1228,12 +1238,12 @@ const Timetable = () => {
             )}
 
             <Button 
-              colorScheme="purple" 
+              colorScheme="green" 
               size="xl" 
               mt={6} 
               width="100%" 
               borderRadius="xl" 
-              leftIcon={<DownloadIcon />} 
+              // leftIcon={<DownloadIcon />} 
               onClick={handleSubmit} 
               fontSize="lg" 
               fontWeight="bold"
@@ -1242,7 +1252,7 @@ const Timetable = () => {
               _hover={{ transform: 'translateY(-2px)', boxShadow: '2xl' }}
               transition="all 0.3s"
             >
-              💾 Save Timetable
+            💾 Save Timetable
             </Button>
           </CardBody>
         </Card>
