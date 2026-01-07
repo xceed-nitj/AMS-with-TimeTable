@@ -1091,7 +1091,7 @@ const Timetable = () => {
               </Flex>
             ) : (
               <Box overflowX="auto" borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner">
-                <Table size="lg" variant="striped">
+                <Table size="lg" variant="striped" w="100%" tableLayout="fixed">
                   <Thead bg="purple.600">
                     <Tr>
                       <Th color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">DAY</Th>
@@ -1114,7 +1114,7 @@ const Timetable = () => {
                           {day}
                         </Td>
                         {[1,2,3,4,5,6,7,8].map(period => (
-                          <Td key={period} p={1} verticalAlign="top">
+                          <Td key={period} p={1} verticalAlign="top"  overflow="hidden">
                             {timetableData[day][`period${period}`].map((slot, si) => (
                               <Box key={si}>
                                 {slot.map((cell, ci) => (
@@ -1129,6 +1129,7 @@ const Timetable = () => {
                                     boxShadow="sm"
                                     _hover={{ boxShadow: 'md', borderColor: 'purple.300' }}
                                     transition="all 0.2s"
+                                    overflow="hidden"
                                   >
                                     {cell.subject && (
                                       <Box bg="blue.50" px={1} py={1} mb={1} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">

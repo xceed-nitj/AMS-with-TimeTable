@@ -230,7 +230,7 @@ function App() {
         </Route>
 
         {/* Original Routes */}
-<Route path="/tt/:generatedLink">
+<Route path="/tt/:generatedLink/v1">
   <Route index element={<Timetable />}></Route>
   <Route path="addfaculty" element={<AddFaculty />} />
   <Route path="importttdata" element={<ImportTT />} />
@@ -250,7 +250,7 @@ function App() {
 </Route>
 
 {/* Backup Routes - v1 */}
-<Route path="/tt/:generatedLink/old">
+<Route path="/tt/:generatedLink">
   <Route index element={<Timetable2 />}></Route>
   <Route path="addfaculty" element={<AddFaculty />} />
   <Route path="importttdata" element={<ImportTT />} />
