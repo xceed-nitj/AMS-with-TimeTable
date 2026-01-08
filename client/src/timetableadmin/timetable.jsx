@@ -458,7 +458,7 @@ const Timetable = () => {
     toast({
       title: "Timetable Published",
       status: "success",
-      duration: 9000,
+      duration: 3000,
       isClosable: true,
       position: "bottom",
     });
@@ -466,7 +466,7 @@ const Timetable = () => {
     toast({
       title: "Publish failed",
       status: "error",
-      duration: 9000,
+      duration: 3000,
       isClosable: true,
       position: "bottom",
     });
@@ -556,9 +556,9 @@ const Timetable = () => {
    toast({
      title: "Saving timetable...",
       status: "info",
-      duration: 2000,
+      duration: 4000,
       isClosable: true,
-       position: "top-right",
+       position: "bottom",
 });
 
     try {
@@ -573,18 +573,18 @@ const Timetable = () => {
         toast({
   title: "Save failed",
   status: "error",
-  duration: 3000,
+  duration: 6000,
   isClosable: true,
-  position: "top-right",
+  position: "bottom",
 });
 
       } else {
        toast({
      title: "Timetable Saved",
      status: "success",
-    duration: 9000,
+    duration: 3000,
     isClosable: true,
-     position: "middle",
+     position: "bottom",
 });
 
       }
@@ -594,9 +594,9 @@ const Timetable = () => {
      title: "Error saving timetable",
      description: "Something went wrong while saving. Please try again.",
      status: "error",
-     duration: 9000,
+     duration: 3000,
      isClosable: true,
-     position: "middle",
+     position: "bottom",
 });
 
     }
@@ -649,9 +649,9 @@ const handleLockTT = async () => {
           toast({
             title: 'Timetable Locked',
             status: 'success',
-            duration: 6000,
+            duration: 3000,
             isClosable: true,
-            position: 'top',
+            position: 'bottom',
           });
         } else {
           console.error(
@@ -668,9 +668,9 @@ const handleLockTT = async () => {
         description:
           'An error occurred while attempting to lock the timetable.',
         status: 'error',
-        duration: 6000,
+        duration: 3000,
         isClosable: true,
-        position: 'top',
+        position: 'bottom',
       });
     }
   };
@@ -1108,168 +1108,176 @@ const handleLockTT = async () => {
             </Flex>
 
             
+{Object.keys(timetableData).length === 0 ? (
+  <Flex justify="center" align="center" minH="300px" bg="gray.50" borderRadius="2xl">
+    <VStack spacing={4}>
+      <RepeatIcon boxSize={12} color="purple.400" className="spin" />
+      <Text fontSize="lg" color="gray.600" fontWeight="semibold">Loading Timetable...</Text>
+    </VStack>
+  </Flex>
+) : (
+  <Box overflowX="auto" borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner" w="100vw" maxW="100%">
+    <Table size="sm" variant="simple" w="100%" tableLayout="fixed" bg="white">
+      <Thead bg="purple.600">
+        <Tr>
+          <Th color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="100px">DAY</Th>
+          {[1,2,3,4,5,6,7,8].map(p => (
+            <Th key={p} color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="160px">
+              {p}
+            </Th>
+          ))}
+        </Tr>
+      </Thead>
+      <Tbody>
+        {days.map((day, di) => (
+          <Tr 
+            key={day} 
+            bg="white"
+            _hover={{ bg: 'purple.50' }}
+            transition="background 0.2s"
+            borderBottom="1px"
+            borderColor="gray.200"
+          >
+            <Td fontWeight="bold" fontSize="sm" color="purple.700" p={2}>
+              {day}
+            </Td>
+            {[1,2,3,4,5,6,7,8].map(period => (
+              <Td key={period} p={2} verticalAlign="top" bg="white">
+                {timetableData[day][`period${period}`].map((slot, si) => (
+                  <Box key={si}>
+                    {slot.map((cell, ci) => {
+                      // Generate consistent color based on subject name
+                      const getSubjectColor = (subject) => {
+                        if (!subject) return 'gray.50';
+                        const colors = [
+                          'red.100', 'orange.100', 'yellow.100', 'green.100', 
+                          'teal.100', 'blue.100', 'cyan.100', 'purple.100', 
+                          'pink.100', 'lime.100', 'indigo.100', 'violet.100'
+                        ];
+                        let hash = 0;
+                        for (let i = 0; i < subject.length; i++) {
+                          hash = subject.charCodeAt(i) + ((hash << 5) - hash);
+                        }
+                        return colors[Math.abs(hash) % colors.length];
+                      };
 
-            {Object.keys(timetableData).length === 0 ? (
-              <Flex justify="center" align="center" minH="300px" bg="gray.50" borderRadius="2xl">
-                <VStack spacing={4}>
-                  <RepeatIcon boxSize={12} color="purple.400" className="spin" />
-                  <Text fontSize="lg" color="gray.600" fontWeight="semibold">Loading Timetable...</Text>
-                </VStack>
-              </Flex>
-            ) : (
-              <Box overflowX="auto" borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner">
-                <Table size="lg" variant="striped"  w="100%" overflow="hidden">
-                  <Thead bg="purple.600">
-                    <Tr>
-                      <Th color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">DAY</Th>
-                      {[1,2,3,4,5,6,7,8].map(p => (
-                        <Th key={p} color="white" fontSize="md" p={4} textAlign="center" fontWeight="bold">
-                          {p}
-                        </Th>
-                      ))}
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {days.map((day, di) => (
-                      <Tr 
-                        key={day} 
-                        bg={di % 2 === 0 ? 'white' : 'gray.50'} 
-                        _hover={{ bg: 'purple.50' }}
-                        transition="background 0.2s"
-                      >
-                        <Td fontWeight="bold" fontSize="md" color="purple.700" p={4}>
-                          {day}
-                        </Td>
-                        {[1,2,3,4,5,6,7,8].map(period => (
-                          <Td key={period} p={3} verticalAlign="top">
-                            {timetableData[day][`period${period}`].map((slot, si) => (
-                              <Box key={si}>
-                                {slot.map((cell, ci) => (
-                                  <Box 
-                                    key={ci} 
-                                    mb={3} 
-                                    p={3} 
-                                    bg="white" 
-                                    borderRadius="lg" 
-                                    borderWidth="2px" 
-                                    borderColor="gray.200"
-                                    boxShadow="sm"
-                                    _hover={{ boxShadow: 'md', borderColor: 'purple.300' }}
-                                    transition="all 0.2s"
-                                  >
-                                    {cell.subject && (
-                                      <Box bg="blue.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">
-                                        <Text fontSize="sm" fontWeight="bold" color="blue.700" isTruncated title={cell.subject}>
-                                          📚 {cell.subject}
-                                        </Text>
-                                      </Box>
-                                    )}
-                                    <Select 
-                                      value={cell.subject} 
-                                      onChange={(e) => handleCellChange(day, period, si, ci, 'subject', e)} 
-                                      size="sm" 
-                                      borderColor="blue.300" 
-                                      fontSize="sm" 
-                                      mb={2}
-                                      borderRadius="md"
-                                      _focus={{ borderColor: 'blue.500' }}
-                                    >
-                                      <option value="">Subject</option>
-                                      {availableSubjects.map(s => (
-                                        <option key={s._id} value={s.subName}>{s.subName}</option>
-                                      ))}
-                                    </Select>
-
-                                    {cell.room && (
-                                      <Box bg="green.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="green.500">
-                                        <Text fontSize="sm" fontWeight="bold" color="green.700">
-                                          🏢 {cell.room}
-                                        </Text>
-                                      </Box>
-                                    )}
-                                    <Select 
-                                      value={cell.room} 
-                                      onChange={(e) => handleCellChange(day, period, si, ci, 'room', e)} 
-                                      size="sm" 
-                                      borderColor="green.300" 
-                                      fontSize="sm" 
-                                      mb={2}
-                                      borderRadius="md"
-                                      _focus={{ borderColor: 'green.500' }}
-                                    >
-                                      <option value=""> Room</option>
-                                      {availableRooms.map(r => (
-                                        <option key={r} value={r}>{r}</option>
-                                      ))}
-                                    </Select>
-
-                                    {cell.faculty && (
-                                      <Box bg="purple.50" px={3} py={2} mb={2} borderRadius="md" borderLeftWidth="4px" borderLeftColor="purple.500">
-                                        <Text fontSize="sm" fontWeight="bold" color="purple.700" isTruncated title={cell.faculty}>
-                                          👨‍🏫 {cell.faculty}
-                                        </Text>
-                                      </Box>
-                                    )}
-                                    <Select 
-                                      value={cell.faculty} 
-                                      onChange={(e) => handleCellChange(day, period, si, ci, 'faculty', e)} 
-                                      size="sm" 
-                                      borderColor="purple.300" 
-                                      fontSize="sm" 
-                                      overflow="hidden"
-                                      mb={2}
-                                      borderRadius="md"
-                                      _focus={{ borderColor: 'purple.500' }}
-                                    >
-                                      <option value="">Faculty</option>
-                                      {availableFaculties.map((f, i) => (
-                                        <option key={i} value={f}>{f}</option>
-                                      ))}
-                                    </Select>
-
-                                    <IconButton 
-                                      icon={<DeleteIcon />} 
-                                      size="sm" 
-                                      colorScheme="red" 
-                                      variant="outline" 
-                                      width="100%" 
-                                      onClick={() => handleDeleteCell(day, period, si, ci)}
-                                      borderRadius="md"
-                                      _hover={{ transform: 'scale(1.05)' }}
-                                      transition="all 0.2s"
-                                    />
-                                  </Box>
-                                ))}
-                                {si === 0 && (
-                                  <Button 
-                                    leftIcon={<AddIcon />} 
-                                    size="sm" 
-                                    colorScheme="purple" 
-                                    width="100%" 
-                                    onClick={() => handleSplitCell(day, period, si)}
-                                    borderRadius="md"
-                                    _hover={{ transform: 'scale(1.05)' }}
-                                    transition="all 0.2s"
-                                  >
-                                    Add Slot
-                                  </Button>
-                                )}
-                              </Box>
+                      return (
+                        <Box 
+                          key={ci} 
+                          mb={2} 
+                          p={2} 
+                          bg={getSubjectColor(cell.subject)}
+                          borderRadius="md" 
+                          borderWidth="2px" 
+                          borderColor="gray.400"
+                          boxShadow="sm"
+                          _hover={{ boxShadow: 'md', borderColor: 'purple.500' }}
+                          transition="all 0.2s"
+                        >
+                          {/* Subject Select */}
+                          <Select 
+                            value={cell.subject} 
+                            onChange={(e) => handleCellChange(day, period, si, ci, 'subject', e)} 
+                            size="sm" 
+                            borderColor="blue.400" 
+                            fontSize="xs" 
+                            fontWeight="bold"
+                            borderRadius="md"
+                            mb={1}
+                            bg="white"
+                            title={cell.subject || 'Select Subject'}
+                            _focus={{ borderColor: 'blue.600' }}
+                          >
+                            <option value="">📚 Subject</option>
+                            {availableSubjects.map(s => (
+                              <option key={s._id} value={s.subName}>{s.subName}</option>
                             ))}
-                          </Td>
-                        ))}
-                      </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </Box>
-            )}
+                          </Select>
+
+                          {/* Room Select */}
+                          <Select 
+                            value={cell.room} 
+                            onChange={(e) => handleCellChange(day, period, si, ci, 'room', e)} 
+                            size="sm" 
+                            borderColor="green.400" 
+                            fontSize="xs" 
+                            fontWeight="bold"
+                            borderRadius="md"
+                            mb={1}
+                            bg="white"
+                            title={cell.room || 'Select Room'}
+                            _focus={{ borderColor: 'green.600' }}
+                          >
+                            <option value="">🏢 Room</option>
+                            {availableRooms.map(r => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </Select>
+
+                          {/* Faculty Select */}
+                          <Select 
+                            value={cell.faculty} 
+                            onChange={(e) => handleCellChange(day, period, si, ci, 'faculty', e)} 
+                            size="sm" 
+                            borderColor="purple.400" 
+                            fontSize="xs" 
+                            fontWeight="bold"
+                            borderRadius="md"
+                            mb={1}
+                            bg="white"
+                            title={cell.faculty || 'Select Faculty'}
+                            _focus={{ borderColor: 'purple.600' }}
+                          >
+                            <option value="">👨‍🏫 Faculty</option>
+                            {availableFaculties.map((f, i) => (
+                              <option key={i} value={f}>{f}</option>
+                            ))}
+                          </Select>
+
+                          {/* Delete Button */}
+                          <IconButton 
+                            icon={<DeleteIcon />} 
+                            size="xs" 
+                            colorScheme="red" 
+                            variant="outline" 
+                            width="100%" 
+                            onClick={() => handleDeleteCell(day, period, si, ci)}
+                            borderRadius="md"
+                            _hover={{ transform: 'scale(1.02)' }}
+                            transition="all 0.2s"
+                          />
+                        </Box>
+                      );
+                    })}
+                    {/* Add Slot Button */}
+                    {si === 0 && (
+                      <IconButton 
+                        icon={<AddIcon />} 
+                        size="xs" 
+                        colorScheme="purple" 
+                        width="100%" 
+                        onClick={() => handleSplitCell(day, period, si)}
+                        borderRadius="md"
+                        _hover={{ transform: 'scale(1.02)' }}
+                        transition="all 0.2s"
+                      />
+                    )}
+                  </Box>
+                ))}
+              </Td>
+            ))}
+          </Tr>
+        ))}
+      </Tbody>
+    </Table>
+  </Box>
+)}
 
             <Button 
               colorScheme="green" 
               size="xl" 
               mt={6} 
-              width="100%" 
+              width="50%" 
               borderRadius="xl" 
               // leftIcon={<DownloadIcon />} 
               onClick={handleSubmit} 
@@ -1280,7 +1288,7 @@ const handleLockTT = async () => {
               _hover={{ transform: 'translateY(-2px)', boxShadow: '2xl' }}
               transition="all 0.3s"
             >
-            💾 Save Timetable
+            Save Timetable
             </Button>
           </CardBody>
         </Card>
@@ -1288,9 +1296,9 @@ const handleLockTT = async () => {
         {/* Enhanced View Sections */}
         <Box mb={6}>
           <Heading size="lg" mb={4} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
-            View Timetables
+            {/* View Timetables */}
           </Heading>
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={5}>
+          {/* <SimpleGrid columns={{ base: 1, md: 3 }} spacing={5}> */}
             {/* View Semester */}
             <Card borderRadius="2xl" boxShadow="xl" overflow="hidden" _hover={{ transform: 'translateY(-4px)', boxShadow: '2xl' }} transition="all 0.3s">
               <CardHeader bg="blue.500" py={5}>
@@ -1433,7 +1441,7 @@ const handleLockTT = async () => {
                 )}
               </CardBody>
             </Card>
-          </SimpleGrid>
+          {/* </SimpleGrid> */}
         </Box>
       </Container>
 
