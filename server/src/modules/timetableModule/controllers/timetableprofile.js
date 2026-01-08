@@ -309,5 +309,49 @@ class TableController {
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
+  async publishTimetable(req, res) {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: "Invalid timetable id" });
+  }
+
+  try {
+    await TimeTable.findByIdAndUpdate(id, {
+      publish: true,
+      datePublished: new Date(),
+    });
+
+ 
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error publishing timetable:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+async publishSession(req, res) {
+  const { session } = req.body;
+
+  if (!session) {
+    return res.status(400).json({ error: "Session is required" });
+  }
+
+  try {
+    await TimeTable.updateMany(
+      { session },
+      {
+        publish: true,
+        datePublished: new Date(),
+      }
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error publishing session timetables:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+
 }
 module.exports = TableController;

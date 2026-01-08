@@ -24,7 +24,16 @@ const tableSchema = new mongoose.Schema({
     type: Schema.Types.ObjectId,
     ref: "User"
   },
-  currentSession: { type: Boolean, default: false }
+  currentSession: { type: Boolean, default: false },
+  publish: {
+  type: Boolean,
+  default: false,
+},
+datePublished: {
+  type: Date,
+  default: null,
+}
+
   
 });
 
