@@ -177,7 +177,7 @@ async function sendFacultyChangeEmails(facultyChanges) {
     }
 
     try {
-      // await mailSender(facultyDoc.email, emailTitle, emailBody(facultyDoc._id.toString()));
+      await mailSender(facultyDoc.email, emailTitle, emailBody(facultyDoc._id.toString()));
       console.log(`Email sent to: ${facultyDoc.email}`);
       console.log(facultyDoc._id);
 
