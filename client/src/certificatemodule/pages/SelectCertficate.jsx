@@ -38,7 +38,7 @@ function SelectCertficate({
   footer,
 }) {
   const certiDesignTemp = [
-    <CertificateContent
+    <CertificateContent            //BASIC 01
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -52,7 +52,7 @@ function SelectCertficate({
       footer={footer}
       key={'0'}
     />,
-    <Template02
+    <Template02                   //BASIC 02
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -66,7 +66,7 @@ function SelectCertficate({
       footer={footer}
       key={'1'}
     />,
-    <Template03
+    <Template03                    //BASIC 03
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -80,7 +80,7 @@ function SelectCertficate({
       footer={footer}
       key={'2'}
     />,
-    <Template04
+    <Template04                    //BASIC 04
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -94,7 +94,7 @@ function SelectCertficate({
       footer={footer}
       key={'3'}
     />,
-    <Template05
+    <Template05                     //BASIC 05
       eventId={eventId}
       contentBody={contentBody}
       certificateOf={certificateOf}
@@ -108,7 +108,7 @@ function SelectCertficate({
       footer={footer}
       key={'4'}
     />,
-    <Template06
+    <Template06                   //basic06
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -122,7 +122,7 @@ function SelectCertficate({
       footer={footer}
       key={'5'}
     />,
-    <Template07
+    <Template07                     //basic07
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -136,7 +136,7 @@ function SelectCertficate({
       footer={footer}
       key={'6'}
     />,
-    <Template08
+    <Template08                     //basic08
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -151,7 +151,7 @@ function SelectCertficate({
       key={'7'}
     />,
 
-    <Template09
+    <Template09                    //BASIC 09
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -165,7 +165,7 @@ function SelectCertficate({
       footer={footer}
       key={'8'}
     />,
-    <Template10
+    <Template10                   //PREMIUM 01
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -179,7 +179,7 @@ function SelectCertficate({
       footer={footer}
       key={'9'}
     />,
-    <Template11
+    <Template11                   //PREMIUM 02
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -193,7 +193,7 @@ function SelectCertficate({
       footer={footer}
       key={'10'}
     />,
-    <Template12
+    <Template12                   //PREMIUM 03
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -207,7 +207,7 @@ function SelectCertficate({
       footer={footer}
       key={'11'}
     />,
-    <Template13
+    <Template13                   //PREMIUM 04
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -221,7 +221,7 @@ function SelectCertficate({
       footer={footer}
       key={'12'}
     />,
-    <Template14
+    <Template14                   //BASIC 10
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -235,7 +235,7 @@ function SelectCertficate({
       footer={footer}
       key={'13'}
     />,
-    <Template15
+    <Template15                   //PREMIUM 05
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -249,7 +249,7 @@ function SelectCertficate({
       footer={footer}
       key={'14'}
     />,
-    <Template16
+    <Template16                   //PREMIUM 06
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -264,7 +264,7 @@ function SelectCertficate({
       key={'15'}
     />,
     
-    <Template17
+    <Template17                   //BASIC 11
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -279,7 +279,7 @@ function SelectCertficate({
       key={'16'}
       />,
 
-      <Template18
+      <Template18                   //BASIC 12
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -293,7 +293,7 @@ function SelectCertficate({
       footer={footer}
       key={'17'}
       />,
-      <Template19
+      <Template19                   //BASIC 13
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -307,7 +307,7 @@ function SelectCertficate({
       footer={footer}
       key={'18'}
       />,
-      <Template20
+      <Template20                   //PREMIUM 07
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -321,7 +321,7 @@ function SelectCertficate({
       footer={footer}
       key={'19'}
       />,
-      <Template21
+      <Template21                   //BASIC 14
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -335,7 +335,7 @@ function SelectCertficate({
       footer={footer}
       key={'20'}
       />,
-      <Template22
+      <Template22                   //BASIC 15
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}
@@ -349,7 +349,7 @@ function SelectCertficate({
       footer={footer}
       key={'21'}
       />,
-      <Template23
+      <Template23                   //BASIC 16
       eventId={eventId}
       contentBody={contentBody}
       certiType={certiType}

@@ -1,3 +1,17 @@
+// ============================= PREMIUM 1 ====================
+
+
+
+
+
+
+
+
+
+
+
+
+
 import React from 'react';
 import { useEffect, useRef } from 'react';
 
@@ -308,19 +322,18 @@ const CertificateContent = ({
           </div>
         </foreignObject>
         {verifiableLink && (
-          <foreignObject x={'24%'} y={'94%'} width={'76%'} height={'100'}>
+          <foreignObject x={'24%'} y={'96%'} width={'76%'} height={'100'}>
             <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
               {window.location.href}
             </div>
           </foreignObject>
         )}
-        <foreignObject x={'24%'} y={'91%'} width={'76%'} height={'100'}>
+        <foreignObject x={'24%'} y={'94%'} width={'76%'} height={'100'}>
           <Text className="tw-text-sm tw-text-center tw-text-gray-700 ">
             Issued On: {footer.footer}
           </Text>
         </foreignObject>
       </>
-      );
     </svg>
   );
 };
