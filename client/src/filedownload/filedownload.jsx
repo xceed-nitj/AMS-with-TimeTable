@@ -11,10 +11,10 @@ const FileDownloadButton = ({ fileUrl, fileName }) => {
 
   return (
     <Button
-      colorScheme="teal"
+      colorScheme="blue"
       onClick={handleDownload}
       size="md"
-      px="6"
+      px="12"
       py="5"
       borderRadius="lg"
       fontWeight="600"
