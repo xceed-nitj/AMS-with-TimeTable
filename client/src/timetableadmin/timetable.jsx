@@ -458,7 +458,7 @@ const Timetable = () => {
     toast({
       title: "Timetable Published",
       status: "success",
-      duration: 3000,
+      duration: 9000,
       isClosable: true,
       position: "bottom",
     });
@@ -466,7 +466,7 @@ const Timetable = () => {
     toast({
       title: "Publish failed",
       status: "error",
-      duration: 3000,
+      duration: 9000,
       isClosable: true,
       position: "bottom",
     });
@@ -582,9 +582,9 @@ const Timetable = () => {
        toast({
      title: "Timetable Saved",
      status: "success",
-    duration: 3000,
+    duration: 9000,
     isClosable: true,
-     position: "top-right",
+     position: "middle",
 });
 
       }
@@ -594,62 +594,89 @@ const Timetable = () => {
      title: "Error saving timetable",
      description: "Something went wrong while saving. Please try again.",
      status: "error",
-     duration: 3000,
+     duration: 9000,
      isClosable: true,
-     position: "top-right",
+     position: "middle",
 });
 
     }
   };
 
- const handleLockTT = async () => {
-  const isConfirmed = window.confirm('Are you sure you want to lock the timetable?');
-  let toInform = false;
+const handleLockTT = async () => {
+    const isConfirmed = window.confirm(
+      'Are you sure you want to lock the timetable?'
+    );
+    var toInform = false;
+    if (currentSessionCodes.includes(currentCode) && TTData?.publish === true)
+      toInform = window.confirm(
+        'Do you want to inform the teachers about the timetable changes?'
+      );
+    if (isConfirmed) {
+      setMessage('Data is being saved....');
+      setMessage('Data saved. Commencing lock');
+      setMessage('Data is being locked');
+      const Url = `${apiUrl}/timetablemodule/lock/locktt`;
+      const code = currentCode;
+      try {
+        const response = await fetch(Url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, toInform }),
+          credentials: 'include',
+        });
 
-  if (currentSessionCodes.includes(currentCode)) {
-    toInform = window.confirm('Do you want to inform the teachers about the timetable changes?');
-  }
+        if (response.ok) {
+          const data = await response.json();
+          const { results } = data;
+          if (toInform) {
+            let successMsg = '✔ Successful Emails:\n';
+            let failedMsg = '✘ Failed Emails:\n';
 
-  if (!isConfirmed) return;
+            results.forEach((item) => {
+              if (item.success) {
+                successMsg += `• ${item.email}\n`;
+              } else {
+                failedMsg += `• ${item.faculty} (${item.email || 'No Email'
+                  }) → ${item.error}\n`;
+              }
+            });
 
-  toast({
-    title: "Locking timetable",
-    description: "Please wait...",
-    status: "info",
-    duration: 2000,
-    isClosable: true,
-    position: "top-right",
-  });
+            // Show alerts
+            if (results.some((r) => r.success)) alert(successMsg);
+            if (results.some((r) => !r.success)) alert(failedMsg);
+          }
+          setMessage('');
+          toast({
+            title: 'Timetable Locked',
+            status: 'success',
+            duration: 6000,
+            isClosable: true,
+            position: 'top',
+          });
+        } else {
+          console.error(
+            'Failed to send data to the backend. HTTP status:',
+            response.status
+          );
+        }
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    } else {
+      toast({
+        title: 'Timetable Lock Failed',
+        description:
+          'An error occurred while attempting to lock the timetable.',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+        position: 'top',
+      });
+    }
+  };
 
-  try {
-    const response = await fetch(`${apiUrl}/timetablemodule/lock/locktt`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: currentCode, toInform }),
-      credentials: 'include',
-    });
-
-    if (!response.ok) throw new Error();
-
-    toast({
-      title: "Timetable Locked",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-      position: "top-right",
-    });
-
-    await fetchTime(); // refresh timestamps
-  } catch (error) {
-    toast({
-      title: "Timetable Lock Failed",
-      status: "error",
-      duration: 3000,
-      isClosable: true,
-      position: "top-right",
-    });
-  }
-};
+  // const [showMessage, setShowMessage] = useState(true);
+  
 
   // Scroll handler
   useEffect(() => {
