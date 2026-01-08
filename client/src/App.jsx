@@ -187,6 +187,7 @@ import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
 //import faculty rankings
 
 import FacultyDashboard from './instituterankings/facultydashboard.jsx';
+import Logs from './timetableadmin/logs.jsx';
 function App() {
   return (
     <Router>
@@ -227,6 +228,7 @@ function App() {
           <Route path="viewmrooms" element={<ViewMRooms />} />
           <Route path="masterdata" element={<MasterDataTable />} />
           <Route path="messages" element={<Messages />} />
+          <Route path="logs" element={<Logs />} />
         </Route>
 
         {/* Original Routes */}

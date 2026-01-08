@@ -21,6 +21,7 @@ router.use('/instituteLoad', require("./instituteLoad"));
 router.use('/mastertable', require("./masterclasstable")); 
 router.use('/message', require("./message"));
 router.use('/adminclash', require("./adminClash"));
+router.use('/logs', require("./logs"));
 
 module.exports = router;
 
