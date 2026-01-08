@@ -1116,7 +1116,7 @@ const handleLockTT = async () => {
     </VStack>
   </Flex>
 ) : (
-  <Box overflowX="auto" borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner" w="100vw" maxW="100%">
+  <Box borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner" w="100vw" maxW="100%">
     <Table size="sm" variant="simple" w="100%" tableLayout="fixed" bg="white">
       <Thead bg="purple.600">
         <Tr>
@@ -1146,13 +1146,25 @@ const handleLockTT = async () => {
                 {timetableData[day][`period${period}`].map((slot, si) => (
                   <Box key={si}>
                     {slot.map((cell, ci) => {
-                      // Generate consistent color based on subject name
+                      // Generate consistent color based on subject name with valid Chakra colors
                       const getSubjectColor = (subject) => {
-                        if (!subject) return 'gray.50';
+                        if (!subject) return 'white';
                         const colors = [
-                          'red.100', 'orange.100', 'yellow.100', 'green.100', 
-                          'teal.100', 'blue.100', 'cyan.100', 'purple.100', 
-                          'pink.100', 'lime.100', 'indigo.100', 'violet.100'
+                          'red.100', 'red.200', 'red.300',
+                          'orange.100', 'orange.200', 'orange.300',
+                          'yellow.100', 'yellow.200', 'yellow.300',
+                          'green.100', 'green.200', 'green.300',
+                          'teal.100', 'teal.200', 'teal.300',
+                          'blue.100', 'blue.200', 'blue.300',
+                          'cyan.100', 'cyan.200', 'cyan.300',
+                          'purple.100', 'purple.200', 'purple.300',
+                          'pink.100', 'pink.200', 'pink.300',
+                          'linkedin.100', 'linkedin.200', 'linkedin.300',
+                          'facebook.100', 'facebook.200', 'facebook.300',
+                          'messenger.100', 'messenger.200', 'messenger.300',
+                          'whatsapp.100', 'whatsapp.200', 'whatsapp.300',
+                          'twitter.100', 'twitter.200', 'twitter.300',
+                          'telegram.100', 'telegram.200', 'telegram.300'
                         ];
                         let hash = 0;
                         for (let i = 0; i < subject.length; i++) {
@@ -1160,6 +1172,8 @@ const handleLockTT = async () => {
                         }
                         return colors[Math.abs(hash) % colors.length];
                       };
+
+                      const isEmpty = !cell.subject;
 
                       return (
                         <Box 
@@ -1169,9 +1183,9 @@ const handleLockTT = async () => {
                           bg={getSubjectColor(cell.subject)}
                           borderRadius="md" 
                           borderWidth="2px" 
-                          borderColor="gray.400"
+                          borderColor={isEmpty ? "gray.300" : "gray.400"}
                           boxShadow="sm"
-                          _hover={{ boxShadow: 'md', borderColor: 'purple.500' }}
+                          _hover={{ boxShadow: 'md', borderColor: isEmpty ? 'gray.400' : 'purple.500' }}
                           transition="all 0.2s"
                         >
                           {/* Subject Select */}
@@ -1181,7 +1195,7 @@ const handleLockTT = async () => {
                             size="sm" 
                             borderColor="blue.400" 
                             fontSize="xs" 
-                            fontWeight="bold"
+                            fontWeight={isEmpty ? "normal" : "bold"}
                             borderRadius="md"
                             mb={1}
                             bg="white"
@@ -1201,7 +1215,7 @@ const handleLockTT = async () => {
                             size="sm" 
                             borderColor="green.400" 
                             fontSize="xs" 
-                            fontWeight="bold"
+                            fontWeight={isEmpty ? "normal" : "bold"}
                             borderRadius="md"
                             mb={1}
                             bg="white"
@@ -1221,7 +1235,7 @@ const handleLockTT = async () => {
                             size="sm" 
                             borderColor="purple.400" 
                             fontSize="xs" 
-                            fontWeight="bold"
+                            fontWeight={isEmpty ? "normal" : "bold"}
                             borderRadius="md"
                             mb={1}
                             bg="white"
@@ -1272,12 +1286,11 @@ const handleLockTT = async () => {
     </Table>
   </Box>
 )}
-
             <Button 
               colorScheme="green" 
               size="xl" 
               mt={6} 
-              width="50%" 
+              width="25%" 
               borderRadius="xl" 
               // leftIcon={<DownloadIcon />} 
               onClick={handleSubmit} 
