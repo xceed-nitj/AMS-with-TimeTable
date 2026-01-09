@@ -291,7 +291,7 @@ const LunchLoad = () => {
     <Box bg="white" minH="100vh">
       {/* Hero Header Section */}
       <Box
-        bgGradient="linear(to-r, cyan.400, teal.500, green.500)"
+        bgGradient="linear(to-r, blue.700, blue.500, green.200)"
         pt={0}
         pb={24}
         position="relative"

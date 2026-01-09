@@ -26,6 +26,10 @@ import {
   Wrap,
   WrapItem,
   useColorModeValue,
+  Spinner,
+  Alert,
+  AlertIcon,
+  AlertDescription,
 } from "@chakra-ui/react";
 import {
   CustomTh,
@@ -66,6 +70,7 @@ function Subject() {
   const parts = currentURL.split("/");
   const currentCode = parts[parts.length - 2];
   const [isLoading, setIsLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadState, setUploadState] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
@@ -119,6 +124,7 @@ function Subject() {
   }, [currentCode]); 
 
   const fetchData = () => {
+    setIsDataLoading(true);
     if (currentCode) {
       fetch(`${apiUrl}/timetablemodule/subject?code=${currentCode}`, {
         credentials: "include",
@@ -134,12 +140,23 @@ function Subject() {
         .then((data) => {
           const filteredData = data.filter((item) => item.code === currentCode);
           setTableData(filteredData);
+          setIsDataLoading(false);
         })
         .catch((error) => {
           console.error("Error:", error);
+          setIsDataLoading(false);
+          toast({
+            title: 'Error Loading Data',
+            description: 'Failed to load subjects',
+            status: 'error',
+            duration: 3000,
+            isClosable: true,
+            position: 'top',
+          });
         });
     } else {
       setTableData([]);
+      setIsDataLoading(false);
     }
   };
 
@@ -637,7 +654,7 @@ function Subject() {
       <Box pb={16}>
         {/* Hero Header Section */}
         <Box 
-          bgGradient="linear(to-r, purple.500, purple.600, pink.600)"
+          bgGradient="linear(to-r, red.700, pink.500, green.300)"
           pt={4}
           pb={24}
           position="relative"
@@ -980,284 +997,322 @@ function Subject() {
               </Wrap>
             )}
 
-            {/* Semester-wise Subject Cards */}
-            <Box>
-              <Text fontWeight="bold" fontSize="xl" mb={4}>
-                Subjects by Semester
-              </Text>
-              <SimpleGrid columns={{ base: 1 }} spacing={4}>
-                {Object.keys(groupedSubjects).sort().map((sem) => (
-                  <Card key={sem} bg={cardBg} boxShadow="xl" borderRadius="lg" overflow="hidden" border="2px" borderColor="gray.200">
-                    <CardHeader
-                      bg="purple.600"
-                      color="white"
-                      p={4}
-                      cursor="pointer"
-                      onClick={() => toggleSem(sem)}
-                      _hover={{ bg: "purple.700" }}
-                    >
-                      <Flex justify="space-between" align="center" flexDirection={{ base: "column", sm: "row" }} gap={2}>
-                        <HStack spacing={3}>
-                          <Text fontWeight="bold" fontSize={{ base: "md", md: "lg" }}>{sem}</Text>
-                          <Badge colorScheme="green" fontSize={{ base: "xs", md: "md" }} p={2}>
-                            {groupedSubjects[sem].length} Subjects
-                          </Badge>
-                        </HStack>
-                        <IconButton
-                          icon={expandedSem[sem] ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                          size="sm"
-                          variant="ghost"
-                          color="white"
-                          aria-label="Toggle"
-                          _hover={{ bg: "purple.500" }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                        />
-                      </Flex>
-                    </CardHeader>
-                    <Collapse in={expandedSem[sem] === true} animateOpacity>
-                      <CardBody p={0}>
-                        <Box overflowX="auto">
-                          <Table size="sm" variant="simple">
-                            <Thead bg="gray.100">
-                              <Tr>
-                                <Th 
-                                  fontSize="xs" 
-                                  cursor="pointer" 
-                                  onClick={() => handleSort('subjectFullName', sem)}
-                                  _hover={{ bg: "gray.200" }}
-                                >
-                                  <Flex align="center">
-                                    Subject Name
-                                    {getSortIcon('subjectFullName', sem)}
-                                  </Flex>
-                                </Th>
-                                <Th 
-                                  fontSize="xs" 
-                                  cursor="pointer" 
-                                  onClick={() => handleSort('type', sem)}
-                                  _hover={{ bg: "gray.200" }}
-                                >
-                                  <Flex align="center">
-                                    Type
-                                    {getSortIcon('type', sem)}
-                                  </Flex>
-                                </Th>
-                                <Th 
-                                  fontSize="xs" 
-                                  cursor="pointer" 
-                                  onClick={() => handleSort('subCode', sem)}
-                                  _hover={{ bg: "gray.200" }}
-                                >
-                                  <Flex align="center">
-                                    Code
-                                    {getSortIcon('subCode', sem)}
-                                  </Flex>
-                                </Th>
-                                <Th 
-                                  fontSize="xs" 
-                                  cursor="pointer" 
-                                  onClick={() => handleSort('subName', sem)}
-                                  _hover={{ bg: "gray.200" }}
-                                >
-                                  <Flex align="center">
-                                    Abbr.
-                                    {getSortIcon('subName', sem)}
-                                  </Flex>
-                                </Th>
-                                <Th 
-                                  fontSize="xs" 
-                                  cursor="pointer" 
-                                  onClick={() => handleSort('studentCount', sem)}
-                                  _hover={{ bg: "gray.200" }}
-                                >
-                                  <Flex align="center">
-                                    Count
-                                    {getSortIcon('studentCount', sem)}
-                                  </Flex>
-                                </Th>
-                                <Th 
-                                  fontSize="xs" 
-                                  cursor="pointer" 
-                                  onClick={() => handleSort('degree', sem)}
-                                  _hover={{ bg: "gray.200" }}
-                                >
-                                  <Flex align="center">
-                                    Degree
-                                    {getSortIcon('degree', sem)}
-                                  </Flex>
-                                </Th>
-                                <Th 
-                                  fontSize="xs" 
-                                  cursor="pointer" 
-                                  onClick={() => handleSort('dept', sem)}
-                                  _hover={{ bg: "gray.200" }}
-                                >
-                                  <Flex align="center">
-                                    Department
-                                    {getSortIcon('dept', sem)}
-                                  </Flex>
-                                </Th>
-                                <Th fontSize="xs" textAlign="center">Actions</Th>
-                              </Tr>
-                            </Thead>
-                            <Tbody>
-                              {getSortedData(groupedSubjects[sem], sortConfig.key ? sortConfig.key.split('-')[1] : null).map((row) => (
-                                <Tr key={row._id} _hover={{ bg: "purple.50" }}>
-                                  <Td fontSize="xs">
-                                    {editRowId === row._id ? (
-                                      <Input
-                                        size="xs"
-                                        value={editedData.subjectFullName}
-                                        onChange={(e) =>
-                                          setEditedData({
-                                            ...editedData,
-                                            subjectFullName: e.target.value,
-                                          })
-                                        }
-                                      />
-                                    ) : (
-                                      <Text fontWeight="bold">{row.subjectFullName}</Text>
-                                    )}
-                                  </Td>
-                                  <Td fontSize="xs">
-                                    {editRowId === row._id ? (
-                                      <Input
-                                        size="xs"
-                                        value={editedData.type}
-                                        onChange={(e) =>
-                                          setEditedData({ ...editedData, type: e.target.value })
-                                        }
-                                      />
-                                    ) : (
-                                      <Badge colorScheme="blue">{row.type}</Badge>
-                                    )}
-                                  </Td>
-                                  <Td fontSize="xs">
-                                    {editRowId === row._id ? (
-                                      <Input
-                                        size="xs"
-                                        value={editedData.subCode}
-                                        onChange={(e) =>
-                                          setEditedData({
-                                            ...editedData,
-                                            subCode: e.target.value,
-                                          })
-                                        }
-                                      />
-                                    ) : (
-                                      row.subCode
-                                    )}
-                                  </Td>
-                                  <Td fontSize="xs">
-                                    {editRowId === row._id ? (
-                                      <Input
-                                        size="xs"
-                                        value={editedData.subName}
-                                        onChange={(e) =>
-                                          setEditedData({
-                                            ...editedData,
-                                            subName: e.target.value,
-                                          })
-                                        }
-                                      />
-                                    ) : (
-                                      <Text fontWeight="bold">{row.subName}</Text>
-                                    )}
-                                  </Td>
-                                  <Td fontSize="xs">
-                                    {editRowId === row._id ? (
-                                      <Input
-                                        size="xs"
-                                        type="number"
-                                        value={editedData.studentCount}
-                                        onChange={(e) =>
-                                          setEditedData({ ...editedData, studentCount: e.target.value })
-                                        }
-                                      />
-                                    ) : (
-                                      row.studentCount
-                                    )}
-                                  </Td>
-                                  <Td fontSize="xs">
-                                    {editRowId === row._id ? (
-                                      <Input
-                                        size="xs"
-                                        value={editedData.degree}
-                                        onChange={(e) =>
-                                          setEditedData({ ...editedData, degree: e.target.value })
-                                        }
-                                      />
-                                    ) : (
-                                      row.degree
-                                    )}
-                                  </Td>
-                                  <Td fontSize="xs">
-                                    {editRowId === row._id ? (
-                                      <Input
-                                        size="xs"
-                                        value={editedData.dept}
-                                        onChange={(e) =>
-                                          setEditedData({ ...editedData, dept: e.target.value })
-                                        }
-                                      />
-                                    ) : (
-                                      <Text fontWeight="semibold">
-                                        {row.dept}
-                                      </Text>
-                                    )}
-                                  </Td>
-                                  <Td>
-                                    <HStack spacing={1} justify="center" flexWrap="wrap">
-                                      {editRowId === row._id ? (
-                                        <>
-                                          <IconButton
-                                            icon={<CheckIcon />}
-                                            size="xs"
-                                            colorScheme="green"
-                                            onClick={handleSaveEdit}
-                                            aria-label="Save"
-                                          />
-                                          <IconButton
-                                            icon={<CloseIcon />}
-                                            size="xs"
-                                            colorScheme="gray"
-                                            onClick={handleCancelEdit}
-                                            aria-label="Cancel"
-                                          />
-                                        </>
-                                      ) : (
-                                        <>
-                                          <IconButton
-                                            icon={<EditIcon />}
-                                            size="xs"
-                                            colorScheme="blue"
-                                            onClick={() => handleEditClick(row._id)}
-                                            aria-label="Edit"
-                                          />
-                                          <IconButton
-                                            icon={<DeleteIcon />}
-                                            size="xs"
-                                            colorScheme="red"
-                                            onClick={() => handleDelete(row._id)}
-                                            aria-label="Delete"
-                                          />
-                                        </>
-                                      )}
-                                    </HStack>
-                                  </Td>
+            {/* Loading State */}
+            {isDataLoading ? (
+              <Box 
+                bg={cardBg}
+                borderRadius="2xl"
+                shadow="2xl"
+                p={12}
+                border="1px"
+                borderColor={borderColor}
+              >
+                <VStack spacing={4}>
+                  <Spinner size="xl" thickness="4px" color="purple.500" speed="0.65s" />
+                  <Text color="gray.600" fontSize="lg">Loading subjects...</Text>
+                </VStack>
+              </Box>
+            ) : tableData.length === 0 ? (
+              <Box 
+                bg={cardBg}
+                borderRadius="2xl"
+                shadow="2xl"
+                p={6}
+                border="1px"
+                borderColor={borderColor}
+              >
+                <Alert status="info" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription>
+                    No subjects found. Add your first subject using the "Add Subject" button above.
+                  </AlertDescription>
+                </Alert>
+              </Box>
+            ) : (
+              /* Semester-wise Subject Cards */
+              <Box>
+                <Flex justify="space-between" align="center" mb={4}>
+                  <Text fontWeight="bold" fontSize="xl">
+                    Subjects by Semester
+                  </Text>
+                  <Badge colorScheme="purple" fontSize="lg" px={4} py={2}>
+                    {tableData.length} Total Subjects
+                  </Badge>
+                </Flex>
+                <SimpleGrid columns={{ base: 1 }} spacing={4}>
+                  {Object.keys(groupedSubjects).sort().map((sem) => (
+                    <Card key={sem} bg={cardBg} boxShadow="xl" borderRadius="lg" overflow="hidden" border="2px" borderColor="gray.200">
+                      <CardHeader
+                        bg="purple.600"
+                        color="white"
+                        p={4}
+                        cursor="pointer"
+                        onClick={() => toggleSem(sem)}
+                        _hover={{ bg: "purple.700" }}
+                      >
+                        <Flex justify="space-between" align="center" flexDirection={{ base: "column", sm: "row" }} gap={2}>
+                          <HStack spacing={3}>
+                            <Text fontWeight="bold" fontSize={{ base: "md", md: "lg" }}>{sem}</Text>
+                            <Badge colorScheme="green" fontSize={{ base: "xs", md: "md" }} p={2}>
+                              {groupedSubjects[sem].length} Subjects
+                            </Badge>
+                          </HStack>
+                          <IconButton
+                            icon={expandedSem[sem] ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                            size="sm"
+                            variant="ghost"
+                            color="white"
+                            aria-label="Toggle"
+                            _hover={{ bg: "purple.500" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                          />
+                        </Flex>
+                      </CardHeader>
+                      <Collapse in={expandedSem[sem] === true} animateOpacity>
+                        <CardBody p={0}>
+                          <Box overflowX="auto">
+                            <Table size="sm" variant="simple">
+                              <Thead bg="gray.100">
+                                <Tr>
+                                  <Th 
+                                    fontSize="xs" 
+                                    cursor="pointer" 
+                                    onClick={() => handleSort('subjectFullName', sem)}
+                                    _hover={{ bg: "gray.200" }}
+                                  >
+                                    <Flex align="center">
+                                      Subject Name
+                                      {getSortIcon('subjectFullName', sem)}
+                                    </Flex>
+                                  </Th>
+                                  <Th 
+                                    fontSize="xs" 
+                                    cursor="pointer" 
+                                    onClick={() => handleSort('type', sem)}
+                                    _hover={{ bg: "gray.200" }}
+                                  >
+                                    <Flex align="center">
+                                      Type
+                                      {getSortIcon('type', sem)}
+                                    </Flex>
+                                  </Th>
+                                  <Th 
+                                    fontSize="xs" 
+                                    cursor="pointer" 
+                                    onClick={() => handleSort('subCode', sem)}
+                                    _hover={{ bg: "gray.200" }}
+                                  >
+                                    <Flex align="center">
+                                      Code
+                                      {getSortIcon('subCode', sem)}
+                                    </Flex>
+                                  </Th>
+                                  <Th 
+                                    fontSize="xs" 
+                                    cursor="pointer" 
+                                    onClick={() => handleSort('subName', sem)}
+                                    _hover={{ bg: "gray.200" }}
+                                  >
+                                    <Flex align="center">
+                                      Abbr.
+                                      {getSortIcon('subName', sem)}
+                                    </Flex>
+                                  </Th>
+                                  <Th 
+                                    fontSize="xs" 
+                                    cursor="pointer" 
+                                    onClick={() => handleSort('studentCount', sem)}
+                                    _hover={{ bg: "gray.200" }}
+                                  >
+                                    <Flex align="center">
+                                      Count
+                                      {getSortIcon('studentCount', sem)}
+                                    </Flex>
+                                  </Th>
+                                  <Th 
+                                    fontSize="xs" 
+                                    cursor="pointer" 
+                                    onClick={() => handleSort('degree', sem)}
+                                    _hover={{ bg: "gray.200" }}
+                                  >
+                                    <Flex align="center">
+                                      Degree
+                                      {getSortIcon('degree', sem)}
+                                    </Flex>
+                                  </Th>
+                                  <Th 
+                                    fontSize="xs" 
+                                    cursor="pointer" 
+                                    onClick={() => handleSort('dept', sem)}
+                                    _hover={{ bg: "gray.200" }}
+                                  >
+                                    <Flex align="center">
+                                      Department
+                                      {getSortIcon('dept', sem)}
+                                    </Flex>
+                                  </Th>
+                                  <Th fontSize="xs" textAlign="center">Actions</Th>
                                 </Tr>
-                              ))}
-                            </Tbody>
-                          </Table>
-                        </Box>
-                      </CardBody>
-                    </Collapse>
-                  </Card>
-                ))}
-              </SimpleGrid>
-            </Box>
+                              </Thead>
+                              <Tbody>
+                                {getSortedData(groupedSubjects[sem], sortConfig.key ? sortConfig.key.split('-')[1] : null).map((row) => (
+                                  <Tr key={row._id} _hover={{ bg: "purple.50" }}>
+                                    <Td fontSize="xs">
+                                      {editRowId === row._id ? (
+                                        <Input
+                                          size="xs"
+                                          value={editedData.subjectFullName}
+                                          onChange={(e) =>
+                                            setEditedData({
+                                              ...editedData,
+                                              subjectFullName: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      ) : (
+                                        <Text fontWeight="bold">{row.subjectFullName}</Text>
+                                      )}
+                                    </Td>
+                                    <Td fontSize="xs">
+                                      {editRowId === row._id ? (
+                                        <Input
+                                          size="xs"
+                                          value={editedData.type}
+                                          onChange={(e) =>
+                                            setEditedData({ ...editedData, type: e.target.value })
+                                          }
+                                        />
+                                      ) : (
+                                        <Badge colorScheme="blue">{row.type}</Badge>
+                                      )}
+                                    </Td>
+                                    <Td fontSize="xs">
+                                      {editRowId === row._id ? (
+                                        <Input
+                                          size="xs"
+                                          value={editedData.subCode}
+                                          onChange={(e) =>
+                                            setEditedData({
+                                              ...editedData,
+                                              subCode: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      ) : (
+                                        row.subCode
+                                      )}
+                                    </Td>
+                                    <Td fontSize="xs">
+                                      {editRowId === row._id ? (
+                                        <Input
+                                          size="xs"
+                                          value={editedData.subName}
+                                          onChange={(e) =>
+                                            setEditedData({
+                                              ...editedData,
+                                              subName: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      ) : (
+                                        <Text fontWeight="bold">{row.subName}</Text>
+                                      )}
+                                    </Td>
+                                    <Td fontSize="xs">
+                                      {editRowId === row._id ? (
+                                        <Input
+                                          size="xs"
+                                          type="number"
+                                          value={editedData.studentCount}
+                                          onChange={(e) =>
+                                            setEditedData({ ...editedData, studentCount: e.target.value })
+                                          }
+                                        />
+                                      ) : (
+                                        row.studentCount
+                                      )}
+                                    </Td>
+                                    <Td fontSize="xs">
+                                      {editRowId === row._id ? (
+                                        <Input
+                                          size="xs"
+                                          value={editedData.degree}
+                                          onChange={(e) =>
+                                            setEditedData({ ...editedData, degree: e.target.value })
+                                          }
+                                        />
+                                      ) : (
+                                        row.degree
+                                      )}
+                                    </Td>
+                                    <Td fontSize="xs">
+                                      {editRowId === row._id ? (
+                                        <Input
+                                          size="xs"
+                                          value={editedData.dept}
+                                          onChange={(e) =>
+                                            setEditedData({ ...editedData, dept: e.target.value })
+                                          }
+                                        />
+                                      ) : (
+                                        <Text fontWeight="semibold">
+                                          {row.dept}
+                                        </Text>
+                                      )}
+                                    </Td>
+                                    <Td>
+                                      <HStack spacing={1} justify="center" flexWrap="wrap">
+                                        {editRowId === row._id ? (
+                                          <>
+                                            <IconButton
+                                              icon={<CheckIcon />}
+                                              size="xs"
+                                              colorScheme="green"
+                                              onClick={handleSaveEdit}
+                                              aria-label="Save"
+                                            />
+                                            <IconButton
+                                              icon={<CloseIcon />}
+                                              size="xs"
+                                              colorScheme="gray"
+                                              onClick={handleCancelEdit}
+                                              aria-label="Cancel"
+                                            />
+                                          </>
+                                        ) : (
+                                          <>
+                                            <IconButton
+                                              icon={<EditIcon />}
+                                              size="xs"
+                                              colorScheme="blue"
+                                              onClick={() => handleEditClick(row._id)}
+                                              aria-label="Edit"
+                                            />
+                                            <IconButton
+                                              icon={<DeleteIcon />}
+                                              size="xs"
+                                              colorScheme="red"
+                                              onClick={() => handleDelete(row._id)}
+                                              aria-label="Delete"
+                                            />
+                                          </>
+                                        )}
+                                      </HStack>
+                                    </Td>
+                                  </Tr>
+                                ))}
+                              </Tbody>
+                            </Table>
+                          </Box>
+                        </CardBody>
+                      </Collapse>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+              </Box>
+            )}
           </VStack>
         </Container>
       </Box>

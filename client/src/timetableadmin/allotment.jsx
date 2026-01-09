@@ -2,13 +2,6 @@ import React, { useEffect, useState } from 'react';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
 import {
-  CustomTh,
-  CustomLink,
-  CustomBlueButton,
-  CustomTealButton,
-  CustomDeleteButton,
-} from '../styles/customStyles';
-import {
   Container,
   FormLabel,
   Heading,
@@ -24,7 +17,6 @@ import {
   Tabs,
   VStack,
   HStack,
-  ChakraProvider,
   TabPanel,
   Table,
   Thead,
@@ -32,42 +24,27 @@ import {
   Tr,
   Th,
   Td,
-  extendTheme,
-  Textarea,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
-  useDisclosure
+  useDisclosure,
+  Flex,
+  Badge,
+  IconButton,
+  Card,
+  CardHeader,
+  CardBody,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  SimpleGrid,
 } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@chakra-ui/react';
-
-const theme = extendTheme({
-  colors: {
-    brand: {
-      50: '#E6F3F5',
-      100: '#CCE7EB',
-      200: '#99CFD7',
-      300: '#6BA3BE',
-      400: '#274D60',
-      500: '#0A7075',
-      600: '#0C969C',
-      700: '#08494a',
-      800: '#031716',
-      900: '#000000',
-    },
-  },
-  styles: {
-    global: {
-      body: {
-        bg: '#f8f9fa',
-      },
-    },
-  },
-});
+import { ArrowBackIcon, AddIcon, DeleteIcon, WarningIcon } from '@chakra-ui/icons';
 
 const AllotmentForm = () => {
   const [formData, setFormData] = useState({
@@ -93,6 +70,10 @@ const AllotmentForm = () => {
   const apiUrl = getEnvironment();
   const [session, setSession] = useState();
   const toast = useToast();
+  const [pendingRemove, setPendingRemove] = useState(null);
+  const [pendingRemoveDept, setPendingRemoveDept] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isDeptModalOpen, onOpen: onDeptModalOpen, onClose: onDeptModalClose } = useDisclosure();
 
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -135,7 +116,7 @@ const AllotmentForm = () => {
           const roomNames = data.map((room) => room.room);
           setRooms(roomNames);
         } else {
-          console.error('Failed to fetch departments');
+          console.error('Failed to fetch rooms');
         }
       } catch (error) {
         console.error('Error:', error);
@@ -203,7 +184,7 @@ const AllotmentForm = () => {
 
   useEffect(() => {
     if (sessions.length > 0 && !formData.session) {
-      const defaultSession = sessions[0]; // pick the first session
+      const defaultSession = sessions[0];
       setSession(defaultSession);
       setFormData((prev) => ({ ...prev, session: defaultSession }));
       fetchExistingData(defaultSession);
@@ -211,7 +192,7 @@ const AllotmentForm = () => {
   }, [sessions]);
 
   const handleChange = (e, deptIndex, roomIndex, type) => {
-   const { name, value, type: inputType, checked } = e.target;
+    const { name, value, type: inputType, checked } = e.target;
 
     setFormData((prevData) => {
       const updatedAllotments = [...prevData[type]];
@@ -236,7 +217,7 @@ const AllotmentForm = () => {
         [type]: updatedAllotments,
       };
     });
-  }; 
+  };
 
   const handleAddRoom = (deptIndex, type) => {
     const updatedAllotments = [...formData[type]];
@@ -251,15 +232,14 @@ const AllotmentForm = () => {
       [type]: updatedAllotments,
     }));
   };
-const [pendingRemove, setPendingRemove] = useState(null);
-const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleRemoveRoom = (deptIndex, roomIndex, type) => {
-    setPendingRemove({ deptIndex, roomIndex, type }); // store the info
-  onOpen(); // open the modal
-};
-   const confirmRemoveRoom = () => {
-  const { deptIndex, roomIndex, type } = pendingRemove;
+    setPendingRemove({ deptIndex, roomIndex, type });
+    onOpen();
+  };
+
+  const confirmRemoveRoom = () => {
+    const { deptIndex, roomIndex, type } = pendingRemove;
 
     const updatedAllotments = [...formData[type]];
     const rooms = [...updatedAllotments[deptIndex].rooms];
@@ -281,19 +261,18 @@ const { isOpen, onOpen, onClose } = useDisclosure();
       [type]: updatedAllotments,
     }));
 
-toast({
-    title: 'Room removed',
-    description: 'You have successfully removed a room.',
-    status: 'warning',
-    duration: 3000,
-    isClosable: true,
-    position: 'bottom ',
-  });
+    toast({
+      title: 'Room removed',
+      description: 'You have successfully removed a room.',
+      status: 'warning',
+      duration: 3000,
+      isClosable: true,
+      position: 'top',
+    });
 
-  onClose(); // close the modal
-  setPendingRemove(null);
-};
-
+    onClose();
+    setPendingRemove(null);
+  };
 
   const handleAddAllotment = (type) => {
     setFormData((prevData) => ({
@@ -308,21 +287,13 @@ toast({
     }));
   };
 
-  const handleAddRoomOpenElective = (deptIndex) => {
-    const updatedAllotments = [...formData.openElectiveAllotments];
-    updatedAllotments[deptIndex].rooms.push({
-      room: '',
-      morningSlot: false,
-      afternoonSlot: false,
-    });
-
-    setFormData((prevData) => ({
-      ...prevData,
-      openElectiveAllotments: updatedAllotments,
-    }));
+  const handleRemoveAllotment = (deptIndex, type) => {
+    setPendingRemoveDept({ deptIndex, type });
+    onDeptModalOpen();
   };
 
-  const handleRemoveAllotment = (deptIndex, type) => {
+  const confirmRemoveDept = () => {
+    const { deptIndex, type } = pendingRemoveDept;
     const updatedAllotments = [...formData[type]];
     updatedAllotments.splice(deptIndex, 1);
 
@@ -330,119 +301,127 @@ toast({
       ...prevData,
       [type]: updatedAllotments,
     }));
-  };
-  const handleSubmit = async (e) => {
-  e.preventDefault();
 
-  const validateAllotments = (allotments, type) => {
-    for (let deptIndex = 0; deptIndex < allotments.length; deptIndex++) {
-      const allotment = allotments[deptIndex];
-
-      if (!allotment.dept || allotment.dept.trim() === '') {
-        toast({
-          title: `${type} allotment error`,
-          description: `Please select a department for allotment ${deptIndex + 1}.`,
-          status: 'error',
-          duration: 4000,
-          isClosable: true,
-          position: 'bottom ',
-        });
-        return false; 
-        
-      }
-
-      for (let roomIndex = 0; roomIndex < allotment.rooms.length; roomIndex++) {
-        const room = allotment.rooms[roomIndex];
-
-        if (!room.room || room.room.trim() === '') {
-          toast({
-            title: `${type} allotment error`,
-            description: `Please select a room for department ${allotment.dept} (room ${roomIndex + 1}).`,
-            status: 'error',
-            duration: 4000,
-            isClosable: true,
-            position: 'bottom ',
-          });
-          return false; 
-        }
-
-        if (type === 'Centralised' && !room.morningSlot && !room.afternoonSlot) {
-          toast({
-            title: `${type} allotment error`,
-            description: `At least one slot (morning/afternoon) must be selected for ${room.room} in ${allotment.dept}.`,
-            status: 'error',
-            duration: 4000,
-            isClosable: true,
-            position: 'bottom',
-          });
-          return false; 
-        }
-      }
-    }
-
-    return true; 
-  };
-
-  if (!formData.session || formData.session.trim() === '') {
     toast({
-      title: 'Session missing',
-      description: 'Please select a session before submitting.',
-      status: 'error',
-      duration: 4000,
+      title: 'Department removed',
+      description: 'You have successfully removed a department allotment.',
+      status: 'warning',
+      duration: 3000,
       isClosable: true,
-      position: 'bottom',
-    });
-    return; 
-  }
-
-  const isValidCentral = validateAllotments(formData.centralisedAllotments, 'Centralised');
-  const isValidOpenElective = validateAllotments(formData.openElectiveAllotments, 'Open Elective');
-
-  if (!isValidCentral || !isValidOpenElective) return; 
-
-  const submitData = async () => {
-    const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-      credentials: 'include',
+      position: 'top',
     });
 
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
+    onDeptModalClose();
+    setPendingRemoveDept(null);
   };
 
-  try {
-  await toast.promise(
-    submitData(),
-    {
-      loading: {
-        title: 'Submitting...',
-        description: 'Please wait while we save your allotment.',
-      },
-      success: {
-        title: 'Allotment Updated Successfully',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      },
-      error: {
-        title: 'Submission Failed',
-        description: 'An error occurred while submitting the form.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      },
-    }
-  );
-} catch (error) {
-  console.error('Error creating allotment:', error.message);
-}
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-};
+    const validateAllotments = (allotments, type) => {
+      for (let deptIndex = 0; deptIndex < allotments.length; deptIndex++) {
+        const allotment = allotments[deptIndex];
+
+        if (!allotment.dept || allotment.dept.trim() === '') {
+          toast({
+            title: `${type} allotment error`,
+            description: `Please select a department for allotment ${deptIndex + 1}.`,
+            status: 'error',
+            duration: 4000,
+            isClosable: true,
+            position: 'top',
+          });
+          return false;
+        }
+
+        for (let roomIndex = 0; roomIndex < allotment.rooms.length; roomIndex++) {
+          const room = allotment.rooms[roomIndex];
+
+          if (!room.room || room.room.trim() === '') {
+            toast({
+              title: `${type} allotment error`,
+              description: `Please select a room for department ${allotment.dept} (room ${roomIndex + 1}).`,
+              status: 'error',
+              duration: 4000,
+              isClosable: true,
+              position: 'top',
+            });
+            return false;
+          }
+
+          if (type === 'Centralised' && !room.morningSlot && !room.afternoonSlot) {
+            toast({
+              title: `${type} allotment error`,
+              description: `At least one slot (morning/afternoon) must be selected for ${room.room} in ${allotment.dept}.`,
+              status: 'error',
+              duration: 4000,
+              isClosable: true,
+              position: 'top',
+            });
+            return false;
+          }
+        }
+      }
+
+      return true;
+    };
+
+    if (!formData.session || formData.session.trim() === '') {
+      toast({
+        title: 'Session missing',
+        description: 'Please select a session before submitting.',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
+
+    const isValidCentral = validateAllotments(formData.centralisedAllotments, 'Centralised');
+    const isValidOpenElective = validateAllotments(formData.openElectiveAllotments, 'Open Elective');
+
+    if (!isValidCentral || !isValidOpenElective) return;
+
+    const submitData = async () => {
+      const response = await fetch(`${apiUrl}/timetablemodule/allotment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+    };
+
+    try {
+      await toast.promise(submitData(), {
+        loading: {
+          title: 'Submitting...',
+          description: 'Please wait while we save your allotment.',
+        },
+        success: {
+          title: 'Allotment Updated Successfully',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        },
+        error: {
+          title: 'Submission Failed',
+          description: 'An error occurred while submitting the form.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        },
+      });
+    } catch (error) {
+      console.error('Error creating allotment:', error.message);
+    }
+  };
 
   const getAvailableRooms = (deptIndex, currentRoomIndex, allotments) => {
     const currentDeptRooms = allotments[deptIndex]?.rooms || [];
@@ -453,714 +432,494 @@ toast({
     return rooms.filter((room) => !selectedRooms.includes(room));
   };
 
-  const getAvailableRoomsoe = (deptIndex, currentRoomIndex) => {
-    const currentDept = formData.openElectiveAllotments[deptIndex];
-    const selectedRooms = currentDept.rooms
-      .map((room, index) => (index !== currentRoomIndex ? room.room : null))
-      .filter((room) => room !== null && room !== '');
-
-    return rooms.filter((room) => !selectedRooms.includes(room));
-  };
-
   return (
-    <Container maxW={'6xl'}>
-      <Box>
+    <Box bg="white" minH="100vh">
+      {/* Hero Header Section */}
+      <Box
+        bgGradient="linear(to-r, cyan.400, teal.500, green.500)"
+        pt={0}
+        pb={24}
+        position="relative"
+        overflow="hidden"
+      >
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          opacity="0.1"
+          bgImage="radial-gradient(circle, white 1px, transparent 1px)"
+          bgSize="30px 30px"
+        />
+
+        <Box
+          position="relative"
+          zIndex={2}
+          sx={{
+            '& button[aria-label="Go back"]': { display: 'none' },
+            '& .chakra-button:first-of-type': { display: 'none' },
+          }}
+        >
+          <Header />
+        </Box>
+
+        <Container maxW="7xl" position="relative" mt={8}>
+          <Flex justify="space-between" align="center" w="full" gap={4}>
+            <VStack spacing={4} align="start" flex="1">
+              <Badge colorScheme="whiteAlpha" fontSize="sm" px={3} py={1} borderRadius="full">
+                Room Management
+              </Badge>
+              <Heading size="2xl" color="white" fontWeight="bold" lineHeight="1.2">
+                Room Allotment
+              </Heading>
+              <Text color="whiteAlpha.900" fontSize="lg" maxW="2xl">
+                Manage centralized and open elective room allotments for all departments.
+              </Text>
+            </VStack>
+
+            <HStack spacing={3}>
+              <Link to="/tt/allotment/import">
+                <Button
+                  colorScheme="whiteAlpha"
+                  bg="rgba(255, 255, 255, 0.2)"
+                  color="white"
+                  size="lg"
+                  _hover={{ bg: 'rgba(255, 255, 255, 0.3)' }}
+                  _active={{ bg: 'rgba(255, 255, 255, 0.4)' }}
+                  borderRadius="full"
+                  boxShadow="lg"
+                  border="2px solid"
+                  borderColor="whiteAlpha.400"
+                >
+                  Import Allotment
+                </Button>
+              </Link>
+
+              <IconButton
+                icon={<ArrowBackIcon />}
+                aria-label="Go back"
+                onClick={() => window.history.back()}
+                size="lg"
+                bg="rgba(255, 255, 255, 0.2)"
+                color="white"
+                fontSize="2xl"
+                _hover={{ bg: 'rgba(255, 255, 255, 0.3)' }}
+                _active={{ bg: 'rgba(255, 255, 255, 0.4)' }}
+                borderRadius="full"
+                boxShadow="lg"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+                flexShrink={0}
+              />
+            </HStack>
+          </Flex>
+        </Container>
+      </Box>
+
+      <Container maxW="7xl" mt={-12} position="relative" zIndex={1} pb={16}>
         <form onSubmit={handleSubmit}>
-          <Header title="Allotment"></Header>
-          <Link to="/tt/allotment/import">
-            <Button
-              bg="rgb(47, 104, 196)"
-              color="white"
-              _hover={{ bg: '#2563EB' }}
-            >
-              Import allotment from previous session
-            </Button>
-          </Link>
+          {/* Session Selection Card */}
+          <Card bg="white" borderRadius="2xl" shadow="2xl" border="1px" borderColor="gray.300" overflow="hidden" mb={6}>
+            <CardHeader bg="purple.600" color="white" p={4}>
+              <Heading size="md">Select Session</Heading>
+            </CardHeader>
+            <CardBody p={6}>
+              <FormLabel fontWeight="semibold" color="gray.700">
+                Session
+              </FormLabel>
+              <Select
+                name="session"
+                value={formData.session}
+                onChange={(e) => {
+                  const selectedSession = e.target.value;
+                  setSession(selectedSession);
+                  setFormData({ ...formData, session: selectedSession });
+                  fetchExistingData(selectedSession);
+                }}
+                placeholder="Select a Session"
+                borderColor="purple.300"
+                _hover={{ borderColor: 'purple.400' }}
+                _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
+                size="lg"
+                isInvalid={!formData.session}
+              >
+                {sessions.map((session, index) => (
+                  <option key={index} value={session}>
+                    {session}
+                  </option>
+                ))}
+              </Select>
+              {!formData.session && (
+                <Text color="red.500" fontSize="sm" mt={2}>
+                  Session is required.
+                </Text>
+              )}
+            </CardBody>
+          </Card>
 
-          <FormLabel>Session:</FormLabel>
-          <Select
-            borderColor="brand.300"
-            _hover={{ borderColor: 'brand.500' }}
-            _focus={{ borderColor: 'brand.500' }}
-            name="session"
-            value={formData.session}
-            isInvalid={!formData.session}
-            errorBorderColor="red.300"
-            onChange={(e) => {
-              const selectedSession = e.target.value;
-              setSession(selectedSession);
-              setFormData({ ...formData, session: selectedSession });
-              fetchExistingData(selectedSession);
-            }}
-          >
-            <option colorScheme="brand" value="">
-              Select a Session
-            </option>
-            {sessions.length > 0 &&
-              sessions.map((session, index) => (
-                <option key={index} value={session}>
-                  {session}
-                </option>
-              ))}
-          </Select>
-          {!formData.session && (
-            <Text color="red.500" fontSize="sm">
-              {/* Display an error message */}
-              Session is required.
-            </Text>
-          )}
-
-          <ChakraProvider theme={theme}>
-            <Container maxW="100%" py={4} overflow={'auto'}>
-              <Tabs variant="enclosed" colourScheme="brand">
-                <TabList
-                  flexDirection={{ base: 'column', md: 'row' }}
-                  alignItems="stretch"
-                  gap={{ base: 1, md: 4 }}
+          {/* Tabs Card */}
+          <Card bg="white" borderRadius="2xl" shadow="2xl" border="1px" borderColor="gray.300" overflow="hidden">
+            <Tabs variant="enclosed" colorScheme="purple">
+              <TabList borderBottom="2px" borderColor="gray.200">
+                <Tab
+                  fontWeight="semibold"
+                  color="gray.600"
+                  _selected={{
+                    color: 'white',
+                    bg: 'purple.600',
+                    borderColor: 'purple.600',
+                  }}
+                  fontSize="md"
+                  py={4}
+                  px={6}
                 >
-                  <Tab
-                    m={''}
-                    borderBottom="0px"
-                    fontWeight="bold"
-                    borderRadius={'0px'}
-                    color="brand.400"
-                    transition={'box-shadow 0.1s ease'}
-                    _selected={{
-                      bgGradient: 'linear(to-r,brand.700, #031c30)',
-                      color: 'white',
-                      borderRadius: '10px 10px 0px 0px',
-
-                      border: '0px',
-                      fontWeight: 'bold',
-                      zIndex: '2px',
-                      boxShadow:
-                        'inset 2px 2px 4px rgba(0, 0, 0, 0.46),inset -2px -2px 4px rgba(255, 255, 255, 0.32)',
-                    }}
-                    fontSize="md"
-                    py={5}
-                    px={6}
-                  >
-                    Centralised Room Allotment
-                  </Tab>
-                  <Tab
-                    m={0}
-                    borderBottom="0px"
-                    fontWeight="bold"
-                    borderRadius={'0px'}
-                    color="brand.400"
-                    transition={'box-shadow 0.1s ease'}
-                    _selected={{
-                      bgGradient: 'linear(to-r,brand.700, #031c30)',
-                      color: 'white',
-                      borderRadius: '10px 10px 0px 0px',
-                      borderBottomColor: 'white',
-                      border: '0px',
-                      fontWeight: 'bold',
-                      zIndex: '2px',
-                      boxShadow:
-                        'inset 2px 2px 4px rgba(0, 0, 0, 0.46),inset -2px -2px 4px rgba(255, 255, 255, 0.32)',
-                    }}
-                    fontSize="md"
-                    py={5}
-                    px={6}
-                  >
-                    Open Elective Allotment
-                  </Tab>
-                  {/* <Tab
-                    m={0}
-                    borderBottom="0px"
-                    fontWeight="bold"
-                    minW={'150px'}
-                    borderRadius={'0px'}
-                    color="brand.400"
-                    transition={'box-shadow 0.1s ease'}
-                    _selected={{
-                      bgGradient: 'linear(to-r,brand.700, #031c30)',
-                      color: 'white',
-                      borderRadius: '10px 10px 0px 0px',
-                      borderBottomColor: 'white',
-                      border: '0px',
-                      fontWeight: 'bold',
-                      zIndex: '2px',
-                      boxShadow:
-                        'inset 2px 2px 4px rgba(0, 0, 0, 0.46),inset -2px -2px 4px rgba(255, 255, 255, 0.32)',
-                    }}
-                    fontSize="md"
-                    py={5}
-                    px={6}
-                  >
-                    Message
-                  </Tab> */} 
-                </TabList>
-
-                <TabPanels
-                  border="2px"
-                  borderRadius={' 6px'}
-                  borderColor="rgba(8, 73, 74, 0.82)"
-                  overflowX="auto"
-                  whiteSpace="nowrap"
-                  minW={'max-content'}
-                  px={0}
+                  Centralised Room Allotment
+                </Tab>
+                <Tab
+                  fontWeight="semibold"
+                  color="gray.600"
+                  _selected={{
+                    color: 'white',
+                    bg: 'teal.600',
+                    borderColor: 'teal.600',
+                  }}
+                  fontSize="md"
+                  py={4}
+                  px={6}
                 >
-                  <TabPanel p={5} pt={10} overflow={'auto'}>
-                    {' '}
-                    <Box minW="max-content" w={'full'}>
-                      <VStack spacing={8}>
-                        <Heading
-                          size="md"
-                          fontWeight="semibold"
-                          color="brand.800"
-                        >
-                          Centralised Room Allotment
-                        </Heading>
-                        <Table
-                          w="full"
-                          border="2px solid"
-                          borderColor="brand.600"
-                          borderRadius="md"
-                        >
-                          <Thead bg="brand.50">
-                            <Tr>
-                              <Th
-                                border="2px solid"
-                                color="brand.800"
-                                borderColor="brand.600"
-                                textAlign="center"
-                                py={4}
-                                w={'30%'}
-                              >
-                                Department
-                              </Th>
-                              <Th
-                                border="2px solid"
-                                color="brand.800"
-                                borderColor="brand.600"
-                                textAlign="center"
-                                py={4}
-                                w={'40%'}
-                              >
-                                Room
-                              </Th>
-                              <Th
-                                border="2px solid"
-                                color="brand.800"
-                                borderColor="brand.600"
-                                textAlign="center"
-                                py={4}
-                              >
-                                Actions
-                              </Th>
-                            </Tr>
-                          </Thead>
-                          <Tbody>
-                            {formData.centralisedAllotments.map(
-                              (allotment, deptIndex) => (
-                                <Tr key={`centralisedDeptRow-${deptIndex}`}>
-                                  <Td
-                                    fontWeight="medium"
-                                    borderColor="brand.600"
-                                    fontSize="sm"
-                                  >
-                                    <Select
-                                      name="dept"
-                                      borderColor="brand.300"
-                                      _hover={{ borderColor: 'brand.500' }}
-                                      _focus={{ borderColor: 'brand.500' }}
-                                      fontSize="sm"
-                                      bg="white"
-                                      value={allotment.dept}
-                                      onChange={(e) =>
-                                        handleChange(
-                                          e,
-                                          deptIndex,
-                                          null,
-                                          'centralisedAllotments'
-                                        )
-                                      }
+                  Open Elective Allotment
+                </Tab>
+              </TabList>
+
+              <TabPanels>
+                {/* Centralised Tab */}
+                <TabPanel p={6}>
+                  <VStack spacing={6} align="stretch">
+                    <Box overflowX="auto">
+                      <Table variant="simple" size="md">
+                        <Thead bg="purple.50">
+                          <Tr>
+                            <Th color="purple.700" borderBottom="2px" borderColor="purple.200" w="30%">
+                              Department
+                            </Th>
+                            <Th color="purple.700" borderBottom="2px" borderColor="purple.200" w="50%">
+                              Rooms & Slots
+                            </Th>
+                            <Th color="purple.700" borderBottom="2px" borderColor="purple.200">
+                              Actions
+                            </Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {formData.centralisedAllotments.map((allotment, deptIndex) => (
+                            <Tr key={`centralisedDeptRow-${deptIndex}`} _hover={{ bg: 'purple.50' }}>
+                              <Td>
+                                <Select
+                                  name="dept"
+                                  value={allotment.dept}
+                                  onChange={(e) => handleChange(e, deptIndex, null, 'centralisedAllotments')}
+                                  placeholder="Select Department"
+                                  borderColor="purple.300"
+                                  _hover={{ borderColor: 'purple.400' }}
+                                  _focus={{ borderColor: 'purple.500' }}
+                                  size="sm"
+                                >
+                                  {departments.map((department, index) => (
+                                    <option key={`centralisedDept-${index}`} value={department}>
+                                      {department}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </Td>
+                              <Td>
+                                <VStack spacing={3} align="stretch">
+                                  {allotment.rooms.map((room, roomIndex) => (
+                                    <Box
+                                      key={`centralisedRoom-${deptIndex}-${roomIndex}`}
+                                      p={3}
+                                      bg="gray.50"
+                                      borderRadius="md"
+                                      borderWidth="1px"
+                                      borderColor="gray.200"
                                     >
-                                      <option
-                                        key={`centralisedDefaultDept-${deptIndex}`}
-                                        value=""
+                                      <Select
+                                        name="room"
+                                        value={room.room}
+                                        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+                                        placeholder="Select Room"
+                                        borderColor="blue.300"
+                                        _hover={{ borderColor: 'blue.400' }}
+                                        _focus={{ borderColor: 'blue.500' }}
+                                        size="sm"
+                                        mb={2}
                                       >
-                                        Select Department
-                                      </option>
-                                      {departments.map((department, index) => (
-                                        <option
-                                          key={`centralisedDept-${index}`}
-                                          value={department}
-                                        >
-                                          {department}
-                                        </option>
-                                      ))}
-                                    </Select>
-                                  </Td>
-                                  <Td
-                                    fontWeight="medium"
-                                    borderColor="brand.600"
-                                    p={4}
-                                  >
-                                    {allotment.rooms.map((room, roomIndex) => (
-                                      <div
-                                        key={`centralisedRoom-${deptIndex}-${roomIndex}`}
-                                      >
-                                        <Select
-                                          name="room"
-                                          value={room.room}
-                                          onChange={(e) =>
-                                            handleChange(
-                                              e,
-                                              deptIndex,
-                                              roomIndex,
-                                              'centralisedAllotments'
-                                            )
-                                          }
-                                          borderColor="brand.300"
-                                          _hover={{ borderColor: 'brand.500' }}
-                                          _focus={{ borderColor: 'brand.500' }}
-                                          fontSize="sm"
-                                          bg="white"
-                                        >
-                                          <option
-                                            key={`centralisedDefaultRoom-${deptIndex}-${roomIndex}`}
-                                            value=""
-                                          >
-                                            Select Room
-                                          </option>
-                                          {getAvailableRooms(
-                                            deptIndex,
-                                            roomIndex,
-                                            formData.centralisedAllotments
-                                          ).map((availableRoom, index) => (
-                                            <option
-                                              key={`centralisedRoom-${index}`}
-                                              value={availableRoom}
-                                            >
+                                        {getAvailableRooms(deptIndex, roomIndex, formData.centralisedAllotments).map(
+                                          (availableRoom, index) => (
+                                            <option key={`centralisedRoom-${index}`} value={availableRoom}>
                                               {availableRoom}
                                             </option>
-                                          ))}
-                                        </Select>
+                                          )
+                                        )}
+                                      </Select>
+                                      <HStack spacing={4} mb={2}>
                                         <Checkbox
-                                          p={3}
                                           name="morningSlot"
                                           isChecked={room.morningSlot}
-                                          onChange={(e) =>
-                                            handleChange(
-                                              e,
-                                              deptIndex,
-                                              roomIndex,
-                                              'centralisedAllotments'
-                                            )
-                                          }
-                                          colorScheme="brand"
+                                          onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+                                          colorScheme="purple"
                                           size="sm"
                                         >
                                           Morning Slot
                                         </Checkbox>
                                         <Checkbox
-                                          p={3}
                                           name="afternoonSlot"
                                           isChecked={room.afternoonSlot}
-                                          onChange={(e) =>
-                                            handleChange(
-                                              e,
-                                              deptIndex,
-                                              roomIndex,
-                                              'centralisedAllotments'
-                                            )
-                                          }
-                                          colorScheme="brand"
+                                          onChange={(e) => handleChange(e, deptIndex, roomIndex, 'centralisedAllotments')}
+                                          colorScheme="purple"
                                           size="sm"
                                         >
                                           Afternoon Slot
                                         </Checkbox>
-                                        <div>
-                                          <HStack
-                                            spacing={2}
-                                            justifyContent="center"
-                                          >
-                                            <Button
-                                              size="sm"
-                                              colorScheme="teal"
-                                              onClick={() =>
-                                                handleAddRoom(
-                                                  deptIndex,
-                                                  'centralisedAllotments'
-                                                )
-                                              }
-                                              fontSize="xs"
-                                            >
-                                              Add Room
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              colorScheme="red"
-                                              onClick={() =>
-                                                handleRemoveRoom(
-                                                  deptIndex,
-                                                  roomIndex,
-                                                  'centralisedAllotments'
-                                                )
-                                              }
-                                              fontSize="xs"
-                                            >
-                                              Remove Room
-                                            </Button>
-                                            <Modal
-                                              isOpen={isOpen}
-                                              onClose={onClose}
-                                              isCentered
-                                            >
-                                              <ModalOverlay  bg="rgba(0, 0, 0, 0.7)" />
-                                              <ModalContent>
-                                                <ModalHeader>
-                                                  Remove Room
-                                                </ModalHeader>
-                                                <ModalBody>
-                                                  ⚠️ Are you sure you want to
-                                                  remove this room?
-                                                </ModalBody>
-                                                <ModalFooter>
-                                                  <Button
-                                                    variant="ghost"
-                                                    mr={3}
-                                                    onClick={onClose}
-                                                  >
-                                                    Cancel
-                                                  </Button>
-                                                  <Button
-                                                    colorScheme="red"
-                                                    onClick={confirmRemoveRoom}
-                                                  >
-                                                    Remove
-                                                  </Button>
-                                                </ModalFooter>
-                                              </ModalContent>
-                                            </Modal>
-                                          </HStack>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </Td>
-                                  <Td
-                                    fontWeight="medium"
-                                    borderColor="brand.600"
-                                    p={4}
-                                    textAlign="center"
+                                      </HStack>
+                                      <Button
+                                        size="xs"
+                                        colorScheme="red"
+                                        leftIcon={<DeleteIcon />}
+                                        onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'centralisedAllotments')}
+                                        w="full"
+                                      >
+                                        Remove Room
+                                      </Button>
+                                    </Box>
+                                  ))}
+                                  {/* Add Room button - shown once per department */}
+                                  <Button
+                                    size="sm"
+                                    colorScheme="teal"
+                                    leftIcon={<AddIcon />}
+                                    onClick={() => handleAddRoom(deptIndex, 'centralisedAllotments')}
+                                    variant="outline"
                                   >
-                                    <Button
-                                      size="sm"
-                                      colorScheme="red"
-                                      fontSize="sm"
-                                      textColor={'wh'}
-                                      p={4}
-                                      onClick={() =>
-                                        handleRemoveAllotment(
-                                          deptIndex,
-                                          'centralisedAllotments'
-                                        )
-                                      }
-                                    >
-                                      Remove Allotment
-                                    </Button>{' '}
-                                  </Td>
-                                </Tr>
-                              )
-                            )}
-                          </Tbody>
-                        </Table>
-                        <HStack spacing={5}>
-                          <Button
-                            minW={'150px'}
-                            colorScheme="brand"
-                            fontSize="sm"
-                            alignSelf="center"
-                            onClick={() =>
-                              handleAddAllotment('centralisedAllotments')
-                            }
-                          >
-                            Add Allotment
-                          </Button>
-                          <Button
-                            type="submit"
-                            colorScheme="brand"
-                            //bgGradient="linear(to-r,brand.200,brand.600,brand.600,brand.600,brand.200)"
-                            minW={'150px'}
-                            color="brand.50"
-                            fontSize="md"
-                            alignSelf="center"
-                            _hover={{
-                              bg: 'brand.600',
-                            }}
-                            transition="all 0.2s ease-in-out"
-                          >
-                            Submit
-                          </Button>
-                        </HStack>
-                      </VStack>
-                    </Box>
-                  </TabPanel>
-
-                  <TabPanel p={5} pt={10} overflow={'auto'}>
-                    <Box minW="max-content" w={'full'}>
-                      <VStack spacing={8}>
-                        <Heading
-                          size="md"
-                          fontWeight="semibold"
-                          color="brand.800"
-                        >
-                          Open Elective Room Allotment
-                        </Heading>
-                        <Table
-                          w="full"
-                          border="2px solid"
-                          borderColor="brand.600"
-                          borderRadius="md"
-                        >
-                          <Thead bg="brand.50">
-                            <Tr>
-                              <Th
-                                w={1 / 3}
-                                border="2px solid"
-                                color="brand.800"
-                                borderColor="brand.600"
-                                textAlign="center"
-                                py={4}
-                              >
-                                Department
-                              </Th>
-                              <Th
-                                border="2px solid"
-                                color="brand.800"
-                                borderColor="brand.600"
-                                textAlign="center"
-                                py={4}
-                                w={1 / 3}
-                              >
-                                Room
-                              </Th>
-                              <Th
-                                border="2px solid"
-                                color="brand.800"
-                                borderColor="brand.600"
-                                textAlign="center"
-                                py={4}
-                              >
-                                Actions
-                              </Th>
+                                    Add Room to {allotment.dept || 'Department'}
+                                  </Button>
+                                </VStack>
+                              </Td>
+                              <Td textAlign="center">
+                                <Button
+                                  size="sm"
+                                  colorScheme="red"
+                                  leftIcon={<DeleteIcon />}
+                                  onClick={() => handleRemoveAllotment(deptIndex, 'centralisedAllotments')}
+                                >
+                                  Remove Dept
+                                </Button>
+                              </Td>
                             </Tr>
-                          </Thead>
-                          <Tbody>
-                            {formData.openElectiveAllotments.map(
-                              (allotment, deptIndex) => (
-                                <Tr key={`openElectiveDeptRow-${deptIndex}`}>
-                                  <Td
-                                    fontWeight="medium"
-                                    borderColor="brand.600"
-                                    fontSize="sm"
-                                  >
-                                    <Select
-                                      name="dept"
-                                      borderColor="brand.300"
-                                      _hover={{ borderColor: 'brand.500' }}
-                                      _focus={{ borderColor: 'brand.500' }}
-                                      fontSize="sm"
-                                      bg="white"
-                                      value={allotment.dept}
-                                      onChange={(e) =>
-                                        handleChange(
-                                          e,
-                                          deptIndex,
-                                          null,
-                                          'openElectiveAllotments'
-                                        )
-                                      }
-                                    >
-                                      <option
-                                        key={`openElectiveDefaultDept-${deptIndex}`}
-                                        value=""
-                                      >
-                                        Select Department
-                                      </option>
-
-                                      {departments.map((department, index) => (
-                                        <option
-                                          key={`openElectiveDept-${index}`}
-                                          value={department}
-                                        >
-                                          {department}
-                                        </option>
-                                      ))}
-                                    </Select>
-                                  </Td>
-                                  <Td
-                                    fontWeight="medium"
-                                    borderColor="brand.600"
-                                    p={4}
-                                  >
-                                    {allotment.rooms.map((room, roomIndex) => (
-                                      <div
-                                        key={`openElectiveRoom-${deptIndex}-${roomIndex}`}
-                                      >
-                                        <Select
-                                          name="room"
-                                          value={room.room}
-                                          onChange={(e) =>
-                                            handleChange(
-                                              e,
-                                              deptIndex,
-                                              roomIndex,
-                                              'openElectiveAllotments'
-                                            )
-                                          }
-                                          borderColor="brand.300"
-                                          _hover={{ borderColor: 'brand.500' }}
-                                          _focus={{ borderColor: 'brand.500' }}
-                                          fontSize="sm"
-                                          bg="white"
-                                        >
-                                          <option
-                                            key={`openElectiveDefaultRoom-${deptIndex}-${roomIndex}`}
-                                            value=""
-                                          >
-                                            Select Room
-                                          </option>
-                                          {getAvailableRoomsoe(
-                                            deptIndex,
-                                            roomIndex
-                                          ).map((roomOption, index) => (
-                                            <option
-                                              key={`openElectiveRoom-${index}`}
-                                              value={roomOption}
-                                            >
-                                              {roomOption}
-                                            </option>
-                                          ))}
-                                        </Select>
-                                        <HStack
-                                          pt={3}
-                                          spacing={2}
-                                          justifyContent="center"
-                                        >
-                                          <Button
-                                            size="sm"
-                                            colorScheme="teal"
-                                            onClick={() =>
-                                              handleAddRoomOpenElective(
-                                                deptIndex
-                                              )
-                                            }
-                                            fontSize="xs"
-                                          >
-                                            Add Room
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            colorScheme="red"
-                                            onClick={() =>
-                                              handleRemoveRoom(
-                                                deptIndex,
-                                                roomIndex,
-                                                'openElectiveAllotments'
-                                              )
-                                            }
-                                            fontSize="xs"
-                                          >
-                                            Remove Room
-                                          </Button>
-                                        </HStack>
-                                      </div>
-                                    ))}
-                                  </Td>
-                                  <Td
-                                    fontWeight="medium"
-                                    borderColor="brand.600"
-                                    p={4}
-                                    textAlign="center"
-                                  >
-                                    <Button
-                                      size="sm"
-                                      colorScheme="red"
-                                      fontSize="sm"
-                                      alignSelf="center"
-                                      onClick={() =>
-                                        handleRemoveAllotment(
-                                          deptIndex,
-                                          'openElectiveAllotments'
-                                        )
-                                      }
-                                    >
-                                      Remove Allotment
-                                    </Button>{' '}
-                                  </Td>
-                                </Tr>
-                              )
-                            )}
-                          </Tbody>
-                        </Table>
-                        <HStack spacing={4}>
-                          <Button
-                            colorScheme="brand"
-                            fontSize="sm"
-                            minW={'150px'}
-                            alignSelf="center"
-                            onClick={() =>
-                              handleAddAllotment('openElectiveAllotments')
-                            }
-                          >
-                            Add Allotment
-                          </Button>
-                          <Button
-                            type="submit"
-                            colorScheme="brand"
-                            minW={'150px'}
-                            color="brand.50"
-                            fontSize="md"
-                            alignSelf="center"
-                          >
-                            Submit
-                          </Button>
-                        </HStack>
-                      </VStack>
+                          ))}
+                        </Tbody>
+                      </Table>
                     </Box>
-                  </TabPanel>
 
-                  {/* <TabPanel p={10} overflow={'auto'}>
-                    <VStack spacing={8} maxW="2xl" mx="auto">
-                      <VStack spacing={2} textAlign="center">
-                        <Heading
-                          size="md"
-                          fontWeight="semibold"
-                          color="brand.800"
-                        >
-                          Message to Timetable Coordinators
-                        </Heading>
-                        <Text color="brand.400" fontSize="sm">
-                          Send a note to coordinators. This will be displayed in
-                          centrally alloted room page.
-                        </Text>
-                      </VStack>
-                      <Textarea
-                        borderColor="brand.600"
-                        _focus={{ borderColor: 'brand.500' }}
-                        fontSize="md"
-                        minH="120px"
-                        resize="vertical"
-                        placeholder="Enter your message..."
-                        textAlign="start"
-                        value={formData.message}
-                        onChange={(e) =>
-                          setFormData({ ...formData, message: e.target.value })
-                        }
-                      />
-                    </VStack>
-                  </TabPanel> */}
-                </TabPanels>
-              </Tabs>
-            </Container>
-          </ChakraProvider>
+                    <HStack spacing={4} justify="center">
+                      <Button
+                        colorScheme="purple"
+                        leftIcon={<AddIcon />}
+                        onClick={() => handleAddAllotment('centralisedAllotments')}
+                      >
+                        Add Department
+                      </Button>
+                      <Button type="submit" colorScheme="teal" size="lg" minW="200px">
+                        Submit Allotment
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </TabPanel>
+
+                {/* Open Elective Tab */}
+                <TabPanel p={6}>
+                  <VStack spacing={6} align="stretch">
+                    <Box overflowX="auto">
+                      <Table variant="simple" size="md">
+                        <Thead bg="teal.50">
+                          <Tr>
+                            <Th color="teal.700" borderBottom="2px" borderColor="teal.200" w="30%">
+                              Department
+                            </Th>
+                            <Th color="teal.700" borderBottom="2px" borderColor="teal.200" w="50%">
+                              Rooms
+                            </Th>
+                            <Th color="teal.700" borderBottom="2px" borderColor="teal.200">
+                              Actions
+                            </Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {formData.openElectiveAllotments.map((allotment, deptIndex) => (
+                            <Tr key={`openElectiveDeptRow-${deptIndex}`} _hover={{ bg: 'teal.50' }}>
+                              <Td>
+                                <Select
+                                  name="dept"
+                                  value={allotment.dept}
+                                  onChange={(e) => handleChange(e, deptIndex, null, 'openElectiveAllotments')}
+                                  placeholder="Select Department"
+                                  borderColor="teal.300"
+                                  _hover={{ borderColor: 'teal.400' }}
+                                  _focus={{ borderColor: 'teal.500' }}
+                                  size="sm"
+                                >
+                                  {departments.map((department, index) => (
+                                    <option key={`openElectiveDept-${index}`} value={department}>
+                                      {department}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </Td>
+                              <Td>
+                                <VStack spacing={3} align="stretch">
+                                  {allotment.rooms.map((room, roomIndex) => (
+                                    <Box
+                                      key={`openElectiveRoom-${deptIndex}-${roomIndex}`}
+                                      p={3}
+                                      bg="gray.50"
+                                      borderRadius="md"
+                                      borderWidth="1px"
+                                      borderColor="gray.200"
+                                    >
+                                      <Select
+                                        name="room"
+                                        value={room.room}
+                                        onChange={(e) => handleChange(e, deptIndex, roomIndex, 'openElectiveAllotments')}
+                                        placeholder="Select Room"
+                                        borderColor="orange.300"
+                                        _hover={{ borderColor: 'orange.400' }}
+                                        _focus={{ borderColor: 'orange.500' }}
+                                        size="sm"
+                                        mb={2}
+                                      >
+                                        {getAvailableRooms(deptIndex, roomIndex, formData.openElectiveAllotments).map(
+                                          (availableRoom, index) => (
+                                            <option key={`openElectiveRoom-${index}`} value={availableRoom}>
+                                              {availableRoom}
+                                            </option>
+                                          )
+                                        )}
+                                      </Select>
+                                      <Button
+                                        size="xs"
+                                        colorScheme="red"
+                                        leftIcon={<DeleteIcon />}
+                                        onClick={() => handleRemoveRoom(deptIndex, roomIndex, 'openElectiveAllotments')}
+                                        w="full"
+                                      >
+                                        Remove Room
+                                      </Button>
+                                    </Box>
+                                  ))}
+                                  {/* Add Room button - shown once per department */}
+                                  <Button
+                                    size="sm"
+                                    colorScheme="teal"
+                                    leftIcon={<AddIcon />}
+                                    onClick={() => handleAddRoom(deptIndex, 'openElectiveAllotments')}
+                                    variant="outline"
+                                  >
+                                    Add Room to {allotment.dept || 'Department'}
+                                  </Button>
+                                </VStack>
+                              </Td>
+                              <Td textAlign="center">
+                                <Button
+                                  size="sm"
+                                  colorScheme="red"
+                                  leftIcon={<DeleteIcon />}
+                                  onClick={() => handleRemoveAllotment(deptIndex, 'openElectiveAllotments')}
+                                >
+                                  Remove Dept
+                                </Button>
+                              </Td>
+                            </Tr>
+                          ))}
+                        </Tbody>
+                      </Table>
+                    </Box>
+
+                    <HStack spacing={4} justify="center">
+                      <Button
+                        colorScheme="teal"
+                        leftIcon={<AddIcon />}
+                        onClick={() => handleAddAllotment('openElectiveAllotments')}
+                      >
+                        Add Department
+                      </Button>
+                      <Button type="submit" colorScheme="teal" size="lg" minW="200px">
+                        Submit Allotment
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          </Card>
         </form>
-      </Box>
-    </Container>
+      </Container>
+
+      {/* Room Removal Confirmation Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(10px)" />
+        <ModalContent>
+          <ModalHeader bg="red.600" color="white" borderTopRadius="md">
+            <HStack>
+              <WarningIcon />
+              <Text>Confirm Room Removal</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalBody py={6}>
+            <Text>Are you sure you want to remove this room?</Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={confirmRemoveRoom} leftIcon={<DeleteIcon />}>
+              Remove Room
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Department Removal Confirmation Modal */}
+      <Modal isOpen={isDeptModalOpen} onClose={onDeptModalClose} isCentered>
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(10px)" />
+        <ModalContent>
+          <ModalHeader bg="red.600" color="white" borderTopRadius="md">
+            <HStack>
+              <WarningIcon />
+              <Text>Confirm Department Removal</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalBody py={6}>
+            <VStack spacing={3} align="start">
+              <Text fontWeight="bold">Are you sure you want to remove this department allotment?</Text>
+              <Alert status="warning" borderRadius="md">
+                <AlertIcon />
+                <AlertDescription fontSize="sm">
+                  This will remove all rooms associated with this department. This action cannot be undone.
+                </AlertDescription>
+              </Alert>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onDeptModalClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={confirmRemoveDept} leftIcon={<DeleteIcon />}>
+              Remove Department
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Box>
   );
 };
 

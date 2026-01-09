@@ -305,7 +305,7 @@ const MessagesPage = () => {
       {/* Message Detail Modal */}
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="xl">
         <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(10px)" />
-        <ModalContent maxH="85vh">
+        <ModalContent maxH="70vh" maxW="900px">
           <ModalHeader
             bg="purple.600"
             color="white"
@@ -315,7 +315,7 @@ const MessagesPage = () => {
             {selectedMessage?.title}
           </ModalHeader>
           <ModalCloseButton color="white" />
-          <ModalBody p={6} overflowY="auto">
+          <ModalBody p={2} overflowY="auto">
             <VStack align="stretch" spacing={4}>
               {/* Message metadata */}
               <Flex justify="space-between" align="center" pb={3} borderBottom="1px" borderColor="gray.200">
