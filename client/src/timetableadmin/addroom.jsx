@@ -14,7 +14,15 @@ import {
   Text,
   chakra,
   Checkbox,
-} from "@chakra-ui/react";import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
+  VStack,
+  HStack,
+  Badge,
+  IconButton,
+  Flex,
+  Spinner,
+  Tooltip,
+} from "@chakra-ui/react";
+import { CustomTh, CustomLink, CustomBlueButton, CustomDeleteButton } from "../styles/customStyles";
 import {
   Table,
   TableContainer,
@@ -25,27 +33,20 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
+import { ArrowBackIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
 import Header from "../components/header";
-
-// function SuccessMessage({ message }) {
-//   return (
-//     <div className="success-message">
-//       {message}
-//     </div>
-//   );
-// }
 
 function AddRoomComponent() {
   const toast = useToast();
   const [rooms, setRooms] = useState([]);
   const [newRoom, setNewRoom] = useState("");
   const [isLoading, setIsLoading] = useState({
-    state : false, 
-    id : ''
+    state: false,
+    id: ""
   });
-  // const [successMessage, setSuccessMessage] = useState('');
+  const [isTableLoading, setIsTableLoading] = useState(true);
   const [masterRooms, setMasterRooms] = useState([]);
   const [selectedMasterRoom, setSelectedMasterRoom] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -62,16 +63,20 @@ function AddRoomComponent() {
   const currentCode = parts[parts.length - 2];
 
   useEffect(() => {
-    fetchRoomsData();
-    // fetchMasterRooms();
-    fetchAvailableDepartments();
+    const loadInitialData = async () => {
+      setIsTableLoading(true);
+      await Promise.all([
+        fetchRoomsData(),
+        fetchAvailableDepartments()
+      ]);
+      setIsTableLoading(false);
+    };
+    loadInitialData();
   }, []);
-
-
 
   useEffect(() => {
     if (selectedDepartment) {
-      fetch(`${apiUrl}/timetablemodule/masterroom/dept/${selectedDepartment}`,{credentials: 'include',})
+      fetch(`${apiUrl}/timetablemodule/masterroom/dept/${selectedDepartment}`, { credentials: 'include' })
         .then(handleResponse)
         .then((data) => {
           setMasterRooms(data);
@@ -80,55 +85,37 @@ function AddRoomComponent() {
     }
   }, [selectedDepartment]);
 
-
   const handleViewRoom = () => {
-    // Find the last occurrence of "/"
     const lastSlashIndex = currentPathname.lastIndexOf("/");
-  
-    // Get the portion of the string before the last slash
     const parentPath = currentPathname.substring(0, lastSlashIndex);
-  
-    // Construct the new path by appending "/roomallotment"
     const newPath = `${parentPath}/roomallotment`;
-  
-    // Navigate to the new path
     navigate(newPath);
   };
-  
 
-  const fetchRoomsData = () => {
-    fetch(`${apiUrl}/timetablemodule/addroom`,{credentials: 'include'})
-      .then(handleResponse)
-      .then((data) => {
-        const filteredRooms = data.filter((room) => room.code === currentCode);
-        setRooms(filteredRooms);
-      })
-      .catch(handleError);
+  const fetchRoomsData = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/addroom`, { credentials: 'include' });
+      const data = await handleResponse(response);
+      const filteredRooms = data.filter((room) => room.code === currentCode);
+      setRooms(filteredRooms);
+    } catch (error) {
+      handleError(error);
+    }
   };
 
-  // const fetchMasterRooms = () => {
-  //   fetch(`${apiUrl}/timetablemodule/masterroom`,{credentials: 'include'})
-  //     .then(handleResponse)
-  //     .then((data) => {
-  //       setMasterRooms(data);
-  //     })
-  //     .catch(handleError);
-  // };
-  const fetchAvailableDepartments = () => {
-    fetch(`${apiUrl}/timetablemodule/faculty/dept`,{credentials: 'include'})
-      .then(handleResponse)
-      .then((data) => {
-        const formattedDepartments = data.map((department) => ({
-          value: department,
-          label: department,
-        }));
-        setAvailableDepartment(formattedDepartments);
-      })
-      .catch(handleError);
+  const fetchAvailableDepartments = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept`, { credentials: 'include' });
+      const data = await handleResponse(response);
+      const formattedDepartments = data.map((department) => ({
+        value: department,
+        label: department,
+      }));
+      setAvailableDepartment(formattedDepartments);
+    } catch (error) {
+      handleError(error);
+    }
   };
-
-
-
 
   const handleResponse = (response) => {
     if (!response.ok) {
@@ -144,7 +131,7 @@ function AddRoomComponent() {
   const handleSubmit = () => {
     if (rooms.some((room) => room.room === selectedMasterRoom)) {
       toast({
-        position: 'top',
+        position: 'bottom',
         title: "Room Already Added",
         status: "error",
         duration: 2000,
@@ -152,7 +139,7 @@ function AddRoomComponent() {
       });
       return;
     }
-  
+
     const selectedRoomObject = masterRooms.find(
       (masterRoom) => masterRoom.room === selectedMasterRoom
     );
@@ -169,16 +156,13 @@ function AddRoomComponent() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(dataToSave),
-     credentials: 'include',
+      credentials: 'include',
     })
       .then(handleResponse)
       .then((data) => {
-        // console.log('Data saved successfully:', data);
-        // setSuccessMessage('Room added successfully!');
         toast({
-          position: 'top',
+          position: 'bottom',
           title: "Room Added",
-          // description: "",
           status: "success",
           duration: 2000,
           isClosable: true,
@@ -186,25 +170,34 @@ function AddRoomComponent() {
 
         fetchRoomsData();
         setSelectedMasterRoom("");
+        setSelectedDepartment("");
       })
       .catch(handleError);
   };
 
   const handleDelete = (roomId) => {
     const isConfirmed = window.confirm("Are you sure you want to delete this room?");
-    
+
     if (isConfirmed) {
       setIsLoading({
         state: true,
         id: roomId,
       });
-  
+
       fetch(`${apiUrl}/timetablemodule/addroom/${roomId}`, {
         method: "DELETE",
         credentials: 'include',
       })
         .then(handleResponse)
         .then(() => {
+          toast({
+            position: 'bottom',
+            title: "Room Deleted",
+            description: "Room deleted successfully",
+            status: "success",
+            duration: 2000,
+            isClosable: true,
+          });
           fetchRoomsData();
         })
         .catch(handleError)
@@ -216,130 +209,289 @@ function AddRoomComponent() {
         });
     }
   };
-  
+
   const handleDepartmentChange = (e) => {
     const selectedDepartment = e.target.value;
     setSelectedDepartment(selectedDepartment);
   };
-  // useEffect(()=>{
-  //   setTimeout(() => {
-  //     setSuccessMessage('')
-  //   }, 1500);
-  // },[successMessage])
+
+  // Check if room type is centralized
+  const isCentralizedRoom = (roomType) => {
+    if (!roomType) return false;
+    const normalizedType = roomType.toLowerCase().trim();
+    return normalizedType.includes('centralised') || normalizedType.includes('centralized');
+  };
 
   return (
-    <Container maxW="5xl">
-      {/* <Heading as="h1" size="xl" mt="6" mb="6">
-        Add Rooms
-      </Heading> */}
-      <Header title="Add Rooms "></Header>
-
-      {/* <SuccessMessage message={successMessage} /> */}
+    <Box bg="white" minH="100vh">
       <Box>
-        <Box mb="1">
-          <Text as="b">Room</Text>
-        </Box>
-        {/* <Select
-          value={selectedMasterRoom}
-          onChange={(e) => setSelectedMasterRoom(e.target.value)}
+        {/* Hero Header Section - Same as AddSem */}
+        <Box 
+          bgGradient="linear(to-r, pink.400, purple.500, blue.500)"
+          pt={0}
+          pb={24}
+          position="relative"
+          overflow="hidden"
         >
-          <option value="">Select a Room</option>
-          {masterRooms.map((masterRoom) => (
-            <option key={masterRoom._id} value={masterRoom.room}>
-              {masterRoom.room}
-            </option>
-          ))}
-        </Select> */}
-                <FormControl isRequired mb="2.5">
-          <FormLabel>Department:</FormLabel>
-          <Select
-            value={selectedDepartment}
-            onChange={handleDepartmentChange}
-            isRequired
-          >
-            <option value="">Select a Department</option>
-            {availableDepartment.map((department) => (
-              <option key={department.value} value={department.value}>
-                {department.label}
-              </option>
-            ))}
-          </Select>
-        </FormControl>
-        <Select
-          value={selectedMasterRoom}
-          onChange={(e) => setSelectedMasterRoom(e.target.value)}
-        >
-          <option value="">Select a Room</option>
-          {masterRooms.map((masterRoom) => (
-            <option key={masterRoom._id} value={masterRoom.room}>
-              {masterRoom.room}
-            </option>
-          ))}
-        </Select> 
-
-      </Box >
-        <Box display='flex' mt='2' justifyContent='space-between'
-        >
-          <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleSubmit}>
-            Add Room
-          </Button>
+          <Box
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            opacity="0.1"
+            bgImage="radial-gradient(circle, white 1px, transparent 1px)"
+            bgSize="30px 30px"
+          />
           
-                <Box ml="-1">
-                <Link to="/tt/viewmrooms">
-          <Button ml="0">View Master Rooms</Button>
-                </Link>
-                <Button bg="teal" color="white" ml="0" mt="2.5" onClick={handleViewRoom}>
-            View Centrally Alloted Rooms
-          </Button>
+          {/* Header/Navbar integrated into hero */}
+          <Box position="relative" zIndex={2} sx={{
+            '& button[aria-label="Go back"]': { display: 'none' },
+            '& .chakra-button:first-of-type': { display: 'none' }
+          }}>
+            <Header />
+          </Box>
 
-                </Box>
+          <Container maxW="7xl" position="relative" mt={8}>
+            <Flex justify="space-between" align="center" w="full" gap={4}>
+              <VStack spacing={4} align="start" flex="1">
+                <Badge colorScheme="whiteAlpha" fontSize="sm" px={3} py={1} borderRadius="full">
+                  Room Management
+                </Badge>
+                <Heading size="2xl" color="white" fontWeight="bold" lineHeight="1.2">
+                  Add Rooms
+                </Heading>
+                <Text color="whiteAlpha.900" fontSize="lg" maxW="2xl">
+                  Add and manage rooms for your timetable.
+                </Text>
+              </VStack>
+              
+              {/* Back Button */}
+              <IconButton
+                icon={<ArrowBackIcon />}
+                aria-label="Go back"
+                onClick={() => window.history.back()}
+                size="lg"
+                bg="rgba(255, 255, 255, 0.2)"
+                color="white"
+                fontSize="2xl"
+                _hover={{ bg: 'rgba(255, 255, 255, 0.3)' }}
+                _active={{ bg: 'rgba(255, 255, 255, 0.4)' }}
+                borderRadius="full"
+                boxShadow="lg"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+                flexShrink={0}
+              />
+            </Flex>
+          </Container>
         </Box>
-      <TableContainer>
-        <Box>
-          <Text as="b">Room Data(Total Entries: {rooms.length}):</Text>
-          <Table variant="striped" size="md" mt="1">
-            <Thead>
-              <Tr>
-                <Th>
-                  <Center>Room</Center>
-                </Th>
-                <Th>
-                  <Center>Room Type</Center>
-                </Th>
 
-                <Th>
-                  <Center>Actions</Center>
-                </Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {rooms.map((room) => (
-                <Tr key={room._id}>
-                  <Td>
-                    <Center>{room.room} </Center>
-                  </Td>
-                  
-                  <Td>
-                    <Center>{room.type} </Center>
-                  </Td>
-                  <Td>
-                    <Center>
-                      <CustomDeleteButton
-                        isLoading = {isLoading.state && isLoading.id == room._id}
-                       
-                        onClick={() => handleDelete(room._id)}
+        <Container maxW="5xl" mt={-12} position="relative" zIndex={1} pb={16}>
+          <VStack spacing={8} align="stretch">
+            {/* Add Room Form */}
+            <Box 
+              bg="white"
+              borderRadius="2xl"
+              shadow="2xl"
+              p={6}
+              border="1px"
+              borderColor="gray.300"
+            >
+              <Text fontWeight="bold" fontSize="lg" mb={4}>
+                Add New Room
+              </Text>
+              <VStack spacing={4} align="stretch">
+                <FormControl isRequired>
+                  <FormLabel fontWeight="semibold">Department</FormLabel>
+                  <Select
+                    value={selectedDepartment}
+                    onChange={handleDepartmentChange}
+                    isRequired
+                    size="lg"
+                    bg="gray.50"
+                    border="2px"
+                    borderColor="gray.200"
+                  >
+                    <option value="">Select a Department</option>
+                    {availableDepartment.map((department) => (
+                      <option key={department.value} value={department.value}>
+                        {department.label}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel fontWeight="semibold">Room</FormLabel>
+                  <Select
+                    value={selectedMasterRoom}
+                    onChange={(e) => setSelectedMasterRoom(e.target.value)}
+                    size="lg"
+                    bg="gray.50"
+                    border="2px"
+                    borderColor="gray.200"
+                  >
+                    <option value="">Select a Room</option>
+                    {masterRooms.map((masterRoom) => (
+                      <option key={masterRoom._id} value={masterRoom.room}>
+                        {masterRoom.room}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <VStack spacing={3} align="stretch">
+                  <Button
+                    colorScheme="purple"
+                    size="lg"
+                    onClick={handleSubmit}
+                    isDisabled={!selectedMasterRoom}
+                    _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                    transition="all 0.2s"
+                  >
+                    Add Room
+                  </Button>
+                  <HStack spacing={3} flexWrap="wrap">
+                    <Link to="/tt/viewmrooms">
+                      <Button
+                        colorScheme="gray"
+                        size="md"
+                        _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                        transition="all 0.2s"
                       >
-                        Delete
-                      </CustomDeleteButton>
-                    </Center>
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
-      </TableContainer>
-    </Container>
+                        View Master Rooms
+                      </Button>
+                    </Link>
+                    <Button
+                      colorScheme="blue"
+                      size="md"
+                      onClick={handleViewRoom}
+                      _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                      transition="all 0.2s"
+                    >
+                      View Centrally Allotted Rooms
+                    </Button>
+                  </HStack>
+                </VStack>
+              </VStack>
+            </Box>
+
+            {/* Rooms Table */}
+            <Box>
+              <Flex justify="space-between" align="center" mb={4}>
+                <Text fontWeight="bold" fontSize="xl">
+                  Room Data
+                </Text>
+                <Badge colorScheme="purple" fontSize="md" p={2}>
+                  Total: {rooms.length}
+                </Badge>
+              </Flex>
+
+              {isTableLoading ? (
+                <Box 
+                  bg="white"
+                  borderRadius="2xl"
+                  shadow="xl"
+                  p={16}
+                  textAlign="center"
+                  border="1px"
+                  borderColor="gray.300"
+                >
+                  <VStack spacing={4}>
+                    <Spinner size="xl" color="purple.500" thickness="4px" />
+                    <Text fontSize="lg" color="gray.600">Loading room data...</Text>
+                  </VStack>
+                </Box>
+              ) : (
+                <Box 
+                  bg="white"
+                  borderRadius="2xl"
+                  shadow="2xl"
+                  overflow="hidden"
+                  border="1px"
+                  borderColor="gray.300"
+                >
+                  <TableContainer>
+                    <Table size="sm" variant="simple">
+                      <Thead bg="purple.600">
+                        <Tr>
+                          <Th color="white" fontSize="xs" textAlign="center">Room</Th>
+                          <Th color="white" fontSize="xs" textAlign="center">Room Type</Th>
+                          <Th color="white" fontSize="xs" textAlign="center">Actions</Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {rooms.map((room) => {
+                          const isCentralized = isCentralizedRoom(room.type);
+                          return (
+                            <Tr key={room._id} _hover={{ bg: "purple.50" }}>
+                              <Td textAlign="center">
+                                <Text fontWeight="semibold">{room.room}</Text>
+                              </Td>
+                              <Td textAlign="center">
+                                <Badge 
+                                  colorScheme={isCentralized ? "green" : "gray"}
+                                  fontSize="sm"
+                                  p={1}
+                                >
+                                  {room.type}
+                                </Badge>
+                              </Td>
+                              <Td>
+                                <Center>
+                                  {isCentralized ? (
+                                    <Tooltip 
+                                      label="Cannot delete centralized classroom" 
+                                      placement="top"
+                                      hasArrow
+                                    >
+                                      <Button
+                                        colorScheme="red"
+                                        size="xs"
+                                        isDisabled={true}
+                                        opacity={0.5}
+                                        cursor="not-allowed"
+                                      >
+                                        Delete
+                                      </Button>
+                                    </Tooltip>
+                                  ) : (
+                                    <Button
+                                      colorScheme="red"
+                                      size="xs"
+                                      onClick={() => handleDelete(room._id)}
+                                      isLoading={isLoading.state && isLoading.id === room._id}
+                                      _hover={{ transform: 'scale(1.05)' }}
+                                      transition="all 0.2s"
+                                    >
+                                      Delete
+                                    </Button>
+                                  )}
+                                </Center>
+                              </Td>
+                            </Tr>
+                          );
+                        })}
+                      </Tbody>
+                    </Table>
+                  </TableContainer>
+
+                  {/* Empty State */}
+                  {rooms.length === 0 && (
+                    <Box p={8} textAlign="center">
+                      <Text color="gray.500" fontSize="md">
+                        No rooms added yet. Add your first room above!
+                      </Text>
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </VStack>
+        </Container>
+      </Box>
+    </Box>
   );
 }
 

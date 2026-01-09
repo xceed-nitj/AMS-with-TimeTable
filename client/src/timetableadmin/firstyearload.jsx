@@ -37,7 +37,7 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
-import { ChevronDownIcon, ChevronUpIcon, AddIcon, DeleteIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon, AddIcon, DeleteIcon, ArrowBackIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
 import Header from "../components/header";
@@ -434,289 +434,362 @@ function FirstYearLoad() {
   const groupedSubjects = groupSubjectsByDept();
 
   return (
-    <Container maxW="7xl">
-      <Header title="First Year Faculty Allotment"></Header>
+    <Box bg="white" minH="100vh">
+      <Box>
+        {/* Hero Header Section */}
+        <Box 
+          bgGradient="linear(to-r, cyan.400, teal.500, green.500)"
+          pt={0}
+          pb={24}
+          position="relative"
+          overflow="hidden"
+        >
+          <Box
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            opacity="0.1"
+            bgImage="radial-gradient(circle, white 1px, transparent 1px)"
+            bgSize="30px 30px"
+          />
+          
+          {/* Header/Navbar integrated into hero */}
+          <Box position="relative" zIndex={2} sx={{
+            '& button[aria-label="Go back"]': { display: 'none' },
+            '& .chakra-button:first-of-type': { display: 'none' }
+          }}>
+            <Header />
+          </Box>
 
-      {/* Department-wise Subject Cards */}
-      <Box mb={6}>
-        <Text as="b" fontSize="lg" mb={3}>First Year Subjects by Department</Text>
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} mt={3}>
-          {Object.keys(groupedSubjects).map((dept) => (
-            <Card key={dept} boxShadow="md" borderRadius="lg" overflow="hidden">
-              <CardHeader
-                bg="purple.600"
+          <Container maxW="7xl" position="relative" mt={8}>
+            <Flex justify="space-between" align="center" w="full" gap={4}>
+              <VStack spacing={4} align="start" flex="1">
+                <Badge colorScheme="whiteAlpha" fontSize="sm" px={3} py={1} borderRadius="full">
+                  First Year Timetable
+                </Badge>
+                <Heading size="2xl" color="white" fontWeight="bold" lineHeight="1.2">
+                  First Year Faculty Allotment
+                </Heading>
+                <Text color="whiteAlpha.900" fontSize="lg" maxW="2xl">
+                  Manage and allocate faculty for first year timetable across all departments.
+                </Text>
+              </VStack>
+              
+              {/* Back Button */}
+              <IconButton
+                icon={<ArrowBackIcon />}
+                aria-label="Go back"
+                onClick={() => window.history.back()}
+                size="lg"
+                bg="rgba(255, 255, 255, 0.2)"
                 color="white"
-                p={3}
-                cursor="pointer"
-                onClick={() => toggleDept(dept)}
-                _hover={{ bg: "purple.700" }}
-              >
-                <Flex justify="space-between" align="center">
-                  <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold" fontSize="md">{dept}</Text>
-                    <Badge colorScheme="green" fontSize="sm">
-                      {groupedSubjects[dept].length} Subjects
-                    </Badge>
-                  </VStack>
-                  <IconButton
-                    icon={expandedDept[dept] ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                    size="sm"
-                    variant="ghost"
-                    color="white"
-                    aria-label="Toggle"
-                    _hover={{ bg: "purple.500" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  />
-                </Flex>
-              </CardHeader>
-              <Collapse in={expandedDept[dept] === true} animateOpacity>
-                <CardBody p={0}>
-                  <Table size="sm" variant="simple">
-                    <Thead bg="gray.100">
-                      <Tr>
-                        <Th fontSize="xs">Subject</Th>
-                        <Th fontSize="xs">Code</Th>
-                        <Th fontSize="xs">Type</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {groupedSubjects[dept].map((subject) => (
-                        <Tr key={subject._id} _hover={{ bg: "gray.50" }}>
-                          <Td fontSize="xs" fontWeight="bold">{subject.subName}</Td>
-                          <Td fontSize="xs">{subject.subCode}</Td>
-                          <Td fontSize="xs">
-                            <Badge colorScheme="blue" fontSize="xs">{subject.type}</Badge>
-                          </Td>
-                        </Tr>
-                      ))}
-                    </Tbody>
-                  </Table>
-                </CardBody>
-              </Collapse>
-            </Card>
-          ))}
-        </SimpleGrid>
-      </Box>
-
-      <HStack spacing={3} mb={4}>
-        <Button colorScheme="teal" onClick={handleAddFirstYearFaculty}>
-          Add First Year Faculty
-        </Button>
-
-        <Button colorScheme="orange" onClick={handleLockTT}>
-          Lock First Year Time Table
-        </Button>
-      </HStack>
-
-      <Portal>
-        <Box
-          bg={showMessage && message ? "rgba(255, 100, 0, 0.9)" : 0}
-          color="white"
-          textAlign="center"
-          fontWeight="bold"
-          fontSize="1.5rem"
-          position="fixed"
-          top="30%"
-          left="50%"
-          transform="translate(-50%, -50%)"
-          zIndex="999"
-          borderRadius="20px"
-          p="10px"
-          opacity={showMessage ? 1 : 0}
-        >
-          <Text>{message}</Text>
+                fontSize="2xl"
+                _hover={{ bg: 'rgba(255, 255, 255, 0.3)' }}
+                _active={{ bg: 'rgba(255, 255, 255, 0.4)' }}
+                borderRadius="full"
+                boxShadow="lg"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+                flexShrink={0}
+              />
+            </Flex>
+          </Container>
         </Box>
-      </Portal>
 
-      <Box display="flex" mb={4} alignItems="center">
-        <Text fontWeight="bold" mr={3}>
-          Select Semester:
-        </Text>
-        <Select
-          value={selectedSemester}
-          onChange={(e) => setSelectedSemester(e.target.value)}
-          maxW="200px"
-        >
-          {semesters.map((semester, index) => (
-            <option key={index} value={semester}>
-              {semester}
-            </option>
-          ))}
-        </Select>
-      </Box>
-
-      {/* Timetable with New Design */}
-      {Object.keys(timetableData).length === 0 ? (
-        <Flex justify="center" align="center" minH="300px" bg="gray.50" borderRadius="2xl">
-          <VStack spacing={4}>
-            <Text fontSize="lg" color="gray.600" fontWeight="semibold">Loading Timetable...</Text>
-          </VStack>
-        </Flex>
-      ) : (
-        <Box overflowX="auto" borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner" w="100%" maxW="100%">
-          <Table size="sm" variant="simple" w="100%" tableLayout="fixed" bg="white">
-            <Thead bg="purple.600">
-              <Tr>
-                <Th color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="100px">DAY</Th>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
-                  <Th key={p} color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="160px">
-                    {p}
-                  </Th>
+        <Container maxW="7xl" mt={-12} position="relative" zIndex={1} pb={16}>
+          <Box 
+            bg="white"
+            borderRadius="2xl"
+            shadow="2xl"
+            p={6}
+            border="1px"
+            borderColor="gray.300"
+            mb={6}
+          >
+            {/* Department-wise Subject Cards */}
+            <Box mb={6}>
+              <Text as="b" fontSize="lg" mb={3}>First Year Subjects by Department</Text>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} mt={3}>
+                {Object.keys(groupedSubjects).map((dept) => (
+                  <Card key={dept} boxShadow="md" borderRadius="lg" overflow="hidden">
+                    <CardHeader
+                      bg="purple.600"
+                      color="white"
+                      p={3}
+                      cursor="pointer"
+                      onClick={() => toggleDept(dept)}
+                      _hover={{ bg: "purple.700" }}
+                    >
+                      <Flex justify="space-between" align="center">
+                        <VStack align="start" spacing={0}>
+                          <Text fontWeight="bold" fontSize="md">{dept}</Text>
+                          <Badge colorScheme="green" fontSize="sm">
+                            {groupedSubjects[dept].length} Subjects
+                          </Badge>
+                        </VStack>
+                        <IconButton
+                          icon={expandedDept[dept] ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                          size="sm"
+                          variant="ghost"
+                          color="white"
+                          aria-label="Toggle"
+                          _hover={{ bg: "purple.500" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        />
+                      </Flex>
+                    </CardHeader>
+                    <Collapse in={expandedDept[dept] === true} animateOpacity>
+                      <CardBody p={0}>
+                        <Table size="sm" variant="simple">
+                          <Thead bg="gray.100">
+                            <Tr>
+                              <Th fontSize="xs">Subject</Th>
+                              <Th fontSize="xs">Code</Th>
+                              <Th fontSize="xs">Type</Th>
+                            </Tr>
+                          </Thead>
+                          <Tbody>
+                            {groupedSubjects[dept].map((subject) => (
+                              <Tr key={subject._id} _hover={{ bg: "gray.50" }}>
+                                <Td fontSize="xs" fontWeight="bold">{subject.subName}</Td>
+                                <Td fontSize="xs">{subject.subCode}</Td>
+                                <Td fontSize="xs">
+                                  <Badge colorScheme="blue" fontSize="xs">{subject.type}</Badge>
+                                </Td>
+                              </Tr>
+                            ))}
+                          </Tbody>
+                        </Table>
+                      </CardBody>
+                    </Collapse>
+                  </Card>
                 ))}
-              </Tr>
-            </Thead>
-            <Tbody>
-              {days.map((day, di) => (
-                <Tr
-                  key={day}
-                  bg="white"
-                  _hover={{ bg: 'purple.50' }}
-                  transition="background 0.2s"
-                  borderBottom="1px"
-                  borderColor="gray.200"
-                >
-                  <Td fontWeight="bold" fontSize="sm" color="purple.700" p={2}>
-                    {day}
-                  </Td>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(period => (
-                    <Td key={period} p={2} verticalAlign="top" bg="white">
-                      {timetableData[day][`period${period}`].map((slot, si) => (
-                        <Box key={si}>
-                          {slot.map((cell, ci) => {
-                            const isEnabled = subjects.some(subject => subject === cell.subject);
-                            return (
-                              <Box
-                                key={ci}
-                                mb={2}
-                                p={2}
-                                bg={isEnabled ? getSubjectColor(cell.subject) : 'gray.100'}
-                                borderRadius="md"
-                                borderWidth="2px"
-                                borderColor={isEnabled ? "gray.400" : "gray.300"}
-                                boxShadow="sm"
-                                _hover={{ boxShadow: 'md', borderColor: isEnabled ? 'purple.500' : 'gray.400' }}
-                                transition="all 0.2s"
-                                opacity={isEnabled ? 1 : 0.6}
-                              >
-                                {/* Subject Select (Disabled) */}
-                                <Select
-                                  value={cell.subject}
-                                  onChange={(event) =>
-                                    handleCellChange(
-                                      day,
-                                      period,
-                                      si,
-                                      ci,
-                                      "subject",
-                                      event
-                                    )
-                                  }
-                                  size="sm"
-                                  borderColor="blue.400"
-                                  fontSize="xs"
-                                  fontWeight="bold"
-                                  borderRadius="md"
-                                  mb={1}
-                                  bg="white"
-                                  title={cell.subject || 'Select Subject'}
-                                  _focus={{ borderColor: 'blue.600' }}
-                                  isDisabled
-                                >
-                                  <option value={cell.subject}>{cell.subject || "📚 Subject"}</option>
-                                  {availableSubjects.map((subject) => (
-                                    <option
-                                      key={subject._id}
-                                      value={subject.subName}
-                                    >
-                                      {subject.subName}
-                                    </option>
-                                  ))}
-                                </Select>
+              </SimpleGrid>
+            </Box>
 
-                                {/* Room Select (Disabled) */}
-                                <Select
-                                  value={cell.room}
-                                  onChange={(event) =>
-                                    handleCellChange(
-                                      day,
-                                      period,
-                                      si,
-                                      ci,
-                                      "room",
-                                      event
-                                    )
-                                  }
-                                  size="sm"
-                                  borderColor="green.400"
-                                  fontSize="xs"
-                                  fontWeight="bold"
-                                  borderRadius="md"
-                                  mb={1}
-                                  bg="white"
-                                  title={cell.room || 'Select Room'}
-                                  _focus={{ borderColor: 'green.600' }}
-                                  isDisabled
-                                >
-                                  <option value={cell.room}>{cell.room || "🏢 Room"}</option>
-                                  {availableRooms.map((roomOption) => (
-                                    <option key={roomOption} value={roomOption}>
-                                      {roomOption}
-                                    </option>
-                                  ))}
-                                </Select>
+            <HStack spacing={3} mb={4}>
+              <Button colorScheme="teal" onClick={handleAddFirstYearFaculty}>
+                Add First Year Faculty
+              </Button>
 
-                                {/* Faculty Select (Enabled based on subject) */}
-                                <Select
-                                  value={cell.faculty}
-                                  onChange={(event) =>
-                                    handleCellChange(
-                                      day,
-                                      period,
-                                      si,
-                                      ci,
-                                      "faculty",
-                                      event
-                                    )
-                                  }
-                                  size="sm"
-                                  borderColor={isEnabled ? "purple.400" : "gray.300"}
-                                  fontSize="xs"
-                                  fontWeight="bold"
-                                  borderRadius="md"
-                                  mb={1}
-                                  bg="white"
-                                  title={cell.faculty || 'Select Faculty'}
-                                  _focus={{ borderColor: 'purple.600' }}
-                                  disabled={!isEnabled}
-                                >
-                                  <option value="">👨‍🏫 Faculty</option>
-                                  {availableFaculties.map((faculty, index) => (
-                                    <option key={index} value={faculty}>
-                                      {faculty}
-                                    </option>
-                                  ))}
-                                </Select>
-                              </Box>
-                            );
-                          })}
-                        </Box>
+              <Button colorScheme="orange" onClick={handleLockTT}>
+                Lock First Year Time Table
+              </Button>
+            </HStack>
+
+            <Portal>
+              <Box
+                bg={showMessage && message ? "rgba(255, 100, 0, 0.9)" : 0}
+                color="white"
+                textAlign="center"
+                fontWeight="bold"
+                fontSize="1.5rem"
+                position="fixed"
+                top="30%"
+                left="50%"
+                transform="translate(-50%, -50%)"
+                zIndex="999"
+                borderRadius="20px"
+                p="10px"
+                opacity={showMessage ? 1 : 0}
+              >
+                <Text>{message}</Text>
+              </Box>
+            </Portal>
+
+            <Box display="flex" mb={4} alignItems="center">
+              <Text fontWeight="bold" mr={3}>
+                Select Semester:
+              </Text>
+              <Select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                maxW="200px"
+              >
+                {semesters.map((semester, index) => (
+                  <option key={index} value={semester}>
+                    {semester}
+                  </option>
+                ))}
+              </Select>
+            </Box>
+
+            {/* Timetable with New Design */}
+            {Object.keys(timetableData).length === 0 ? (
+              <Flex justify="center" align="center" minH="300px" bg="gray.50" borderRadius="2xl">
+                <VStack spacing={4}>
+                  <Text fontSize="lg" color="gray.600" fontWeight="semibold">Loading Timetable...</Text>
+                </VStack>
+              </Flex>
+            ) : (
+              <Box overflowX="auto" borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner" w="100%" maxW="100%">
+                <Table size="sm" variant="simple" w="100%" tableLayout="fixed" bg="white">
+                  <Thead bg="purple.600">
+                    <Tr>
+                      <Th color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="100px">DAY</Th>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
+                        <Th key={p} color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="160px">
+                          {p}
+                        </Th>
                       ))}
-                    </Td>
-                  ))}
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
-      )}
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {days.map((day, di) => (
+                      <Tr
+                        key={day}
+                        bg="white"
+                        _hover={{ bg: 'purple.50' }}
+                        transition="background 0.2s"
+                        borderBottom="1px"
+                        borderColor="gray.200"
+                      >
+                        <Td fontWeight="bold" fontSize="sm" color="purple.700" p={2}>
+                          {day}
+                        </Td>
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(period => (
+                          <Td key={period} p={2} verticalAlign="top" bg="white">
+                            {timetableData[day][`period${period}`].map((slot, si) => (
+                              <Box key={si}>
+                                {slot.map((cell, ci) => {
+                                  const isEnabled = subjects.some(subject => subject === cell.subject);
+                                  return (
+                                    <Box
+                                      key={ci}
+                                      mb={2}
+                                      p={2}
+                                      bg={isEnabled ? getSubjectColor(cell.subject) : 'gray.100'}
+                                      borderRadius="md"
+                                      borderWidth="2px"
+                                      borderColor={isEnabled ? "gray.400" : "gray.300"}
+                                      boxShadow="sm"
+                                      _hover={{ boxShadow: 'md', borderColor: isEnabled ? 'purple.500' : 'gray.400' }}
+                                      transition="all 0.2s"
+                                      opacity={isEnabled ? 1 : 0.6}
+                                    >
+                                      {/* Subject Select (Disabled) */}
+                                      <Select
+                                        value={cell.subject}
+                                        onChange={(event) =>
+                                          handleCellChange(
+                                            day,
+                                            period,
+                                            si,
+                                            ci,
+                                            "subject",
+                                            event
+                                          )
+                                        }
+                                        size="sm"
+                                        borderColor="blue.400"
+                                        fontSize="xs"
+                                        fontWeight="bold"
+                                        borderRadius="md"
+                                        mb={1}
+                                        bg="white"
+                                        title={cell.subject || 'Select Subject'}
+                                        _focus={{ borderColor: 'blue.600' }}
+                                        isDisabled
+                                      >
+                                        <option value={cell.subject}>{cell.subject || "📚 Subject"}</option>
+                                        {availableSubjects.map((subject) => (
+                                          <option
+                                            key={subject._id}
+                                            value={subject.subName}
+                                          >
+                                            {subject.subName}
+                                          </option>
+                                        ))}
+                                      </Select>
 
-      <Button colorScheme="teal" mb={3} mt={5} ml={0} onClick={handleSubmit}>
-        Save Timetable
-      </Button>
+                                      {/* Room Select (Disabled) */}
+                                      <Select
+                                        value={cell.room}
+                                        onChange={(event) =>
+                                          handleCellChange(
+                                            day,
+                                            period,
+                                            si,
+                                            ci,
+                                            "room",
+                                            event
+                                          )
+                                        }
+                                        size="sm"
+                                        borderColor="green.400"
+                                        fontSize="xs"
+                                        fontWeight="bold"
+                                        borderRadius="md"
+                                        mb={1}
+                                        bg="white"
+                                        title={cell.room || 'Select Room'}
+                                        _focus={{ borderColor: 'green.600' }}
+                                        isDisabled
+                                      >
+                                        <option value={cell.room}>{cell.room || "🏢 Room"}</option>
+                                        {availableRooms.map((roomOption) => (
+                                          <option key={roomOption} value={roomOption}>
+                                            {roomOption}
+                                          </option>
+                                        ))}
+                                      </Select>
 
-    </Container>
+                                      {/* Faculty Select (Enabled based on subject) */}
+                                      <Select
+                                        value={cell.faculty}
+                                        onChange={(event) =>
+                                          handleCellChange(
+                                            day,
+                                            period,
+                                            si,
+                                            ci,
+                                            "faculty",
+                                            event
+                                          )
+                                        }
+                                        size="sm"
+                                        borderColor={isEnabled ? "purple.400" : "gray.300"}
+                                        fontSize="xs"
+                                        fontWeight="bold"
+                                        borderRadius="md"
+                                        mb={1}
+                                        bg="white"
+                                        title={cell.faculty || 'Select Faculty'}
+                                        _focus={{ borderColor: 'purple.600' }}
+                                        disabled={!isEnabled}
+                                      >
+                                        <option value="">👨‍🏫 Faculty</option>
+                                        {availableFaculties.map((faculty, index) => (
+                                          <option key={index} value={faculty}>
+                                            {faculty}
+                                          </option>
+                                        ))}
+                                      </Select>
+                                    </Box>
+                                  );
+                                })}
+                              </Box>
+                            ))}
+                          </Td>
+                        ))}
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </Box>
+            )}
+
+            <Button colorScheme="teal" mb={3} mt={5} ml={0} onClick={handleSubmit}>
+              Save Timetable
+            </Button>
+          </Box>
+        </Container>
+      </Box>
+    </Box>
   );
 }
 
