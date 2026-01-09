@@ -58,7 +58,7 @@ import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
 import ErrorPage from './pages/ErrorPage.jsx';
-import animation404 from '../public/404.json';
+import animation404 from '../src/assets/404.json';
 import { LogoAnimation } from './components/login/LogoAnimation.jsx';
 import EventRegistration from './certificatemodule/pages/eventregistration';
 import CMDashboard from './certificatemodule/pages/cmdashboard';
