@@ -24,6 +24,14 @@ import {
   CardHeader,
   CardBody,
   IconButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  ModalFooter,
+  useDisclosure,
 } from '@chakra-ui/react';
 import {
   Table,
@@ -41,6 +49,7 @@ import Header from "../components/header";
 
 function CreateTimetable() {
   const navigate = useNavigate();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [formData, setFormData] = useState({
     name: "",
     dept: "",
@@ -165,22 +174,33 @@ function CreateTimetable() {
 
       const data = await response.json();
 
-      // Sort by createdAt (newest first), then by session year (newest first)
+      // Sort by createdAt (newest first) - this ensures latest timetables appear at top
       const sortedData = Array.isArray(data)
         ? data.sort((a, b) => {
             // Primary sort: createdAt date (newest first)
-            if (a.createdAt && b.createdAt) {
-              return new Date(b.createdAt) - new Date(a.createdAt);
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            
+            if (dateB !== dateA) {
+              return dateB - dateA; // Descending order (newest first)
             }
-            // Secondary sort: session year (newest first)
+            
+            // Secondary sort: session year (newest first) - only if createdAt is the same
             if (a.session && b.session) {
               const yearA = parseInt(a.session.split("-")[0]);
               const yearB = parseInt(b.session.split("-")[0]);
               return yearB - yearA;
             }
+
             return 0;
           })
         : [];
+
+      console.log("Sorted timetables:", sortedData.map(t => ({ 
+        name: t.name, 
+        createdAt: t.createdAt, 
+        session: t.session 
+      })));
 
       setTable(sortedData);
     } catch (error) {
@@ -215,6 +235,18 @@ function CreateTimetable() {
         const generatedLink = data.code;
         setGeneratedLink(generatedLink);
         setSubmitted(true);
+        
+        // Close modal and refresh table
+        onClose();
+        fetchTimetables();
+        
+        // Reset form
+        setFormData({
+          name: "",
+          dept: "",
+          session: "",
+          code: "",
+        });
 
         const redirectTo = `/tt/${generatedLink}`;
         navigate(redirectTo);
@@ -278,22 +310,23 @@ function CreateTimetable() {
                 Timetable Management
               </Badge>
               <Heading size="2xl" color="white" fontWeight="bold" lineHeight="1.2">
-                Create Timetable
+                Timetable Dashboard
               </Heading>
               <Text color="whiteAlpha.900" fontSize="lg" maxW="2xl">
                 Create and manage timetables for different departments and sessions.
               </Text>
             </VStack>
 
-            {/* Messages Button with Notification Badge */}
-            <Box position="relative">
+            {/* Action Buttons */}
+            <HStack spacing={3}>
+              {/* Create Timetable Button */}
               <Button
-                leftIcon={<FaGlobe />}
+                leftIcon={<AddIcon />}
                 colorScheme="whiteAlpha"
                 bg="rgba(255, 255, 255, 0.2)"
                 color="white"
                 size="lg"
-                onClick={() => navigate("/tt/viewmessages")}
+                onClick={onOpen}
                 _hover={{ bg: "rgba(255, 255, 255, 0.3)" }}
                 _active={{ bg: "rgba(255, 255, 255, 0.4)" }}
                 borderRadius="full"
@@ -301,50 +334,65 @@ function CreateTimetable() {
                 border="2px solid"
                 borderColor="whiteAlpha.400"
               >
-                View Messages
+                Create Timetable
               </Button>
-              {unReadCount > 0 && (
-                <Box
-                  position="absolute"
-                  top="-2"
-                  right="-2"
-                  bg="red.500"
+
+              {/* Messages Button with Notification Badge */}
+              <Box position="relative">
+                <Button
+                  leftIcon={<FaGlobe />}
+                  colorScheme="whiteAlpha"
+                  bg="rgba(255, 255, 255, 0.2)"
                   color="white"
+                  size="lg"
+                  onClick={() => navigate("/tt/viewmessages")}
+                  _hover={{ bg: "rgba(255, 255, 255, 0.3)" }}
+                  _active={{ bg: "rgba(255, 255, 255, 0.4)" }}
                   borderRadius="full"
-                  minW="24px"
-                  h="24px"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  fontSize="xs"
-                  fontWeight="bold"
-                  px={2}
                   boxShadow="lg"
+                  border="2px solid"
+                  borderColor="whiteAlpha.400"
                 >
-                  {unReadCount}
-                </Box>
-              )}
-            </Box>
+                  View Messages
+                </Button>
+                {unReadCount > 0 && (
+                  <Box
+                    position="absolute"
+                    top="-2"
+                    right="-2"
+                    bg="red.500"
+                    color="white"
+                    borderRadius="full"
+                    minW="24px"
+                    h="24px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    fontSize="xs"
+                    fontWeight="bold"
+                    px={2}
+                    boxShadow="lg"
+                  >
+                    {unReadCount}
+                  </Box>
+                )}
+              </Box>
+            </HStack>
           </Flex>
         </Container>
       </Box>
 
       <Container maxW="7xl" mt={-12} position="relative" zIndex={1} pb={16}>
-        <VStack spacing={6} align="stretch">
-          {/* Create Timetable Form Card */}
-          <Card
-            bg="white"
-            borderRadius="2xl"
-            shadow="2xl"
-            border="1px"
-            borderColor="gray.300"
-            overflow="hidden"
-          >
-            <CardHeader bg="purple.600" color="white" p={4}>
-              <Heading size="md">Create New Timetable</Heading>
-            </CardHeader>
-            <CardBody p={6}>
-              <form onSubmit={handleSubmit}>
+        {/* Create Timetable Modal */}
+        <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader bg="purple.600" color="white" borderTopRadius="md">
+              Create New Timetable
+            </ModalHeader>
+            <ModalCloseButton color="white" />
+            <ModalBody p={6}>
+              <form onSubmit={handleSubmit} id="create-timetable-form">
                 <VStack spacing={4} align="stretch">
                   <FormControl isRequired>
                     <FormLabel fontWeight="semibold" color="gray.700">
@@ -435,22 +483,27 @@ function CreateTimetable() {
                       )}
                     </FormControl>
                   </SimpleGrid>
-
-                  <Button
-                    type="submit"
-                    colorScheme="teal"
-                    size="lg"
-                    leftIcon={<AddIcon />}
-                    isDisabled={departments.length === 0 || sessions.length === 0}
-                    w={{ base: "full", md: "200px" }}
-                  >
-                    Create Timetable
-                  </Button>
                 </VStack>
               </form>
-            </CardBody>
-          </Card>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="create-timetable-form"
+                colorScheme="teal"
+                leftIcon={<AddIcon />}
+                isDisabled={departments.length === 0 || sessions.length === 0}
+              >
+                Create Timetable
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
 
+        <VStack spacing={6} align="stretch">
           {/* Existing Timetables Table Card */}
           <Card
             bg="white"
@@ -462,7 +515,12 @@ function CreateTimetable() {
           >
             <CardHeader bg="teal.600" color="white" p={4}>
               <Flex justify="space-between" align="center">
-                <Heading size="md">Existing Timetables</Heading>
+                <VStack align="start" spacing={0}>
+                  <Heading size="md">Existing Timetables</Heading>
+                  <Text fontSize="xs" color="whiteAlpha.800" mt={1}>
+                    Sorted by latest first
+                  </Text>
+                </VStack>
                 <Badge colorScheme="orange" fontSize="md" px={3} py={1}>
                   {table.length} Total
                 </Badge>
@@ -528,6 +586,7 @@ function CreateTimetable() {
                         >
                           Department
                         </Th>
+                       
                         <Th
                           color="teal.700"
                           fontSize="sm"
@@ -557,6 +616,7 @@ function CreateTimetable() {
                               {timetable.dept}
                             </Badge>
                           </Td>
+                        
                           <Td>
                             <Button
                               as="a"
