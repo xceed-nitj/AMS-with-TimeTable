@@ -19,8 +19,29 @@ import {
   ModalCloseButton,
   useDisclosure,
   Icon,
+  Box,
+  Heading,
+  Badge,
+  IconButton,
+  Flex,
+  Card,
+  CardHeader,
+  CardBody,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  AlertTitle,
+  List,
+  ListItem,
+  ListIcon,
+  Divider,
 } from '@chakra-ui/react';
-import { WarningIcon} from '@chakra-ui/icons';
+import { 
+  WarningIcon, 
+  ArrowBackIcon, 
+  InfoIcon,
+  CheckCircleIcon,
+} from '@chakra-ui/icons';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
 
@@ -59,8 +80,8 @@ function ImportTT() {
       const data = await response.json();
       console.log('data', data);
 
-      setSelectedDept(data.dept); // dept is a string
-      setToSession(data.session); // session is a string
+      setSelectedDept(data.dept);
+      setToSession(data.session);
 
       console.log('data', selectedDept);
     } catch (error) {
@@ -70,6 +91,7 @@ function ImportTT() {
         status: 'error',
         duration: 4000,
         isClosable: true,
+        position: 'bottom',
       });
     }
     setLoading(false);
@@ -105,6 +127,7 @@ function ImportTT() {
         status: 'error',
         duration: 4000,
         isClosable: true,
+        position: 'bottom',
       });
       return;
     }
@@ -120,12 +143,12 @@ function ImportTT() {
 
       if (response.ok) {
         toast({
-          title: 'Time Table Imported',
-          description: 'Go back to the allotment page.',
+          title: 'Time Table Imported Successfully',
+          description: 'Your timetable has been updated.',
           status: 'success',
           duration: 5000,
           isClosable: true,
-          position: 'bottom',
+          position: '',
         });
         onClose();
       } else {
@@ -136,6 +159,7 @@ function ImportTT() {
           status: 'error',
           duration: 5000,
           isClosable: true,
+          position: 'bottom',
         });
       }
     } catch (error) {
@@ -146,6 +170,7 @@ function ImportTT() {
         status: 'error',
         duration: 5000,
         isClosable: true,
+        position: 'bottom',
       });
     }
     setSubmitting(false);
@@ -161,10 +186,10 @@ function ImportTT() {
         status: 'error',
         duration: 4000,
         isClosable: true,
+        position: '',
       });
       return;
     }
-    // Open confirmation modal
     onOpen();
   };
 
@@ -173,7 +198,6 @@ function ImportTT() {
   };
 
   const cancelImport = () => {
-    // Show info toast when cancelled
     toast({
       title: 'Import Cancelled',
       description: 'Your existing timetable remains unchanged.',
@@ -182,94 +206,350 @@ function ImportTT() {
       isClosable: true,
       position: 'bottom',
     });
-
     onClose();
   };
 
   return (
-    <Container maxW="5xl">
-      <Header title="Import Time Table from Previous Sessions" />
-      {loading ? (
-        <VStack py={10}>
-          <Spinner size="xl" />
-          <Text>Loading timetable data...</Text>
-        </VStack>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          <VStack spacing={4}>
-            <FormControl isDisabled>
-              <FormLabel>Department</FormLabel>
-              <Select value={selectedDept} isReadOnly>
-                <option value={selectedDept}>{selectedDept}</option>
-              </Select>
-            </FormControl>
+    <Box bg="white" minH="100vh">
+      {/* Hero Header Section */}
+      <Box
+        bgGradient="linear(to-r, cyan.400, teal.500, green.500)"
+        pt={0}
+        pb={24}
+        position="relative"
+        overflow="hidden"
+      >
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          opacity="0.1"
+          bgImage="radial-gradient(circle, white 1px, transparent 1px)"
+          bgSize="30px 30px"
+        />
 
-            <FormControl id="fromSession" isRequired>
-              <FormLabel>From Session</FormLabel>
-              <Select
-                value={fromSession}
-                onChange={(e) => setFromSession(e.target.value)}
-                placeholder="Select a Session"
+        <Box
+          position="relative"
+          zIndex={2}
+          sx={{
+            '& button[aria-label="Go back"]': { display: 'none' },
+            '& .chakra-button:first-of-type': { display: 'none' },
+          }}
+        >
+          <Header />
+        </Box>
+
+        <Container maxW="7xl" position="relative" mt={8}>
+          <Flex justify="space-between" align="center" w="full" gap={4}>
+            <VStack spacing={4} align="start" flex="1">
+              <Badge
+                colorScheme="whiteAlpha"
+                fontSize="sm"
+                px={3}
+                py={1}
+                borderRadius="full"
               >
-                {sessions.map((session, index) => (
-                  <option key={index} value={session}>
-                    {session}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+                Import Timetable
+              </Badge>
+              <Heading size="2xl" color="white" fontWeight="bold" lineHeight="1.2">
+                Import from Previous Session
+              </Heading>
+              <Text color="whiteAlpha.900" fontSize="lg" maxW="2xl">
+                Copy timetable data from a previous session to quickly set up your current session.
+              </Text>
+            </VStack>
 
-            <FormControl id="toSession" isDisabled>
-              <FormLabel>To Session</FormLabel>
-              <Select
-                value={toSession}
-                onChange={(e) => setToSession(e.target.value)}
-                placeholder="Select a Session"
-              >
-                {sessions.map((session, index) => (
-                  <option key={index} value={session}>
-                    {session}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+            <IconButton
+              icon={<ArrowBackIcon />}
+              aria-label="Go back"
+              onClick={() => window.history.back()}
+              size="lg"
+              bg="rgba(255, 255, 255, 0.2)"
+              color="white"
+              fontSize="2xl"
+              _hover={{ bg: 'rgba(255, 255, 255, 0.3)' }}
+              _active={{ bg: 'rgba(255, 255, 255, 0.4)' }}
+              borderRadius="full"
+              boxShadow="lg"
+              border="2px solid"
+              borderColor="whiteAlpha.400"
+              flexShrink={0}
+            />
+          </Flex>
+        </Container>
+      </Box>
 
-            <Button
-              type="submit"
-              colorScheme="blue"
-              onClick={handleImportClick}
-              isLoading={submitting}
+      <Container maxW="7xl" mt={-12} position="relative" zIndex={1} pb={16}>
+        {loading ? (
+          <Card
+            bg="white"
+            borderRadius="2xl"
+            shadow="2xl"
+            border="1px"
+            borderColor="gray.300"
+            overflow="hidden"
+          >
+            <CardBody p={12}>
+              <VStack spacing={4}>
+                <Spinner size="xl" thickness="4px" color="teal.500" speed="0.65s" />
+                <Text color="gray.600" fontSize="lg">Loading timetable data...</Text>
+              </VStack>
+            </CardBody>
+          </Card>
+        ) : (
+          <VStack spacing={6} align="stretch">
+            {/* Important Information Alert */}
+            <Alert status="warning" borderRadius="lg" variant="left-accent">
+              <AlertIcon />
+              <Box>
+                <AlertTitle fontSize="md" mb={1}>Important Information</AlertTitle>
+                <AlertDescription fontSize="sm">
+                  This action will permanently replace your current timetable with data from the selected session. 
+                  Make sure you have backed up any important data before proceeding.
+                </AlertDescription>
+              </Box>
+            </Alert>
+
+            {/* Import Form Card */}
+            <Card
+              bg="white"
+              borderRadius="2xl"
+              shadow="2xl"
+              border="1px"
+              borderColor="gray.300"
+              overflow="hidden"
             >
-              Submit
-            </Button>
-            <Modal isOpen={isOpen} onClose={cancelImport} isCentered size="md">
-              <ModalOverlay />
-              <ModalContent>
-                <ModalHeader>
-                  <HStack spacing={3}>
-                    <Icon as={WarningIcon} color="orange.500" boxSize={6} />
-                    <Text>Confirm Timetable Import</Text>
-                  </HStack>
-                </ModalHeader>
-                <ModalCloseButton />
-                <ModalBody>
-                  Existing Timetable will be deleted and selected session
-                  Timetable will be imported.
-                </ModalBody>
-                <ModalFooter>
-                  <Button colorScheme="blue" mr={3} onClick={confirmImport}>
-                    Yes, Import Timetable
-                  </Button>
-                  <Button variant="ghost" onClick={cancelImport}>
-                    Cancel
-                  </Button>
-                </ModalFooter>
-              </ModalContent>
-            </Modal>
+              <CardHeader bg="purple.600" color="white" p={4}>
+                <Heading size="md">Import Timetable Settings</Heading>
+              </CardHeader>
+              <CardBody p={6}>
+                <form onSubmit={handleSubmit}>
+                  <VStack spacing={5} align="stretch">
+                    <FormControl>
+                      <FormLabel fontWeight="semibold" color="gray.700">
+                        Department (Current)
+                      </FormLabel>
+                      <Select
+                        value={selectedDept}
+                        isDisabled
+                        bg="gray.100"
+                        size="lg"
+                      >
+                        <option value={selectedDept}>{selectedDept}</option>
+                      </Select>
+                      <Text fontSize="xs" color="gray.600" mt={1}>
+                        This is your current department and cannot be changed
+                      </Text>
+                    </FormControl>
+
+                    <FormControl isRequired>
+                      <FormLabel fontWeight="semibold" color="gray.700">
+                        From Session (Source) *
+                      </FormLabel>
+                      <Select
+                        value={fromSession}
+                        onChange={(e) => setFromSession(e.target.value)}
+                        placeholder="Select the session to import from"
+                        borderColor="purple.300"
+                        _hover={{ borderColor: 'purple.400' }}
+                        _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
+                        size="lg"
+                      >
+                        {sessions.map((session, index) => (
+                          <option key={index} value={session}>
+                            {session}
+                          </option>
+                        ))}
+                      </Select>
+                      <Text fontSize="xs" color="gray.600" mt={1}>
+                        Select which previous session's data you want to copy
+                      </Text>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel fontWeight="semibold" color="gray.700">
+                        To Session (Destination)
+                      </FormLabel>
+                      <Select
+                        value={toSession}
+                        isDisabled
+                        bg="gray.100"
+                        size="lg"
+                      >
+                        <option value={toSession}>{toSession}</option>
+                      </Select>
+                      <Text fontSize="xs" color="gray.600" mt={1}>
+                        This is your current session where data will be imported
+                      </Text>
+                    </FormControl>
+
+                    <Divider my={2} />
+
+                    <Alert status="info" borderRadius="md">
+                      <AlertIcon />
+                      <Box fontSize="sm">
+                        <Text fontWeight="bold" mb={1}>What will be imported:</Text>
+                        <List spacing={1} ml={4}>
+                          <ListItem>• All timetable entries from {fromSession || 'selected session'}</ListItem>
+                          <ListItem>• Faculty assignments</ListItem>
+                          <ListItem>• Room allocations</ListItem>
+                          <ListItem>• Subject schedules</ListItem>
+                        </List>
+                      </Box>
+                    </Alert>
+
+                    <Button
+                      colorScheme="teal"
+                      size="lg"
+                      onClick={handleImportClick}
+                      isLoading={submitting}
+                      loadingText="Importing..."
+                      w={{ base: "full", md: "auto" }}
+                      alignSelf="center"
+                    >
+                      Import Timetable
+                    </Button>
+                  </VStack>
+                </form>
+              </CardBody>
+            </Card>
           </VStack>
-        </form>
-      )}
-    </Container>
+        )}
+      </Container>
+
+      {/* Enhanced Warning Modal */}
+      <Modal isOpen={isOpen} onClose={cancelImport} size="xl" isCentered>
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(10px)" zIndex={1400} />
+        <ModalContent zIndex={1400}>
+          <ModalHeader bg="red.600" color="white" borderTopRadius="md">
+            <HStack spacing={3}>
+              <Icon as={WarningIcon} boxSize={6} />
+              <Text>⚠️ Confirm Timetable Import</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody p={6}>
+            <VStack spacing={4} align="stretch">
+              {/* Critical Warning */}
+              <Alert status="error" borderRadius="md">
+                <AlertIcon />
+                <Box>
+                  <AlertTitle fontSize="md">Critical Action - Data Loss Warning!</AlertTitle>
+                  <AlertDescription fontSize="sm">
+                    This action is <strong>IRREVERSIBLE</strong> and will permanently delete your current timetable.
+                  </AlertDescription>
+                </Box>
+              </Alert>
+
+              {/* What Will Happen */}
+              <Box p={4} bg="red.50" borderRadius="md" borderWidth="1px" borderColor="red.200">
+                <Text fontWeight="bold" color="red.800" mb={2}>
+                  ❌ What will be DELETED:
+                </Text>
+                <List spacing={2} ml={4} color="red.700" fontSize="sm">
+                  <ListItem>
+                    <ListIcon as={WarningIcon} color="red.500" />
+                    All existing timetable entries for {toSession}
+                  </ListItem>
+                  <ListItem>
+                    <ListIcon as={WarningIcon} color="red.500" />
+                    Current faculty assignments
+                  </ListItem>
+                  <ListItem>
+                    <ListIcon as={WarningIcon} color="red.500" />
+                    Current room allocations
+                  </ListItem>
+                  <ListItem>
+                    <ListIcon as={WarningIcon} color="red.500" />
+                    Any manual adjustments you've made
+                  </ListItem>
+                </List>
+              </Box>
+
+              {/* What Will Be Imported */}
+              <Box p={4} bg="green.50" borderRadius="md" borderWidth="1px" borderColor="green.200">
+                <Text fontWeight="bold" color="green.800" mb={2}>
+                  ✅ What will be IMPORTED:
+                </Text>
+                <List spacing={2} ml={4} color="green.700" fontSize="sm">
+                  <ListItem>
+                    <ListIcon as={CheckCircleIcon} color="green.500" />
+                    All timetable data from {fromSession || 'selected session'}
+                  </ListItem>
+                  <ListItem>
+                    <ListIcon as={CheckCircleIcon} color="green.500" />
+                    Faculty assignments from previous session
+                  </ListItem>
+                  <ListItem>
+                    <ListIcon as={CheckCircleIcon} color="green.500" />
+                    Room allocations from previous session
+                  </ListItem>
+                  <ListItem>
+                    <ListIcon as={CheckCircleIcon} color="green.500" />
+                    Subject schedules from previous session
+                  </ListItem>
+                </List>
+              </Box>
+
+              {/* Additional Warnings */}
+              <Alert status="warning" borderRadius="md">
+                <AlertIcon />
+                <Box fontSize="sm">
+                  <AlertTitle fontSize="sm" mb={1}>Before proceeding:</AlertTitle>
+                  <AlertDescription>
+                    • Make sure the source session ({fromSession || 'selected'}) has the correct data
+                    <br />
+                    • Verify that faculty members are still available
+                    <br />
+                    • Check that room numbers haven't changed
+                    <br />
+                    • Consider taking a backup if needed
+                  </AlertDescription>
+                </Box>
+              </Alert>
+
+              {/* Confirmation Summary */}
+              <Box p={4} bg="blue.50" borderRadius="md" borderWidth="1px" borderColor="blue.200">
+                <Text fontWeight="bold" color="blue.800" mb={2}>
+                  📋 Import Summary:
+                </Text>
+                <VStack align="stretch" spacing={1} fontSize="sm" color="blue.700">
+                  <HStack justify="space-between">
+                    <Text>Department:</Text>
+                    <Text fontWeight="bold">{selectedDept}</Text>
+                  </HStack>
+                  <HStack justify="space-between">
+                    <Text>From Session:</Text>
+                    <Text fontWeight="bold">{fromSession}</Text>
+                  </HStack>
+                  <HStack justify="space-between">
+                    <Text>To Session:</Text>
+                    <Text fontWeight="bold">{toSession}</Text>
+                  </HStack>
+                </VStack>
+              </Box>
+            </VStack>
+          </ModalBody>
+          <ModalFooter bg="gray.50">
+            <HStack spacing={3}>
+              <Button variant="ghost" onClick={cancelImport}>
+                Cancel - Keep Current Timetable
+              </Button>
+              <Button 
+                colorScheme="red" 
+                onClick={confirmImport}
+                isLoading={submitting}
+                loadingText="Importing..."
+              >
+                Yes, Import and Replace
+              </Button>
+            </HStack>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Box>
   );
 }
 
