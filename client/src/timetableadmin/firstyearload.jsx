@@ -408,21 +408,21 @@ function FirstYearLoad() {
     if (!subject) return 'gray.50';
     const colors = [
       'red.100', 'red.200', 'red.300',
-                          'orange.100', 'orange.200', 'orange.300',
-                          'yellow.100', 'yellow.200', 'yellow.300',
-                          'green.100', 'green.200', 'green.300',
-                          'teal.100', 'teal.200', 'teal.300',
-                          'blue.100', 'blue.200', 'blue.300',
-                          'cyan.100', 'cyan.200', 'cyan.300',
-                          'purple.100', 'purple.200', 'purple.300',
-                          'pink.100', 'pink.200', 'pink.300',
-                          'linkedin.100', 'linkedin.200', 'linkedin.300',
-                          'facebook.100', 'facebook.200', 'facebook.300',
-                          'messenger.100', 'messenger.200', 'messenger.300',
-                          'whatsapp.100', 'whatsapp.200', 'whatsapp.300',
-                          'twitter.100', 'twitter.200', 'twitter.300',
-                          'telegram.100', 'telegram.200', 'telegram.300'
-                        ];
+      'orange.100', 'orange.200', 'orange.300',
+      'yellow.100', 'yellow.200', 'yellow.300',
+      'green.100', 'green.200', 'green.300',
+      'teal.100', 'teal.200', 'teal.300',
+      'blue.100', 'blue.200', 'blue.300',
+      'cyan.100', 'cyan.200', 'cyan.300',
+      'purple.100', 'purple.200', 'purple.300',
+      'pink.100', 'pink.200', 'pink.300',
+      'linkedin.100', 'linkedin.200', 'linkedin.300',
+      'facebook.100', 'facebook.200', 'facebook.300',
+      'messenger.100', 'messenger.200', 'messenger.300',
+      'whatsapp.100', 'whatsapp.200', 'whatsapp.300',
+      'twitter.100', 'twitter.200', 'twitter.300',
+      'telegram.100', 'telegram.200', 'telegram.300'
+    ];
     let hash = 0;
     for (let i = 0; i < subject.length; i++) {
       hash = subject.charCodeAt(i) + ((hash << 5) - hash);
@@ -538,6 +538,7 @@ function FirstYearLoad() {
                           _hover={{ bg: "purple.500" }}
                           onClick={(e) => {
                             e.stopPropagation();
+                            toggleDept(dept);
                           }}
                         />
                       </Flex>
@@ -626,14 +627,52 @@ function FirstYearLoad() {
                 </VStack>
               </Flex>
             ) : (
-              <Box overflowX="auto" borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner" w="100%" maxW="100%">
-                <Table size="sm" variant="simple" w="100%" tableLayout="fixed" bg="white">
-                  <Thead bg="purple.600">
+              <Box 
+                overflowX="auto" 
+                borderRadius="2xl" 
+                border="2px" 
+                borderColor="gray.200" 
+                boxShadow="inner" 
+                w="100%"
+                sx={{
+                  '&::-webkit-scrollbar': {
+                    height: '10px',
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    background: 'gray.100',
+                    borderRadius: 'full',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    background: 'purple.400',
+                    borderRadius: 'full',
+                  },
+                  '&::-webkit-scrollbar-thumb:hover': {
+                    background: 'purple.500',
+                  },
+                }}
+              >
+                <Table size="sm" variant="simple" minW="1200px" tableLayout="fixed" bg="white">
+                  <Thead bg="purple.600" position="sticky" top={0} zIndex={3}>
                     <Tr>
-                      <Th color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="100px">DAY</Th>
+                      <Th 
+                        color="white" 
+                        fontSize="sm" 
+                        p={2} 
+                        textAlign="center" 
+                        fontWeight="bold" 
+                        w="100px" 
+                        position="sticky" 
+                        left={0} 
+                        zIndex={4} 
+                        bg="purple.600"
+                        borderRight="2px"
+                        borderColor="purple.700"
+                      >
+                        DAY
+                      </Th>
                       {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
                         <Th key={p} color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="160px">
-                          {p}
+                          Period {p}
                         </Th>
                       ))}
                     </Tr>
@@ -648,7 +687,19 @@ function FirstYearLoad() {
                         borderBottom="1px"
                         borderColor="gray.200"
                       >
-                        <Td fontWeight="bold" fontSize="sm" color="purple.700" p={2}>
+                        <Td 
+                          fontWeight="bold" 
+                          fontSize="sm" 
+                          color="purple.700" 
+                          p={2} 
+                          position="sticky" 
+                          left={0} 
+                          zIndex={2} 
+                          bg="white"
+                          borderRight="2px"
+                          borderColor="gray.200"
+                          _hover={{ bg: 'purple.50' }}
+                        >
                           {day}
                         </Td>
                         {[1, 2, 3, 4, 5, 6, 7, 8].map(period => (
