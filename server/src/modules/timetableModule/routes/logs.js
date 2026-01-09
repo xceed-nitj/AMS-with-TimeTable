@@ -34,6 +34,14 @@ router.delete('/session/:session', protectRoute, async (req, res) => {
   }
 });
 
+router.get('/session/:session', protectRoute, async (req, res) => {
+  try {
+    await logsController.getLogsBySession(req, res);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e?.message || 'Internal Server Error' });
+  }
+});
+
 router.get('/dept/:dept', protectRoute, async (req, res) => {
   try {
     await logsController.getLogsByDept(req, res);
