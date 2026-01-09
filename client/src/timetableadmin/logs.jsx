@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -19,11 +19,18 @@ import {
   Button,
   Select,
   Flex,
-  Spacer,
   Menu,
   MenuButton,
   MenuList,
   IconButton,
+  useDisclosure,
+  Collapse,
+  Divider,
+  List,
+  ListItem,
+  ListIcon,
+  Tag,
+  TagLabel,
 } from '@chakra-ui/react';
 import {
   FiList,
@@ -31,6 +38,13 @@ import {
   FiChevronRight,
   FiFilter,
   FiTrash2,
+  FiPlusCircle,
+  FiMinusCircle,
+  FiEdit,
+  FiClock,
+  FiMapPin,
+  FiChevronDown,
+  FiChevronUp,
 } from 'react-icons/fi';
 import getEnvironment from '../getenvironment.js';
 
@@ -46,102 +60,173 @@ const SLOT_TIME_MAP = {
 };
 
 const TimetableLockLog = ({ facultyChanges }) => {
+  const { isOpen, onToggle } = useDisclosure();
+
+  // Summary counts for the "Short Form"
+  const totalAdded = facultyChanges.reduce(
+    (acc, f) => acc + (f.changes.addedSubjects?.length || 0),
+    0
+  );
+  const totalRemoved = facultyChanges.reduce(
+    (acc, f) => acc + (f.changes.removedSubjects?.length || 0),
+    0
+  );
+  const totalUpdated = facultyChanges.reduce(
+    (acc, f) => acc + (f.changes.updatedSubjects?.length || 0),
+    0
+  );
+
   return (
-    <>
-      {facultyChanges.map(({ faculty, changes }, index) => (
-        <div key={index} style={{ marginBottom: 16 }}>
-          <strong>Faculty:</strong> {faculty}
-          <br />
-          <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
-            {/* 🟢 SUBJECT ADDED */}
-            {changes.addedSubjects.length > 0 && (
-              <li>
-                <strong>Subjects Added</strong>
-                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                  {changes.addedSubjects.map((s, i) => (
-                    <li key={i}>
-                      {s.subject} ({s.sem})
-                      <ul>
-                        {s.entries.map((e, j) => (
-                          <li key={j}>
-                            {e.day}, {SLOT_TIME_MAP[e.slot]} — Room {e.room}
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            )}
+    <Box>
+      {/* Summary View (Short Form) */}
+      <HStack wrap="wrap" spacing={2} mb={isOpen ? 4 : 0}>
+        {totalAdded > 0 && (
+          <Tag size="sm" colorScheme="green" variant="subtle">
+            <TagLabel>+{totalAdded} Added</TagLabel>
+          </Tag>
+        )}
+        {totalUpdated > 0 && (
+          <Tag size="sm" colorScheme="blue" variant="subtle">
+            <TagLabel>~{totalUpdated} Updated</TagLabel>
+          </Tag>
+        )}
+        {totalRemoved > 0 && (
+          <Tag size="sm" colorScheme="red" variant="subtle">
+            <TagLabel>-{totalRemoved} Removed</TagLabel>
+          </Tag>
+        )}
 
-            {/* 🔴 SUBJECT REMOVED */}
-            {changes.removedSubjects.length > 0 && (
-              <li>
-                <strong>Subjects Removed</strong>
-                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                  {changes.removedSubjects.map((s, i) => (
-                    <li key={i}>
-                      {s.subject}, ({s.sem})
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            )}
+        <Button
+          size="xs"
+          variant="ghost"
+          colorScheme="purple"
+          onClick={onToggle}
+          rightIcon={isOpen ? <FiChevronUp /> : <FiChevronDown />}
+        >
+          {isOpen ? 'Show Less' : 'View Details'}
+        </Button>
+      </HStack>
 
-            {/* 🟡 SUBJECT UPDATED */}
-            {changes.updatedSubjects.length > 0 && (
-              <li>
-                <strong>Subjects Updated</strong>
-                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                  {changes.updatedSubjects.map((u, i) => (
-                    <li key={i}>
-                      {u.subject} ({u.sem})
-                      <ul>
-                        {u.changes.room && (
-                          <li>
-                            <strong>Room:</strong>{' '}
-                            {u.changes.room.from.join(', ')} →{' '}
-                            {u.changes.room.to.join(', ')}
-                          </li>
-                        )}
+      {/* Expanded View */}
+      <Collapse in={isOpen} animateOpacity>
+        <VStack
+          align="stretch"
+          spacing={4}
+          mt={4}
+          p={3}
+          bg="gray.50"
+          borderRadius="md"
+          border="1px"
+          borderColor="gray.100"
+        >
+          {facultyChanges.map(({ faculty, changes }, idx) => (
+            <Box key={idx} pb={idx !== facultyChanges.length - 1 ? 3 : 0}>
+              <Text
+                fontWeight="bold"
+                fontSize="sm"
+                color="gray.700"
+                mb={2}
+                borderBottom="1px solid"
+                borderColor="gray.200"
+              >
+                Faculty: {faculty}
+              </Text>
 
-                        {u.changes.slots && (
-                          <li>
-                            <strong>Slots:</strong>
-                            <ul>
-                              <li>Added: {u.changes.slots.added.join(', ')}</li>
-                              <li>
-                                Removed: {u.changes.slots.removed.join(', ')}
-                              </li>
-                            </ul>
-                          </li>
-                        )}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            )}
-          </ul>
-        </div>
-      ))}
-    </>
+              <VStack align="stretch" spacing={3} pl={2}>
+                {/* ADDED SECTION */}
+                {changes.addedSubjects?.map((s, i) => (
+                  <Box key={`add-${i}`}>
+                    <HStack fontSize="xs" fontWeight="bold" color="green.600">
+                      <Icon as={FiPlusCircle} />
+                      <Text>
+                        {s.subject} ({s.sem})
+                      </Text>
+                    </HStack>
+                    <List spacing={1} ml={5} mt={1}>
+                      {s.entries.map((e, j) => (
+                        <ListItem key={j} fontSize="xs" color="gray.600">
+                          <Icon as={FiClock} mr={1} /> {e.day},{' '}
+                          {SLOT_TIME_MAP[e.slot]}
+                          <Icon as={FiMapPin} ml={2} mr={1} /> Room {e.room}
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                ))}
+
+                {/* UPDATED SECTION */}
+                {changes.updatedSubjects?.map((u, i) => (
+                  <Box key={`upd-${i}`}>
+                    <HStack fontSize="xs" fontWeight="bold" color="blue.600">
+                      <Icon as={FiEdit} />
+                      <Text>
+                        {u.subject} ({u.sem})
+                      </Text>
+                    </HStack>
+                    <VStack align="stretch" ml={5} mt={1} spacing={1}>
+                      {u.changes.room && (
+                        <Text fontSize="xs" color="gray.600">
+                          <b>Room:</b> {u.changes.room.from.join(', ')} →{' '}
+                          <b>{u.changes.room.to.join(', ')}</b>
+                        </Text>
+                      )}
+                      {u.changes.slots?.added?.length > 0 && (
+                        <Text fontSize="xs" color="gray.600">
+                          <Text as="span" color="green.600" fontWeight="bold">
+                            Added:
+                          </Text>{' '}
+                          {u.changes.slots.added.join(', ')}
+                        </Text>
+                      )}
+                      {u.changes.slots?.removed?.length > 0 && (
+                        <Text fontSize="xs" color="gray.600">
+                          <Text as="span" color="red.600" fontWeight="bold">
+                            Removed:
+                          </Text>{' '}
+                          {u.changes.slots.removed.join(', ')}
+                        </Text>
+                      )}
+                    </VStack>
+                  </Box>
+                ))}
+
+                {/* REMOVED SECTION */}
+                {changes.removedSubjects?.map((s, i) => (
+                  <HStack
+                    key={`rem-${i}`}
+                    fontSize="xs"
+                    color="red.500"
+                    fontWeight="medium"
+                  >
+                    <Icon as={FiMinusCircle} />
+                    <Text strikeThrough>
+                      {s.subject} ({s.sem}) Removed
+                    </Text>
+                  </HStack>
+                ))}
+              </VStack>
+              {idx !== facultyChanges.length - 1 && <Divider mt={4} />}
+            </Box>
+          ))}
+        </VStack>
+      </Collapse>
+    </Box>
   );
 };
 
 const Logs = () => {
+  const apiUrl = getEnvironment();
+  const toast = useToast();
+
   const [logs, setLogs] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [allDepts, setAllDepts] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalLogs, setTotalLogs] = useState(0);
   const [deptFilter, setDeptFilter] = useState('');
+  const [sessionFilter, setSessionFilter] = useState('');
   const [sessionToDelete, setSessionToDelete] = useState('');
-  const [hasMore, setHasMore] = useState(false);
-  const apiUrl = getEnvironment();
-  const toast = useToast();
+  const [limit, setLimit] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalLogs, setTotalLogs] = useState(0);
 
   const bgGradient = useColorModeValue(
     'linear(to-br, blue.50, purple.50, pink.50)',
@@ -150,183 +235,147 @@ const Logs = () => {
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'gray.800');
   const borderColor = useColorModeValue('gray.300', 'gray.700');
 
-  useEffect(() => {
-    fetchSessions();
-    fetchLogs();
-    fetchTotalLogs();
-    setTotalPages(totalLogs / limit === 0 ? 1 : Math.ceil(totalLogs / limit));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, limit]);
-
-  useEffect(() => {
-    // when dept filter changes reset page
-    setCurrentPage(1);
-    fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deptFilter]);
-
-  const fetchLogs = async () => {
-    try {
-      let url = '';
-      if (deptFilter) {
-        url = `${apiUrl}/timetablemodule/logs/dept/${encodeURIComponent(
-          deptFilter
-        )}?page=${currentPage}&limit=${limit}`;
-      } else {
-        url = `${apiUrl}/timetablemodule/logs/get?page=${currentPage}&limit=${limit}`;
-      }
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setLogs(data);
-        // For dept routes there is no total endpoint; use length to determine more pages
-        setHasMore(Array.isArray(data) && data.length === limit);
-        // Cache the full departments list when not filtering by dept
-        if (!deptFilter && Array.isArray(data)) {
-          const depts = [...new Set(data.map((l) => l.dept).filter(Boolean))];
-          setAllDepts(depts);
-        }
-      } else {
-        toast({
-          title: 'Error fetching logs',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-          position: 'top',
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-      toast({
-        title: 'Error fetching logs',
-        description: error.message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top',
-      });
-    }
-  };
-  const fetchTotalLogs = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/timetablemodule/logs/total`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTotalLogs(data.totalLogs);
-        setTotalPages(Math.max(1, Math.ceil(data.totalLogs / limit)));
-      }
-    } catch (error) {
-      console.error('Error fetching total logs:', error);
-    }
-  };
-
-  const fetchSessions = async () => {
-    try {
-      const response = await fetch(
-        `${apiUrl}/timetablemodule/allotment/session`,
-        {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setSessions(data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-    }
-  };
-
-  const deleteSessionLogs = async (session) => {
-    if (!session) {
-      toast({
-        title: 'Select a session first',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-        position: 'top',
-      });
-      return;
-    }
-    const confirmed = window.confirm(
-      `Delete all logs for session "${session}"? This cannot be undone.`
-    );
-    if (!confirmed) return;
-    try {
-      const response = await fetch(
-        `${apiUrl}/timetablemodule/logs/session/${encodeURIComponent(session)}`,
-        {
-          method: 'DELETE',
-          credentials: 'include',
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: `Deleted ${data.deletedCount || 0} logs`,
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-          position: 'top',
-        });
-        // refresh
-        fetchLogs();
-        fetchTotalLogs();
-      } else {
-        const err = await response.json();
-        toast({
-          title: 'Failed to delete logs',
-          description: err.error || 'Server error',
-          status: 'error',
-          duration: 4000,
-          isClosable: true,
-          position: 'top',
-        });
-      }
-    } catch (error) {
-      console.error('Error deleting logs:', error);
-      toast({
-        title: 'Error deleting logs',
-        description: error.message,
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-        position: 'top',
-      });
-    }
-  };
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  };
-
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setCurrentPage(1); // Reset to first page when limit changes
-  };
-
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
+  const formatTime = (iso) =>
+    new Date(iso).toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
+
+  const fetchSessions = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiUrl}/timetablemodule/allotment/session`, {
+        credentials: 'include',
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSessions(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [apiUrl]);
+
+  const fetchTotal = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiUrl}/timetablemodule/logs/total`, {
+        credentials: 'include',
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setTotalLogs(data.totalLogs || 0);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [apiUrl]);
+
+  const fetchLogs = useCallback(async () => {
+    try {
+      let url = `${apiUrl}/timetablemodule/logs/get?page=${currentPage}&limit=${limit}`;
+      if (deptFilter && sessionFilter)
+        url = `${apiUrl}/timetablemodule/logs/dept/${encodeURIComponent(
+          deptFilter
+        )}?session=${encodeURIComponent(
+          sessionFilter
+        )}&page=${currentPage}&limit=${limit}`;
+      else if (deptFilter)
+        url = `${apiUrl}/timetablemodule/logs/dept/${encodeURIComponent(
+          deptFilter
+        )}?page=${currentPage}&limit=${limit}`;
+      else if (sessionFilter)
+        url = `${apiUrl}/timetablemodule/logs/session/${encodeURIComponent(
+          sessionFilter
+        )}?page=${currentPage}&limit=${limit}`;
+
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) {
+        toast({
+          title: 'Error fetching logs',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+      const data = await res.json();
+      // support both older array responses and new { logs, totalLogs } shape
+      const receivedLogs = Array.isArray(data) ? data : data.logs || [];
+      const receivedTotal = Array.isArray(data)
+        ? receivedLogs.length
+        : data.totalLogs || 0;
+      setLogs(receivedLogs);
+      setTotalLogs(receivedTotal);
+      if (!deptFilter)
+        setAllDepts([
+          ...new Set(receivedLogs.map((l) => l.dept).filter(Boolean)),
+        ]);
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: 'Error fetching logs',
+        description: e.message,
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      });
+    }
+  }, [apiUrl, currentPage, limit, deptFilter, sessionFilter, toast]);
+
+  useEffect(() => {
+    fetchSessions();
+    fetchTotal();
+  }, [fetchSessions, fetchTotal]);
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchLogs();
+  }, [deptFilter, sessionFilter, limit, fetchLogs]);
+
+  const deleteSessionLogs = async (session) => {
+    if (!session)
+      return toast({
+        title: 'Select a session first',
+        status: 'warning',
+        duration: 2500,
+        isClosable: true,
+      });
+    if (
+      !window.confirm(
+        `Delete all logs for session "${session}"? This cannot be undone.`
+      )
+    )
+      return;
+    try {
+      const res = await fetch(
+        `${apiUrl}/timetablemodule/logs/session/${encodeURIComponent(session)}`,
+        { method: 'DELETE', credentials: 'include' }
+      );
+      if (!res.ok)
+        return toast({
+          title: 'Failed to delete logs',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      const data = await res.json();
+      toast({
+        title: `Deleted ${data.deletedCount || 0} logs`,
+        status: 'success',
+        duration: 2500,
+        isClosable: true,
+      });
+      fetchLogs();
+      fetchTotal();
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: 'Error deleting logs',
+        description: e.message,
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      });
+    }
   };
 
   return (
@@ -394,66 +443,105 @@ const Logs = () => {
                 </VStack>
               </HStack>
 
-              {/* Mobile menu */}
-              <Menu display={{ base: 'inline-flex', md: 'none' }}>
-                <MenuButton
-                  as={IconButton}
-                  icon={<Icon as={FiFilter} />}
-                  aria-label="Open filters"
-                  variant="ghost"
-                  color="white"
-                  size="md"
-                  _hover={{ bg: 'gray.700' }}
-                  _active={{ bg: 'gray.700' }}
-                  _focus={{ boxShadow: 'none' }}
-                />
-                <MenuList p={3} bg={cardBg} borderColor={borderColor}>
-                  <VStack align="stretch" spacing={3}>
-                    <Select
-                      size="sm"
-                      value={deptFilter}
-                      onChange={(e) => setDeptFilter(e.target.value)}
-                      variant="unstyled"
-                      focusBorderColor="transparent"
-                      border="none"
-                    >
-                      <option value="">All Depts</option>
-                      {(allDepts.length
-                        ? allDepts
-                        : [...new Set(logs.map((l) => l.dept).filter(Boolean))]
-                      ).map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
-                      ))}
-                    </Select>
+              <HStack spacing={3}>
+                <Menu>
+                  <MenuButton
+                    as={IconButton}
+                    icon={<Icon as={FiFilter} />}
+                    aria-label="Open filters"
+                    variant="ghost"
+                    color="white"
+                    size="md"
+                    _hover={{ bg: 'gray.700' }}
+                    _active={{ bg: 'gray.700' }}
+                    _focus={{ boxShadow: 'none' }}
+                  />
+                  <MenuList p={3} bg={cardBg} borderColor={borderColor}>
+                    <VStack align="stretch" spacing={3}>
+                      <Select
+                        size="sm"
+                        value={deptFilter}
+                        onChange={(e) => setDeptFilter(e.target.value)}
+                        variant="unstyled"
+                        focusBorderColor="transparent"
+                        border="none"
+                      >
+                        <option value="">All Depts</option>
+                        {(allDepts.length
+                          ? allDepts
+                          : [
+                              ...new Set(
+                                logs.map((l) => l.dept).filter(Boolean)
+                              ),
+                            ]
+                        ).map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </Select>
 
-                    <Select
-                      size="sm"
-                      value={sessionToDelete}
-                      onChange={(e) => setSessionToDelete(e.target.value)}
-                      placeholder="Select session"
-                      variant="unstyled"
-                      focusBorderColor="transparent"
-                      border="none"
-                    >
-                      {sessions.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </Select>
+                      <Select
+                        size="sm"
+                        value={sessionFilter}
+                        onChange={(e) => setSessionFilter(e.target.value)}
+                        variant="unstyled"
+                        focusBorderColor="transparent"
+                        border="none"
+                      >
+                        <option value="">All Sessions</option>
+                        {sessions.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </Select>
+                    </VStack>
+                  </MenuList>
+                </Menu>
 
-                    <Button
-                      size="sm"
-                      colorScheme="red"
-                      onClick={() => deleteSessionLogs(sessionToDelete)}
-                    >
-                      Delete Logs
-                    </Button>
-                  </VStack>
-                </MenuList>
-              </Menu>
+                {/* Delete session: visible on all sizes */}
+                <Menu>
+                  <MenuButton
+                    as={IconButton}
+                    icon={<Icon as={FiTrash2} />}
+                    aria-label="Select session to delete"
+                    variant="ghost"
+                    color="white"
+                    size="md"
+                    _hover={{ bg: 'gray.700' }}
+                    _active={{ bg: 'gray.700' }}
+                    _focus={{ boxShadow: 'none' }}
+                  />
+                  <MenuList p={3} bg={cardBg} borderColor={borderColor}>
+                    <VStack align="stretch" spacing={3}>
+                      <Select
+                        size="sm"
+                        value={sessionToDelete}
+                        onChange={(e) => setSessionToDelete(e.target.value)}
+                        placeholder="Select session"
+                        variant="unstyled"
+                        focusBorderColor="transparent"
+                        border="none"
+                      >
+                        <option value="">Select session</option>
+                        {sessions.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </Select>
+                      <Button
+                        size="sm"
+                        colorScheme="red"
+                        onClick={() => deleteSessionLogs(sessionToDelete)}
+                      >
+                        Delete Logs
+                      </Button>
+                    </VStack>
+                  </MenuList>
+                </Menu>
+              </HStack>
             </HStack>
           </Box>
 
@@ -475,8 +563,8 @@ const Logs = () => {
                     </Td>
                   </Tr>
                 ) : (
-                  logs.map((log, index) => (
-                    <Tr key={index} _hover={{ bg: 'gray.50' }}>
+                  logs.map((log, i) => (
+                    <Tr key={i} _hover={{ bg: 'gray.50' }}>
                       <Td py={5}>
                         <Text fontSize="sm" color="gray.600">
                           {formatTime(log.time)}
@@ -493,11 +581,15 @@ const Logs = () => {
                         </Badge>
                       </Td>
                       <Td py={5}>
-                        <Text fontSize="sm" color="gray.800">
-                          <TimetableLockLog
-                            facultyChanges={JSON.parse(log.changes)}
-                          />
-                        </Text>
+                        <TimetableLockLog
+                          facultyChanges={(() => {
+                            try {
+                              return JSON.parse(log.changes);
+                            } catch {
+                              return [];
+                            }
+                          })()}
+                        />
                       </Td>
                     </Tr>
                   ))
@@ -506,62 +598,62 @@ const Logs = () => {
             </Table>
           </Box>
 
-          {/* Pagination Controls */}
-          {totalLogs ? (
-            <Box p={6} bg="gray.50" borderTop="1px" borderColor={borderColor}>
-              <Flex align="center" justify="space-between">
-                <HStack spacing={4}>
-                  <Text fontSize="sm" color="gray.600">
-                    Show per page:
-                  </Text>
-                  <Select
-                    size="sm"
-                    value={limit}
-                    onChange={(e) =>
-                      handleLimitChange(parseInt(e.target.value))
-                    }
-                    width="80px"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </Select>
-                </HStack>
+          <Box p={6} bg="gray.50" borderTop="1px" borderColor={borderColor}>
+            <Flex align="center" justify="space-between">
+              <HStack spacing={4}>
+                <Text fontSize="sm" color="gray.600">
+                  Show per page:
+                </Text>
+                <Select
+                  size="sm"
+                  value={limit}
+                  onChange={(e) => setLimit(parseInt(e.target.value, 10))}
+                  width="80px"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </Select>
+              </HStack>
 
-                <HStack spacing={2}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    leftIcon={<FiChevronLeft />}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    isDisabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  <Text
-                    fontSize="sm"
-                    color="gray.600"
-                    minW="100px"
-                    textAlign="center"
-                  >
-                    Page {currentPage} of {totalPages}
-                  </Text>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    rightIcon={<FiChevronRight />}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    isDisabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </HStack>
-              </Flex>
-            </Box>
-          ) : (
-            <></>
-          )}
+              <HStack spacing={2}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<FiChevronLeft />}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  isDisabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Text
+                  fontSize="sm"
+                  color="gray.600"
+                  minW="100px"
+                  textAlign="center"
+                >
+                  Page {currentPage} of{' '}
+                  {Math.max(1, Math.ceil(totalLogs / limit))}
+                </Text>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  rightIcon={<FiChevronRight />}
+                  onClick={() =>
+                    setCurrentPage((p) =>
+                      Math.min(p + 1, Math.max(1, Math.ceil(totalLogs / limit)))
+                    )
+                  }
+                  isDisabled={
+                    currentPage === Math.max(1, Math.ceil(totalLogs / limit))
+                  }
+                >
+                  Next
+                </Button>
+              </HStack>
+            </Flex>
+          </Box>
         </Box>
       </Container>
     </Box>

@@ -8,7 +8,46 @@ const HttpException = require("../../../models/http-exception");
 const getRoomByDepartment = require("./masterroomprofile");
 const masterroomprofile = require("./masterroomprofile");
 const AddAllotment = require("../../../models/allotment");
+const FacultyController = require("./facultyprofile");
+const getEnvironmentURL = require("../../../getEnvironmentURL");
+const addFaculty = require("../../../models/addfaculty");
+const facultyControllerInstance = new FacultyController();
 const MasterRoomProfile = new masterroomprofile();
+
+function getTimetableEmailContent({ facultyName, departmentName, sessionName, timetableUrl }) {
+  return {
+    subject: "Timetable Published for the Upcoming Academic Session",
+    body: `
+      <p>Dear ${facultyName},</p>
+
+      <p>
+        We are pleased to inform you that the timetable for the
+        <strong>${departmentName}</strong> department for the upcoming academic
+        session <strong>${sessionName}</strong> has been published.
+      </p>
+
+      <p>
+        You may access your timetable using the link below:
+      </p>
+
+      <p>
+        <a href="${timetableUrl}" target="_blank">
+          View Timetable
+        </a>
+      </p>
+
+      <p>
+        This is an auto-generated email. For any clarifications, kindly contact the
+        timetable coordinator.
+      </p>
+
+      <p>
+        Regards,<br />
+        <strong>Team XCEED</strong>
+      </p>
+    `,
+  };
+}
 
 class TableController {
   async createTable(req, res) {
@@ -302,7 +341,7 @@ class TableController {
       if (!sessions || sessions.length === 0) {
         return res.status(404).json({ message: "No active sessions found" });
       }
-      const codes = sessions.map(s => s.code);
+      const codes = sessions.map((s) => s.code);
       res.json({ codes });
     } catch (error) {
       console.error("Error updating current session:", error);
@@ -310,48 +349,58 @@ class TableController {
     }
   }
   async publishTimetable(req, res) {
-  const { id } = req.params;
+    const { id } = req.params;
 
-  if (!id) {
-    return res.status(400).json({ error: "Invalid timetable id" });
-  }
+    if (!id) {
+      return res.status(400).json({ error: "Invalid timetable id" });
+    }
 
-  try {
-    await TimeTable.findByIdAndUpdate(id, {
-      publish: true,
-      datePublished: new Date(),
-    });
-
- 
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Error publishing timetable:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-}
-async publishSession(req, res) {
-  const { session } = req.body;
-
-  if (!session) {
-    return res.status(400).json({ error: "Session is required" });
-  }
-
-  try {
-    await TimeTable.updateMany(
-      { session },
-      {
+    try {
+      const updatedTimeTable = await TimeTable.findByIdAndUpdate(id, {
         publish: true,
         datePublished: new Date(),
-      }
-    );
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Error publishing session timetables:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+      });
+      res.json({ success: true });
+      const allfaculties = await addFaculty.find({ code: updatedTimeTable.code });
+      const base_url = getEnvironmentURL();
+      for (const faculty of allfaculties)
+        facultyControllerInstance
+          .getFacultyByName(faculty)
+          .then(async (facultyData) => {
+            const { subject, body } = getTimetableEmailContent({
+              facultyName: facultyData[0].name,
+              departmentName: updatedTimeTable.dept,  
+              sessionName: updatedTimeTable.session,
+              timetableUrl: `${base_url}/faculty/${facultyData[0]._id}`,
+            });
+            await mailSender(facultyData.email, subject, body);
+          });
+    } catch (error) {
+      console.error("Error publishing timetable:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-}
+  async publishSession(req, res) {
+    const { session } = req.body;
 
+    if (!session) {
+      return res.status(400).json({ error: "Session is required" });
+    }
 
+    try {
+      await TimeTable.updateMany(
+        { session },
+        {
+          publish: true,
+          datePublished: new Date(),
+        }
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error publishing session timetables:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
 }
 module.exports = TableController;
