@@ -563,12 +563,12 @@ function FirstYearFaculty() {
                           borderColor={lastModifiedSem === sem ? "orange.400" : "gray.200"}
                         >
                           <CardHeader
-                            bg={lastModifiedSem === sem ? "violet.500" : "violet.600"}
+                            bg={lastModifiedSem === sem ? "green.500" : "green.600"}
                             color="white"
                             p={4}
                             cursor="pointer"
                             onClick={() => toggleSem(sem)}
-                            _hover={{ bg: lastModifiedSem === sem ? "violet.600" : "violet.700" }}
+                            _hover={{ bg: lastModifiedSem === sem ? "green.600" : "green.700" }}
                           >
                             <Flex justify="space-between" align="center" flexDirection={{ base: "column", sm: "row" }} gap={2}>
                               <HStack spacing={3}>
