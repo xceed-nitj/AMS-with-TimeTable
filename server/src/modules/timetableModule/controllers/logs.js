@@ -1,5 +1,4 @@
 const TimetableChangeLog = require("../../../models/timetableChangeLogs");
-const TimeTable = require("../../../models/timetable");
 
 class LogsController {
   async getLogs(req, res) {
@@ -9,22 +8,13 @@ class LogsController {
       const logs = await TimetableChangeLog.find()
         .skip(skip)
         .limit(parseInt(limit))
-        .sort({ time: -1 });
+        .sort({ time: -1 })
+        .lean();
 
-      // Fetch dept and session for each log
-      const enrichedLogs = await Promise.all(
-        logs.map(async (log) => {
-          const timetable = await TimeTable.findOne({ code: log.code }).select('dept session').lean();
-          return {
-            ...log.toObject(),
-            dept: timetable ? timetable.dept : 'Unknown',
-            session: timetable ? timetable.session : 'Unknown',
-          };
-        })
-      );
-
-      res.json(enrichedLogs);
+      // Dept and session are stored on the log document now
+      res.json(logs);
     } catch (error) {
+      console.error('Error in getLogs:', error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
@@ -34,7 +24,39 @@ class LogsController {
       const total = await TimetableChangeLog.countDocuments();
       res.json({ totalLogs: total });
     } catch (error) {
+      console.error('Error in getTotalLogs:', error);
       res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
+  async deleteBySession(req, res) {
+    try {
+      const session = req.params.session;
+      if (!session) return res.status(400).json({ error: 'Missing session parameter' });
+      const result = await TimetableChangeLog.deleteMany({ session });
+      res.json({ deletedCount: result.deletedCount });
+    } catch (error) {
+      console.error('Error deleting logs by session:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  async getLogsByDept(req, res) {
+    try {
+      const { dept } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+      const skip = (page - 1) * parseInt(limit);
+
+      const logs = await TimetableChangeLog.find({ dept })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .sort({ time: -1 })
+        .lean();
+
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching dept logs:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 }

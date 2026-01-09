@@ -24,7 +24,18 @@ const timetableChangeLogSchema = new Schema({
     type: String,
     required: true,
   },
+  dept: {
+    type: String,
+    required: false,
+  },
+  session: {
+    type: String,
+    required: false,
+  },
 });
+
+// TTL index: automatically remove documents 365 days after `time`
+timetableChangeLogSchema.index({ time: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 });
 
 const TimetableChangeLog = mongoose.model(
   "TimetableChangeLog",

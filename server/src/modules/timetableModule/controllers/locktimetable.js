@@ -22,6 +22,7 @@ const mailSender = require("../../mailsender");
 const Faculty = require("../../../models/faculty");
 const getEnvironmentURL = require("../../../getEnvironmentURL");
 const TimetableChangeLog = require("../../../models/timetableChangeLogs");
+const TimeTable = require("../../../models/timetable");
 
 function indexBySubjectAndSem(entries) {
   const map = {};
@@ -338,11 +339,26 @@ class LockTimeTableController {
       const facultyChanges = generateFacultyChangeEmails(oldData, newData);
       if (toInform) results = await sendFacultyChangeEmails(facultyChanges);
       if (facultyChanges.length > 0) {
+        // enrich log with dept and session at creation time to avoid later lookups
+        let dept = 'Unknown';
+        let session = '';
+        try {
+          const tt = await TimeTable.findOne({ code }).select('dept session').lean();
+          if (tt) {
+            dept = tt.dept || dept;
+            session = tt.session || '';
+          }
+        } catch (err) {
+          console.warn('Failed to fetch timetable for log enrichment:', err.message || err);
+        }
+
         await TimetableChangeLog.create({
           userId: req.user.id,
           userEmail: JSON.stringify(req.user.email),
           changes: JSON.stringify(facultyChanges),
           code,
+          dept,
+          session,
         });
       }
 

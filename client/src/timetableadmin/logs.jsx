@@ -20,8 +20,18 @@ import {
   Select,
   Flex,
   Spacer,
+  Menu,
+  MenuButton,
+  MenuList,
+  IconButton,
 } from '@chakra-ui/react';
-import { FiList, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import {
+  FiList,
+  FiChevronLeft,
+  FiChevronRight,
+  FiFilter,
+  FiTrash2,
+} from 'react-icons/fi';
 import getEnvironment from '../getenvironment.js';
 
 const SLOT_TIME_MAP = {
@@ -121,10 +131,15 @@ const TimetableLockLog = ({ facultyChanges }) => {
 
 const Logs = () => {
   const [logs, setLogs] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [allDepts, setAllDepts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalLogs, setTotalLogs] = useState(0);
+  const [deptFilter, setDeptFilter] = useState('');
+  const [sessionToDelete, setSessionToDelete] = useState('');
+  const [hasMore, setHasMore] = useState(false);
   const apiUrl = getEnvironment();
   const toast = useToast();
 
@@ -136,25 +151,46 @@ const Logs = () => {
   const borderColor = useColorModeValue('gray.300', 'gray.700');
 
   useEffect(() => {
+    fetchSessions();
     fetchLogs();
     fetchTotalLogs();
     setTotalPages(totalLogs / limit === 0 ? 1 : Math.ceil(totalLogs / limit));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, limit]);
 
+  useEffect(() => {
+    // when dept filter changes reset page
+    setCurrentPage(1);
+    fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deptFilter]);
+
   const fetchLogs = async () => {
     try {
-      const response = await fetch(
-        `${apiUrl}/timetablemodule/logs/get?page=${currentPage}&limit=${limit}`,
-        {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        }
-      );
+      let url = '';
+      if (deptFilter) {
+        url = `${apiUrl}/timetablemodule/logs/dept/${encodeURIComponent(
+          deptFilter
+        )}?page=${currentPage}&limit=${limit}`;
+      } else {
+        url = `${apiUrl}/timetablemodule/logs/get?page=${currentPage}&limit=${limit}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setLogs(data);
+        // For dept routes there is no total endpoint; use length to determine more pages
+        setHasMore(Array.isArray(data) && data.length === limit);
+        // Cache the full departments list when not filtering by dept
+        if (!deptFilter && Array.isArray(data)) {
+          const depts = [...new Set(data.map((l) => l.dept).filter(Boolean))];
+          setAllDepts(depts);
+        }
       } else {
         toast({
           title: 'Error fetching logs',
@@ -186,9 +222,88 @@ const Logs = () => {
       if (response.ok) {
         const data = await response.json();
         setTotalLogs(data.totalLogs);
+        setTotalPages(Math.max(1, Math.ceil(data.totalLogs / limit)));
       }
     } catch (error) {
       console.error('Error fetching total logs:', error);
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/allotment/session`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setSessions(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    }
+  };
+
+  const deleteSessionLogs = async (session) => {
+    if (!session) {
+      toast({
+        title: 'Select a session first',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
+    const confirmed = window.confirm(
+      `Delete all logs for session "${session}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/logs/session/${encodeURIComponent(session)}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: `Deleted ${data.deletedCount || 0} logs`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+          position: 'top',
+        });
+        // refresh
+        fetchLogs();
+        fetchTotalLogs();
+      } else {
+        const err = await response.json();
+        toast({
+          title: 'Failed to delete logs',
+          description: err.error || 'Server error',
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+          position: 'top',
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting logs:', error);
+      toast({
+        title: 'Error deleting logs',
+        description: error.message,
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+        position: 'top',
+      });
     }
   };
 
@@ -264,8 +379,8 @@ const Logs = () => {
           borderColor={borderColor}
         >
           <Box bgGradient="linear(to-r, gray.700, gray.800)" p={6}>
-            <HStack justify="space-between">
-              <HStack spacing={3}>
+            <HStack justify="space-between" align="center">
+              <HStack spacing={3} align="center">
                 <Box bg="whiteAlpha.200" p={2} borderRadius="lg">
                   <Icon as={FiList} boxSize={5} color="white" />
                 </Box>
@@ -278,6 +393,67 @@ const Logs = () => {
                   </Text>
                 </VStack>
               </HStack>
+
+              {/* Mobile menu */}
+              <Menu display={{ base: 'inline-flex', md: 'none' }}>
+                <MenuButton
+                  as={IconButton}
+                  icon={<Icon as={FiFilter} />}
+                  aria-label="Open filters"
+                  variant="ghost"
+                  color="white"
+                  size="md"
+                  _hover={{ bg: 'gray.700' }}
+                  _active={{ bg: 'gray.700' }}
+                  _focus={{ boxShadow: 'none' }}
+                />
+                <MenuList p={3} bg={cardBg} borderColor={borderColor}>
+                  <VStack align="stretch" spacing={3}>
+                    <Select
+                      size="sm"
+                      value={deptFilter}
+                      onChange={(e) => setDeptFilter(e.target.value)}
+                      variant="unstyled"
+                      focusBorderColor="transparent"
+                      border="none"
+                    >
+                      <option value="">All Depts</option>
+                      {(allDepts.length
+                        ? allDepts
+                        : [...new Set(logs.map((l) => l.dept).filter(Boolean))]
+                      ).map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </Select>
+
+                    <Select
+                      size="sm"
+                      value={sessionToDelete}
+                      onChange={(e) => setSessionToDelete(e.target.value)}
+                      placeholder="Select session"
+                      variant="unstyled"
+                      focusBorderColor="transparent"
+                      border="none"
+                    >
+                      {sessions.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </Select>
+
+                    <Button
+                      size="sm"
+                      colorScheme="red"
+                      onClick={() => deleteSessionLogs(sessionToDelete)}
+                    >
+                      Delete Logs
+                    </Button>
+                  </VStack>
+                </MenuList>
+              </Menu>
             </HStack>
           </Box>
 
