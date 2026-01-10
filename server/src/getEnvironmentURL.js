@@ -13,7 +13,7 @@ function getEnvironmentURL() {
       return nitjServer;
     } else {
       // Default to localhost if no match is found
-      return localhostFrontend;
+      return nitjServer;
     }
   }
   

@@ -371,7 +371,7 @@ class TableController {
               facultyName: facultyData[0].name,
               departmentName: updatedTimeTable.dept,  
               sessionName: updatedTimeTable.session,
-              timetableUrl: `${base_url}/faculty/${facultyData[0]._id}`,
+              timetableUrl: `${base_url}/timetable/faculty/${facultyData[0]._id}`,
             });
             await mailSender(facultyData.email, subject, body);
           });
