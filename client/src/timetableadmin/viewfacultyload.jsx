@@ -42,19 +42,19 @@ import { Parser } from '@json2csv/plainjs';
 import { Helmet } from 'react-helmet-async';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
-
 const MasterLoadDataTable = () => {
-  const [data, setData] = useState([]);
+  const [dataCurrent, setDataCurrent] = useState([]);
+  const [dataPrevious, setDataPrevious] = useState([]);
+  const [subjectData, setSubjectData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [allSessions, setAllSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState('');
+  const [previousSession, setPreviousSession] = useState('');
   const [filters, setFilters] = useState({});
   const [searchTerms, setSearchTerms] = useState({});
   const [hiddenColumns, setHiddenColumns] = useState([]);
-
   const apiUrl = getEnvironment();
-
   useEffect(() => {
     const fetchSessions = async () => {
       try {
@@ -69,6 +69,9 @@ const MasterLoadDataTable = () => {
         // Automatically select the first session (current session)
         if (uniqueSessions && uniqueSessions.length > 0) {
           setSelectedSession(uniqueSessions[0].session);
+          if (uniqueSessions.length > 1) {
+            setPreviousSession(uniqueSessions[1].session);
+          }
         }
       } catch (error) {
         console.error('Error fetching session and department data:', error);
@@ -76,9 +79,8 @@ const MasterLoadDataTable = () => {
     };
     fetchSessions();
   }, [apiUrl]);
-
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDataCurrent = async () => {
       if (!selectedSession) return;
       setLoading(true);
       try {
@@ -87,35 +89,70 @@ const MasterLoadDataTable = () => {
           throw new Error('Network response was not ok');
         }
         const fetchedData = await response.json();
-        setData(fetchedData);
+        setDataCurrent(fetchedData);
       } catch (error) {
         setError(error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchDataCurrent();
   }, [apiUrl, selectedSession]);
-
+  useEffect(() => {
+    const fetchDataPrevious = async () => {
+      if (!previousSession) return;
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/mastertable/session/${previousSession}`, { credentials: 'include' });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const fetchedData = await response.json();
+        setDataPrevious(fetchedData);
+      } catch (error) {
+        console.error('Error fetching previous session data:', error);
+      }
+    };
+    fetchDataPrevious();
+  }, [apiUrl, previousSession]);
+  useEffect(() => {
+    if (dataCurrent.length === 0 && dataPrevious.length === 0) return;
+    const fetchSubjects = async () => {
+      const allData = [...dataCurrent, ...dataPrevious];
+      const uniqueCodes = [...new Set(allData.map(item => item.subjectCode).filter(Boolean))];
+      try {
+        const results = await Promise.all(
+          uniqueCodes.map(async (code) => {
+            const res = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${code}`, { credentials: 'include' });
+            if (!res.ok) {
+              console.error(`Error fetching ${code}`);
+              return [];
+            }
+            return await res.json();
+          })
+        );
+        setSubjectData([].concat(...results));
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+      }
+    };
+    fetchSubjects();
+  }, [dataCurrent, dataPrevious, apiUrl]);
   const handleFilterChange = (column, value) => {
     setFilters(prevFilters => ({
       ...prevFilters,
       [column]: value
     }));
   };
-
   const handleSearchChange = (column, value) => {
     setSearchTerms(prevTerms => ({
       ...prevTerms,
       [column]: value
     }));
   };
-
   const clearFilters = () => {
     setFilters({});
     setSearchTerms({});
   };
-
   const columns = [
     { label: "Subject Full Name", key: "subjectFullName" },
     { label: "Faculty", key: "faculty" },
@@ -131,7 +168,6 @@ const MasterLoadDataTable = () => {
     { label: "Subject Credit", key: "subjectCredit" },
     { label: "Load", key: "count" },
   ];
-
   const mergeAndFilterData = (data) => {
     const groupedData = data.reduce((acc, item) => {
       const key = `${item.subjectCode}-${item.subjectFullName}-${item.faculty}-${item.sem}-${item.subjectType}`;
@@ -155,7 +191,6 @@ const MasterLoadDataTable = () => {
       }
       return acc;
     }, {});
-
     return Object.values(groupedData).map(item => {
       const processedItem = { ...item };
       Object.keys(processedItem).forEach(field => {
@@ -170,9 +205,8 @@ const MasterLoadDataTable = () => {
       return processedItem;
     });
   };
-
   const filteredData = useMemo(() => {
-    const filtered = data.filter(item =>
+    const filtered = dataCurrent.filter(item =>
       item.subject && item.faculty &&
       Object.entries(filters).every(([key, value]) => {
         const itemValue = item[key];
@@ -184,8 +218,7 @@ const MasterLoadDataTable = () => {
       })
     );
     return mergeAndFilterData(filtered);
-  }, [data, filters, searchTerms]);
-
+  }, [dataCurrent, filters, searchTerms]);
   const filterOptions = useMemo(() => {
     return columns.reduce((acc, { key }) => {
       const columnValues = filteredData.map(item => item[key]).filter(value => value !== undefined && value !== null);
@@ -193,133 +226,110 @@ const MasterLoadDataTable = () => {
       return acc;
     }, {});
   }, [filteredData, columns]);
-
-  // Get all unique departments
+  // Get all unique departments from current session
   const departments = useMemo(() => {
     const depts = new Set();
-    data.forEach(item => {
+    dataCurrent.forEach(item => {
       if (item.offeringDept) {
         depts.add(item.offeringDept);
       }
     });
     return Array.from(depts).sort();
-  }, [data]);
-
-  // Calculate Faculty Load by Department
-  const facultyLoadByDepartment = useMemo(() => {
+  }, [dataCurrent]);
+  const computeFacultyLoad = (data, departments, subjectData) => {
     const deptData = {};
-
     departments.forEach(dept => {
       deptData[dept] = {};
     });
-
     data.forEach(item => {
       if (!item.subject || !item.faculty || !item.offeringDept) return;
-
       const dept = item.offeringDept;
       const faculty = item.faculty;
-      const slotNum = parseInt(item.slot);
       const subType = item.subjectType?.toLowerCase() || 'other';
-      const studentCount = parseInt(item.studentCount) || 0;
-
+      const subject = item.subject;
+      const sem = item.sem;
+      const subjectInfo = subjectData.find(
+        s => s.subName === subject && s.sem === sem
+      );
+      const studentCount = parseInt(subjectInfo?.studentCount) || 0;
       if (!deptData[dept]) return;
-
       if (!deptData[dept][faculty]) {
         deptData[dept][faculty] = {
           faculty,
           department: dept,
-          firstSlot: { theory: 0, laboratory: 0, tutorial: 0, total: 0 },
-          secondSlot: { theory: 0, laboratory: 0, tutorial: 0, total: 0 },
           total: { theory: 0, laboratory: 0, tutorial: 0, total: 0 },
-          studentCount: {
-            theory: { total: 0, hours: 0 },
-            laboratory: { total: 0, hours: 0 },
-            tutorial: { total: 0, hours: 0 }
-          }
+          subjects: {}
         };
       }
-
       const facultyData = deptData[dept][faculty];
-
-      // Count student hours
-      if (subType === 'theory') {
-        facultyData.studentCount.theory.total += studentCount;
-        facultyData.studentCount.theory.hours += 1;
-      } else if (subType === 'laboratory') {
-        facultyData.studentCount.laboratory.total += studentCount;
-        facultyData.studentCount.laboratory.hours += 1;
-      } else if (subType === 'tutorial') {
-        facultyData.studentCount.tutorial.total += studentCount;
-        facultyData.studentCount.tutorial.hours += 1;
+      const subjectKey = `${subject}-${sem}-${subType}`;
+      if (!facultyData.subjects[subjectKey]) {
+        facultyData.subjects[subjectKey] = {
+          studentCount: studentCount,
+          hours: 0,
+          type: subType
+        };
       }
-
-      // First slot: only slot 1, Second slot: only slot 2
-      if (slotNum === 1) {
-        facultyData.firstSlot.total++;
-        if (subType === 'theory') facultyData.firstSlot.theory++;
-        else if (subType === 'laboratory') facultyData.firstSlot.laboratory++;
-        else if (subType === 'tutorial') facultyData.firstSlot.tutorial++;
-      } else if (slotNum === 2) {
-        facultyData.secondSlot.total++;
-        if (subType === 'theory') facultyData.secondSlot.theory++;
-        else if (subType === 'laboratory') facultyData.secondSlot.laboratory++;
-        else if (subType === 'tutorial') facultyData.secondSlot.tutorial++;
-      }
-
-      // Total (includes all slots)
-      facultyData.total.total++;
-      if (subType === 'theory') facultyData.total.theory++;
-      else if (subType === 'laboratory') facultyData.total.laboratory++;
-      else if (subType === 'tutorial') facultyData.total.tutorial++;
+      facultyData.subjects[subjectKey].hours += 1;
+      facultyData.total.total += 1;
+      if (subType === 'theory') facultyData.total.theory += 1;
+      else if (subType === 'laboratory') facultyData.total.laboratory += 1;
+      else if (subType === 'tutorial') facultyData.total.tutorial += 1;
     });
-
-    // Convert to array and calculate normalized values
+    Object.keys(deptData).forEach(dept => {
+      Object.keys(deptData[dept]).forEach(facultyKey => {
+        const fd = deptData[dept][facultyKey];
+        const studentHours = {
+          theory: { totalStudentHours: 0, totalHours: 0 },
+          laboratory: { totalStudentHours: 0, totalHours: 0 },
+          tutorial: { totalStudentHours: 0, totalHours: 0 }
+        };
+        Object.values(fd.subjects).forEach(sub => {
+          const type = sub.type;
+          const sh = sub.studentCount * sub.hours;
+          if (type === 'theory') {
+            studentHours.theory.totalStudentHours += sh;
+            studentHours.theory.totalHours += sub.hours;
+          } else if (type === 'laboratory') {
+            studentHours.laboratory.totalStudentHours += sh;
+            studentHours.laboratory.totalHours += sub.hours;
+          } else if (type === 'tutorial') {
+            studentHours.tutorial.totalStudentHours += sh;
+            studentHours.tutorial.totalHours += sub.hours;
+          }
+        });
+        const normalizedTheory = studentHours.theory.totalHours > 0
+          ? (studentHours.theory.totalStudentHours / studentHours.theory.totalHours).toFixed(2)
+          : '0.00';
+        const normalizedLab = studentHours.laboratory.totalHours > 0
+          ? (studentHours.laboratory.totalStudentHours / studentHours.laboratory.totalHours).toFixed(2)
+          : '0.00';
+        const normalizedTutorial = studentHours.tutorial.totalHours > 0
+          ? (studentHours.tutorial.totalStudentHours / studentHours.tutorial.totalHours).toFixed(2)
+          : '0.00';
+        const normalizedLoad = (
+          (fd.total.theory * parseFloat(normalizedTheory)) +
+          (fd.total.tutorial * parseFloat(normalizedTutorial)) +
+          ((fd.total.laboratory / 2) * parseFloat(normalizedLab))
+        ).toFixed(2);
+        fd.normalizedStudentCount = {
+          theory: normalizedTheory,
+          laboratory: normalizedLab,
+          tutorial: normalizedTutorial
+        };
+        fd.normalizedLoad = normalizedLoad;
+      });
+    });
     const result = {};
     Object.keys(deptData).forEach(dept => {
       result[dept] = Object.values(deptData[dept])
-        .map(faculty => {
-          const normalizedTheory = faculty.studentCount.theory.hours > 0 
-            ? parseFloat((faculty.studentCount.theory.total / faculty.studentCount.theory.hours).toFixed(2))
-            : 0;
-          
-          const normalizedLab = faculty.studentCount.laboratory.hours > 0
-            ? parseFloat((faculty.studentCount.laboratory.total / faculty.studentCount.laboratory.hours).toFixed(2))
-            : 0;
-          
-          const normalizedTutorial = faculty.studentCount.tutorial.hours > 0
-            ? parseFloat((faculty.studentCount.tutorial.total / faculty.studentCount.tutorial.hours).toFixed(2))
-            : 0;
-
-          // Calculate normalized load
-          // Formula: (Theory hrs × Normalized Theory Students) + (Tutorial hrs × Normalized Tutorial Students) + ((Lab hrs / 2) × Normalized Lab Students)
-          const normalizedLoad = (
-            (faculty.total.theory * normalizedTheory) +
-            (faculty.total.tutorial * normalizedTutorial) +
-            ((faculty.total.laboratory / 2) * normalizedLab)
-          ).toFixed(2);
-
-          return {
-            ...faculty,
-            sumFirstSecond: {
-              theory: faculty.firstSlot.theory + faculty.secondSlot.theory,
-              laboratory: faculty.firstSlot.laboratory + faculty.secondSlot.laboratory,
-              tutorial: faculty.firstSlot.tutorial + faculty.secondSlot.tutorial,
-              total: faculty.firstSlot.total + faculty.secondSlot.total
-            },
-            normalizedStudentCount: {
-              theory: normalizedTheory.toFixed(2),
-              laboratory: normalizedLab.toFixed(2),
-              tutorial: normalizedTutorial.toFixed(2)
-            },
-            normalizedLoad: normalizedLoad
-          };
-        })
         .sort((a, b) => a.faculty.localeCompare(b.faculty));
     });
-
     return result;
-  }, [data, departments]);
-
+  };
+  // Calculate Faculty Load for current and previous
+  const currentLoad = useMemo(() => computeFacultyLoad(dataCurrent, departments, subjectData), [dataCurrent, departments, subjectData]);
+  const previousLoad = useMemo(() => computeFacultyLoad(dataPrevious, departments, subjectData), [dataPrevious, departments, subjectData]);
   const downloadCSV = () => {
     const visibleColumns = columns.filter(c => !hiddenColumns.includes(c.key));
     const csvData = filteredData.map(item => {
@@ -329,10 +339,8 @@ const MasterLoadDataTable = () => {
       });
       return filteredItem;
     });
-
     const parser = new Parser({ fields: visibleColumns.map(c => c.key) });
     const csv = parser.parse(csvData);
-
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
@@ -345,38 +353,29 @@ const MasterLoadDataTable = () => {
       document.body.removeChild(link);
     }
   };
-
   const downloadDepartmentFacultyLoadCSV = (dept) => {
-    const facultyList = facultyLoadByDepartment[dept] || [];
-    
-    const csvData = facultyList.map(item => ({
-      'Faculty': item.faculty,
-      'Department': item.department,
-      'First Slot Theory': item.firstSlot.theory,
-      'First Slot Laboratory': item.firstSlot.laboratory,
-      'First Slot Tutorial': item.firstSlot.tutorial,
-      'First Slot Total': item.firstSlot.total,
-      'Second Slot Theory': item.secondSlot.theory,
-      'Second Slot Laboratory': item.secondSlot.laboratory,
-      'Second Slot Tutorial': item.secondSlot.tutorial,
-      'Second Slot Total': item.secondSlot.total,
-      'Sum (Slot 1 + 2) Theory': item.sumFirstSecond.theory,
-      'Sum (Slot 1 + 2) Laboratory': item.sumFirstSecond.laboratory,
-      'Sum (Slot 1 + 2) Tutorial': item.sumFirstSecond.tutorial,
-      'Sum (Slot 1 + 2) Total': item.sumFirstSecond.total,
-      'Total Theory': item.total.theory,
-      'Total Laboratory': item.total.laboratory,
-      'Total Tutorial': item.total.tutorial,
-      'Total Load': item.total.total,
-      'Normalized Student Count (Theory)': item.normalizedStudentCount.theory,
-      'Normalized Student Count (Laboratory)': item.normalizedStudentCount.laboratory,
-      'Normalized Student Count (Tutorial)': item.normalizedStudentCount.tutorial,
-      'Normalized Load': item.normalizedLoad,
-    }));
-
+    const facultyList = currentLoad[dept] || [];
+    const csvData = facultyList.map(item => {
+      const prevFaculty = (previousLoad[dept] || []).find(f => f.faculty === item.faculty);
+      const prevNormLoad = prevFaculty ? prevFaculty.normalizedLoad : '0.00';
+      const yearlyAvg = (((parseFloat(item.normalizedLoad) + parseFloat(prevNormLoad)) / 2).toFixed(2));
+      return {
+        'Faculty': item.faculty,
+        'Department': item.department,
+        'Total Theory': item.total.theory,
+        'Total Laboratory': item.total.laboratory,
+        'Total Tutorial': item.total.tutorial,
+        'Total Load': item.total.total,
+        'Normalized Student Count (Theory)': item.normalizedStudentCount.theory,
+        'Normalized Student Count (Laboratory)': item.normalizedStudentCount.laboratory,
+        'Normalized Student Count (Tutorial)': item.normalizedStudentCount.tutorial,
+        'Normalized Load (Current)': item.normalizedLoad,
+        'Normalized Load (Previous)': prevNormLoad,
+        'Yearly Average Load': yearlyAvg,
+      };
+    });
     const parser = new Parser();
     const csv = parser.parse(csvData);
-
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
@@ -389,14 +388,12 @@ const MasterLoadDataTable = () => {
       document.body.removeChild(link);
     }
   };
-
   return (
     <>
       <Helmet>
         <title>Master Search Timetable | XCEED NITJ</title>
         <meta name="description" content="NITJ's official timetable search engine for all semesters and courses" />
       </Helmet>
-
       <Box bg="white" minH="100vh">
         {/* Hero Header Section */}
         <Box
@@ -416,7 +413,6 @@ const MasterLoadDataTable = () => {
             bgImage="radial-gradient(circle, white 1px, transparent 1px)"
             bgSize="30px 30px"
           />
-
           <Box
             position="relative"
             zIndex={2}
@@ -427,7 +423,6 @@ const MasterLoadDataTable = () => {
           >
             <Header />
           </Box>
-
           <Container
             maxW="7xl"
             position="relative"
@@ -469,7 +464,6 @@ const MasterLoadDataTable = () => {
             </VStack>
           </Container>
         </Box>
-
         <Container maxW="7xl" mt={-12} position="relative" zIndex={1} pb={16} px={{ base: 4, md: 6, lg: 8 }}>
           <VStack spacing={6} align="stretch">
             {/* Session Selection Card */}
@@ -507,9 +501,11 @@ const MasterLoadDataTable = () => {
                     ))}
                   </Select>
                 </FormControl>
+                {previousSession && (
+                  <Text mt={2} color="gray.600">Previous Session: {previousSession}</Text>
+                )}
               </CardBody>
             </Card>
-
             {selectedSession && (
               <>
                 {loading ? (
@@ -573,7 +569,6 @@ const MasterLoadDataTable = () => {
                             </Tab>
                           ))}
                         </TabList>
-
                         <TabPanels>
                           {/* Department Tabs */}
                           {departments.map((dept) => (
@@ -583,7 +578,7 @@ const MasterLoadDataTable = () => {
                                   <VStack align="start" spacing={0}>
                                     <Heading size={{ base: "sm", md: "md" }}>{dept} - Faculty Load Analysis</Heading>
                                     <Text fontSize="xs" color="gray.600" mt={1}>
-                                      Load distribution by faculty (Slot 1 and Slot 2 only)
+                                      Load distribution by faculty
                                     </Text>
                                   </VStack>
                                   <Button
@@ -596,7 +591,6 @@ const MasterLoadDataTable = () => {
                                   </Button>
                                 </Flex>
                               </Box>
-
                               <Box
                                 overflowX="auto"
                                 w="100%"
@@ -631,42 +625,6 @@ const MasterLoadDataTable = () => {
                                         minW="150px"
                                       >
                                         Faculty
-                                      </Th>
-                                      <Th
-                                        colSpan={4}
-                                        color="blue.700"
-                                        fontSize={{ base: "xs", md: "sm" }}
-                                        fontWeight="bold"
-                                        textAlign="center"
-                                        borderBottom="2px"
-                                        borderColor="teal.200"
-                                        bg="blue.50"
-                                      >
-                                        Slot 1
-                                      </Th>
-                                      <Th
-                                        colSpan={4}
-                                        color="purple.700"
-                                        fontSize={{ base: "xs", md: "sm" }}
-                                        fontWeight="bold"
-                                        textAlign="center"
-                                        borderBottom="2px"
-                                        borderColor="teal.200"
-                                        bg="purple.50"
-                                      >
-                                        Slot 2
-                                      </Th>
-                                      <Th
-                                        colSpan={4}
-                                        color="orange.700"
-                                        fontSize={{ base: "xs", md: "sm" }}
-                                        fontWeight="bold"
-                                        textAlign="center"
-                                        borderBottom="2px"
-                                        borderColor="teal.200"
-                                        bg="orange.50"
-                                      >
-                                        Sum (Slot 1 + 2)
                                       </Th>
                                       <Th
                                         colSpan={4}
@@ -727,7 +685,7 @@ const MasterLoadDataTable = () => {
                                       >
                                         <VStack spacing={1}>
                                           <HStack spacing={1}>
-                                            <Text>Normalized Load</Text>
+                                            <Text>Normalized Load (Current)</Text>
                                             <Tooltip
                                               label={
                                                 <Box p={2}>
@@ -757,47 +715,38 @@ const MasterLoadDataTable = () => {
                                           </HStack>
                                         </VStack>
                                       </Th>
+                                      {previousSession && (
+                                        <>
+                                          <Th
+                                            rowSpan={2}
+                                            color="yellow.800"
+                                            fontSize={{ base: "xs", md: "sm" }}
+                                            fontWeight="bold"
+                                            textAlign="center"
+                                            borderBottom="2px"
+                                            borderColor="teal.200"
+                                            bg="yellow.100"
+                                            verticalAlign="middle"
+                                          >
+                                            Normalized Load (Previous)
+                                          </Th>
+                                          <Th
+                                            rowSpan={2}
+                                            color="yellow.800"
+                                            fontSize={{ base: "xs", md: "sm" }}
+                                            fontWeight="bold"
+                                            textAlign="center"
+                                            borderBottom="2px"
+                                            borderColor="teal.200"
+                                            bg="yellow.200"
+                                            verticalAlign="middle"
+                                          >
+                                            Yearly Average Load
+                                          </Th>
+                                        </>
+                                      )}
                                     </Tr>
                                     <Tr>
-                                      {['Th', 'Lab', 'Tut', 'Tot'].map((label, idx) => (
-                                        <Th
-                                          key={`first-${idx}`}
-                                          color="blue.700"
-                                          fontSize={{ base: "2xs", md: "xs" }}
-                                          textAlign="center"
-                                          borderBottom="2px"
-                                          borderColor="teal.200"
-                                          bg="blue.50"
-                                        >
-                                          {label}
-                                        </Th>
-                                      ))}
-                                      {['Th', 'Lab', 'Tut', 'Tot'].map((label, idx) => (
-                                        <Th
-                                          key={`second-${idx}`}
-                                          color="purple.700"
-                                          fontSize={{ base: "2xs", md: "xs" }}
-                                          textAlign="center"
-                                          borderBottom="2px"
-                                          borderColor="teal.200"
-                                          bg="purple.50"
-                                        >
-                                          {label}
-                                        </Th>
-                                      ))}
-                                      {['Th', 'Lab', 'Tut', 'Tot'].map((label, idx) => (
-                                        <Th
-                                          key={`sum-${idx}`}
-                                          color="orange.700"
-                                          fontSize={{ base: "2xs", md: "xs" }}
-                                          textAlign="center"
-                                          borderBottom="2px"
-                                          borderColor="teal.200"
-                                          bg="orange.50"
-                                        >
-                                          {label}
-                                        </Th>
-                                      ))}
                                       {['Th', 'Lab', 'Tut', 'Tot'].map((label, idx) => (
                                         <Th
                                           key={`total-${idx}`}
@@ -827,90 +776,72 @@ const MasterLoadDataTable = () => {
                                     </Tr>
                                   </Thead>
                                   <Tbody>
-                                    {(facultyLoadByDepartment[dept] || []).map((faculty, index) => (
-                                      <Tr
-                                        key={index}
-                                        bg={index % 2 === 0 ? "white" : "gray.50"}
-                                        _hover={{ bg: "teal.50" }}
-                                      >
-                                        <Td 
-                                          fontWeight="bold" 
-                                          fontSize={{ base: "xs", md: "sm" }}
-                                          whiteSpace="normal"
-                                          wordBreak="break-word"
+                                    {(currentLoad[dept] || []).map((faculty, index) => {
+                                      const prevFaculty = (previousLoad[dept] || []).find(f => f.faculty === faculty.faculty);
+                                      const prevNormLoad = prevFaculty ? prevFaculty.normalizedLoad : '0.00';
+                                      const yearlyAvg = (((parseFloat(faculty.normalizedLoad) + parseFloat(prevNormLoad)) / 2).toFixed(2));
+                                      return (
+                                        <Tr
+                                          key={index}
+                                          bg={index % 2 === 0 ? "white" : "gray.50"}
+                                          _hover={{ bg: "teal.50" }}
                                         >
-                                          {faculty.faculty}
-                                        </Td>
-                                        {/* Slot 1 */}
-                                        <Td textAlign="center" bg="blue.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="green" fontSize="xs">{faculty.firstSlot.theory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="blue.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="red" fontSize="xs">{faculty.firstSlot.laboratory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="blue.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="orange" fontSize="xs">{faculty.firstSlot.tutorial}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="blue.100" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
-                                          {faculty.firstSlot.total}
-                                        </Td>
-                                        {/* Slot 2 */}
-                                        <Td textAlign="center" bg="purple.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="green" fontSize="xs">{faculty.secondSlot.theory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="purple.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="red" fontSize="xs">{faculty.secondSlot.laboratory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="purple.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="orange" fontSize="xs">{faculty.secondSlot.tutorial}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="purple.100" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
-                                          {faculty.secondSlot.total}
-                                        </Td>
-                                        {/* Sum */}
-                                        <Td textAlign="center" bg="orange.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="green" fontSize="xs">{faculty.sumFirstSecond.theory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="orange.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="red" fontSize="xs">{faculty.sumFirstSecond.laboratory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="orange.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="orange" fontSize="xs">{faculty.sumFirstSecond.tutorial}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="orange.100" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
-                                          {faculty.sumFirstSecond.total}
-                                        </Td>
-                                        {/* Total */}
-                                        <Td textAlign="center" bg="green.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="green" fontSize="xs">{faculty.total.theory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="green.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="red" fontSize="xs">{faculty.total.laboratory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="green.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="orange" fontSize="xs">{faculty.total.tutorial}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="green.100" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
-                                          {faculty.total.total}
-                                        </Td>
-                                        {/* Normalized Student Count */}
-                                        <Td textAlign="center" bg="pink.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="cyan" fontSize="xs">{faculty.normalizedStudentCount.theory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="pink.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="cyan" fontSize="xs">{faculty.normalizedStudentCount.laboratory}</Badge>
-                                        </Td>
-                                        <Td textAlign="center" bg="pink.50" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="cyan" fontSize="xs">{faculty.normalizedStudentCount.tutorial}</Badge>
-                                        </Td>
-                                        {/* Normalized Load */}
-                                        <Td textAlign="center" bg="yellow.50" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
-                                          <Badge colorScheme="yellow" fontSize="xs" px={3} py={1}>
-                                            {faculty.normalizedLoad}
-                                          </Badge>
-                                        </Td>
-                                      </Tr>
-                                    ))}
+                                          <Td
+                                            fontWeight="bold"
+                                            fontSize={{ base: "xs", md: "sm" }}
+                                            whiteSpace="normal"
+                                            wordBreak="break-word"
+                                          >
+                                            {faculty.faculty}
+                                          </Td>
+                                          {/* Total */}
+                                          <Td textAlign="center" bg="green.50" fontSize={{ base: "xs", md: "sm" }}>
+                                            <Badge colorScheme="green" fontSize="xs">{faculty.total.theory}</Badge>
+                                          </Td>
+                                          <Td textAlign="center" bg="green.50" fontSize={{ base: "xs", md: "sm" }}>
+                                            <Badge colorScheme="red" fontSize="xs">{faculty.total.laboratory}</Badge>
+                                          </Td>
+                                          <Td textAlign="center" bg="green.50" fontSize={{ base: "xs", md: "sm" }}>
+                                            <Badge colorScheme="orange" fontSize="xs">{faculty.total.tutorial}</Badge>
+                                          </Td>
+                                          <Td textAlign="center" bg="green.100" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
+                                            {faculty.total.total}
+                                          </Td>
+                                          {/* Normalized Student Count */}
+                                          <Td textAlign="center" bg="pink.50" fontSize={{ base: "xs", md: "sm" }}>
+                                            <Badge colorScheme="cyan" fontSize="xs">{faculty.normalizedStudentCount.theory}</Badge>
+                                          </Td>
+                                          <Td textAlign="center" bg="pink.50" fontSize={{ base: "xs", md: "sm" }}>
+                                            <Badge colorScheme="cyan" fontSize="xs">{faculty.normalizedStudentCount.laboratory}</Badge>
+                                          </Td>
+                                          <Td textAlign="center" bg="pink.50" fontSize={{ base: "xs", md: "sm" }}>
+                                            <Badge colorScheme="cyan" fontSize="xs">{faculty.normalizedStudentCount.tutorial}</Badge>
+                                          </Td>
+                                          {/* Normalized Load Current */}
+                                          <Td textAlign="center" bg="yellow.50" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
+                                            <Badge colorScheme="yellow" fontSize="xs" px={3} py={1}>
+                                              {faculty.normalizedLoad}
+                                            </Badge>
+                                          </Td>
+                                          {previousSession && (
+                                            <>
+                                              {/* Normalized Load Previous */}
+                                              <Td textAlign="center" bg="yellow.100" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
+                                                <Badge colorScheme="yellow" fontSize="xs" px={3} py={1}>
+                                                  {prevNormLoad}
+                                                </Badge>
+                                              </Td>
+                                              {/* Yearly Average */}
+                                              <Td textAlign="center" bg="yellow.200" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
+                                                <Badge colorScheme="orange" fontSize="xs" px={3} py={1}>
+                                                  {yearlyAvg}
+                                                </Badge>
+                                              </Td>
+                                            </>
+                                          )}
+                                        </Tr>
+                                      );
+                                    })}
                                   </Tbody>
                                 </Table>
                               </Box>
@@ -929,5 +860,4 @@ const MasterLoadDataTable = () => {
     </>
   );
 };
-
 export default MasterLoadDataTable;
