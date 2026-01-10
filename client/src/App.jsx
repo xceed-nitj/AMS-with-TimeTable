@@ -44,12 +44,12 @@ import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
 // import InstituteLoad from './timetableadmin/instituteload';
-import ViewInstituteLoad from './timetableadmin/viewinstituteload';
+// import ViewInstituteLoad from './timetableadmin/viewinstituteload';
 import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 import ImportForm from './timetableadmin/importCentralRoom';
-import MergePDFComponent from './filedownload/mergepdfdocuments';
+// import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
-import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
+// import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
 import FacultyHourLoad from './timetableadmin/facultyhourload.jsx';
@@ -226,7 +226,7 @@ function App() {
           <Route path="mastersem" element={<MasterSem />} />
           <Route path="masterdelete" element={<MasterDelete />} />
           <Route path="viewmrooms" element={<ViewMRooms />} />
-          <Route path="masterdata" element={<MasterDataTable />} />
+          {/* <Route path="masterdata" element={<MasterDataTable />} /> */}
           <Route path="messages" element={<Messages />} />
           <Route path="logs" element={<Logs />} />
         </Route>
@@ -290,13 +290,13 @@ function App() {
 
         <Route path="/tt/admin/view" element={<View />} />
         {/* <Route path="/tt/admin/instituteload" element={<InstituteLoad />} /> */}
-        <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} />
+        {/* <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} /> */}
         <Route path="/tt/masterload" element={<MasterLoadDataTable />} />
         <Route path="/tt/admin/clashes" element={<AdminClash />} />
-        <Route
+        {/* <Route
           path="/tt/:generatedLink/generatepdf/mergepdf"
           element={<MergePDFComponent />}
-        />
+        /> */}
         <Route
           path="/tt/:generatedLink/generatepdf/loadallocation"
           element={<Departmentloadallocation />}
