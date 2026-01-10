@@ -7,7 +7,7 @@ import {
   Heading,
   Text,
   VStack,
-  HStack,
+  Stack,
   Flex,
   Badge,
   SimpleGrid,
@@ -270,7 +270,7 @@ function CreateTimetable() {
       <Box
         bgGradient="linear(to-r, cyan.400, teal.500, green.500)"
         pt={0}
-        pb={24}
+        pb={{ base: 16, md: 20, lg: 24 }}
         position="relative"
         overflow="hidden"
       >
@@ -297,35 +297,65 @@ function CreateTimetable() {
           <Header />
         </Box>
 
-        <Container maxW="7xl" position="relative" mt={8}>
-          <Flex justify="space-between" align="center" w="full" gap={4}>
-            <VStack spacing={4} align="start" flex="1">
+        <Container 
+          maxW="7xl" 
+          position="relative" 
+          mt={{ base: 4, md: 6, lg: 8 }}
+          px={{ base: 4, md: 6, lg: 8 }}
+        >
+          <Flex 
+            direction={{ base: "column", lg: "row" }}
+            justify="space-between" 
+            align={{ base: "stretch", lg: "center" }}
+            w="full" 
+            gap={{ base: 6, md: 6, lg: 4 }}
+          >
+            <VStack 
+              spacing={{ base: 3, md: 4 }}
+              align={{ base: "center", lg: "start" }}
+              flex="1"
+              textAlign={{ base: "center", lg: "left" }}
+            >
               <Badge
                 colorScheme="whiteAlpha"
-                fontSize="sm"
-                px={3}
+                fontSize={{ base: "xs", md: "sm" }}
+                px={{ base: 2, md: 3 }}
                 py={1}
                 borderRadius="full"
               >
                 Timetable Management
               </Badge>
-              <Heading size="2xl" color="white" fontWeight="bold" lineHeight="1.2">
+              <Heading 
+                size={{ base: "xl", md: "2xl" }}
+                color="white" 
+                fontWeight="bold" 
+                lineHeight="1.2"
+              >
                 Timetable Dashboard
               </Heading>
-              <Text color="whiteAlpha.900" fontSize="lg" maxW="2xl">
+              <Text 
+                color="whiteAlpha.900" 
+                fontSize={{ base: "md", md: "lg" }}
+                maxW={{ base: "full", lg: "2xl" }}
+              >
                 Create and manage timetables for different departments and sessions.
               </Text>
             </VStack>
 
             {/* Action Buttons */}
-            <HStack spacing={3}>
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={{ base: 2, md: 3 }}
+              w={{ base: "100%", lg: "auto" }}
+              align="stretch"
+            >
               {/* Create Timetable Button */}
               <Button
                 leftIcon={<AddIcon />}
                 colorScheme="whiteAlpha"
                 bg="rgba(255, 255, 255, 0.2)"
                 color="white"
-                size="lg"
+                size={{ base: "md", md: "lg" }}
                 onClick={onOpen}
                 _hover={{ bg: "rgba(255, 255, 255, 0.3)" }}
                 _active={{ bg: "rgba(255, 255, 255, 0.4)" }}
@@ -333,18 +363,20 @@ function CreateTimetable() {
                 boxShadow="lg"
                 border="2px solid"
                 borderColor="whiteAlpha.400"
+                w={{ base: "100%", lg: "auto" }}
+                fontSize={{ base: "sm", md: "md" }}
               >
                 Create Timetable
               </Button>
 
               {/* Messages Button with Notification Badge */}
-              <Box position="relative">
+              <Box position="relative" w={{ base: "100%", lg: "auto" }}>
                 <Button
                   leftIcon={<FaGlobe />}
                   colorScheme="whiteAlpha"
                   bg="rgba(255, 255, 255, 0.2)"
                   color="white"
-                  size="lg"
+                  size={{ base: "md", md: "lg" }}
                   onClick={() => navigate("/tt/viewmessages")}
                   _hover={{ bg: "rgba(255, 255, 255, 0.3)" }}
                   _active={{ bg: "rgba(255, 255, 255, 0.4)" }}
@@ -352,23 +384,25 @@ function CreateTimetable() {
                   boxShadow="lg"
                   border="2px solid"
                   borderColor="whiteAlpha.400"
+                  w={{ base: "100%", lg: "auto" }}
+                  fontSize={{ base: "sm", md: "md" }}
                 >
                   View Messages
                 </Button>
                 {unReadCount > 0 && (
                   <Box
                     position="absolute"
-                    top="-2"
-                    right="-2"
+                    top={{ base: "-1", md: "-2" }}
+                    right={{ base: "-1", md: "-2" }}
                     bg="red.500"
                     color="white"
                     borderRadius="full"
-                    minW="24px"
-                    h="24px"
+                    minW={{ base: "20px", md: "24px" }}
+                    h={{ base: "20px", md: "24px" }}
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    fontSize="xs"
+                    fontSize={{ base: "2xs", md: "xs" }}
                     fontWeight="bold"
                     px={2}
                     boxShadow="lg"
@@ -377,7 +411,7 @@ function CreateTimetable() {
                   </Box>
                 )}
               </Box>
-            </HStack>
+            </Stack>
           </Flex>
         </Container>
       </Box>
@@ -494,7 +528,7 @@ function CreateTimetable() {
                 type="submit"
                 form="create-timetable-form"
                 colorScheme="teal"
-                leftIcon={<AddIcon />}
+                // leftIcon={<AddIcon />}
                 isDisabled={departments.length === 0 || sessions.length === 0}
               >
                 Create Timetable

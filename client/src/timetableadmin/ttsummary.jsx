@@ -187,50 +187,88 @@ const TimetableSummary = ({ timetableData, code, type, time, headTitle, subjectD
     <Box my={6}>
       <Card bg="white" borderRadius="2xl" shadow="2xl" border="1px" borderColor="gray.300" overflow="hidden">
         <CardHeader bg="cyan.600" color="white" p={4}>
-          <Flex justify="space-between" align="center">
-            <Heading size="md">Timetable Summary</Heading>
-            <Flex gap={3}>
-              <Badge colorScheme="orange" fontSize="md" px={3} py={1}>
+          <Flex 
+            direction={{ base: "column", md: "row" }} 
+            justify={{ base: "flex-start", md: "space-between" }} 
+            align={{ base: "flex-start", md: "center" }}
+            gap={3}
+          >
+            <Heading size={{ base: "sm", md: "md" }}>Timetable Summary</Heading>
+            <Flex gap={2} flexWrap="wrap">
+              <Badge colorScheme="orange" fontSize={{ base: "sm", md: "md" }} px={3} py={1}>
                 {Object.keys(sortedSummaryEntries).length} Subjects
               </Badge>
-              <Badge colorScheme="green" fontSize="md" px={3} py={1}>
+              <Badge colorScheme="green" fontSize={{ base: "sm", md: "md" }} px={3} py={1}>
                 {totalHours} Hours/Week
               </Badge>
             </Flex>
           </Flex>
         </CardHeader>
         <CardBody p={0}>
-          <TableContainer maxH="600px" overflowY="auto">
+          {/* Scroll Hint for Mobile */}
+          <Box 
+            display={{ base: "block", lg: "none" }} 
+            p={3} 
+            bg="blue.50" 
+            borderBottom="1px" 
+            borderColor="blue.200"
+          >
+            <Text fontSize="xs" color="blue.700" fontWeight="medium">
+              ℹ️ Scroll horizontally to view all columns →
+            </Text>
+          </Box>
+          
+          <TableContainer 
+            maxH="600px" 
+            overflowY="auto"
+            overflowX="auto"
+            sx={{
+              '&::-webkit-scrollbar': {
+                height: '8px',
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: 'gray.100',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: 'cyan.400',
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                background: 'cyan.600',
+              },
+            }}
+          >
             <Table variant="simple" size="sm">
               <Thead position="sticky" top={0} zIndex={1} bg="cyan.50">
                 <Tr>
-                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3}>
+                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} minW="100px">
                     Abbreviation
                   </Th>
-                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3}>
+                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} minW="100px">
                     Subject Code
                   </Th>
-                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3}>
+                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} minW="200px">
                     Subject Name
                   </Th>
-                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3}>
+                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} minW="100px">
                     Type
                   </Th>
-                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} textAlign="center">
+                  <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} textAlign="center" minW="80px">
                     Hours
                   </Th>
                   {type !== 'faculty' && (
-                    <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3}>
+                    <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} minW="150px">
                       Faculty Name
                     </Th>
                   )}
                   {type !== 'room' && (
-                    <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3}>
+                    <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} minW="100px">
                       Room No
                     </Th>
                   )}
                   {type !== 'sem' && (
-                    <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3}>
+                    <Th color="cyan.700" fontSize="xs" borderBottom="2px" borderColor="cyan.200" p={3} minW="100px">
                       Semester
                     </Th>
                   )}
@@ -239,60 +277,60 @@ const TimetableSummary = ({ timetableData, code, type, time, headTitle, subjectD
               <Tbody>
                 {Object.keys(sortedSummaryEntries).map((subCode, index) => (
                   <Tr key={subCode} _hover={{ bg: 'cyan.50' }} transition="background 0.2s">
-                    <Td fontSize="sm" p={3} borderColor="gray.200">
-                      <Text fontWeight="semibold" color="gray.700">
+                    <Td fontSize="sm" p={3} borderColor="gray.200" minW="100px">
+                      <Text fontWeight="semibold" color="gray.700" fontSize={{ base: "xs", md: "sm" }}>
                         {sortedSummaryEntries[subCode].originalKeys.join(', ')}
                       </Text>
                     </Td>
-                    <Td fontSize="sm" p={3} borderColor="gray.200">
-                      <Badge colorScheme="purple" fontSize="xs" px={2} py={1}>
+                    <Td fontSize="sm" p={3} borderColor="gray.200" minW="100px">
+                      <Badge colorScheme="purple" fontSize={{ base: "2xs", md: "xs" }} px={2} py={1}>
                         {sortedSummaryEntries[subCode].subCode}
                       </Badge>
                     </Td>
-                    <Td fontSize="sm" p={3} borderColor="gray.200">
-                      <Text fontWeight="medium" color="gray.800" noOfLines={2}>
+                    <Td fontSize="sm" p={3} borderColor="gray.200" minW="200px">
+                      <Text fontWeight="medium" color="gray.800" noOfLines={2} fontSize={{ base: "xs", md: "sm" }}>
                         {sortedSummaryEntries[subCode].subjectFullName}
                       </Text>
                     </Td>
-                    <Td fontSize="sm" p={3} borderColor="gray.200">
+                    <Td fontSize="sm" p={3} borderColor="gray.200" minW="100px">
                       <Badge
                         colorScheme={getTypeColor(sortedSummaryEntries[subCode].subType)}
-                        fontSize="xs"
+                        fontSize={{ base: "2xs", md: "xs" }}
                         px={2}
                         py={1}
                       >
                         {sortedSummaryEntries[subCode].subType}
                       </Badge>
                     </Td>
-                    <Td fontSize="sm" p={3} borderColor="gray.200" textAlign="center">
-                      <Badge colorScheme="teal" fontSize="sm" px={2} py={1} fontWeight="bold">
+                    <Td fontSize="sm" p={3} borderColor="gray.200" textAlign="center" minW="80px">
+                      <Badge colorScheme="teal" fontSize={{ base: "xs", md: "sm" }} px={2} py={1} fontWeight="bold">
                         {sortedSummaryEntries[subCode].count}
                       </Badge>
                     </Td>
                     {type !== 'faculty' && (
-                      <Td fontSize="sm" p={3} borderColor="gray.200">
-                        <Text color="gray.700" noOfLines={2}>
+                      <Td fontSize="sm" p={3} borderColor="gray.200" minW="150px">
+                        <Text color="gray.700" noOfLines={2} fontSize={{ base: "xs", md: "sm" }}>
                           {sortedSummaryEntries[subCode].faculties.join(', ') || '-'}
                         </Text>
                       </Td>
                     )}
                     {type !== 'room' && (
-                      <Td fontSize="sm" p={3} borderColor="gray.200">
-                        <Text color="gray.700" noOfLines={2}>
+                      <Td fontSize="sm" p={3} borderColor="gray.200" minW="100px">
+                        <Text color="gray.700" noOfLines={2} fontSize={{ base: "xs", md: "sm" }}>
                           {sortedSummaryEntries[subCode].rooms.join(', ') || '-'}
                         </Text>
                       </Td>
                     )}
                     {type !== 'sem' && type !== 'room' ? (
-                      <Td fontSize="sm" p={3} borderColor="gray.200">
-                        <Text color="gray.700" noOfLines={2}>
+                      <Td fontSize="sm" p={3} borderColor="gray.200" minW="100px">
+                        <Text color="gray.700" noOfLines={2} fontSize={{ base: "xs", md: "sm" }}>
                           {sortedSummaryEntries[subCode].faculties.join(', ') || '-'}
                         </Text>
                       </Td>
                     ) : (
                       type !== 'sem' && (
-                        <Td fontSize="sm" p={3} borderColor="gray.200">
-                          <Text color="gray.700" noOfLines={2}>
+                        <Td fontSize="sm" p={3} borderColor="gray.200" minW="100px">
+                          <Text color="gray.700" noOfLines={2} fontSize={{ base: "xs", md: "sm" }}>
                             {sortedSummaryEntries[subCode].rooms.join(', ') || '-'}
                           </Text>
                         </Td>
