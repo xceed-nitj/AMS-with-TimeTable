@@ -54,6 +54,8 @@ import {
   CheckCircleIcon,
   RepeatIcon
 } from '@chakra-ui/icons';
+import { PersonStanding, PersonStandingIcon } from 'lucide-react';
+import { FaTasks, FaUser, FaUserAlt } from 'react-icons/fa';
 
 const Timetable = () => {
   // All state declarations
@@ -519,12 +521,21 @@ const Timetable = () => {
   const handleAddLunchSlot = () => navigate(`${currentPathname}/addlunchload`);
   const handleViewRoom = () => navigate(`${currentPathname}/roomallotment`);
   const handleMasterView = () => navigate('/timetable');
-  const handleViewSummary = () => navigate(`${currentPathname}/lockedsummary`);
+  // const handleViewSummary = () => navigate(`${currentPathname}/lockedsummary`);
+  // const handleViewFacultyLoad = () => navigate(`${currentPathname}/generatepdf/loadallocation`);
   const handleEditFaculty = () => navigate(`${currentPathname}/editmasterfaculty`);
   const handleImportData = () => navigate(`${currentPathname}/importttdata`);
+  const handleViewSummary = () => {
+  const url = `${currentPathname}/lockedsummary`;
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+  const handleViewFacultyLoad = () => {
+  const url = `${currentPathname}/generatepdf/loadallocation`;
+  window.open(url, "_blank", "noopener,noreferrer");
+};
   const handleDownloadClick = () => {
     const pdfUrl = `${currentPathname}/generatepdf`;
-    window.location.href = pdfUrl;
+  window.open(pdfUrl, "_blank", "noopener,noreferrer");
   };
 
   const saveSlotData = async (day, slot, slotData) => {
@@ -1090,12 +1101,24 @@ const handleLockTT = async () => {
                     transition="all 0.3s"
                   />
                 </Tooltip>
-
-                <Tooltip label="Download PDF" placement="top" hasArrow bg="pink.600" fontSize="sm">
+                 <Tooltip label="View Faculty Load Allocation" placement="top" hasArrow bg="pink.600" fontSize="sm">
                   <IconButton
-                    icon={<DownloadIcon />}
-                    onClick={handleDownloadClick}
+                    icon={<FaUserAlt color="white"/>}
+                    onClick={handleViewFacultyLoad}
                     colorScheme="pink"
+                    size="md"
+                    borderRadius="lg"
+                    boxShadow="md"
+                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
+                    transition="all 0.3s"
+                  />
+                </Tooltip>
+
+                <Tooltip label="Download PDF" placement="top" hasArrow bg="cyan.600" fontSize="sm">
+                  <IconButton
+                    icon={<DownloadIcon color="white"/>}
+                    onClick={handleDownloadClick}
+                    colorScheme="cyan"
                     size="md"
                     borderRadius="lg"
                     boxShadow="md"

@@ -210,7 +210,7 @@ function generateEmail(faculty, changes, timetableLink) {
 
   body += `
 <p>Please review your complete updated timetable here: <a href="${timetableLink}" target="_blank">${timetableLink}</a></p>
-<p>If you have any questions, please contact the administration.</p>
+<p>This is auto-generated email. If you have any questions, please contact the department timetable coordinator.</p>
 <p>Regards,<br><strong>Team XCEED</strong></p>
 `;
 
@@ -243,7 +243,7 @@ function generateFacultyChangeEmails(oldData, newData) {
           return generateEmail(
             faculty,
             changes,
-            `${base_url}/faculty/${facultyid}`
+            `${base_url}/timetable/faculty/${facultyid}`
           );
         },
         changes,

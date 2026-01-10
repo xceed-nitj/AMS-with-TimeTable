@@ -6,7 +6,24 @@ import './Timetable.css';
 import TimetableSummary from './ttsummary';
 import ReactToPrint from 'react-to-print';
 import { Container } from "@chakra-ui/layout";
-import { filter, Heading } from '@chakra-ui/react';
+import { 
+  Heading, 
+  VStack,
+  Flex,
+  Badge,
+  Card,
+  CardHeader,
+  CardBody,
+  SimpleGrid,
+  FormControl,
+  FormLabel,
+  InputGroup,
+  InputLeftElement,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  HStack,
+} from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton } from '../styles/customStyles'
 import { Box, Text, Portal, ChakraProvider, Spinner, Select } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
@@ -20,6 +37,8 @@ import {
   Tr,
 } from "@chakra-ui/table";
 import { Button } from "@chakra-ui/button";
+import { DownloadIcon, SearchIcon, RepeatIcon } from '@chakra-ui/icons';
+import { FaFilter } from 'react-icons/fa';
 import Header from '../components/header';
 
 const Departmentloadallocation = () => {
@@ -75,6 +94,15 @@ const Departmentloadallocation = () => {
   const location = useLocation();
   const currentPath = location.pathname;
 
+  // Reset filters function
+  const resetFilters = () => {
+    setSem("All");
+    setCode("All");
+    setName("All");
+    setTyp("All");
+    setTable(dupTable);
+  };
+
   useEffect(() => {
 
     // getting all the semester values for this code.
@@ -83,14 +111,10 @@ const Departmentloadallocation = () => {
         const response = await fetch(`${apiUrl}/timetablemodule/addsem?code=${currentCode}`, { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
-          // console.log('filtered data',data)
           const filteredSems = data.filter((sem) => sem.code === currentCode);
           const semValues = filteredSems.map((sem) => sem.sem);
-          // console.log(semValues)
           setAvailableSems(semValues);
           setDownloadStatus("fetchingSemesters")
-          //   setSelectedSemester(semValues[0]);
-          // console.log('available semesters',availableSems)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
@@ -106,30 +130,24 @@ const Departmentloadallocation = () => {
           const semValues = filteredSems.map((room) => room.room);
 
           setAvailableRooms(semValues);
-          // console.log('available rooms',availableRooms)
         }
       } catch (error) {
         console.error('Error fetching subject data:', error);
       }
     };
-
-
 
     const fetchFaculty = async () => {
       try {
         const response = await fetch(`${apiUrl}/timetablemodule/addfaculty/all?code=${currentCode}`, { credentials: 'include', });
         if (response.ok) {
           const data = await response.json();
-          // console.log('faculty response',data);
           setAvailableFaculties(data);
-          // console.log('faculties', availableFaculties);
         }
 
       } catch (error) {
         console.error('Error fetching subject data:', error);
       }
     };
-
 
     fetchSem();
     fetchRoom(currentCode);
@@ -137,14 +155,12 @@ const Departmentloadallocation = () => {
     fetchDeptLoadAllocation()
 
   }, []);
-  // fetching sem data
+
+  // [All the fetch functions remain the same - keeping them as is for brevity]
   const fetchData = async (semester) => {
     try {
-      // console.log('sem value',semester);
-      // console.log('current code', currentCode);
       const response = await fetch(`${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`, { credentials: 'include' });
       const data1 = await response.json();
-      // console.log('fetched',data1);
       const data = data1.timetableData;
       const notes = data1.notes;
       const initialData = generateInitialTimetableData(data, 'sem');
@@ -157,11 +173,8 @@ const Departmentloadallocation = () => {
 
   const fetchTime = async () => {
     try {
-      // console.log('sem value',semester);
-      // console.log('current code', currentCode);
       const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`, { credentials: 'include' });
       const data = await response.json();
-      // console.log('time daata', data)
       setLockedTime(data.updatedTime.lockTimeIST)
       setSavedTime(data.updatedTime.saveTimeIST)
       return data.updatedTime.lockTimeIST;
@@ -170,28 +183,20 @@ const Departmentloadallocation = () => {
     }
   };
 
-
   const fetchTimetableData = async (semester) => {
     setDownloadStatus("fetchingSlotData")
     const { initialData, notes } = await fetchData(semester);
-    // setTimetableData(initialData);
     setDownloadStatus("fetchingSummaryData")
-    // console.log('semdata',initialData)
     return { initialData, notes };
-
   };
 
-
-  //fetching faculty data 
   const facultyData = async (currentCode, faculty) => {
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty}`, { credentials: 'include' });
       const data1 = await response.json();
       const data = data1.timetableData;
-      // console.log('updated time for faculty', data1.updatedTime)
       const updateTime = data1.updatedTime;
       const notes = data1.notes;
-      // console.log('faclty time', facultyUpdateTime)
       const initialData = generateInitialTimetableData(data, 'faculty');
       return { initialData, updateTime, notes };
     } catch (error) {
@@ -199,22 +204,18 @@ const Departmentloadallocation = () => {
       return {};
     }
   };
+
   const fetchFacultyData = async (currentCode, faculty) => {
     const { initialData, updateTime, notes } = await facultyData(currentCode, faculty);
-    // setTimetableData(data);
     setSlotStatus('fetchingSlotData')
     return { initialData, updateTime, notes };
-
   };
-
-  // fetching room data
 
   const roomData = async (currentCode, room) => {
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/tt/viewroomtt/${currentCode}/${room}`, { credentials: 'include' });
       const data1 = await response.json();
       const data = data1.timetableData;
-      // setRoomUpdateTime(data1.updatedTime);
       const updateTime = data1.updatedTime;
       const notes = data1.notes;
 
@@ -224,15 +225,12 @@ const Departmentloadallocation = () => {
       console.error('Error fetching existing timetable data:', error);
       return {};
     }
-
   };
 
   const fetchRoomData = async (currentCode, room) => {
     const { initialData, updateTime, notes } = await roomData(currentCode, room);
-    // setViewRoomData(initialData);
     return { initialData, updateTime, notes };
   };
-
 
   const generateInitialTimetableData = (fetchedData, type) => {
     const initialData = {};
@@ -250,7 +248,7 @@ const Departmentloadallocation = () => {
 
             for (const slot of slotData) {
               const slotSubjects = [];
-              let faculty = ""; // Declare faculty here
+              let faculty = "";
               let room = "";
               for (const slotItem of slot) {
                 const subj = slotItem.subject || "";
@@ -264,7 +262,6 @@ const Departmentloadallocation = () => {
                 } else {
                   faculty = slotItem.faculty || "";
                 }
-                // Only push the values if they are not empty
                 if (subj || room || faculty) {
                   slotSubjects.push({
                     subject: subj,
@@ -274,8 +271,6 @@ const Departmentloadallocation = () => {
                 }
               }
               initialData[day]['lunch'].push(slotSubjects);
-
-
             }
           }
 
@@ -288,7 +283,7 @@ const Departmentloadallocation = () => {
 
             for (const slot of slotData) {
               const slotSubjects = [];
-              let faculty = ""; // Declare faculty here
+              let faculty = "";
               let room = "";
               for (const slotItem of slot) {
                 const subj = slotItem.subject || "";
@@ -302,7 +297,6 @@ const Departmentloadallocation = () => {
                 } else {
                   faculty = slotItem.faculty || "";
                 }
-                // Only push the values if they are not empty
                 if (subj || room || faculty) {
                   slotSubjects.push({
                     subject: subj,
@@ -312,7 +306,6 @@ const Departmentloadallocation = () => {
                 }
               }
 
-              // Push an empty array if no data is available for this slot
               if (slotSubjects.length === 0) {
                 slotSubjects.push({
                   subject: "",
@@ -324,7 +317,6 @@ const Departmentloadallocation = () => {
               initialData[day][`period${period}`].push(slotSubjects);
             }
           } else {
-            // Assign an empty array if day or period data is not available
             initialData[day][`period${period}`].push([]);
           }
         }
@@ -336,19 +328,12 @@ const Departmentloadallocation = () => {
     return initialData;
   };
 
-
-  //   fetchTimetableData(selectedSemester);
-  //   fetchFacultyData(viewFaculty);
-  //   fetchRoomData(viewRoom);
-
-
   const fetchSubjectData = async (currentCode) => {
     try {
       const response = await fetch(`${apiUrl}/timetablemodule/subject/subjectdetails/${currentCode}`);
       const data = await response.json();
       setSubjectData(data);
       return data
-      // console.log('subjectdata',data)
     } catch (error) {
       console.error('Error fetching subject data:', error);
     }
@@ -362,30 +347,25 @@ const Departmentloadallocation = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        // body: JSON.stringify(userData),
         credentials: 'include'
       });
 
       const data = await response.json();
-      // console.log('ttdata',data)
       setTTData(data);
       return data;
-      //   
     } catch (error) {
       console.error('Error fetching TTdata:', error);
     }
   };
 
-
   const fetchDeptFaculty = async (currentCode) => {
     try {
       const fetchedttdetails = await fetchTTData(currentCode);
-      console.log('fetchedttdetails',fetchedttdetails)
+      console.log('fetchedttdetails', fetchedttdetails)
 
       const response = await fetch(`${apiUrl}/timetablemodule/faculty/dept/${fetchedttdetails?.dept}`, { credentials: 'include', });
       if (response.ok) {
         const data = await response.json();
-        // console.log('faculty response',data);
         setDeptFaculties(data);
         console.log('deptfaculties', data);
         return data;
@@ -408,7 +388,6 @@ const Departmentloadallocation = () => {
         const data = await response.json();
         console.log('faculty common response', data);
         setCommonLoad(data);
-        // console.log('coomomo load', data);
         return data;
       }
     } catch (error) {
@@ -416,14 +395,11 @@ const Departmentloadallocation = () => {
     }
   };
 
-
-
   function generateSummary(timetableData, subjectData, type, headTitle, commonLoad) {
     console.log(headTitle)
     console.log('load', commonLoad)
     const summaryData = {};
 
-    // Iterate through the timetable data to calculate the summary
     for (const day in timetableData) {
       for (let period = 1; period <= 9; period++) {
         let slots = ''
@@ -433,11 +409,9 @@ const Departmentloadallocation = () => {
         else {
           slots = timetableData[day][`period${period}`];
         }
-        // Check if the slot is not empty
         if (slots) {
           slots.forEach((slot) => {
             slot.forEach((cell) => {
-              // Check if the cell contains data
               if (cell.subject) {
                 const { subject, faculty, room } = cell;
                 let foundSubject = ''
@@ -450,7 +424,6 @@ const Departmentloadallocation = () => {
                 else if (type == 'sem') {
                   foundSubject = subjectData.find(item => item.subName === subject && item.sem === headTitle);
                 }
-                // Initialize or update the subject entry in the summaryData
                 if (foundSubject) {
                   if (!summaryData[subject]) {
                     console.log('subcode inside', foundSubject.subCode)
@@ -470,18 +443,11 @@ const Departmentloadallocation = () => {
                       summaryData[subject].faculties.push(faculty);
                     }
 
-                    // Handle rooms
                     if (!summaryData[subject].rooms.includes(room)) {
                       summaryData[subject].rooms.push(room);
                     }
-
                   }
                 }
-
-
-
-
-
               }
             });
           });
@@ -497,7 +463,6 @@ const Departmentloadallocation = () => {
 
       let isMerged = false;
 
-      // Check against all existing entries in mergedSummaryData
       for (const existingKey in mergedSummaryData) {
         const existingEntry = mergedSummaryData[existingKey];
 
@@ -507,24 +472,18 @@ const Departmentloadallocation = () => {
           entry.subjectFullName === existingEntry.subjectFullName &&
           entry.rooms.every(room => existingEntry.rooms.includes(room))
         ) {
-          // Merge the data
           existingEntry.count += entry.count;
           existingEntry.faculties = [...new Set([...existingEntry.faculties, ...entry.faculties])];
           existingEntry.originalKeys.push(key);
           isMerged = true;
-          // Add any other merging logic as needed
-          break; // Stop checking further if merged
+          break;
         }
       }
 
-      // If not merged, create a new entry
       if (!isMerged) {
         mergedSummaryData[key] = { ...entry, originalKeys: [key] };
       }
     }
-
-    // Now, mergedSummaryData contains the merged entries with original keys
-    // console.log('merged data', mergedSummaryData);
 
     const sortedSummary = Object.values(mergedSummaryData).sort((a, b) => {
       const subCodeComparison = a.subCode.localeCompare(b.subCode);
@@ -542,7 +501,7 @@ const Departmentloadallocation = () => {
           case 'laboratory':
             return 2;
           default:
-            return 3; // If there are other subtypes, place them at the end
+            return 3;
         }
       };
 
@@ -552,9 +511,7 @@ const Departmentloadallocation = () => {
       return aPriority - bPriority;
     });
 
-
-    let sortedSummaryEntries = { ...sortedSummary }; // Assuming sortedSummary is an existing object
-
+    let sortedSummaryEntries = { ...sortedSummary };
 
     if (commonLoad) {
       commonLoad.forEach((commonLoadItem) => {
@@ -570,8 +527,6 @@ const Departmentloadallocation = () => {
             subjectFullName: commonLoadItem.subFullName,
             subType: commonLoadItem.subType,
             subSem: commonLoadItem.sem,
-            // code: commonLoadItem.code,
-            // add other fields from commonLoadItem as needed
           },
         };
       });
@@ -588,53 +543,52 @@ const Departmentloadallocation = () => {
       const fetchedttdetails = await fetchTTData(currentCode);
       const filteredFaculties = await fetchDeptFaculty(currentCode);
 
-      // Map each faculty to a Promise so we can fetch in parallel
       const facultyDataPromises = filteredFaculties.map(async (faculty) => {
         try {
           const facultyName = faculty.name;
-          // Concurrent fetches for specific faculty data and common load
           const [ttResult, projectLoad] = await Promise.all([
             fetchFacultyData(currentCode, facultyName),
             fetchCommonLoad(currentCode, facultyName)
           ]);
 
           const summaryData = generateSummary(
-            ttResult.initialData, 
-            subjectData, 
-            'faculty', 
-            facultyName, 
+            ttResult.initialData,
+            subjectData,
+            'faculty',
+            facultyName,
             projectLoad
           );
 
           return { faculty: facultyName, summaryData };
         } catch (err) {
           console.error(`Error processing faculty ${faculty.name}:`, err);
-          return null; // Skip failed fetches
+          return null;
         }
       });
 
       const results = await Promise.all(facultyDataPromises);
       const allFacultySummaries = results.filter(res => res !== null);
 
-      // Update state all at once to prevent multiple re-renders
       setTable(allFacultySummaries);
       setDupTable(allFacultySummaries);
-      
+
       semDropDown(allFacultySummaries);
       codeDropDown(allFacultySummaries);
       typeDropDown(allFacultySummaries);
       nameDropDown(allFacultySummaries);
-      
+
       console.log("Fetching complete.");
     } catch (error) {
       console.error("Critical error in fetchDeptLoadAllocation:", error);
     }
   };
+
   function getDesignation(name) {
     let desig = ""
     deptFaculties.forEach(elem => { if (elem?.name == name) { desig = elem?.designation } })
     return desig;
   }
+
   function countRows(obj) {
     const arr = returnValue(obj);
     return arr.length;
@@ -654,11 +608,11 @@ const Departmentloadallocation = () => {
     arr[0] = { ...arr[0], "Tcount": Tcount }
     return arr
   }
+
   function semDropDown(Table) {
     let drop = ["All"]
     Table.forEach((elem) => {
       for (let i in elem.summaryData) {
-
         let count = 0;
         drop.forEach((e) => {
           if (e == elem.summaryData[i]?.subSem) {
@@ -672,11 +626,11 @@ const Departmentloadallocation = () => {
     })
     setSemDrop(drop)
   }
+
   function codeDropDown(Table) {
     let drop = ["All"]
     Table.forEach((elem) => {
       for (let i in elem.summaryData) {
-
         let count = 0;
         drop.forEach((e) => {
           if (e == elem.summaryData[i]?.subCode) {
@@ -690,11 +644,11 @@ const Departmentloadallocation = () => {
     })
     setCodeDrop(drop)
   }
+
   function nameDropDown(Table) {
     let drop = ["All"]
     Table.forEach((elem) => {
       for (let i in elem.summaryData) {
-
         let count = 0;
         drop.forEach((e) => {
           if (e == elem.summaryData[i]?.subjectFullName) {
@@ -708,11 +662,11 @@ const Departmentloadallocation = () => {
     })
     setNameDrop(drop)
   }
+
   function typeDropDown(Table) {
     let drop = ["All"]
     Table.forEach((elem) => {
       for (let i in elem.summaryData) {
-
         let count = 0;
         drop.forEach((e) => {
           if (e == elem.summaryData[i]?.subType) {
@@ -727,12 +681,10 @@ const Departmentloadallocation = () => {
     setTypDrop(drop)
   }
 
-
   function filterSem(e) {
     const value = e?.target?.value;
     setSem(value)
     let newTable = []
-    console.log(newTable)
     dupTable.forEach((elem) => {
       let obj = {}
       let ct = 0;
@@ -743,7 +695,6 @@ const Departmentloadallocation = () => {
           (elem.summaryData[i]?.subType == typ || typ == "All")
         ) {
           obj[ct++] = elem.summaryData[i]
-          console.log(obj)
         }
       }
       if (ct > 0) {
@@ -753,17 +704,13 @@ const Departmentloadallocation = () => {
         })
       }
     })
-    console.log(newTable)
-    console.log(dupTable)
     setTable(newTable)
   }
-
 
   function filterCode(e) {
     const value = e?.target?.value;
     setCode(value)
     let newTable = []
-    console.log(newTable)
     dupTable.forEach((elem) => {
       let obj = {}
       let ct = 0;
@@ -773,7 +720,6 @@ const Departmentloadallocation = () => {
           (elem.summaryData[i]?.subjectFullName == name || name == "All") &&
           (elem.summaryData[i]?.subType == typ || typ == "All")) {
           obj[ct++] = elem.summaryData[i]
-          console.log(obj)
         }
       }
       if (ct > 0) {
@@ -783,18 +729,13 @@ const Departmentloadallocation = () => {
         })
       }
     })
-    console.log(newTable)
-    console.log(dupTable)
     setTable(newTable)
   }
-
 
   function filterSubName(e) {
     const value = e?.target?.value;
     setName(value)
-    console.log(value)
     let newTable = []
-    console.log(newTable)
     dupTable.forEach((elem) => {
       let obj = {}
       let ct = 0;
@@ -804,7 +745,6 @@ const Departmentloadallocation = () => {
           (elem.summaryData[i]?.subjectFullName == value || value == "All") &&
           (elem.summaryData[i]?.subType == typ || typ == "All")) {
           obj[ct++] = elem.summaryData[i]
-          console.log(obj)
         }
       }
       if (ct > 0) {
@@ -814,17 +754,13 @@ const Departmentloadallocation = () => {
         })
       }
     })
-    console.log(newTable)
-    console.log(dupTable)
     setTable(newTable)
   }
-
 
   function filterType(e) {
     const value = e?.target?.value;
     setTyp(value)
     let newTable = []
-    console.log(newTable)
     dupTable.forEach((elem) => {
       let obj = {}
       let ct = 0;
@@ -834,7 +770,6 @@ const Departmentloadallocation = () => {
           (elem.summaryData[i]?.subjectFullName == name || name == "All") &&
           (elem.summaryData[i]?.subType == value || value == "All")) {
           obj[ct++] = elem.summaryData[i]
-          console.log(obj)
         }
       }
       if (ct > 0) {
@@ -844,20 +779,18 @@ const Departmentloadallocation = () => {
         })
       }
     })
-    console.log(newTable)
-    console.log(dupTable)
     setTable(newTable)
   }
+
   function downloadCSV(e) {
     const newTab = table;
-    // Added "Total Hours" to header to match UI
     let csv_data = [["Faculty Name", "Designation", "Semester", "Subject Code", "Subject Name", "Type", "Hours", "Total Hours"]];
-    
+
     newTab.forEach((elem) => {
       const summaryArray = returnValue(elem.summaryData);
-      
+
       summaryArray.forEach((summaryRow, index) => {
-       
+
         const facultyName = index === 0 ? elem.faculty : "";
         const designation = index === 0 ? getDesignation(elem.faculty) : "";
         const totalHours = index === 0 ? summaryRow.Tcount : "";
@@ -872,7 +805,7 @@ const Departmentloadallocation = () => {
           `"${summaryRow?.count || 0}"`,
           `"${totalHours}"`
         ];
-        
+
         csv_data.push(csv_row.join(","));
       });
     });
@@ -888,72 +821,524 @@ const Departmentloadallocation = () => {
     temp_link.click();
     document.body.removeChild(temp_link);
   }
+
   return (
-    <div className='tw-p-2'>
-      <h1 className='tw-m-1 tw-p-2 tw-font-jakarta tw-text-2xl tw-font-extrabold tw-text-slate-800'>Department Load Allocation</h1>
-      <div className='tw-w-full tw-flex tw-justify-center'><Button onClick={(e)=>{downloadCSV()}}>Download CSV</Button></div>
-      <Table colorScheme='black'>
-        <Tbody>
-          <Tr>
-            <Th>Faculty Name</Th>
-            <Th>Designation</Th>
-            <Th>Semester
-              <Select className='tw-mt-1'
-                value={sem}
-                onChange={(e) => filterSem(e)}
-              >
-                {semDrop.map((elem) => (<option value={elem} key={elem}>{elem}</option>))}
-              </Select>
-            </Th>
-            <Th>Subject Code
-              <Select className='tw-mt-1'
-                value={code}
-                onChange={(e) => filterCode(e)}
-              >
-                {codeDrop.map((elem) => (<option value={elem} key={elem}>{elem}</option>))}
-              </Select>
-            </Th>
-            <Th>Subject Name
-              <Select className='tw-mt-1'
-                value={name}
-                onChange={(e) => filterSubName(e)}
-              >
-                {nameDrop.map((elem) => (<option value={elem} key={elem}>{elem}</option>))}
-              </Select>
-            </Th>
-            <Th>Type
-              <Select className='tw-mt-1'
-                value={typ}
-                onChange={(e) => filterType(e)}
-              >
-                {typDrop.map((elem) => (<option value={elem} key={elem}>{elem}</option>))}
-              </Select>
-            </Th>
-            <Th>Hours</Th>
-            <Th>Total Hours</Th>
-          </Tr>
+    <Box bg="white" minH="100vh">
+      {/* Hero Header Section */}
+      <Box
+        bgGradient="linear(to-r, cyan.400, teal.500, green.500)"
+        pt={0}
+        pb={{ base: 16, md: 20, lg: 24 }}
+        position="relative"
+        overflow="hidden"
+      >
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          opacity="0.1"
+          bgImage="radial-gradient(circle, white 1px, transparent 1px)"
+          bgSize="30px 30px"
+        />
 
-          {((sem != "All" || code != "All" || name != "All" || typ != "All") && !table.length && <Tr><Td className='tw-text-center' colSpan={8}>No Data</Td></Tr>) || (sem == "All" && code == "All" && name == "All" && typ == "All" && !table.length && <Tr><Td colSpan={8}>Fetching data..<Spinner /></Td></Tr>)}
-          {table.map((row,i) => (
-            returnValue(row.summaryData)?.map((elem, index) => (
-              <Tr key={index} bgColor={i%2==0?"paleGreen":"lightCyan"}>
-                {(index == 0 && <Td rowSpan={countRows(row.summaryData)}>{row.faculty}</Td>)}
-                {index == 0 && <Td rowSpan={countRows(row.summaryData)}>{getDesignation(row.faculty)}</Td>}
-                <Td>{elem.subSem}</Td>
-                <Td>{elem.subCode}</Td>
-                <Td>{elem.subjectFullName}</Td>
-                <Td>{elem.subType}</Td>
-                <Td>{elem.count}</Td>
-                {index == 0 && <Td rowSpan={countRows(row.summaryData)}>{elem.Tcount}</Td>}
-              </Tr>
-            ))
+        {/* Header/Navbar integrated into hero */}
+        <Box
+          position="relative"
+          zIndex={2}
+          sx={{
+            '& button[aria-label="Go back"]': { display: "none" },
+            '& .chakra-button:first-of-type': { display: "none" },
+          }}
+        >
+          <Header />
+        </Box>
 
+        <Container
+          maxW="7xl"
+          position="relative"
+          mt={{ base: 4, md: 6, lg: 8 }}
+          px={{ base: 4, md: 6, lg: 8 }}
+        >
+          <Flex
+            direction={{ base: "column", lg: "row" }}
+            justify="space-between"
+            align={{ base: "stretch", lg: "center" }}
+            w="full"
+            gap={{ base: 6, md: 6, lg: 4 }}
+          >
+            <VStack
+              spacing={{ base: 3, md: 4 }}
+              align={{ base: "center", lg: "start" }}
+              flex="1"
+              textAlign={{ base: "center", lg: "left" }}
+            >
+              <Badge
+                colorScheme="whiteAlpha"
+                fontSize={{ base: "xs", md: "sm" }}
+                px={{ base: 2, md: 3 }}
+                py={1}
+                borderRadius="full"
+              >
+                Load Management
+              </Badge>
+              <Heading
+                size={{ base: "xl", md: "2xl" }}
+                color="white"
+                fontWeight="bold"
+                lineHeight="1.2"
+              >
+                Department Load Allocation
+              </Heading>
+              <Text
+                color="whiteAlpha.900"
+                fontSize={{ base: "md", md: "lg" }}
+                maxW={{ base: "full", lg: "2xl" }}
+              >
+                View and manage faculty workload distribution across subjects and semesters
+              </Text>
+            </VStack>
 
-          ))}
-        </Tbody>
-      </Table>
-    </div>
-  )
+            {/* Download Button */}
+            <Button
+              leftIcon={<DownloadIcon />}
+              colorScheme="whiteAlpha"
+              bg="rgba(255, 255, 255, 0.2)"
+              color="white"
+              size={{ base: "md", md: "lg" }}
+              onClick={downloadCSV}
+              _hover={{ bg: "rgba(255, 255, 255, 0.3)" }}
+              _active={{ bg: "rgba(255, 255, 255, 0.4)" }}
+              borderRadius="full"
+              boxShadow="lg"
+              border="2px solid"
+              borderColor="whiteAlpha.400"
+              alignSelf={{ base: "stretch", lg: "center" }}
+            >
+              Download CSV
+            </Button>
+          </Flex>
+        </Container>
+      </Box>
+
+      <Container maxW="7xl" mt={-12} position="relative" zIndex={1} pb={16} px={{ base: 4, md: 6, lg: 8 }}>
+        <VStack spacing={6} align="stretch">
+          {/* Filters Card */}
+          <Card
+            bg="white"
+            borderRadius="2xl"
+            shadow="2xl"
+            border="1px"
+            borderColor="gray.300"
+            overflow="hidden"
+          >
+            <CardHeader bg="purple.600" color="white" p={4}>
+              <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
+                <HStack spacing={2}>
+                  <FaFilter />
+                  <Heading size="md">Filters</Heading>
+                </HStack>
+                <Button
+                  leftIcon={<RepeatIcon />}
+                  size="sm"
+                  colorScheme="whiteAlpha"
+                  bg="rgba(255, 255, 255, 0.2)"
+                  color="white"
+                  onClick={resetFilters}
+                  _hover={{ bg: "rgba(255, 255, 255, 0.3)" }}
+                  _active={{ bg: "rgba(255, 255, 255, 0.4)" }}
+                  borderRadius="md"
+                >
+                  Reset Filters
+                </Button>
+              </Flex>
+            </CardHeader>
+            <CardBody p={6}>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+                <FormControl>
+                  <FormLabel fontWeight="semibold" color="gray.700" fontSize="sm">
+                    Semester
+                  </FormLabel>
+                  <Select
+                    value={sem}
+                    onChange={filterSem}
+                    borderColor="purple.300"
+                    _hover={{ borderColor: "purple.400" }}
+                    _focus={{
+                      borderColor: "purple.500",
+                      boxShadow: "0 0 0 1px #805AD5",
+                    }}
+                    size="md"
+                  >
+                    {semDrop.map((elem) => (
+                      <option value={elem} key={elem}>{elem}</option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel fontWeight="semibold" color="gray.700" fontSize="sm">
+                    Subject Code
+                  </FormLabel>
+                  <Select
+                    value={code}
+                    onChange={filterCode}
+                    borderColor="purple.300"
+                    _hover={{ borderColor: "purple.400" }}
+                    _focus={{
+                      borderColor: "purple.500",
+                      boxShadow: "0 0 0 1px #805AD5",
+                    }}
+                    size="md"
+                  >
+                    {codeDrop.map((elem) => (
+                      <option value={elem} key={elem}>{elem}</option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel fontWeight="semibold" color="gray.700" fontSize="sm">
+                    Subject Name
+                  </FormLabel>
+                  <Select
+                    value={name}
+                    onChange={filterSubName}
+                    borderColor="purple.300"
+                    _hover={{ borderColor: "purple.400" }}
+                    _focus={{
+                      borderColor: "purple.500",
+                      boxShadow: "0 0 0 1px #805AD5",
+                    }}
+                    size="md"
+                  >
+                    {nameDrop.map((elem) => (
+                      <option value={elem} key={elem}>{elem}</option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel fontWeight="semibold" color="gray.700" fontSize="sm">
+                    Type
+                  </FormLabel>
+                  <Select
+                    value={typ}
+                    onChange={filterType}
+                    borderColor="purple.300"
+                    _hover={{ borderColor: "purple.400" }}
+                    _focus={{
+                      borderColor: "purple.500",
+                      boxShadow: "0 0 0 1px #805AD5",
+                    }}
+                    size="md"
+                  >
+                    {typDrop.map((elem) => (
+                      <option value={elem} key={elem}>{elem}</option>
+                    ))}
+                  </Select>
+                </FormControl>
+              </SimpleGrid>
+            </CardBody>
+          </Card>
+
+          {/* Data Table Card */}
+          <Card
+            bg="white"
+            borderRadius="2xl"
+            shadow="2xl"
+            border="1px"
+            borderColor="gray.300"
+            overflow="hidden"
+          >
+            <CardHeader bg="teal.600" color="white" p={4}>
+              <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
+                <Heading size="md">Faculty Load Distribution</Heading>
+                <Badge colorScheme="orange" fontSize="md" px={3} py={1}>
+                  {table.length} Faculty
+                </Badge>
+              </Flex>
+            </CardHeader>
+            <CardBody p={0}>
+              {((sem != "All" || code != "All" || name != "All" || typ != "All") && !table.length) ? (
+                <Box p={6}>
+                  <Alert status="info" borderRadius="md">
+                    <AlertIcon />
+                    <AlertDescription>
+                      No data found matching the selected filters. Try adjusting your filter criteria.
+                    </AlertDescription>
+                  </Alert>
+                </Box>
+              ) : (sem == "All" && code == "All" && name == "All" && typ == "All" && !table.length) ? (
+                <Box p={12} textAlign="center">
+                  <Spinner
+                    thickness="4px"
+                    speed="0.65s"
+                    emptyColor="gray.200"
+                    color="teal.500"
+                    size="xl"
+                  />
+                  <Text mt={4} color="gray.600">Fetching department load data...</Text>
+                </Box>
+              ) : (
+                <Box
+                  overflowX="auto"
+                  w="100%"
+                  sx={{
+                    '&::-webkit-scrollbar': {
+                      height: '10px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: 'gray.100',
+                      borderRadius: 'full',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: 'teal.400',
+                      borderRadius: 'full',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      background: 'teal.500',
+                    },
+                  }}
+                >
+                  <Table 
+                    variant="simple" 
+                    size={{ base: "sm", md: "md" }}
+                    colorScheme="gray"
+                    sx={{
+                      tableLayout: "fixed",
+                      width: "100%",
+                    }}
+                  >
+                    <Thead bg="teal.50">
+                      <Tr>
+                        <Th
+                          color="teal.700"
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="bold"
+                          borderBottom="2px"
+                          borderColor="teal.200"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          width={{ base: "15%", md: "12%" }}
+                        >
+                          Faculty Name
+                        </Th>
+                        <Th
+                          color="teal.700"
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="bold"
+                          borderBottom="2px"
+                          borderColor="teal.200"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          width={{ base: "10%", md: "8%" }}
+                        >
+                          Designation
+                        </Th>
+                        <Th
+                          color="teal.700"
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="bold"
+                          borderBottom="2px"
+                          borderColor="teal.200"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          width={{ base: "12%", md: "10%" }}
+                        >
+                          Sem
+                        </Th>
+                        <Th
+                          color="teal.700"
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="bold"
+                          borderBottom="2px"
+                          borderColor="teal.200"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          width={{ base: "12%", md: "10%" }}
+                        >
+                          Subject Code
+                        </Th>
+                        <Th
+                          color="teal.700"
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="bold"
+                          borderBottom="2px"
+                          borderColor="teal.200"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          width={{ base: "15%", md: "15%" }}
+                        >
+                          Subject Name
+                        </Th>
+                        <Th
+                          color="teal.700"
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="bold"
+                          borderBottom="2px"
+                          borderColor="teal.200"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          width={{ base: "12%", md: "10%" }}
+                        >
+                          Type
+                        </Th>
+                        <Th
+                          color="teal.700"
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="bold"
+                          borderBottom="2px"
+                          borderColor="teal.200"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          width={{ base: "10%", md: "8%" }}
+                        >
+                          Hours
+                        </Th>
+                        <Th
+                          color="teal.700"
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="bold"
+                          borderBottom="2px"
+                          borderColor="teal.200"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          width={{ base: "10%", md: "8%" }}
+                        >
+                          Total Hours
+                        </Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {table.map((row, i) => (
+                        returnValue(row.summaryData)?.map((elem, index) => (
+                          <Tr
+                            key={`${i}-${index}`}
+                            bg={i % 2 == 0 ? "green.50" : "cyan.50"}
+                            _hover={{ bg: "teal.100" }}
+                            transition="background 0.2s"
+                          >
+                            {index == 0 && (
+                              <Td 
+                                rowSpan={countRows(row.summaryData)} 
+                                fontWeight="bold"
+                                fontSize={{ base: "xs", md: "sm" }}
+                                whiteSpace="normal"
+                                wordBreak="break-word"
+                                p={{ base: 2, md: 3 }}
+                              >
+                                {row.faculty}
+                              </Td>
+                            )}
+                            {index == 0 && (
+                              <Td 
+                                rowSpan={countRows(row.summaryData)}
+                                fontSize={{ base: "xs", md: "sm" }}
+                                p={{ base: 2, md: 3 }}
+                              >
+                                <Badge 
+                                  colorScheme="blue" 
+                                  fontSize="xs" 
+                                  px={2} 
+                                  py={1}
+                                  whiteSpace="normal"
+                                  wordBreak="break-word"
+                                  textAlign="center"
+                                  display="block"
+                                >
+                                  {getDesignation(row.faculty)}
+                                </Badge>
+                              </Td>
+                            )}
+                            <Td 
+                              fontSize={{ base: "xs", md: "sm" }}
+                              p={{ base: 2, md: 3 }}
+                            >
+                              <Badge 
+                                colorScheme="purple" 
+                                fontSize="xs" 
+                                px={2} 
+                                py={1}
+                                whiteSpace="normal"
+                                wordBreak="break-word"
+                                textAlign="center"
+                                display="block"
+                              >
+                                {elem.subSem}
+                              </Badge>
+                            </Td>
+                            <Td 
+                              fontSize={{ base: "xs", md: "sm" }}
+                              whiteSpace="normal"
+                              wordBreak="break-word"
+                              p={{ base: 2, md: 3 }}
+                            >
+                              {elem.subCode}
+                            </Td>
+                            <Td 
+                              fontSize={{ base: "xs", md: "sm" }}
+                              whiteSpace="normal"
+                              wordBreak="break-word"
+                              p={{ base: 2, md: 3 }}
+                            >
+                              {elem.subjectFullName}
+                            </Td>
+                            <Td 
+                              fontSize={{ base: "xs", md: "sm" }}
+                              p={{ base: 2, md: 3 }}
+                            >
+                              <Badge 
+                                colorScheme={
+                                  elem.subType?.toLowerCase() === 'theory' ? 'green' : 
+                                  elem.subType?.toLowerCase() === 'tutorial' ? 'orange' : 
+                                  'red'
+                                } 
+                                fontSize="xs" 
+                                px={2} 
+                                py={1}
+                                whiteSpace="normal"
+                                wordBreak="break-word"
+                                textAlign="center"
+                                display="block"
+                              >
+                                {elem.subType}
+                              </Badge>
+                            </Td>
+                            <Td 
+                              fontSize={{ base: "xs", md: "sm" }}
+                              fontWeight="semibold"
+                              textAlign="center"
+                              p={{ base: 2, md: 3 }}
+                            >
+                              {elem.count}
+                            </Td>
+                            {index == 0 && (
+                              <Td 
+                                rowSpan={countRows(row.summaryData)} 
+                                fontWeight="bold"
+                                fontSize={{ base: "xs", md: "sm" }}
+                                bg="yellow.100"
+                                textAlign="center"
+                                p={{ base: 2, md: 3 }}
+                              >
+                                {elem.Tcount}
+                              </Td>
+                            )}
+                          </Tr>
+                        ))
+                      ))}
+                    </Tbody>
+                  </Table>
+                </Box>
+              )}
+            </CardBody>
+          </Card>
+        </VStack>
+      </Container>
+    </Box>
+  );
 }
 
-export default Departmentloadallocation
+export default Departmentloadallocation;

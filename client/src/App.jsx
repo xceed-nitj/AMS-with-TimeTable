@@ -43,7 +43,7 @@ import AllocatedRolesPage from './dashboard/allotedroles';
 import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
-import InstituteLoad from './timetableadmin/instituteload';
+// import InstituteLoad from './timetableadmin/instituteload';
 import ViewInstituteLoad from './timetableadmin/viewinstituteload';
 import EditMasterFaculty from './timetableadmin/editmasterfaculty';
 import ImportForm from './timetableadmin/importCentralRoom';
@@ -289,7 +289,7 @@ function App() {
         {/* Same link */}
 
         <Route path="/tt/admin/view" element={<View />} />
-        <Route path="/tt/admin/instituteload" element={<InstituteLoad />} />
+        {/* <Route path="/tt/admin/instituteload" element={<InstituteLoad />} /> */}
         <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} />
         <Route path="/tt/masterload" element={<MasterLoadDataTable />} />
         <Route path="/tt/admin/clashes" element={<AdminClash />} />
