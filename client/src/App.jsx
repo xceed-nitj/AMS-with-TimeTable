@@ -250,6 +250,7 @@ function App() {
   <Route path="loaddistribution" element={<LoadDistribution />} />
   <Route path="roomallotment" element={<ViewAllotmentPage />} />
   <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
+  <Route path="clashes" element={<AdminClash />} />
 </Route>
 
 {/* Backup Routes - v1 */}

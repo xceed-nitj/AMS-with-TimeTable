@@ -984,7 +984,7 @@ const handleLockTT = async () => {
               </Flex>
             </CardBody>
           </Card>
-             <Card 
+       <Card 
             borderRadius="2xl" 
             borderWidth="3px" 
             borderColor={clash.length > 0 ? 'red.300' : 'green.300'}
@@ -1016,19 +1016,24 @@ const handleLockTT = async () => {
                       ✓ NO CLASHES FOUND
                     </Badge>
                   ) : (
-                    <Select 
-                      size="md" 
-                      placeholder={`⚠ ${clash.length} Clash(es) Found`} 
-                      borderColor="red.400" 
-                      color="red.600" 
-                      fontSize="sm"
-                      fontWeight="semibold"
-                      borderRadius="lg"
-                    >
-                      {clash.map((e, i) => (
-                        <option key={i}>{e.name} - {e.day} {e.period}</option>
-                      ))}
-                    </Select>
+                    <VStack spacing={2} align="stretch">
+                      <Badge colorScheme="red" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
+                        ⚠ {clash.length} Clash(es) Found
+                      </Badge>
+                      <Button
+                        size="sm"
+                        colorScheme="red"
+                        variant="solid"
+                        leftIcon={<ViewIcon />}
+                        onClick={() => window.open(`${currentPathname}/clashes`, '_blank', 'noopener,noreferrer')}
+                        borderRadius="lg"
+                        fontWeight="bold"
+                        _hover={{ transform: 'scale(1.02)' }}
+                        transition="all 0.2s"
+                      >
+                        View Clashes
+                      </Button>
+                    </VStack>
                   )
                 ) : (
                   <Badge colorScheme="yellow" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
