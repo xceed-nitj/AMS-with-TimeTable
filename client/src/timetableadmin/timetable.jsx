@@ -521,8 +521,6 @@ const Timetable = () => {
   const handleAddLunchSlot = () => navigate(`${currentPathname}/addlunchload`);
   const handleViewRoom = () => navigate(`${currentPathname}/roomallotment`);
   const handleMasterView = () => navigate('/timetable');
-  // const handleViewSummary = () => navigate(`${currentPathname}/lockedsummary`);
-  // const handleViewFacultyLoad = () => navigate(`${currentPathname}/generatepdf/loadallocation`);
   const handleEditFaculty = () => navigate(`${currentPathname}/editmasterfaculty`);
   const handleImportData = () => navigate(`${currentPathname}/importttdata`);
   const handleViewSummary = () => {
@@ -652,7 +650,6 @@ const handleLockTT = async () => {
               }
             });
 
-            // Show alerts
             if (results.some((r) => r.success)) alert(successMsg);
             if (results.some((r) => !r.success)) alert(failedMsg);
           }
@@ -686,7 +683,6 @@ const handleLockTT = async () => {
     }
   };
 
-  // const [showMessage, setShowMessage] = useState(true);
   
 
   // Scroll handler
@@ -779,53 +775,46 @@ const handleLockTT = async () => {
 
   // RENDER
   return (
-    <Container maxW="full" p={0} bg="gray.50">
+    <Container maxW="full" p={0} bg="gray.50" overflowX="hidden">
       {/* Enhanced Hero Section with Gradient */}
       <Box 
         bgGradient="linear(135deg, #FF6B35 0%, #F7931E 50%, #EC008C 100%)" 
-        py={10} 
+        py={{ base: 7, md: 10 }} 
         position="relative" 
         overflow="hidden"
       >
         <Box position="absolute" top="0" left="0" right="0" bottom="0" opacity="0.1">
-          <Box position="absolute" top="15%" left="8%" w="120px" h="120px" borderRadius="full" bg="white" />
-          <Box position="absolute" top="50%" right="12%" w="180px" h="180px" borderRadius="full" bg="white" />
-          <Box position="absolute" bottom="10%" left="40%" w="100px" h="100px" borderRadius="full" bg="white" />
+          <Box position="absolute" top="15%" left="8%" w={{ base: "60px", md: "120px" }} h={{ base: "60px", md: "120px" }} borderRadius="full" bg="white" />
+          <Box position="absolute" top="50%" right="12%" w={{ base: "90px", md: "180px" }} h={{ base: "90px", md: "180px" }} borderRadius="full" bg="white" />
+          <Box position="absolute" bottom="10%" left="40%" w={{ base: "50px", md: "100px" }} h={{ base: "50px", md: "100px" }} borderRadius="full" bg="white" />
         </Box>
-        <Container maxW="8xl" position="relative" zIndex="1">
-          <VStack spacing={1} align="center">
-            <Badge fontSize="xl" px={3} py={0} borderRadius="full" bg="whiteAlpha.400" color="white" fontWeight="bold" textTransform="uppercase">
-              Dashboard -   Timetable Management System
+        <Container maxW="8xl" position="relative" zIndex="1" px={{ base: 4, md: 6 }}>
+          <VStack spacing={0} align="center" justify="center" minH={{ base: "90px", md: "110px" }}>
+            <Badge fontSize={{ base: "sm", md: "xl" }} px={{ base: 2, md: 3 }} py={{ base: 1, md: 2 }} borderRadius="full" bg="whiteAlpha.400" color="white" fontWeight="bold" textTransform="uppercase">
+              Dashboard - Timetable Management System
             </Badge>
-            {/* <Heading fontSize="4xl" color="white" fontWeight="900" letterSpacing="tight">
-              Timetable Management System
-            </Heading> */}
-            {/* <Text fontSize="md" color="whiteAlpha.900" fontWeight="500">
-              Create, Monitor and resolve timetable conflicts across all departments in real-time
-            </Text> */}
           </VStack>
         </Container>
       </Box>
 
-      <Container maxW="8xl" mt={-6} position="relative" zIndex="2" pb={8}>
+      <Container maxW="8xl" mt={8} position="relative" zIndex="2" pb={8} px={{ base: 2, md: 6 }} overflowX="hidden">
         
         {/* Enhanced Quick Actions Card */}
         <Card bg="white" borderRadius="2xl" boxShadow="2xl" mb={6} border="1px" borderColor="gray.100">
-          <CardBody p={3}>
-            <Flex justify="space-between" align="center" mb={2}>
-              <Box>
-                <Heading size="md" mb={1} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
+          <CardBody p={{ base: 3, md: 5 }}>
+            <Flex justify="space-between" align="center" mb={5} direction={{ base: "column", md: "row" }} gap={{ base: 2, md: 0 }}>
+              <Box textAlign={{ base: "center", md: "left" }}>
+                <Heading size={{ base: "sm", md: "md" }} mb={1} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
                   Quick Actions
                 </Heading>
-                {/* <Text fontSize="sm" color="gray.600">Manage your timetable efficiently</Text> */}
               </Box>
             </Flex>
 
-            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={4} mb={3}>
+            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={{ base: 2, md: 4 }} mb={3}>
               {[
-                { icon: TimeIcon, label: 'First Year Allotment', c: 'red', fn: handleFirstYear },
+                { icon: TimeIcon, label: 'First Year', c: 'red', fn: handleFirstYear },
                 { icon: CalendarIcon, label: 'Master View', c: 'blue', fn: handleMasterView },
-                { icon: ViewIcon, label: 'View Centrally Allotted Rooms', c: 'pink', fn: handleViewRoom },
+                { icon: ViewIcon, label: 'View Rooms', c: 'pink', fn: handleViewRoom },
                 { icon: EditIcon, label: 'Edit Faculty', c: 'cyan', fn: handleEditFaculty },
                 { icon: DownloadIcon, label: 'Import Data', c: 'yellow', fn: handleImportData },
               ].map((a, i) => (
@@ -833,29 +822,36 @@ const handleLockTT = async () => {
                   key={i} 
                   onClick={a.fn} 
                   colorScheme={a.c} 
-                  size="lg" 
-                  h="90px" 
+                  size={{ base: "md", md: "lg" }}
+                  h={{ base: "80px", md: "90px" }}
                   flexDirection="column" 
-                  gap={2} 
+                  gap={{ base: 1, md: 2 }}
                   borderRadius="xl"
                   boxShadow="md"
                   _hover={{ transform: 'translateY(-4px)', boxShadow: 'xl' }}
                   transition="all 0.3s"
+                  px={{ base: 2, md: 4 }}
+                  whiteSpace="normal"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
                 >
-                  <a.icon boxSize={7} />
-                  <Text fontSize="sm" fontWeight="bold">{a.label}</Text>
+                  <a.icon boxSize={{ base: 4, md: 7 }} />
+                  <Text 
+                    fontSize={{ base: "2xs", md: "sm" }} 
+                    fontWeight="bold" 
+                    textAlign="center"
+                    lineHeight="1.2"
+                    noOfLines={2}
+                  >
+                    {a.label}
+                  </Text>
                 </Button>
               ))}
             </SimpleGrid>
           
-
-            {/* <Divider mb={6} /> */}
-
             <Box>
-              {/* <Text fontSize="sm" fontWeight="bold" color="gray.700" mb={3}>
-                Data Management: 
-              </Text> */}
-              <SimpleGrid columns={{ base: 2, md: 7 }} spacing={3}>
+              <SimpleGrid columns={{ base: 2, md: 4, lg: 7 }} spacing={{ base: 3, md: 4 }}>
                 {[
                   { l: 'Semester', fn: handleAddSem, icon: AddIcon },
                   { l: 'Subject', fn: handleAddSubject, icon: AddIcon },
@@ -870,11 +866,15 @@ const handleLockTT = async () => {
                     onClick={c.fn} 
                     leftIcon={<c.icon />} 
                     colorScheme="teal" 
-                    size="md" 
-                    fontSize="sm"
+                    size={{ base: "sm", md: "md" }}
+                    fontSize={{ base: "2xs", md: "sm" }}
                     borderRadius="lg"
                     _hover={{ transform: 'scale(1.05)' }}
                     transition="all 0.2s"
+                    whiteSpace="normal"
+                    h={{ base: "auto", md: "40px" }}
+                    py={{ base: 2, md: 2 }}
+                    px={{ base: 2, md: 4 }}
                   >
                     {c.l}
                   </Button>
@@ -884,21 +884,18 @@ const handleLockTT = async () => {
           </CardBody>
         </Card>
 
-        {/* Enhanced Status Dashboard */}
-        
         {/* Enhanced Edit Section */}
         <Card borderRadius="2xl" boxShadow="2xl" mb={2} overflow="hidden">
           <CardHeader 
             bgGradient="linear(to-r, purple.500, blue.500)" 
-            py={2}
+            py={{ base: 3, md: 4 }}
           >
-            <Flex align="center" gap={4}>
-              <Box bg="whiteAlpha.300" p={1} borderRadius="xl">
-                <EditIcon color="white" boxSize={7} />
+            <Flex align="center" gap={{ base: 2, md: 4 }} direction={{ base: "column", md: "row" }}>
+              <Box bg="whiteAlpha.300" p={{ base: 2, md: 3 }} borderRadius="xl" display={{ base: "none", md: "block" }}>
+                <EditIcon color="white" boxSize={{ base: 5, md: 7 }} />
               </Box>
-              <Box>
-                <Heading size="md" color="white" mb={1}> Details</Heading>
-                {/* <Text fontSize="sm" color="whiteAlpha.900">Time Details</Text> */}
+              <Box textAlign={{ base: "center", md: "left" }}>
+                <Heading size={{ base: "sm", md: "md" }} color="white" mb={1}>Details</Heading>
               </Box>
 
               <SimpleGrid columns={{ base: 1, md: 4 }} spacing={5} mb={2}>
@@ -1048,446 +1045,539 @@ const handleLockTT = async () => {
               
             </Flex>
           </CardHeader>
-          <CardBody p={8}>
-            <Flex align="center" gap={4} mb={6} bg="purple.50" p={2} borderRadius="xl">
-              <Text fontWeight="bold" fontSize="lg" minW="120px" color="purple.800">
+
+          <CardBody p={{ base: 3, md: 6 }}>
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={{ base: 3, md: 5 }} mb={{ base: 4, md: 6 }}>
+              {/* Saved Status */}
+              <Card 
+                borderRadius="2xl" 
+                borderLeftWidth="6px" 
+                borderLeftColor="blue.500"
+                boxShadow="lg"
+                _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+                transition="all 0.3s"
+              >
+                <CardBody p={{ base: 3, md: 4 }}>
+                  <Flex align="center" gap={{ base: 2, md: 3 }}>
+                    <Box bg="blue.100" p={{ base: 2, md: 3 }} borderRadius="xl" boxShadow="md">
+                      <TimeIcon boxSize={{ base: 3, md: 6 }} color="blue.600" />
+                    </Box>
+                    <Box flex="1">
+                      <Text fontSize={{ base: "2xs", md: "xs" }} color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                        Last Saved
+                      </Text>
+                      <Text fontSize={{ base: "xs", md: "md" }} fontWeight="bold" color="blue.700">
+                        {savedTime || 'Not saved'}
+                      </Text>
+                    </Box>
+                  </Flex>
+                </CardBody>
+              </Card>
+
+              {/* Locked Status */}
+              <Card 
+                borderRadius="2xl" 
+                borderLeftWidth="6px" 
+                borderLeftColor="orange.500"
+                boxShadow="lg"
+                _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+                transition="all 0.3s"
+              >
+                <CardBody p={{ base: 3, md: 4 }}>
+                  <Flex align="center" gap={{ base: 2, md: 3 }}>
+                    <Box bg="orange.100" p={{ base: 2, md: 3 }} borderRadius="xl" boxShadow="md">
+                      <LockIcon boxSize={{ base: 3, md: 6 }} color="orange.600" />
+                    </Box>
+                    <Box flex="1">
+                      <Text fontSize={{ base: "2xs", md: "xs" }} color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                        Last Locked
+                      </Text>
+                      <Text fontSize={{ base: "xs", md: "md" }} fontWeight="bold" color="orange.700">
+                        {lockedTime || 'Not locked'}
+                      </Text>
+                    </Box>
+                  </Flex>
+                </CardBody>
+              </Card>
+
+              {/* Published Status */}
+              <Card 
+                borderRadius="2xl" 
+                borderLeftWidth="6px" 
+                borderLeftColor="purple.500"
+                boxShadow="lg"
+                _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+                transition="all 0.3s"
+              >
+                <CardBody p={{ base: 3, md: 4 }}>
+                  <Flex align="center" gap={{ base: 2, md: 3 }}>
+                    <Box bg="purple.100" p={{ base: 2, md: 3 }} borderRadius="xl" boxShadow="md">
+                      <CheckCircleIcon boxSize={{ base: 3, md: 6 }} color="purple.600" />
+                    </Box>
+                    <Box flex="1">
+                      <Text fontSize={{ base: "2xs", md: "xs" }} color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                        Published
+                      </Text>
+                      <Text fontSize={{ base: "xs", md: "md" }} fontWeight="bold" color="purple.700">
+                        {formatDateTime(TTData?.datePublished)}
+                      </Text>
+                    </Box>
+                  </Flex>
+                </CardBody>
+              </Card>
+
+              {/* Clash Detection */}
+              <Card 
+                borderRadius="2xl" 
+                borderWidth="3px" 
+                borderColor={clash.length > 0 ? 'red.300' : 'green.300'}
+                boxShadow="lg"
+                _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+                transition="all 0.3s"
+              >
+                <CardBody p={{ base: 3, md: 4 }}>
+                  <VStack align="stretch" spacing={{ base: 2, md: 3 }}>
+                    <Flex align="center" gap={{ base: 2, md: 3 }}>
+                      <Box 
+                        bg={clash.length > 0 ? 'red.100' : 'green.100'} 
+                        p={{ base: 2, md: 3 }}
+                        borderRadius="xl"
+                        boxShadow="md"
+                      >
+                        {clash.length > 0 ? 
+                          <WarningIcon boxSize={{ base: 3, md: 6 }} color="red.600" /> : 
+                          <CheckCircleIcon boxSize={{ base: 3, md: 6 }} color="green.600" />
+                        }
+                      </Box>
+                      <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold" color="gray.700">
+                        Clash Detection
+                      </Text>
+                    </Flex>
+                    {clashFlag ? (
+                      clash.length === 0 ? (
+                        <Badge colorScheme="green" fontSize={{ base: "xs", md: "sm" }} px={{ base: 2, md: 4 }} py={2} borderRadius="lg" textAlign="center">
+                          ✓ NO CLASHES
+                        </Badge>
+                      ) : (
+                        <VStack spacing={2} align="stretch">
+                          <Badge colorScheme="red" fontSize={{ base: "xs", md: "sm" }} px={{ base: 2, md: 4 }} py={2} borderRadius="lg" textAlign="center">
+                            ⚠ {clash.length} Clash(es)
+                          </Badge>
+                          <Button
+                            size={{ base: "xs", md: "sm" }}
+                            colorScheme="red"
+                            variant="solid"
+                            leftIcon={<ViewIcon />}
+                            onClick={() => window.open(`${currentPathname}/clashes`, '_blank', 'noopener,noreferrer')}
+                            borderRadius="lg"
+                            fontWeight="bold"
+                            fontSize={{ base: "xs", md: "sm" }}
+                          >
+                            View
+                          </Button>
+                        </VStack>
+                      )
+                    ) : (
+                      <Badge colorScheme="yellow" fontSize={{ base: "xs", md: "sm" }} px={{ base: 2, md: 4 }} py={2} borderRadius="lg" textAlign="center">
+                        🔍 Searching...
+                      </Badge>
+                    )}
+                  </VStack>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+
+            <Flex align="center" gap={{ base: 2, md: 4 }} mb={{ base: 4, md: 6 }} bg="purple.50" p={{ base: 2, md: 4 }} borderRadius="xl" direction={{ base: "column", md: "row" }}>
+              <Text fontWeight="bold" fontSize={{ base: "sm", md: "lg" }} minW={{ base: "auto", md: "120px" }} color="purple.800">
                 Select Semester:
               </Text>
               <Select 
                 value={selectedSemester} 
                 onChange={(e) => setSelectedSemester(e.target.value)} 
-                size="lg" 
+                size={{ base: "sm", md: "lg" }}
                 borderColor="purple.400" 
-                maxW="400px" 
+                maxW={{ base: "100%", md: "400px" }}
                 borderRadius="xl"
-                fontSize="md"
+                fontSize={{ base: "sm", md: "md" }}
                 fontWeight="semibold"
                 _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px purple.500' }}
               >
                 {semesters.map((s, i) => <option key={i} value={s}>{s}</option>)}
               </Select>
-             <HStack spacing={3} ml="auto">
-
+              <HStack spacing={{ base: 2, md: 3 }} ml={{ base: 0, md: "auto" }} w={{ base: "100%", md: "auto" }} justify={{ base: "center", md: "flex-start" }}>
                 <Tooltip label="Lock Timetable" placement="top" hasArrow bg="orange.600" fontSize="sm">
                   <IconButton
                     icon={<LockIcon />}
                     onClick={handleLockTT}
                     colorScheme="orange"
-                    size="md"
+                    size={{ base: "sm", md: "md" }}
                     borderRadius="lg"
                     boxShadow="md"
-                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
-                    transition="all 0.3s"
                   />
                 </Tooltip>
-               <Tooltip label="Publish Timetable" hasArrow>
-                <IconButton
+                <Tooltip label="Publish Timetable" hasArrow>
+                  <IconButton
                     icon={<CheckCircleIcon />}
                     onClick={handlePublishTT}
                     colorScheme="green"
-                    size="md"
+                    size={{ base: "sm", md: "md" }}
                     borderRadius="lg"
                     isDisabled={TTData?.publish === true}
-                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
-                 />
-
-              </Tooltip>
-
-
-                <Tooltip label="View Locked Summary" placement="top" hasArrow bg="purple.600" fontSize="sm">
+                  />
+                </Tooltip>
+                <Tooltip label="View Summary" placement="top" hasArrow bg="purple.600" fontSize="sm">
                   <IconButton
                     icon={<ViewIcon />}
                     onClick={handleViewSummary}
                     colorScheme="blue"
-                    size="md"
+                    size={{ base: "sm", md: "md" }}
                     borderRadius="lg"
                     boxShadow="md"
-                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
-                    transition="all 0.3s"
                   />
                 </Tooltip>
-                 <Tooltip label="View Faculty Load Allocation" placement="top" hasArrow bg="pink.600" fontSize="sm">
+                <Tooltip label="Faculty Load" placement="top" hasArrow bg="pink.600" fontSize="sm">
                   <IconButton
                     icon={<FaUserAlt color="white"/>}
                     onClick={handleViewFacultyLoad}
                     colorScheme="pink"
-                    size="md"
+                    size={{ base: "sm", md: "md" }}
                     borderRadius="lg"
                     boxShadow="md"
-                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
-                    transition="all 0.3s"
                   />
                 </Tooltip>
-
                 <Tooltip label="Download PDF" placement="top" hasArrow bg="cyan.600" fontSize="sm">
                   <IconButton
                     icon={<DownloadIcon color="white"/>}
                     onClick={handleDownloadClick}
                     colorScheme="cyan"
-                    size="md"
+                    size={{ base: "sm", md: "md" }}
                     borderRadius="lg"
                     boxShadow="md"
-                    _hover={{ transform: 'scale(1.05)', boxShadow: 'lg' }}
-                    transition="all 0.3s"
                   />
                 </Tooltip>
               </HStack>
-            
             </Flex>
 
-            
-{Object.keys(timetableData).length === 0 ? (
-  <Flex justify="center" align="center" minH="300px" bg="gray.50" borderRadius="2xl">
-    <VStack spacing={4}>
-      <RepeatIcon boxSize={12} color="purple.400" className="spin" />
-      <Text fontSize="lg" color="gray.600" fontWeight="semibold">Loading Timetable...</Text>
-    </VStack>
-  </Flex>
-) : (
-  <Box borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner" w="100vw" maxW="100%">
-    <Table size="sm" variant="simple" w="100%" tableLayout="fixed" bg="white">
-      <Thead bg="purple.600">
-        <Tr>
-          <Th color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="100px">DAY</Th>
-          {[1,2,3,4,5,6,7,8].map(p => (
-            <Th key={p} color="white" fontSize="sm" p={2} textAlign="center" fontWeight="bold" w="160px">
-              {p}
-            </Th>
-          ))}
-        </Tr>
-      </Thead>
-      <Tbody>
-        {days.map((day, di) => (
-          <Tr 
-            key={day} 
-            bg="white"
-            _hover={{ bg: 'purple.50' }}
-            transition="background 0.2s"
-            borderBottom="1px"
-            borderColor="gray.200"
-          >
-            <Td fontWeight="bold" fontSize="sm" color="purple.700" p={2}>
-              {day}
-            </Td>
-            {[1,2,3,4,5,6,7,8].map(period => (
-              <Td key={period} p={2} verticalAlign="top" bg="white">
-                {timetableData[day][`period${period}`].map((slot, si) => (
-                  <Box key={si}>
-                    {slot.map((cell, ci) => {
-                      // Generate consistent color based on subject name with valid Chakra colors
-                      const getSubjectColor = (subject) => {
-                        if (!subject) return 'white';
-                        const colors = [
-                          'red.100', 'red.200', 'red.300',
-                          'orange.100', 'orange.200', 'orange.300',
-                          'yellow.100', 'yellow.200', 'yellow.300',
-                          'green.100', 'green.200', 'green.300',
-                          'teal.100', 'teal.200', 'teal.300',
-                          'blue.100', 'blue.200', 'blue.300',
-                          'cyan.100', 'cyan.200', 'cyan.300',
-                          'purple.100', 'purple.200', 'purple.300',
-                          'pink.100', 'pink.200', 'pink.300',
-                          'linkedin.100', 'linkedin.200', 'linkedin.300',
-                          'facebook.100', 'facebook.200', 'facebook.300',
-                          'messenger.100', 'messenger.200', 'messenger.300',
-                          'whatsapp.100', 'whatsapp.200', 'whatsapp.300',
-                          'twitter.100', 'twitter.200', 'twitter.300',
-                          'telegram.100', 'telegram.200', 'telegram.300'
-                        ];
-                        let hash = 0;
-                        for (let i = 0; i < subject.length; i++) {
-                          hash = subject.charCodeAt(i) + ((hash << 5) - hash);
-                        }
-                        return colors[Math.abs(hash) % colors.length];
-                      };
+            {Object.keys(timetableData).length === 0 ? (
+              <Flex justify="center" align="center" minH="300px" bg="gray.50" borderRadius="2xl">
+                <VStack spacing={4}>
+                  <RepeatIcon boxSize={12} color="purple.400" className="spin" />
+                  <Text fontSize="lg" color="gray.600" fontWeight="semibold">Loading Timetable...</Text>
+                </VStack>
+              </Flex>
+            ) : (
+              <Box borderRadius="2xl" border="2px" borderColor="gray.200" boxShadow="inner" overflowX={{ base: "auto", md: "visible" }} w="100%">
+                <Table size="sm" variant="simple" minW={{ base: "1200px", md: "100%" }} w="100%" tableLayout="fixed">
+                  <Thead bg="purple.600">
+                    <Tr>
+                      <Th color="white" fontSize={{ base: "xs", md: "sm" }} p={{ base: 1, md: 2 }} textAlign="center" fontWeight="bold" w={{ base: "100px", md: "8%" }}>DAY</Th>
+                      {[1,2,3,4,5,6,7,8].map(p => (
+                        <Th key={p} color="white" fontSize={{ base: "xs", md: "sm" }} p={{ base: 1, md: 2 }} textAlign="center" fontWeight="bold" w={{ base: "150px", md: "11.5%" }}>
+                          {p}
+                        </Th>
+                      ))}
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {days.map((day, di) => (
+                      <Tr 
+                        key={day} 
+                        bg="white"
+                        _hover={{ bg: 'purple.50' }}
+                        transition="background 0.2s"
+                        borderBottom="1px"
+                        borderColor="gray.200"
+                      >
+                        <Td fontWeight="bold" fontSize={{ base: "xs", md: "sm" }} color="purple.700" p={{ base: 1, md: 2 }}>
+                          {day}
+                        </Td>
+                        {[1,2,3,4,5,6,7,8].map(period => (
+                          <Td key={period} p={{ base: 1, md: 2 }} verticalAlign="top" bg="white">
+                            {timetableData[day][`period${period}`].map((slot, si) => (
+                              <Box key={si}>
+                                {slot.map((cell, ci) => {
+                                  const getSubjectColor = (subject) => {
+                                    if (!subject) return 'white';
+                                    const colors = [
+                                      'red.100', 'red.200', 'red.300',
+                                      'orange.100', 'orange.200', 'orange.300',
+                                      'yellow.100', 'yellow.200', 'yellow.300',
+                                      'green.100', 'green.200', 'green.300',
+                                      'teal.100', 'teal.200', 'teal.300',
+                                      'blue.100', 'blue.200', 'blue.300',
+                                      'cyan.100', 'cyan.200', 'cyan.300',
+                                      'purple.100', 'purple.200', 'purple.300',
+                                      'pink.100', 'pink.200', 'pink.300',
+                                    ];
+                                    let hash = 0;
+                                    for (let i = 0; i < subject.length; i++) {
+                                      hash = subject.charCodeAt(i) + ((hash << 5) - hash);
+                                    }
+                                    return colors[Math.abs(hash) % colors.length];
+                                  };
 
-                      const isEmpty = !cell.subject;
+                                  const isEmpty = !cell.subject;
 
-                      return (
-                        <Box 
-                          key={ci} 
-                          mb={2} 
-                          p={2} 
-                          bg={getSubjectColor(cell.subject)}
-                          borderRadius="md" 
-                          borderWidth="2px" 
-                          borderColor={isEmpty ? "gray.300" : "gray.400"}
-                          boxShadow="sm"
-                          _hover={{ boxShadow: 'md', borderColor: isEmpty ? 'gray.400' : 'purple.500' }}
-                          transition="all 0.2s"
-                        >
-                          {/* Subject Select */}
-                          <Select 
-                            value={cell.subject} 
-                            onChange={(e) => handleCellChange(day, period, si, ci, 'subject', e)} 
-                            size="sm" 
-                            borderColor="blue.400" 
-                            fontSize="xs" 
-                            fontWeight={isEmpty ? "normal" : "bold"}
-                            borderRadius="md"
-                            mb={1}
-                            bg="white"
-                            title={cell.subject || 'Select Subject'}
-                            _focus={{ borderColor: 'blue.600' }}
-                          >
-                            <option value="">📚 Subject</option>
-                            {availableSubjects.map(s => (
-                              <option key={s._id} value={s.subName}>{s.subName}</option>
+                                  return (
+                                    <Box 
+                                      key={ci} 
+                                      mb={2} 
+                                      p={{ base: 1, md: 2 }}
+                                      bg={getSubjectColor(cell.subject)}
+                                      borderRadius="md" 
+                                      borderWidth="2px" 
+                                      borderColor={isEmpty ? "gray.300" : "gray.400"}
+                                      boxShadow="sm"
+                                    >
+                                      <Select 
+                                        value={cell.subject} 
+                                        onChange={(e) => handleCellChange(day, period, si, ci, 'subject', e)} 
+                                        size="xs"
+                                        borderColor="blue.400" 
+                                        fontSize="xs"
+                                        fontWeight={isEmpty ? "normal" : "bold"}
+                                        borderRadius="md"
+                                        mb={1}
+                                        bg="white"
+                                      >
+                                        <option value="">📚 Subject</option>
+                                        {availableSubjects.map(s => (
+                                          <option key={s._id} value={s.subName}>{s.subName}</option>
+                                        ))}
+                                      </Select>
+
+                                      <Select 
+                                        value={cell.room} 
+                                        onChange={(e) => handleCellChange(day, period, si, ci, 'room', e)} 
+                                        size="xs"
+                                        borderColor="green.400" 
+                                        fontSize="xs"
+                                        fontWeight={isEmpty ? "normal" : "bold"}
+                                        borderRadius="md"
+                                        mb={1}
+                                        bg="white"
+                                      >
+                                        <option value="">🏢 Room</option>
+                                        {availableRooms.map(r => (
+                                          <option key={r} value={r}>{r}</option>
+                                        ))}
+                                      </Select>
+
+                                      <Select 
+                                        value={cell.faculty} 
+                                        onChange={(e) => handleCellChange(day, period, si, ci, 'faculty', e)} 
+                                        size="xs"
+                                        borderColor="purple.400" 
+                                        fontSize="xs"
+                                        fontWeight={isEmpty ? "normal" : "bold"}
+                                        borderRadius="md"
+                                        mb={1}
+                                        bg="white"
+                                      >
+                                        <option value="">👨‍🏫 Faculty</option>
+                                        {availableFaculties.map((f, i) => (
+                                          <option key={i} value={f}>{f}</option>
+                                        ))}
+                                      </Select>
+
+                                      <IconButton 
+                                        icon={<DeleteIcon />} 
+                                        size="xs" 
+                                        colorScheme="red" 
+                                        variant="outline" 
+                                        width="100%" 
+                                        onClick={() => handleDeleteCell(day, period, si, ci)}
+                                        borderRadius="md"
+                                      />
+                                    </Box>
+                                  );
+                                })}
+                                {si === 0 && (
+                                  <IconButton 
+                                    icon={<AddIcon />} 
+                                    size="xs" 
+                                    colorScheme="purple" 
+                                    width="100%" 
+                                    onClick={() => handleSplitCell(day, period, si)}
+                                    borderRadius="md"
+                                  />
+                                )}
+                              </Box>
                             ))}
-                          </Select>
+                          </Td>
+                        ))}
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </Box>
+            )}
 
-                          {/* Room Select */}
-                          <Select 
-                            value={cell.room} 
-                            onChange={(e) => handleCellChange(day, period, si, ci, 'room', e)} 
-                            size="sm" 
-                            borderColor="green.400" 
-                            fontSize="xs" 
-                            fontWeight={isEmpty ? "normal" : "bold"}
-                            borderRadius="md"
-                            mb={1}
-                            bg="white"
-                            title={cell.room || 'Select Room'}
-                            _focus={{ borderColor: 'green.600' }}
-                          >
-                            <option value="">🏢 Room</option>
-                            {availableRooms.map(r => (
-                              <option key={r} value={r}>{r}</option>
-                            ))}
-                          </Select>
-
-                          {/* Faculty Select */}
-                          <Select 
-                            value={cell.faculty} 
-                            onChange={(e) => handleCellChange(day, period, si, ci, 'faculty', e)} 
-                            size="sm" 
-                            borderColor="purple.400" 
-                            fontSize="xs" 
-                            fontWeight={isEmpty ? "normal" : "bold"}
-                            borderRadius="md"
-                            mb={1}
-                            bg="white"
-                            title={cell.faculty || 'Select Faculty'}
-                            _focus={{ borderColor: 'purple.600' }}
-                          >
-                            <option value="">👨‍🏫 Faculty</option>
-                            {availableFaculties.map((f, i) => (
-                              <option key={i} value={f}>{f}</option>
-                            ))}
-                          </Select>
-
-                          {/* Delete Button */}
-                          <IconButton 
-                            icon={<DeleteIcon />} 
-                            size="xs" 
-                            colorScheme="red" 
-                            variant="outline" 
-                            width="100%" 
-                            onClick={() => handleDeleteCell(day, period, si, ci)}
-                            borderRadius="md"
-                            _hover={{ transform: 'scale(1.02)' }}
-                            transition="all 0.2s"
-                          />
-                        </Box>
-                      );
-                    })}
-                    {/* Add Slot Button */}
-                    {si === 0 && (
-                      <IconButton 
-                        icon={<AddIcon />} 
-                        size="xs" 
-                        colorScheme="purple" 
-                        width="100%" 
-                        onClick={() => handleSplitCell(day, period, si)}
-                        borderRadius="md"
-                        _hover={{ transform: 'scale(1.02)' }}
-                        transition="all 0.2s"
-                      />
-                    )}
-                  </Box>
-                ))}
-              </Td>
-            ))}
-          </Tr>
-        ))}
-      </Tbody>
-    </Table>
-  </Box>
-)}
             <Button 
               colorScheme="green" 
-              size="xl" 
-              mt={6} 
-              width="25%" 
+              size={{ base: "md", md: "xl" }}
+              mt={{ base: 4, md: 6 }}
+              width={{ base: "100%", md: "25%" }}
               borderRadius="xl" 
-              // leftIcon={<DownloadIcon />} 
               onClick={handleSubmit} 
-              fontSize="lg" 
+              fontSize={{ base: "md", md: "lg" }}
               fontWeight="bold"
-              h="60px"
+              h={{ base: "50px", md: "60px" }}
               boxShadow="lg"
               _hover={{ transform: 'translateY(-2px)', boxShadow: '2xl' }}
               transition="all 0.3s"
             >
-            Save Timetable
+              Save Timetable
             </Button>
           </CardBody>
         </Card>
 
         {/* Enhanced View Sections */}
         <Box mb={6}>
-          <Heading size="lg" mb={4} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
-            {/* View Timetables */}
+          <Heading size={{ base: "md", md: "lg" }} mb={4} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
           </Heading>
-          {/* <SimpleGrid columns={{ base: 1, md: 3 }} spacing={5}> */}
-            {/* View Semester */}
-            <Card borderRadius="2xl" boxShadow="xl" overflow="hidden" _hover={{ transform: 'translateY(-4px)', boxShadow: '2xl' }} transition="all 0.3s">
-              <CardHeader bg="blue.500" py={5}>
-                <Flex align="center" gap={3}>
-                  <Box bg="whiteAlpha.300" p={3} borderRadius="lg">
-                    <ViewIcon color="white" boxSize={6} />
-                  </Box>
-                  <Heading size="md" color="white">View Semester</Heading>
+          
+          {/* View Semester */}
+          <Card borderRadius="2xl" boxShadow="xl" overflow="hidden" mb={4}>
+            <CardHeader bg="blue.500" py={{ base: 3, md: 5 }}>
+              <Flex align="center" gap={3}>
+                <Box bg="whiteAlpha.300" p={3} borderRadius="lg">
+                  <ViewIcon color="white" boxSize={{ base: 4, md: 6 }} />
+                </Box>
+                <Heading size={{ base: "sm", md: "md" }} color="white">View Semester</Heading>
+              </Flex>
+            </CardHeader>
+            <CardBody p={{ base: 3, md: 6 }}>
+              <Flex align="center" gap={3} mb={4} bg="blue.50" p={3} borderRadius="lg" direction={{ base: "column", md: "row" }}>
+                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold" minW={{ base: "auto", md: "80px" }} color="blue.800">
+                  Semester:
+                </Text>
+                <Select 
+                  value={viewselectedSemester} 
+                  onChange={(e) => setViewSelectedSemester(e.target.value)} 
+                  size={{ base: "sm", md: "md" }}
+                  borderColor="blue.400" 
+                  placeholder="Select Semester" 
+                  fontSize="sm"
+                  borderRadius="lg"
+                >
+                  {semesters.map((s, i) => <option key={i} value={s}>{s}</option>)}
+                </Select>
+              </Flex>
+              {viewselectedSemester ? (
+                <Box>
+                  <ViewTimetable timetableData={viewData} />
+                  <TimetableSummary 
+                    timetableData={viewData} 
+                    type={'sem'} 
+                    code={currentCode} 
+                    subjectData={subjectData} 
+                    TTData={TTData} 
+                    headTitle={viewselectedSemester} 
+                    commonLoad={commonLoad} 
+                  />
+                </Box>
+              ) : (
+                <Flex justify="center" align="center" minH="100px" bg="gray.50" borderRadius="lg">
+                  <Text color="gray.500" fontSize="sm">Please select a semester</Text>
                 </Flex>
-              </CardHeader>
-              <CardBody p={6}>
-                <Flex align="center" gap={3} mb={4} bg="blue.50" p={3} borderRadius="lg">
-                  <Text fontSize="sm" fontWeight="bold" minW="80px" color="blue.800">
-                    Semester:
-                  </Text>
-                  <Select 
-                    value={viewselectedSemester} 
-                    onChange={(e) => setViewSelectedSemester(e.target.value)} 
-                    size="md" 
-                    borderColor="blue.400" 
-                    placeholder="Select Semester" 
-                    fontSize="sm"
-                    borderRadius="lg"
-                    _focus={{ borderColor: 'blue.600', boxShadow: '0 0 0 1px blue.600' }}
-                  >
-                    {semesters.map((s, i) => <option key={i} value={s}>{s}</option>)}
-                  </Select>
-                </Flex>
-                {viewselectedSemester ? (
-                  <Box>
-                    <ViewTimetable timetableData={viewData} />
-                    <TimetableSummary 
-                      timetableData={viewData} 
-                      type={'sem'} 
-                      code={currentCode} 
-                      subjectData={subjectData} 
-                      TTData={TTData} 
-                      headTitle={viewselectedSemester} 
-                      commonLoad={commonLoad} 
-                    />
-                  </Box>
-                ) : (
-                  <Flex justify="center" align="center" minH="100px" bg="gray.50" borderRadius="lg">
-                    <Text color="gray.500" fontSize="sm">Please select a semester</Text>
-                  </Flex>
-                )}
-              </CardBody>
-            </Card>
+              )}
+            </CardBody>
+          </Card>
 
-            {/* View Faculty */}
-            <Card borderRadius="2xl" boxShadow="xl" overflow="hidden" _hover={{ transform: 'translateY(-4px)', boxShadow: '2xl' }} transition="all 0.3s">
-              <CardHeader bg="green.500" py={5}>
-                <Flex align="center" gap={3}>
-                  <Box bg="whiteAlpha.300" p={3} borderRadius="lg">
-                    <ViewIcon color="white" boxSize={6} />
-                  </Box>
-                  <Heading size="md" color="white">View Faculty</Heading>
+          {/* View Faculty */}
+          <Card borderRadius="2xl" boxShadow="xl" overflow="hidden" mb={4}>
+            <CardHeader bg="green.500" py={{ base: 3, md: 5 }}>
+              <Flex align="center" gap={3}>
+                <Box bg="whiteAlpha.300" p={3} borderRadius="lg">
+                  <ViewIcon color="white" boxSize={{ base: 4, md: 6 }} />
+                </Box>
+                <Heading size={{ base: "sm", md: "md" }} color="white">View Faculty</Heading>
+              </Flex>
+            </CardHeader>
+            <CardBody p={{ base: 3, md: 6 }}>
+              <Flex align="center" gap={3} mb={4} bg="green.50" p={3} borderRadius="lg" direction={{ base: "column", md: "row" }}>
+                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold" minW={{ base: "auto", md: "80px" }} color="green.800">
+                  Faculty:
+                </Text>
+                <Select 
+                  value={viewFaculty} 
+                  onChange={(e) => setViewFaculty(e.target.value)} 
+                  size={{ base: "sm", md: "md" }}
+                  borderColor="green.400" 
+                  placeholder="Select Faculty" 
+                  fontSize="sm"
+                  borderRadius="lg"
+                >
+                  {availableFaculties.map((f, i) => <option key={i} value={f}>{f}</option>)}
+                </Select>
+              </Flex>
+              {viewFaculty ? (
+                <Box>
+                  <Badge colorScheme="green" fontSize="xs" mb={3} px={3} py={1} borderRadius="full">
+                    Updated: {facultyUpdateTime || 'N/A'}
+                  </Badge>
+                  <ViewTimetable timetableData={viewFacultyData} />
+                  <TimetableSummary 
+                    timetableData={viewFacultyData} 
+                    type={'faculty'} 
+                    code={currentCode} 
+                    subjectData={subjectData} 
+                    TTData={TTData} 
+                    commonLoad={commonLoad} 
+                  />
+                </Box>
+              ) : (
+                <Flex justify="center" align="center" minH="100px" bg="gray.50" borderRadius="lg">
+                  <Text color="gray.500" fontSize="sm">Please select a faculty</Text>
                 </Flex>
-              </CardHeader>
-              <CardBody p={6}>
-                <Flex align="center" gap={3} mb={4} bg="green.50" p={3} borderRadius="lg">
-                  <Text fontSize="sm" fontWeight="bold" minW="80px" color="green.800">
-                    Faculty:
-                  </Text>
-                  <Select 
-                    value={viewFaculty} 
-                    onChange={(e) => setViewFaculty(e.target.value)} 
-                    size="md" 
-                    borderColor="green.400" 
-                    placeholder="Select Faculty" 
-                    fontSize="sm"
-                    borderRadius="lg"
-                    _focus={{ borderColor: 'green.600', boxShadow: '0 0 0 1px green.600' }}
-                  >
-                    {availableFaculties.map((f, i) => <option key={i} value={f}>{f}</option>)}
-                  </Select>
-                </Flex>
-                {viewFaculty ? (
-                  <Box>
-                    <Badge colorScheme="green" fontSize="xs" mb={3} px={3} py={1} borderRadius="full">
-                      Updated: {facultyUpdateTime || 'N/A'}
-                    </Badge>
-                    <ViewTimetable timetableData={viewFacultyData} />
-                    <TimetableSummary 
-                      timetableData={viewFacultyData} 
-                      type={'faculty'} 
-                      code={currentCode} 
-                      subjectData={subjectData} 
-                      TTData={TTData} 
-                      commonLoad={commonLoad} 
-                    />
-                  </Box>
-                ) : (
-                  <Flex justify="center" align="center" minH="100px" bg="gray.50" borderRadius="lg">
-                    <Text color="gray.500" fontSize="sm">Please select a faculty</Text>
-                  </Flex>
-                )}
-              </CardBody>
-            </Card>
+              )}
+            </CardBody>
+          </Card>
 
-            {/* View Room */}
-            <Card borderRadius="2xl" boxShadow="xl" overflow="hidden" _hover={{ transform: 'translateY(-4px)', boxShadow: '2xl' }} transition="all 0.3s">
-              <CardHeader bg="orange.500" py={5}>
-                <Flex align="center" gap={3}>
-                  <Box bg="whiteAlpha.300" p={3} borderRadius="lg">
-                    <ViewIcon color="white" boxSize={6} />
-                  </Box>
-                  <Heading size="md" color="white">View Room</Heading>
+          {/* View Room */}
+          <Card borderRadius="2xl" boxShadow="xl" overflow="hidden">
+            <CardHeader bg="orange.500" py={{ base: 3, md: 5 }}>
+              <Flex align="center" gap={3}>
+                <Box bg="whiteAlpha.300" p={3} borderRadius="lg">
+                  <ViewIcon color="white" boxSize={{ base: 4, md: 6 }} />
+                </Box>
+                <Heading size={{ base: "sm", md: "md" }} color="white">View Room</Heading>
+              </Flex>
+            </CardHeader>
+            <CardBody p={{ base: 3, md: 6 }}>
+              <Flex align="center" gap={3} mb={4} bg="orange.50" p={3} borderRadius="lg" direction={{ base: "column", md: "row" }}>
+                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold" minW={{ base: "auto", md: "80px" }} color="orange.800">
+                  Room:
+                </Text>
+                <Select 
+                  value={viewRoom} 
+                  onChange={(e) => setViewRoom(e.target.value)} 
+                  size={{ base: "sm", md: "md" }}
+                  borderColor="orange.400" 
+                  placeholder="Select Room" 
+                  fontSize="sm"
+                  borderRadius="lg"
+                >
+                  {availableRooms.map((r, i) => <option key={i} value={r}>{r}</option>)}
+                </Select>
+              </Flex>
+              {viewRoom ? (
+                <Box>
+                  <Badge colorScheme="orange" fontSize="xs" mb={3} px={3} py={1} borderRadius="full">
+                    Updated: {roomUpdateTime || 'N/A'}
+                  </Badge>
+                  <ViewTimetable timetableData={viewRoomData} />
+                </Box>
+              ) : (
+                <Flex justify="center" align="center" minH="100px" bg="gray.50" borderRadius="lg">
+                  <Text color="gray.500" fontSize="sm">Please select a room</Text>
                 </Flex>
-              </CardHeader>
-              <CardBody p={6}>
-                <Flex align="center" gap={3} mb={4} bg="orange.50" p={3} borderRadius="lg">
-                  <Text fontSize="sm" fontWeight="bold" minW="80px" color="orange.800">
-                    Room:
-                  </Text>
-                  <Select 
-                    value={viewRoom} 
-                    onChange={(e) => setViewRoom(e.target.value)} 
-                    size="md" 
-                    borderColor="orange.400" 
-                    placeholder="Select Room" 
-                    fontSize="sm"
-                    borderRadius="lg"
-                    _focus={{ borderColor: 'orange.600', boxShadow: '0 0 0 1px orange.600' }}
-                  >
-                    {availableRooms.map((r, i) => <option key={i} value={r}>{r}</option>)}
-                  </Select>
-                </Flex>
-                {viewRoom ? (
-                  <Box>
-                    <Badge colorScheme="orange" fontSize="xs" mb={3} px={3} py={1} borderRadius="full">
-                      Updated: {roomUpdateTime || 'N/A'}
-                    </Badge>
-                    <ViewTimetable timetableData={viewRoomData} />
-                  </Box>
-                ) : (
-                  <Flex justify="center" align="center" minH="100px" bg="gray.50" borderRadius="lg">
-                    <Text color="gray.500" fontSize="sm">Please select a room</Text>
-                  </Flex>
-                )}
-              </CardBody>
-            </Card>
-          {/* </SimpleGrid> */}
+              )}
+            </CardBody>
+          </Card>
         </Box>
       </Container>
-
-     
-      
 
       {/* Message Toast */}
       <Portal>
@@ -1496,16 +1586,17 @@ const handleLockTT = async () => {
           color="white"
           textAlign="center"
           fontWeight="bold"
-          fontSize="md"
+          fontSize={{ base: "sm", md: "md" }}
           position="fixed"
           top="30%"
           left="50%"
           transform="translate(-50%, -50%)"
           zIndex="999"
           borderRadius="xl"
-          p={3}
+          p={{ base: 2, md: 3 }}
           opacity={showMessage && message ? 1 : 0}
           transition="opacity 0.3s"
+          maxW={{ base: "90%", md: "auto" }}
         >
           {message}
         </Box>
@@ -1521,4 +1612,4 @@ const handleLockTT = async () => {
   );
 };
 
-export default Timetable
+export default Timetable;
