@@ -50,6 +50,7 @@ import ImportForm from './timetableadmin/importCentralRoom';
 // import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
 // import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
+import FacultyLoadCalculation from './timetableadmin/viewfacultyload.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
 import FacultyHourLoad from './timetableadmin/facultyhourload.jsx';
@@ -280,6 +281,8 @@ function App() {
 
         <Route path="/tt/admin" element={<AdminPage />} />
         <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
+        <Route path="/tt/admin/facultyloadcalculation" element={<FacultyLoadCalculation />} />
+
 
         {/* Same link */}
         <Route path="/timetable">
@@ -292,6 +295,7 @@ function App() {
         {/* <Route path="/tt/admin/instituteload" element={<InstituteLoad />} /> */}
         {/* <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} /> */}
         <Route path="/tt/masterload" element={<MasterLoadDataTable />} />
+
         <Route path="/tt/admin/clashes" element={<AdminClash />} />
         {/* <Route
           path="/tt/:generatedLink/generatepdf/mergepdf"
