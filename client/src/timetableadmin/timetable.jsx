@@ -1024,8 +1024,8 @@ const handleLockTT = async () => {
                         size="sm"
                         colorScheme="red"
                         variant="solid"
-                        leftIcon={<ViewIcon />}
-                        onClick={() => window.open(`${currentPathname}/clashes`, '_blank', 'noopener,noreferrer')}
+                        leftIcon={<WarningIcon />}
+                        onClick={() => window.open(`tt/admin/clashes`, '_blank', 'noopener,noreferrer')}
                         borderRadius="lg"
                         fontWeight="bold"
                         _hover={{ transform: 'scale(1.02)' }}
