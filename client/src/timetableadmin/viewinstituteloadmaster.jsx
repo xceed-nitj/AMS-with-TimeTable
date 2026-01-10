@@ -119,7 +119,7 @@ const MasterLoadDataTable = () => {
     { label: "Subject Code", key: "subjectCode" },
     { label: "Subject", key: "subject" },
     { label: "Subject Credit", key: "subjectCredit" },
-    { label: "Load", key: "count" },
+    // { label: "Load", key: "count" },
   ];
 
   const mergeAndFilterData = (data) => {

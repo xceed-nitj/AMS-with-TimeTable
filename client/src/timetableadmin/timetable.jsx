@@ -897,6 +897,152 @@ const handleLockTT = async () => {
               <Box textAlign={{ base: "center", md: "left" }}>
                 <Heading size={{ base: "sm", md: "md" }} color="white" mb={1}>Details</Heading>
               </Box>
+
+              <SimpleGrid columns={{ base: 1, md: 4 }} spacing={5} mb={2}>
+          {/* Clash Detection */}
+         
+
+          {/* Saved Status */}
+          <Card 
+            borderRadius="2xl" 
+            borderLeftWidth="6px" 
+            borderLeftColor="blue.500"
+            boxShadow="lg"
+            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+            transition="all 0.3s"
+          >
+            <CardBody p={2}>
+              <Flex align="center" gap={2}>
+                <Box bg="blue.100" p={4} borderRadius="xl" boxShadow="md">
+                  <TimeIcon boxSize={4} color="blue.600" />
+                </Box>
+                <Box flex="1">
+                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                    Last Saved Time
+                  </Text>
+                  <Text fontSize="lg" fontWeight="bold" color="blue.700">
+                    {savedTime || 'Not saved yet'}
+                  </Text>
+                </Box>
+              </Flex>
+            </CardBody>
+          </Card>
+
+          {/* Locked Status */}
+          <Card 
+            borderRadius="2xl" 
+            borderLeftWidth="6px" 
+            borderLeftColor="orange.500"
+            boxShadow="lg"
+            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+            transition="all 0.3s"
+          >
+            <CardBody p={2}>
+              <Flex align="center" gap={4}>
+                <Box bg="orange.100" p={4} borderRadius="xl" boxShadow="md">
+                  <LockIcon boxSize={8} color="orange.600" />
+                </Box>
+                <Box flex="1">
+                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                    Last Locked Time
+                  </Text>
+                  <Text fontSize="lg" fontWeight="bold" color="orange.700">
+                    {lockedTime || 'Not locked yet'}
+                  </Text>
+                </Box>
+              </Flex>
+            </CardBody>
+          </Card>
+
+          {/* Published Status */}
+          <Card 
+            borderRadius="2xl" 
+            borderLeftWidth="6px" 
+            borderLeftColor="purple.500"
+            boxShadow="lg"
+            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+            transition="all 0.3s"
+          >
+            <CardBody p={2}>
+              <Flex align="center" gap={4}>
+                <Box bg="purple.100" p={4} borderRadius="xl" boxShadow="md">
+                  <CheckCircleIcon boxSize={8} color="purple.600" />
+                </Box>
+                <Box flex="1">
+                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                    Published Date
+                  </Text>
+                <Text fontSize="lg" fontWeight="bold" color="purple.700">
+                    {formatDateTime(TTData?.datePublished)}
+
+                </Text>
+
+                </Box>
+              </Flex>
+            </CardBody>
+          </Card>
+       <Card 
+            borderRadius="2xl" 
+            borderWidth="3px" 
+            borderColor={clash.length > 0 ? 'red.300' : 'green.300'}
+            boxShadow="lg"
+            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+            transition="all 0.3s"
+          >
+            <CardBody p={2}>
+              <VStack align="stretch" spacing={3}>
+                <Flex align="center" gap={3}>
+                  <Box 
+                    bg={clash.length > 0 ? 'red.100' : 'green.100'} 
+                    p={1} 
+                    borderRadius="xl"
+                    boxShadow="md"
+                  >
+                    {clash.length > 0 ? 
+                      <WarningIcon boxSize={8} color="red.600" /> : 
+                      <CheckCircleIcon boxSize={8} color="green.600" />
+                    }
+                  </Box>
+                  <Text fontSize="md" fontWeight="bold" color="gray.700">
+                    Clash Detection
+                  </Text>
+                </Flex>
+                {clashFlag ? (
+                  clash.length === 0 ? (
+                    <Badge colorScheme="green" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
+                      ✓ NO CLASHES FOUND
+                    </Badge>
+                  ) : (
+                    <VStack spacing={2} align="stretch">
+                      <Badge colorScheme="red" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
+                        ⚠ {clash.length} Clash(es) Found
+                      </Badge>
+                      <Button
+                        size="sm"
+                        colorScheme="red"
+                        variant="solid"
+                        leftIcon={<WarningIcon />}
+                        onClick={() => window.open(`admin/clashes`, '_blank', 'noopener,noreferrer')}
+                        borderRadius="lg"
+                        fontWeight="bold"
+                        _hover={{ transform: 'scale(1.02)' }}
+                        transition="all 0.2s"
+                      >
+                        View Clashes
+                      </Button>
+                    </VStack>
+                  )
+                ) : (
+                  <Badge colorScheme="yellow" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
+                    🔍 Searching...
+                  </Badge>
+                )}
+              </VStack>
+            </CardBody>
+          </Card>
+        </SimpleGrid>
+
+              
             </Flex>
           </CardHeader>
 

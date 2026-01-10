@@ -239,7 +239,6 @@ const AdminClashes = () => {
         {/* Hero Header Section with integrated navbar */}
         <Box 
           bgGradient="linear(to-r, orange.500, red.600, pink.600)"
-          pt={4}
           pb={24}
           position="relative"
           overflow="hidden"
@@ -263,7 +262,7 @@ const AdminClashes = () => {
             <Header />
           </Box>
 
-          <Container maxW="7xl" position="relative" mt={20}>
+          <Container maxW="7xl" position="relative" >
             <Flex justify="space-between" align="center" w="full" gap={4}>
               <VStack spacing={4} align="start" flex="1">
                 <Badge colorScheme="whiteAlpha" fontSize="sm" px={3} py={1} borderRadius="full">
