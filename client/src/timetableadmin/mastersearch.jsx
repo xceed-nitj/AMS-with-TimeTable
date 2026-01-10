@@ -5,8 +5,8 @@ import getEnvironment from '../getenvironment';
 import ViewTimetable from './viewtt';
 import TimetableSummary from './ttsummary';
 import './Timetable.css';
-import { Container } from '@chakra-ui/layout';
 import {
+  Container,
   FormControl,
   FormLabel,
   Heading,
@@ -17,40 +17,33 @@ import {
   Spinner,
   List,
   Flex,
-} from '@chakra-ui/react';
-import { keyframes } from '@emotion/react';
-import {
-  CustomTh,
-  CustomLink,
-  CustomBlueButton,
-  CustomPlusButton,
-  CustomDeleteButton,
-} from '../styles/customStyles';
-import {
   Box,
   Text,
   HStack,
-  Center,
-  Portal,
-  ChakraProvider,
-  Spacer,
+  VStack,
+  Button,
+  Card,
+  CardHeader,
+  CardBody,
+  Badge,
+  IconButton,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  Wrap,
+  WrapItem,
+  Divider,
 } from '@chakra-ui/react';
-
-import {
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from '@chakra-ui/table';
-import { Button } from '@chakra-ui/button';
+import { 
+  ArrowBackIcon, 
+  SearchIcon,
+  TimeIcon,
+  CalendarIcon,
+  ExternalLinkIcon,
+} from '@chakra-ui/icons';
 import Header from '../components/header';
 import { Helmet } from 'react-helmet-async';
 import debounce from 'lodash.debounce';
-
-// import PDFViewTimetable from '../filedownload/chakrapdf'
 
 function MasterView({ autofill = false }) {
   const [viewData, setViewData] = useState({});
@@ -68,7 +61,6 @@ function MasterView({ autofill = false }) {
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const autofillid = parts[parts.length - 1];
-  // const autofilltype = parts[parts.length - 2];
 
   const [availableSems, setAvailableSems] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
@@ -87,49 +79,27 @@ function MasterView({ autofill = false }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isSessionsLoading, setIsSessionsLoading] = useState(true);
+  const [isSemesterDataLoading, setIsSemesterDataLoading] = useState(false);
+  const [isFacultyDataLoading, setIsFacultyDataLoading] = useState(false);
+  const [isRoomDataLoading, setIsRoomDataLoading] = useState(false);
   const facultySectionRef = useRef(null);
-  const roomSectionRef = useRef(null); // 🔹 ADDED
+  const roomSectionRef = useRef(null);
 
-  // 🔹 ADDED: Allotment-backed room maps for search + dept matching
   const [allotmentData, setAllotmentData] = useState(null);
-  const [roomDeptIndex, setRoomDeptIndex] = useState({}); // room -> dept
-  const [roomCatalog, setRoomCatalog] = useState([]); // {room, dept, source, morningSlot, afternoonSlot}
-  // ⬆️ near your other state
+  const [roomDeptIndex, setRoomDeptIndex] = useState({});
+  const [roomCatalog, setRoomCatalog] = useState([]);
   const roomCatalogRef = useRef([]);
 
-  // keep the ref in sync with state
   useEffect(() => {
     roomCatalogRef.current = roomCatalog;
   }, [roomCatalog]);
 
   const semesters = availableSems;
 
-  const softGlow = keyframes`
-  0% {
-    border-color: #a78bfa;  /* Soft Purple */
-    box-shadow: 0 0 10px #d6bffb;
-  }
-  25% {
-    border-color: #38bdf8;  /* Sky Blue */
-    box-shadow: 0 0 10px #a1e3fc;
-  }
-  50% {
-  border-color: #ffe0ac;  /* Light Apricot */
-    box-shadow: 0 0 10px #fff1cc;
-    
-  }
-  75% {
-    border-color: #34d399;  /* Mint Green */
-    box-shadow: 0 0 10px #bafce4;
-  }
-  100% {
-    border-color: #a78bfa;  /* Back to Soft Purple */
-    box-shadow: 0 0 10px #d6bffb;
-  }
-`;
-
   useEffect(() => {
     const fetchSessions = async () => {
+      setIsSessionsLoading(true);
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/timetable/sess/allsessanddept`,
@@ -140,7 +110,6 @@ function MasterView({ autofill = false }) {
         }
 
         const data = await response.json();
-        // console.log(data)
         const { uniqueSessions, uniqueDept } = data;
 
         setAllSessions(uniqueSessions.map((s) => s.session));
@@ -152,13 +121,15 @@ function MasterView({ autofill = false }) {
         } else if (uniqueSessions.length > 0) {
           setSelectedSession(uniqueSessions[0].session);
         }
+        setIsSessionsLoading(false);
       } catch (error) {
         console.error('Error fetching existing timetable data:', error);
+        setIsSessionsLoading(false);
       }
     };
 
     fetchSessions();
-  }, []); // Empty dependency array means this effect runs once on mount
+  }, []);
 
   useEffect(() => {
     const fetchCode = async (session, dept) => {
@@ -169,7 +140,6 @@ function MasterView({ autofill = false }) {
         );
         const data1 = await response.json();
         console.log('received code:', data1);
-
         setCurrentCode(data1);
       } catch (error) {
         console.error('Error fetching existing timetable data:', error);
@@ -179,10 +149,8 @@ function MasterView({ autofill = false }) {
     fetchCode(selectedSession, selectedDept);
   }, [selectedSession, selectedDept]);
 
-  // 🔹 ADDED: Fetch allotment for current session and build room maps
   useEffect(() => {
     const fetchAllotment = async () => {
-      // if (!selectedSession) return;
       try {
         const res = await fetch(
           `${apiUrl}/timetablemodule/allotment?session=${selectedSession}`,
@@ -193,7 +161,7 @@ function MasterView({ autofill = false }) {
           const [allotment] = Array.isArray(data) ? data : [];
           setAllotmentData(allotment);
           console.log('Fetched allotment:', allotment);
-          // Build room -> dept index & a flat room catalog
+          
           const index = {};
           const catalog = [];
           const ingest = (arr, source) => {
@@ -207,7 +175,6 @@ function MasterView({ autofill = false }) {
                 catalog.push({
                   room,
                   dept,
-                  // source, // "centralised" | "openElective"
                   morningSlot: !!r.morningSlot,
                   afternoonSlot: !!r.afternoonSlot,
                 });
@@ -233,10 +200,12 @@ function MasterView({ autofill = false }) {
       }
     };
     fetchAllotment();
-  }, [apiUrl, selectedSession]); // runs whenever session changes
+  }, [apiUrl, selectedSession]);
 
   useEffect(() => {
     const fetchData = async (semester, currentCode) => {
+      if (!semester || !currentCode) return;
+      setIsSemesterDataLoading(true);
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/lock/lockclasstt/${currentCode}/${semester}`,
@@ -251,6 +220,8 @@ function MasterView({ autofill = false }) {
       } catch (error) {
         console.error('Error fetching existing timetable data:', error);
         return {};
+      } finally {
+        setIsSemesterDataLoading(false);
       }
     };
 
@@ -258,10 +229,12 @@ function MasterView({ autofill = false }) {
       const data = await fetchData(semester, currentCode);
     };
     fetchViewData(selectedSemester, currentCode);
-  }, [selectedSemester]);
+  }, [selectedSemester, currentCode]);
 
   useEffect(() => {
     const facultyData = async (currentCode, faculty) => {
+      if (!faculty || !currentCode) return {};
+      setIsFacultyDataLoading(true);
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/lock/lockfacultytt/${currentCode}/${faculty}`,
@@ -276,6 +249,8 @@ function MasterView({ autofill = false }) {
       } catch (error) {
         console.error('Error fetching existing timetable data:', error);
         return {};
+      } finally {
+        setIsFacultyDataLoading(false);
       }
     };
 
@@ -285,6 +260,7 @@ function MasterView({ autofill = false }) {
     };
 
     const fetchCommonLoad = async (currentCode, viewFaculty) => {
+      if (!viewFaculty || !currentCode) return;
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/commonLoad/${currentCode}/${viewFaculty}`,
@@ -304,6 +280,8 @@ function MasterView({ autofill = false }) {
 
   useEffect(() => {
     const roomData = async (currentCode, room) => {
+      if (!room || !currentCode) return {};
+      setIsRoomDataLoading(true);
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/lock/lockroomtt/${currentCode}/${room}`,
@@ -318,6 +296,8 @@ function MasterView({ autofill = false }) {
       } catch (error) {
         console.error('Error fetching existing timetable data:', error);
         return {};
+      } finally {
+        setIsRoomDataLoading(false);
       }
     };
 
@@ -327,7 +307,7 @@ function MasterView({ autofill = false }) {
     };
 
     fetchRoomData(currentCode, selectedRoom);
-  }, [selectedRoom]);
+  }, [currentCode, selectedRoom]);
 
   useEffect(() => {
     const fetchSem = async (currentCode) => {
@@ -357,7 +337,6 @@ function MasterView({ autofill = false }) {
           const data = await response.json();
           const filteredSems = data.filter((room) => room.code === currentCode);
           const semValues = filteredSems.map((room) => room.room);
-
           setAvailableRooms(semValues);
         }
       } catch (error) {
@@ -530,7 +509,6 @@ function MasterView({ autofill = false }) {
 
   const handleFacultyClick = async (faculty) => {
     const { name, dept } = faculty;
-
     setSelectedDept(dept);
 
     setTimeout(() => {
@@ -551,7 +529,6 @@ function MasterView({ autofill = false }) {
     setSuggestions([]);
   };
 
-  // 🔹 ADDED: Handle room selection from search suggestions
   const handleRoomClick = (roomItem) => {
     const roomName = roomItem?.room || roomItem?.name;
     if (!roomName) return;
@@ -559,9 +536,9 @@ function MasterView({ autofill = false }) {
     const rawDept =
       roomDeptIndex[roomName.trim().toUpperCase()] || roomItem?.dept;
     const dept = canonDept(rawDept);
-    if (dept) setSelectedDept(dept); // triggers currentCode + rooms refresh
+    if (dept) setSelectedDept(dept);
 
-    setPendingRoom(roomName); // select after rooms load
+    setPendingRoom(roomName);
     setQuery('');
     setSuggestions([]);
   };
@@ -587,7 +564,6 @@ function MasterView({ autofill = false }) {
     fetchTTData(currentCode);
   }, [currentCode]);
 
-  // 🔸 CHANGED: augment suggestions with rooms from allotment (keeping faculty fetch)
   const fetchSuggestions = useRef(
     debounce(async (q) => {
       if (!q) {
@@ -596,7 +572,6 @@ function MasterView({ autofill = false }) {
       }
       setLoading(true);
       try {
-        // ---- FACULTY (existing endpoint) ----
         const facRes = await fetch(
           `${apiUrl}/timetablemodule/faculty/search?q=${encodeURIComponent(q)}`,
           { credentials: 'include' }
@@ -611,20 +586,15 @@ function MasterView({ autofill = false }) {
           }))
           .filter((x) => x.name);
 
-        // If exactly one faculty is returned, auto-select them using the
-        // existing handler so the dept is set and the view scrolls.
         if (facultyItems.length === 1) {
           try {
-            // call handler which also clears suggestions
             handleFacultyClick(facultyItems[0]);
           } catch (err) {
             console.error('Error auto-selecting single faculty:', err);
           }
-          // let finally block clear loading; return early to avoid extra work
           return;
         }
 
-        // ---- ROOMS from allotment (local) ----
         const qlc = q.toLowerCase();
         const roomLocal = (roomCatalogRef.current || [])
           .filter(
@@ -641,7 +611,6 @@ function MasterView({ autofill = false }) {
             room: r.room,
           }));
 
-        // ---- Fallback: backend room search when local is empty ----
         let roomRemote = [];
         if (roomLocal.length > 0) {
           const rRes = await fetch(
@@ -681,7 +650,6 @@ function MasterView({ autofill = false }) {
           }
         }
 
-        // ---- Merge & dedupe by kind+name ----
         const seen = new Set();
         const merged = [...facultyItems, ...roomLocal, ...roomRemote].filter(
           (it) => {
@@ -693,8 +661,6 @@ function MasterView({ autofill = false }) {
         );
 
         setSuggestions(merged);
-        // Optional debug (won't crash prod):
-        // console.log('[rooms] local:', roomLocal.length, 'remote:', roomRemote.length, 'catalog:', roomCatalogRef.current?.length || 0);
       } catch (err) {
         console.error('Error in fetchSuggestions:', err);
         setSuggestions([]);
@@ -707,7 +673,6 @@ function MasterView({ autofill = false }) {
   useEffect(() => () => fetchSuggestions.cancel?.(), [fetchSuggestions]);
   const [pendingRoom, setPendingRoom] = useState(null);
 
-  // Autofill input from URL when the page first loads (if present)
   useEffect(() => {
     const fetchAndAutofill = async () => {
       try {
@@ -716,7 +681,6 @@ function MasterView({ autofill = false }) {
           const response = await fetch(`${apiUrl}/timetablemodule/faculty/id/${id}`, { credentials: 'include' });
           if (response.ok) {
             const faculty = await response.json();
-            // Assuming faculty has name and dept
             handleFacultyClick({ name: faculty.name, dept: faculty.dept });
           } else {
             console.error('Failed to fetch faculty by ID');
@@ -727,10 +691,8 @@ function MasterView({ autofill = false }) {
       }
     };
     fetchAndAutofill();
-    // We depend on autofillid which is derived from the pathname
   }, [autofillid]);
 
-  // map any dept string to the exact option in availableDepts (case/space tolerant)
   const canonDept = (name) => {
     const n = (name || '').trim().toLowerCase();
     const match = availableDepts.find(
@@ -768,414 +730,593 @@ function MasterView({ autofill = false }) {
           content="NITJ's official time table search engine for all semesters and courses"
         />
       </Helmet>
-      <Container maxW="7xl">
-        <Header title="View TimeTable "></Header>
-        <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ base: 'flex-start', md: 'center' }}
-          justify="flex-start"
-          gap={2}
-          wrap="wrap"
+
+      <Box bg="white" minH="100vh">
+        {/* Hero Header Section */}
+        <Box
+          bgGradient="linear(to-r, purple.900, purple.700, pink.500)"
+          pt={0}
+          pb={32}
+          position="relative"
+          overflow="hidden"
         >
-          <Link to="/tt/masterdata">
-            <Button
-              colorScheme="purple"
-              style={{ marginRight: 'auto', background: 'darkred' }}
-            >
-              Slot wise master search
-            </Button>
-          </Link>
-          <Link to="/tt/commonslot">
-            <Button
-              colorScheme="blue"
-              style={{ marginRight: 'auto', background: 'darkblue' }}
-            >
-              Search Meet-Slot
-            </Button>
-          </Link>
           <Box
-            flex="1"
-            style={{
-              width: '100%',
-              marginRight: '',
-              position: 'relative',
-              zIndex: '5',
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            opacity="0.1"
+            bgImage="radial-gradient(circle, white 1px, transparent 1px)"
+            bgSize="30px 30px"
+          />
+
+          <Box
+            position="relative"
+            zIndex={2}
+            sx={{
+              '& button[aria-label="Go back"]': { display: 'none' },
+              '& .chakra-button:first-of-type': { display: 'none' },
             }}
           >
-            <Input
-              style={{
-                backgroundColor: 'white',
-                borderRadius: '5px',
-                padding: '10px',
-                border: '1px solid #ccc',
-                height: '45px',
-              }}
-              placeholder="Type faculty or room "
-              value={query}
-              onChange={(e) => {
-                const value = e.target.value;
-                setQuery(value);
-                fetchSuggestions(value);
-              }}
-              sx={{
-                backgroundColor: 'white',
-                borderRadius: '5px',
-                padding: '10px',
-                height: '45px',
-                border: '2px solid',
-                animation: `${softGlow} 20s infinite ease-in-out`,
-                transition: 'box-shadow 5s ease-in-out',
-              }}
-            />
-            {loading && (
-              <Spinner
-                mt={2}
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  zIndex: '11',
-                }}
-              />
-            )}
-            <List
-              spacing={2}
-              mt={4}
-              style={{
-                maxHeight: '200px',
-                overflowY: 'auto',
-                width: '100%',
-                position: 'absolute',
-                zIndex: '10',
-                backgroundColor: 'white',
-              }}
-            >
-              {suggestions.map((item) => (
-                <ListItem
-                  onClick={() =>
-                    item.kind === 'room'
-                      ? handleRoomClick(item)
-                      : handleFacultyClick(item)
-                  }
-                  _hover={{ backgroundColor: 'gray.100', cursor: 'pointer' }}
-                  key={item._id || item.name || item.room}
-                  p={2}
-                  borderWidth="1px"
-                  borderRadius="md"
-                >
-                  <Text fontWeight="bold">
-                    {item.kind === 'room' ? item.room : item.name}
-                    <Text as="span" ml={2} fontSize="xs" color="gray.600">
-                      [{item.kind || 'faculty'}]
-                    </Text>
-                  </Text>
-                  <Text fontSize="sm" color="gray.600">
-                    {item.kind === 'faculty'
-                      ? item.dept
-                      : `Allotted to ${item.dept} & others`}
-                  </Text>
-                </ListItem>
-              ))}
-            </List>
+            <Header />
           </Box>
 
-          <Link to="/classrooms">
-            <Button
-              colorScheme="green"
-              style={{ marginRight: 'auto', background: 'darkgreen' }}
-            >
-              Geo Locate Classrooms
-            </Button>
-          </Link>
-        </Flex>
-        <FormLabel fontWeight="bold">Select Session:</FormLabel>
-
-        <Select
-          value={selectedSession}
-          onChange={(e) => setSelectedSession(e.target.value)}
-          isRequired
-        >
-          {allsessions.map((session, index) => (
-            <option key={index} value={session}>
-              {session}
-            </option>
-          ))}
-        </Select>
-
-        <FormLabel fontWeight="bold">Select Department:</FormLabel>
-
-        <Select
-          value={selectedDept}
-          onChange={(e) => setSelectedDept(e.target.value)}
-          isRequired
-        >
-          <option value="">Select Department</option>
-          {availableDepts.map((dept, index) => (
-            <option key={index} value={dept}>
-              {dept}
-            </option>
-          ))}
-        </Select>
-
-        {selectedSession === '' || selectedDept === '' ? (
-          <Text color="red">
-            Please select Session and Department to proceed further.
-          </Text>
-        ) : (
-          <>
-            <Container maxW="6xl">
-              <Center my={4}>
-                <Text color="blue">
-                  Select semester (or) faculty (or) room to view the time table
-                </Text>
-              </Center>
-              <FormControl>
-                <FormLabel fontWeight="bold">
-                  View Semester timetable:
-                </FormLabel>
-
-                <Select
-                  value={selectedSemester}
-                  onChange={(e) => setSelectedSemester(e.target.value)}
+          <Container maxW="7xl" position="relative" mt={2}>
+            <Flex justify="space-between" align="center" w="full" gap={4} mb={4}>
+              <VStack spacing={2} align="start" flex="1">
+                <Badge
+                  colorScheme="whiteAlpha"
+                  fontSize="sm"
+                  px={3}
+                  py={1}
+                  borderRadius="full"
                 >
-                  <option value="">Select Semester</option>
-                  {semesters.map((semester, index) => (
-                    <option key={index} value={semester}>
-                      {semester}
-                    </option>
+                  Timetable Search
+                </Badge>
+                <Heading size="2xl" color="white" fontWeight="bold" lineHeight="1.2">
+                  View Timetables
+                </Heading>
+                <Text color="whiteAlpha.900" fontSize="lg" maxW="2xl">
+                  Search and view timetables by semester, faculty, or room.
+                </Text>
+              </VStack>
+
+              <IconButton
+                icon={<ArrowBackIcon />}
+                aria-label="Go back"
+                onClick={() => window.history.back()}
+                size="lg"
+                bg="rgba(255, 255, 255, 0.2)"
+                color="white"
+                fontSize="2xl"
+                _hover={{ bg: 'rgba(255, 255, 255, 0.3)' }}
+                _active={{ bg: 'rgba(255, 255, 255, 0.4)' }}
+                borderRadius="full"
+                boxShadow="lg"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+                flexShrink={0}
+              />
+            </Flex>
+
+            {/* Quick Action Buttons */}
+            <Wrap spacing={3} mb={6}>
+              <WrapItem>
+                <Button
+                  as={Link}
+                  to="/tt/masterdata"
+                  bg="rgba(220, 38, 38, 0.9)"
+                  color="white"
+                  leftIcon={<SearchIcon />}
+                  size="md"
+                  _hover={{ bg: 'rgba(220, 38, 38, 1)' }}
+                  boxShadow="lg"
+                >
+                  Slot-wise Master Search
+                </Button>
+              </WrapItem>
+              <WrapItem>
+                <Button
+                  as={Link}
+                  to="/tt/commonslot"
+                  bg="rgba(37, 99, 235, 0.9)"
+                  color="white"
+                  leftIcon={<CalendarIcon />}
+                  size="md"
+                  _hover={{ bg: 'rgba(37, 99, 235, 1)' }}
+                  boxShadow="lg"
+                >
+                  Search Meet-Slot
+                </Button>
+              </WrapItem>
+              <WrapItem>
+                <Button
+                  as={Link}
+                  to="/classrooms"
+                  bg="rgba(22, 163, 74, 0.9)"
+                  color="white"
+                  leftIcon={<ExternalLinkIcon />}
+                  size="md"
+                  _hover={{ bg: 'rgba(22, 163, 74, 1)' }}
+                  boxShadow="lg"
+                >
+                  Geo Locate Classrooms
+                </Button>
+              </WrapItem>
+            </Wrap>
+
+            {/* Smart Search Bar */}
+            <Box position="relative" maxW="4xl">
+              <Box position="relative">
+                <Input
+                  placeholder="Type faculty name or room number..."
+                  value={query}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setQuery(value);
+                    fetchSuggestions(value);
+                  }}
+                  size="lg"
+                  bg="white"
+                  borderColor="whiteAlpha.400"
+                  _hover={{ borderColor: 'whiteAlpha.600' }}
+                  _focus={{ 
+                    borderColor: 'white', 
+                    boxShadow: '0 0 0 3px rgba(255,255,255,0.3)',
+                    bg: 'white'
+                  }}
+                  pr="50px"
+                  fontSize="md"
+                />
+                <SearchIcon
+                  position="absolute"
+                  right="16px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  color="purple.500"
+                  boxSize={5}
+                />
+              </Box>
+
+              {loading && (
+                <Flex align="center" mt={2} color="white">
+                  <Spinner size="sm" mr={2} />
+                  <Text fontSize="sm">Searching...</Text>
+                </Flex>
+              )}
+
+              {suggestions.length > 0 && (
+                <Box
+                  mt={2}
+                  maxH="300px"
+                  overflowY="auto"
+                  borderWidth="1px"
+                  borderColor="whiteAlpha.300"
+                  borderRadius="md"
+                  bg="white"
+                  shadow="2xl"
+                >
+                  {suggestions.map((item) => (
+                    <Box
+                      key={item._id || item.name || item.room}
+                      p={3}
+                      _hover={{ bg: 'purple.50', cursor: 'pointer' }}
+                      borderBottomWidth="1px"
+                      borderColor="gray.100"
+                      onClick={() =>
+                        item.kind === 'room'
+                          ? handleRoomClick(item)
+                          : handleFacultyClick(item)
+                      }
+                    >
+                      <HStack justify="space-between">
+                        <VStack align="start" spacing={0}>
+                          <Text fontWeight="bold" fontSize="sm">
+                            {item.kind === 'room' ? item.room : item.name}
+                          </Text>
+                          <Text fontSize="xs" color="gray.600">
+                            {item.kind === 'faculty'
+                              ? item.dept
+                              : `Allotted to ${item.dept} & others`}
+                          </Text>
+                        </VStack>
+                        <Badge
+                          colorScheme={item.kind === 'faculty' ? 'blue' : 'green'}
+                          fontSize="xs"
+                        >
+                          {item.kind || 'faculty'}
+                        </Badge>
+                      </HStack>
+                    </Box>
                   ))}
-                </Select>
-                <Box mb="5">
-                  {selectedSemester ? (
-                    <Box>
-                      <Text
-                        color="green"
-                        style={{ fontWeight: '700' }}
-                        id="saveTime"
-                        mb="2.5"
-                        mt="2.5"
+                </Box>
+              )}
+            </Box>
+          </Container>
+        </Box>
+
+        <Container maxW="7xl" mt={-20} position="relative" zIndex={1} pb={16}>
+          <VStack spacing={2} align="stretch">
+            {/* Session and Department Selection */}
+            <Card
+              bg="white"
+              borderRadius="2xl"
+              shadow="2xl"
+              border="1px"
+              borderColor="gray.300"
+              overflow="hidden"
+            >
+              <CardHeader bg="cyan.600" color="white" p={4}>
+                <Heading size="md">Select Session & Department</Heading>
+              </CardHeader>
+              <CardBody p={6}>
+                <VStack spacing={4} align="stretch">
+                  <FormControl>
+                    <FormLabel fontWeight="semibold" color="gray.700">
+                      Academic Session
+                    </FormLabel>
+                    {isSessionsLoading ? (
+                      <HStack spacing={3}>
+                        <Spinner size="sm" color="cyan.500" />
+                        <Text fontSize="sm" color="gray.600">Loading sessions...</Text>
+                      </HStack>
+                    ) : (
+                      <Select
+                        value={selectedSession}
+                        onChange={(e) => setSelectedSession(e.target.value)}
+                        size="lg"
+                        borderColor="cyan.300"
+                        _hover={{ borderColor: 'cyan.400' }}
+                        _focus={{ borderColor: 'cyan.500', boxShadow: '0 0 0 1px #0891B2' }}
                       >
-                        Last saved on:{' '}
-                        {lockedTime ? lockedTime : 'Not saved yet'}
-                      </Text>
-                      <ViewTimetable timetableData={viewData} />
-                      {Array.isArray(subjectData) && subjectData.length > 0 ? (
-                        <TimetableSummary
-                          timetableData={viewData}
-                          type={'sem'}
-                          code={currentCode}
-                          time={lockedTime}
-                          headTitle={selectedSemester}
-                          subjectData={subjectData}
-                          TTData={TTData}
-                          notes={semNotes}
-                        />
-                      ) : (
-                        <Text style={{ fontWeight: '700', color: 'red' }}>
-                          Loading TimeTable Summary...
-                        </Text>
-                      )}
-                      <Box>
-                        {semNotes.length > 0 ? (
-                          <div>
-                            <Text fontSize="xl" fontWeight="bold">
-                              Notes:
-                            </Text>
-                            {semNotes.map((noteArray, index) => (
-                              <UnorderedList key={index}>
-                                {noteArray.map((note, noteIndex) => (
-                                  <ListItem key={noteIndex}>{note}</ListItem>
-                                ))}
-                              </UnorderedList>
-                            ))}
-                          </div>
-                        ) : (
-                          <Text>No notes added for this selection.</Text>
-                        )}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Text>Please select a Semester from the dropdown.</Text>
+                        {allsessions.map((session, index) => (
+                          <option key={index} value={session}>
+                            {session}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontWeight="semibold" color="gray.700">
+                      Department
+                    </FormLabel>
+                    <Select
+                      value={selectedDept}
+                      onChange={(e) => setSelectedDept(e.target.value)}
+                      placeholder="Select Department"
+                      size="lg"
+                      borderColor="cyan.300"
+                      _hover={{ borderColor: 'cyan.400' }}
+                      _focus={{ borderColor: 'cyan.500', boxShadow: '0 0 0 1px #0891B2' }}
+                    >
+                      {availableDepts.map((dept, index) => (
+                        <option key={index} value={dept}>
+                          {dept}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {(selectedSession === '' || selectedDept === '') && (
+                    <Alert status="warning" borderRadius="md">
+                      <AlertIcon />
+                      <AlertDescription fontSize="sm">
+                        Please select both session and department to view timetables.
+                      </AlertDescription>
+                    </Alert>
                   )}
-                </Box>
-                <Center my={4}>
-                  <Text
-                    style={{
-                      fontWeight: '800',
-                      color: '#394870',
-                      fontSize: 'large',
-                    }}
-                  >
-                    or
-                  </Text>
-                </Center>
-                {/* Faculty Dropdown */}
-                <FormControl ref={facultySectionRef}>
-                  <FormLabel fontWeight="bold">
-                    View Faculty timetable
-                  </FormLabel>
-                  <Select
-                    value={selectedFaculty}
-                    onChange={(e) => setSelectedFaculty(e.target.value)}
-                  >
-                    <option value="">Select Faculty</option>
-                    {availableFaculties.map((faculty, index) => (
-                      <option key={index} value={faculty}>
-                        {faculty}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Box mb="5">
-                  {selectedFaculty ? (
-                    <Box>
-                      <Text
-                        color="green"
-                        style={{ fontWeight: '700' }}
-                        id="saveTime"
-                        mb="2.5"
-                        mt="2.5"
+                </VStack>
+              </CardBody>
+            </Card>
+
+            {/* Timetable Views - Only show if session and dept selected */}
+            {selectedSession !== '' && selectedDept !== '' && (
+              <>
+                <Alert status="info" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription fontSize="sm">
+                    Select semester, faculty, or room below to view the corresponding timetable
+                  </AlertDescription>
+                </Alert>
+
+                {/* Semester Timetable */}
+                <Card
+                  bg="white"
+                  borderRadius="2xl"
+                  shadow="2xl"
+                  border="1px"
+                  borderColor="gray.300"
+                  overflow="hidden"
+                >
+                  <CardHeader bg="purple.600" color="white" p={4}>
+                    <Heading size="md">Semester Timetable</Heading>
+                  </CardHeader>
+                  <CardBody p={6}>
+                    <FormControl mb={4}>
+                      <FormLabel fontWeight="semibold" color="gray.700">
+                        Select Semester
+                      </FormLabel>
+                      <Select
+                        value={selectedSemester}
+                        onChange={(e) => setSelectedSemester(e.target.value)}
+                        placeholder="Select Semester"
+                        size="lg"
+                        borderColor="purple.300"
+                        _hover={{ borderColor: 'purple.400' }}
+                        _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px #805AD5' }}
                       >
-                        Last saved on:{' '}
-                        {facultyLockedTime
-                          ? facultyLockedTime
-                          : 'Not saved yet'}
-                      </Text>
+                        {semesters.map((semester, index) => (
+                          <option key={index} value={semester}>
+                            {semester}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
 
-                      <ViewTimetable timetableData={viewFacultyData} />
-                      {Array.isArray(subjectData) && subjectData.length > 0 ? (
-                        <TimetableSummary
-                          timetableData={viewFacultyData}
-                          type={'faculty'}
-                          code={currentCode}
-                          time={facultyLockedTime}
-                          headTitle={selectedFaculty}
-                          subjectData={subjectData}
-                          TTData={TTData}
-                          notes={facultyNotes}
-                          commonLoad={commonLoad}
-                        />
+                    {selectedSemester ? (
+                      isSemesterDataLoading ? (
+                        <Box p={8}>
+                          <VStack spacing={4}>
+                            <Spinner size="xl" thickness="4px" color="purple.500" speed="0.65s" />
+                            <Text color="gray.600" fontSize="lg">Loading semester timetable...</Text>
+                          </VStack>
+                        </Box>
                       ) : (
-                        <Text style={{ fontWeight: '700', color: 'red' }}>
-                          Loading TimeTable Summary...
-                        </Text>
-                      )}
-                      <Box>
-                        {facultyNotes.length > 0 ? (
-                          <div>
-                            <Text fontSize="xl" fontWeight="bold">
-                              Notes:
+                        <Box>
+                          <HStack spacing={2} mb={4}>
+                            <TimeIcon color="green.500" />
+                            <Text fontSize="sm" fontWeight="semibold" color="green.600">
+                              Last saved: {lockedTime || 'Not saved yet'}
                             </Text>
-                            {facultyNotes.map((noteArray, index) => (
-                              <UnorderedList key={index}>
-                                {noteArray.map((note, noteIndex) => (
-                                  <ListItem key={noteIndex}>{note}</ListItem>
-                                ))}
-                              </UnorderedList>
-                            ))}
-                          </div>
-                        ) : (
-                          <Text>No notes added for this selection.</Text>
-                        )}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Text>Please select a faculty from the dropdown.</Text>
-                  )}
-                </Box>
-                <Center my={4}>
-                  <Text
-                    style={{
-                      fontWeight: '800',
-                      color: '#394870',
-                      fontSize: 'large',
-                    }}
-                  >
-                    or
-                  </Text>
-                </Center>
+                          </HStack>
+                          <ViewTimetable timetableData={viewData} />
+                          {Array.isArray(subjectData) && subjectData.length > 0 ? (
+                            <TimetableSummary
+                              timetableData={viewData}
+                              type={'sem'}
+                              code={currentCode}
+                              time={lockedTime}
+                              headTitle={selectedSemester}
+                              subjectData={subjectData}
+                              TTData={TTData}
+                              notes={semNotes}
+                            />
+                          ) : (
+                            <Flex justify="center" align="center" p={4}>
+                              <Spinner size="md" color="purple.500" mr={2} />
+                              <Text color="gray.600" fontWeight="bold">
+                                Loading TimeTable Summary...
+                              </Text>
+                            </Flex>
+                          )}
+                          {semNotes.length > 0 && (
+                            <Box mt={4} p={4} bg="yellow.50" borderRadius="md" borderWidth="1px" borderColor="yellow.200">
+                              <Text fontSize="md" fontWeight="bold" color="yellow.800" mb={2}>
+                                Notes:
+                              </Text>
+                              {semNotes.map((noteArray, index) => (
+                                <UnorderedList key={index} color="yellow.700">
+                                  {noteArray.map((note, noteIndex) => (
+                                    <ListItem key={noteIndex} fontSize="sm">{note}</ListItem>
+                                  ))}
+                                </UnorderedList>
+                              ))}
+                            </Box>
+                          )}
+                        </Box>
+                      )
+                    ) : (
+                      <Text color="gray.600">Please select a semester from the dropdown.</Text>
+                    )}
+                  </CardBody>
+                </Card>
 
-                <FormControl ref={roomSectionRef}>
-                  <FormLabel fontWeight="bold">View Room timetable</FormLabel>
-                  {/* Room Dropdown */}
-                  <Select
-                    value={selectedRoom}
-                    onChange={(e) => {
-                      const rm = e.target.value;
-                      setSelectedRoom(rm);
-                      // 🔹 ADDED: auto-match dept from allotment mapping
-                      // const dep = roomDeptIndex[rm];
-                      // if (dep && dep !== selectedDept) setSelectedDept(dep);
-                      const dep = roomDeptIndex[rm.trim().toUpperCase()];
-                      const depCanon = canonDept(dep);
-                      if (dep && dep !== selectedDept) setSelectedDept(dep);
-                      if (depCanon && depCanon !== selectedDept)
-                        setSelectedDept(depCanon);
-                    }}
-                  >
-                    <option value="">Select Room</option>
-                    {availableRooms.map((room, index) => (
-                      <option key={index} value={room}>
-                        {room}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Box mb="5">
-                  {selectedRoom ? (
-                    <Box>
-                      <Text color="black" id="saveTime" mb="2.5" mt="2.5">
-                        Last saved on:{' '}
-                        {roomlockedTime ? roomlockedTime : 'Not saved yet'}
-                      </Text>
+                <Divider />
 
-                      <ViewTimetable timetableData={viewRoomData} />
-                      {Array.isArray(subjectData) && subjectData.length > 0 ? (
-                        <TimetableSummary
-                          timetableData={viewRoomData}
-                          type={'room'}
-                          code={currentCode}
-                          time={roomlockedTime}
-                          headTitle={selectedRoom}
-                          subjectData={subjectData}
-                          TTData={TTData}
-                          notes={roomNotes}
-                        />
+                {/* Faculty Timetable */}
+                <Card
+                  ref={facultySectionRef}
+                  bg="white"
+                  borderRadius="2xl"
+                  shadow="2xl"
+                  border="1px"
+                  borderColor="gray.300"
+                  overflow="hidden"
+                >
+                  <CardHeader bg="teal.600" color="white" p={4}>
+                    <Heading size="md">Faculty Timetable</Heading>
+                  </CardHeader>
+                  <CardBody p={6}>
+                    <FormControl mb={4}>
+                      <FormLabel fontWeight="semibold" color="gray.700">
+                        Select Faculty
+                      </FormLabel>
+                      <Select
+                        value={selectedFaculty}
+                        onChange={(e) => setSelectedFaculty(e.target.value)}
+                        placeholder="Select Faculty"
+                        size="lg"
+                        borderColor="teal.300"
+                        _hover={{ borderColor: 'teal.400' }}
+                        _focus={{ borderColor: 'teal.500', boxShadow: '0 0 0 1px #14B8A6' }}
+                      >
+                        {availableFaculties.map((faculty, index) => (
+                          <option key={index} value={faculty}>
+                            {faculty}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    {selectedFaculty ? (
+                      isFacultyDataLoading ? (
+                        <Box p={8}>
+                          <VStack spacing={4}>
+                            <Spinner size="xl" thickness="4px" color="teal.500" speed="0.65s" />
+                            <Text color="gray.600" fontSize="lg">Loading faculty timetable...</Text>
+                          </VStack>
+                        </Box>
                       ) : (
-                        <Text style={{ fontWeight: '700', color: 'red' }}>
-                          Loading TimeTable Summary...
-                        </Text>
-                      )}
-                      <Box>
-                        {roomNotes.length > 0 ? (
-                          <div>
-                            <Text fontSize="xl" fontWeight="bold">
-                              Notes:
+                        <Box>
+                          <HStack spacing={2} mb={4}>
+                            <TimeIcon color="green.500" />
+                            <Text fontSize="sm" fontWeight="semibold" color="green.600">
+                              Last saved: {facultyLockedTime || 'Not saved yet'}
                             </Text>
-                            {roomNotes.map((noteArray, index) => (
-                              <UnorderedList key={index}>
-                                {noteArray.map((note, noteIndex) => (
-                                  <ListItem key={noteIndex}>{note}</ListItem>
-                                ))}
-                              </UnorderedList>
-                            ))}
-                          </div>
-                        ) : (
-                          <Text>No notes added for this selection.</Text>
-                        )}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Text>Please select a Room from the dropdown.</Text>
-                  )}
-                </Box>
-                <Box height="200px" />
-              </FormControl>
-            </Container>
-          </>
-        )}
-      </Container>
+                          </HStack>
+                          <ViewTimetable timetableData={viewFacultyData} />
+                          {Array.isArray(subjectData) && subjectData.length > 0 ? (
+                            <TimetableSummary
+                              timetableData={viewFacultyData}
+                              type={'faculty'}
+                              code={currentCode}
+                              time={facultyLockedTime}
+                              headTitle={selectedFaculty}
+                              subjectData={subjectData}
+                              TTData={TTData}
+                              notes={facultyNotes}
+                              commonLoad={commonLoad}
+                            />
+                          ) : (
+                            <Flex justify="center" align="center" p={4}>
+                              <Spinner size="md" color="teal.500" mr={2} />
+                              <Text color="gray.600" fontWeight="bold">
+                                Loading TimeTable Summary...
+                              </Text>
+                            </Flex>
+                          )}
+                          {facultyNotes.length > 0 && (
+                            <Box mt={4} p={4} bg="yellow.50" borderRadius="md" borderWidth="1px" borderColor="yellow.200">
+                              <Text fontSize="md" fontWeight="bold" color="yellow.800" mb={2}>
+                                Notes:
+                              </Text>
+                              {facultyNotes.map((noteArray, index) => (
+                                <UnorderedList key={index} color="yellow.700">
+                                  {noteArray.map((note, noteIndex) => (
+                                    <ListItem key={noteIndex} fontSize="sm">{note}</ListItem>
+                                  ))}
+                                </UnorderedList>
+                              ))}
+                            </Box>
+                          )}
+                        </Box>
+                      )
+                    ) : (
+                      <Text color="gray.600">Please select a faculty from the dropdown.</Text>
+                    )}
+                  </CardBody>
+                </Card>
+
+                <Divider />
+
+                {/* Room Timetable */}
+                <Card
+                  ref={roomSectionRef}
+                  bg="white"
+                  borderRadius="2xl"
+                  shadow="2xl"
+                  border="1px"
+                  borderColor="gray.300"
+                  overflow="hidden"
+                >
+                  <CardHeader bg="green.600" color="white" p={4}>
+                    <Heading size="md">Room Timetable</Heading>
+                  </CardHeader>
+                  <CardBody p={6}>
+                    <FormControl mb={4}>
+                      <FormLabel fontWeight="semibold" color="gray.700">
+                        Select Room
+                      </FormLabel>
+                      <Select
+                        value={selectedRoom}
+                        onChange={(e) => {
+                          const rm = e.target.value;
+                          setSelectedRoom(rm);
+                          const dep = roomDeptIndex[rm.trim().toUpperCase()];
+                          const depCanon = canonDept(dep);
+                          if (dep && dep !== selectedDept) setSelectedDept(dep);
+                          if (depCanon && depCanon !== selectedDept)
+                            setSelectedDept(depCanon);
+                        }}
+                        placeholder="Select Room"
+                        size="lg"
+                        borderColor="green.300"
+                        _hover={{ borderColor: 'green.400' }}
+                        _focus={{ borderColor: 'green.500', boxShadow: '0 0 0 1px #10B981' }}
+                      >
+                        {availableRooms.map((room, index) => (
+                          <option key={index} value={room}>
+                            {room}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    {selectedRoom ? (
+                      isRoomDataLoading ? (
+                        <Box p={8}>
+                          <VStack spacing={4}>
+                            <Spinner size="xl" thickness="4px" color="green.500" speed="0.65s" />
+                            <Text color="gray.600" fontSize="lg">Loading room timetable...</Text>
+                          </VStack>
+                        </Box>
+                      ) : (
+                        <Box>
+                          <HStack spacing={2} mb={4}>
+                            <TimeIcon color="green.500" />
+                            <Text fontSize="sm" fontWeight="semibold" color="green.600">
+                              Last saved: {roomlockedTime || 'Not saved yet'}
+                            </Text>
+                          </HStack>
+                          <ViewTimetable timetableData={viewRoomData} />
+                          {Array.isArray(subjectData) && subjectData.length > 0 ? (
+                            <TimetableSummary
+                              timetableData={viewRoomData}
+                              type={'room'}
+                              code={currentCode}
+                              time={roomlockedTime}
+                              headTitle={selectedRoom}
+                              subjectData={subjectData}
+                              TTData={TTData}
+                              notes={roomNotes}
+                            />
+                          ) : (
+                            <Flex justify="center" align="center" p={4}>
+                              <Spinner size="md" color="green.500" mr={2} />
+                              <Text color="gray.600" fontWeight="bold">
+                                Loading TimeTable Summary...
+                              </Text>
+                            </Flex>
+                          )}
+                          {roomNotes.length > 0 && (
+                            <Box mt={4} p={4} bg="yellow.50" borderRadius="md" borderWidth="1px" borderColor="yellow.200">
+                              <Text fontSize="md" fontWeight="bold" color="yellow.800" mb={2}>
+                                Notes:
+                              </Text>
+                              {roomNotes.map((noteArray, index) => (
+                                <UnorderedList key={index} color="yellow.700">
+                                  {noteArray.map((note, noteIndex) => (
+                                    <ListItem key={noteIndex} fontSize="sm">{note}</ListItem>
+                                  ))}
+                                </UnorderedList>
+                              ))}
+                            </Box>
+                          )}
+                        </Box>
+                      )
+                    ) : (
+                      <Text color="gray.600">Please select a room from the dropdown.</Text>
+                    )}
+                  </CardBody>
+                </Card>
+              </>
+            )}
+          </VStack>
+        </Container>
+      </Box>
     </>
   );
 }
