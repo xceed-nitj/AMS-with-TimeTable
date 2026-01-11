@@ -55,7 +55,7 @@ import {
   RepeatIcon
 } from '@chakra-ui/icons';
 import { PersonStanding, PersonStandingIcon } from 'lucide-react';
-import { FaTasks, FaUser, FaUserAlt } from 'react-icons/fa';
+import { FaTasks, FaUser, FaUserAlt, FaUserAltSlash, FaUserTimes } from 'react-icons/fa';
 
 const Timetable = () => {
   // All state declarations
@@ -525,6 +525,10 @@ const Timetable = () => {
   const handleImportData = () => navigate(`${currentPathname}/importttdata`);
   const handleViewSummary = () => {
   const url = `${currentPathname}/lockedsummary`;
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+  const handleViewDeptFacultyLoad = () => {
+  const url = `${currentPathname}/facultyload`;
   window.open(url, "_blank", "noopener,noreferrer");
 };
   const handleViewFacultyLoad = () => {
@@ -1235,7 +1239,17 @@ const handleLockTT = async () => {
                     boxShadow="md"
                   />
                 </Tooltip>
-                <Tooltip label="Faculty Load" placement="top" hasArrow bg="pink.600" fontSize="sm">
+                <Tooltip label=" Student Normalised Faculty Load" placement="bottom" hasArrow bg="yellow.600" fontSize="sm">
+                  <IconButton
+                    icon={<FaUserTimes color="white"/>}
+                    onClick={handleViewDeptFacultyLoad}
+                    colorScheme="yellow"
+                    size={{ base: "sm", md: "md" }}
+                    borderRadius="lg"
+                    boxShadow="md"
+                  />
+                </Tooltip>
+                <Tooltip label="Subject Wise Faculty Load" placement="top" hasArrow bg="pink.600" fontSize="sm">
                   <IconButton
                     icon={<FaUserAlt color="white"/>}
                     onClick={handleViewFacultyLoad}
@@ -1245,7 +1259,8 @@ const handleLockTT = async () => {
                     boxShadow="md"
                   />
                 </Tooltip>
-                <Tooltip label="Download PDF" placement="top" hasArrow bg="cyan.600" fontSize="sm">
+
+                <Tooltip label="Download PDF" placement="bottom" hasArrow bg="cyan.600" fontSize="sm">
                   <IconButton
                     icon={<DownloadIcon color="white"/>}
                     onClick={handleDownloadClick}

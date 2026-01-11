@@ -343,8 +343,8 @@ const AdminPage = () => {
       gradient: 'linear(to-br, orange.500, orange.700)',
     },
     {
-      path: '/tt/viewinstituteload',
-      label: 'Department Load',
+      path: '/tt/admin/facultyloadallocation',
+      label: 'Department Faculty Load',
       icon: FiBarChart2,
       gradient: 'linear(to-br, pink.600, pink.800)',
     },

@@ -43,6 +43,7 @@ import AllocatedRolesPage from './dashboard/allotedroles';
 import FirstYearLoad from './timetableadmin/firstyearload';
 import FirstYearFaculty from './timetableadmin/addfirstyearfaculty';
 import LunchLoad from './timetableadmin/addlunchload';
+import FacultyDeptHourLoad from './timetableadmin/viewdeptfacultyload.jsx';
 // import InstituteLoad from './timetableadmin/instituteload';
 // import ViewInstituteLoad from './timetableadmin/viewinstituteload';
 import EditMasterFaculty from './timetableadmin/editmasterfaculty';
@@ -50,7 +51,7 @@ import ImportForm from './timetableadmin/importCentralRoom';
 // import MergePDFComponent from './filedownload/mergepdfdocuments';
 import TimetableMasterView from './timetableadmin/masterview';
 // import MasterDataTable from './timetableadmin/viewmasterclasstable.jsx';
-import FacultyLoadCalculation from './timetableadmin/viewfacultyload.jsx';
+import FacultyLoadCalculation from './timetableadmin/facultyloadadmin.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
 import FacultyHourLoad from './timetableadmin/facultyhourload.jsx';
@@ -250,7 +251,7 @@ function App() {
   <Route path="loaddistribution" element={<LoadDistribution />} />
   <Route path="roomallotment" element={<ViewAllotmentPage />} />
   <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
-  <Route path="clashes" element={<AdminClash />} />
+  <Route path="facultyload" element={<FacultyDeptHourLoad />} />
 </Route>
 
 {/* Backup Routes - v1 */}
