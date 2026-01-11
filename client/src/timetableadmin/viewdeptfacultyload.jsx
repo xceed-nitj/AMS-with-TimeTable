@@ -774,7 +774,7 @@ const MasterLoadDataTable = () => {
     };
   }, []);
 
-  // Fetch department data for a specific session using the currentCode
+  // Fetch department data for a specific session
   const fetchDepartmentData = useCallback(async (session, department, isPrevious = false) => {
     if (!session || !department) return [];
 
@@ -787,27 +787,25 @@ const MasterLoadDataTable = () => {
     }
     
     try {
-      // Use currentCode directly for current session, fetch code for previous session
+      // Always fetch the timetable code based on session and department
+      // This ensures both current and previous sessions use the same logic
+      const cacheKey = `${session}-${department}`;
       let code;
-      if (!isPrevious) {
-        code = currentCode;
+      
+      if (deptCodesCache.current[cacheKey]) {
+        code = deptCodesCache.current[cacheKey];
       } else {
-        const cacheKey = `${session}-${department}`;
-        if (deptCodesCache.current[cacheKey]) {
-          code = deptCodesCache.current[cacheKey];
-        } else {
-          const codeResponse = await fetch(
-            `${apiUrl}/timetablemodule/timetable/getcode/${session}/${department}`,
-            { credentials: 'include' }
-          );
-          if (!codeResponse.ok) {
-            console.error(`No timetable found for ${department} in ${session}`);
-            if (isPrevious) setPreviousDataFetched(true); // Mark as fetched even if no data
-            return [];
-          }
-          code = await codeResponse.json();
-          deptCodesCache.current[cacheKey] = code;
+        const codeResponse = await fetch(
+          `${apiUrl}/timetablemodule/timetable/getcode/${session}/${department}`,
+          { credentials: 'include' }
+        );
+        if (!codeResponse.ok) {
+          console.error(`No timetable found for ${department} in ${session}`);
+          if (isPrevious) setPreviousDataFetched(true);
+          return [];
         }
+        code = await codeResponse.json();
+        deptCodesCache.current[cacheKey] = code;
       }
 
       if (!code) {
@@ -879,8 +877,8 @@ const MasterLoadDataTable = () => {
         });
       }
 
-      // Sort by normalized load (descending)
-      facultyLoadData.sort((a, b) => parseFloat(b.normalizedLoad) - parseFloat(a.normalizedLoad));
+      // Sort by TWU (descending)
+      facultyLoadData.sort((a, b) => parseFloat(b.teachingWorkUnits) - parseFloat(a.teachingWorkUnits));
 
       return facultyLoadData;
     } catch (error) {
@@ -900,13 +898,16 @@ const MasterLoadDataTable = () => {
         setPreviousDataFetched(true); // Mark as fetched when done (success or failure)
       }
     }
-  }, [apiUrl, currentCode, generateInitialTimetableData, generateSummary, computeFacultyLoad, toast]);
+  }, [apiUrl, generateInitialTimetableData, generateSummary, computeFacultyLoad, toast]);
 
   // Fetch current session data when department or session changes
   useEffect(() => {
     if (selectedSession && selectedDepartment && !deptLoading) {
+      // Clear all data when session changes
+      setCurrentLoadData([]);
       setPreviousLoadData([]);
-      setPreviousDataFetched(false); // Reset when current session changes
+      setPreviousDataFetched(false);
+      
       fetchDepartmentData(selectedSession, selectedDepartment, false).then(setCurrentLoadData);
     }
   }, [selectedSession, selectedDepartment, deptLoading, fetchDepartmentData]);
@@ -914,15 +915,21 @@ const MasterLoadDataTable = () => {
   // Automatically fetch previous session data for yearly load
   useEffect(() => {
     const fetchPreviousData = async () => {
+      // Clear previous data when previous session changes
+      setPreviousLoadData([]);
+      setPreviousDataFetched(false);
+      
       if (previousSession && selectedDepartment && currentLoadData.length > 0 && !loadingCurrent) {
-        setPreviousDataFetched(false); // Reset before fetching
         const data = await fetchDepartmentData(previousSession, selectedDepartment, true);
         setPreviousLoadData(data);
+      } else if (!previousSession) {
+        // If no previous session selected, mark as fetched (no data to fetch)
+        setPreviousDataFetched(true);
       }
     };
     
     fetchPreviousData();
-  }, [previousSession, selectedDepartment, currentLoadData, loadingCurrent, fetchDepartmentData]);
+  }, [previousSession, selectedDepartment, currentLoadData.length, loadingCurrent, fetchDepartmentData]);
 
   // Get sorted faculty list - always sorted by TWU (descending)
   // When Yearly ON: Sort by Yearly Average TWU
