@@ -283,7 +283,7 @@ function App() {
 
         <Route path="/tt/admin" element={<AdminPage />} />
         <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
-        <Route path="/tt/admin/facultyloadcalculation" element={<FacultyLoadCalculation />} />
+        <Route path="/tt/admin/facultyload" element={<FacultyLoadCalculation />} />
 
 
         {/* Same link */}
