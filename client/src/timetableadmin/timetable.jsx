@@ -801,7 +801,7 @@ const handleLockTT = async () => {
         </Container>
       </Box>
 
-      <Container maxW="8xl" mt={8} position="relative" zIndex="2" pb={8} px={{ base: 2, md: 6 }} overflowX="hidden">
+      <Container maxW="8xl" mt={-8} position="relative" zIndex="2" pb={8} px={{ base: 2, md: 6 }} overflowX="hidden">
         
         {/* Enhanced Quick Actions Card */}
         <Card bg="white" borderRadius="2xl" boxShadow="2xl" mb={6} border="1px" borderColor="gray.100">
