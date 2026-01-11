@@ -533,49 +533,33 @@ const FacultyLoadCalculation = () => {
   const buttonSize = useBreakpointValue({ base: "sm", md: "md" });
 
   // Fetch department from timetable code on mount
-  useEffect(() => {
-    const fetchDepartmentFromCode = async () => {
-      if (!currentCode) {
-        setDeptLoading(false);
-        return;
+useEffect(() => {
+  const fetchDepartment = async () => {
+    try {
+      setDeptLoading(true);
+
+      const res = await fetch(`${apiUrl}/timetablemodule/mastersem/dept`, {
+        credentials: 'include',
+      });
+
+      const data = await res.json();
+
+      const deptList = Array.isArray(data) ? data : [data];
+      setAllDepartments(deptList);
+
+      if (deptList.length > 0) {
+        setSelectedDepartment(deptList[0].dept);
       }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeptLoading(false);
+    }
+  };
 
-      try {
-        const response = await fetch(
-          `${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include'
-          }
-        );
+  fetchDepartment();
+}, [apiUrl]);
 
-        const data = await response.json();
-        
-        // Handle both array and object responses
-        if (Array.isArray(data) && data.length > 0) {
-          setSelectedDepartment(data[0].dept);
-        } else if (data?.dept) {
-          setSelectedDepartment(data.dept);
-        }
-      } catch (error) {
-        console.error('Error fetching department from code:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to fetch department information',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setDeptLoading(false);
-      }
-    };
-
-    fetchDepartmentFromCode();
-  }, [apiUrl, currentCode, toast]);
 
   // Fetch all sessions and departments on mount
   useEffect(() => {
@@ -588,7 +572,12 @@ const FacultyLoadCalculation = () => {
         const { uniqueSessions, uniqueDept } = data;
         
         setAllSessions(uniqueSessions || []);
-        setAllDepartments(uniqueDept || []);
+        setAllDepartments(
+  (uniqueDept || []).map(d =>
+    typeof d === "string" ? { dept: d } : { dept: d.dept || d.department }
+  )
+);
+
         
         if (uniqueSessions?.length > 0) {
           setSelectedSession(uniqueSessions[0].session);
