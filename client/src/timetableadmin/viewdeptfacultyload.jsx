@@ -1501,8 +1501,8 @@ const MasterLoadDataTable = () => {
                       <StatNumber fontSize={{ base: "lg", md: "xl" }} color="cyan.700">{totals.courses}</StatNumber>
                       <StatHelpText fontSize="2xs">unique courses</StatHelpText>
                     </Stat>
-                    <Stat bg="white" p={3} borderRadius="lg" shadow="sm" cursor="pointer" onClick={onTWUOpen} _hover={{ bg: "purple.50" }}>
-                      <StatLabel fontSize="xs" color="purple.600">
+                    <Stat bg="white" p={3} borderRadius="lg" shadow="sm" cursor="pointer" onClick={onTWUOpen} _hover={{ bg: "yellow.500" }}>
+                      <StatLabel fontSize="xs" color="yellow.600">
                         <HStack spacing={1}>
                           <Text>Total TWU</Text>
                           <Tooltip label="Click to learn how TWU is calculated" hasArrow>
