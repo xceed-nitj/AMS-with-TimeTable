@@ -44,6 +44,24 @@ import {
   StatNumber,
   StatHelpText,
   useToast,
+  Checkbox,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
+  Divider,
+  Code,
+  UnorderedList,
+  ListItem,
 } from '@chakra-ui/react';
 import { 
   FaChalkboardTeacher,
@@ -52,12 +70,17 @@ import {
   FaUsers,
   FaUserTie,
   FaCalendarAlt,
+  FaFilePdf,
+  FaFileExcel,
+  FaCalculator,
 } from 'react-icons/fa';
-import { DownloadIcon, ArrowBackIcon, InfoIcon, RepeatIcon } from '@chakra-ui/icons';
+import { DownloadIcon, ArrowBackIcon, InfoIcon, RepeatIcon, ChevronDownIcon, QuestionIcon } from '@chakra-ui/icons';
 import { Parser } from '@json2csv/plainjs';
 import { Helmet } from 'react-helmet-async';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Designation color mapping
 const getDesignationStyle = (designation) => {
@@ -84,7 +107,7 @@ const FacultySummaryTooltip = ({ faculty, children }) => {
         {children}
       </PopoverTrigger>
       <PopoverContent 
-        w={{ base: "280px", md: "350px" }} 
+        w={{ base: "280px", md: "380px" }} 
         boxShadow="xl" 
         borderRadius="lg"
         border="2px solid"
@@ -108,52 +131,68 @@ const FacultySummaryTooltip = ({ faculty, children }) => {
             </Badge>
           )}
         </PopoverHeader>
-        <PopoverBody p={0} maxH="300px" overflowY="auto">
+        <PopoverBody p={0} maxH="350px" overflowY="auto">
           {subjects.length > 0 ? (
             <Box>
               <Box bg="gray.50" px={3} py={2} borderBottom="1px" borderColor="gray.200">
                 <Text fontSize="xs" fontWeight="bold" color="gray.600" textTransform="uppercase">
-                  Subject Load Summary
+                  Subject Load Summary (Hours × Students)
                 </Text>
               </Box>
-              {subjects.map((subject, idx) => (
-                <Box 
-                  key={idx} 
-                  px={3} 
-                  py={2} 
-                  borderBottom="1px" 
-                  borderColor="gray.100"
-                  _hover={{ bg: 'gray.50' }}
-                >
-                  <Flex justify="space-between" align="center" flexWrap="wrap" gap={1}>
-                    <VStack align="start" spacing={0} flex="1" minW="0">
-                      <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium" noOfLines={2}>
-                        {subject.subjectFullName || subject.subCode}
-                      </Text>
-                      <HStack spacing={1} flexWrap="wrap">
-                        <Badge 
-                          size="sm" 
-                          colorScheme={
-                            subject.subType?.toLowerCase() === 'theory' ? 'green' :
-                            subject.subType?.toLowerCase() === 'laboratory' ? 'red' : 'orange'
-                          }
-                          fontSize="2xs"
-                        >
-                          {subject.subType}
+              {subjects.map((subject, idx) => {
+                const shb = (subject.count || 0) * (subject.studentCount || 0);
+                return (
+                  <Box 
+                    key={idx} 
+                    px={3} 
+                    py={2} 
+                    borderBottom="1px" 
+                    borderColor="gray.100"
+                    _hover={{ bg: 'gray.50' }}
+                  >
+                    <Flex justify="space-between" align="center" flexWrap="wrap" gap={1}>
+                      <VStack align="start" spacing={0} flex="1" minW="0">
+                        <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium" noOfLines={2}>
+                          {subject.subjectFullName || subject.subCode}
+                        </Text>
+                        <HStack spacing={1} flexWrap="wrap">
+                          <Badge 
+                            size="sm" 
+                            colorScheme={
+                              subject.subType?.toLowerCase() === 'theory' ? 'green' :
+                              subject.subType?.toLowerCase() === 'laboratory' ? 'red' : 'orange'
+                            }
+                            fontSize="2xs"
+                          >
+                            {subject.subType}
+                          </Badge>
+                          <Text fontSize="2xs" color="gray.500">{subject.subSem}</Text>
+                        </HStack>
+                      </VStack>
+                      <VStack align="end" spacing={0}>
+                        <Text fontSize="2xs" color="gray.500">
+                          {subject.count}h × {subject.studentCount}
+                        </Text>
+                        <Badge colorScheme="purple" fontSize={{ base: "xs", md: "sm" }} px={2}>
+                          {shb} TWU
                         </Badge>
-                        <Text fontSize="2xs" color="gray.500">{subject.subSem}</Text>
-                      </HStack>
-                    </VStack>
-                    <Badge colorScheme="blue" fontSize={{ base: "xs", md: "sm" }} px={2}>
-                      {subject.count} hrs
-                    </Badge>
-                  </Flex>
-                </Box>
-              ))}
+                      </VStack>
+                    </Flex>
+                  </Box>
+                );
+              })}
               <Box bg="teal.50" px={3} py={2}>
                 <Flex justify="space-between" fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
-                  <Text>Total Load:</Text>
-                  <Text color="teal.600">{faculty.total?.total || 0} hrs</Text>
+                  <VStack align="start" spacing={0}>
+                    <Text>Total Hours:</Text>
+                    <Text>Course Complexity:</Text>
+                    <Text color="purple.600">Teaching Work Units:</Text>
+                  </VStack>
+                  <VStack align="end" spacing={0}>
+                    <Text color="teal.600">{faculty.total?.total || 0} hrs</Text>
+                    <Text color="cyan.600">{faculty.courseComplexity?.total || 0} courses</Text>
+                    <Text color="purple.600">{faculty.teachingWorkUnits || 0}</Text>
+                  </VStack>
                 </Flex>
               </Box>
             </Box>
@@ -168,11 +207,13 @@ const FacultySummaryTooltip = ({ faculty, children }) => {
   );
 };
 
-// Student Count Tooltip Component
+// Student Count Tooltip Component - Shows Student-Hour Burden breakdown
 const StudentCountTooltip = ({ faculty, type, children }) => {
   const subjects = (faculty.subjects || []).filter(s => 
     s.subType?.toLowerCase() === type.toLowerCase()
   );
+  
+  const totalSHB = subjects.reduce((sum, s) => sum + ((s.count || 0) * (s.studentCount || 0)), 0);
   
   return (
     <Popover trigger="hover" placement="top" openDelay={200}>
@@ -180,7 +221,7 @@ const StudentCountTooltip = ({ faculty, type, children }) => {
         {children}
       </PopoverTrigger>
       <PopoverContent 
-        w={{ base: "250px", md: "300px" }} 
+        w={{ base: "280px", md: "320px" }} 
         boxShadow="xl" 
         borderRadius="lg"
         border="2px solid"
@@ -197,32 +238,52 @@ const StudentCountTooltip = ({ faculty, type, children }) => {
           <HStack spacing={2}>
             <FaUsers />
             <Text fontSize={{ base: "xs", md: "sm" }}>
-              {type.charAt(0).toUpperCase() + type.slice(1)} - Student Details
+              {type.charAt(0).toUpperCase() + type.slice(1)} - Student-Hour Burden
             </Text>
           </HStack>
         </PopoverHeader>
-        <PopoverBody p={0} maxH="200px" overflowY="auto">
+        <PopoverBody p={0} maxH="250px" overflowY="auto">
           {subjects.length > 0 ? (
             <Box>
-              {subjects.map((subject, idx) => (
-                <Box 
-                  key={idx} 
-                  px={3} 
-                  py={2} 
-                  borderBottom="1px" 
-                  borderColor="gray.100"
-                  _hover={{ bg: 'gray.50' }}
-                >
-                  <Flex justify="space-between" align="center" gap={2}>
-                    <Text fontSize={{ base: "xs", md: "sm" }} noOfLines={1} flex="1">
-                      {subject.subjectFullName || subject.subCode}
-                    </Text>
-                    <Badge colorScheme="purple" fontSize="xs">
-                      {subject.studentCount || 0} students
-                    </Badge>
-                  </Flex>
-                </Box>
-              ))}
+              <Box bg="gray.50" px={3} py={1} borderBottom="1px" borderColor="gray.200">
+                <Flex justify="space-between" fontSize="2xs" color="gray.500" fontWeight="bold">
+                  <Text>Subject</Text>
+                  <Text>Hours × Students = SHB</Text>
+                </Flex>
+              </Box>
+              {subjects.map((subject, idx) => {
+                const shb = (subject.count || 0) * (subject.studentCount || 0);
+                return (
+                  <Box 
+                    key={idx} 
+                    px={3} 
+                    py={2} 
+                    borderBottom="1px" 
+                    borderColor="gray.100"
+                    _hover={{ bg: 'gray.50' }}
+                  >
+                    <Flex justify="space-between" align="center" gap={2}>
+                      <Text fontSize={{ base: "xs", md: "sm" }} noOfLines={1} flex="1">
+                        {subject.subjectFullName || subject.subCode}
+                      </Text>
+                      <HStack spacing={1}>
+                        <Text fontSize="2xs" color="gray.500">
+                          {subject.count} × {subject.studentCount}
+                        </Text>
+                        <Badge colorScheme="purple" fontSize="xs">
+                          = {shb}
+                        </Badge>
+                      </HStack>
+                    </Flex>
+                  </Box>
+                );
+              })}
+              <Box bg="pink.50" px={3} py={2}>
+                <Flex justify="space-between" fontWeight="bold" fontSize="sm">
+                  <Text>Total {type} SHB:</Text>
+                  <Badge colorScheme="pink" fontSize="sm" px={2}>{totalSHB}</Badge>
+                </Flex>
+              </Box>
             </Box>
           ) : (
             <Box p={3} textAlign="center">
@@ -235,9 +296,204 @@ const StudentCountTooltip = ({ faculty, type, children }) => {
   );
 };
 
-const FacultyDeptHourLoad = () => {
+// TWU Explanation Modal Component
+const TWUExplanationModal = ({ isOpen, onClose, totals, currentLoadData }) => {
+  // Sample calculation using first faculty if available
+  const sampleFaculty = currentLoadData.length > 0 ? currentLoadData[0] : null;
+  const sampleSubjects = sampleFaculty?.subjects?.slice(0, 3) || [];
+  
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
+      <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(5px)" />
+      <ModalContent borderRadius="xl" mx={4}>
+        <ModalHeader bg="purple.600" color="white" borderTopRadius="xl">
+          <HStack spacing={2}>
+            <FaCalculator />
+            <Text>Understanding TWU (Teaching Work Units)</Text>
+          </HStack>
+        </ModalHeader>
+        <ModalCloseButton color="white" />
+        <ModalBody py={6}>
+          <VStack spacing={6} align="stretch">
+            {/* What is TWU */}
+            <Box>
+              <Heading size="sm" color="purple.700" mb={2}>What is TWU?</Heading>
+              <Text fontSize="sm" color="gray.600">
+                Teaching Work Units (TWU) is a comprehensive metric that measures the actual instructional workload 
+                of faculty members by considering both the contact hours AND the number of students being taught.
+              </Text>
+            </Box>
+
+            <Divider />
+
+            {/* Formula */}
+            <Box>
+              <Heading size="sm" color="purple.700" mb={3}>The Formula</Heading>
+              <Box bg="purple.50" p={4} borderRadius="lg" border="2px solid" borderColor="purple.200">
+                <Text fontSize="lg" fontWeight="bold" textAlign="center" color="purple.800">
+                  TWU = Σ (Contact Hours × Student Count)
+                </Text>
+                <Text fontSize="sm" color="purple.600" textAlign="center" mt={2}>
+                  for each subject taught by the faculty
+                </Text>
+              </Box>
+            </Box>
+
+            <Divider />
+
+            {/* Step by Step */}
+            <Box>
+              <Heading size="sm" color="purple.700" mb={3}>Calculation Steps</Heading>
+              <VStack spacing={3} align="stretch">
+                <HStack align="start" spacing={3}>
+                  <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>1</Badge>
+                  <Text fontSize="sm">For each subject, get the weekly contact hours from the timetable</Text>
+                </HStack>
+                <HStack align="start" spacing={3}>
+                  <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>2</Badge>
+                  <Text fontSize="sm">Multiply hours by the number of students enrolled in that subject</Text>
+                </HStack>
+                <HStack align="start" spacing={3}>
+                  <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>3</Badge>
+                  <Text fontSize="sm">Sum up all the (Hours × Students) values across all subjects</Text>
+                </HStack>
+                <HStack align="start" spacing={3}>
+                  <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>4</Badge>
+                  <Text fontSize="sm">The result is the TWU - representing total student-contact-hours</Text>
+                </HStack>
+              </VStack>
+            </Box>
+
+            <Divider />
+
+            {/* Example Calculation */}
+            {sampleFaculty && sampleSubjects.length > 0 && (
+              <Box>
+                <Heading size="sm" color="purple.700" mb={3}>
+                  Example: {sampleFaculty.faculty}
+                </Heading>
+                <Box bg="gray.50" p={4} borderRadius="lg">
+                  <Table size="sm" variant="simple">
+                    <Thead>
+                      <Tr>
+                        <Th>Subject</Th>
+                        <Th isNumeric>Hours</Th>
+                        <Th isNumeric>Students</Th>
+                        <Th isNumeric>SHB</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {sampleSubjects.map((sub, idx) => (
+                        <Tr key={idx}>
+                          <Td fontSize="xs">{sub.subjectFullName || sub.subCode}</Td>
+                          <Td isNumeric>{sub.count}</Td>
+                          <Td isNumeric>{sub.studentCount}</Td>
+                          <Td isNumeric fontWeight="bold">{(sub.count || 0) * (sub.studentCount || 0)}</Td>
+                        </Tr>
+                      ))}
+                      {sampleFaculty.subjects?.length > 3 && (
+                        <Tr>
+                          <Td colSpan={4} fontSize="xs" color="gray.500" fontStyle="italic">
+                            ... and {sampleFaculty.subjects.length - 3} more subjects
+                          </Td>
+                        </Tr>
+                      )}
+                    </Tbody>
+                  </Table>
+                  <Flex justify="space-between" mt={3} p={2} bg="purple.100" borderRadius="md">
+                    <Text fontWeight="bold">Total TWU:</Text>
+                    <Badge colorScheme="purple" fontSize="md" px={3}>
+                      {sampleFaculty.teachingWorkUnits}
+                    </Badge>
+                  </Flex>
+                </Box>
+              </Box>
+            )}
+
+            <Divider />
+
+            {/* Department Totals */}
+            <Box>
+              <Heading size="sm" color="purple.700" mb={3}>Current Department Totals</Heading>
+              <SimpleGrid columns={2} spacing={3}>
+                <Stat bg="green.50" p={3} borderRadius="lg">
+                  <StatLabel fontSize="xs">Theory SHB</StatLabel>
+                  <StatNumber fontSize="lg" color="green.700">{totals.shbTheory}</StatNumber>
+                </Stat>
+                <Stat bg="red.50" p={3} borderRadius="lg">
+                  <StatLabel fontSize="xs">Lab SHB</StatLabel>
+                  <StatNumber fontSize="lg" color="red.700">{totals.shbLab}</StatNumber>
+                </Stat>
+                <Stat bg="orange.50" p={3} borderRadius="lg">
+                  <StatLabel fontSize="xs">Tutorial SHB</StatLabel>
+                  <StatNumber fontSize="lg" color="orange.700">{totals.shbTutorial}</StatNumber>
+                </Stat>
+                <Stat bg="purple.50" p={3} borderRadius="lg">
+                  <StatLabel fontSize="xs">Department Total TWU</StatLabel>
+                  <StatNumber fontSize="lg" color="purple.700">{totals.twu.toFixed(0)}</StatNumber>
+                </Stat>
+              </SimpleGrid>
+            </Box>
+
+            <Divider />
+
+            {/* Why TWU Matters */}
+            <Box>
+              <Heading size="sm" color="purple.700" mb={2}>Why TWU Matters</Heading>
+              <UnorderedList spacing={2} fontSize="sm" color="gray.600">
+                <ListItem>
+                  <Text as="span" fontWeight="semibold">Fair Comparison:</Text> Unlike simple hour counts, TWU accounts for class sizes
+                </ListItem>
+                <ListItem>
+                  <Text as="span" fontWeight="semibold">Workload Distribution:</Text> Helps identify imbalances in teaching loads
+                </ListItem>
+                <ListItem>
+                  <Text as="span" fontWeight="semibold">Resource Planning:</Text> Better allocation of teaching resources
+                </ListItem>
+                <ListItem>
+                  <Text as="span" fontWeight="semibold">Yearly Average:</Text> Comparing across semesters reveals consistent workload patterns
+                </ListItem>
+              </UnorderedList>
+            </Box>
+
+            <Divider />
+
+            {/* Course Complexity Explanation */}
+            <Box>
+              <Heading size="sm" color="cyan.700" mb={2}>Course Complexity</Heading>
+              <Text fontSize="sm" color="gray.600" mb={2}>
+                Course Complexity counts the number of <Text as="span" fontWeight="bold">unique courses</Text> (based on subject code) 
+                a faculty member teaches, not the total number of subject entries.
+              </Text>
+              <Box bg="cyan.50" p={3} borderRadius="md" border="1px solid" borderColor="cyan.200">
+                <Text fontSize="sm" color="cyan.800">
+                  <Text as="span" fontWeight="bold">Example:</Text> If a professor teaches "CS301 - Data Structures" to 3 different sections, 
+                  the course complexity counts as <Badge colorScheme="cyan">1</Badge> (one unique course preparation based on code CS301), 
+                  not 3.
+                </Text>
+              </Box>
+              <Text fontSize="xs" color="gray.500" mt={2}>
+                This metric reflects actual preparation effort - teaching the same course (same subject code) to multiple sections 
+                requires one preparation, not multiple.
+              </Text>
+            </Box>
+          </VStack>
+        </ModalBody>
+        <ModalFooter bg="gray.50" borderBottomRadius="xl">
+          <Button colorScheme="purple" onClick={onClose}>
+            Got it!
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+const MasterLoadDataTable = () => {
   const navigate = useNavigate();
   const toast = useToast();
+  const { isOpen: isDownloadOpen, onOpen: onDownloadOpen, onClose: onDownloadClose } = useDisclosure();
+  const { isOpen: isTWUOpen, onOpen: onTWUOpen, onClose: onTWUClose } = useDisclosure();
   
   // Extract timetable code from URL: /tt/:code/facultyload
   const pathParts = window.location.pathname.split("/");
@@ -254,12 +510,16 @@ const FacultyDeptHourLoad = () => {
   const [loadingCurrent, setLoadingCurrent] = useState(false);
   const [loadingPrevious, setLoadingPrevious] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0, stage: '' });
+  const [previousDataFetched, setPreviousDataFetched] = useState(false); // Track if previous data fetch was attempted
   
   // Data states
   const [currentLoadData, setCurrentLoadData] = useState([]);
   const [previousLoadData, setPreviousLoadData] = useState([]);
-  const [showYearlyLoad, setShowYearlyLoad] = useState(false);
+  const [showYearlyLoad, setShowYearlyLoad] = useState(true); // Default to true
   const [error, setError] = useState(null);
+  
+  // Download options
+  const [includeYearlyInDownload, setIncludeYearlyInDownload] = useState(true);
   
   // Cache for department codes
   const deptCodesCache = useRef({});
@@ -437,64 +697,79 @@ const FacultyDeptHourLoad = () => {
     return subjects;
   }, []);
 
-  // Compute faculty load with normalized metrics
+  // Compute faculty load with Teaching Work Units (TWU) algorithm
+  // TWU = Σ (hours × student count) for each subject
   const computeFacultyLoad = useCallback((subjects, facultyName, department, designation) => {
+    // Total contact hours by type
     const total = { theory: 0, laboratory: 0, tutorial: 0, total: 0 };
-    const studentHours = {
-      theory: { totalStudentHours: 0, totalHours: 0 },
-      laboratory: { totalStudentHours: 0, totalHours: 0 },
-      tutorial: { totalStudentHours: 0, totalHours: 0 }
+    
+    // Student-Hour Burden (SHB) by type = Σ (hours × students)
+    const studentHourBurden = {
+      theory: 0,
+      laboratory: 0,
+      tutorial: 0,
+      total: 0
+    };
+    
+    // Course complexity - track unique course names by type
+    const uniqueCourses = {
+      theory: new Set(),
+      laboratory: new Set(),
+      tutorial: new Set(),
+      all: new Set()
     };
 
     subjects.forEach((item) => {
       const subType = item.subType?.toLowerCase() || 'other';
       const hours = item.count || 0;
       const studentCount = item.studentCount || 0;
+      
+      // Use subCode as primary identifier for unique course (more standardized)
+      // Fall back to subjectFullName if subCode is not available
+      const courseName = item.subCode || item.subjectFullName || 'Unknown';
+      
+      // Calculate Student-Hour Burden for this subject
+      const shb = hours * studentCount;
 
       total.total += hours;
+      studentHourBurden.total += shb;
+      uniqueCourses.all.add(courseName);
       
       if (subType === 'theory') {
         total.theory += hours;
-        studentHours.theory.totalStudentHours += studentCount * hours;
-        studentHours.theory.totalHours += hours;
+        studentHourBurden.theory += shb;
+        uniqueCourses.theory.add(courseName);
       } else if (subType === 'laboratory') {
         total.laboratory += hours;
-        studentHours.laboratory.totalStudentHours += studentCount * hours;
-        studentHours.laboratory.totalHours += hours;
+        studentHourBurden.laboratory += shb;
+        uniqueCourses.laboratory.add(courseName);
       } else if (subType === 'tutorial') {
         total.tutorial += hours;
-        studentHours.tutorial.totalStudentHours += studentCount * hours;
-        studentHours.tutorial.totalHours += hours;
+        studentHourBurden.tutorial += shb;
+        uniqueCourses.tutorial.add(courseName);
       }
     });
 
-    const normalizedTheory = studentHours.theory.totalHours > 0
-      ? (studentHours.theory.totalStudentHours / studentHours.theory.totalHours).toFixed(2)
-      : '0.00';
-    const normalizedLab = studentHours.laboratory.totalHours > 0
-      ? (studentHours.laboratory.totalStudentHours / studentHours.laboratory.totalHours).toFixed(2)
-      : '0.00';
-    const normalizedTutorial = studentHours.tutorial.totalHours > 0
-      ? (studentHours.tutorial.totalStudentHours / studentHours.tutorial.totalHours).toFixed(2)
-      : '0.00';
+    // Convert Sets to counts for course complexity
+    const courseComplexity = {
+      theory: uniqueCourses.theory.size,
+      laboratory: uniqueCourses.laboratory.size,
+      tutorial: uniqueCourses.tutorial.size,
+      total: uniqueCourses.all.size
+    };
 
-    const normalizedLoad = (
-      (total.theory * parseFloat(normalizedTheory)) +
-      (total.tutorial * parseFloat(normalizedTutorial)) +
-      ((total.laboratory / 2) * parseFloat(normalizedLab))
-    ).toFixed(2);
+    // Teaching Work Units (TWU) = Total Student-Hour Burden
+    // This represents the true instructional workload
+    const teachingWorkUnits = studentHourBurden.total.toFixed(2);
 
     return {
       faculty: facultyName,
       department,
       designation,
       total,
-      normalizedStudentCount: {
-        theory: normalizedTheory,
-        laboratory: normalizedLab,
-        tutorial: normalizedTutorial
-      },
-      normalizedLoad,
+      studentHourBurden,
+      courseComplexity,
+      teachingWorkUnits,
       subjects
     };
   }, []);
@@ -505,6 +780,11 @@ const FacultyDeptHourLoad = () => {
 
     const setLoading = isPrevious ? setLoadingPrevious : setLoadingCurrent;
     setLoading(true);
+    
+    // Reset previousDataFetched when starting a new fetch for previous session
+    if (isPrevious) {
+      setPreviousDataFetched(false);
+    }
     
     try {
       // Use currentCode directly for current session, fetch code for previous session
@@ -522,6 +802,7 @@ const FacultyDeptHourLoad = () => {
           );
           if (!codeResponse.ok) {
             console.error(`No timetable found for ${department} in ${session}`);
+            if (isPrevious) setPreviousDataFetched(true); // Mark as fetched even if no data
             return [];
           }
           code = await codeResponse.json();
@@ -529,7 +810,10 @@ const FacultyDeptHourLoad = () => {
         }
       }
 
-      if (!code) return [];
+      if (!code) {
+        if (isPrevious) setPreviousDataFetched(true);
+        return [];
+      }
 
       setLoadingProgress({ current: 0, total: 3, stage: 'Fetching subject data...' });
 
@@ -543,6 +827,7 @@ const FacultyDeptHourLoad = () => {
       const faculties = facultyResponse.ok ? await facultyResponse.json() : [];
 
       if (!Array.isArray(faculties) || faculties.length === 0) {
+        if (isPrevious) setPreviousDataFetched(true);
         return [];
       }
 
@@ -611,50 +896,54 @@ const FacultyDeptHourLoad = () => {
     } finally {
       setLoading(false);
       setLoadingProgress({ current: 0, total: 0, stage: '' });
+      if (isPrevious) {
+        setPreviousDataFetched(true); // Mark as fetched when done (success or failure)
+      }
     }
   }, [apiUrl, currentCode, generateInitialTimetableData, generateSummary, computeFacultyLoad, toast]);
 
   // Fetch current session data when department or session changes
   useEffect(() => {
     if (selectedSession && selectedDepartment && !deptLoading) {
-      setShowYearlyLoad(false);
       setPreviousLoadData([]);
+      setPreviousDataFetched(false); // Reset when current session changes
       fetchDepartmentData(selectedSession, selectedDepartment, false).then(setCurrentLoadData);
     }
   }, [selectedSession, selectedDepartment, deptLoading, fetchDepartmentData]);
 
-  // Handle showing yearly load
-  const handleShowYearlyLoad = async () => {
-    if (!previousSession || !selectedDepartment) {
-      toast({
-        title: 'Missing Selection',
-        description: 'Please select a previous session first',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
+  // Automatically fetch previous session data for yearly load
+  useEffect(() => {
+    const fetchPreviousData = async () => {
+      if (previousSession && selectedDepartment && currentLoadData.length > 0 && !loadingCurrent) {
+        setPreviousDataFetched(false); // Reset before fetching
+        const data = await fetchDepartmentData(previousSession, selectedDepartment, true);
+        setPreviousLoadData(data);
+      }
+    };
+    
+    fetchPreviousData();
+  }, [previousSession, selectedDepartment, currentLoadData, loadingCurrent, fetchDepartmentData]);
 
-    const data = await fetchDepartmentData(previousSession, selectedDepartment, true);
-    setPreviousLoadData(data);
-    setShowYearlyLoad(true);
-  };
-
-  // Get sorted faculty list with yearly average
+  // Get sorted faculty list - always sorted by TWU (descending)
+  // When Yearly ON: Sort by Yearly Average TWU
+  // When Yearly OFF: Sort by Current TWU
   const getSortedFacultyList = useCallback(() => {
-    if (!showYearlyLoad || previousLoadData.length === 0) {
-      return currentLoadData;
-    }
+    if (currentLoadData.length === 0) return [];
 
     return [...currentLoadData].sort((a, b) => {
-      const prevA = previousLoadData.find(f => f.faculty === a.faculty);
-      const prevB = previousLoadData.find(f => f.faculty === b.faculty);
+      // When yearly load is enabled and previous data is available, sort by yearly average
+      if (showYearlyLoad && previousLoadData.length > 0) {
+        const prevA = previousLoadData.find(f => f.faculty === a.faculty);
+        const prevB = previousLoadData.find(f => f.faculty === b.faculty);
+        
+        const yearlyAvgA = (parseFloat(a.teachingWorkUnits) + parseFloat(prevA?.teachingWorkUnits || '0.00')) / 2;
+        const yearlyAvgB = (parseFloat(b.teachingWorkUnits) + parseFloat(prevB?.teachingWorkUnits || '0.00')) / 2;
+        
+        return yearlyAvgB - yearlyAvgA;
+      }
       
-      const yearlyAvgA = ((parseFloat(a.normalizedLoad) + parseFloat(prevA?.normalizedLoad || '0.00')) / 2);
-      const yearlyAvgB = ((parseFloat(b.normalizedLoad) + parseFloat(prevB?.normalizedLoad || '0.00')) / 2);
-      
-      return yearlyAvgB - yearlyAvgA;
+      // Otherwise, sort by current TWU (descending)
+      return parseFloat(b.teachingWorkUnits) - parseFloat(a.teachingWorkUnits);
     });
   }, [currentLoadData, previousLoadData, showYearlyLoad]);
 
@@ -665,7 +954,13 @@ const FacultyDeptHourLoad = () => {
       laboratory: 0,
       tutorial: 0,
       total: 0,
-      normalizedLoad: 0,
+      // Student-Hour Burden totals
+      shbTheory: 0,
+      shbLab: 0,
+      shbTutorial: 0,
+      twu: 0,
+      // Course complexity
+      courses: 0,
       facultyCount: currentLoadData.length
     };
 
@@ -674,38 +969,43 @@ const FacultyDeptHourLoad = () => {
       totals.laboratory += f.total.laboratory;
       totals.tutorial += f.total.tutorial;
       totals.total += f.total.total;
-      totals.normalizedLoad += parseFloat(f.normalizedLoad);
+      totals.shbTheory += f.studentHourBurden.theory;
+      totals.shbLab += f.studentHourBurden.laboratory;
+      totals.shbTutorial += f.studentHourBurden.tutorial;
+      totals.twu += parseFloat(f.teachingWorkUnits);
+      totals.courses += f.courseComplexity.total;
     });
 
     return totals;
   }, [currentLoadData]);
 
   // Download CSV
-  const downloadCSV = () => {
+  const downloadCSV = (includeYearly = true) => {
     const sortedList = getSortedFacultyList();
     const csvData = sortedList.map((item, index) => {
       const prevFaculty = previousLoadData.find(f => f.faculty === item.faculty);
-      const prevNormLoad = prevFaculty ? prevFaculty.normalizedLoad : '0.00';
-      const yearlyAvg = (((parseFloat(item.normalizedLoad) + parseFloat(prevNormLoad)) / 2).toFixed(2));
+      const prevTWU = prevFaculty ? prevFaculty.teachingWorkUnits : '0.00';
+      const yearlyAvg = (((parseFloat(item.teachingWorkUnits) + parseFloat(prevTWU)) / 2).toFixed(2));
       
       const baseData = {
         'Rank': index + 1,
         'Faculty': item.faculty,
         'Designation': item.designation || '',
         'Department': item.department,
-        'Total Theory': item.total.theory,
-        'Total Laboratory': item.total.laboratory,
-        'Total Tutorial': item.total.tutorial,
-        'Total Load': item.total.total,
-        'Normalized Student Count (Theory)': item.normalizedStudentCount.theory,
-        'Normalized Student Count (Laboratory)': item.normalizedStudentCount.laboratory,
-        'Normalized Student Count (Tutorial)': item.normalizedStudentCount.tutorial,
-        'Normalized Load (Current)': item.normalizedLoad,
+        'Theory Hours': item.total.theory,
+        'Lab Hours': item.total.laboratory,
+        'Tutorial Hours': item.total.tutorial,
+        'Total Hours': item.total.total,
+        'Theory SHB (Hrs×Students)': item.studentHourBurden.theory,
+        'Lab SHB (Hrs×Students)': item.studentHourBurden.laboratory,
+        'Tutorial SHB (Hrs×Students)': item.studentHourBurden.tutorial,
+        'Course Complexity': item.courseComplexity.total,
+        'TWU (Current)': item.teachingWorkUnits,
       };
 
-      if (showYearlyLoad) {
-        baseData['Normalized Load (Previous)'] = prevNormLoad;
-        baseData['Yearly Average Load'] = yearlyAvg;
+      if (includeYearly && showYearlyLoad && previousLoadData.length > 0) {
+        baseData['TWU (Previous)'] = prevTWU;
+        baseData['Yearly Average TWU'] = yearlyAvg;
       }
 
       return baseData;
@@ -717,11 +1017,154 @@ const FacultyDeptHourLoad = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `${selectedDepartment}-Faculty-Load-${selectedSession}.csv`);
+    link.setAttribute('download', `${selectedDepartment}-Faculty-TWU-${selectedSession}${includeYearly ? '-Yearly' : ''}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Download PDF
+  const downloadPDF = (includeYearly = true) => {
+    const sortedList = getSortedFacultyList();
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+    
+    // Title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Faculty Teaching Workload - ${selectedDepartment}`, 14, 15);
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Session: ${selectedSession}${includeYearly && previousSession ? ` | Previous: ${previousSession}` : ''}`, 14, 22);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
+    
+    // Prepare table data
+    const headers = [
+      '#',
+      'Faculty',
+      'Designation',
+      'Th',
+      'Lab',
+      'Tut',
+      'Total',
+      'SHB-Th',
+      'SHB-Lab',
+      'SHB-Tut',
+      'Courses',
+      'TWU',
+    ];
+    
+    if (includeYearly && showYearlyLoad && previousLoadData.length > 0) {
+      headers.push('Prev TWU', 'Yearly Avg');
+    }
+    
+    const tableData = sortedList.map((item, index) => {
+      const prevFaculty = previousLoadData.find(f => f.faculty === item.faculty);
+      const prevTWU = prevFaculty ? prevFaculty.teachingWorkUnits : '0.00';
+      const yearlyAvg = (((parseFloat(item.teachingWorkUnits) + parseFloat(prevTWU)) / 2).toFixed(2));
+      
+      const row = [
+        index + 1,
+        item.faculty,
+        item.designation || '-',
+        item.total.theory,
+        item.total.laboratory,
+        item.total.tutorial,
+        item.total.total,
+        item.studentHourBurden.theory,
+        item.studentHourBurden.laboratory,
+        item.studentHourBurden.tutorial,
+        item.courseComplexity.total,
+        item.teachingWorkUnits,
+      ];
+      
+      if (includeYearly && showYearlyLoad && previousLoadData.length > 0) {
+        row.push(prevTWU, yearlyAvg);
+      }
+      
+      return row;
+    });
+    
+    // Add totals row
+    const totalsRow = [
+      '',
+      'TOTAL',
+      `${sortedList.length} faculty`,
+      totals.theory,
+      totals.laboratory,
+      totals.tutorial,
+      totals.total,
+      totals.shbTheory,
+      totals.shbLab,
+      totals.shbTutorial,
+      totals.courses,
+      totals.twu.toFixed(2),
+    ];
+    
+    if (includeYearly && showYearlyLoad && previousLoadData.length > 0) {
+      const prevTotal = previousLoadData.reduce((sum, f) => sum + parseFloat(f.teachingWorkUnits || 0), 0);
+      totalsRow.push(prevTotal.toFixed(2), ((totals.twu + prevTotal) / 2).toFixed(2));
+    }
+    
+    tableData.push(totalsRow);
+    
+    // Generate table
+    doc.autoTable({
+      head: [headers],
+      body: tableData,
+      startY: 35,
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [56, 178, 172], // Teal
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center',
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 8 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 25 },
+        3: { halign: 'center', cellWidth: 12 },
+        4: { halign: 'center', cellWidth: 12 },
+        5: { halign: 'center', cellWidth: 12 },
+        6: { halign: 'center', cellWidth: 14 },
+        7: { halign: 'center', cellWidth: 18 },
+        8: { halign: 'center', cellWidth: 18 },
+        9: { halign: 'center', cellWidth: 18 },
+        10: { halign: 'center', cellWidth: 16 },
+        11: { halign: 'center', cellWidth: 16, fontStyle: 'bold' },
+        12: { halign: 'center', cellWidth: 18 },
+        13: { halign: 'center', cellWidth: 20, fontStyle: 'bold' },
+      },
+      didParseCell: function(data) {
+        // Style the last row (totals)
+        if (data.row.index === tableData.length - 1) {
+          data.cell.styles.fillColor = [237, 242, 247]; // Gray
+          data.cell.styles.fontStyle = 'bold';
+        }
+      },
+    });
+    
+    // Add footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(128);
+      doc.text(
+        `Page ${i} of ${pageCount} | TWU = Teaching Work Units (Σ Hours × Students)`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      );
+    }
+    
+    doc.save(`${selectedDepartment}-Faculty-TWU-${selectedSession}${includeYearly ? '-Yearly' : ''}.pdf`);
   };
 
   const sortedFaculty = getSortedFacultyList();
@@ -777,10 +1220,10 @@ const FacultyDeptHourLoad = () => {
                   </HStack>
                 </Badge>
                 <Heading size={{ base: "lg", md: "xl", lg: "2xl" }} color="white" fontWeight="bold" lineHeight="1.2">
-                  Student Normalised Faculty Workload Analysis
+                  Department Faculty Load
                 </Heading>
                 <Text color="whiteAlpha.900" fontSize={{ base: "sm", md: "md" }} maxW={{ base: "full", lg: "2xl" }}>
-                  Analyze faculty workload with normalized metrics over the year
+                  Analyze faculty workload with normalized metrics
                 </Text>
               </VStack>
 
@@ -955,50 +1398,77 @@ const FacultyDeptHourLoad = () => {
                       <Heading size={headingSize}>{selectedDepartment}</Heading>
                       <Text fontSize={{ base: "xs", md: "sm" }} opacity={0.9}>
                         {sortedFaculty.length} faculty members • {selectedSession}
+                        {previousSession && ` vs ${previousSession}`}
                       </Text>
                     </VStack>
                     <HStack spacing={2} flexWrap="wrap">
-                      {!showYearlyLoad && previousSession && (
-                        <Button
-                          leftIcon={loadingPrevious ? <Spinner size="sm" /> : <FaCalendarAlt />}
-                          onClick={handleShowYearlyLoad}
-                          colorScheme="yellow"
-                          size={buttonSize}
-                          isLoading={loadingPrevious}
-                          loadingText="Loading..."
-                        >
-                          <Text display={{ base: "none", sm: "inline" }}>Show Yearly Load</Text>
-                          <Text display={{ base: "inline", sm: "none" }}>Yearly</Text>
-                        </Button>
-                      )}
-                      {showYearlyLoad && (
-                        <Button
-                          leftIcon={<RepeatIcon />}
-                          onClick={() => { setShowYearlyLoad(false); setPreviousLoadData([]); }}
-                          colorScheme="gray"
-                          variant="outline"
-                          size={buttonSize}
-                          bg="white"
-                        >
-                          Hide
-                        </Button>
-                      )}
+                      {/* TWU Explanation Button */}
                       <Button
-                        leftIcon={<DownloadIcon />}
-                        onClick={downloadCSV}
-                        colorScheme="green"
+                        leftIcon={<QuestionIcon />}
+                        onClick={onTWUOpen}
+                        colorScheme="purple"
+                        variant="outline"
                         size={buttonSize}
+                        bg="whiteAlpha.200"
+                        borderColor="whiteAlpha.400"
+                        _hover={{ bg: "whiteAlpha.300" }}
                       >
-                        <Text display={{ base: "none", sm: "inline" }}>Download CSV</Text>
-                        <Text display={{ base: "inline", sm: "none" }}>CSV</Text>
+                        <Text display={{ base: "none", sm: "inline" }}>How TWU Works</Text>
+                        <Text display={{ base: "inline", sm: "none" }}>TWU?</Text>
                       </Button>
+                      
+                      {/* Toggle Yearly Load Display */}
+                      <Button
+                        leftIcon={showYearlyLoad ? <RepeatIcon /> : <FaCalendarAlt />}
+                        onClick={() => setShowYearlyLoad(!showYearlyLoad)}
+                        colorScheme={showYearlyLoad ? "green" : "gray"}
+                        variant={showYearlyLoad ? "solid" : "outline"}
+                        size={buttonSize}
+                        bg={showYearlyLoad ? "green.500" : "whiteAlpha.200"}
+                        _hover={{ bg: showYearlyLoad ? "green.600" : "whiteAlpha.300" }}
+                      >
+                        <Text display={{ base: "none", sm: "inline" }}>
+                          {showYearlyLoad ? "Yearly: ON" : "Yearly: OFF"}
+                        </Text>
+                        <Text display={{ base: "inline", sm: "none" }}>
+                          {showYearlyLoad ? "ON" : "OFF"}
+                        </Text>
+                      </Button>
+                      
+                      {/* Download Menu */}
+                      <Menu>
+                        <MenuButton
+                          as={Button}
+                          rightIcon={<ChevronDownIcon />}
+                          leftIcon={<DownloadIcon />}
+                          colorScheme="green"
+                          size={buttonSize}
+                        >
+                          <Text display={{ base: "none", sm: "inline" }}>Download</Text>
+                        </MenuButton>
+                        <MenuList color="gray.800">
+                          <MenuItem icon={<FaFileExcel />} onClick={() => downloadCSV(true)}>
+                            CSV with Yearly Data
+                          </MenuItem>
+                          <MenuItem icon={<FaFileExcel />} onClick={() => downloadCSV(false)}>
+                            CSV (Current Session Only)
+                          </MenuItem>
+                          <MenuDivider />
+                          <MenuItem icon={<FaFilePdf />} onClick={() => downloadPDF(true)}>
+                            PDF with Yearly Data
+                          </MenuItem>
+                          <MenuItem icon={<FaFilePdf />} onClick={() => downloadPDF(false)}>
+                            PDF (Current Session Only)
+                          </MenuItem>
+                        </MenuList>
+                      </Menu>
                     </HStack>
                   </Flex>
                 </CardHeader>
 
                 {/* Department Summary Stats */}
                 <Box p={{ base: 3, md: 4 }} bg="gray.50" borderBottom="1px" borderColor="gray.200">
-                  <SimpleGrid columns={{ base: 2, sm: 3, md: 5 }} spacing={{ base: 2, md: 3 }}>
+                  <SimpleGrid columns={{ base: 2, sm: 3, md: 6 }} spacing={{ base: 2, md: 3 }}>
                     <Stat bg="white" p={3} borderRadius="lg" shadow="sm">
                       <StatLabel fontSize="xs" color="green.600"><HStack spacing={1}><FaBook size={10} /><Text>Theory</Text></HStack></StatLabel>
                       <StatNumber fontSize={{ base: "lg", md: "xl" }} color="green.700">{totals.theory}</StatNumber>
@@ -1015,24 +1485,43 @@ const FacultyDeptHourLoad = () => {
                       <StatHelpText fontSize="2xs">hours</StatHelpText>
                     </Stat>
                     <Stat bg="white" p={3} borderRadius="lg" shadow="sm">
-                      <StatLabel fontSize="xs" color="blue.600">Total</StatLabel>
+                      <StatLabel fontSize="xs" color="blue.600">Total Hours</StatLabel>
                       <StatNumber fontSize={{ base: "lg", md: "xl" }} color="blue.700">{totals.total}</StatNumber>
-                      <StatHelpText fontSize="2xs">hours</StatHelpText>
+                      <StatHelpText fontSize="2xs">contact hrs</StatHelpText>
                     </Stat>
                     <Stat bg="white" p={3} borderRadius="lg" shadow="sm">
-                      <StatLabel fontSize="xs" color="purple.600">Normalized</StatLabel>
-                      <StatNumber fontSize={{ base: "lg", md: "xl" }} color="purple.700">{totals.normalizedLoad.toFixed(2)}</StatNumber>
-                      <StatHelpText fontSize="2xs">total</StatHelpText>
+                      <StatLabel fontSize="xs" color="cyan.600">Courses</StatLabel>
+                      <StatNumber fontSize={{ base: "lg", md: "xl" }} color="cyan.700">{totals.courses}</StatNumber>
+                      <StatHelpText fontSize="2xs">unique courses</StatHelpText>
+                    </Stat>
+                    <Stat bg="white" p={3} borderRadius="lg" shadow="sm" cursor="pointer" onClick={onTWUOpen} _hover={{ bg: "purple.50" }}>
+                      <StatLabel fontSize="xs" color="purple.600">
+                        <HStack spacing={1}>
+                          <Text>Total TWU</Text>
+                          <Tooltip label="Click to learn how TWU is calculated" hasArrow>
+                            <InfoIcon boxSize={2.5} />
+                          </Tooltip>
+                        </HStack>
+                      </StatLabel>
+                      <StatNumber fontSize={{ base: "lg", md: "xl" }} color="purple.700">{totals.twu.toFixed(0)}</StatNumber>
+                      <StatHelpText fontSize="2xs">student-hours</StatHelpText>
                     </Stat>
                   </SimpleGrid>
                 </Box>
 
-                {/* Loading indicator for previous session */}
-                {loadingPrevious && (
+                {/* Status indicator for previous session loading */}
+                {showYearlyLoad && loadingPrevious && (
                   <Box p={3} bg="yellow.50" borderBottom="1px" borderColor="yellow.200">
                     <HStack justify="center" spacing={3}>
                       <Spinner size="sm" color="yellow.500" />
-                      <Text fontSize="sm" color="yellow.700">Loading previous session data...</Text>
+                      <Text fontSize="sm" color="yellow.700">
+                        Computing previous session ({previousSession}) data... {loadingProgress.stage}
+                      </Text>
+                      {loadingProgress.total > 0 && (
+                        <Badge colorScheme="yellow">
+                          {loadingProgress.current}/{loadingProgress.total}
+                        </Badge>
+                      )}
                     </HStack>
                   </Box>
                 )}
@@ -1051,23 +1540,39 @@ const FacultyDeptHourLoad = () => {
                       <Tr>
                         <Th rowSpan={2} fontSize="xs" fontWeight="bold" borderBottom="2px" borderColor="teal.200" verticalAlign="middle" textAlign="center" w="40px">#</Th>
                         <Th rowSpan={2} color="teal.700" fontSize="xs" fontWeight="bold" borderBottom="2px" borderColor="teal.200" verticalAlign="middle" minW="150px">Faculty</Th>
-                        <Th colSpan={4} color="green.700" fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="green.50">Total Load</Th>
+                        <Th colSpan={4} color="green.700" fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="green.50">Contact Hours</Th>
                         <Th colSpan={3} color="pink.700" fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="pink.50">
                           <HStack spacing={1} justify="center">
-                            <Text>Norm. Student Count</Text>
-                            <Tooltip label="Total Students ÷ Total Hours" placement="top" hasArrow><InfoIcon boxSize={2.5} /></Tooltip>
+                            <Text>Student-Hour Burden</Text>
+                            <Tooltip label="Hours × Student Count for each subject" placement="top" hasArrow><InfoIcon boxSize={2.5} /></Tooltip>
+                          </HStack>
+                        </Th>
+                        <Th rowSpan={2} color="cyan.800" fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="cyan.50" verticalAlign="middle">
+                          <HStack spacing={1} justify="center">
+                            <Text>Courses</Text>
+                            <Tooltip label="Unique courses based on subject code (same course to multiple sections = 1)" placement="top" hasArrow><InfoIcon boxSize={2.5} /></Tooltip>
                           </HStack>
                         </Th>
                         <Th rowSpan={2} color="yellow.800" fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="yellow.50" verticalAlign="middle">
                           <HStack spacing={1} justify="center">
-                            <Text>Current</Text>
-                            <Tooltip label="(Theory × Norm.Th) + (Tutorial × Norm.Tut) + ((Lab÷2) × Norm.Lab)" placement="top" hasArrow><InfoIcon boxSize={2.5} /></Tooltip>
+                            <Text>TWU</Text>
+                            <Tooltip label="Teaching Work Units = Σ(Hours × Students)" placement="top" hasArrow><InfoIcon boxSize={2.5} /></Tooltip>
                           </HStack>
                         </Th>
                         {showYearlyLoad && (
                           <>
-                            <Th rowSpan={2} color="orange.800" fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="orange.50" verticalAlign="middle">Previous</Th>
-                            <Th rowSpan={2} fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bgGradient="linear(to-r, green.100, teal.100, blue.100)" verticalAlign="middle" color="teal.800">Yearly Avg</Th>
+                            <Th rowSpan={2} color="orange.800" fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="orange.50" verticalAlign="middle">
+                              <VStack spacing={0}>
+                                <Text>Prev TWU</Text>
+                                {loadingPrevious && <Spinner size="xs" color="orange.500" />}
+                              </VStack>
+                            </Th>
+                            <Th rowSpan={2} fontSize="xs" fontWeight="bold" textAlign="center" borderBottom="2px" borderColor="teal.200" bgGradient="linear(to-r, green.100, teal.100, blue.100)" verticalAlign="middle" color="teal.800">
+                              <VStack spacing={0}>
+                                <Text>Yearly Avg</Text>
+                                {loadingPrevious && <Spinner size="xs" color="teal.500" />}
+                              </VStack>
+                            </Th>
                           </>
                         )}
                       </Tr>
@@ -1076,16 +1581,20 @@ const FacultyDeptHourLoad = () => {
                           <Th key={`total-${idx}`} color="green.700" fontSize="2xs" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="green.50" px={1}>{label}</Th>
                         ))}
                         {['Th', 'Lab', 'Tut'].map((label, idx) => (
-                          <Th key={`norm-${idx}`} color="pink.700" fontSize="2xs" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="pink.50" px={1}>{label}</Th>
+                          <Th key={`shb-${idx}`} color="pink.700" fontSize="2xs" textAlign="center" borderBottom="2px" borderColor="teal.200" bg="pink.50" px={1}>{label}</Th>
                         ))}
                       </Tr>
                     </Thead>
                     <Tbody>
                       {sortedFaculty.map((faculty, index) => {
                         const prevFaculty = previousLoadData.find(f => f.faculty === faculty.faculty);
-                        const prevNormLoad = prevFaculty ? prevFaculty.normalizedLoad : '0.00';
-                        const yearlyAvg = (((parseFloat(faculty.normalizedLoad) + parseFloat(prevNormLoad)) / 2).toFixed(2));
+                        const prevTWU = prevFaculty ? prevFaculty.teachingWorkUnits : '0.00';
+                        const yearlyAvg = (((parseFloat(faculty.teachingWorkUnits) + parseFloat(prevTWU)) / 2).toFixed(2));
                         const designationStyle = getDesignationStyle(faculty.designation);
+                        
+                        // FIXED: Use previousDataFetched to determine if still computing
+                        // Only show computing if: loading OR (yearly enabled AND previous session selected AND fetch not yet attempted)
+                        const isComputingYearly = loadingPrevious || (showYearlyLoad && previousSession && !previousDataFetched);
                         
                         return (
                           <Tr
@@ -1115,31 +1624,48 @@ const FacultyDeptHourLoad = () => {
                             <Td textAlign="center" bg="green.100" fontWeight="bold" fontSize="xs" px={1}>{faculty.total.total}</Td>
                             <Td textAlign="center" bg="pink.50" fontSize="xs" px={1}>
                               <StudentCountTooltip faculty={faculty} type="theory">
-                                <Badge colorScheme="cyan" fontSize="2xs" cursor="pointer" _hover={{ transform: 'scale(1.1)' }}>{faculty.normalizedStudentCount.theory}</Badge>
+                                <Badge colorScheme="green" fontSize="2xs" cursor="pointer" _hover={{ transform: 'scale(1.1)' }}>{faculty.studentHourBurden.theory}</Badge>
                               </StudentCountTooltip>
                             </Td>
                             <Td textAlign="center" bg="pink.50" fontSize="xs" px={1}>
                               <StudentCountTooltip faculty={faculty} type="laboratory">
-                                <Badge colorScheme="cyan" fontSize="2xs" cursor="pointer" _hover={{ transform: 'scale(1.1)' }}>{faculty.normalizedStudentCount.laboratory}</Badge>
+                                <Badge colorScheme="red" fontSize="2xs" cursor="pointer" _hover={{ transform: 'scale(1.1)' }}>{faculty.studentHourBurden.laboratory}</Badge>
                               </StudentCountTooltip>
                             </Td>
                             <Td textAlign="center" bg="pink.50" fontSize="xs" px={1}>
                               <StudentCountTooltip faculty={faculty} type="tutorial">
-                                <Badge colorScheme="cyan" fontSize="2xs" cursor="pointer" _hover={{ transform: 'scale(1.1)' }}>{faculty.normalizedStudentCount.tutorial}</Badge>
+                                <Badge colorScheme="orange" fontSize="2xs" cursor="pointer" _hover={{ transform: 'scale(1.1)' }}>{faculty.studentHourBurden.tutorial}</Badge>
                               </StudentCountTooltip>
                             </Td>
+                            <Td textAlign="center" bg="cyan.50" fontWeight="bold" fontSize="xs" px={1}>
+                              <Badge colorScheme="cyan" fontSize="xs" px={2} py={1}>{faculty.courseComplexity.total}</Badge>
+                            </Td>
                             <Td textAlign="center" bg="yellow.50" fontWeight="bold" fontSize="xs" px={1}>
-                              <Badge colorScheme="yellow" fontSize="xs" px={2} py={1}>{faculty.normalizedLoad}</Badge>
+                              <Badge colorScheme="yellow" fontSize="xs" px={2} py={1}>{faculty.teachingWorkUnits}</Badge>
                             </Td>
                             {showYearlyLoad && (
                               <>
                                 <Td textAlign="center" bg="orange.50" fontWeight="bold" fontSize="xs" px={1}>
-                                  <Badge colorScheme="orange" fontSize="xs" px={2} py={1}>{prevNormLoad}</Badge>
+                                  {isComputingYearly ? (
+                                    <HStack spacing={1} justify="center">
+                                      <Spinner size="xs" color="orange.500" />
+                                      <Text fontSize="2xs" color="orange.600">...</Text>
+                                    </HStack>
+                                  ) : (
+                                    <Badge colorScheme="orange" fontSize="xs" px={2} py={1}>{prevTWU}</Badge>
+                                  )}
                                 </Td>
                                 <Td textAlign="center" fontWeight="bold" fontSize="xs" bgGradient="linear(to-r, green.50, teal.50, blue.50)" px={1}>
-                                  <Badge bgGradient="linear(to-r, green.400, teal.400, blue.400)" color="white" fontSize="sm" px={3} py={1} borderRadius="full" boxShadow="md">
-                                    {yearlyAvg}
-                                  </Badge>
+                                  {isComputingYearly ? (
+                                    <HStack spacing={1} justify="center">
+                                      <Spinner size="xs" color="teal.500" />
+                                      <Text fontSize="2xs" color="teal.600">Computing...</Text>
+                                    </HStack>
+                                  ) : (
+                                    <Badge bgGradient="linear(to-r, green.400, teal.400, blue.400)" color="white" fontSize="sm" px={3} py={1} borderRadius="full" boxShadow="md">
+                                      {yearlyAvg}
+                                    </Badge>
+                                  )}
                                 </Td>
                               </>
                             )}
@@ -1154,8 +1680,16 @@ const FacultyDeptHourLoad = () => {
           </VStack>
         </Container>
       </Box>
+      
+      {/* TWU Explanation Modal */}
+      <TWUExplanationModal 
+        isOpen={isTWUOpen} 
+        onClose={onTWUClose} 
+        totals={totals}
+        currentLoadData={currentLoadData}
+      />
     </>
   );
 };
 
-export default FacultyDeptHourLoad;
+export default MasterLoadDataTable;
