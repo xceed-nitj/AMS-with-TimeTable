@@ -340,10 +340,10 @@ const AdminPage = () => {
       path: '/tt/admin/clashes',
       label: 'View Clashes',
       icon: FiAlertCircle,
-      gradient: 'linear(to-br, orange.500, orange.700)',
+      gradient: 'linear(to-br, yellow.500, yellow.700)',
     },
     {
-      path: '/tt/admin/facultyloadallocation',
+      path: '/tt/admin/facultyload',
       label: 'Department Faculty Load',
       icon: FiBarChart2,
       gradient: 'linear(to-br, pink.600, pink.800)',
@@ -358,7 +358,7 @@ const AdminPage = () => {
       path: '/tt/logs',
       label: 'Logs',
       icon: FiList,
-      gradient: 'linear(to-br, orange.600, red.700)',
+      gradient: 'linear(to-br, purple.600, pink.700)',
     },
   ];
 
