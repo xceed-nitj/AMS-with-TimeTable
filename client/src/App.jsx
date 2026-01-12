@@ -55,7 +55,7 @@ import FacultyLoadCalculation from './timetableadmin/facultyloadadmin.jsx';
 import MasterLoadDataTable from './timetableadmin/viewinstituteloadmaster.jsx';
 import Departmentloadallocation from './timetableadmin/departmentloadallocation.jsx';
 import FacultyHourLoad from './timetableadmin/facultyhourload.jsx';
-
+import FacultyLoadCOE from './timetableadmin/facultyloadcoe.jsx';
 import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
@@ -284,7 +284,7 @@ function App() {
         <Route path="/tt/admin" element={<AdminPage />} />
         <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
         <Route path="/tt/admin/facultyload" element={<FacultyLoadCalculation />} />
-
+<Route path="tt/coe/facultyload" element={<FacultyLoadCOE/>}/>
 
         {/* Same link */}
         <Route path="/timetable">
