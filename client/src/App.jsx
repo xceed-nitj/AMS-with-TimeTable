@@ -296,7 +296,7 @@ function App() {
         <Route path="/tt/admin/view" element={<View />} />
         {/* <Route path="/tt/admin/instituteload" element={<InstituteLoad />} /> */}
         {/* <Route path="/tt/viewinstituteload" element={<ViewInstituteLoad />} /> */}
-        <Route path="/tt/masterload" element={<MasterLoadDataTable />} />
+        <Route path="/tt/masterdata" element={<MasterLoadDataTable />} />
 
         <Route path="/tt/admin/clashes" element={<AdminClash />} />
         {/* <Route
