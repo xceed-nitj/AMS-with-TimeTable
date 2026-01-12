@@ -86,6 +86,7 @@ export default function Navbar() {
     '/prm/emailverification',
     '/404',
     '/facultyrankings',
+    '/tt/coe/facultyload'
   ];
 
   useEffect(() => {
