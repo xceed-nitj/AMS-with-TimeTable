@@ -344,9 +344,15 @@ const AdminPage = () => {
     },
     {
       path: '/tt/admin/facultyload',
-      label: 'Department Faculty Load',
+      label: 'Student Normalised Faculty Load',
       icon: FiBarChart2,
       gradient: 'linear(to-br, pink.600, pink.800)',
+    },
+    {
+      path: '/tt/coe/facultyload',
+      label: 'Department Faculty Load',
+      icon: FiBarChart2,
+      gradient: 'linear(to-br, green.600, green.800)',
     },
     {
       path: '/tt/messages',
@@ -536,7 +542,7 @@ const AdminPage = () => {
               Timetable Modifications
             </Heading>
             <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={4}>
-              {[navigationItems[3], ...navigationItems.slice(5, 8)].map(
+              {[navigationItems[3], ...navigationItems.slice(5, 9)].map(
                 ({ path, label, icon, gradient }) => (
                   <Box
                     key={path}
@@ -584,7 +590,7 @@ const AdminPage = () => {
             </Heading>
             <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
               {navigationItems
-                .slice(8)
+                .slice(9)
                 .map(({ path, label, icon, gradient }) => (
                   <Box
                     key={path}
