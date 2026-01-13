@@ -17,7 +17,7 @@ const mailSender = require("../../mailsender");
 
 function getTimetableEmailContent({ facultyName, departmentName, sessionName, timetableUrl }) {
   return {
-    subject: "Timetable Published for the Upcoming Academic Session",
+    subject: "Timetable Published for the Upcoming Session",
     body: `
       <p>Dear ${facultyName},</p>
 

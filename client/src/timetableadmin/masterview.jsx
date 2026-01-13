@@ -170,7 +170,7 @@ function TimetableMasterView() {
 
       if (response.ok) {
         toast({
-          title: 'Published Successfully',
+          title: 'Published Successfully & Mail sent to all faculty members',
           description: 'Timetable has been published.',
           status: 'success',
           duration: 3000,
@@ -571,7 +571,7 @@ function TimetableMasterView() {
                                     size="xs"
                                     colorScheme="green"
                                     leftIcon={<CheckIcon />}
-                                    onClick={() => handlePublish(item.code)}
+                                    onClick={() => handlePublish(item._id)}
                                     isLoading={publishingCode === item.code}
                                     loadingText="Publishing..."
                                     fontSize="xs"
