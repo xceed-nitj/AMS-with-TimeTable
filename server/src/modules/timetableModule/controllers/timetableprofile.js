@@ -13,6 +13,7 @@ const getEnvironmentURL = require("../../../getEnvironmentURL");
 const addFaculty = require("../../../models/addfaculty");
 const facultyControllerInstance = new FacultyController();
 const MasterRoomProfile = new masterroomprofile();
+const mailSender = require("../../mailsender");
 
 function getTimetableEmailContent({ facultyName, departmentName, sessionName, timetableUrl }) {
   return {
@@ -362,10 +363,12 @@ class TableController {
       });
       res.json({ success: true });
       const allfaculties = await addFaculty.find({ code: updatedTimeTable.code });
+      console.log("facultyData", allfaculties);
+
       const base_url = getEnvironmentURL();
       for (const faculty of allfaculties)
         facultyControllerInstance
-          .getFacultyByName(faculty)
+          .getFacultyByName(faculty.faculty)
           .then(async (facultyData) => {
             const { subject, body } = getTimetableEmailContent({
               facultyName: facultyData[0].name,
@@ -373,7 +376,9 @@ class TableController {
               sessionName: updatedTimeTable.session,
               timetableUrl: `${base_url}/timetable/faculty/${facultyData[0]._id}`,
             });
-            await mailSender(facultyData.email, subject, body);
+            console.log("facultyData-mail", facultyData[0].email);
+
+            await mailSender(facultyData[0].email, subject, body);
           });
     } catch (error) {
       console.error("Error publishing timetable:", error);

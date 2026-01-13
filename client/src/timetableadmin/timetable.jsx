@@ -458,7 +458,7 @@ const Timetable = () => {
     await fetchTime(); // refresh timestamps
 
     toast({
-      title: "Timetable Published",
+      title: "Timetable Published & Mail sent to all faculty",
       status: "success",
       duration: 3000,
       isClosable: true,
