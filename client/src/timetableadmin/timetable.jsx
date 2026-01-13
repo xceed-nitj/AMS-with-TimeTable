@@ -782,7 +782,7 @@ const handleLockTT = async () => {
     <Container maxW="full" p={0} bg="gray.50" overflowX="hidden">
       {/* Enhanced Hero Section with Gradient */}
       <Box 
-        bgGradient="linear(135deg, #FF6B35 0%, #F7931E 50%, #EC008C 100%)" 
+        bgGradient="linear(135deg, #1a413f 0%, #375b59 50%, #1e566a 100%)" 
         py={{ base: 7, md: 10 }} 
         position="relative" 
         overflow="hidden"
@@ -891,7 +891,7 @@ const handleLockTT = async () => {
         {/* Enhanced Edit Section */}
         <Card borderRadius="2xl" boxShadow="2xl" mb={2} overflow="hidden">
           <CardHeader 
-            bgGradient="linear(to-r, purple.500, blue.500)" 
+            bgGradient="linear(to-r, purple.700, purple.700)" 
             py={{ base: 3, md: 4 }}
           >
             <Flex align="center" gap={{ base: 2, md: 4 }} direction={{ base: "column", md: "row" }}>
@@ -1175,17 +1175,25 @@ const handleLockTT = async () => {
                                 {slot.map((cell, ci) => {
                                   const getSubjectColor = (subject) => {
                                     if (!subject) return 'white';
-                                    const colors = [
-                                      'red.100', 'red.200', 'red.300',
-                                      'orange.100', 'orange.200', 'orange.300',
-                                      'yellow.100', 'yellow.200', 'yellow.300',
-                                      'green.100', 'green.200', 'green.300',
-                                      'teal.100', 'teal.200', 'teal.300',
-                                      'blue.100', 'blue.200', 'blue.300',
-                                      'cyan.100', 'cyan.200', 'cyan.300',
-                                      'purple.100', 'purple.200', 'purple.300',
-                                      'pink.100', 'pink.200', 'pink.300',
-                                    ];
+                                  const colors = [
+  // Neutrals
+  'gray.50', 'gray.100', 'gray.200',
+  'blackAlpha.50', 'blackAlpha.100', 'blackAlpha.200',
+  'whiteAlpha.50', 'whiteAlpha.100', 'whiteAlpha.200',
+
+  // Reds → Pinks
+  'red.50', 'red.100', 'red.200',
+  'orange.50', 'orange.100', 'orange.200',
+  'yellow.50', 'yellow.100', 'yellow.200',
+  'green.50', 'green.100', 'green.200',
+  'teal.50', 'teal.100', 'teal.200',
+  'blue.50', 'blue.100', 'blue.200',
+  'cyan.50', 'cyan.100', 'cyan.200',
+  'purple.50', 'purple.100', 'purple.200',
+  'pink.50', 'pink.100', 'pink.200'
+];
+
+
                                     let hash = 0;
                                     for (let i = 0; i < subject.length; i++) {
                                       hash = subject.charCodeAt(i) + ((hash << 5) - hash);
@@ -1217,7 +1225,7 @@ const handleLockTT = async () => {
                                         mb={1}
                                         bg="white"
                                       >
-                                        <option value="">📚 Subject</option>
+                                        <option value="">Subject</option>
                                         {availableSubjects.map(s => (
                                           <option key={s._id} value={s.subName}>{s.subName}</option>
                                         ))}
@@ -1234,7 +1242,7 @@ const handleLockTT = async () => {
                                         mb={1}
                                         bg="white"
                                       >
-                                        <option value="">🏢 Room</option>
+                                        <option value=""> Room</option>
                                         {availableRooms.map(r => (
                                           <option key={r} value={r}>{r}</option>
                                         ))}
@@ -1251,7 +1259,7 @@ const handleLockTT = async () => {
                                         mb={1}
                                         bg="white"
                                       >
-                                        <option value="">👨‍🏫 Faculty</option>
+                                        <option value=""> Faculty</option>
                                         {availableFaculties.map((f, i) => (
                                           <option key={i} value={f}>{f}</option>
                                         ))}

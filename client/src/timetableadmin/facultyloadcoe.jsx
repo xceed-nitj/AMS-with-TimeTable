@@ -34,8 +34,14 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from '@chakra-ui/react';
-import { ArrowBackIcon, DownloadIcon, RepeatIcon } from '@chakra-ui/icons';
+import { ArrowBackIcon, DownloadIcon, RepeatIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
 
@@ -235,6 +241,208 @@ const FacultyLoadCalculation = () => {
     }
   }, [apiUrl, generateInitialTimetableData, generateSummary]);
 
+  // ==================== DOWNLOAD CURRENT TABLE ====================
+  const downloadCurrentTable = (format) => {
+    if (filteredData.length === 0) {
+      toast({
+        title: 'No Data',
+        description: 'No data available to download',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+
+    const dataToDownload = filteredData.map(r => ({
+      Faculty: r.faculty,
+      Designation: r.designation,
+      Semester: r.subSem || '-',
+      'Subject Code': r.subCode,
+      'Subject Name': r.subjectFullName,
+      Type: r.subType,
+      Hours: r.hours
+    }));
+
+    if (format === 'csv') {
+      const csvHeader = ["Faculty", "Designation", "Semester", "Subject Code", "Subject Name", "Type", "Hours"];
+      const csvContent = [csvHeader, ...dataToDownload.map(row => Object.values(row))]
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${selectedDepartment}_${typeFilter}_${selectedSession}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Download Complete',
+        description: 'CSV file downloaded successfully',
+        status: 'success',
+        duration: 3000,
+      });
+    } else if (format === 'pdf') {
+      const pdf = new jsPDF('landscape');
+      
+      pdf.setFontSize(16);
+      pdf.text(`Department: ${selectedDepartment}`, 14, 20);
+      pdf.setFontSize(11);
+      pdf.text(`Session: ${selectedSession} | Type: ${typeFilter === 'ALL' ? 'All' : typeFilter.toUpperCase()}`, 14, 28);
+
+      pdf.autoTable({
+        startY: 35,
+        head: [['Faculty', 'Designation', 'Semester', 'Subject Code', 'Subject Name', 'Type', 'Hours']],
+        body: dataToDownload.map(r => [
+          r.Faculty,
+          r.Designation,
+          r.Semester,
+          r['Subject Code'],
+          r['Subject Name'],
+          r.Type,
+          r.Hours
+        ]),
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [45, 55, 72], textColor: 255 },
+      });
+
+      pdf.save(`${selectedDepartment}_${typeFilter}_${selectedSession}.pdf`);
+
+      toast({
+        title: 'Download Complete',
+        description: 'PDF file downloaded successfully',
+        status: 'success',
+        duration: 3000,
+      });
+    }
+  };
+
+  // ==================== DOWNLOAD ALL DEPARTMENTS ====================
+  const downloadAll = async (filterType, format) => {
+    const toastId = toast({
+      title: 'Preparing Download',
+      description: 'Initializing process...',
+      status: 'info',
+      duration: null,
+      isClosable: true,
+      position: 'bottom',
+    });
+
+    try {
+      let allData = [];
+      const pdf = format === 'pdf' ? new jsPDF('landscape') : null;
+      let isFirstPage = true;
+
+      for (let i = 0; i < allDepartments.length; i++) {
+        const deptObj = allDepartments[i];
+        const dept = deptObj.dept;
+
+        toast.update(toastId, {
+          description: `Fetching data for ${dept} (${i + 1}/${allDepartments.length})...`,
+        });
+
+        const rawData = await fetchDepartmentData(selectedSession, dept);
+        
+        let filtered = rawData;
+        if (filterType !== 'all') {
+          if (filterType === 'theory_tut') {
+            filtered = filtered.filter(r => ['theory', 'tutorial'].includes(r.subType?.toLowerCase()));
+          } else if (filterType === 'theory_lab') {
+            filtered = filtered.filter(r => ['theory', 'laboratory'].includes(r.subType?.toLowerCase()));
+          } else {
+            filtered = filtered.filter(r => r.subType?.toLowerCase() === filterType.toLowerCase());
+          }
+        }
+
+        const deptData = filtered.map(r => ({
+          Department: dept,
+          Faculty: r.faculty,
+          Designation: r.designation,
+          Semester: r.subSem || '-',
+          'Subject Code': r.subCode,
+          'Subject Name': r.subjectFullName,
+          Type: r.subType,
+          Hours: r.hours
+        }));
+
+        allData = [...allData, ...deptData];
+
+        // PDF - one page per department
+        if (format === 'pdf' && pdf) {
+          if (!isFirstPage) {
+            pdf.addPage();
+          }
+          isFirstPage = false;
+          
+          pdf.setFontSize(16);
+          pdf.text(`Department: ${dept} - ${selectedSession}`, 14, 20);
+          pdf.setFontSize(11);
+          pdf.text(`Load Type: ${filterType === 'all' ? 'All' : filterType.toUpperCase()}`, 14, 28);
+
+          pdf.autoTable({
+            startY: 35,
+            head: [['Department', 'Faculty', 'Designation', 'Semester', 'Subject Code', 'Subject Name', 'Type', 'Hours']],
+            body: deptData.map(r => [
+              r.Department,
+              r.Faculty,
+              r.Designation,
+              r.Semester,
+              r['Subject Code'],
+              r['Subject Name'],
+              r.Type,
+              r.Hours
+            ]),
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [45, 55, 72], textColor: 255 },
+          });
+        }
+      }
+
+      toast.update(toastId, {
+        title: 'Generating File',
+        description: 'Preparing the final file...',
+      });
+
+      if (format === 'csv') {
+        const csvHeader = ["Department", "Faculty", "Designation", "Semester", "Subject Code", "Subject Name", "Type", "Hours"];
+        const csvContent = [csvHeader, ...allData.map(row => Object.values(row))]
+          .map(row => row.map(cell => `"${cell}"`).join(','))
+          .join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `All_Departments_${filterType}_${selectedSession}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'pdf' && pdf) {
+        pdf.save(`All_Departments_${filterType}_${selectedSession}.pdf`);
+      }
+
+      toast.update(toastId, {
+        title: 'Download Complete',
+        description: 'Your file has been downloaded successfully.',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.update(toastId, {
+        title: 'Error',
+        description: `An error occurred: ${err.message}`,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   // ==================== EFFECTS ====================
   useEffect(() => {
     const fetchSessionsAndDepartments = async () => {
@@ -271,112 +479,6 @@ const FacultyLoadCalculation = () => {
     }
   }, [selectedSession, selectedDepartment, deptLoading, fetchDepartmentData]);
 
-  // ==================== DOWNLOAD ALL DEPARTMENTS ====================
-  const downloadAll = async (filterType, format) => {
-    const toastId = toast({
-      title: 'Preparing Download',
-      description: 'Initializing process...',
-      status: 'info',
-      duration: null,
-      isClosable: true,
-      position: 'bottom',
-    });
-
-    try {
-      let allData = [];
-      const pdf = new jsPDF('landscape');
-
-      for (let i = 0; i < allDepartments.length; i++) {
-        const deptObj = allDepartments[i];
-        const dept = deptObj.dept;
-
-        toast.update(toastId, {
-          description: `Fetching data for ${dept} (${i + 1}/${allDepartments.length})...`,
-        });
-
-        const rawData = await fetchDepartmentData(selectedSession, dept);
-        
-        let filtered = rawData;
-        if (filterType !== 'all') {
-          if (filterType === 'theory_tut') {
-            filtered = filtered.filter(r => ['theory', 'tutorial'].includes(r.subType?.toLowerCase()));
-          } else if (filterType === 'theory_lab') {
-            filtered = filtered.filter(r => ['theory', 'laboratory'].includes(r.subType?.toLowerCase()));
-          } else {
-            filtered = filtered.filter(r => r.subType?.toLowerCase() === filterType.toLowerCase());
-          }
-        }
-
-        const deptData = filtered.map(r => ({
-          Department: dept,
-          Faculty: r.faculty,
-          Designation: r.designation,
-          'Subject Code': r.subCode,
-          'Subject Name': r.subjectFullName,
-          Type: r.subType,
-          Hours: r.hours
-        }));
-
-        allData = [...allData, ...deptData];
-
-        // PDF - one page per department
-        if (format === 'pdf') {
-          if (pdf.internal.getNumberOfPages() > 1) pdf.addPage();
-          
-          pdf.setFontSize(16);
-          pdf.text(`Department: ${dept} - ${selectedSession}`, 14, 20);
-          pdf.setFontSize(11);
-          pdf.text(`Load Type: ${filterType === 'all' ? 'All' : filterType.toUpperCase()}`, 14, 28);
-
-          pdf.autoTable({
-            startY: 35,
-            head: [['Department', 'Faculty', 'Designation', 'Subject Code', 'Subject Name', 'Type', 'Hours']],
-            body: deptData.map(r => [r.Department, r.Faculty, r.Designation, r['Subject Code'], r['Subject Name'], r.Type, r.Hours]),
-            theme: 'grid',
-            styles: { fontSize: 9, cellPadding: 3 },
-            headStyles: { fillColor: [45, 55, 72], textColor: 255 },
-          });
-        }
-      }
-
-      toast.update(toastId, {
-        title: 'Generating File',
-        description: 'Preparing the final file...',
-      });
-
-      if (format === 'csv') {
-        const csvHeader = ["Department","Faculty","Designation","Subject Code","Subject Name","Type","Hours"];
-        const csvContent = [csvHeader, ...allData.map(row => Object.values(row))].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `All_Departments_${filterType}_${selectedSession}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
-      } else if (format === 'pdf') {
-        pdf.save(`All_Departments_${filterType}_${selectedSession}.pdf`);
-      }
-
-      toast.update(toastId, {
-        title: 'Download Complete',
-        description: 'Your file has been downloaded successfully.',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-
-    } catch (err) {
-      toast.update(toastId, {
-        title: 'Error',
-        description: 'An error occurred during download. Please try again.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
-
   // ==================== RENDER ====================
   const filteredData = currentLoadData.filter(r => {
     if (typeFilter === 'ALL') return true;
@@ -409,9 +511,6 @@ const FacultyLoadCalculation = () => {
           bgImage="radial-gradient(circle, white 1px, transparent 1px)"
           bgSize="30px 30px"
         />
-        {/* <Box position="relative" zIndex={2}>
-          <Header />
-        </Box> */}
 
         <Container maxW="7xl" mt={{ base: 4, md: 6 }}>
           <Flex
@@ -430,22 +529,21 @@ const FacultyLoadCalculation = () => {
             </VStack>
 
             <HStack spacing={3}>
-            <Button
-  leftIcon={<DownloadIcon boxSize={6} />}
-  onClick={onOpen}
-  size="lg"
-  bg="orange.500"
-  color="white"
-  _hover={{ bg: "orange.400" }}
-  borderRadius="full"
-  border="2px solid"
-  borderColor="whiteAlpha.500"
->
-  Download Center
-</Button>
-
+              <Button
+                leftIcon={<DownloadIcon boxSize={6} />}
+                onClick={onOpen}
+                size="lg"
+                bg="orange.500"
+                color="white"
+                _hover={{ bg: "orange.400" }}
+                borderRadius="full"
+                border="2px solid"
+                borderColor="whiteAlpha.500"
+              >
+                Download Center
+              </Button>
                 
-                <IconButton
+              <IconButton
                 icon={<ArrowBackIcon boxSize={6} />}
                 aria-label="Go back"
                 onClick={() => navigate(-1)}
@@ -497,7 +595,6 @@ const FacultyLoadCalculation = () => {
                   <option value="theory_lab">Theory + Lab</option>
                   <option value="tutorial">Tutorial</option>
                   <option value="laboratory">Lab</option>
-                  {/* <option value="project">Project</option> */}
                   <option value="theory_tut">Theory + Tutorial</option>
                 </Select>
               </SimpleGrid>
@@ -511,9 +608,44 @@ const FacultyLoadCalculation = () => {
                 <Heading size="md">
                   {selectedDepartment || 'Select Department'} Load Distribution
                 </Heading>
-                <Badge colorScheme="yellow" fontSize="lg" px={4} py={2}>
-                  {filteredData.length} Entries
-                </Badge>
+                <HStack spacing={3}>
+                  <Badge colorScheme="yellow" fontSize="lg" px={4} py={2}>
+                    {filteredData.length} Entries
+                  </Badge>
+                  {filteredData.length > 0 && (
+                    <Menu>
+                      <MenuButton
+                        as={Button}
+                        rightIcon={<ChevronDownIcon />}
+                        leftIcon={<DownloadIcon />}
+                        colorScheme="green"
+                        size="sm"
+                      >
+                        Download Table
+                      </MenuButton>
+                      <MenuList bg="green.50" borderColor="green.100">
+  <MenuItem
+    color="green.900"
+    _hover={{ bg: 'green.100', color: 'green.900' }}
+    _focus={{ bg: 'green.100', color: 'green.900' }}
+    onClick={() => downloadCurrentTable('csv')}
+  >
+    Download as CSV
+  </MenuItem>
+
+  <MenuItem
+    color="green.900"
+    _hover={{ bg: 'green.100', color: 'green.900' }}
+    _focus={{ bg: 'green.100', color: 'green.900' }}
+    onClick={() => downloadCurrentTable('pdf')}
+  >
+    Download as PDF
+  </MenuItem>
+</MenuList>
+
+                    </Menu>
+                  )}
+                </HStack>
               </Flex>
             </CardHeader>
 
@@ -609,15 +741,14 @@ const FacultyLoadCalculation = () => {
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Download Center (All Departments)</ModalHeader>
-          <Text  px={6} color="Violet.900" fontSize={{ base: "md", md: "lg" }}>
-                Current Session: {selectedSession}
-              </Text>
+          <Text px={6} color="violet.900" fontSize={{ base: "md", md: "lg" }}>
+            Current Session: {selectedSession}
+          </Text>
           <ModalCloseButton />
           <ModalBody p={6}>
-          <Text pb={3} color="green.900" fontSize={{ base: "md", md: "lg" }}>
-          Details will be downloaded for the session selected
-              </Text>
-          
+            <Text pb={3} color="green.900" fontSize={{ base: "md", md: "lg" }}>
+              Details will be downloaded for the session selected
+            </Text>
 
             <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={6}>
               {[

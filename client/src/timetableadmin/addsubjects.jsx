@@ -815,7 +815,7 @@ function Subject() {
                     <Box>
                       <FormLabel fontWeight="bold">Type</FormLabel>
                       <Input
-                        placeholder="Core/Elective"
+                        placeholder="Theory/Tutorial/Laboratory"
                         value={editedSData.type}
                         onChange={(e) =>
                           setEditedSData({ ...editedSData, type: e.target.value })
