@@ -32,28 +32,23 @@ const FacultyHourLoad = () => {
             );
 
             const data = await res.json();
-
             if (!Array.isArray(data)) {
                 setSessions([]);
                 return;
             }
 
-
-            const filtered = data.filter(
-                s =>
-                    s.startsWith("2024-2025") ||
-                    s.startsWith("2025-2026")
-            );
-
-
-            const formatted = filtered.map(s => ({ session: s }));
-
+            // backend decides order → we TRUST it
+            const formatted = data.map(s => ({ session: s }));
             setSessions(formatted);
+
+            // ✅ AUTO-SET BACKEND CURRENT SESSION
+            if (data.length > 0) {
+                setSelectedSession(data[0]); // ← current session decided by backend
+            }
         } catch (err) {
             console.error("Error fetching sessions", err);
         }
     };
-
 
     /* Fetch Departments */
 
@@ -81,7 +76,8 @@ const FacultyHourLoad = () => {
     /* CALCULATION */
 
     const fetchFacultyHourLoad = async () => {
-        if (!selectedDept || !selectedSession) return;
+        if (!selectedDept) return;
+
 
         setLoading(true);
         try {
