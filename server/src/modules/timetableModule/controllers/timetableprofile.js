@@ -363,23 +363,34 @@ class TableController {
       });
       res.json({ success: true });
       const allfaculties = await addFaculty.find({ code: updatedTimeTable.code });
-      console.log("facultyData", allfaculties);
 
-      const base_url = getEnvironmentURL();
-      for (const faculty of allfaculties)
-        facultyControllerInstance
-          .getFacultyByName(faculty)
-          .then(async (facultyData) => {
-            const { subject, body } = getTimetableEmailContent({
-              facultyName: facultyData[0].name,
-              departmentName: updatedTimeTable.dept,  
-              sessionName: updatedTimeTable.session,
-              timetableUrl: `${base_url}/timetable/faculty/${facultyData[0]._id}`,
-            });
-            console.log("facultyData-mail", facultyData[0].email);
+const base_url = getEnvironmentURL();
 
-            await mailSender(facultyData[0].email, subject, body);
-          });
+for (const record of allfaculties) {
+  for (const facultyName of record.faculty) {
+
+    const facultyData = await facultyControllerInstance.getFacultyByName(facultyName);
+
+    if (!facultyData || facultyData.length === 0) {
+      console.warn(`Faculty not found: ${facultyName}`);
+      continue;
+    }
+
+    const faculty = facultyData[0];
+
+    const { subject, body } = getTimetableEmailContent({
+      facultyName: faculty.name,
+      departmentName: updatedTimeTable.dept,
+      sessionName: updatedTimeTable.session,
+      timetableUrl: `${base_url}/timetable/faculty/${faculty._id}`,
+    });
+
+    console.log("Sending mail to:", faculty.email);
+
+    await mailSender(faculty.email, subject, body);
+  }
+}
+
     } catch (error) {
       console.error("Error publishing timetable:", error);
       res.status(500).json({ error: "Internal Server Error" });
