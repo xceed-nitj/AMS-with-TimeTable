@@ -343,8 +343,8 @@ const AdminClashes = () => {
                     borderColor="gray.200"
                   >
                     <option value="all">All Clashes</option>
-                    <option value="room">Room Clashes</option>
-                    <option value="faculty">Faculty Clashes</option>
+                    <option value="room">Room Clashes: Same room with multiple classes</option>
+                    <option value="faculty">Faculty Clashes: same faculty at different location</option>
                   </Select>
                 </Box>
 
