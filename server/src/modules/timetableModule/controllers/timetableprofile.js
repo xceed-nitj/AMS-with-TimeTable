@@ -368,7 +368,7 @@ class TableController {
       const base_url = getEnvironmentURL();
       for (const faculty of allfaculties)
         facultyControllerInstance
-          .getFacultyByName(faculty.faculty)
+          .getFacultyByName(faculty)
           .then(async (facultyData) => {
             const { subject, body } = getTimetableEmailContent({
               facultyName: facultyData[0].name,
