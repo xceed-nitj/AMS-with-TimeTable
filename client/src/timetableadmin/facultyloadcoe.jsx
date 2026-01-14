@@ -663,7 +663,7 @@ useEffect(() => {
                 <Box p={10} textAlign="center">
                   <Alert status="info" borderRadius="lg" maxW="xl" mx="auto">
                     <AlertIcon />
-                    <AlertDescription>No teaching load found for the selected filters.</AlertDescription>
+                    <AlertDescription>Loading..</AlertDescription>
                   </Alert>
                 </Box>
               ) : (
