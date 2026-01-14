@@ -168,7 +168,7 @@ const FacultyLoadCalculation = () => {
   // ==================== API FUNCTIONS ====================
   const fetchDepartmentData = useCallback(async (session, department) => {
     if (!session || !department) return [];
-    setLoadingCurrent(true);
+    // setLoadingCurrent(true);
    
     try {
       const cacheKey = `${session}-${department}`;
@@ -236,9 +236,7 @@ const FacultyLoadCalculation = () => {
       console.error('Error:', error);
       setError(error.message);
       return [];
-    } finally {
-      setLoadingCurrent(false);
-    }
+    } 
   }, [apiUrl, generateInitialTimetableData, generateSummary]);
 
   // ==================== DOWNLOAD CURRENT TABLE ====================
@@ -467,17 +465,23 @@ const FacultyLoadCalculation = () => {
     fetchSessionsAndDepartments();
   }, [apiUrl]);
 
-  useEffect(() => {
-    if (!deptLoading && !selectedDepartment && allDepartments.length > 0) {
-      setSelectedDepartment(allDepartments[0].dept);
-    }
-  }, [deptLoading, selectedDepartment, allDepartments]);
+useEffect(() => {
+  if (!selectedSession || !selectedDepartment || deptLoading) return;
 
-  useEffect(() => {
-    if (selectedSession && selectedDepartment && !deptLoading) {
-      fetchDepartmentData(selectedSession, selectedDepartment).then(setCurrentLoadData);
-    }
-  }, [selectedSession, selectedDepartment, deptLoading, fetchDepartmentData]);
+  // IMPORTANT: clear old data & show spinner immediately
+  setCurrentLoadData([]);
+  setLoadingCurrent(true);
+
+  fetchDepartmentData(selectedSession, selectedDepartment)
+    .then(data => {
+      setCurrentLoadData(data);
+    })
+    .finally(() => {
+      setLoadingCurrent(false);
+    });
+
+}, [selectedSession, selectedDepartment, deptLoading, fetchDepartmentData]);
+
 
   // ==================== RENDER ====================
   const filteredData = currentLoadData.filter(r => {
