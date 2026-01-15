@@ -58,6 +58,9 @@ class TableController {
       user: userId,
       session: data.session,
     });
+     const sessionstatus = await TimeTable.findOne({
+      session: data.session,
+    });
 
     if (existingTimeTable) {
       // If a timetable already exists, you can choose to return an error or update the existing one
@@ -68,8 +71,15 @@ class TableController {
     }
     try {
       const newCode = await generateUniqueLink();
-      console.log(newCode);
+      // console.log(newCode);
       //const userObject = await User.findById(userId)
+      if (sessionstatus.currentSession == true) {
+        data.currentSession = true;
+      }
+      else
+      { data.currentSession = false;
+        }
+        console.log("seesionstatus",data.currentSession);
       const newTimeTable = new TimeTable({
         ...data,
         code: newCode,
