@@ -1,3 +1,12 @@
+//========================BASIC 13======================
+
+
+
+
+
+
+
+
 import React from 'react';
 import { useEffect, useRef } from 'react';
 
@@ -68,7 +77,6 @@ const CertificateContent = ({
       className="svg-img tw-object-contain"
       ref={svgRef}
     >
-      <>
         <g clipPath="url(#clip0_137_3)">
           <path fill="#fff" d="M0 0H1122.5V798.222H0z"></path>
           <path fill="#6C6B70" d="M0 0H898V31.929H0z"></path>
@@ -122,8 +130,7 @@ const CertificateContent = ({
             <path fill="#fff" d="M0 0H1122.5V798.222H0z"></path>
           </clipPath>
         </defs>
-      </>
-      <>
+
         <foreignObject width={'90%'} height={'400'} y={'40'} x={'5%'}>
           <div style={{ height: "200px" }} className="tw-flex tw-items-center tw-justify-center tw-w-full">
             {logos.map((item, key) => (
@@ -173,7 +180,7 @@ const CertificateContent = ({
           </Text>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={435} width={'62%'} height={400}>
+        <foreignObject x={'20%'} y={420} width={'62%'} height={400}>
           <div style={{ height: "250px" }} className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
             {signature.map((item, key) => (
               <div
@@ -192,14 +199,12 @@ const CertificateContent = ({
           </div>
         </foreignObject>
         {verifiableLink &&
-          <foreignObject x={'0%'} y={'91%'} width={'100%'} height={'100'}>
+          <foreignObject x={'0%'} y={'89%'} width={'100%'} height={'100'}>
             <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
               {window.location.href}
             </div>
           </foreignObject>}
-        <foreignObject x={"0%"} y={'89%'} width={'100%'} height={'100'}><Text className="tw-text-sm tw-text-center tw-text-gray-700 ">Issued On: {footer.footer}</Text></foreignObject>
-      </>
-      );
+        <foreignObject x={"0%"} y={'87%'} width={'100%'} height={'100'}><Text className="tw-text-sm tw-text-center tw-text-gray-700 ">Issued On: {footer.footer}</Text></foreignObject>
     </svg>
   );
 };

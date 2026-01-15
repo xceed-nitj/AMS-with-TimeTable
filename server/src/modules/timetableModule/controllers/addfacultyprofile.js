@@ -209,4 +209,3 @@ class addFacultyController {
     }
 module.exports = addFacultyController;
 
-

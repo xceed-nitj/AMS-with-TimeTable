@@ -278,7 +278,7 @@ const CertificateContent = ({
           </Text>
         </foreignObject>
 
-        <foreignObject x={'20%'} y={435} width={'62%'} height={400}>
+        <foreignObject x={'20%'} y={425} width={'62%'} height={400}>
           <div style={{ height: "250px" }} className="tw-flex-wrap tw-flex tw-items-center tw-justify-between tw-gap-6 tw-px-6 ">
             {signature.map((item, key) => (
               <div
@@ -297,14 +297,13 @@ const CertificateContent = ({
           </div>
         </foreignObject>
         {verifiableLink &&
-          <foreignObject x={'0%'} y={'91%'} width={'100%'} height={'100'}>
+          <foreignObject x={'0%'} y={'90%'} width={'100%'} height={'100'}>
             <div className="tw-text-sm tw-text-center tw-text-gray-700 ">
               {window.location.href}
             </div>
           </foreignObject>}
-        <foreignObject x={"0%"} y={'89%'} width={'100%'} height={'100'}><Text className="tw-text-sm tw-text-center tw-text-gray-700 ">Issued On: {footer.footer}</Text></foreignObject>
+        <foreignObject x={"0%"} y={'88%'} width={'100%'} height={'100'}><Text className="tw-text-sm tw-text-center tw-text-gray-700 ">Issued On: {footer.footer}</Text></foreignObject>
       </>
-      );
     </svg>
   );
 };

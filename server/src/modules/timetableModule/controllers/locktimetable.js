@@ -21,105 +21,197 @@ const getIndianTime = require("../helper/getIndianTime");
 const mailSender = require("../../mailsender");
 const Faculty = require("../../../models/faculty");
 const getEnvironmentURL = require("../../../getEnvironmentURL");
-function indexEntriesByKey(entries) {
+const TimetableChangeLog = require("../../../models/timetableChangeLogs");
+const TimeTable = require("../../../models/timetable");
+
+function indexBySubjectAndSem(entries) {
   const map = {};
   for (const e of entries) {
-    const key = `${e.day}-${e.slot}-${e.sem}-${e.code}`;
-    map[key] = e;
+    const key = `${e.subject}][${e.sem}`;
+    if (!map[key]) {
+      map[key] = [];
+    }
+    map[key].push(e);
   }
   return map;
 }
+const SLOT_TIME_MAP = {
+  period1: "08:30 AM",
+  period2: "09:30 AM",
+  period3: "10:30 AM",
+  period4: "11:30 AM",
+  period5: "01:30 PM",
+  period6: "02:30 PM",
+  period7: "03:30 PM",
+  period8: "04:30 PM",
+};
+function formatSlot(slot) {
+  return `${slot} (${SLOT_TIME_MAP[slot] || "Unknown Time"})`;
+}
+
+function formatDaySlot(entry) {
+  return `${entry.day}, ${formatSlot(entry.slot)}`;
+}
 
 function detectChangesForFaculty(oldEntries, newEntries) {
-  const oldMap = indexEntriesByKey(oldEntries);
-  const newMap = indexEntriesByKey(newEntries);
+  const oldMap = indexBySubjectAndSem(oldEntries);
+  const newMap = indexBySubjectAndSem(newEntries);
 
-  const added = [];
-  const removed = [];
-  const updated = [];
+  const addedSubjects = [];
+  const removedSubjects = [];
+  const updatedSubjects = [];
 
-  // Check for updated or removed entries
-  for (const key of Object.keys(oldMap)) {
-    const oldE = oldMap[key];
-    const newE = newMap[key];
+  const allSubjectKeys = new Set([
+    ...Object.keys(oldMap),
+    ...Object.keys(newMap),
+  ]);
 
-    if (!newE) {
-      removed.push(oldE);
+  for (const subjectKey of allSubjectKeys) {
+    const [subject, sem] = subjectKey.split("][");
+    const oldList = oldMap[subjectKey];
+    const newList = newMap[subjectKey];
+
+    // 🟢 Subject Added
+    if (!oldList && newList) {
+      addedSubjects.push({
+        subject,
+        entries: newList,
+        sem,
+      });
       continue;
     }
 
-    // Check field-by-field changes
+    // 🔴 Subject Removed
+    if (oldList && !newList) {
+      removedSubjects.push({
+        subject,
+        entries: oldList,
+        sem,
+      });
+      continue;
+    }
+
+    // 🟡 Subject Exists → Check changes
     const changes = {};
-    ["subject", "room", "slot", "day"].forEach((field) => {
-      if (oldE[field] !== newE[field]) {
-        changes[field] = { from: oldE[field], to: newE[field] };
+
+    /* ---------- ROOM CHANGE ---------- */
+    const oldRooms = [...new Set(oldList.map((e) => e.room))];
+    const newRooms = [...new Set(newList.map((e) => e.room))];
+
+    if (JSON.stringify(oldRooms) !== JSON.stringify(newRooms)) {
+      changes.room = { from: oldRooms, to: newRooms };
+    }
+
+    /* ---------- SLOT / DAY CHANGE ---------- */
+    const normalizeSlots = (list) =>
+      list
+        .map((e) => ({
+          raw: `${e.day}-${e.slot}`,
+          label: `${e.day}, ${formatSlot(e.slot)}`,
+        }))
+        .sort((a, b) => a.raw.localeCompare(b.raw));
+
+    const oldSlots = normalizeSlots(oldList);
+    const newSlots = normalizeSlots(newList);
+
+    // Convert to maps for easy lookup
+    const oldSlotMap = new Map(oldSlots.map((s) => [s.raw, s.label]));
+    const newSlotMap = new Map(newSlots.map((s) => [s.raw, s.label]));
+
+    // Diff
+    const removed = [];
+    const added = [];
+
+    for (const [raw, label] of oldSlotMap) {
+      if (!newSlotMap.has(raw)) {
+        removed.push(label);
       }
-    });
+    }
+
+    for (const [raw, label] of newSlotMap) {
+      if (!oldSlotMap.has(raw)) {
+        added.push(label);
+      }
+    }
+
+    if (added.length > 0 || removed.length > 0) {
+      changes.slots = { added, removed };
+      updatedSubjects;
+    }
 
     if (Object.keys(changes).length > 0) {
-      updated.push({
-        key,
-        old: oldE,
-        new: newE,
+      updatedSubjects.push({
+        subject,
         changes,
+        sem,
       });
     }
   }
 
-  // Check for added entries
-  for (const key of Object.keys(newMap)) {
-    if (!oldMap[key]) {
-      added.push(newMap[key]);
-    }
-  }
-
-  return { added, removed, updated };
+  return {
+    addedSubjects,
+    removedSubjects,
+    updatedSubjects,
+  };
 }
 
-function generateEmail(faculty, { added, removed, updated }, timetableLink) {
+function generateEmail(faculty, changes, timetableLink) {
   let body = `
 <p>Dear ${faculty},</p>
-
-<p>This email is to inform you that changes have been made to your teaching timetable. Please find the changes below:</p>
+<p>This email is to notify you of updates to your teaching timetable. Please review the changes below:</p>
 `;
 
-  if (added.length > 0) {
-    body += `<p><strong>📌 Added Slots</strong><br>`;
-    added.forEach((e) => {
-      body += `• ${e.day}, ${e.slot} – ${e.subject} in ${e.room}<br>`;
+  /* 🟢 ADDED SUBJECTS */
+  if (changes.addedSubjects.length > 0) {
+    body += `<p><strong>New Subjects Assigned:</strong></p><ul>`;
+    changes.addedSubjects.forEach((s) => {
+      body += `<li><strong>${s.subject} (${s.sem})</strong><ul>`;
+      s.entries.forEach((e) => {
+        body += `<li>${e.day}, ${e.slot} | Room: ${e.room}</li>`;
+      });
+      body += `</ul></li>`;
     });
-    body += `</p>`;
+    body += `</ul>`;
   }
 
-  if (removed.length > 0) {
-    body += `<p><strong>❌ Removed Slots</strong><br>`;
-    removed.forEach((e) => {
-      body += `• ${e.day}, ${e.slot} – ${e.subject} (Room: ${e.room})<br>`;
+  /* 🔴 REMOVED SUBJECTS */
+  if (changes.removedSubjects.length > 0) {
+    body += `<p><strong>Subjects Removed:</strong></p><ul>`;
+    changes.removedSubjects.forEach((s) => {
+      body += `<li><strong>${s.subject} (${s.sem})</strong></li>`;
     });
-    body += `</p>`;
+    body += `</ul>`;
   }
 
-  if (updated.length > 0) {
-    body += `<p><strong>🔄 Updated Slots</strong><br>`;
-    updated.forEach((u) => {
-      body += `• ${u.old.day}, ${u.old.slot}<br>`;
-      for (const field of Object.keys(u.changes)) {
-        const ch = u.changes[field];
-        body += `&nbsp;&nbsp;&nbsp;- <strong>${field.toUpperCase()}</strong>: ${ch.from} → ${ch.to}<br>`;
+  /* 🟡 UPDATED SUBJECTS */
+  if (changes.updatedSubjects.length > 0) {
+    body += `<p><strong>Subject Updates:</strong></p><ul>`;
+    changes.updatedSubjects.forEach((u) => {
+      body += `<li><strong>${u.subject} (${u.sem})</strong><ul>`;
+      if (u.changes.room) {
+        body += `<li>Room Changed: From ${u.changes.room.from.join(
+          ", "
+        )} to ${u.changes.room.to.join(", ")}</li>`;
       }
+      if (u.changes.slots) {
+        body += `<li>Slot Changes:<ul>`;
+        if (u.changes.slots.added.length > 0) {
+          body += `<li>Added: ${u.changes.slots.added.join(", ")}</li>`;
+        }
+        if (u.changes.slots.removed.length > 0) {
+          body += `<li>Removed: ${u.changes.slots.removed.join(", ")}</li>`;
+        }
+        body += `</ul></li>`;
+      }
+      body += `</ul></li>`;
     });
-    body += `</p>`;
+    body += `</ul>`;
   }
 
   body += `
-<p>
-Please review the <strong>detailed updated timetable</strong> using the link below:<br>
-<a href="${timetableLink}" target="_blank">${timetableLink}</a>
-</p>
-
-<p>If you have any questions or require clarification, please feel free to contact the department timetable coordinator.</p>
-
-<p>Warm regards,<br>Team XCEED</p>
+<p>Please review your complete updated timetable here: <a href="${timetableLink}" target="_blank">${timetableLink}</a></p>
+<p>This is auto-generated email. If you have any questions, please contact the department timetable coordinator.</p>
+<p>Regards,<br><strong>Team XCEED</strong></p>
 `;
 
   return body;
@@ -138,12 +230,21 @@ function generateFacultyChangeEmails(oldData, newData) {
     const newEntries = newMap[faculty] || [];
 
     const changes = detectChangesForFaculty(oldEntries, newEntries);
-
-    if (!(changes.added.length === 0 && changes.removed.length === 0 && changes.updated.length === 0)) {
+    if (
+      !(
+        changes.addedSubjects.length === 0 &&
+        changes.removedSubjects.length === 0 &&
+        changes.updatedSubjects.length === 0
+      )
+    ) {
       results.push({
         faculty,
         emailBody: (facultyid) => {
-          return generateEmail(faculty, changes, `${base_url}/faculty/${facultyid}`)
+          return generateEmail(
+            faculty,
+            changes,
+            `${base_url}/timetable/faculty/${facultyid}`
+          );
         },
         changes,
       });
@@ -155,14 +256,13 @@ function generateFacultyChangeEmails(oldData, newData) {
 
 async function sendFacultyChangeEmails(facultyChanges) {
   const today = new Date();
-  const day = String(today.getDate()).padStart(2, '0');
-  const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const day = String(today.getDate()).padStart(2, "0");
+  const month = today.toLocaleString("en-US", { month: "short" }).toUpperCase();
   const year = today.getFullYear();
   const emailTitle = `Timetable Update Notification [${day} ${month} ${year}]`;
   const results = [];
 
   for (const change of facultyChanges) {
-    
     // Fetch faculty email from DB
     const facultyDoc = await Faculty.findOne({ name: change.faculty }).lean();
     if (!facultyDoc || !facultyDoc.email) {
@@ -177,10 +277,7 @@ async function sendFacultyChangeEmails(facultyChanges) {
     }
 
     try {
-      // await mailSender(facultyDoc.email, emailTitle, emailBody(facultyDoc._id.toString()));
-      console.log(`Email sent to: ${facultyDoc.email}`);
-      console.log(facultyDoc._id);
-
+      await mailSender(facultyDoc.email, emailTitle, change.emailBody(facultyDoc._id.toString()));
       results.push({
         email: facultyDoc.email,
         faculty: change.faculty,
@@ -188,7 +285,6 @@ async function sendFacultyChangeEmails(facultyChanges) {
       });
     } catch (err) {
       console.error(`Failed to send email to ${facultyDoc.email}:`, err);
-
       results.push({
         email: facultyDoc.email,
         faculty: change.faculty,
@@ -201,83 +297,73 @@ async function sendFacultyChangeEmails(facultyChanges) {
   return results;
 }
 
+const aggregateConfig = (code) => [
+  {
+    $match: { code },
+  },
+  {
+    $unwind: "$slotData",
+  },
+  {
+    $match: {
+      "slotData.faculty": { $exists: true, $ne: "" },
+    },
+  },
+  {
+    $group: {
+      _id: "$slotData.faculty",
+      entries: {
+        $push: {
+          day: "$day",
+          slot: "$slot",
+          subject: "$slotData.subject",
+          faculty: "$slotData.faculty",
+          room: "$slotData.room",
+          sem: "$sem",
+          code: "$code",
+        },
+      },
+    },
+  },
+];
 
 class LockTimeTableController {
   async locktt(req, res) {
     try {
       const { code, toInform } = req.body;
       var results = [];
-      
+
       // Delete all existing records in 'LockSem' for the given code
-      if (toInform) {
-        const oldData = await LockSem.aggregate([
-          {
-            $match: { code },
-          },
-          {
-            $unwind: "$slotData",
-          },
-          {
-            $match: {
-              "slotData.faculty": { $exists: true, $ne: "" },
-            },
-          },
-          {
-            $group: {
-              _id: "$slotData.faculty",
-              entries: {
-                $push: {
-                  day: "$day",
-                  slot: "$slot",
-                  subject: "$slotData.subject",
-                  faculty: "$slotData.faculty",
-                  room: "$slotData.room",
-                  sem: "$sem",
-                  code: "$code",
-                },
-              },
-            },
-          },
-        ]);
-        
-        const newData = await ClassTable.aggregate([
-          {
-            $match: { code },
-          },
-          {
-            $unwind: "$slotData",
-          },
-          {
-            $match: {
-              "slotData.faculty": { $exists: true, $ne: "" },
-            },
-          },
-          {
-            $group: {
-              _id: "$slotData.faculty",
-              entries: {
-                $push: {
-                  day: "$day",
-                  slot: "$slot",
-                  subject: "$slotData.subject",
-                  faculty: "$slotData.faculty",
-                  room: "$slotData.room",
-                  sem: "$sem",
-                  code: "$code",
-                },
-              },
-            },
-          },
-        ]);
-        
-        results = await sendFacultyChangeEmails(
-          generateFacultyChangeEmails(oldData, newData)
-        );
+      const oldData = await LockSem.aggregate(aggregateConfig(code));
+      const newData = await ClassTable.aggregate(aggregateConfig(code));
+      const facultyChanges = generateFacultyChangeEmails(oldData, newData);
+      if (toInform) results = await sendFacultyChangeEmails(facultyChanges);
+      if (facultyChanges.length > 0) {
+        // enrich log with dept and session at creation time to avoid later lookups
+        let dept = 'Unknown';
+        let session = '';
+        try {
+          const tt = await TimeTable.findOne({ code }).select('dept session').lean();
+          if (tt) {
+            dept = tt.dept || dept;
+            session = tt.session || '';
+          }
+        } catch (err) {
+          console.warn('Failed to fetch timetable for log enrichment:', err.message || err);
+        }
+
+        await TimetableChangeLog.create({
+          userId: req.user.id,
+          userEmail: JSON.stringify(req.user.email),
+          changes: JSON.stringify(facultyChanges),
+          code,
+          dept,
+          session,
+        });
       }
-      
+
       await LockSem.deleteMany({ code });
 
-      // Fetch data from 'ClassTable' based on the code
       const classTableData = await ClassTable.find({ code });
       if (!classTableData.length) {
         return res
@@ -303,16 +389,14 @@ class LockTimeTableController {
       res.status(200).json({
         message: "Data Locked successfully!",
         updatedTime: formattedtime,
-        results
+        results,
       });
 
       // Execute MasterTable logic asynchronously (fire-and-forget)
-      MasterClassTableController.createMasterTable(req.body)
-        .catch(err => {
-          console.error("Background MasterTable creation failed:", err);
-          // Optionally: Send to error monitoring service (e.g., Sentry)
-        });
-        
+      MasterClassTableController.createMasterTable(req.body).catch((err) => {
+        console.error("Background MasterTable creation failed:", err);
+        // Optionally: Send to error monitoring service (e.g., Sentry)
+      });
     } catch (err) {
       console.error("Error in locktt:", err);
       // Only send error response if headers haven't been sent yet

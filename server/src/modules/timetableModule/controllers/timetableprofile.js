@@ -8,7 +8,47 @@ const HttpException = require("../../../models/http-exception");
 const getRoomByDepartment = require("./masterroomprofile");
 const masterroomprofile = require("./masterroomprofile");
 const AddAllotment = require("../../../models/allotment");
+const FacultyController = require("./facultyprofile");
+const getEnvironmentURL = require("../../../getEnvironmentURL");
+const addFaculty = require("../../../models/addfaculty");
+const facultyControllerInstance = new FacultyController();
 const MasterRoomProfile = new masterroomprofile();
+const mailSender = require("../../mailsender");
+
+function getTimetableEmailContent({ facultyName, departmentName, sessionName, timetableUrl }) {
+  return {
+    subject: "Timetable Published for the Upcoming Session",
+    body: `
+      <p>Dear ${facultyName},</p>
+
+      <p>
+        We are pleased to inform you that the timetable for the
+        <strong>${departmentName}</strong> department for the upcoming academic
+        session <strong>${sessionName}</strong> has been published.
+      </p>
+
+      <p>
+        You may access your timetable using the link below:
+      </p>
+
+      <p>
+        <a href="${timetableUrl}" target="_blank">
+          View Timetable
+        </a>
+      </p>
+
+      <p>
+        This is an auto-generated email. For any clarifications, kindly contact the
+        timetable coordinator.
+      </p>
+
+      <p>
+        Regards,<br />
+        <strong>Team XCEED</strong>
+      </p>
+    `,
+  };
+}
 
 class TableController {
   async createTable(req, res) {
@@ -16,6 +56,9 @@ class TableController {
     const userId = req.user.id;
     const existingTimeTable = await TimeTable.findOne({
       user: userId,
+      session: data.session,
+    });
+     const sessionstatus = await TimeTable.findOne({
       session: data.session,
     });
 
@@ -28,8 +71,15 @@ class TableController {
     }
     try {
       const newCode = await generateUniqueLink();
-      console.log(newCode);
+      // console.log(newCode);
       //const userObject = await User.findById(userId)
+      if (sessionstatus.currentSession == true) {
+        data.currentSession = true;
+      }
+      else
+      { data.currentSession = false;
+        }
+        console.log("seesionstatus",data.currentSession);
       const newTimeTable = new TimeTable({
         ...data,
         code: newCode,
@@ -302,10 +352,100 @@ class TableController {
       if (!sessions || sessions.length === 0) {
         return res.status(404).json({ message: "No active sessions found" });
       }
-      const codes = sessions.map(s => s.code);
+      const codes = sessions.map((s) => s.code);
       res.json({ codes });
     } catch (error) {
       console.error("Error updating current session:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+ 
+async publishTimetable(req, res) {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: "Invalid timetable id" });
+  }
+
+  try {
+    // 1. Publish timetable
+    const updatedTimeTable = await TimeTable.findByIdAndUpdate(
+      id,
+      { publish: true, datePublished: new Date() },
+      { new: true }
+    );
+
+    if (!updatedTimeTable) {
+      return res.status(404).json({ error: "Timetable not found" });
+    }
+
+    // 2. Fetch all semester–faculty mappings for this timetable
+    const allfaculties = await addFaculty.find({ code: updatedTimeTable.code });
+
+    // 3. Build UNIQUE faculty list across all semesters
+    const facultySet = new Set();
+    for (const record of allfaculties) {
+      if (Array.isArray(record.faculty)) {
+        for (const name of record.faculty) {
+          facultySet.add(name.trim());
+        }
+      }
+    }
+
+    const base_url = getEnvironmentURL();
+
+    // 4. Send mail ONCE per faculty
+    for (const facultyName of facultySet) {
+      const facultyData = await facultyControllerInstance.getFacultyByName(facultyName);
+
+      if (!facultyData || facultyData.length === 0) {
+        console.warn(`Faculty not found: ${facultyName}`);
+        continue;
+      }
+
+      const faculty = facultyData[0];
+
+      const { subject, body } = getTimetableEmailContent({
+        facultyName: faculty.name,
+        departmentName: updatedTimeTable.dept,
+        sessionName: updatedTimeTable.session,
+        timetableUrl: `${base_url}/timetable/faculty/${faculty._id}`,
+      });
+
+      console.log("Sending mail to:", faculty.email);
+
+      await mailSender(faculty.email, subject, body);
+    }
+
+    // 5. Respond only after all mails are sent
+    res.json({ success: true, message: "Timetable published and mails sent" });
+
+  } catch (error) {
+    console.error("Error publishing timetable:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+
+  async publishSession(req, res) {
+    const { session } = req.body;
+
+    if (!session) {
+      return res.status(400).json({ error: "Session is required" });
+    }
+
+    try {
+      await TimeTable.updateMany(
+        { session },
+        {
+          publish: true,
+          datePublished: new Date(),
+        }
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error publishing session timetables:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   }

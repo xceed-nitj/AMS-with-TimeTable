@@ -61,7 +61,13 @@ const AllocatedRolesPage = () => {
   if (isLoading) {
     return <Spinner />;
   }
-  if (allocatedRoles.length === 1) {
+  if (allocatedRoles.length === 1 && user) {
+     const email = user.name?.toLowerCase();
+    if (email === 'coe@nitj.ac.in') {
+      console.log('Navigating to COE faculty load page for user:', email);
+    navigate('/tt/coe/facultyload');
+    return null;
+  }
     switch (allocatedRoles[0]) {
       case 'ITTC':
         navigate('/tt/admin');

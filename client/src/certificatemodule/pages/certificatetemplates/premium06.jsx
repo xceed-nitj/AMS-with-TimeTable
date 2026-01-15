@@ -328,7 +328,6 @@ const CertificateContent = ({
           </foreignObject>}
         <foreignObject x={"0%"} y={'89%'} width={'100%'} height={'100'}><Text className="tw-text-sm tw-text-center tw-text-gray-700 ">Issued On: {footer.footer}</Text></foreignObject>
       </>
-      );
     </svg>
   );
 };
