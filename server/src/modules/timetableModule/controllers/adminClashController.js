@@ -1,21 +1,16 @@
-const LockSem = require("../../../models/locksem"); // Changed from ClassTable
+const LockSem = require("../../../models/locksem");
 const TimeTable = require("../../../models/timetable");
-const LockTimeTabledto = require("../dto/locktimetable"); // Changed from ClassTimeTabledto
+const LockTimeTabledto = require("../dto/locktimetable");
 const LockTimeTableDto = new LockTimeTabledto();
 const TimeTabledto = require("../dto/timetable");
 const TimeTableDto = new TimeTabledto();
 
 class AdminClashController {
-  /**
-   * Get all clashes across all departments in a session (OPTIMIZED - Using Locked Data)
-   * @route GET /timetablemodule/adminclash/:session
-   */
   async getAllClashes(req, res) {
     try {
       const session = req.params.session;
       console.log('Getting clashes for session:', session);
 
-      // Check if mongoose is connected
       const mongoose = require('mongoose');
       if (mongoose.connection.readyState !== 1) {
         console.error('Database connection state:', mongoose.connection.readyState);
@@ -25,7 +20,6 @@ class AdminClashController {
         });
       }
 
-      // Get all department codes for this session
       const codes = await TimeTableDto.getAllCodesOfSession(session);
       console.log('Found department codes:', codes);
 
@@ -35,23 +29,23 @@ class AdminClashController {
           session,
           totalDepartments: 0,
           departmentsWithClashes: 0,
+          departmentsNeedingAttention: 0,
           clashes: {},
+          needsAttention: {},
         });
       }
 
-      // OPTIMIZATION: Fetch ALL locked timetable records for the session at once
       const allRecords = await LockSem.find({ 
         code: { $in: codes } 
       }).lean();
       
       console.log(`Fetched ${allRecords.length} locked records for ${codes.length} departments`);
 
-      // OPTIMIZATION: Build lookup maps for quick access
       const roomMap = this.buildRoomMap(allRecords);
       const facultyMap = this.buildFacultyMap(allRecords);
+      const subjectFacultyMap = this.buildSubjectFacultyMap(allRecords);
       const deptRecordsMap = this.groupRecordsByDept(allRecords);
 
-      // OPTIMIZATION: Fetch all department details at once
       const deptDetailsPromises = codes.map(code => 
         TimeTableDto.getTTdetailsByCode(code).catch(err => {
           console.error(`Error fetching details for ${code}:`, err);
@@ -69,14 +63,15 @@ class AdminClashController {
       });
 
       const allClashes = {};
+      const allNeedsAttention = {};
 
-      // Process each department using pre-loaded data
       for (const code of codes) {
-        const departmentClashes = this.findClashesForDepartmentOptimized(
+        const { clashes: departmentClashes, needsAttention } = this.findClashesForDepartmentOptimized(
           code,
           deptRecordsMap[code] || [],
           roomMap,
           facultyMap,
+          subjectFacultyMap,
           deptDetailsMap
         );
 
@@ -92,20 +87,33 @@ class AdminClashController {
             clashes: departmentClashes,
           };
         }
+
+        if (needsAttention.length > 0) {
+          const departmentName = deptDetailsMap[code]?.name || code;
+          
+          allNeedsAttention[code] = {
+            department: departmentName,
+            session: session,
+            code: code,
+            incompleteSlots: needsAttention,
+          };
+        }
       }
 
       console.log(`Total departments with clashes: ${Object.keys(allClashes).length}`);
+      console.log(`Total departments needing attention: ${Object.keys(allNeedsAttention).length}`);
 
       res.status(200).json({
         session,
         totalDepartments: codes.length,
         departmentsWithClashes: Object.keys(allClashes).length,
+        departmentsNeedingAttention: Object.keys(allNeedsAttention).length,
         clashes: allClashes,
+        needsAttention: allNeedsAttention,
       });
     } catch (error) {
       console.error("Error getting all clashes:", error);
       
-      // Check if it's a MongoDB connection error
       if (error.name === 'MongoNetworkError' || error.message.includes('ETIMEDOUT')) {
         return res.status(503).json({ 
           error: "Database connection timeout",
@@ -120,11 +128,6 @@ class AdminClashController {
     }
   }
 
-  /**
-   * Build a map of rooms to their slot assignments
-   * Key: "room|day|slot"
-   * Value: Array of records using that room at that time
-   */
   buildRoomMap(records) {
     const map = {};
     
@@ -154,11 +157,6 @@ class AdminClashController {
     return map;
   }
 
-  /**
-   * Build a map of faculty to their slot assignments
-   * Key: "faculty|day|slot"
-   * Value: Array of records with that faculty at that time
-   */
   buildFacultyMap(records) {
     const map = {};
     
@@ -188,9 +186,38 @@ class AdminClashController {
     return map;
   }
 
-  /**
-   * Group records by department code
-   */
+  buildSubjectFacultyMap(records) {
+    const map = {};
+    
+    for (const record of records) {
+      const { day, slot, slotData, code, sem } = record;
+      
+      if (!slotData || slotData.length === 0) continue;
+      
+      for (const slotItem of slotData) {
+        if (!slotItem.subject || !slotItem.faculty) continue;
+        
+        const normalizedSubject = slotItem.subject.trim().toLowerCase();
+        const normalizedFaculty = slotItem.faculty.trim().toLowerCase();
+        
+        const key = `${normalizedSubject}|${normalizedFaculty}|${day}|${slot}`;
+        if (!map[key]) {
+          map[key] = [];
+        }
+        
+        map[key].push({
+          code,
+          sem,
+          subject: slotItem.subject,
+          faculty: slotItem.faculty,
+          room: slotItem.room,
+        });
+      }
+    }
+    
+    return map;
+  }
+
   groupRecordsByDept(records) {
     const map = {};
     
@@ -204,21 +231,124 @@ class AdminClashController {
     return map;
   }
 
-  /**
-   * Find clashes using pre-built maps (no database queries)
-   */
-  findClashesForDepartmentOptimized(code, deptRecords, roomMap, facultyMap, deptDetailsMap) {
+  findClashesForDepartmentOptimized(code, deptRecords, roomMap, facultyMap, subjectFacultyMap, deptDetailsMap) {
     const clashes = [];
-    const seenClashes = new Set(); // Prevent duplicate clash reporting
+    const needsAttention = [];
+    const seenClashes = new Set();
+    const seenIncomplete = new Set();
 
     for (const record of deptRecords) {
       const { day, slot, slotData, sem } = record;
 
       if (!slotData || slotData.length === 0) continue;
 
+      // NEW: Check for internal department clashes (same slot has multiple entries)
+      if (slotData.length > 1) {
+        const facultyInSlot = {};
+        const roomsInSlot = {};
+        
+        for (const slotItem of slotData) {
+          // Track faculty usage in this slot
+          if (slotItem.faculty && slotItem.faculty.trim() !== '') {
+            if (!facultyInSlot[slotItem.faculty]) {
+              facultyInSlot[slotItem.faculty] = [];
+            }
+            facultyInSlot[slotItem.faculty].push({
+              subject: slotItem.subject,
+              room: slotItem.room,
+            });
+          }
+          
+          // Track room usage in this slot
+          if (slotItem.room && slotItem.room.trim() !== '') {
+            if (!roomsInSlot[slotItem.room]) {
+              roomsInSlot[slotItem.room] = [];
+            }
+            roomsInSlot[slotItem.room].push({
+              subject: slotItem.subject,
+              faculty: slotItem.faculty,
+            });
+          }
+        }
+        
+        // Check if same faculty in multiple rooms (internal clash)
+        for (const [faculty, assignments] of Object.entries(facultyInSlot)) {
+          if (assignments.length > 1) {
+            const clashKey = `internal-faculty|${day}|${slot}|${sem}|${faculty}`;
+            if (!seenClashes.has(clashKey)) {
+              seenClashes.add(clashKey);
+              clashes.push({
+                type: "internal_faculty",
+                day,
+                slot,
+                sem,
+                faculty,
+                issue: `Same faculty assigned to ${assignments.length} different rooms in the same slot`,
+                assignments: assignments.map((a, idx) => ({
+                  subject: a.subject,
+                  room: a.room,
+                  instance: idx + 1
+                }))
+              });
+            }
+          }
+        }
+        
+        // Check if same room with multiple classes (internal clash)
+        for (const [room, assignments] of Object.entries(roomsInSlot)) {
+          if (assignments.length > 1) {
+            const clashKey = `internal-room|${day}|${slot}|${sem}|${room}`;
+            if (!seenClashes.has(clashKey)) {
+              seenClashes.add(clashKey);
+              clashes.push({
+                type: "internal_room",
+                day,
+                slot,
+                sem,
+                room,
+                issue: `Same room assigned ${assignments.length} times in the same slot`,
+                assignments: assignments.map((a, idx) => ({
+                  subject: a.subject,
+                  faculty: a.faculty,
+                  instance: idx + 1
+                }))
+              });
+            }
+          }
+        }
+      }
+
       for (const slotItem of slotData) {
-        // Check room clashes
-        if (slotItem.room) {
+        // Check for incomplete slot assignments (Needs Attention)
+        const hasSubject = slotItem.subject && slotItem.subject.trim() !== '';
+        const hasFaculty = slotItem.faculty && slotItem.faculty.trim() !== '';
+        const hasRoom = slotItem.room && slotItem.room.trim() !== '';
+        
+        if ((hasSubject || hasFaculty || hasRoom) && !(hasSubject && hasFaculty && hasRoom)) {
+          const missingFields = [];
+          if (!hasSubject) missingFields.push('subject');
+          if (!hasFaculty) missingFields.push('faculty');
+          if (!hasRoom) missingFields.push('room');
+          
+          const incompleteKey = `${day}|${slot}|${sem}|${slotItem.subject || 'no-subject'}|${slotItem.faculty || 'no-faculty'}|${slotItem.room || 'no-room'}`;
+          
+          if (!seenIncomplete.has(incompleteKey)) {
+            seenIncomplete.add(incompleteKey);
+            needsAttention.push({
+              day,
+              slot,
+              sem,
+              subject: slotItem.subject || null,
+              faculty: slotItem.faculty || null,
+              room: slotItem.room || null,
+              missingFields,
+              issue: `Missing: ${missingFields.join(', ')}`
+            });
+          }
+        }
+
+        // Check room clashes (only if room is assigned)
+        if (hasRoom) {
           const roomKey = `${slotItem.room}|${day}|${slot}`;
           const roomConflicts = roomMap[roomKey] || [];
           
@@ -251,8 +381,8 @@ class AdminClashController {
           }
         }
 
-        // Check faculty clashes
-        if (slotItem.faculty) {
+        // Check faculty clashes (only if faculty is assigned)
+        if (hasFaculty) {
           const facultyKey = `${slotItem.faculty}|${day}|${slot}`;
           const facultyConflicts = facultyMap[facultyKey] || [];
           
@@ -284,16 +414,48 @@ class AdminClashController {
             }
           }
         }
+
+        // Check subject+faculty clashes (only if both are assigned)
+        if (hasSubject && hasFaculty) {
+          const normalizedSubject = slotItem.subject.trim().toLowerCase();
+          const normalizedFaculty = slotItem.faculty.trim().toLowerCase();
+          const subjectFacultyKey = `${normalizedSubject}|${normalizedFaculty}|${day}|${slot}`;
+          const subjectFacultyConflicts = subjectFacultyMap[subjectFacultyKey] || [];
+          
+          const conflicts = subjectFacultyConflicts
+            .filter(r => !(r.code === code && r.sem === sem))
+            .map(conflict => ({
+              code: conflict.code,
+              department: deptDetailsMap?.[conflict.code]?.name || conflict.code,
+              sem: conflict.sem,
+              subject: conflict.subject,
+              faculty: conflict.faculty,
+              room: conflict.room
+            }));
+          
+          if (conflicts.length > 0) {
+            const clashKey = `subject-faculty|${day}|${slot}|${sem}|${normalizedSubject}|${normalizedFaculty}`;
+            if (!seenClashes.has(clashKey)) {
+              seenClashes.add(clashKey);
+              clashes.push({
+                type: "faculty",
+                day,
+                slot,
+                sem,
+                faculty: slotItem.faculty,
+                subject: slotItem.subject,
+                room: slotItem.room,
+                conflictsWith: conflicts,
+              });
+            }
+          }
+        }
       }
     }
 
-    return clashes;
+    return { clashes, needsAttention };
   }
 
-  /**
-   * Get clashes for a specific department (OPTIMIZED - Using Locked Data)
-   * @route GET /timetablemodule/adminclash/department/:code
-   */
   async getDepartmentClashes(req, res) {
     try {
       const code = req.params.code;
@@ -303,20 +465,17 @@ class AdminClashController {
         return res.status(404).json({ error: "Department not found" });
       }
 
-      // Get all codes for the session
       const codes = await TimeTableDto.getAllCodesOfSession(session);
       
-      // Fetch all locked records for the session at once
       const allRecords = await LockSem.find({ 
         code: { $in: codes } 
       }).lean();
       
-      // Build maps
       const roomMap = this.buildRoomMap(allRecords);
       const facultyMap = this.buildFacultyMap(allRecords);
+      const subjectFacultyMap = this.buildSubjectFacultyMap(allRecords);
       const deptRecordsMap = this.groupRecordsByDept(allRecords);
       
-      // Fetch department details for all codes
       const deptDetailsPromises = codes.map(c => 
         TimeTableDto.getTTdetailsByCode(c).catch(err => {
           console.error(`Error fetching details for ${c}:`, err);
@@ -333,12 +492,12 @@ class AdminClashController {
         };
       });
       
-      // Find clashes for this specific department
-      const clashes = this.findClashesForDepartmentOptimized(
+      const { clashes, needsAttention } = this.findClashesForDepartmentOptimized(
         code,
         deptRecordsMap[code] || [],
         roomMap,
         facultyMap,
+        subjectFacultyMap,
         deptDetailsMap
       );
       
@@ -349,7 +508,9 @@ class AdminClashController {
         code,
         session,
         totalClashes: clashes.length,
+        totalIncompleteSlots: needsAttention.length,
         clashes,
+        needsAttention,
       });
     } catch (error) {
       console.error("Error getting department clashes:", error);
@@ -357,10 +518,6 @@ class AdminClashController {
     }
   }
 
-  /**
-   * LEGACY METHOD - kept for backwards compatibility
-   * Use findClashesForDepartmentOptimized instead
-   */
   async findClashesForDepartment(code, session) {
     try {
       const clashes = [];
@@ -458,26 +615,20 @@ class AdminClashController {
     }
   }
 
-  /**
-   * Get clash summary statistics (OPTIMIZED - Using Locked Data)
-   * @route GET /timetablemodule/adminclash/:session/summary
-   */
   async getClashSummary(req, res) {
     try {
       const session = req.params.session;
       const codes = await TimeTableDto.getAllCodesOfSession(session);
 
-      // Fetch all locked records at once
       const allRecords = await LockSem.find({ 
         code: { $in: codes } 
       }).lean();
       
-      // Build maps
       const roomMap = this.buildRoomMap(allRecords);
       const facultyMap = this.buildFacultyMap(allRecords);
+      const subjectFacultyMap = this.buildSubjectFacultyMap(allRecords);
       const deptRecordsMap = this.groupRecordsByDept(allRecords);
 
-      // Fetch all department details at once
       const deptDetailsPromises = codes.map(code => 
         TimeTableDto.getTTdetailsByCode(code).catch(err => {
           console.error(`Error fetching details for ${code}:`, err);
@@ -501,20 +652,24 @@ class AdminClashController {
         totalClashes: 0,
         roomClashes: 0,
         facultyClashes: 0,
+        internalClashes: 0,
+        totalIncompleteSlots: 0,
       };
 
       codes.forEach((code) => {
-        const clashes = this.findClashesForDepartmentOptimized(
+        const { clashes, needsAttention } = this.findClashesForDepartmentOptimized(
           code,
           deptRecordsMap[code] || [],
           roomMap,
           facultyMap,
+          subjectFacultyMap,
           deptDetailsMap
         );
         
         const departmentName = deptDetailsMap[code]?.name || code;
         const roomClashCount = clashes.filter(c => c.type === "room").length;
         const facultyClashCount = clashes.filter(c => c.type === "faculty").length;
+        const internalClashCount = clashes.filter(c => c.type === "internal_faculty" || c.type === "internal_room").length;
 
         summary.departmentStats.push({
           code,
@@ -522,11 +677,15 @@ class AdminClashController {
           totalClashes: clashes.length,
           roomClashes: roomClashCount,
           facultyClashes: facultyClashCount,
+          internalClashes: internalClashCount,
+          incompleteSlots: needsAttention.length,
         });
 
         summary.totalClashes += clashes.length;
         summary.roomClashes += roomClashCount;
         summary.facultyClashes += facultyClashCount;
+        summary.internalClashes += internalClashCount;
+        summary.totalIncompleteSlots += needsAttention.length;
       });
 
       res.status(200).json(summary);
