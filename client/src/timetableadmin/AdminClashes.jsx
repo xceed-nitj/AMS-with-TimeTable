@@ -42,7 +42,8 @@ import {
   RepeatIcon, 
   WarningIcon, 
   CheckCircleIcon,
-  ArrowBackIcon
+  ArrowBackIcon,
+  InfoIcon
 } from '@chakra-ui/icons';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
@@ -53,6 +54,7 @@ const AdminClashes = () => {
   const [clashData, setClashData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedDepts, setExpandedDepts] = useState({});
+  const [expandedAttentionDepts, setExpandedAttentionDepts] = useState({});
   const [filterType, setFilterType] = useState('all');
   const [deptNameMap, setDeptNameMap] = useState({});
   const [dbError, setDbError] = useState(false);
@@ -176,15 +178,20 @@ const AdminClashes = () => {
       setDbError(false);
       
       const nameMap = {};
-      Object.entries(data.clashes).forEach(([code, deptData]) => {
+      Object.entries(data.clashes || {}).forEach(([code, deptData]) => {
         nameMap[code] = deptData.department || code;
+      });
+      Object.entries(data.needsAttention || {}).forEach(([code, deptData]) => {
+        if (!nameMap[code]) {
+          nameMap[code] = deptData.department || code;
+        }
       });
       setDeptNameMap(nameMap);
       
-      if (data.departmentsWithClashes === 0) {
+      if (data.departmentsWithClashes === 0 && data.departmentsNeedingAttention === 0) {
         toast({
-          title: 'No Clashes Found',
-          description: 'All departments have clean timetables!',
+          title: 'Perfect Timetables!',
+          description: 'All departments have complete and clash-free timetables!',
           status: 'success',
           duration: 3000,
           isClosable: true,
@@ -220,13 +227,36 @@ const AdminClashes = () => {
     }));
   };
 
+  const toggleAttentionDepartment = (code) => {
+    setExpandedAttentionDepts(prev => ({
+      ...prev,
+      [code]: !prev[code]
+    }));
+  };
+
   const getFilteredClashes = (clashes) => {
     if (filterType === 'all') return clashes;
     return clashes.filter(clash => clash.type === filterType);
   };
 
   const getClashBadgeColor = (type) => {
+    if (type === 'internal_room' || type === 'internal_faculty') return 'red';
     return type === 'room' ? 'orange' : 'purple';
+  };
+
+  const getClashTypeLabel = (type) => {
+    switch(type) {
+      case 'internal_faculty':
+        return 'Internal Faculty Clash';
+      case 'internal_room':
+        return 'Internal Room Clash';
+      case 'faculty':
+        return 'Faculty Clash';
+      case 'room':
+        return 'Room Clash';
+      default:
+        return type;
+    }
   };
 
   const getDepartmentName = (code) => {
@@ -406,7 +436,7 @@ const AdminClashes = () => {
 
             {/* Statistics */}
             {clashData && (
-              <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6}>
+              <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={6}>
                 <GridItem>
                   <Box 
                     bg={cardBg}
@@ -465,6 +495,32 @@ const AdminClashes = () => {
                     shadow="xl"
                     overflow="hidden"
                     border="2px"
+                    borderColor="yellow.200"
+                  >
+                    <Box bgGradient="linear(to-br, yellow.400, orange.500)" p={6}>
+                      <Stat>
+                        <StatLabel color="white" fontSize="md" fontWeight="semibold">
+                          Needs Attention
+                        </StatLabel>
+                        <StatNumber color="white" fontSize="4xl" fontWeight="bold">
+                          {clashData.departmentsNeedingAttention || 0}
+                        </StatNumber>
+                        <StatHelpText color="whiteAlpha.900">
+                          <InfoIcon mr={1} />
+                          Incomplete slots
+                        </StatHelpText>
+                      </Stat>
+                    </Box>
+                  </Box>
+                </GridItem>
+
+                <GridItem>
+                  <Box 
+                    bg={cardBg}
+                    borderRadius="2xl"
+                    shadow="xl"
+                    overflow="hidden"
+                    border="2px"
                     borderColor="green.200"
                   >
                     <Box bgGradient="linear(to-br, green.400, green.600)" p={6}>
@@ -473,11 +529,11 @@ const AdminClashes = () => {
                           Clean Departments
                         </StatLabel>
                         <StatNumber color="white" fontSize="4xl" fontWeight="bold">
-                          {clashData.totalDepartments - clashData.departmentsWithClashes}
+                          {clashData.totalDepartments - clashData.departmentsWithClashes - (clashData.departmentsNeedingAttention || 0)}
                         </StatNumber>
                         <StatHelpText color="whiteAlpha.900">
                           <CheckCircleIcon mr={1} />
-                          No conflicts
+                          No issues
                         </StatHelpText>
                       </Stat>
                     </Box>
@@ -486,8 +542,8 @@ const AdminClashes = () => {
               </Grid>
             )}
 
-            {/* No Clashes Message */}
-            {clashData && Object.keys(clashData.clashes).length === 0 && (
+            {/* All Clear Message */}
+            {clashData && Object.keys(clashData.clashes || {}).length === 0 && Object.keys(clashData.needsAttention || {}).length === 0 && (
               <Box 
                 bg={cardBg}
                 borderRadius="2xl"
@@ -508,17 +564,217 @@ const AdminClashes = () => {
                 >
                   <CheckCircleIcon boxSize="40px" mr={0} />
                   <AlertTitle mt={4} mb={1} fontSize="2xl">
-                    No Clashes Found!
+                    Perfect Timetables!
                   </AlertTitle>
                   <AlertDescription maxWidth="sm" fontSize="lg">
-                    All departments have clean timetables for session {selectedSession}
+                    All departments have complete and clash-free timetables for session {selectedSession}
                   </AlertDescription>
                 </Alert>
               </Box>
             )}
 
+            {/* Departments Needing Attention (Incomplete Slots) */}
+            {clashData && Object.entries(clashData.needsAttention || {}).map(([code, deptData]) => {
+              const isExpanded = expandedAttentionDepts[code];
+              const departmentName = deptData.department || code;
+
+              return (
+                <Box 
+                  key={`attention-${code}`}
+                  bg={cardBg}
+                  borderRadius="2xl"
+                  shadow="xl"
+                  overflow="hidden"
+                  border="2px"
+                  borderColor="yellow.300"
+                >
+                  {/* Department Header */}
+                  <Flex
+                    p={5}
+                    bgGradient="linear(to-r, yellow.400, orange.500)"
+                    color="white"
+                    align="center"
+                    justify="space-between"
+                    cursor="pointer"
+                    onClick={() => toggleAttentionDepartment(code)}
+                    _hover={{ bgGradient: 'linear(to-r, yellow.500, orange.600)' }}
+                    transition="all 0.2s"
+                  >
+                    <VStack align="start" spacing={1}>
+                      <HStack>
+                        <InfoIcon />
+                        <Heading size="lg">{departmentName}</Heading>
+                      </HStack>
+                      <Text fontSize="sm" opacity={0.9}>
+                        Code: {code} • Incomplete Assignments
+                      </Text>
+                    </VStack>
+
+                    <HStack spacing={4}>
+                      <VStack align="end" spacing={0}>
+                        <Text fontSize="3xl" fontWeight="bold">
+                          {deptData.incompleteSlots?.length || 0}
+                        </Text>
+                        <Text fontSize="sm" opacity={0.9}>
+                          Slot{deptData.incompleteSlots?.length !== 1 ? 's' : ''} Need{deptData.incompleteSlots?.length === 1 ? 's' : ''} Attention
+                        </Text>
+                      </VStack>
+                      <IconButton
+                        icon={isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                        variant="ghost"
+                        color="white"
+                        size="lg"
+                        _hover={{ bg: 'orange.500' }}
+                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                      />
+                    </HStack>
+                  </Flex>
+
+                  {/* Incomplete Slot Details */}
+                  <Collapse in={isExpanded} animateOpacity>
+                    <Box p={6} bg="yellow.50">
+                      <VStack spacing={4} align="stretch">
+                        {(() => {
+                          // Group consecutive periods with identical incomplete data
+                          const groupedSlots = [];
+                          const slots = deptData.incompleteSlots || [];
+                          
+                          if (slots.length === 0) return null;
+                          
+                          let currentGroup = [slots[0]];
+                          
+                          for (let i = 1; i < slots.length; i++) {
+                            const prev = slots[i - 1];
+                            const curr = slots[i];
+                            
+                            // Check if same day, consecutive slots, and identical data
+                            const sameDay = prev.day === curr.day;
+                            const prevSlotNum = parseInt(prev.slot.match(/\d+/)?.[0] || 0);
+                            const currSlotNum = parseInt(curr.slot.match(/\d+/)?.[0] || 0);
+                            const consecutive = currSlotNum === prevSlotNum + 1;
+                            const sameData = 
+                              (prev.subject || '') === (curr.subject || '') &&
+                              (prev.faculty || '') === (curr.faculty || '') &&
+                              (prev.room || '') === (curr.room || '');
+                            
+                            if (sameDay && consecutive && sameData) {
+                              currentGroup.push(curr);
+                            } else {
+                              groupedSlots.push(currentGroup);
+                              currentGroup = [curr];
+                            }
+                          }
+                          groupedSlots.push(currentGroup);
+                          
+                          return groupedSlots.map((group, idx) => {
+                            const firstSlot = group[0];
+                            const isMultiPeriod = group.length > 1;
+                            const slotRange = isMultiPeriod 
+                              ? `${group[0].slot} - ${group[group.length - 1].slot}`
+                              : firstSlot.slot;
+                            
+                            return (
+                          <Card key={idx} bg="white" borderColor="yellow.300" borderWidth="2px">
+                            <CardBody>
+                              <VStack align="stretch" spacing={3}>
+                                {/* Slot Info */}
+                                <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
+                                  <HStack spacing={3} flexWrap="wrap">
+                                    <Badge
+                                      colorScheme="yellow"
+                                      fontSize="sm"
+                                      px={3}
+                                      py={1}
+                                      borderRadius="full"
+                                      textTransform="uppercase"
+                                    >
+                                      Incomplete
+                                    </Badge>
+                                    <Text fontWeight="bold" color="gray.700" fontSize="md">
+                                      {firstSlot.day} - {slotRange}
+                                    </Text>
+                                    {isMultiPeriod && (
+                                      <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
+                                        {group.length} Periods
+                                      </Badge>
+                                    )}
+                                    <Badge colorScheme="blue" fontSize="sm" px={3} py={1}>
+                                      Semester {firstSlot.sem}
+                                    </Badge>
+                                  </HStack>
+                                  <InfoIcon color="yellow.500" boxSize={6} />
+                                </Flex>
+
+                                {/* Current Details */}
+                                <Box bg="gray.50" p={4} borderRadius="md">
+                                  <Text fontSize="xs" color="gray.600" fontWeight="bold" mb={2}>
+                                    CURRENT ASSIGNMENT:
+                                  </Text>
+                                  <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={4}>
+                                    <Box>
+                                      <Text fontSize="xs" color="gray.600" fontWeight="bold" mb={1}>
+                                        SUBJECT
+                                      </Text>
+                                      <Text 
+                                        fontSize="sm" 
+                                        color={firstSlot.subject ? "gray.800" : "red.500"} 
+                                        fontWeight="semibold"
+                                      >
+                                        {firstSlot.subject || '❌ Missing'}
+                                      </Text>
+                                    </Box>
+                                    <Box>
+                                      <Text fontSize="xs" color="gray.600" fontWeight="bold" mb={1}>
+                                        FACULTY
+                                      </Text>
+                                      <Text 
+                                        fontSize="sm" 
+                                        color={firstSlot.faculty ? "gray.800" : "red.500"} 
+                                        fontWeight="semibold"
+                                      >
+                                        {firstSlot.faculty || '❌ Missing'}
+                                      </Text>
+                                    </Box>
+                                    <Box>
+                                      <Text fontSize="xs" color="gray.600" fontWeight="bold" mb={1}>
+                                        ROOM
+                                      </Text>
+                                      <Text 
+                                        fontSize="sm" 
+                                        color={firstSlot.room ? "gray.800" : "red.500"} 
+                                        fontWeight="semibold"
+                                      >
+                                        {firstSlot.room || '❌ Missing'}
+                                      </Text>
+                                    </Box>
+                                  </Grid>
+                                </Box>
+
+                                {/* Issue Description */}
+                                <Alert status="warning" borderRadius="md">
+                                  <AlertIcon />
+                                  <Box>
+                                    <AlertTitle fontSize="sm">Action Required</AlertTitle>
+                                    <AlertDescription fontSize="sm">
+                                      {firstSlot.issue}
+                                    </AlertDescription>
+                                  </Box>
+                                </Alert>
+                              </VStack>
+                            </CardBody>
+                          </Card>
+                            );
+                          });
+                        })()}
+                      </VStack>
+                    </Box>
+                  </Collapse>
+                </Box>
+              );
+            })}
+
             {/* Departments with Clashes */}
-            {clashData && Object.entries(clashData.clashes).map(([code, deptData]) => {
+            {clashData && Object.entries(clashData.clashes || {}).map(([code, deptData]) => {
               const filteredClashes = getFilteredClashes(deptData.clashes);
               
               if (filteredClashes.length === 0) return null;
@@ -594,7 +850,7 @@ const AdminClashes = () => {
                                       borderRadius="full"
                                       textTransform="uppercase"
                                     >
-                                      {clash.type} Clash
+                                      {getClashTypeLabel(clash.type)}
                                     </Badge>
                                     <Text fontWeight="bold" color="gray.700" fontSize="md">
                                       {clash.day} - {clash.slot}
@@ -644,56 +900,117 @@ const AdminClashes = () => {
 
                                 <Divider borderColor="red.300" />
 
-                                {/* Conflicts With */}
-                                <Box>
-                                  <HStack mb={3} spacing={2}>
-                                    <WarningIcon color="red.600" />
-                                    <Text fontWeight="bold" color="red.700" fontSize="md">
-                                      Conflicts with:
-                                    </Text>
-                                  </HStack>
-                                  <TableContainer>
-                                    <Table size="sm" variant="simple">
-                                      <Thead>
-                                        <Tr bg="red.100">
-                                          <Th color="red.800" fontWeight="bold">Department</Th>
-                                          <Th color="red.800" fontWeight="bold">Semester</Th>
-                                          <Th color="red.800" fontWeight="bold">Subject</Th>
-                                          <Th color="red.800" fontWeight="bold">Faculty</Th>
-                                          <Th color="red.800" fontWeight="bold">Room</Th>
-                                        </Tr>
-                                      </Thead>
-                                      <Tbody>
-                                        {clash.conflictsWith.map((conflict, cIdx) => (
-                                          <Tr 
-                                            key={cIdx} 
-                                            bg="white"
-                                            _hover={{ bg: 'red.50' }}
-                                            borderBottom={cIdx < clash.conflictsWith.length - 1 ? '1px' : 'none'}
-                                            borderColor="red.100"
-                                          >
-                                            <Td fontWeight="bold" color="gray.800">
-                                              <VStack align="start" spacing={0}>
-                                                <Text fontWeight="bold" fontSize="sm">
-                                                  {getDepartmentName(conflict.code)}
-                                                </Text>
-                                                {getDepartmentName(conflict.code) !== conflict.code && (
-                                                  <Text fontSize="xs" color="gray.500">
-                                                    ({conflict.code})
-                                                  </Text>
-                                                )}
-                                              </VStack>
-                                            </Td>
-                                            <Td color="gray.700">{conflict.sem}</Td>
-                                            <Td color="gray.700">{conflict.subject || '-'}</Td>
-                                            <Td color="gray.700">{conflict.faculty || '-'}</Td>
-                                            <Td color="gray.700">{conflict.room || '-'}</Td>
+                                {/* Display issue description for internal clashes */}
+                                {clash.issue && (
+                                  <Alert status="error" borderRadius="md">
+                                    <AlertIcon />
+                                    <AlertDescription fontSize="sm" fontWeight="semibold">
+                                      {clash.issue}
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+
+                                {/* Internal Clashes - Show Assignments */}
+                                {(clash.type === 'internal_faculty' || clash.type === 'internal_room') && clash.assignments && (
+                                  <Box>
+                                    <HStack mb={3} spacing={2}>
+                                      <WarningIcon color="red.600" />
+                                      <Text fontWeight="bold" color="red.700" fontSize="md">
+                                        Multiple Assignments in Same Slot:
+                                      </Text>
+                                    </HStack>
+                                    <TableContainer>
+                                      <Table size="sm" variant="simple">
+                                        <Thead>
+                                          <Tr bg="red.100">
+                                            <Th color="red.800" fontWeight="bold">#</Th>
+                                            <Th color="red.800" fontWeight="bold">Subject</Th>
+                                            {clash.type === 'internal_faculty' ? (
+                                              <Th color="red.800" fontWeight="bold">Room</Th>
+                                            ) : (
+                                              <Th color="red.800" fontWeight="bold">Faculty</Th>
+                                            )}
                                           </Tr>
-                                        ))}
-                                      </Tbody>
-                                    </Table>
-                                  </TableContainer>
-                                </Box>
+                                        </Thead>
+                                        <Tbody>
+                                          {clash.assignments.map((assignment, aIdx) => (
+                                            <Tr 
+                                              key={aIdx} 
+                                              bg="white"
+                                              _hover={{ bg: 'red.50' }}
+                                              borderBottom={aIdx < clash.assignments.length - 1 ? '1px' : 'none'}
+                                              borderColor="red.100"
+                                            >
+                                              <Td fontWeight="bold" color="red.600">
+                                                {assignment.instance}
+                                              </Td>
+                                              <Td color="gray.700">{assignment.subject || '-'}</Td>
+                                              <Td color="gray.700">
+                                                {clash.type === 'internal_faculty' 
+                                                  ? (assignment.room || '-')
+                                                  : (assignment.faculty || '-')
+                                                }
+                                              </Td>
+                                            </Tr>
+                                          ))}
+                                        </Tbody>
+                                      </Table>
+                                    </TableContainer>
+                                  </Box>
+                                )}
+
+                                {/* Conflicts With - Cross Department Clashes */}
+                                {clash.conflictsWith && clash.conflictsWith.length > 0 && (
+                                  <Box>
+                                    <HStack mb={3} spacing={2}>
+                                      <WarningIcon color="red.600" />
+                                      <Text fontWeight="bold" color="red.700" fontSize="md">
+                                        Conflicts with:
+                                      </Text>
+                                    </HStack>
+                                    <TableContainer>
+                                      <Table size="sm" variant="simple">
+                                        <Thead>
+                                          <Tr bg="red.100">
+                                            <Th color="red.800" fontWeight="bold">Department</Th>
+                                            <Th color="red.800" fontWeight="bold">Semester</Th>
+                                            <Th color="red.800" fontWeight="bold">Subject</Th>
+                                            <Th color="red.800" fontWeight="bold">Faculty</Th>
+                                            <Th color="red.800" fontWeight="bold">Room</Th>
+                                          </Tr>
+                                        </Thead>
+                                        <Tbody>
+                                          {clash.conflictsWith.map((conflict, cIdx) => (
+                                            <Tr 
+                                              key={cIdx} 
+                                              bg="white"
+                                              _hover={{ bg: 'red.50' }}
+                                              borderBottom={cIdx < clash.conflictsWith.length - 1 ? '1px' : 'none'}
+                                              borderColor="red.100"
+                                            >
+                                              <Td fontWeight="bold" color="gray.800">
+                                                <VStack align="start" spacing={0}>
+                                                  <Text fontWeight="bold" fontSize="sm">
+                                                    {getDepartmentName(conflict.code)}
+                                                  </Text>
+                                                  {getDepartmentName(conflict.code) !== conflict.code && (
+                                                    <Text fontSize="xs" color="gray.500">
+                                                      ({conflict.code})
+                                                    </Text>
+                                                  )}
+                                                </VStack>
+                                              </Td>
+                                              <Td color="gray.700">{conflict.sem}</Td>
+                                              <Td color="gray.700">{conflict.subject || '-'}</Td>
+                                              <Td color="gray.700">{conflict.faculty || '-'}</Td>
+                                              <Td color="gray.700">{conflict.room || '-'}</Td>
+                                            </Tr>
+                                          ))}
+                                        </Tbody>
+                                      </Table>
+                                    </TableContainer>
+                                  </Box>
+                                )}
                               </VStack>
                             </CardBody>
                           </Card>

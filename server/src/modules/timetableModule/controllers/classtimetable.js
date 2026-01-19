@@ -83,65 +83,255 @@ async savett(req, res) {
   }
 }
 
- 
-  async saveslot(req, res) {
-    const day = req.params.day;
-    const slot = req.params.slot;
-    const slotData = req.body.slotData; // Access the slotData object
-    const code = req.body.code;
-    const sem = req.body.sem;
-    // console.log('sem',sem)
-    try {
-      const query = {
-        day,
-        slot,
-        code,
-        sem,
-      };
-
-      const  session = await TimeTableDto.getSessionByCode(code);
-         
-      let isSlotAvailable = true; // Assume the slot is initially available
-      const unavailableItems = [];
-
-      for (const slotItem of slotData) {
-        if (slotItem.room){
-          const roomSlots = await ClassTimeTableDto.findRoomDataWithSession(session, slotItem.room);
-          const isRoomAvailable = await ClassTimeTableDto.isRoomSlotAvailable(day, slot, roomSlots,sem);
-          if (!isRoomAvailable) {
-              isSlotAvailable = false; // At least one item is not available
-              if (!isRoomAvailable) {
-                  unavailableItems.push({ item: slotItem, reason: "room" });
-              }
+/**
+ * HELPER: Build subject and faculty to department mappings for the session
+ * Maps each subject/faculty name to which department code owns it
+ */
+async buildDepartmentMappings(session) {
+  const subjectToDeptMap = {};
+  const facultyToDeptMap = {};
+  
+  try {
+    // Get all department codes in this session
+    const codes = await TimeTableDto.getAllCodesOfSession(session);
+    
+    // Fetch all timetable records for the session
+    const allRecords = await ClassTable.find({ 
+      code: { $in: codes } 
+    }).lean();
+    
+    // Map each subject and faculty to its owning department
+    for (const record of allRecords) {
+      if (record.slotData && Array.isArray(record.slotData)) {
+        for (const slotItem of record.slotData) {
+          // Map subject to department
+          if (slotItem.subject) {
+            const normalizedSubject = slotItem.subject.trim().toLowerCase();
+            if (!subjectToDeptMap[normalizedSubject]) {
+              subjectToDeptMap[normalizedSubject] = record.code;
+            }
           }
-      }
-      if (slotItem.faculty){
-      const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(session, slotItem.faculty);
-      const isFacultyAvailable = await ClassTimeTableDto.isFacultySlotAvailable(day, slot, facultySlots, sem);
-      if (!isFacultyAvailable) {
-        isSlotAvailable = false; // At least one item is not available
-
-        if (!isFacultyAvailable) {
-            unavailableItems.push({ item: slotItem, reason: "faculty" });
+          
+          // Map faculty to department(s) - faculty can teach in multiple depts
+          if (slotItem.faculty) {
+            const normalizedFaculty = slotItem.faculty.trim().toLowerCase();
+            if (!facultyToDeptMap[normalizedFaculty]) {
+              facultyToDeptMap[normalizedFaculty] = new Set();
+            }
+            facultyToDeptMap[normalizedFaculty].add(record.code);
+          }
         }
-
-    }  
+      }
     }
+    
+    return { subjectToDeptMap, facultyToDeptMap };
+  } catch (error) {
+    console.error("Error building department mappings:", error);
+    return { subjectToDeptMap: {}, facultyToDeptMap: {} };
+  }
+}
 
-
+/**
+ * Returns true if EITHER subject OR faculty belongs to current department
+ */
+isFalsePositiveRoomConflict(conflictRecord, currentCode, currentSubject, currentFaculty, subjectToDeptMap, facultyToDeptMap) {
+  try {
+    // If it's the same department, not a conflict
+    if (conflictRecord.code === currentCode) {
+      return true;
     }
-      if (isSlotAvailable) {
-      res.status(200).json({ message: "Slot is available" });
-    }else {
-        res.status(200).json({
-            message: "Slot is not available. Check faculty and room availability for more details",
-            unavailableItems,
+    
+    // Check each item in the conflicting slot
+    if (conflictRecord.slotData && Array.isArray(conflictRecord.slotData)) {
+      for (const slotItem of conflictRecord.slotData) {
+        
+        // Check 1: Does the SUBJECT belong to current department?
+        if (slotItem.subject) {
+          const normalizedSubject = slotItem.subject.trim().toLowerCase();
+          const subjectOwnerDept = subjectToDeptMap[normalizedSubject];
+          
+          if (subjectOwnerDept === currentCode) {
+            console.log(`✓ Room conflict is FALSE POSITIVE: Subject "${slotItem.subject}" belongs to current dept`);
+            return true; // Subject belongs to current dept - NOT a real clash
+          }
+        }
+        
+        // Check 2: Does the FACULTY belong to current department?
+        if (slotItem.faculty) {
+          const normalizedFaculty = slotItem.faculty.trim().toLowerCase();
+          const facultyDepts = facultyToDeptMap[normalizedFaculty];
+          
+          if (facultyDepts && facultyDepts.has(currentCode)) {
+            console.log(`✓ Room conflict is FALSE POSITIVE: Faculty "${slotItem.faculty}" belongs to current dept`);
+            return true; // Faculty belongs to current dept - NOT a real clash
+          }
+        }
+      }
+    }
+    
+    return false; // Real conflict
+  } catch (error) {
+    console.error("Error checking false positive:", error);
+    return false;
+  }
+}
+
+/**
+ * IMPROVED HELPER: Check if a faculty conflict is a FALSE POSITIVE
+ * Returns true if EITHER:
+ * 1. Same faculty teaching same subject for same dept (different sections)
+ * 2. Faculty or subject belongs to current department
+ */
+isFalsePositiveFacultyConflict(conflictRecord, currentCode, currentSubject, currentFaculty, subjectToDeptMap, facultyToDeptMap) {
+  try {
+    // If it's the same department, not a conflict
+    if (conflictRecord.code === currentCode) {
+      return true;
+    }
+    
+    const normalizedCurrentSubject = (currentSubject || "").trim().toLowerCase();
+    const normalizedCurrentFaculty = (currentFaculty || "").trim().toLowerCase();
+    
+    // Check faculty teaching in the conflicting slot
+    if (conflictRecord.slotData && Array.isArray(conflictRecord.slotData)) {
+      for (const slotItem of conflictRecord.slotData) {
+        
+        // Only check items with the same faculty
+        if (slotItem.faculty && slotItem.faculty.trim().toLowerCase() === normalizedCurrentFaculty) {
+          
+          // Check 1: Is it the SAME SUBJECT being taught?
+          if (slotItem.subject) {
+            const normalizedConflictSubject = slotItem.subject.trim().toLowerCase();
+            
+            if (normalizedCurrentSubject === normalizedConflictSubject) {
+              const subjectOwnerDept = subjectToDeptMap[normalizedConflictSubject];
+              
+              // If same subject belongs to current dept, it's just different sections
+              if (subjectOwnerDept === currentCode) {
+                console.log(`✓ Faculty conflict is FALSE POSITIVE: Same subject "${slotItem.subject}" taught in different sections of current dept`);
+                return true;
+              }
+            }
+            
+            // Check 2: Does the SUBJECT belong to current department?
+            const conflictSubjectOwner = subjectToDeptMap[normalizedConflictSubject];
+            if (conflictSubjectOwner === currentCode) {
+              console.log(`✓ Faculty conflict is FALSE POSITIVE: Subject "${slotItem.subject}" belongs to current dept`);
+              return true;
+            }
+          }
+          
+          // Check 3: Does the FACULTY primarily belong to current department?
+          const facultyDepts = facultyToDeptMap[normalizedCurrentFaculty];
+          if (facultyDepts && facultyDepts.has(currentCode)) {
+            console.log(`✓ Faculty conflict is FALSE POSITIVE: Faculty "${currentFaculty}" belongs to current dept`);
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false; // Real conflict
+  } catch (error) {
+    console.error("Error checking false positive faculty:", error);
+    return false;
+  }
+}
+ 
+async saveslot(req, res) {
+  const day = req.params.day;
+  const slot = req.params.slot;
+  const slotData = req.body.slotData;
+  const code = req.body.code;
+  const sem = req.body.sem;
+  
+  try {
+    const session = await TimeTableDto.getSessionByCode(code);
+    
+    // IMPROVED: Build both subject and faculty mappings
+    const { subjectToDeptMap, facultyToDeptMap } = await this.buildDepartmentMappings(session);
+    
+    let isSlotAvailable = true;
+    const unavailableItems = [];
+
+    for (const slotItem of slotData) {
+      // Check room clashes
+      if (slotItem.room) {
+        const roomSlots = await ClassTimeTableDto.findRoomDataWithSession(session, slotItem.room);
+        
+        // IMPROVED: Filter with both subject and faculty checks
+        const realRoomConflicts = roomSlots.filter(record => {
+          // Check if this is in the same time slot
+          if (record.day !== day || record.slot !== slot) return false;
+          
+          // Check if it's a false positive (subject OR faculty belongs to current dept)
+          return !this.isFalsePositiveRoomConflict(
+            record, 
+            code, 
+            slotItem.subject,
+            slotItem.faculty,
+            subjectToDeptMap,
+            facultyToDeptMap
+          );
         });
+        
+        const isRoomAvailable = realRoomConflicts.length === 0;
+        
+        if (!isRoomAvailable) {
+          isSlotAvailable = false;
+          unavailableItems.push({ 
+            item: slotItem, 
+            reason: "room",
+            details: "Room is occupied by another department's class"
+          });
+        }
+      }
+      
+      // Check faculty clashes
+      if (slotItem.faculty) {
+        const facultySlots = await ClassTimeTableDto.findFacultyDataWithSession(session, slotItem.faculty);
+        
+        // IMPROVED: Filter with both subject and faculty checks
+        const realFacultyConflicts = facultySlots.filter(record => {
+          // Check if this is in the same time slot
+          if (record.day !== day || record.slot !== slot) return false;
+          
+          // Check if it's a false positive
+          return !this.isFalsePositiveFacultyConflict(
+            record, 
+            code, 
+            slotItem.subject, 
+            slotItem.faculty,
+            subjectToDeptMap,
+            facultyToDeptMap
+          );
+        });
+        
+        const isFacultyAvailable = realFacultyConflicts.length === 0;
+        
+        if (!isFacultyAvailable) {
+          isSlotAvailable = false;
+          unavailableItems.push({ 
+            item: slotItem, 
+            reason: "faculty",
+            details: "Faculty is teaching in another department at this time"
+          });
+        }
+      }
     }
-} catch (error) {
+    
+    if (isSlotAvailable) {
+      res.status(200).json({ message: "Slot is available" });
+    } else {
+      res.status(200).json({
+        message: "Slot is not available. Check faculty and room availability for more details",
+        unavailableItems,
+      });
+    }
+  } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal server error" });
-}
+  }
 }
 
 
@@ -193,13 +383,15 @@ async savelunchslot(req, res) {
 }
 
 async getlunchslot(req, res) {
-  const code = req.params.code;
+  try {
+    const code = req.params.code;
     const lunchrecords = await ClassTable.find({slot:'lunch',code, 'slotData.0': { $exists: true }});
     // console.log(lunchrecords)
     res.status(200).json({lunchrecords})
   } catch (error) {
-  console.error(error);
-  res.status(500).json({ error: "Internal server error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 }
 
 async deletelunchslot(req, res) {
@@ -373,5 +565,3 @@ async deletelunchslot(req, res) {
 
 }
 module.exports = ClassTimeTableController;
-
-
