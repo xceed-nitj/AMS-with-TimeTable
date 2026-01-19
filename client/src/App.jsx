@@ -186,6 +186,10 @@ import FileUpload from './fileUpload/fileUploads.jsx'
 import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
 
 
+//import machine learning modules
+import LinearRegression from './mlcoursemodule/linearregression.jsx';
+
+
 //import faculty rankings
 
 import FacultyDashboard from './instituterankings/facultydashboard.jsx';
@@ -583,9 +587,15 @@ function App() {
         <Route path="/dm/addDoctor" element={<DoctorForm />} />
         <Route path="/dm/addDailyDosage" element={<DailyDosageForm />} />
         <Route path="/dm/addSickDay" element={<SickDayForm />} />
+
+
+        <Route path="/ml/t1" element={<LinearRegression />} />
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
+
+
+
     </Router>
   );
 }
