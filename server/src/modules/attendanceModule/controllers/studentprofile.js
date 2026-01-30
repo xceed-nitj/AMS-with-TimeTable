@@ -7,6 +7,9 @@ class StudentController {
     console.log(newStudent);
     try {
       const createdStudent = await Student.create(newStudent);
+      if (!createdStudent) {
+        throw new HttpException(400, "Unable to create student");
+      }
       res.json(createdStudent);
     } catch (error) {
       console.error(error);
@@ -17,6 +20,9 @@ class StudentController {
   async getStudents(req, res) {
     try {
       const studentList = await Student.find();
+      if (!studentList) {
+        throw new HttpException(400, "No students found");
+      }
       res.json(studentList);
     } catch (error) {
       console.error(error);
@@ -30,7 +36,9 @@ class StudentController {
     }
     try {
       const student = await Student.findById(id);
-      if (!student) throw new HttpException(400, "Student does not exist");
+      if (!student) {
+        throw new HttpException(400, "Student does not exist");
+      }
       return student;
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
@@ -42,7 +50,10 @@ class StudentController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      await Student.findByIdAndUpdate(id, studentData);
+      const updatedStudent = await Student.findByIdAndUpdate(id, studentData);
+      if (!updatedStudent) {
+        throw new HttpException(400, "Unable to update student");
+      }
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
@@ -53,7 +64,10 @@ class StudentController {
       throw new HttpException(400, "Invalid Id");
     }
     try {
-      await Student.findByIdAndDelete(id);
+      const deletedStudent = await Student.findByIdAndDelete(id);
+      if (!deletedStudent) {
+        throw new HttpException(400, "Unable to delete student");
+      }
     } catch (e) {
       throw new HttpException(500, e.message || "Internal Server Error");
     }
