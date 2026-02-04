@@ -9,6 +9,8 @@ import {
   Progress, CircularProgress, CircularProgressLabel
 } from '@chakra-ui/react';
 import { CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons';
+import WorkflowQuizTab from './workflowquiztab';
+import MatrixQuizTab from './orderquiztab';
 
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randFloat = (min, max, dec = 2) => parseFloat((Math.random() * (max - min) + min).toFixed(dec));
@@ -66,9 +68,11 @@ const ProgressTracker = ({ progress, totalQuestions, problems }) => {
   const pct = totalQuestions > 0 ? Math.round((completed / totalQuestions) * 100) : 0;
   const cats = [
     { key: 'mse', label: 'MSE', icon: '📊', color: 'blue', total: problems.mse.reduce((t,p) => t + p.parts.length, 0) },
-    { key: 'gradient', label: 'Gradient Descent', icon: '⚡', color: 'green', total: problems.gradient.reduce((t,p) => t + p.parts.length, 0) },
-    { key: 'scaling', label: 'Scaling', icon: '📏', color: 'teal', total: problems.scaling.reduce((t,p) => t + p.parts.length, 0) }
-  ];
+    { key: 'gradient', label: 'G.Descent', icon: '⚡', color: 'green', total: problems.gradient.reduce((t,p) => t + p.parts.length, 0) },
+    { key: 'scaling', label: 'Scaling', icon: '📏', color: 'teal', total: problems.scaling.reduce((t,p) => t + p.parts.length, 0) },
+  { key: 'workflow', label: 'Workflow', icon: '🔀', color: 'orange', total: 4 },
+  { key: 'matrix', label: 'Matrix Dims', icon: '📐', color: 'pink', total: 4 }
+];
 
   return (
     <Card bg={cardBg} mb={6} shadow="lg" borderWidth="2px" borderColor={pct === 100 ? 'green.400' : 'purple.200'}>
@@ -82,7 +86,7 @@ const ProgressTracker = ({ progress, totalQuestions, problems }) => {
             <Text fontSize="sm" color="gray.500">{completed} / {totalQuestions} questions</Text>
           </Flex>
           <Box flex="1" w="100%">
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+            <SimpleGrid columns={{ base: 1, md: 5 }} spacing={2}>
               {cats.map(cat => {
                 const done = Object.keys(progress).filter(k => k.startsWith(cat.key) && progress[k]).length;
                 const catPct = cat.total > 0 ? Math.round((done / cat.total) * 100) : 0;
@@ -271,7 +275,7 @@ export default function LinearRegressionTutorial() {
       parts:[{key:'mn',label:'min=',answer:mn},{key:'mx',label:'max=',answer:mx},{key:'s1',label:`Scale ${v2[0]}=`,answer:s1},{key:'s2',label:`Scale ${v2[1]}=`,answer:s2}],
       solution:`min=${mn}, max=${mx}\n${v2[0]}: ${s1.toFixed(4)}\n${v2[1]}: ${s2.toFixed(4)}`});
     
-    let total=0;mse.forEach(p=>total+=p.parts.length);grad.forEach(p=>total+=p.parts.length);scale.forEach(p=>total+=p.parts.length);
+    let total=0;mse.forEach(p=>total+=p.parts.length);grad.forEach(p=>total+=p.parts.length);scale.forEach(p=>total+=p.parts.length);total += 4;
     
     // Convergence data
     const sim=[{x:randInt(1,10),y:randInt(100,200)},{x:randInt(20,30),y:randInt(300,400)},{x:randInt(40,50),y:randInt(500,600)},{x:randInt(60,70),y:randInt(700,800)},{x:randInt(80,100),y:randInt(900,1000)}];
@@ -299,6 +303,8 @@ export default function LinearRegressionTutorial() {
             <Tab fontWeight="semibold">📊 MSE{Object.keys(progress).filter(k=>k.startsWith('mse')&&progress[k]).length===problems.mse.reduce((t,p)=>t+p.parts.length,0)&&<Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
             <Tab fontWeight="semibold">⚡ Gradient{Object.keys(progress).filter(k=>k.startsWith('gradient')&&progress[k]).length===problems.gradient.reduce((t,p)=>t+p.parts.length,0)&&<Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
             <Tab fontWeight="semibold">📏 Scaling{Object.keys(progress).filter(k=>k.startsWith('scaling')&&progress[k]).length===problems.scaling.reduce((t,p)=>t+p.parts.length,0)&&<Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
+            <Tab fontWeight="semibold">🔀 Workflow{Object.keys(progress).filter(k => k.startsWith('workflow') && progress[k]).length === 4 && <Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
+            <Tab fontWeight="semibold">📐 Matrix{Object.keys(progress).filter(k => k.startsWith('matrix') && progress[k]).length === 4 && <Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel><Theory/></TabPanel>
@@ -307,6 +313,7 @@ export default function LinearRegressionTutorial() {
             <TabPanel><Alert status="info" mb={6} borderRadius="md"><AlertIcon/><Text fontSize="sm"><b>Gradient Descent:</b> Update all parameters simultaneously!</Text></Alert>
               {problems.gradient.map((p,i)=><Problem key={i} problem={p} index={i} category="gradient" progress={progress} onCorrect={onCorrect}/>)}</TabPanel>
             <TabPanel><Alert status="info" mb={6} borderRadius="md"><AlertIcon/><Text fontSize="sm"><b>Feature Scaling:</b> Normalize for faster convergence</Text></Alert>
+               
               <Card bg={cardBg} mb={6}><CardHeader><Heading size="md" color="teal.600">Convergence Comparison</Heading></CardHeader>
                 <CardBody><DualLineChart data1={scalingData.withScaling} data2={scalingData.withoutScaling} label1="With Scaling (α=0.1)" label2="Without (α=0.00001)" xLabel="Iterations" yLabel="Cost J(θ)" title="Cost Over Iterations"/>
                   <SimpleGrid columns={{base:1,md:2}} spacing={4} mt={4}>
@@ -315,7 +322,14 @@ export default function LinearRegressionTutorial() {
                   </SimpleGrid>
                 </CardBody></Card>
               {problems.scaling.map((p,i)=><Problem key={i} problem={p} index={i} category="scaling" progress={progress} onCorrect={onCorrect}/>)}</TabPanel>
+         <TabPanel>
+    <WorkflowQuizTab progress={progress} onCorrect={onCorrect} />
+  </TabPanel>
+  <TabPanel>
+  <MatrixQuizTab progress={progress} onCorrect={onCorrect} />
+</TabPanel>
           </TabPanels>
+        
         </Tabs>
         <Box textAlign="center" mt={8} color="gray.500" fontSize="sm"><Text>Problems regenerate on page load</Text></Box>
       </Container>
