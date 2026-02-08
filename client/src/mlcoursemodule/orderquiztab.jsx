@@ -295,12 +295,12 @@ const QuizProblemSet = ({ problemSet, onComplete, isCompleted, progress, onUpdat
 
 // Theory/Reference Card
 const MatrixTheoryCard = () => {
-  const cardBg = useColorModeValue('white', 'gray.800');
+  const cardBg = useColorModeValue('white', 'g.800');
   
   return (
     <Accordion allowMultiple mb={6}>
       <AccordionItem>
-        <AccordionButton bg={cardBg} _expanded={{ bg: 'purple.50' }}>
+        <AccordionButton bg={'purple.500'} _hover={'green.500'} _expanded={{ bg: 'blue.500' }}>
           <Box flex="1" textAlign="left" fontWeight="bold">
             📐 Matrix Dimensions Reference for Multiple Linear Regression
           </Box>
@@ -745,7 +745,7 @@ const MatrixQuizTab = ({ progress, onCorrect }) => {
       </Alert>
 
       {/* Overall Progress */}
-      <Card bg={cardBg} mb={6} shadow="md">
+      {/* <Card bg={cardBg} mb={6} shadow="md">
         <CardBody>
           <HStack justify="space-between" mb={3}>
             <Text fontWeight="bold">Quiz Progress</Text>
@@ -785,7 +785,7 @@ const MatrixQuizTab = ({ progress, onCorrect }) => {
             ))}
           </SimpleGrid>
         </CardBody>
-      </Card>
+      </Card> */}
 
       {/* Theory Reference */}
       <MatrixTheoryCard />
