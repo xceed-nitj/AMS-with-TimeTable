@@ -295,7 +295,7 @@ const QuizProblemSet = ({ problemSet, onComplete, isCompleted, progress, onUpdat
 
 // Theory/Reference Card
 const MatrixTheoryCard = () => {
-  const cardBg = useColorModeValue('white', 'g.800');
+  const cardBg = useColorModeValue('white', 'green.800');
   
   return (
     <Accordion allowMultiple mb={6}>
