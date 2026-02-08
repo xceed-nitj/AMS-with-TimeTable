@@ -9,9 +9,9 @@ import {
   Progress, CircularProgress, CircularProgressLabel
 } from '@chakra-ui/react';
 import { CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons';
-import WorkflowQuizTab from './workflowquiztab';
-import MatrixQuizTab from './orderquiztab';
-import PythonQuizTab from './PythonQuizTab'
+import WorkflowQuizTab from './linearregression/workflowquiztab';
+import MatrixQuizTab from './linearregression/orderquiztab';
+import PythonQuizTab from './linearregression/PythonQuizTab'
 
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randFloat = (min, max, dec = 2) => parseFloat((Math.random() * (max - min) + min).toFixed(dec));
