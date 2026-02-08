@@ -9,8 +9,9 @@ import {
   Progress, CircularProgress, CircularProgressLabel
 } from '@chakra-ui/react';
 import { CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons';
-import WorkflowQuizTab from './workflowquiztab';
-import MatrixQuizTab from './orderquiztab';
+import WorkflowQuizTab from './linearregression/workflowquiztab';
+import MatrixQuizTab from './linearregression/orderquiztab';
+import PythonQuizTab from './linearregression/PythonQuizTab'
 
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randFloat = (min, max, dec = 2) => parseFloat((Math.random() * (max - min) + min).toFixed(dec));
@@ -71,7 +72,8 @@ const ProgressTracker = ({ progress, totalQuestions, problems }) => {
     { key: 'gradient', label: 'G.Descent', icon: '⚡', color: 'green', total: problems.gradient.reduce((t,p) => t + p.parts.length, 0) },
     { key: 'scaling', label: 'Scaling', icon: '📏', color: 'teal', total: problems.scaling.reduce((t,p) => t + p.parts.length, 0) },
   { key: 'workflow', label: 'Workflow', icon: '🔀', color: 'orange', total: 4 },
-  { key: 'matrix', label: 'Matrix Dims', icon: '📐', color: 'pink', total: 4 }
+  { key: 'matrix', label: 'Matrix', icon: '📐', color: 'pink', total: 4 },
+{ key: 'python', label: 'Python', icon: '📚', color: 'cyan', total: 5 }
 ];
 
   return (
@@ -86,7 +88,7 @@ const ProgressTracker = ({ progress, totalQuestions, problems }) => {
             <Text fontSize="sm" color="gray.500">{completed} / {totalQuestions} questions</Text>
           </Flex>
           <Box flex="1" w="100%">
-            <SimpleGrid columns={{ base: 1, md: 5 }} spacing={2}>
+            <SimpleGrid columns={{ base: 1, md: 6 }} spacing={2}>
               {cats.map(cat => {
                 const done = Object.keys(progress).filter(k => k.startsWith(cat.key) && progress[k]).length;
                 const catPct = cat.total > 0 ? Math.round((done / cat.total) * 100) : 0;
@@ -275,7 +277,7 @@ export default function LinearRegressionTutorial() {
       parts:[{key:'mn',label:'min=',answer:mn},{key:'mx',label:'max=',answer:mx},{key:'s1',label:`Scale ${v2[0]}=`,answer:s1},{key:'s2',label:`Scale ${v2[1]}=`,answer:s2}],
       solution:`min=${mn}, max=${mx}\n${v2[0]}: ${s1.toFixed(4)}\n${v2[1]}: ${s2.toFixed(4)}`});
     
-    let total=0;mse.forEach(p=>total+=p.parts.length);grad.forEach(p=>total+=p.parts.length);scale.forEach(p=>total+=p.parts.length);total += 4;
+    let total=0;mse.forEach(p=>total+=p.parts.length);grad.forEach(p=>total+=p.parts.length);scale.forEach(p=>total+=p.parts.length);total += 9;
     
     // Convergence data
     const sim=[{x:randInt(1,10),y:randInt(100,200)},{x:randInt(20,30),y:randInt(300,400)},{x:randInt(40,50),y:randInt(500,600)},{x:randInt(60,70),y:randInt(700,800)},{x:randInt(80,100),y:randInt(900,1000)}];
@@ -299,15 +301,16 @@ export default function LinearRegressionTutorial() {
         <ProgressTracker progress={progress} totalQuestions={totalQuestions} problems={problems}/>
         <Tabs colorScheme="purple" variant="enclosed" isLazy>
           <TabList flexWrap="wrap">
-            <Tab fontWeight="semibold">📚 Theory</Tab>
+            {/* <Tab fontWeight="semibold">📚 Theory</Tab> */}
             <Tab fontWeight="semibold">📊 MSE{Object.keys(progress).filter(k=>k.startsWith('mse')&&progress[k]).length===problems.mse.reduce((t,p)=>t+p.parts.length,0)&&<Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
             <Tab fontWeight="semibold">⚡ Gradient{Object.keys(progress).filter(k=>k.startsWith('gradient')&&progress[k]).length===problems.gradient.reduce((t,p)=>t+p.parts.length,0)&&<Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
             <Tab fontWeight="semibold">📏 Scaling{Object.keys(progress).filter(k=>k.startsWith('scaling')&&progress[k]).length===problems.scaling.reduce((t,p)=>t+p.parts.length,0)&&<Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
             <Tab fontWeight="semibold">🔀 Workflow{Object.keys(progress).filter(k => k.startsWith('workflow') && progress[k]).length === 4 && <Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
             <Tab fontWeight="semibold">📐 Matrix{Object.keys(progress).filter(k => k.startsWith('matrix') && progress[k]).length === 4 && <Badge ml={2} colorScheme="green">✓</Badge>}</Tab>
+            <Tab fontWeight="semibold"> 📚 Python {Object.keys(progress).filter(k => k.startsWith('python') && progress[k]).length === 5 && <Badge ml={2} colorScheme="green">✓</Badge>} </Tab>
           </TabList>
           <TabPanels>
-            <TabPanel><Theory/></TabPanel>
+            {/* <TabPanel><Theory/></TabPanel> */}
             <TabPanel><Alert status="info" mb={6} borderRadius="md"><AlertIcon/><Text fontSize="sm"><b>MSE:</b> J(θ)=(1/2m)×Σ(h(x)-y)²</Text></Alert>
               {problems.mse.map((p,i)=><Problem key={i} problem={p} index={i} category="mse" progress={progress} onCorrect={onCorrect}/>)}</TabPanel>
             <TabPanel><Alert status="info" mb={6} borderRadius="md"><AlertIcon/><Text fontSize="sm"><b>Gradient Descent:</b> Update all parameters simultaneously!</Text></Alert>
@@ -327,6 +330,9 @@ export default function LinearRegressionTutorial() {
   </TabPanel>
   <TabPanel>
   <MatrixQuizTab progress={progress} onCorrect={onCorrect} />
+</TabPanel>
+<TabPanel>
+  <PythonQuizTab progress={progress} onCorrect={onCorrect} />
 </TabPanel>
           </TabPanels>
         
