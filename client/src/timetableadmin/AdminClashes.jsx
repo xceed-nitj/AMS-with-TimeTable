@@ -268,7 +268,7 @@ const AdminClashes = () => {
       <Box pb={16}>
         {/* Hero Header Section with integrated navbar */}
         <Box 
-          bgGradient="linear(to-r, orange.500, red.600, pink.600)"
+          bgGradient="linear(to-r, orange.500, red.700, pink.600)"
           pb={24}
           position="relative"
           overflow="hidden"
