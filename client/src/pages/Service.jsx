@@ -18,7 +18,7 @@ const ServicePage = () => {
   }, []);
 
   return (
-    <main className="tw-font-jakarta tw-dark tw-bg-gray-900 tw-min-h-screen tw-text-white">
+    <main className="tw-font-jakarta tw-dark tw-bg-gray-950 tw-min-h-screen tw-text-white">
       <ServiceHero {...service} />
       <ServiceFeatures features={service?.features} />
       <Team

@@ -11,7 +11,7 @@ const PlatformConfig = () => {
   return (
     <Box bgGradient={bgGradient} minH="100vh" pb={16}>
       <Box 
-        bgGradient="linear(to-r, blue.600, purple.600, pink.500)"
+        bgGradient="linear(to-r, blue.650, purple.600, pink.500)"
         pt={8}
         pb={20}
         position="relative"
