@@ -310,24 +310,23 @@ const Timetable = () => {
   }, [selectedSemester, viewData, currentCode, apiUrl]);
 
   // Fetch current session
-  useEffect(() => {
-    const fetchCurrentSession = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/timetable/get-current-session`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        });
-        if (!response.ok) throw new Error('Failed to get current session');
-        const responseData = await response.json();
-        setCurrentSessionCodes(responseData.codes);
-      } catch (error) {
-        console.error('Error setting current session:', error.message);
-      }
-    };
-    fetchCurrentSession();
-    return () => {};
-  }, [currentSessionCodes]);
+useEffect(() => {
+  const fetchCurrentSession = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/timetable/get-current-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to get current session');
+      const responseData = await response.json();
+      setCurrentSessionCodes(responseData.codes);
+    } catch (error) {
+      console.error('Error setting current session:', error.message);
+    }
+  };
+  fetchCurrentSession();
+}, []);
 
   // Generate initial timetable data
   const generateInitialTimetableData = (fetchedData, type) => {
