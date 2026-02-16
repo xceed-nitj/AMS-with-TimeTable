@@ -24,7 +24,7 @@ function GoToHome(props) {
     },)
 
     return (
-        <h3 className="tw-tracking-tight tw-text-cyan-600 md:tw-text-xl lg:tw-text-2xl"
+        <h3 className="tw-tracking-tight tw-text-red-750 md:tw-text-xl lg:tw-text-2xl"
         >
         Redirecting to {props.destinationName} in {timer} seconds...
         </h3>

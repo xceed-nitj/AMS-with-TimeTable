@@ -227,7 +227,7 @@ function AddRoomComponent() {
       <Box>
         {/* Hero Header Section - Same as AddSem */}
         <Box 
-          bgGradient="linear(to-r, pink.400, purple.500, blue.500)"
+          bgGradient="linear(to-r, pink.500, purple.500, blue.400)"
           pt={0}
           pb={24}
           position="relative"
