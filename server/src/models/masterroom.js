@@ -21,6 +21,7 @@ const masterroomSchema = new mongoose.Schema({
   },
   dept: {
     type: String,
+    
   },
   landMark: {
     type: String,
