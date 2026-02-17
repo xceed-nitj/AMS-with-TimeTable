@@ -99,37 +99,30 @@ const Timetable = () => {
   const [publishedTime, setPublishedTime] = useState();
 
   const formatDateTime = (dateString) => {
-      if (!dateString) return 'Not published yet';
-
-           const date = new Date(dateString);
-
-        return date.toLocaleString('en-IN', {
-           day: '2-digit',
-           month: '2-digit',
-           year: 'numeric',
-           hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-         hour12: true,
-  });
-};
+    if (!dateString) return 'Not published yet';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+  };
   
   const fetchTime = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`, { credentials: 'include' });
-        const data = await response.json();
-        setLockedTime(data.updatedTime.lockTimeIST);
-        setSavedTime(data.updatedTime.saveTimeIST);
-        setPublishedTime(data.updatedTime.publishTimeIST);
-      } catch (error) {
-        console.error('Error fetching existing timetable data:', error);
-      }
-    };
-
-  
-
-  // Auto-hide notification
- 
+    try {
+      const response = await fetch(`${apiUrl}/timetablemodule/lock/viewsem/${currentCode}`, { credentials: 'include' });
+      const data = await response.json();
+      setLockedTime(data.updatedTime.lockTimeIST);
+      setSavedTime(data.updatedTime.saveTimeIST);
+      setPublishedTime(data.updatedTime.publishTimeIST);
+    } catch (error) {
+      console.error('Error fetching existing timetable data:', error);
+    }
+  };
 
   // Auto-clear message
   useEffect(() => {
@@ -138,8 +131,6 @@ const Timetable = () => {
       return () => clearTimeout(timer);
     }
   }, [message]);
-
- 
 
   // Fetch semester data
   useEffect(() => {
@@ -172,8 +163,6 @@ const Timetable = () => {
         return {};
       }
     };
-
-    
 
     const fetchTimetableData = async (semester) => {
       const data = await fetchData(semester);
@@ -309,24 +298,24 @@ const Timetable = () => {
     fetchFaculty(currentCode, selectedSemester);
   }, [selectedSemester, viewData, currentCode, apiUrl]);
 
-  // Fetch current session
-useEffect(() => {
-  const fetchCurrentSession = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/timetablemodule/timetable/get-current-session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to get current session');
-      const responseData = await response.json();
-      setCurrentSessionCodes(responseData.codes);
-    } catch (error) {
-      console.error('Error setting current session:', error.message);
-    }
-  };
-  fetchCurrentSession();
-}, []);
+  // Fetch current session - FIXED: Empty dependency array to prevent infinite loop
+  useEffect(() => {
+    const fetchCurrentSession = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/timetablemodule/timetable/get-current-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to get current session');
+        const responseData = await response.json();
+        setCurrentSessionCodes(responseData.codes);
+      } catch (error) {
+        console.error('Error setting current session:', error.message);
+      }
+    };
+    fetchCurrentSession();
+  }, []); // ✅ FIXED: Empty dependency array
 
   // Generate initial timetable data
   const generateInitialTimetableData = (fetchedData, type) => {
@@ -398,83 +387,79 @@ useEffect(() => {
       }
     };
 
-  const fetchTTData = async (currentCode) => {
-  try {
-    const response = await fetch(
-      `${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`,
-      { credentials: 'include' }
-    );
+    const fetchTTData = async (currentCode) => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/timetable/alldetails/${currentCode}`,
+          { credentials: 'include' }
+        );
 
-    if (!response.ok) {
-      console.error("TTData API failed:", response.status);
-      return;
-    }
+        if (!response.ok) {
+          console.error("TTData API failed:", response.status);
+          return;
+        }
 
-    const data = await response.json();
-    console.log("Fetched TTData:", data); 
-    setTTData(data);
-  } catch (error) {
-    console.error('Error fetching TTdata:', error);
-  }
-};
-
-
+        const data = await response.json();
+        console.log("Fetched TTData:", data); 
+        setTTData(data);
+      } catch (error) {
+        console.error('Error fetching TTdata:', error);
+      }
+    };
 
     fetchSubjectData(currentCode);
     fetchTTData(currentCode);
     
   }, []);
+
   const handlePublishTT = async () => {
-  const timetableId = TTData?._id;
+    const timetableId = TTData?._id;
 
+    if (!timetableId) {
+      toast({
+        title: "Timetable not loaded",
+        description: "Timetable ID missing",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom",
+      });
+      return;
+    }
 
-  if (!timetableId) {
-    toast({
-      title: "Timetable not loaded",
-      description: "Timetable ID missing",
-      status: "error",
-      duration: 3000,
-      isClosable: true,
-      position: "bottom",
-    });
-    return;
-  }
+    const confirm = window.confirm("Are you sure you want to publish this timetable?");
+    if (!confirm) return;
 
-  const confirm = window.confirm("Are you sure you want to publish this timetable?");
-  if (!confirm) return;
+    try {
+      const response = await fetch(
+        `${apiUrl}/timetablemodule/timetable/publish/${timetableId}`,
+        {
+          method: "PUT",
+          credentials: "include",
+        }
+      );
 
-  try {
-    const response = await fetch(
-      `${apiUrl}/timetablemodule/timetable/publish/${timetableId}`,
-      {
-        method: "PUT",
-        credentials: "include",
-      }
-    );
+      if (!response.ok) throw new Error();
 
-    if (!response.ok) throw new Error();
+      await fetchTime(); // refresh timestamps
 
-    await fetchTime(); // refresh timestamps
-
-    toast({
-      title: "Timetable Published & Mail sent to all faculty",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-      position: "bottom",
-    });
-  } catch (err) {
-    toast({
-      title: "Publish failed",
-      status: "error",
-      duration: 3000,
-      isClosable: true,
-      position: "bottom",
-    });
-  }
-};
-
-
+      toast({
+        title: "Timetable Published & Mail sent to all faculty",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom",
+      });
+    } catch (err) {
+      toast({
+        title: "Publish failed",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom",
+      });
+    }
+  };
 
   // Handler functions
   const handleCellChange = (day, period, slotIndex, cellIndex, type, event) => {
@@ -509,7 +494,6 @@ useEffect(() => {
     });
   };
 
-
   const handleAddSubject = () => navigate(`${currentPathname}/addsubjects`);
   const handleAddFaculty = () => navigate(`${currentPathname}/addfaculty`);
   const handleAddSem = () => navigate(`${currentPathname}/addsem`);
@@ -523,20 +507,20 @@ useEffect(() => {
   const handleEditFaculty = () => navigate(`${currentPathname}/editmasterfaculty`);
   const handleImportData = () => navigate(`${currentPathname}/importttdata`);
   const handleViewSummary = () => {
-  const url = `${currentPathname}/lockedsummary`;
-  window.open(url, "_blank", "noopener,noreferrer");
-};
+    const url = `${currentPathname}/lockedsummary`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
   const handleViewDeptFacultyLoad = () => {
-  const url = `${currentPathname}/facultyload`;
-  window.open(url, "_blank", "noopener,noreferrer");
-};
+    const url = `${currentPathname}/facultyload`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
   const handleViewFacultyLoad = () => {
-  const url = `${currentPathname}/generatepdf/loadallocation`;
-  window.open(url, "_blank", "noopener,noreferrer");
-};
+    const url = `${currentPathname}/generatepdf/loadallocation`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
   const handleDownloadClick = () => {
     const pdfUrl = `${currentPathname}/generatepdf`;
-  window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
   };
 
   const saveSlotData = async (day, slot, slotData) => {
@@ -565,13 +549,13 @@ useEffect(() => {
     const code = currentCode;
     const sem = selectedSemester;
 
-   toast({
-     title: "Saving timetable...",
+    toast({
+      title: "Saving timetable...",
       status: "info",
       duration: 4000,
       isClosable: true,
-       position: "bottom",
-});
+      position: "bottom",
+    });
 
     try {
       const response = await fetch(Url, {
@@ -583,38 +567,35 @@ useEffect(() => {
       if (!response.ok) {
         console.error('Failed to send data to the backend. HTTP status:', response.status);
         toast({
-  title: "Save failed",
-  status: "error",
-  duration: 6000,
-  isClosable: true,
-  position: "bottom",
-});
-
+          title: "Save failed",
+          status: "error",
+          duration: 6000,
+          isClosable: true,
+          position: "bottom",
+        });
       } else {
-       toast({
-     title: "Timetable Saved",
-     status: "success",
-    duration: 3000,
-    isClosable: true,
-     position: "bottom",
-});
-
+        toast({
+          title: "Timetable Saved",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+          position: "bottom",
+        });
       }
     } catch (error) {
       console.error('Error sending data to the backend:', error);
-     toast({
-     title: "Error saving timetable",
-     description: "Something went wrong while saving. Please try again.",
-     status: "error",
-     duration: 3000,
-     isClosable: true,
-     position: "bottom",
-});
-
+      toast({
+        title: "Error saving timetable",
+        description: "Something went wrong while saving. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom",
+      });
     }
   };
 
-const handleLockTT = async () => {
+  const handleLockTT = async () => {
     const isConfirmed = window.confirm(
       'Are you sure you want to lock the timetable?'
     );
@@ -686,8 +667,6 @@ const handleLockTT = async () => {
     }
   };
 
-  
-
   // Scroll handler
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
@@ -732,8 +711,6 @@ const handleLockTT = async () => {
         }
       };
 
-    
-
       const facultyData = async (currentCode, faculty) => {
         try {
           const response = await fetch(`${apiUrl}/timetablemodule/tt/viewfacultytt/${currentCode}/${faculty}`, { credentials: 'include' });
@@ -772,9 +749,8 @@ const handleLockTT = async () => {
   }, [availableFaculties, availableRooms]);
 
   useEffect(() => {
-  console.log("TTData updated:", TTData);
-}, [TTData]);
-
+    console.log("TTData updated:", TTData);
+  }, [TTData]);
 
   // RENDER
   return (
@@ -902,156 +878,149 @@ const handleLockTT = async () => {
               </Box>
 
               <SimpleGrid columns={{ base: 1, md: 4 }} spacing={5} mb={2}>
-          {/* Clash Detection */}
-         
+                {/* Saved Status */}
+                <Card 
+                  borderRadius="2xl" 
+                  borderLeftWidth="6px" 
+                  borderLeftColor="blue.500"
+                  boxShadow="lg"
+                  _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+                  transition="all 0.3s"
+                >
+                  <CardBody p={2}>
+                    <Flex align="center" gap={2}>
+                      <Box bg="blue.100" p={4} borderRadius="xl" boxShadow="md">
+                        <TimeIcon boxSize={4} color="blue.600" />
+                      </Box>
+                      <Box flex="1">
+                        <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                          Last Saved Time
+                        </Text>
+                        <Text fontSize="lg" fontWeight="bold" color="blue.700">
+                          {savedTime || 'Not saved yet'}
+                        </Text>
+                      </Box>
+                    </Flex>
+                  </CardBody>
+                </Card>
 
-          {/* Saved Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="blue.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={2}>
-              <Flex align="center" gap={2}>
-                <Box bg="blue.100" p={4} borderRadius="xl" boxShadow="md">
-                  <TimeIcon boxSize={4} color="blue.600" />
-                </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Last Saved Time
-                  </Text>
-                  <Text fontSize="lg" fontWeight="bold" color="blue.700">
-                    {savedTime || 'Not saved yet'}
-                  </Text>
-                </Box>
-              </Flex>
-            </CardBody>
-          </Card>
+                {/* Locked Status */}
+                <Card 
+                  borderRadius="2xl" 
+                  borderLeftWidth="6px" 
+                  borderLeftColor="orange.500"
+                  boxShadow="lg"
+                  _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+                  transition="all 0.3s"
+                >
+                  <CardBody p={2}>
+                    <Flex align="center" gap={4}>
+                      <Box bg="orange.100" p={4} borderRadius="xl" boxShadow="md">
+                        <LockIcon boxSize={8} color="orange.600" />
+                      </Box>
+                      <Box flex="1">
+                        <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                          Last Locked Time
+                        </Text>
+                        <Text fontSize="lg" fontWeight="bold" color="orange.700">
+                          {lockedTime || 'Not locked yet'}
+                        </Text>
+                      </Box>
+                    </Flex>
+                  </CardBody>
+                </Card>
 
-          {/* Locked Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="orange.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={2}>
-              <Flex align="center" gap={4}>
-                <Box bg="orange.100" p={4} borderRadius="xl" boxShadow="md">
-                  <LockIcon boxSize={8} color="orange.600" />
-                </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Last Locked Time
-                  </Text>
-                  <Text fontSize="lg" fontWeight="bold" color="orange.700">
-                    {lockedTime || 'Not locked yet'}
-                  </Text>
-                </Box>
-              </Flex>
-            </CardBody>
-          </Card>
+                {/* Published Status */}
+                <Card 
+                  borderRadius="2xl" 
+                  borderLeftWidth="6px" 
+                  borderLeftColor="purple.500"
+                  boxShadow="lg"
+                  _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+                  transition="all 0.3s"
+                >
+                  <CardBody p={2}>
+                    <Flex align="center" gap={4}>
+                      <Box bg="purple.100" p={4} borderRadius="xl" boxShadow="md">
+                        <CheckCircleIcon boxSize={8} color="purple.600" />
+                      </Box>
+                      <Box flex="1">
+                        <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
+                          Published Date
+                        </Text>
+                        <Text fontSize="lg" fontWeight="bold" color="purple.700">
+                          {formatDateTime(TTData?.datePublished)}
+                        </Text>
+                      </Box>
+                    </Flex>
+                  </CardBody>
+                </Card>
 
-          {/* Published Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="purple.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={2}>
-              <Flex align="center" gap={4}>
-                <Box bg="purple.100" p={4} borderRadius="xl" boxShadow="md">
-                  <CheckCircleIcon boxSize={8} color="purple.600" />
-                </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Published Date
-                  </Text>
-                <Text fontSize="lg" fontWeight="bold" color="purple.700">
-                    {formatDateTime(TTData?.datePublished)}
-
-                </Text>
-
-                </Box>
-              </Flex>
-            </CardBody>
-          </Card>
-       <Card 
-            borderRadius="2xl" 
-            borderWidth="3px" 
-            borderColor={clash.length > 0 ? 'red.300' : 'green.300'}
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={2}>
-              <VStack align="stretch" spacing={3}>
-                <Flex align="center" gap={3}>
-                  <Box 
-                    bg={clash.length > 0 ? 'red.100' : 'green.100'} 
-                    p={1} 
-                    borderRadius="xl"
-                    boxShadow="md"
-                  >
-                    {clash.length > 0 ? 
-                      <WarningIcon boxSize={8} color="red.600" /> : 
-                      <CheckCircleIcon boxSize={8} color="green.600" />
-                    }
-                  </Box>
-                  <Text fontSize="md" fontWeight="bold" color="gray.700">
-                    Clash Detection
-                  </Text>
-                </Flex>
-                {clashFlag ? (
-                  clash.length === 0 ? (
-                    <Badge colorScheme="green" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
-                      ✓ NO CLASHES FOUND
-                    </Badge>
-                  ) : (
-                    <VStack spacing={2} align="stretch">
-                      <Badge colorScheme="red" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
-                        ⚠ {clash.length} Clash(es) Found
-                      </Badge>
-                      <Button
-                        size="sm"
-                        colorScheme="red"
-                        variant="solid"
-                        leftIcon={<WarningIcon />}
-                        onClick={() => window.open(`admin/clashes`, '_blank', 'noopener,noreferrer')}
-                        borderRadius="lg"
-                        fontWeight="bold"
-                        _hover={{ transform: 'scale(1.02)' }}
-                        transition="all 0.2s"
-                      >
-                        View Clashes
-                      </Button>
+                {/* Clash Detection */}
+                <Card 
+                  borderRadius="2xl" 
+                  borderWidth="3px" 
+                  borderColor={clash.length > 0 ? 'red.300' : 'green.300'}
+                  boxShadow="lg"
+                  _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
+                  transition="all 0.3s"
+                >
+                  <CardBody p={2}>
+                    <VStack align="stretch" spacing={3}>
+                      <Flex align="center" gap={3}>
+                        <Box 
+                          bg={clash.length > 0 ? 'red.100' : 'green.100'} 
+                          p={1} 
+                          borderRadius="xl"
+                          boxShadow="md"
+                        >
+                          {clash.length > 0 ? 
+                            <WarningIcon boxSize={8} color="red.600" /> : 
+                            <CheckCircleIcon boxSize={8} color="green.600" />
+                          }
+                        </Box>
+                        <Text fontSize="md" fontWeight="bold" color="gray.700">
+                          Clash Detection
+                        </Text>
+                      </Flex>
+                      {clashFlag ? (
+                        clash.length === 0 ? (
+                          <Badge colorScheme="green" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
+                            ✓ NO CLASHES FOUND
+                          </Badge>
+                        ) : (
+                          <VStack spacing={2} align="stretch">
+                            <Badge colorScheme="red" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
+                              ⚠ {clash.length} Clash(es) Found
+                            </Badge>
+                            <Button
+                              size="sm"
+                              colorScheme="red"
+                              variant="solid"
+                              leftIcon={<WarningIcon />}
+                              onClick={() => window.open(`admin/clashes`, '_blank', 'noopener,noreferrer')}
+                              borderRadius="lg"
+                              fontWeight="bold"
+                              _hover={{ transform: 'scale(1.02)' }}
+                              transition="all 0.2s"
+                            >
+                              View Clashes
+                            </Button>
+                          </VStack>
+                        )
+                      ) : (
+                        <Badge colorScheme="yellow" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
+                          🔍 Searching...
+                        </Badge>
+                      )}
                     </VStack>
-                  )
-                ) : (
-                  <Badge colorScheme="yellow" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
-                    🔍 Searching...
-                  </Badge>
-                )}
-              </VStack>
-            </CardBody>
-          </Card>
-        </SimpleGrid>
-
-              
+                  </CardBody>
+                </Card>
+              </SimpleGrid>
             </Flex>
           </CardHeader>
 
           <CardBody p={{ base: 3, md: 6 }}>
-       
-
             <Flex align="center" gap={{ base: 2, md: 4 }} mb={{ base: 4, md: 6 }} bg="purple.50" p={{ base: 2, md: 4 }} borderRadius="xl" direction={{ base: "column", md: "row" }}>
               <Text fontWeight="bold" fontSize={{ base: "sm", md: "lg" }} minW={{ base: "auto", md: "120px" }} color="purple.800">
                 Select Semester:
@@ -1100,7 +1069,7 @@ const handleLockTT = async () => {
                     boxShadow="md"
                   />
                 </Tooltip>
-                <Tooltip label=" Student Normalised Faculty Load" placement="bottom" hasArrow bg="yellow.600" fontSize="sm">
+                <Tooltip label="Student Normalised Faculty Load" placement="bottom" hasArrow bg="yellow.600" fontSize="sm">
                   <IconButton
                     icon={<FaUserTimes color="white"/>}
                     onClick={handleViewDeptFacultyLoad}
@@ -1120,7 +1089,6 @@ const handleLockTT = async () => {
                     boxShadow="md"
                   />
                 </Tooltip>
-
                 <Tooltip label="Download PDF" placement="bottom" hasArrow bg="cyan.600" fontSize="sm">
                   <IconButton
                     icon={<DownloadIcon color="white"/>}
@@ -1174,24 +1142,20 @@ const handleLockTT = async () => {
                                 {slot.map((cell, ci) => {
                                   const getSubjectColor = (subject) => {
                                     if (!subject) return 'white';
-                                  const colors = [
-  // Neutrals
-  'gray.50', 'gray.100', 'gray.200',
-  'blackAlpha.50', 'blackAlpha.100', 'blackAlpha.200',
-  'whiteAlpha.50', 'whiteAlpha.100', 'whiteAlpha.200',
-
-  // Reds → Pinks
-  'red.50', 'red.100', 'red.200',
-  'orange.50', 'orange.100', 'orange.200',
-  'yellow.50', 'yellow.100', 'yellow.200',
-  'green.50', 'green.100', 'green.200',
-  'teal.50', 'teal.100', 'teal.200',
-  'blue.50', 'blue.100', 'blue.200',
-  'cyan.50', 'cyan.100', 'cyan.200',
-  'purple.50', 'purple.100', 'purple.200',
-  'pink.50', 'pink.100', 'pink.200'
-];
-
+                                    const colors = [
+                                      'gray.50', 'gray.100', 'gray.200',
+                                      'blackAlpha.50', 'blackAlpha.100', 'blackAlpha.200',
+                                      'whiteAlpha.50', 'whiteAlpha.100', 'whiteAlpha.200',
+                                      'red.50', 'red.100', 'red.200',
+                                      'orange.50', 'orange.100', 'orange.200',
+                                      'yellow.50', 'yellow.100', 'yellow.200',
+                                      'green.50', 'green.100', 'green.200',
+                                      'teal.50', 'teal.100', 'teal.200',
+                                      'blue.50', 'blue.100', 'blue.200',
+                                      'cyan.50', 'cyan.100', 'cyan.200',
+                                      'purple.50', 'purple.100', 'purple.200',
+                                      'pink.50', 'pink.100', 'pink.200'
+                                    ];
 
                                     let hash = 0;
                                     for (let i = 0; i < subject.length; i++) {
@@ -1241,7 +1205,7 @@ const handleLockTT = async () => {
                                         mb={1}
                                         bg="white"
                                       >
-                                        <option value=""> Room</option>
+                                        <option value="">Room</option>
                                         {availableRooms.map(r => (
                                           <option key={r} value={r}>{r}</option>
                                         ))}
@@ -1258,7 +1222,7 @@ const handleLockTT = async () => {
                                         mb={1}
                                         bg="white"
                                       >
-                                        <option value=""> Faculty</option>
+                                        <option value="">Faculty</option>
                                         {availableFaculties.map((f, i) => (
                                           <option key={i} value={f}>{f}</option>
                                         ))}

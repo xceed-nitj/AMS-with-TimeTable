@@ -1,27 +1,15 @@
-import * as pdfMake from 'pdfmake/build/pdfmake';
-import * as Pvfs from 'pdfmake/build/vfs_fonts';
+import pdfMakeLib from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
 
 const pdfMakeInitializer = () => {
   // Check if the pdfMake object already exists
   if (!globalThis.pdfMake) {
-    // Initialize pdfMake with the fonts
-    pdfMake.vfs = Pvfs.vfs;
+    // Create a new pdfMake instance with fonts
+    const pdfMake = Object.assign({}, pdfMakeLib);
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;
     globalThis.pdfMake = pdfMake;
   }
+  return globalThis.pdfMake;
 };
-
-// export default pdfMakeInitializer;
-
-// const pdfMakeInitializer = () => {
-//   // Always ensure the VFS is initialized
-//   pdfMake.vfs = pdfFonts.pdfMake.vfs;
-  
-//   // Make it global if needed
-//   if (typeof window !== 'undefined') {
-//     window.pdfMake = pdfMake;
-//   }
-  
-//   return pdfMake;
-// };
 
 export default pdfMakeInitializer;
