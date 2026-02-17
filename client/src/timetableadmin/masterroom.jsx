@@ -570,7 +570,7 @@ function MasterRoom() {
                       />
                     </FormControl>
 
-                    <FormControl isRequired>
+                    <FormControl>
                       <FormLabel fontWeight="semibold" color="gray.700">
                         Department (optional)
                       </FormLabel>
