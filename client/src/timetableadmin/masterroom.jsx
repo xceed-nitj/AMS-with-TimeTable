@@ -196,7 +196,7 @@ function MasterRoom() {
   };
 
   const handleSaveNewRoom = () => {
-    const requiredFields = ['room', 'type', 'building', 'floor', 'dept', 'landMark'];
+    const requiredFields = ['room', 'type', 'building', 'floor',  'landMark'];
     const missingFields = requiredFields.filter((field) => !editedRoom[field]);
 
     if (missingFields.length > 0) {
@@ -570,9 +570,9 @@ function MasterRoom() {
                       />
                     </FormControl>
 
-                    <FormControl isRequired>
+                    <FormControl>
                       <FormLabel fontWeight="semibold" color="gray.700">
-                        Department <Text as="span" color="red.500"></Text>
+                        Department (optional)
                       </FormLabel>
                       <Select
                         placeholder="Select department"
