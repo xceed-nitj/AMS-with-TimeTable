@@ -8,7 +8,6 @@ import {
   Tr,
   Th,
   Td,
-  TableContainer,
   Spinner,
   Alert,
   AlertIcon,
@@ -31,7 +30,7 @@ import {
   Tooltip,
   AlertDescription,
 } from '@chakra-ui/react';
-import { FaMinus, FaPlus, FaSearch, FaEye, FaDownload, FaEraser } from 'react-icons/fa';
+import { FaMinus, FaPlus, FaSearch } from 'react-icons/fa';
 import { DownloadIcon, ViewIcon, RepeatIcon } from '@chakra-ui/icons';
 import { Parser } from '@json2csv/plainjs';
 import { Helmet } from 'react-helmet-async';
@@ -174,12 +173,11 @@ const MasterLoadDataTable = () => {
   return (
     <>
       <Helmet>
-        <title>Master Search Timetable | XCEED NITJ</title>
+        <title>Master Search Timetable | XCEED-NITJ</title>
         <meta name="description" content="NITJ's official timetable search engine for all semesters and courses" />
       </Helmet>
 
       <Box bg="white" minH="100vh">
-        {/* Hero Header Section */}
         <Box
           bgGradient="linear(to-r, teal.400, green.500, blue.500)"
           pt={0}
@@ -198,7 +196,6 @@ const MasterLoadDataTable = () => {
             bgSize="30px 30px"
           />
 
-          {/* Header/Navbar integrated into hero */}
           <Box
             position="relative"
             zIndex={2}
@@ -254,7 +251,6 @@ const MasterLoadDataTable = () => {
 
         <Container maxW="7xl" mt={-12} position="relative" zIndex={1} pb={16} px={{ base: 4, md: 6, lg: 8 }}>
           <VStack spacing={6} align="stretch">
-            {/* Session Selection Card */}
             <Card
               bg="white"
               borderRadius="2xl"
@@ -293,7 +289,6 @@ const MasterLoadDataTable = () => {
               </CardBody>
             </Card>
 
-            {/* Action Buttons Card */}
             {selectedSession && (
               <Card
                 bg="white"
@@ -378,7 +373,6 @@ const MasterLoadDataTable = () => {
               </Card>
             )}
 
-            {/* Data Table Card */}
             {selectedSession && (
               <Card
                 bg="white"
