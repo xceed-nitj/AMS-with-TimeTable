@@ -8,7 +8,6 @@ import {
   Tr,
   Th,
   Td,
-  TableContainer,
   Spinner,
   Alert,
   AlertIcon,
@@ -31,7 +30,7 @@ import {
   Tooltip,
   AlertDescription,
 } from '@chakra-ui/react';
-import { FaMinus, FaPlus, FaSearch, FaEye, FaDownload, FaEraser } from 'react-icons/fa';
+import { FaMinus, FaPlus, FaSearch } from 'react-icons/fa';
 import { DownloadIcon, ViewIcon, RepeatIcon } from '@chakra-ui/icons';
 import { Parser } from '@json2csv/plainjs';
 import { Helmet } from 'react-helmet-async';
@@ -111,6 +110,7 @@ const MasterLoadDataTable = () => {
     { label: "Faculty", key: "faculty" },
     { label: "Offering Dept", key: "offeringDept" },
     { label: "Room", key: "room" },
+    { label: "Day", key: "day" },
     { label: "Slot", key: "slot" },
     { label: "Subject Type", key: "subjectType" },
     { label: "Subject Dept", key: "subjectDept" },
@@ -120,49 +120,10 @@ const MasterLoadDataTable = () => {
     { label: "Subject Code", key: "subjectCode" },
     { label: "Subject", key: "subject" },
     { label: "Subject Credit", key: "subjectCredit" },
-    // { label: "Load", key: "count" },
   ];
 
-  const mergeAndFilterData = (data) => {
-    const groupedData = data.reduce((acc, item) => {
-      const key = `${item.subjectCode}-${item.subjectFullName}-${item.faculty}-${item.sem}-${item.subjectType}`;
-      if (!acc[key]) {
-        acc[key] = { ...item, count: 1 };
-        delete acc[key].day;
-      } else {
-        acc[key].count += 1;
-        Object.keys(item).forEach(field => {
-          if (field !== 'subjectCode' && field !== 'subjectType' && field !== 'faculty' && field !== 'day' ) {
-            if (Array.isArray(acc[key][field])) {
-              if (!acc[key][field].includes(item[field])) {
-                acc[key][field].push(item[field]);
-              }
-            } else {
-              acc[key][field] = [acc[key][field], item[field]];
-            }
-          }
-        });
-      }
-      return acc;
-    }, {});
-
-    return Object.values(groupedData).map(item => {
-      const processedItem = { ...item };
-      Object.keys(processedItem).forEach(field => {
-        if (Array.isArray(processedItem[field])) {
-          if (field === 'faculty') {
-            processedItem[field] = Array.from(new Set(processedItem[field])).sort().join(', ');
-          } else {
-            processedItem[field] = Array.from(new Set(processedItem[field])).join(', ');
-          }
-        }
-      });
-      return processedItem;
-    });
-  };
-
   const filteredData = useMemo(() => {
-    const filtered = data.filter(item =>
+    return data.filter(item =>
       item.subject && item.faculty &&
       Object.entries(filters).every(([key, value]) => {
         const itemValue = item[key];
@@ -173,7 +134,6 @@ const MasterLoadDataTable = () => {
         return !term || (itemValue && itemValue.toString().toLowerCase().includes(term.toLowerCase()));
       })
     );
-    return mergeAndFilterData(filtered);
   }, [data, filters, searchTerms]);
 
   const filterOptions = useMemo(() => {
@@ -213,12 +173,11 @@ const MasterLoadDataTable = () => {
   return (
     <>
       <Helmet>
-        <title>Master Search Timetable | XCEED NITJ</title>
+        <title>Master Search Timetable | XCEED-NITJ</title>
         <meta name="description" content="NITJ's official timetable search engine for all semesters and courses" />
       </Helmet>
 
       <Box bg="white" minH="100vh">
-        {/* Hero Header Section */}
         <Box
           bgGradient="linear(to-r, teal.400, green.500, blue.500)"
           pt={0}
@@ -237,7 +196,6 @@ const MasterLoadDataTable = () => {
             bgSize="30px 30px"
           />
 
-          {/* Header/Navbar integrated into hero */}
           <Box
             position="relative"
             zIndex={2}
@@ -293,7 +251,6 @@ const MasterLoadDataTable = () => {
 
         <Container maxW="7xl" mt={-12} position="relative" zIndex={1} pb={16} px={{ base: 4, md: 6, lg: 8 }}>
           <VStack spacing={6} align="stretch">
-            {/* Session Selection Card */}
             <Card
               bg="white"
               borderRadius="2xl"
@@ -332,7 +289,6 @@ const MasterLoadDataTable = () => {
               </CardBody>
             </Card>
 
-            {/* Action Buttons Card */}
             {selectedSession && (
               <Card
                 bg="white"
@@ -417,7 +373,6 @@ const MasterLoadDataTable = () => {
               </Card>
             )}
 
-            {/* Data Table Card */}
             {selectedSession && (
               <Card
                 bg="white"
@@ -578,11 +533,7 @@ const MasterLoadDataTable = () => {
                                   p={{ base: 2, md: 3 }}
                                 >
                                   {item[key] !== undefined && item[key] !== null ? (
-                                    key === 'count' ? (
-                                      <Badge colorScheme="blue" fontSize="xs" px={2} py={1}>
-                                        {item[key].toString()}
-                                      </Badge>
-                                    ) : key === 'subjectType' ? (
+                                    key === 'subjectType' ? (
                                       <Badge
                                         colorScheme={
                                           item[key]?.toLowerCase() === 'theory' ? 'green' :
