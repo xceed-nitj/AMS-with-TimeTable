@@ -111,6 +111,7 @@ const MasterLoadDataTable = () => {
     { label: "Faculty", key: "faculty" },
     { label: "Offering Dept", key: "offeringDept" },
     { label: "Room", key: "room" },
+    { label: "Slot", key: "slot" },
     { label: "Subject Type", key: "subjectType" },
     { label: "Subject Dept", key: "subjectDept" },
     { label: "Sem", key: "sem" },
@@ -128,11 +129,10 @@ const MasterLoadDataTable = () => {
       if (!acc[key]) {
         acc[key] = { ...item, count: 1 };
         delete acc[key].day;
-        delete acc[key].slot;
       } else {
         acc[key].count += 1;
         Object.keys(item).forEach(field => {
-          if (field !== 'subjectCode' && field !== 'subjectType' && field !== 'faculty' && field !== 'day' && field !== 'slot') {
+          if (field !== 'subjectCode' && field !== 'subjectType' && field !== 'faculty' && field !== 'day' ) {
             if (Array.isArray(acc[key][field])) {
               if (!acc[key][field].includes(item[field])) {
                 acc[key][field].push(item[field]);
