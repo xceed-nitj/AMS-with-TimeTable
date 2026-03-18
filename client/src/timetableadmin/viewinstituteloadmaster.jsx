@@ -111,6 +111,7 @@ const MasterLoadDataTable = () => {
     { label: "Faculty", key: "faculty" },
     { label: "Offering Dept", key: "offeringDept" },
     { label: "Room", key: "room" },
+    { label: "Day", key: "day" },
     { label: "Slot", key: "slot" },
     { label: "Subject Type", key: "subjectType" },
     { label: "Subject Dept", key: "subjectDept" },
@@ -120,49 +121,10 @@ const MasterLoadDataTable = () => {
     { label: "Subject Code", key: "subjectCode" },
     { label: "Subject", key: "subject" },
     { label: "Subject Credit", key: "subjectCredit" },
-    // { label: "Load", key: "count" },
   ];
 
-  const mergeAndFilterData = (data) => {
-    const groupedData = data.reduce((acc, item) => {
-      const key = `${item.subjectCode}-${item.subjectFullName}-${item.faculty}-${item.sem}-${item.subjectType}`;
-      if (!acc[key]) {
-        acc[key] = { ...item, count: 1 };
-        delete acc[key].day;
-      } else {
-        acc[key].count += 1;
-        Object.keys(item).forEach(field => {
-          if (field !== 'subjectCode' && field !== 'subjectType' && field !== 'faculty' && field !== 'day' ) {
-            if (Array.isArray(acc[key][field])) {
-              if (!acc[key][field].includes(item[field])) {
-                acc[key][field].push(item[field]);
-              }
-            } else {
-              acc[key][field] = [acc[key][field], item[field]];
-            }
-          }
-        });
-      }
-      return acc;
-    }, {});
-
-    return Object.values(groupedData).map(item => {
-      const processedItem = { ...item };
-      Object.keys(processedItem).forEach(field => {
-        if (Array.isArray(processedItem[field])) {
-          if (field === 'faculty') {
-            processedItem[field] = Array.from(new Set(processedItem[field])).sort().join(', ');
-          } else {
-            processedItem[field] = Array.from(new Set(processedItem[field])).join(', ');
-          }
-        }
-      });
-      return processedItem;
-    });
-  };
-
   const filteredData = useMemo(() => {
-    const filtered = data.filter(item =>
+    return data.filter(item =>
       item.subject && item.faculty &&
       Object.entries(filters).every(([key, value]) => {
         const itemValue = item[key];
@@ -173,7 +135,6 @@ const MasterLoadDataTable = () => {
         return !term || (itemValue && itemValue.toString().toLowerCase().includes(term.toLowerCase()));
       })
     );
-    return mergeAndFilterData(filtered);
   }, [data, filters, searchTerms]);
 
   const filterOptions = useMemo(() => {
@@ -578,11 +539,7 @@ const MasterLoadDataTable = () => {
                                   p={{ base: 2, md: 3 }}
                                 >
                                   {item[key] !== undefined && item[key] !== null ? (
-                                    key === 'count' ? (
-                                      <Badge colorScheme="blue" fontSize="xs" px={2} py={1}>
-                                        {item[key].toString()}
-                                      </Badge>
-                                    ) : key === 'subjectType' ? (
+                                    key === 'subjectType' ? (
                                       <Badge
                                         colorScheme={
                                           item[key]?.toLowerCase() === 'theory' ? 'green' :
