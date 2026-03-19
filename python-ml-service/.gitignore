@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pkl
+test-data/
+*.mp4
+*.avi
+result.json
+*.pyc
+.insightface/
