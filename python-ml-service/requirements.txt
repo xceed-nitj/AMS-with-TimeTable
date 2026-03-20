@@ -1,0 +1,7 @@
+insightface==0.7.3
+onnxruntime==1.17.1
+opencv-python-headless==4.9.0.80
+fastapi==0.110.0
+uvicorn==0.29.0
+numpy<2
+requests
