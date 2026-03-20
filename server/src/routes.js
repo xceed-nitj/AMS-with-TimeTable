@@ -46,4 +46,8 @@ v1router.use("/stories", stories);
 const diabeticsModule = require("./modules/diabeticsModule/routes/index");
 v1router.use("/diabeticsModule", diabeticsModule);
 
+// face recognition
+const mlRoutes = require("./modules/ml/routes/mlRoutes");
+v1router.use("/ml", mlRoutes);
+
 module.exports = v1router;
