@@ -189,6 +189,8 @@ import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
 //import machine learning modules
 import LinearRegression from './mlcoursemodule/linearregression.jsx';
 
+//import for ml project of face recognition and attendance system
+import MLServiceControl from './ml/MLServiceControl';
 
 //import faculty rankings
 
@@ -590,6 +592,7 @@ function App() {
 
 
         <Route path="/ml/t1" element={<LinearRegression />} />
+         <Route path="/ml/service-control" element={<MLServiceControl />} />
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
