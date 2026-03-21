@@ -2,7 +2,7 @@ const chokidar = require('chokidar');
 const path = require('path');
 const mlClient = require('./mlServiceClient');
 
-const VIDEO_FOLDER = process.env.VIDEO_FOLDER || path.join(__dirname, '../../../../classroom-videos');
+const VIDEO_FOLDER = process.env.VIDEO_FOLDER || path.join(__dirname, '../classroom-videos');
 const SETTLE_DELAY_MS = parseInt(process.env.SETTLE_DELAY_MS) || 10000;
 const VIDEO_EXTENSIONS = ['.mp4', '.avi', '.mkv', '.mov', '.webm'];
 
