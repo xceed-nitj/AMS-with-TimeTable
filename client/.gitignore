@@ -24,4 +24,8 @@ dist-ssr
 *.sln
 *.sw?
 
+# Ground truth student photos - local only
+public/ground-truth/*
+!public/ground-truth/.gitkeep
+
 
