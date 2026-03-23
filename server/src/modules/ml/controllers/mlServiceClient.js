@@ -19,19 +19,9 @@ async function waitForService(maxWaitSec = 60) {
     throw new Error(`ML service unavailable after ${maxWaitSec}s`);
 }
 
-async function processVideo(videoPath, opts = {}) {
-    const res = await axios.post(`${ML_SERVICE_URL}/process-video`, {
-        video_path: videoPath,
-        threshold: opts.threshold || 0.45,
-        frame_skip: opts.frameSkip || 10,
-        min_detections: opts.minDetections || 3,
-    }, { timeout: 600000 });
-    return res.data;
-}
-
 async function reloadEmbeddings() {
     const res = await axios.post(`${ML_SERVICE_URL}/reload-embeddings`);
     return res.data;
 }
 
-module.exports = { healthCheck, waitForService, processVideo, reloadEmbeddings };
+module.exports = { healthCheck, waitForService, reloadEmbeddings };

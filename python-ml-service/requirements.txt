@@ -5,3 +5,5 @@ fastapi==0.110.0
 uvicorn==0.29.0
 numpy<2
 requests
+aiofiles
+scikit-learn
