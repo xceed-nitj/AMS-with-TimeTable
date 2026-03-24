@@ -191,10 +191,18 @@ import LinearRegression from './mlcoursemodule/linearregression.jsx';
 
 //import for ml project of face recognition and attendance system
 import MLDashboard from './ml/MLDashboard';
-//import faculty rankings
 
+//import faculty rankings
 import FacultyDashboard from './instituterankings/facultydashboard.jsx';
 import Logs from './timetableadmin/logs.jsx';
+
+// ─── Attendance Module Imports ────────────────────────────────────
+import GroundTruthGen from './attendancemodule/groundtruthgen';
+import NamingGroundTruth from './attendancemodule/NamingGroundTruth';
+import EditGroundTruth from './attendancemodule/editgroundtruth';
+import Attendancedoc from './attendancemodule/Attendancedoc';
+import ModelPerformance from './attendancemodule/modelperformance';
+
 function App() {
   return (
     <Router>
@@ -591,7 +599,17 @@ function App() {
 
 
         <Route path="/ml/t1" element={<LinearRegression />} />
-         <Route path="/ml" element={<MLDashboard />} />
+        <Route path="/ml" element={<MLDashboard />} />
+
+        {/* ─── Attendance Module Routes ──────────────────────────── */}
+        <Route path="/attendance">
+          <Route path="groundtruth/generate" element={<GroundTruthGen />} />
+          <Route path="groundtruth/select" element={<NamingGroundTruth />} />
+          <Route path="groundtruth/edit" element={<EditGroundTruth />} />
+          <Route path="report" element={<Attendancedoc />} />
+          <Route path="model" element={<ModelPerformance />} />
+        </Route>
+
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}

@@ -1,0 +1,99 @@
+// server/src/modules/attendanceModule/routes/groundTruthRoutes.js
+
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const GroundTruthController = require('../controllers/groundTruthController');
+
+const controller = new GroundTruthController();
+
+// Multer for direct photo uploads
+const upload = multer({
+    dest: path.join(__dirname, '..', '..', '..', '..', 'temp_uploads'),
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
+        cb(null, allowed.includes(path.extname(file.originalname).toLowerCase()));
+    }
+});
+
+// ─── Ground Truth Management ──────────────────────────────────────
+
+// List all batches
+router.get('/batches', async (req, res) => {
+    try { await controller.listBatches(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Create a new batch folder
+router.post('/create-batch', async (req, res) => {
+    try { await controller.createBatch(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// List students in a batch
+router.get('/batches/:batch/students', async (req, res) => {
+    try { await controller.listStudents(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Serve a photo
+router.get('/photo/:batch/:rollNo/:filename', async (req, res) => {
+    try { await controller.servePhoto(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Face Extraction from Video (Page 1) ──────────────────────────
+
+// Extract faces from video link
+router.post('/extract-faces', async (req, res) => {
+    try { await controller.extractFaces(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Save tagged faces (face → roll number mapping)
+router.post('/save-tagged-faces', async (req, res) => {
+    try { await controller.saveTaggedFaces(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Photo Selection & Upload (Page 2) ────────────────────────────
+
+// Save selected best photos
+router.post('/save-selected-photos', async (req, res) => {
+    try { await controller.saveSelectedPhotos(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Direct photo upload with face cropping
+router.post('/upload-photos', upload.array('photos', 10), async (req, res) => {
+    try { await controller.uploadPhotos(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Edit & Delete (Page 3) ───────────────────────────────────────
+
+router.delete('/student/:batch/:rollNo', async (req, res) => {
+    try { await controller.deleteStudent(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/photo/:batch/:rollNo/:filename', async (req, res) => {
+    try { await controller.deletePhoto(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Embeddings & Attendance (Page 4) ─────────────────────────────
+
+router.post('/generate-embeddings', async (req, res) => {
+    try { await controller.generateEmbeddings(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/run-attendance', async (req, res) => {
+    try { await controller.runAttendance(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+module.exports = router;
