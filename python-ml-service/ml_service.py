@@ -40,6 +40,7 @@ CLIENT_GROUND_TRUTH = os.path.join(
 logger.info(f"ROOT_DIR: {ROOT_DIR}")
 logger.info(f"DB_PATH: {DB_PATH}")
 logger.info(f"CLIENT_GROUND_TRUTH: {CLIENT_GROUND_TRUTH}")
+
 # ─── Request Models ───────────────────────────────────────────
 
 class VideoRequest(BaseModel):
@@ -70,6 +71,13 @@ class TestPipelineRequest(BaseModel):
     video_path: str
     ground_truth_file: str = ""
     threshold: float = 0.45
+    frame_skip: int = 10
+
+class ExtractFacesRequest(BaseModel):
+    videoUrl: str
+    degree: str
+    department: str
+    year: str
     frame_skip: int = 10
 
 # ─── Static Files (serve student photos) ─────────────────────
@@ -165,6 +173,90 @@ def enrolled_students():
 def reload_embeddings():
     load_embeddings()
     return {"status": "ok", "students_enrolled": len(embeddings_db)}
+
+# ─── Extract Faces from Video (Ground Truth Generation) ───────
+
+@app.post("/extract-faces-from-video")
+def extract_faces_from_video(req: ExtractFacesRequest):
+    import urllib.request
+
+    if face_app is None:
+        raise HTTPException(status_code=500, detail="Face model not loaded.")
+
+    # Build output folder: ground-truth/DEGREE_DEPARTMENT_YEAR/
+    folder_name = f"{req.degree}_{req.department}_{req.year}"
+    output_dir = os.path.join(CLIENT_GROUND_TRUTH, folder_name)
+    os.makedirs(output_dir, exist_ok=True)
+    logger.info(f"Extracting faces into: {output_dir}")
+
+    # Download video to a temp file
+    temp_video = os.path.join(BASE_DIR, "temp_extract.mp4")
+    try:
+        logger.info(f"Downloading video from: {req.videoUrl}")
+        urllib.request.urlretrieve(req.videoUrl, temp_video)
+        logger.info("Video downloaded successfully.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to download video: {e}")
+
+    # Open video and extract faces
+    cap = cv2.VideoCapture(temp_video)
+    if not cap.isOpened():
+        if os.path.exists(temp_video):
+            os.remove(temp_video)
+        raise HTTPException(status_code=400, detail="Cannot open downloaded video.")
+
+    saved_faces = []
+    frame_count = 0
+    face_index = 0
+
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame_count += 1
+
+            # Skip frames based on frame_skip
+            if frame_count % req.frame_skip != 0:
+                continue
+
+            faces = face_app.get(frame)
+            for face in faces:
+                box = face.bbox.astype(int)
+                x1, y1, x2, y2 = box
+
+                # Clamp to frame bounds
+                x1 = max(0, x1)
+                y1 = max(0, y1)
+                x2 = min(frame.shape[1], x2)
+                y2 = min(frame.shape[0], y2)
+
+                crop = frame[y1:y2, x1:x2]
+                if crop.size == 0:
+                    continue
+
+                filename = f"face_{face_index:04d}.jpg"
+                filepath = os.path.join(output_dir, filename)
+                cv2.imwrite(filepath, crop)
+                saved_faces.append(filename)
+                face_index += 1
+
+    finally:
+        cap.release()
+        # Clean up temp video
+        if os.path.exists(temp_video):
+            os.remove(temp_video)
+
+    logger.info(f"Extracted {len(saved_faces)} faces into {output_dir}")
+
+    return {
+        "status": "success",
+        "folder": f"ground_truth/{folder_name}/",
+        "output_dir": output_dir,
+        "faces_extracted": len(saved_faces),
+        "frames_processed": frame_count // req.frame_skip,
+        "files": saved_faces
+    }
 
 # ─── Helper: Process Video Frames ─────────────────────────────
 
@@ -464,14 +556,15 @@ def test_pipeline(req: TestPipelineRequest):
 
     return run_script_stream(script_path, args)
 
+# ─── Build Embeddings Sync ────────────────────────────────────
+
 @app.post("/build-embeddings-sync")
 def build_embeddings_sync(req: BuildEmbeddingsRequest):
     """
-    Synchronous version of build embeddings
-    Used by videoWatcher for auto rebuild
-    Returns result directly instead of streaming
+    Synchronous version of build embeddings.
+    Used by videoWatcher for auto rebuild.
+    Returns result directly instead of streaming.
     """
-    import pickle
     import cv2 as cv
 
     photos_dir = req.photos_dir
@@ -528,7 +621,7 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
     with open(output_path, "wb") as f:
         pickle.dump(db, f)
 
-    # auto reload into memory
+    # Auto reload into memory
     global embeddings_db
     embeddings_db = db
     logger.info(f"Auto rebuilt DB: {len(db)} students enrolled")
@@ -538,6 +631,8 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
         "students_enrolled": len(db),
         "output_path": output_path
     }
+
+# ─── Clustering ───────────────────────────────────────────────
 
 class ClusterRequest(BaseModel):
     videoPath: str
@@ -574,9 +669,7 @@ def process_video_clustering(req: ClusterRequest):
         output_base_dir=req.output_dir
     )
 
-
-
-    # if roll list provided compare against it
+    # If roll list provided, compare against it
     if req.roll_list:
         roll_list = [r.strip().upper() for r in req.roll_list]
         comparison = []
@@ -585,32 +678,34 @@ def process_video_clustering(req: ClusterRequest):
             if roll_no in result["attendance"]:
                 a = result["attendance"][roll_no]
                 comparison.append({
-                    "roll_no":        roll_no,
-                    "name":           a["name"],
-                    "status":         a["status"],
-                    "avg_confidence": a["avg_confidence"],
-                    "confidence_zone":a["confidence_zone"],
-                    "cluster_folder": a["cluster_folder"],
-                    "first_seen_sec": a["first_seen_sec"],
-                    "in_roll_list":   True,
-                    "in_ml_db":       True
+                    "roll_no":         roll_no,
+                    "name":            a["name"],
+                    "status":          a["status"],
+                    "avg_confidence":  a["avg_confidence"],
+                    "confidence_zone": a["confidence_zone"],
+                    "cluster_folder":  a["cluster_folder"],
+                    "first_seen_sec":  a["first_seen_sec"],
+                    "in_roll_list":    True,
+                    "in_ml_db":        True
                 })
             else:
                 comparison.append({
-                    "roll_no":        roll_no,
-                    "name":           "Not Enrolled",
-                    "status":         "not_enrolled",
-                    "avg_confidence": 0,
-                    "confidence_zone":"low",
-                    "cluster_folder": None,
-                    "first_seen_sec": None,
-                    "in_roll_list":   True,
-                    "in_ml_db":       False
+                    "roll_no":         roll_no,
+                    "name":            "Not Enrolled",
+                    "status":          "not_enrolled",
+                    "avg_confidence":  0,
+                    "confidence_zone": "low",
+                    "cluster_folder":  None,
+                    "first_seen_sec":  None,
+                    "in_roll_list":    True,
+                    "in_ml_db":        False
                 })
 
         result["comparison"] = comparison
 
     return result
+
+# ─── Entry Point ──────────────────────────────────────────────
 
 if __name__ == "__main__":
     uvicorn.run("ml_service:app", host="0.0.0.0", port=8500, reload=False)
