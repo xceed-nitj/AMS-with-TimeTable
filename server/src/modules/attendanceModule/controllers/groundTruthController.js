@@ -9,6 +9,14 @@ const FormData = require('form-data');
 // Python ML service base URL
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
+// Helper: human-readable error from axios
+function mlError(err) {
+    if (err.code === 'ECONNREFUSED') {
+        return `Python ML service is not running at ${ML_SERVICE_URL}. Start it with: python ml_service.py`;
+    }
+    return err.response?.data?.detail || err.message || 'Unknown ML service error';
+}
+
 // Ground truth & embeddings directories (at server root level)
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
 const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
@@ -111,7 +119,7 @@ class GroundTruthController {
 
     // ─── Extract faces from video via Python ──────────────────────
     // Sends video link to FastAPI → returns array of unique face crops (base64)
-    async extractFaces(req, res) {
+    /*async extractFaces(req, res) {
         try {
             const { videoLink, batch } = req.body;
             if (!videoLink) {
@@ -127,7 +135,38 @@ class GroundTruthController {
             const msg = err.response?.data?.detail || err.message;
             res.status(500).json({ error: msg });
         }
+    }*/
+    async extractFaces(req, res) {
+    try {
+        const { videoLink, batch } = req.body;
+        if (!videoLink) {
+            return res.status(400).json({ error: 'videoLink is required' });
+        }
+
+        // Strip surrounding quotes and normalize path
+        let videoPath = videoLink.trim().replace(/^["']+|["']+$/g, '').trim();
+        console.log('[extractFaces] videoPath received:', videoPath);
+
+        const response = await axios.post(
+            `${ML_SERVICE_URL}/extract-faces`,  // ← was /process-video-clustering
+            {
+                videoPath,
+                frame_skip: 10,
+                cluster_threshold: 0.45,
+                min_samples: 2,
+            },
+            { timeout: 300000 }
+        );
+
+        // Response is { faces: [{id, imageData, frameCount, firstSeenSec}] }
+        // which matches exactly what groundtruthgen.jsx expects
+        res.json(response.data);
+
+    } catch (err) {
+        console.error('extractFaces error:', err.code, err.response?.data);
+        res.status(500).json({ error: mlError(err) });
     }
+}
 
     // ─── Save tagged faces (Page 1 → faces renamed to roll numbers) ──
     async saveTaggedFaces(req, res) {
@@ -258,25 +297,29 @@ class GroundTruthController {
     }
 
     // ─── Generate embeddings for a batch ──────────────────────────
-    async generateEmbeddings(req, res) {
-        try {
-            const { batch } = req.body;
-            if (!batch) return res.status(400).json({ error: 'batch is required' });
+     async generateEmbeddings(req, res) {
+    try {
+        const { batch } = req.body;
+        if (!batch) return res.status(400).json({ error: 'batch is required' });
 
-            const response = await axios.post(
-                `${ML_SERVICE_URL}/generate-embeddings`,
-                { batch, ground_truth_dir: GROUND_TRUTH_DIR },
-                { timeout: 180000 }
-            );
-            res.json(response.data);
-        } catch (err) {
-            const msg = err.response?.data?.detail || err.message;
-            res.status(500).json({ error: msg });
-        }
-    }
+        const response = await axios.post(
+            `${ML_SERVICE_URL}/build-embeddings-sync`,
+            {
+                // Pass the batch subfolder so Python builds embeddings for this batch only
+                photos_dir: path.join(GROUND_TRUTH_DIR, batch),
+                output_path: path.join(EMBEDDINGS_DIR, `${batch}.pkl`)
+            },
+            { timeout: 180000 }
+        );
+        res.json(response.data);
+    } catch (err) {
+        console.error('generateEmbeddings error:', err.code, err.response?.data);
+        res.status(500).json({ error: mlError(err) });
+     }
+ }
 
     // ─── Run attendance (video + batch → attendance report) ───────
-    async runAttendance(req, res) {
+    /*async runAttendance(req, res) {
         try {
             const { videoLink, batch, room, date, timeSlot, faculty, subject } = req.body;
             if (!videoLink || !batch) {
@@ -297,7 +340,38 @@ class GroundTruthController {
             const msg = err.response?.data?.detail || err.message;
             res.status(500).json({ error: msg });
         }
+    }*/
+    async runAttendance(req, res) {
+    try {
+        const { videoLink, batch, room, date, timeSlot, faculty, subject } = req.body;
+        if (!videoLink || !batch) {
+            return res.status(400).json({ error: 'videoLink and batch are required' });
+        }
+
+        // CompareRequest schema needs videoPath + optional roll_list
+        const response = await axios.post(
+            `${ML_SERVICE_URL}/process-video-with-rolllist`,
+            {
+                videoPath: videoLink,   // ← "videoPath" not "video_url"
+                threshold: 0.45,
+                frame_skip: 10,
+                roll_list: [],          // optionally pass batch roll numbers here
+                auto_present_threshold: 0.6,
+                review_threshold: 0.4,
+                min_detections: 3
+            },
+            { timeout: 600000 }
+        );
+
+        res.json({
+            ...response.data,
+            metadata: { room, date, timeSlot, faculty, subject, batch }
+        });
+    } catch (err) {
+        console.error('runAttendance error:', err.code, err.response?.data);
+        res.status(500).json({ error: mlError(err) });
     }
+}
 }
 
 module.exports = GroundTruthController;
