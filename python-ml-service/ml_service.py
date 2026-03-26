@@ -3,10 +3,11 @@ import pickle
 import time
 import numpy as np
 import cv2
+import base64
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from clustering_service import process_video_with_clustering
+from clustering_service import process_video_with_clustering, extract_all_faces, cluster_faces
 from pydantic import BaseModel
 from typing import List
 import uvicorn
@@ -33,8 +34,9 @@ ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, '..'))
 
 DB_PATH = os.path.join(BASE_DIR, "embeddings_db.pkl")
 
+# Ground truth photos are stored by the Node server under server/ground_truth/
 CLIENT_GROUND_TRUTH = os.path.join(
-    ROOT_DIR, 'client', 'public', 'ground-truth'
+    ROOT_DIR, 'server', 'ground_truth'
 )
 
 logger.info(f"ROOT_DIR: {ROOT_DIR}")
@@ -74,11 +76,28 @@ class TestPipelineRequest(BaseModel):
     frame_skip: int = 10
 
 class ExtractFacesRequest(BaseModel):
+<<<<<<< HEAD
+    videoPath: str
+    frame_skip: int = 5
+    cluster_threshold: float = 0.45
+    min_samples: int = 2
+
+class ClusterRequest(BaseModel):
+    videoPath: str
+    frame_skip: int = 10
+    cluster_threshold: float = 0.45
+    min_samples: int = 2
+    auto_present_threshold: float = 0.60
+    review_threshold: float = 0.40
+    output_dir: str = "./clustering_output"
+    roll_list: List[str] = []
+=======
     videoUrl: str
     degree: str
     department: str
     year: str
     frame_skip: int = 10
+>>>>>>> main
 
 # ─── Static Files (serve student photos) ─────────────────────
 
@@ -632,6 +651,76 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
         "output_path": output_path
     }
 
+<<<<<<< HEAD
+# ─── Extract Faces for Ground Truth Tagging ───────────────────
+
+@app.post("/extract-faces")
+def extract_faces_for_tagging(req: ExtractFacesRequest):
+    """
+    Extracts unique face clusters from a video and returns them as base64 images.
+    Used by Ground Truth Generation page — returns faces for manual roll-number tagging.
+    Does NOT compare against the embeddings DB.
+    """
+    if not os.path.exists(req.videoPath):
+        raise HTTPException(status_code=404, detail=f"Video not found: {req.videoPath}")
+    if face_app is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    # Step 1+2: Extract all face embeddings + crops from video
+    all_embeddings, all_face_images, all_timestamps = extract_all_faces(
+        req.videoPath, face_app, req.frame_skip
+    )
+
+    if not all_embeddings:
+        return {"faces": [], "total_detections": 0, "unique_faces": 0}
+
+    # Step 3: Cluster to find unique people
+    labels, unique_labels = cluster_faces(
+        all_embeddings, req.cluster_threshold, req.min_samples
+    )
+
+    faces_out = []
+
+    for cluster_id in unique_labels:
+        indices = np.where(labels == cluster_id)[0]
+
+        # Pick the largest face crop from this cluster as the representative image
+        best_idx = max(indices, key=lambda i: (
+            all_face_images[i].shape[0] * all_face_images[i].shape[1]
+            if all_face_images[i].size > 0 else 0
+        ))
+
+        face_img = all_face_images[best_idx]
+        if face_img.size == 0:
+            continue
+
+        # Encode to base64 JPEG
+        success, buffer = cv2.imencode('.jpg', face_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if not success:
+            continue
+
+        b64 = base64.b64encode(buffer.tobytes()).decode('utf-8')
+
+        faces_out.append({
+            "id": f"cluster_{cluster_id}",
+            "imageData": f"data:image/jpeg;base64,{b64}",
+            "frameCount": len(indices),
+            "firstSeenSec": round(float(all_timestamps[indices[0]]), 1),
+        })
+
+    logger.info(
+        f"/extract-faces: {len(faces_out)} unique faces found "
+        f"from {len(all_embeddings)} total detections"
+    )
+
+    return {
+        "faces": faces_out,
+        "total_detections": len(all_embeddings),
+        "unique_faces": len(faces_out),
+    }
+
+# ─── Process Video with Clustering ────────────────────────────
+=======
 # ─── Clustering ───────────────────────────────────────────────
 
 class ClusterRequest(BaseModel):
@@ -643,6 +732,7 @@ class ClusterRequest(BaseModel):
     review_threshold: float = 0.40
     output_dir: str = "./clustering_output"
     roll_list: List[str] = []
+>>>>>>> main
 
 @app.post("/process-video-clustering")
 def process_video_clustering(req: ClusterRequest):
@@ -669,7 +759,11 @@ def process_video_clustering(req: ClusterRequest):
         output_base_dir=req.output_dir
     )
 
+<<<<<<< HEAD
+    # if roll list provided, compare against it
+=======
     # If roll list provided, compare against it
+>>>>>>> main
     if req.roll_list:
         roll_list = [r.strip().upper() for r in req.roll_list]
         comparison = []
