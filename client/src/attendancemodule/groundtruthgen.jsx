@@ -10,7 +10,8 @@ export default function GroundTruthGen() {
     const [department, setDepartment] = useState('');
     const [year, setYear] = useState('');
     const [videoLink, setVideoLink] = useState('');
-
+const [progress, setProgress] = useState(0);
+const [progressMsg, setProgressMsg] = useState('');
     // Extraction state
     const [extracting, setExtracting] = useState(false);
     const [faces, setFaces] = useState([]); // [{ id, imageData, rollNo, confirmed }]
@@ -27,55 +28,123 @@ export default function GroundTruthGen() {
     };
 
     // ─── Extract faces from video ─────────────────────────────────
-    const handleExtract = useCallback(async () => {
-        if (!batchName || !videoLink.trim()) {
-            showToast('Fill in all fields and provide a video link', 'error');
-            return;
+    // const handleExtract = useCallback(async () => {
+    //     if (!batchName || !videoLink.trim()) {
+    //         showToast('Fill in all fields and provide a video link', 'error');
+    //         return;
+    //     }
+
+    //     setExtracting(true);
+    //     setFaces([]);
+
+    //     try {
+    //         // First, create batch folder
+    //         await fetch(`${API_BASE}/create-batch`, {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ degree, department, year })
+    //         });
+
+    //         // Extract faces from video
+    //         const res = await fetch(`${API_BASE}/extract-faces`, {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ videoLink: videoLink.trim(), batch: batchName })
+    //         });
+
+    //         const data = await res.json();
+
+    //         if (data.error) {
+    //             showToast(data.error, 'error');
+    //             return;
+    //         }
+
+    //         // Map extracted faces to UI state
+    //         const extracted = (data.faces || []).map((f, i) => ({
+    //             id: f.id || `face_${i}`,
+    //             imageData: f.imageData, // base64
+    //             rollNo: '',
+    //             confirmed: false,
+    //             frameCount: f.frameCount || 1,
+    //         }));
+
+    //         setFaces(extracted);
+    //         showToast(`${extracted.length} unique face(s) detected`);
+    //     } catch (err) {
+    //         showToast('Failed to extract faces: ' + err.message, 'error');
+    //     } finally {
+    //         setExtracting(false);
+    //     }
+    // }, [batchName, videoLink, degree, department, year]);
+const handleExtract = useCallback(async () => {
+    if (!batchName || !videoLink.trim()) {
+        showToast('Fill in all fields', 'error');
+        return;
+    }
+
+    setExtracting(true);
+    setFaces([]);
+    setProgress(0); // new state
+
+    // Create batch folder first
+    await fetch(`${API_BASE}/create-batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ degree, department, year })
+    });
+
+    // Use EventSource-style fetch for SSE
+    const response = await fetch(`${API_BASE}/extract-faces`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoLink: videoLink.trim() })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value);
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+                const event = JSON.parse(line.slice(6));
+
+                if (event.type === 'progress') {
+                    setProgress(event.progress); // show progress bar
+                    setProgressMsg(`Frame ${event.frame}: ${event.faces} faces found...`);
+                }
+
+                if (event.type === 'status') {
+                    setProgressMsg(event.message);
+                }
+
+                if (event.type === 'done') {
+                    const extracted = (event.faces || []).map((f, i) => ({
+                        id: f.id || `face_${i}`,
+                        imageData: f.imageData,
+                        rollNo: '',
+                        confirmed: false,
+                        frameCount: f.frameCount || 1,
+                    }));
+                    setFaces(extracted);
+                    showToast(`${extracted.length} unique face(s) detected`);
+                    setExtracting(false);
+                }
+
+                if (event.type === 'error') {
+                    showToast(event.message, 'error');
+                    setExtracting(false);
+                }
+            } catch (e) {}
         }
-
-        setExtracting(true);
-        setFaces([]);
-
-        try {
-            // First, create batch folder
-            await fetch(`${API_BASE}/create-batch`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ degree, department, year })
-            });
-
-            // Extract faces from video
-            const res = await fetch(`${API_BASE}/extract-faces`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ videoLink: videoLink.trim(), batch: batchName })
-            });
-
-            const data = await res.json();
-
-            if (data.error) {
-                showToast(data.error, 'error');
-                return;
-            }
-
-            // Map extracted faces to UI state
-            const extracted = (data.faces || []).map((f, i) => ({
-                id: f.id || `face_${i}`,
-                imageData: f.imageData, // base64
-                rollNo: '',
-                confirmed: false,
-                frameCount: f.frameCount || 1,
-            }));
-
-            setFaces(extracted);
-            showToast(`${extracted.length} unique face(s) detected`);
-        } catch (err) {
-            showToast('Failed to extract faces: ' + err.message, 'error');
-        } finally {
-            setExtracting(false);
-        }
-    }, [batchName, videoLink, degree, department, year]);
-
+    }
+}, [batchName, videoLink, degree, department, year]);
     // ─── Update roll number for a face ────────────────────────────
     const updateRollNo = (faceId, rollNo) => {
         setFaces(prev => prev.map(f =>
@@ -181,6 +250,25 @@ export default function GroundTruthGen() {
                         />
                     </div>
                 </div>
+
+                {extracting && (
+    <div style={{ ...styles.card, textAlign: 'center', padding: '60px 20px' }}>
+        {/* Progress bar */}
+        <div style={{ width: '100%', background: theme.border, borderRadius: '4px', height: '8px', marginBottom: 16 }}>
+            <div style={{
+                width: `${progress}%`, height: '100%',
+                background: theme.accent, borderRadius: '4px',
+                transition: 'width 0.3s ease'
+            }} />
+        </div>
+        <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>
+            Processing Video — {progress}%
+        </div>
+        <div style={{ fontSize: '13px', color: theme.textMuted }}>
+            {progressMsg || 'Detecting and clustering unique faces...'}
+        </div>
+    </div>
+)}
 
                 {/* Folder preview + Extract button */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
