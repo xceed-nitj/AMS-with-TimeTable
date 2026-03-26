@@ -76,28 +76,10 @@ class TestPipelineRequest(BaseModel):
     frame_skip: int = 10
 
 class ExtractFacesRequest(BaseModel):
-<<<<<<< HEAD
     videoPath: str
     frame_skip: int = 5
     cluster_threshold: float = 0.45
     min_samples: int = 2
-
-class ClusterRequest(BaseModel):
-    videoPath: str
-    frame_skip: int = 10
-    cluster_threshold: float = 0.45
-    min_samples: int = 2
-    auto_present_threshold: float = 0.60
-    review_threshold: float = 0.40
-    output_dir: str = "./clustering_output"
-    roll_list: List[str] = []
-=======
-    videoUrl: str
-    degree: str
-    department: str
-    year: str
-    frame_skip: int = 10
->>>>>>> main
 
 # ─── Static Files (serve student photos) ─────────────────────
 
@@ -192,6 +174,134 @@ def enrolled_students():
 def reload_embeddings():
     load_embeddings()
     return {"status": "ok", "students_enrolled": len(embeddings_db)}
+
+
+from fastapi.responses import StreamingResponse
+import json
+
+@app.post("/extract-faces-stream")
+def extract_faces_stream(req: ExtractFacesRequest):
+    def generate():
+        # Step 1: yield progress during frame extraction
+        cap = cv2.VideoCapture(req.videoPath)
+        fps = cap.get(cv2.CAP_PROP_FPS) or 25
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        all_embeddings, all_face_images, all_timestamps = [], [], []
+        frame_count = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame_count += 1
+            if frame_count % req.frame_skip != 0:
+                continue
+
+            faces = face_app.get(frame)
+            for face in faces:
+                emb = face.embedding
+                norm = np.linalg.norm(emb)
+                if norm > 0:
+                    emb = emb / norm
+                bbox = face.bbox.astype(int)
+                x1,y1,x2,y2 = max(0,bbox[0]),max(0,bbox[1]),min(frame.shape[1],bbox[2]),min(frame.shape[0],bbox[3])
+                crop = frame[y1:y2, x1:x2]
+                if crop.size > 0:
+                    all_embeddings.append(emb)
+                    all_face_images.append(crop)
+                    all_timestamps.append(round(frame_count/fps, 2))
+
+            # Stream progress every 100 frames
+            if frame_count % 100 == 0:
+                progress = round((frame_count / total_frames) * 100, 1)
+                yield f"data: {json.dumps({'type':'progress','frame':frame_count,'faces':len(all_embeddings),'progress':progress})}\n\n"
+
+        cap.release()
+
+        # Step 2: yield clustering progress
+        yield f"data: {json.dumps({'type':'status','message':f'Clustering {len(all_embeddings)} faces...'})}\n\n"
+
+        if not all_embeddings:
+            yield f"data: {json.dumps({'type':'done','faces':[],'total_detections':0,'unique_faces':0})}\n\n"
+            return
+
+        labels, unique_labels = cluster_faces(all_embeddings, req.cluster_threshold, req.min_samples)
+
+        # Step 3: yield final result with face images
+        faces_out = []
+        for cluster_id in unique_labels:
+            indices = np.where(labels == cluster_id)[0]
+            best_idx = max(indices, key=lambda i: all_face_images[i].shape[0]*all_face_images[i].shape[1] if all_face_images[i].size > 0 else 0)
+            face_img = all_face_images[best_idx]
+            if face_img.size == 0:
+                continue
+            success, buffer = cv2.imencode('.jpg', face_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+            if not success:
+                continue
+            b64 = base64.b64encode(buffer.tobytes()).decode('utf-8')
+            faces_out.append({
+                "id": f"cluster_{cluster_id}",
+                "imageData": f"data:image/jpeg;base64,{b64}",
+                "frameCount": len(indices),
+                "firstSeenSec": round(float(all_timestamps[indices[0]]), 1),
+            })
+
+        yield f"data: {json.dumps({'type':'done','faces':faces_out,'total_detections':len(all_embeddings),'unique_faces':len(faces_out)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"}
+    )
+
+# ─── Extract Faces (non-streaming, called directly by browser) ────
+
+@app.post("/extract-faces")
+def extract_faces_for_tagging(req: ExtractFacesRequest):
+    if not os.path.exists(req.videoPath):
+        raise HTTPException(status_code=404, detail=f"Video not found: {req.videoPath}")
+    if face_app is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    all_embeddings, all_face_images, all_timestamps = extract_all_faces(
+        req.videoPath, face_app, req.frame_skip
+    )
+
+    if not all_embeddings:
+        return {"faces": [], "total_detections": 0, "unique_faces": 0}
+
+    labels, unique_labels = cluster_faces(
+        all_embeddings, req.cluster_threshold, req.min_samples
+    )
+
+    faces_out = []
+    for cluster_id in unique_labels:
+        indices = np.where(labels == cluster_id)[0]
+        best_idx = max(indices, key=lambda i: (
+            all_face_images[i].shape[0] * all_face_images[i].shape[1]
+            if all_face_images[i].size > 0 else 0
+        ))
+        face_img = all_face_images[best_idx]
+        if face_img.size == 0:
+            continue
+        success, buffer = cv2.imencode('.jpg', face_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if not success:
+            continue
+        b64 = base64.b64encode(buffer.tobytes()).decode('utf-8')
+        faces_out.append({
+            "id": f"cluster_{cluster_id}",
+            "imageData": f"data:image/jpeg;base64,{b64}",
+            "frameCount": len(indices),
+            "firstSeenSec": round(float(all_timestamps[indices[0]]), 1),
+        })
+
+    logger.info(f"/extract-faces: {len(faces_out)} unique faces from {len(all_embeddings)} detections")
+    return {
+        "faces": faces_out,
+        "total_detections": len(all_embeddings),
+        "unique_faces": len(faces_out),
+    }
 
 # ─── Extract Faces from Video (Ground Truth Generation) ───────
 
@@ -651,76 +761,6 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
         "output_path": output_path
     }
 
-<<<<<<< HEAD
-# ─── Extract Faces for Ground Truth Tagging ───────────────────
-
-@app.post("/extract-faces")
-def extract_faces_for_tagging(req: ExtractFacesRequest):
-    """
-    Extracts unique face clusters from a video and returns them as base64 images.
-    Used by Ground Truth Generation page — returns faces for manual roll-number tagging.
-    Does NOT compare against the embeddings DB.
-    """
-    if not os.path.exists(req.videoPath):
-        raise HTTPException(status_code=404, detail=f"Video not found: {req.videoPath}")
-    if face_app is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-
-    # Step 1+2: Extract all face embeddings + crops from video
-    all_embeddings, all_face_images, all_timestamps = extract_all_faces(
-        req.videoPath, face_app, req.frame_skip
-    )
-
-    if not all_embeddings:
-        return {"faces": [], "total_detections": 0, "unique_faces": 0}
-
-    # Step 3: Cluster to find unique people
-    labels, unique_labels = cluster_faces(
-        all_embeddings, req.cluster_threshold, req.min_samples
-    )
-
-    faces_out = []
-
-    for cluster_id in unique_labels:
-        indices = np.where(labels == cluster_id)[0]
-
-        # Pick the largest face crop from this cluster as the representative image
-        best_idx = max(indices, key=lambda i: (
-            all_face_images[i].shape[0] * all_face_images[i].shape[1]
-            if all_face_images[i].size > 0 else 0
-        ))
-
-        face_img = all_face_images[best_idx]
-        if face_img.size == 0:
-            continue
-
-        # Encode to base64 JPEG
-        success, buffer = cv2.imencode('.jpg', face_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
-        if not success:
-            continue
-
-        b64 = base64.b64encode(buffer.tobytes()).decode('utf-8')
-
-        faces_out.append({
-            "id": f"cluster_{cluster_id}",
-            "imageData": f"data:image/jpeg;base64,{b64}",
-            "frameCount": len(indices),
-            "firstSeenSec": round(float(all_timestamps[indices[0]]), 1),
-        })
-
-    logger.info(
-        f"/extract-faces: {len(faces_out)} unique faces found "
-        f"from {len(all_embeddings)} total detections"
-    )
-
-    return {
-        "faces": faces_out,
-        "total_detections": len(all_embeddings),
-        "unique_faces": len(faces_out),
-    }
-
-# ─── Process Video with Clustering ────────────────────────────
-=======
 # ─── Clustering ───────────────────────────────────────────────
 
 class ClusterRequest(BaseModel):
@@ -732,7 +772,6 @@ class ClusterRequest(BaseModel):
     review_threshold: float = 0.40
     output_dir: str = "./clustering_output"
     roll_list: List[str] = []
->>>>>>> main
 
 @app.post("/process-video-clustering")
 def process_video_clustering(req: ClusterRequest):
@@ -759,11 +798,7 @@ def process_video_clustering(req: ClusterRequest):
         output_base_dir=req.output_dir
     )
 
-<<<<<<< HEAD
-    # if roll list provided, compare against it
-=======
     # If roll list provided, compare against it
->>>>>>> main
     if req.roll_list:
         roll_list = [r.strip().upper() for r in req.roll_list]
         comparison = []
