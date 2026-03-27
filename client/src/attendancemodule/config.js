@@ -5,7 +5,6 @@ import getEnvironment from '../getenvironment';
 const apiUrl = getEnvironment();
 const API_BASE = `${apiUrl}/attendancemodule/ground-truth`;
 const TIMETABLE_API = `${apiUrl}/timetablemodule`;
-
 // Dropdown options matching NIT Jalandhar structure
 const DEGREES = ['BTECH', 'MTECH', 'BSC', 'MSC', 'PHD'];
 const DEPARTMENTS = ['CSE', 'ECE', 'EE', 'ME', 'CE', 'ICE', 'IPE', 'IT', 'BT', 'TT', 'CHE', 'PHY', 'CHEM', 'MATH', 'HUM'];

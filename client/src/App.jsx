@@ -190,11 +190,15 @@ import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
 import LinearRegression from './mlcoursemodule/linearregression.jsx';
 
 //import for ml project of face recognition and attendance system
-import MLDashboard from './ml/MLDashboard';
-
-//import faculty rankings
-import FacultyDashboard from './instituterankings/facultydashboard.jsx';
-import Logs from './timetableadmin/logs.jsx';
+import DashboardLayout from './ml/dashboard/layouts/DashboardLayout';
+import Overview from './ml/dashboard/pages/Overview';
+import LiveMonitor from './ml/dashboard/pages/LiveMonitor';
+import CameraNetwork from './ml/dashboard/pages/CameraNetwork';
+import Students from './ml/dashboard/pages/Students';
+import Attendance from './ml/dashboard/pages/Attendance';
+import Analytics from './ml/dashboard/pages/Analytics';
+import Alerts from './ml/dashboard/pages/Alerts';
+import Settings from './ml/dashboard/pages/Settings';
 
 // ─── Attendance Module Imports ────────────────────────────────────
 import GroundTruthGen from './attendancemodule/groundtruthgen';
@@ -202,6 +206,7 @@ import NamingGroundTruth from './attendancemodule/NamingGroundTruth';
 import EditGroundTruth from './attendancemodule/editgroundtruth';
 import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
+import LiveAttendance from './attendancemodule/LiveAttendance';
 
 function App() {
   return (
@@ -601,6 +606,18 @@ function App() {
         <Route path="/ml/t1" element={<LinearRegression />} />
         <Route path="/ml" element={<MLDashboard />} />
 
+        {/* ─── Admin Dashboard Module ────────────────────────────── */}
+        <Route path="/ams/dashboard" element={<DashboardLayout />}>
+          <Route index element={<Overview />} />
+          <Route path="live" element={<LiveMonitor />} />
+          <Route path="network" element={<CameraNetwork />} />
+          <Route path="students" element={<Students />} />
+          <Route path="attendance" element={<Attendance />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="alerts" element={<Alerts />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+
         {/* ─── Attendance Module Routes ──────────────────────────── */}
         <Route path="/attendance">
           <Route path="groundtruth/generate" element={<GroundTruthGen />} />
@@ -608,6 +625,7 @@ function App() {
           <Route path="groundtruth/edit" element={<EditGroundTruth />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
+          <Route path="live" element={<LiveAttendance />} />
         </Route>
 
       </Routes>
