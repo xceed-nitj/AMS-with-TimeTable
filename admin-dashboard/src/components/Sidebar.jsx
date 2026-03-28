@@ -6,27 +6,27 @@ import {
 
 const navItems = [
   { group: 'DASHBOARD', items: [
-    { to: '', icon: LayoutDashboard, label: 'Overview' },
+    { to: '/overview', icon: LayoutDashboard, label: 'Overview' },
   ]},
   { group: 'SURVEILLANCE', items: [
-    { to: 'live', icon: Eye, label: 'Live Monitor' },
-    { to: 'network', icon: Link2, label: 'Camera Network' },
+    { to: '/live-monitor', icon: Eye, label: 'Live Monitor' },
+    { to: '/camera-network', icon: Link2, label: 'Camera Network' },
   ]},
   { group: 'PEOPLE', items: [
-    { to: 'students', icon: Users, label: 'Students' },
+    { to: '/students', icon: Users, label: 'Students' },
   ]},
   { group: 'RECORDS', items: [
-    { to: 'attendance', icon: ClipboardList, label: 'Attendance' },
+    { to: '/attendance', icon: ClipboardList, label: 'Attendance' },
   ]},
   { group: 'INSIGHTS', items: [
-    { to: 'analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   ]},
   { group: 'MODELS', items: [
-    { to: 'ground-truth', icon: FileVideo, label: 'Ground Generation' },
+    { to: '/ground-truth', icon: FileVideo, label: 'Ground Generation' },
   ]},
   { group: 'SYSTEM', items: [
-    { to: 'alerts', icon: Bell, label: 'Alerts', badge: 11 },
-    { to: 'settings', icon: Settings, label: 'Settings' },
+    { to: '/alerts', icon: Bell, label: 'Alerts', badge: 11 },
+    { to: '/settings', icon: Settings, label: 'Settings' },
   ]},
 ]
 

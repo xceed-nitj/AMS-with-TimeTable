@@ -189,7 +189,12 @@ import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
 //import machine learning modules
 import LinearRegression from './mlcoursemodule/linearregression.jsx';
 
+//import faculty rankings
+import FacultyDashboard from './instituterankings/facultydashboard.jsx';
+import Logs from './timetableadmin/logs.jsx';
+
 //import for ml project of face recognition and attendance system
+import MLDashboard from './ml/MLDashboard';
 import DashboardLayout from './ml/dashboard/layouts/DashboardLayout';
 import Overview from './ml/dashboard/pages/Overview';
 import LiveMonitor from './ml/dashboard/pages/LiveMonitor';
@@ -198,7 +203,8 @@ import Students from './ml/dashboard/pages/Students';
 import Attendance from './ml/dashboard/pages/Attendance';
 import Analytics from './ml/dashboard/pages/Analytics';
 import Alerts from './ml/dashboard/pages/Alerts';
-import Settings from './ml/dashboard/pages/Settings';
+import DashboardSettings from './ml/dashboard/pages/Settings';
+import GroundTruth from './ml/dashboard/pages/GroundTruth';
 
 // ─── Attendance Module Imports ────────────────────────────────────
 import GroundTruthGen from './attendancemodule/groundtruthgen';
@@ -615,7 +621,8 @@ function App() {
           <Route path="attendance" element={<Attendance />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="alerts" element={<Alerts />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="settings" element={<DashboardSettings />} />
+          <Route path="ground-truth" element={<GroundTruth />} />
         </Route>
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
