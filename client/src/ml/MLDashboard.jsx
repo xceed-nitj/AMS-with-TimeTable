@@ -6,10 +6,11 @@ import {
   Badge, Flex, Table, Thead, Tbody, Tr, Th, Td,
   TableContainer, IconButton, Card, CardBody,
   CardHeader, SimpleGrid, Input, FormControl,
-  FormLabel, Select, Tooltip, Divider, Avatar, Image
+  FormLabel, Select, Tooltip, Divider, Avatar, Image,
+  Progress, List, ListItem, ListIcon
 } from "@chakra-ui/react";
 import { Button } from "@chakra-ui/button";
-import { ArrowBackIcon, CheckIcon, CloseIcon, RepeatIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon, CheckIcon, CloseIcon, RepeatIcon, TimeIcon } from "@chakra-ui/icons";
 import { useToast } from "@chakra-ui/react";
 import Header from "../components/header";
 
@@ -42,6 +43,12 @@ function MLDashboard() {
   const [result, setResult] = useState(null);
   const [filter, setFilter] = useState("all");
   const [manualApprovals, setManualApprovals] = useState({});
+
+  // ── Live Progress State ──
+  const [progressStage, setProgressStage] = useState(null);   // "extracting" | "clustering" | "identifying" | "done"
+  const [progressData, setProgressData] = useState(null);     // { frame, totalFrames, facesFound, progress, elapsedSec, etaSec }
+  const [progressLog, setProgressLog] = useState([]);         // array of { time, message, stage }
+  const progressLogRef = useRef(null);
 
   // ── Fetch service status every 5s ──
   const fetchStatus = async () => {
@@ -124,7 +131,7 @@ function MLDashboard() {
     setRollLoading(false);
   };
 
-  // ── Cluster Attendance ──
+  // ── Cluster Attendance (SSE streaming) ──
   const handleCluster = async () => {
     if (!videoPath) {
       toast({ position: "bottom", title: "Enter video path", status: "error", duration: 2000, isClosable: true });
@@ -133,6 +140,23 @@ function MLDashboard() {
     setClusterLoading(true);
     setManualApprovals({});
     setResult(null);
+    setProgressStage("start");
+    setProgressData(null);
+    setProgressLog([]);
+
+    const addLog = (message, stage) => {
+      const entry = { time: new Date().toLocaleTimeString(), message, stage };
+      setProgressLog(prev => {
+        const next = [...prev, entry];
+        return next.slice(-20); // keep last 20 entries
+      });
+      // auto-scroll log
+      setTimeout(() => {
+        if (progressLogRef.current)
+          progressLogRef.current.scrollTop = progressLogRef.current.scrollHeight;
+      }, 50);
+    };
+
     try {
       const formData = new FormData();
       formData.append("videoPath", videoPath);
@@ -142,19 +166,63 @@ function MLDashboard() {
       formData.append("clusterThreshold", 0.45);
       formData.append("minSamples", 2);
 
-      const res = await axios.post(
-        `${apiUrl}/api/v1/ml/process-clustering`, formData,
-        { withCredentials: true, headers: { "Content-Type": "multipart/form-data" } }
+      const response = await fetch(
+        `${apiUrl}/api/v1/ml/process-clustering-stream`,
+        { method: "POST", body: formData, credentials: "include" }
       );
-      setResult(res.data);
-      toast({
-        position: "bottom",
-        title: "Clustering Done! 🧠",
-        description: `Present: ${res.data.summary.present} | Review: ${res.data.summary.review} | Absent: ${res.data.summary.absent} | Unknown: ${res.data.summary.unknown_faces}`,
-        status: "success", duration: 5000, isClosable: true,
-      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const reader  = response.body.getReader();
+      const decoder = new TextDecoder();
+      let   buffer  = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop(); // keep incomplete last chunk
+
+        for (const chunk of chunks) {
+          const dataLine = chunk.split("\n").find(l => l.startsWith("data: "));
+          if (!dataLine) continue;
+          let data;
+          try { data = JSON.parse(dataLine.slice(6)); } catch { continue; }
+
+          if (data.type === "error") {
+            toast({ position: "bottom", title: "Processing Error", description: data.message, status: "error", duration: 5000, isClosable: true });
+            addLog(`❌ ${data.message}`, "error");
+            setProgressStage("error");
+
+          } else if (data.type === "stage") {
+            setProgressStage(data.stage);
+            addLog(`▶ ${data.message}`, data.stage);
+
+          } else if (data.type === "progress") {
+            setProgressData(data);
+            addLog(`⏳ ${data.message}`, data.stage);
+
+          } else if (data.type === "done") {
+            setResult(data.result);
+            setProgressStage("done");
+            addLog(`✅ ${data.message}`, "done");
+            const s = data.result?.summary || {};
+            toast({
+              position: "bottom",
+              title: "Clustering Done! 🧠",
+              description: `Present: ${s.present} | Review: ${s.review} | Absent: ${s.absent} | Unknown: ${s.unknown_faces}`,
+              status: "success", duration: 5000, isClosable: true,
+            });
+          }
+        }
+      }
     } catch (e) {
-      toast({ position: "bottom", title: "Error", description: e.response?.data?.error || e.message, status: "error", duration: 3000, isClosable: true });
+      toast({ position: "bottom", title: "Error", description: e.message, status: "error", duration: 3000, isClosable: true });
+      setProgressStage("error");
     }
     setClusterLoading(false);
   };
@@ -540,13 +608,108 @@ function MLDashboard() {
                 <Button
                   colorScheme="purple" size="lg"
                   isLoading={clusterLoading}
-                  loadingText="Clustering faces..."
+                  loadingText="Processing..."
                   onClick={handleCluster}
                   _hover={{ transform: "translateY(-2px)", boxShadow: "lg" }}
                   transition="all 0.2s"
                 >
                   🧠 Process Video (Cluster Mode)
                 </Button>
+
+                {/* ── Live Progress Panel ── */}
+                {clusterLoading && progressStage && progressStage !== "done" && (
+                  <Box
+                    bg="gray.900" borderRadius="xl" p={4}
+                    border="1px" borderColor="purple.500"
+                  >
+                    {/* Stage indicator */}
+                    <HStack mb={3} spacing={3}>
+                      <Box w={3} h={3} borderRadius="full" bg="purple.400"
+                        animation="pulse 1.5s infinite" />
+                      <Text color="purple.300" fontWeight="bold" fontSize="sm">
+                        {{
+                          start:       "🚀 Starting...",
+                          extracting:  "🎞 Extracting faces from video",
+                          clustering:  "🔵 Clustering face embeddings",
+                          identifying: "🔍 Identifying people",
+                          saving:      "💾 Saving cluster images",
+                        }[progressStage] || `⚙ ${progressStage}`}
+                      </Text>
+                    </HStack>
+
+                    {/* Progress bar — only shown during extraction */}
+                    {progressStage === "extracting" && progressData?.progress != null && (
+                      <Box mb={3}>
+                        <HStack justify="space-between" mb={1}>
+                          <Text color="gray.400" fontSize="xs">
+                            Frame {(progressData.frame || 0).toLocaleString()} / {(progressData.total_frames || 0).toLocaleString()}
+                          </Text>
+                          <HStack spacing={3}>
+                            <Text color="green.300" fontSize="xs">
+                              {progressData.faces_found} faces found
+                            </Text>
+                            <Text color="gray.400" fontSize="xs">
+                              {progressData.elapsed_sec}s elapsed
+                            </Text>
+                            {progressData.eta_sec != null && (
+                              <Text color="yellow.300" fontSize="xs">
+                                ~{Math.round(progressData.eta_sec)}s left
+                              </Text>
+                            )}
+                          </HStack>
+                        </HStack>
+                        <Progress
+                          value={progressData.progress}
+                          colorScheme="purple" size="sm"
+                          borderRadius="full" hasStripe isAnimated
+                        />
+                        <Text color="gray.500" fontSize="xs" mt={1} textAlign="right">
+                          {progressData.progress}%
+                        </Text>
+                      </Box>
+                    )}
+
+                    {/* Stats row for non-extraction stages */}
+                    {progressStage !== "extracting" && progressData && (
+                      <HStack spacing={4} mb={3}>
+                        <Badge colorScheme="green">{progressData.faces_found} faces</Badge>
+                        <Badge colorScheme="blue">{progressData.elapsed_sec}s elapsed</Badge>
+                      </HStack>
+                    )}
+
+                    {/* Scrollable log */}
+                    <Box
+                      ref={progressLogRef}
+                      maxH="150px" overflowY="auto"
+                      bg="black" borderRadius="md" p={2}
+                      fontFamily="mono" fontSize="xs"
+                    >
+                      {progressLog.map((entry, i) => (
+                        <HStack key={i} spacing={2} align="start" py="1px">
+                          <Text color="gray.600" flexShrink={0}>{entry.time}</Text>
+                          <Text color={
+                            entry.stage === "error"      ? "red.300" :
+                            entry.stage === "done"       ? "green.300" :
+                            entry.stage === "extracting" ? "cyan.300" :
+                            entry.stage === "clustering" ? "blue.300" :
+                            "gray.300"
+                          }>
+                            {entry.message}
+                          </Text>
+                        </HStack>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Final summary after done */}
+                {progressStage === "done" && progressLog.length > 0 && !clusterLoading && (
+                  <Box bg="green.50" border="1px" borderColor="green.300" borderRadius="lg" p={3}>
+                    <Text fontSize="sm" fontWeight="bold" color="green.700">
+                      ✅ {progressLog[progressLog.length - 1]?.message}
+                    </Text>
+                  </Box>
+                )}
 
                 {result?.output_dir && (
                   <Box bg="purple.50" border="1px" borderColor="purple.300" borderRadius="lg" p={3}>

@@ -1,20 +1,17 @@
-const User = require("../../../models/usermanagement/user");
+require("dotenv").config(); // must be first — loads .env before any process.env reads
 
+const User = require("../../../models/usermanagement/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.JWT_SECRET;
 
 const OTP = require("../../../models/usermanagement/otp");
 const otpGenerator = require("otp-generator");
-const dotenv = require("dotenv"); // Corrected import
 const fs = require("fs");
 const ejs = require("ejs");
-// const mailSender = require("./mailsender");
 const path = require("path");
 const ejsTemplatePath = path.join(__dirname, "otpbody.ejs");
 const mailSender = require("../../mailsender");
-// const ejsTemplatePath = path.join(__dirname, "otpBody.ejs");
-dotenv.config();
 
 exports.register = async (req, res, next) => {
   const { email, password, roles } = req.body;
