@@ -9,8 +9,7 @@ const { sendMail } = require("../../mailerModule/mailer.js"); // Importing the s
 const getEnvironmentURL =require('../../../getEnvironmentURL.js')
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const jwtSecret =
-  "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
+const jwtSecret = process.env.JWT_SECRET;
 const DefaultQuestion=require("../../../models/reviewModule/defaultQuestion.js");
 const ReviewQuestion=require("../../../models/reviewModule/reviewQuestion.js");
 const DefaultTemplate=require("../../../models/reviewModule/defaultTemplate.js")
@@ -309,7 +308,7 @@ const addReviewer = async (req, res) => {
       // If reviewer does not exist, create a new one
       try {
           // Hash the password
-          const password = "1234";
+          const password = require("crypto").randomBytes(8).toString("hex");
         const hash = await bcrypt.hash(password, 10);
         
         // Create the user with the hashed password

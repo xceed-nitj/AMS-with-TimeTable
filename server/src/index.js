@@ -6,7 +6,26 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const axios = require("axios");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const v1router = require("./routes");
+
+// Security headers
+app.use(helmet({ contentSecurityPolicy: false }));
+
+// Rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: { message: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/v1/users/login", authLimiter);
+app.use("/api/v1/users/register", authLimiter);
+app.use("/users/login", authLimiter);
+app.use("/users/register", authLimiter);
+
 // CORS configuration
 app.use(
   cors({

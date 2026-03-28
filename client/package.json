@@ -75,7 +75,8 @@
     "vfs": "^0.2.2",
     "xlsx": "^0.18.5",
     "xlsx-populate": "^1.21.0",
-    "yup": "^1.4.0"
+    "yup": "^1.4.0",
+    "dompurify": ">=3.0.0"
   },
   "devDependencies": {
     "@types/katex": "^0.16.7",
