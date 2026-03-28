@@ -156,6 +156,48 @@ class GroundTruthController {
         }
     }
 
+    // ─── Extract + auto-save to serial folders (no roll-no needed) ──
+    async extractAndSaveToFolders(req, res) {
+        try {
+            const { videoLink, batch, frameSkip, minImages, detSize, matchThreshold } = req.body;
+            if (!videoLink || !batch) {
+                return res.status(400).json({ error: 'videoLink and batch required' });
+            }
+
+            let videoPath = videoLink.trim().replace(/^["']+|["']+$/g, '').trim();
+
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.flushHeaders();
+
+            const response = await axios.post(
+                `${ML_SERVICE_URL}/extract-save-ground-truth`,
+                {
+                    videoPath,
+                    batchName:       batch,
+                    frame_skip:      parseInt(frameSkip)     || 5,
+                    min_images:      parseInt(minImages)     || 10,
+                    det_size:        parseInt(detSize)       || 320,
+                    match_threshold: parseFloat(matchThreshold) || 0.55,
+                },
+                { responseType: 'stream', timeout: 0 }
+            );
+
+            response.data.pipe(res);
+            response.data.on('end',   () => res.end());
+            response.data.on('error', (err) => {
+                res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
+                res.end();
+            });
+
+        } catch (err) {
+            console.error('extractAndSaveToFolders error:', err.code, err.response?.data);
+            res.write(`data: ${JSON.stringify({ type: 'error', message: mlError(err) })}\n\n`);
+            res.end();
+        }
+    }
+
     // ─── Save tagged faces (Page 1 → faces renamed to roll numbers) ──
     async saveTaggedFaces(req, res) {
         try {

@@ -191,6 +191,35 @@ router.post('/process-with-rolllist', upload.single('rollList'), async (req, res
     }
 });
 
+// ─── Process Video Clustering — live SSE progress stream ─────
+router.post('/process-clustering-stream', upload.single('rollList'), async (req, res) => {
+    const {
+        videoPath, frameSkip, clusterThreshold,
+        minSamples, autoThreshold, reviewThreshold
+    } = req.body;
+
+    if (!videoPath) {
+        return res.status(400).json({ error: 'videoPath required' });
+    }
+
+    let rollList = [];
+    if (req.file) {
+        rollList = parseRollList(req.file.path);
+        fs.unlinkSync(req.file.path);
+    }
+
+    await pipeStream('process-video-clustering-stream', {
+        videoPath,
+        frame_skip:             parseInt(frameSkip)          || 10,
+        cluster_threshold:      parseFloat(clusterThreshold) || 0.45,
+        min_samples:            parseInt(minSamples)          || 2,
+        auto_present_threshold: parseFloat(autoThreshold)    || 0.60,
+        review_threshold:       parseFloat(reviewThreshold)  || 0.40,
+        roll_list:              rollList,
+        output_dir:             CLUSTERING_OUTPUT
+    }, res);
+});
+
 // ─── Process Video with Clustering ───────────────────────────
 router.post('/process-clustering', upload.single('rollList'), async (req, res) => {
     const {

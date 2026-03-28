@@ -7,7 +7,8 @@ import base64
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from clustering_service import process_video_with_clustering, extract_all_faces, cluster_faces
+from clustering_service import process_video_with_clustering, extract_all_faces, cluster_faces, process_video_cluster_only, identify_clusters
+from sklearn.cluster import DBSCAN as _DBSCAN
 from pydantic import BaseModel
 from typing import List
 import uvicorn
@@ -25,6 +26,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
 face_app = None
+current_det_size = 320
 embeddings_db = {}
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -95,12 +97,14 @@ else:
 
 # ─── Startup ──────────────────────────────────────────────────
 
-def load_model():
-    global face_app
+def load_model(det_size: int = 320):
+    global face_app, current_det_size
     from insightface.app import FaceAnalysis
-    logger.info("Loading InsightFace buffalo_s model (CPU)...")
+    # det_size=320 is ~4x faster on CPU; use 640 when faces are small/far
+    current_det_size = det_size
+    logger.info(f"Loading InsightFace buffalo_s model (CPU, det_size={det_size})...")
     face_app = FaceAnalysis(name="buffalo_s", providers=["CPUExecutionProvider"])
-    face_app.prepare(ctx_id=0, det_size=(640, 640))
+    face_app.prepare(ctx_id=0, det_size=(det_size, det_size))
     logger.info("Model loaded successfully.")
 
 def load_embeddings():
@@ -175,6 +179,23 @@ def reload_embeddings():
     load_embeddings()
     return {"status": "ok", "students_enrolled": len(embeddings_db)}
 
+# ─── Set Detection Size (front-end controlled) ────────────────
+
+class SetDetSizeRequest(BaseModel):
+    det_size: int = 320  # 320 = Fast, 640 = Accurate
+
+@app.post("/set-det-size")
+def set_det_size(req: SetDetSizeRequest):
+    if req.det_size not in (320, 640):
+        raise HTTPException(status_code=400, detail="det_size must be 320 or 640")
+    if req.det_size != current_det_size:
+        load_model(det_size=req.det_size)
+    return {"status": "ok", "det_size": current_det_size}
+
+@app.get("/det-size")
+def get_det_size():
+    return {"det_size": current_det_size}
+
 
 from fastapi.responses import StreamingResponse
 import json
@@ -184,33 +205,49 @@ def extract_faces_stream(req: ExtractFacesRequest):
     def generate():
         # Step 1: yield progress during frame extraction
         cap = cv2.VideoCapture(req.videoPath)
-        fps = cap.get(cv2.CAP_PROP_FPS) or 25
+        fps          = cap.get(cv2.CAP_PROP_FPS) or 25
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
+        vid_width    = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        MAX_WIDTH    = 640
+        scale        = min(1.0, MAX_WIDTH / vid_width) if vid_width > MAX_WIDTH else 1.0
+
         all_embeddings, all_face_images, all_timestamps = [], [], []
+        all_face_areas = []   # (h*w) for largest-face selection later
         frame_count = 0
 
         while True:
-            ret, frame = cap.read()
-            if not ret:
+            # grab() advances codec without decoding — fast skip for non-processed frames
+            if not cap.grab():
                 break
             frame_count += 1
             if frame_count % req.frame_skip != 0:
                 continue
 
+            ret, frame = cap.retrieve()
+            if not ret:
+                continue
+
+            # Downscale before detection — InsightFace resizes internally anyway
+            if scale < 1.0:
+                frame = cv2.resize(frame, None, fx=scale, fy=scale,
+                                   interpolation=cv2.INTER_LINEAR)
+
             faces = face_app.get(frame)
             for face in faces:
                 emb = face.embedding
                 norm = np.linalg.norm(emb)
-                if norm > 0:
-                    emb = emb / norm
+                if norm == 0:
+                    continue
+                emb = emb / norm
                 bbox = face.bbox.astype(int)
-                x1,y1,x2,y2 = max(0,bbox[0]),max(0,bbox[1]),min(frame.shape[1],bbox[2]),min(frame.shape[0],bbox[3])
+                x1 = max(0, bbox[0]); y1 = max(0, bbox[1])
+                x2 = min(frame.shape[1], bbox[2]); y2 = min(frame.shape[0], bbox[3])
                 crop = frame[y1:y2, x1:x2]
                 if crop.size > 0:
                     all_embeddings.append(emb)
                     all_face_images.append(crop)
-                    all_timestamps.append(round(frame_count/fps, 2))
+                    all_face_areas.append(crop.shape[0] * crop.shape[1])
+                    all_timestamps.append(round(frame_count / fps, 2))
 
             # Stream progress every 100 frames
             if frame_count % 100 == 0:
@@ -231,8 +268,8 @@ def extract_faces_stream(req: ExtractFacesRequest):
         # Step 3: yield final result with face images
         faces_out = []
         for cluster_id in unique_labels:
-            indices = np.where(labels == cluster_id)[0]
-            best_idx = max(indices, key=lambda i: all_face_images[i].shape[0]*all_face_images[i].shape[1] if all_face_images[i].size > 0 else 0)
+            indices  = np.where(labels == cluster_id)[0]
+            best_idx = max(indices, key=lambda i: all_face_areas[i])
             face_img = all_face_images[best_idx]
             if face_img.size == 0:
                 continue
@@ -277,10 +314,9 @@ def extract_faces_for_tagging(req: ExtractFacesRequest):
 
     faces_out = []
     for cluster_id in unique_labels:
-        indices = np.where(labels == cluster_id)[0]
+        indices  = np.where(labels == cluster_id)[0]
         best_idx = max(indices, key=lambda i: (
             all_face_images[i].shape[0] * all_face_images[i].shape[1]
-            if all_face_images[i].size > 0 else 0
         ))
         face_img = all_face_images[best_idx]
         if face_img.size == 0:
@@ -761,6 +797,451 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
         "output_path": output_path
     }
 
+# ─── Extract + Save Ground Truth (serial folders, no roll-no needed) ──
+
+class ExtractSaveGTRequest(BaseModel):
+    videoPath: str
+    batchName: str               # e.g. "BTECH_ECE_2023"
+    frame_skip: int = 5
+    cluster_threshold: float = 0.45
+    min_samples: int = 3
+    min_images: int = 10         # images to save per person
+    det_size: int = 320          # 320 = Fast, 640 = Accurate
+    match_threshold: float = 0.55  # cosine similarity to match existing folder (dedup)
+
+@app.post("/extract-save-ground-truth")
+def extract_save_ground_truth(req: ExtractSaveGTRequest):
+    """
+    Extract faces from video, cluster them, and save ≥min_images per
+    unique person to  ground_truth/{batchName}/person_001/ … person_NNN/
+    WITHOUT needing roll numbers — assign roll numbers later.
+    Streams SSE progress every 15 seconds.
+    """
+    def generate():
+        import time as _t
+        def sse(d): return f"data: {json.dumps(d)}\n\n"
+        EMIT = 15
+
+        if not os.path.exists(req.videoPath):
+            yield sse({"type": "error", "message": f"Video not found: {req.videoPath}"})
+            return
+        if face_app is None:
+            yield sse({"type": "error", "message": "Face model not loaded"})
+            return
+
+        # Reload model if det_size changed
+        if req.det_size != current_det_size:
+            yield sse({"type": "stage", "stage": "loading",
+                       "message": f"Reloading model with det_size={req.det_size}…"})
+            load_model(det_size=req.det_size)
+
+        batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batchName)
+        os.makedirs(batch_dir, exist_ok=True)
+
+        start     = _t.time()
+        yield sse({"type": "stage", "stage": "extracting",
+                   "message": f"Opening video → extracting faces (batch: {req.batchName}, det_size={req.det_size})…"})
+
+        # ── Extract (same optimised approach: grab/retrieve + resize) ──
+        cap          = cv2.VideoCapture(req.videoPath)
+        fps          = cap.get(cv2.CAP_PROP_FPS) or 25
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        vid_width    = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        scale        = min(1.0, 640 / vid_width) if vid_width > 640 else 1.0
+        duration_sec = round(total_frames / fps, 1)
+
+        yield sse({"type": "stage", "stage": "extracting",
+                   "message": f"Video: {duration_sec}s, {total_frames} frames, "
+                              f"processing every {req.frame_skip} frames",
+                   "total_frames": total_frames, "duration_sec": duration_sec})
+
+        all_embeddings, all_face_images, all_timestamps = [], [], []
+        frame_count = 0
+        last_emit   = _t.time()
+
+        while True:
+            if not cap.grab():
+                break
+            frame_count += 1
+            if frame_count % req.frame_skip != 0:
+                continue
+            ret, frame = cap.retrieve()
+            if not ret:
+                continue
+            if scale < 1.0:
+                frame = cv2.resize(frame, None, fx=scale, fy=scale,
+                                   interpolation=cv2.INTER_LINEAR)
+            for face in face_app.get(frame):
+                emb  = face.embedding
+                norm = np.linalg.norm(emb)
+                if norm == 0:
+                    continue
+                emb = emb / norm
+                bbox = face.bbox.astype(int)
+                x1 = max(0, bbox[0]); y1 = max(0, bbox[1])
+                x2 = min(frame.shape[1], bbox[2]); y2 = min(frame.shape[0], bbox[3])
+                crop = frame[y1:y2, x1:x2]
+                if crop.size > 0:
+                    all_embeddings.append(emb)
+                    all_face_images.append(crop)
+                    all_timestamps.append(round(frame_count / fps, 2))
+
+            now = _t.time()
+            if now - last_emit >= EMIT:
+                pct = round((frame_count / total_frames) * 100, 1) if total_frames else 0
+                yield sse({"type": "progress", "stage": "extracting",
+                           "frame": frame_count, "total_frames": total_frames,
+                           "faces_found": len(all_embeddings), "progress": pct,
+                           "elapsed_sec": round(now - start, 1),
+                           "message": f"Frame {frame_count:,}/{total_frames:,} ({pct}%) "
+                                      f"— {len(all_embeddings)} faces"})
+                last_emit = now
+
+        cap.release()
+        total_faces = len(all_embeddings)
+
+        if total_faces == 0:
+            yield sse({"type": "error", "message": "No faces detected in video"})
+            return
+
+        yield sse({"type": "stage", "stage": "clustering",
+                   "message": f"Extracted {total_faces} faces. Clustering…",
+                   "faces_found": total_faces,
+                   "elapsed_sec": round(_t.time() - start, 1)})
+
+        # ── Cluster ──
+        euclidean_eps = float(np.sqrt(2.0 * (1.0 - req.cluster_threshold)))
+        clustering    = _DBSCAN(
+            eps=euclidean_eps, min_samples=req.min_samples,
+            metric='euclidean', algorithm='ball_tree', n_jobs=-1
+        ).fit(np.array(all_embeddings))
+        labels        = clustering.labels_
+        unique_labels = sorted(set(labels) - {-1})
+
+        yield sse({"type": "stage", "stage": "saving",
+                   "message": f"Found {len(unique_labels)} unique people. Saving images…",
+                   "clusters_found": len(unique_labels),
+                   "elapsed_sec": round(_t.time() - start, 1)})
+
+        # ── Load mean embeddings for existing person folders (deduplication) ──
+        existing_person_dirs = sorted([
+            d for d in os.listdir(batch_dir)
+            if os.path.isdir(os.path.join(batch_dir, d)) and d.startswith("person_")
+        ])
+        existing_mean_embs = {}  # folder_name -> mean L2-normalised embedding
+
+        if existing_person_dirs:
+            yield sse({"type": "stage", "stage": "dedup",
+                       "message": f"Loading {len(existing_person_dirs)} existing folders for deduplication…"})
+            for folder_name in existing_person_dirs:
+                folder_path = os.path.join(batch_dir, folder_name)
+                img_files   = [f for f in os.listdir(folder_path)
+                               if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+                folder_embs = []
+                for img_file in img_files[:5]:   # up to 5 images is enough for a mean
+                    img = cv2.imread(os.path.join(folder_path, img_file))
+                    if img is None:
+                        continue
+                    faces = face_app.get(img)
+                    if faces:
+                        emb  = faces[0].embedding
+                        norm = np.linalg.norm(emb)
+                        if norm > 0:
+                            folder_embs.append(emb / norm)
+                if folder_embs:
+                    mean_emb = np.mean(folder_embs, axis=0)
+                    existing_mean_embs[folder_name] = mean_emb / np.linalg.norm(mean_emb)
+
+        # Next serial starts after ALL existing dirs (not just person_XXX)
+        all_existing = [d for d in os.listdir(batch_dir)
+                        if os.path.isdir(os.path.join(batch_dir, d))]
+        next_serial = len(all_existing) + 1
+
+        # ── Save ≥min_images per person; deduplicate against existing folders ──
+        saved_total = 0
+        for cluster_id in unique_labels:
+            indices = np.where(labels == cluster_id)[0]
+            n       = len(indices)
+
+            # Compute mean embedding for this cluster
+            cluster_embs = np.array([all_embeddings[i] for i in indices])
+            cluster_mean = np.mean(cluster_embs, axis=0)
+            cluster_mean = cluster_mean / np.linalg.norm(cluster_mean)
+
+            # Check if this cluster matches an existing person folder
+            best_folder = None
+            best_score  = 0.0
+            for fname, existing_emb in existing_mean_embs.items():
+                score = float(np.dot(cluster_mean, existing_emb))
+                if score > best_score:
+                    best_score = score
+                    best_folder = fname
+
+            if best_folder and best_score >= req.match_threshold:
+                # Append to existing folder (same person seen in different video)
+                folder = os.path.join(batch_dir, best_folder)
+                folder_label = f"{best_folder} (matched, score={best_score:.2f})"
+                # Update mean so later clusters in this run can also match
+                existing_mean_embs[best_folder] = cluster_mean
+            else:
+                # New person — create next serial folder
+                folder_name = f"person_{next_serial:03d}"
+                next_serial += 1
+                folder = os.path.join(batch_dir, folder_name)
+                os.makedirs(folder, exist_ok=True)
+                existing_mean_embs[folder_name] = cluster_mean
+                folder_label = f"new {folder_name}"
+
+            if n <= req.min_images:
+                chosen = list(indices)
+            else:
+                step   = n / req.min_images
+                chosen = [indices[int(i * step)] for i in range(req.min_images)]
+
+            for idx in chosen:
+                img = all_face_images[idx]
+                if img.size > 0:
+                    cv2.imwrite(
+                        os.path.join(folder, f"t{all_timestamps[idx]}s_f{idx}.jpg"),
+                        img
+                    )
+                    saved_total += 1
+
+            logger.info(f"[GT] cluster {cluster_id}: {n} detections → {folder_label}, "
+                        f"{len(chosen)} images")
+
+        elapsed = round(_t.time() - start, 2)
+        yield sse({"type": "done",
+                   "people_detected": len(unique_labels),
+                   "images_saved":    saved_total,
+                   "batch_dir":       batch_dir,
+                   "elapsed_sec":     elapsed,
+                   "message": f"Done in {elapsed}s — {len(unique_labels)} people detected, "
+                              f"{saved_total} images saved to {req.batchName}/"})
+
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# ─── Streaming Clustering (live SSE progress) ─────────────────
+
+class ClusterStreamRequest(BaseModel):
+    videoPath: str
+    frame_skip: int = 10
+    cluster_threshold: float = 0.45
+    min_samples: int = 2
+    auto_present_threshold: float = 0.60
+    review_threshold: float = 0.40
+    output_dir: str = "./clustering_output"
+    roll_list: List[str] = []
+
+@app.post("/process-video-clustering-stream")
+def process_video_clustering_stream(req: ClusterStreamRequest):
+    """
+    Full clustering pipeline with live SSE progress updates.
+    Emits a progress event every EMIT_INTERVAL seconds during face extraction,
+    plus instant stage-change events for clustering, identifying, and done.
+    """
+    def generate():
+        import time as _time
+
+        def sse(data: dict) -> str:
+            return f"data: {json.dumps(data)}\n\n"
+
+        EMIT_INTERVAL = 15  # seconds between progress updates
+
+        if not os.path.exists(req.videoPath):
+            yield sse({"type": "error", "message": f"Video not found: {req.videoPath}"})
+            return
+        if face_app is None:
+            yield sse({"type": "error", "message": "Face model not loaded"})
+            return
+        if not embeddings_db:
+            yield sse({"type": "error", "message": "No embeddings loaded. Build embeddings first."})
+            return
+
+        start = _time.time()
+        yield sse({"type": "stage", "stage": "start",
+                   "message": "Starting — opening video file..."})
+
+        # ── Step 1: Extract faces with periodic progress ──
+        cap = cv2.VideoCapture(req.videoPath)
+        fps          = cap.get(cv2.CAP_PROP_FPS) or 25
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        vid_width    = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        MAX_WIDTH    = 640
+        scale        = min(1.0, MAX_WIDTH / vid_width) if vid_width > MAX_WIDTH else 1.0
+
+        duration_sec = round(total_frames / fps, 1) if fps else 0
+        yield sse({"type": "stage", "stage": "extracting",
+                   "message": f"Extracting faces — video is {duration_sec}s "
+                              f"({total_frames} frames, processing every {req.frame_skip} frames)",
+                   "total_frames": total_frames, "duration_sec": duration_sec})
+
+        all_embeddings, all_face_images, all_timestamps = [], [], []
+        frame_count = 0
+        last_emit   = _time.time()
+
+        while True:
+            if not cap.grab():
+                break
+            frame_count += 1
+            if frame_count % req.frame_skip != 0:
+                continue
+
+            ret, frame = cap.retrieve()
+            if not ret:
+                continue
+
+            if scale < 1.0:
+                frame = cv2.resize(frame, None, fx=scale, fy=scale,
+                                   interpolation=cv2.INTER_LINEAR)
+
+            faces = face_app.get(frame)
+            timestamp = round(frame_count / fps, 2)
+
+            for face in faces:
+                emb  = face.embedding
+                norm = np.linalg.norm(emb)
+                if norm == 0:
+                    continue
+                emb = emb / norm
+                bbox = face.bbox.astype(int)
+                x1 = max(0, bbox[0]); y1 = max(0, bbox[1])
+                x2 = min(frame.shape[1], bbox[2]); y2 = min(frame.shape[0], bbox[3])
+                crop = frame[y1:y2, x1:x2]
+                if crop.size > 0:
+                    all_embeddings.append(emb)
+                    all_face_images.append(crop)
+                    all_timestamps.append(timestamp)
+
+            now = _time.time()
+            if now - last_emit >= EMIT_INTERVAL:
+                progress = round((frame_count / total_frames) * 100, 1) if total_frames else 0
+                elapsed  = round(now - start, 1)
+                eta      = round((elapsed / max(progress, 0.1)) * (100 - progress), 0) if progress > 0 else None
+                yield sse({
+                    "type":         "progress",
+                    "stage":        "extracting",
+                    "frame":        frame_count,
+                    "total_frames": total_frames,
+                    "faces_found":  len(all_embeddings),
+                    "progress":     progress,
+                    "elapsed_sec":  elapsed,
+                    "eta_sec":      eta,
+                    "message":      f"Frame {frame_count:,}/{total_frames:,} ({progress}%) "
+                                    f"— {len(all_embeddings)} faces found — {elapsed}s elapsed"
+                })
+                last_emit = now
+
+        cap.release()
+        total_faces = len(all_embeddings)
+        yield sse({
+            "type":        "stage",
+            "stage":       "clustering",
+            "message":     f"Extraction done — {total_faces} face detections. "
+                           f"Clustering into unique people...",
+            "faces_found": total_faces,
+            "elapsed_sec": round(_time.time() - start, 1)
+        })
+
+        if not all_embeddings:
+            yield sse({"type": "error", "message": "No faces detected in video"})
+            return
+
+        # ── Step 2: DBSCAN cluster ──
+        cosine_eps     = 1.0 - req.cluster_threshold
+        euclidean_eps  = float(np.sqrt(2.0 * cosine_eps))
+        embeddings_arr = np.array(all_embeddings)
+        clustering = _DBSCAN(
+            eps=euclidean_eps, min_samples=req.min_samples,
+            metric='euclidean', algorithm='ball_tree', n_jobs=-1
+        ).fit(embeddings_arr)
+        labels        = clustering.labels_
+        unique_labels = set(labels)
+        unique_labels.discard(-1)
+
+        yield sse({
+            "type":           "stage",
+            "stage":          "identifying",
+            "message":        f"Found {len(unique_labels)} unique face clusters. "
+                              f"Matching against {len(embeddings_db)} enrolled students...",
+            "clusters_found": len(unique_labels),
+            "elapsed_sec":    round(_time.time() - start, 1)
+        })
+
+        # ── Step 3+4: Identify + save images ──
+        video_name = os.path.splitext(os.path.basename(req.videoPath))[0]
+        output_dir = os.path.join(req.output_dir, video_name)
+
+        attendance, cluster_results = identify_clusters(
+            labels, unique_labels,
+            all_embeddings, all_face_images, all_timestamps,
+            embeddings_db, output_dir,
+            req.auto_present_threshold, req.review_threshold
+        )
+
+        elapsed = round(_time.time() - start, 2)
+        present = sum(1 for v in attendance.values() if v["status"] == "present")
+        review  = sum(1 for v in attendance.values() if v["status"] == "review")
+        absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
+        unknown = sum(1 for c in cluster_results   if c["status"] == "unknown")
+
+        result = {
+            "video":      req.videoPath,
+            "output_dir": output_dir,
+            "attendance": attendance,
+            "clusters":   cluster_results,
+            "summary": {
+                "total_faces_extracted": total_faces,
+                "unique_clusters_found": len(unique_labels),
+                "unknown_faces":         unknown,
+                "total_enrolled":        len(embeddings_db),
+                "present":               present,
+                "review":                review,
+                "absent":                absent,
+                "processing_time":       elapsed,
+            }
+        }
+
+        if req.roll_list:
+            roll_list  = [r.strip().upper() for r in req.roll_list]
+            comparison = []
+            for roll_no in roll_list:
+                if roll_no in attendance:
+                    a = attendance[roll_no]
+                    comparison.append({
+                        "roll_no": roll_no, "name": a["name"],
+                        "status": a["status"], "avg_confidence": a["avg_confidence"],
+                        "confidence_zone": a["confidence_zone"],
+                        "cluster_folder": a["cluster_folder"],
+                        "first_seen_sec": a["first_seen_sec"],
+                        "in_roll_list": True, "in_ml_db": True
+                    })
+                else:
+                    comparison.append({
+                        "roll_no": roll_no, "name": "Not Enrolled",
+                        "status": "not_enrolled", "avg_confidence": 0,
+                        "confidence_zone": "low", "cluster_folder": None,
+                        "first_seen_sec": None,
+                        "in_roll_list": True, "in_ml_db": False
+                    })
+            result["comparison"] = comparison
+
+        yield sse({
+            "type":    "done",
+            "result":  result,
+            "message": f"Completed in {elapsed}s — "
+                       f"Present: {present}  Review: {review}  Absent: {absent}  Unknown: {unknown}"
+        })
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
+
+
 # ─── Clustering ───────────────────────────────────────────────
 
 class ClusterRequest(BaseModel):
@@ -833,6 +1314,95 @@ def process_video_clustering(req: ClusterRequest):
         result["comparison"] = comparison
 
     return result
+
+# ─── Cluster-Only (no roll-number assignment needed) ──────────
+
+class ClusterOnlyRequest(BaseModel):
+    videoPath: str
+    frame_skip: int = 10
+    cluster_threshold: float = 0.45
+    min_samples: int = 2
+    min_images_per_cluster: int = 5
+    output_dir: str = "./clustering_output"
+
+@app.post("/cluster-only")
+def cluster_only(req: ClusterOnlyRequest):
+    """
+    Extract faces, cluster them, and save each cluster to a serial-numbered
+    folder (cluster_001, cluster_002, …) WITHOUT requiring roll numbers.
+    Roll numbers can be assigned later via /assign-rollno.
+    """
+    if not os.path.exists(req.videoPath):
+        raise HTTPException(status_code=404, detail=f"Video not found: {req.videoPath}")
+    if face_app is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    result = process_video_cluster_only(
+        video_path=req.videoPath,
+        face_app=face_app,
+        frame_skip=req.frame_skip,
+        cluster_threshold=req.cluster_threshold,
+        min_samples=req.min_samples,
+        min_images_per_cluster=req.min_images_per_cluster,
+        output_base_dir=req.output_dir,
+    )
+    return result
+
+
+class AssignRollNoRequest(BaseModel):
+    output_dir: str        # The video's cluster output directory
+    cluster_folder: str    # e.g., "cluster_001"
+    roll_no: str
+    name: str = ""
+
+@app.post("/assign-rollno")
+def assign_rollno(req: AssignRollNoRequest):
+    """
+    Assign a roll number to a serial cluster folder by renaming it.
+    Updates cluster_metadata.json in the same output_dir.
+    """
+    old_path = os.path.join(req.output_dir, req.cluster_folder)
+    if not os.path.exists(old_path):
+        raise HTTPException(status_code=404, detail=f"Cluster folder not found: {old_path}")
+
+    new_name = (
+        f"{req.roll_no}_{req.name.replace(' ', '_')}"
+        if req.name else req.roll_no
+    )
+    new_path = os.path.join(req.output_dir, new_name)
+
+    if os.path.exists(new_path):
+        raise HTTPException(status_code=409, detail=f"Folder already exists: {new_name}")
+
+    os.rename(old_path, new_path)
+
+    # Update metadata JSON
+    metadata_path = os.path.join(req.output_dir, "cluster_metadata.json")
+    if os.path.exists(metadata_path):
+        with open(metadata_path, "r") as f:
+            metadata = json.load(f)
+        for cluster in metadata.get("clusters", []):
+            if cluster["folder_name"] == req.cluster_folder:
+                cluster["folder_name"]   = new_name
+                cluster["roll_no"]       = req.roll_no
+                cluster["assigned_name"] = req.name
+                break
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f, indent=2)
+
+    logger.info(f"Assigned {req.roll_no} ({req.name}) → {req.cluster_folder} → {new_name}")
+    return {"status": "ok", "old_folder": req.cluster_folder, "new_folder": new_name}
+
+
+@app.get("/cluster-metadata")
+def get_cluster_metadata(output_dir: str):
+    """Return the cluster_metadata.json for a given output directory."""
+    metadata_path = os.path.join(output_dir, "cluster_metadata.json")
+    if not os.path.exists(metadata_path):
+        raise HTTPException(status_code=404, detail=f"No metadata found in: {output_dir}")
+    with open(metadata_path, "r") as f:
+        return json.load(f)
+
 
 # ─── Entry Point ──────────────────────────────────────────────
 

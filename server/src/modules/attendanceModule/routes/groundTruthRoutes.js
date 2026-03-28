@@ -46,7 +46,13 @@ router.get('/photo/:batch/:rollNo/:filename', async (req, res) => {
 
 // ─── Face Extraction from Video (Page 1) ──────────────────────────
 
-// Extract faces from video link
+// NEW: Extract + auto-save to person_001/… folders (no roll-no needed)
+router.post('/extract-and-save', async (req, res) => {
+    try { await controller.extractAndSaveToFolders(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Extract faces from video link (legacy — returns base64 to browser)
 router.post('/extract-faces', async (req, res) => {
     try { await controller.extractFaces(req, res); }
     catch (e) { res.status(500).json({ error: e.message }); }
