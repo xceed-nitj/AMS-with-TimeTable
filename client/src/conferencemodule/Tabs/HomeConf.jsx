@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import QuillBetterTable from "quill-better-table";
@@ -604,8 +605,8 @@ const HomeConf = () => {
                             </Heading>
                             <Box
                                 className="tw-prose tw-max-w-none tw-min-h-[100px] tw-p-2 tw-border tw-rounded tw-bg-gray-50"
-                                dangerouslySetInnerHTML={{ 
-                                    __html: about[activeAboutTab].description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>' 
+                                dangerouslySetInnerHTML={{
+                                    __html: DOMPurify.sanitize(about[activeAboutTab].description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>')
                                 }}
                             />
                         </Box>

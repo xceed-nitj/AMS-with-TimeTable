@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import DOMPurify from 'dompurify'
 import axios from 'axios'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Box, Heading, Text, VStack, IconButton, chakra, Spinner, useToast, Button, Flex } from '@chakra-ui/react'
@@ -173,7 +174,7 @@ const ViewQuestions = () => {
       </Flex>
 
       </Flex>
-      <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: question.question[0] }} />
+      <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.question[0]) }} />
       {question.options && question.options.length > 0 && (
         <VStack align="start" spacing={1} mt={2}>
           <Text fontWeight="semibold">Options:</Text>

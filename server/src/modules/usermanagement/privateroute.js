@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const getUserDetails = require("./controllers/dto");
-const jwtSecret =
-  "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab"; // Replace with your actual secret
+const jwtSecret = process.env.JWT_SECRET;
 
 // this route is for checking department timetable coordinators
 async function protectRoute(req, res, next) {

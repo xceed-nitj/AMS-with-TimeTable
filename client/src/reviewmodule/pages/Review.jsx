@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import axios from 'axios';
 import { Flex, Text, chakra, Heading, IconButton,
   Box,
@@ -328,7 +329,7 @@ const ReviewPage = () => {
             <Flex style={{boxSizing:'border-box', width: '100%'}}></Flex>
           </Flex>
           {/* <FormLabel><span dangerouslySetInnerHTML={{__html:question.question}} /></FormLabel> */}
-          <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: question.question }} />
+          <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.question) }} />
 
           <FormControl as="fieldset">
             {question.type.includes('Text') ? (

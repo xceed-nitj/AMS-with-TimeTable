@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import DOMPurify from "dompurify";
 import {
   Container,
   Heading,
@@ -273,7 +274,7 @@ const MessagesPage = () => {
                               color="gray.600"
                               noOfLines={2}
                               dangerouslySetInnerHTML={{
-                                __html: msg.content?.substring(0, 100) || ""
+                                __html: DOMPurify.sanitize(msg.content?.substring(0, 100) || "")
                               }}
                             />
                           </VStack>
@@ -336,7 +337,7 @@ const MessagesPage = () => {
 
               {/* Message content */}
               <Box
-                dangerouslySetInnerHTML={{ __html: selectedMessage?.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedMessage?.content || "") }}
                 sx={{
                   '& p': { mb: 3 },
                   '& ul, & ol': { ml: 6, mb: 3 },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -54,7 +55,7 @@ const LivePreviewSection = ({ title, html }) => {
             minH="100px"
             className="ql-editor"
           >
-            <Box as="div" dangerouslySetInnerHTML={{ __html: html }} />
+            <Box as="div" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />
           </Box>
         </VStack>
       </Box>
@@ -872,7 +873,7 @@ const CommonTemplate = () => {
                               </Text>
                               <Text fontSize="sm" color="gray.600">Featured: {template.feature ? "Yes" : "No"}</Text>
                               <Text fontSize="sm" color="gray.700" noOfLines={3}>
-                                <span dangerouslySetInnerHTML={{ __html: template.description?.substring(0, 150) + "..." || "No description" }} />
+                                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(template.description?.substring(0, 150) + "..." || "No description") }} />
                               </Text>
                             </VStack>
                             <Button colorScheme="green" size="sm" onClick={() => handleImportTemplate(template)}>

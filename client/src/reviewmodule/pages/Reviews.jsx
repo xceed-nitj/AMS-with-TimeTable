@@ -5,6 +5,7 @@ import { Heading, chakra, IconButton, Box, Container, Textarea, Text,
 } from '@chakra-ui/react'
 
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useNavigate, Link } from 'react-router-dom';
 
 import axios from 'axios';
@@ -76,7 +77,7 @@ function QuestionCards(props) {
                     <Flex style={{boxSizing:'border-box', width: '100%'}}></Flex>
                 </Flex>
                 {/* <FormLabel><span dangerouslySetInnerHTML={{__html:question.question}} /></FormLabel> */}
-                <span style={{ fontWeight: 'bold', padding:'5px' }} dangerouslySetInnerHTML={{ __html: question.question }} />
+                <span style={{ fontWeight: 'bold', padding:'5px' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.question) }} />
 
                 <FormControl as="fieldset">
                     {question.type.includes('Text') ? (

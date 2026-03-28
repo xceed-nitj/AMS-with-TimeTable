@@ -24,7 +24,7 @@ const addDoctor = async (req, res) => {
     }
 
     // First create a user with role "doctor"
-    const defaultPassword = '12345' // Default password
+    const defaultPassword = require('crypto').randomBytes(8).toString('hex')
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
     const newUser = new User({
@@ -245,9 +245,14 @@ const loginDoctor = async (req, res) => {
       return res.status(404).json({ message: 'Doctor not found.' })
     }
 
-    // Check if the password is correct
-    if (password !== '12345') {
-      // Assuming temporary password is "12345"
+    // Look up the associated user account to verify password via bcrypt
+    const user = await User.findById(doctor.userId)
+    if (!user) {
+      return res.status(404).json({ message: 'Associated user not found.' })
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) {
       return res.status(401).json({ message: 'Invalid password.' })
     }
 
