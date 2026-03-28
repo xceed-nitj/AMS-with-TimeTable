@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Eye, Link2, Users, ClipboardList,
   BarChart3, Bell, Settings, FileVideo
 } from 'lucide-react'
+import NitjLogo from './NitjLogo'
 
 const navItems = [
   { group: 'DASHBOARD', items: [
@@ -42,15 +43,11 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <div className="sidebar-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-          </svg>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 72 }}>
+          <NitjLogo size={72} />
         </div>
         <div>
-          <div className="sidebar-title">Integrated Campus<br/>Surveillance System (ICSS)</div>
-          <div className="sidebar-subtitle">ArcFace Engine</div>
+          <div className="sidebar-title" style={{ fontSize: '13px', lineHeight: '1.3' }}>NIT Jalandhar Centralised<br/>Surveillance System</div>
         </div>
       </div>
 
