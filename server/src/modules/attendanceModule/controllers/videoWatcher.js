@@ -85,7 +85,7 @@ async function processVideoFile(videoPath) {
                 auto_present_threshold: 0.60,
                 review_threshold:       0.40,
                 output_dir:             path.join(__dirname, '../clustering_output'),
-                roll_list:              rollList  // ← pass roll list here
+                roll_list:              rollList
             },
             { timeout: 600000 }
         );

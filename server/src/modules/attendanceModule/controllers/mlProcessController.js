@@ -3,8 +3,7 @@ const path = require('path');
 
 let pythonProcess = null;
 
-// python-ml-service is inside server/src/modules/ml/
-// controllers/ → ml/ → modules/ → src/ → server/ → ROOT → python-ml-service
+// attendanceModule/controllers/ → attendanceModule/ → modules/ → src/ → server/ → ROOT → python-ml-service
 const BASE = path.resolve(__dirname, '..', '..', '..', '..', '..', 'python-ml-service');
 
 const PYTHON_PATH = path.join(BASE, 'venv', 'Scripts', 'python.exe');

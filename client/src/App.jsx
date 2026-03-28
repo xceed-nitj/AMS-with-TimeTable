@@ -200,6 +200,8 @@ import Logs from './timetableadmin/logs.jsx';
 import GroundTruthGen from './attendancemodule/groundtruthgen';
 import NamingGroundTruth from './attendancemodule/NamingGroundTruth';
 import EditGroundTruth from './attendancemodule/editgroundtruth';
+import RollAssign from './attendancemodule/rollassign';
+import FlaggedAssign from './attendancemodule/flaggedassign';
 import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
 
@@ -604,6 +606,8 @@ function App() {
         {/* ─── Attendance Module Routes ──────────────────────────── */}
         <Route path="/attendance">
           <Route path="groundtruth/generate" element={<GroundTruthGen />} />
+          <Route path="groundtruth/assign" element={<RollAssign />} />
+          <Route path="groundtruth/flagged" element={<FlaggedAssign />} />
           <Route path="groundtruth/select" element={<NamingGroundTruth />} />
           <Route path="groundtruth/edit" element={<EditGroundTruth />} />
           <Route path="report" element={<Attendancedoc />} />

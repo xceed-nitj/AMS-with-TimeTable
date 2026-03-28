@@ -47,7 +47,7 @@ const diabeticsModule = require("./modules/diabeticsModule/routes/index");
 v1router.use("/diabeticsModule", diabeticsModule);
 
 // face recognition
-const mlRoutes = require("./modules/ml/routes/mlRoutes");
+const mlRoutes = require("./modules/attendanceModule/routes/mlRoutes");
 v1router.use("/ml", mlRoutes);
 
 module.exports = v1router;

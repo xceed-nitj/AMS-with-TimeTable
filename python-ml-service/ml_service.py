@@ -1,4 +1,5 @@
 import os
+import re
 import pickle
 import time
 import numpy as np
@@ -1021,6 +1022,114 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
 
     return StreamingResponse(generate(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# ─── Match Clusters to ERP Photos ────────────────────────────
+
+class MatchClustersRequest(BaseModel):
+    batch_dir: str        # absolute path to e.g. ground_truth/BTECH_CSE_2023/
+    erp_photos_dir: str   # absolute path to erp_photos/
+    top_k: int = 3        # return top-k candidates per cluster
+
+@app.post("/match-clusters-to-erp")
+def match_clusters_to_erp(req: MatchClustersRequest):
+    """
+    For each person_XXX folder in batch_dir:
+      - Compute mean embedding from stored face crops
+      - Compare against every ERP photo embedding
+      - Return top_k candidates with confidence scores
+    ERP photos must be named {rollNo}.jpg / .png / .jpeg
+    """
+    if face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+    if not os.path.isdir(req.batch_dir):
+        raise HTTPException(status_code=404, detail=f"batch_dir not found: {req.batch_dir}")
+    if not os.path.isdir(req.erp_photos_dir):
+        raise HTTPException(status_code=404, detail=f"erp_photos_dir not found: {req.erp_photos_dir}")
+
+    IMG_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
+
+    # ── Step 1: Build ERP embeddings ────────────────────────────
+    erp_embs = {}   # roll_no → {embedding, photo_filename}
+    for fname in sorted(os.listdir(req.erp_photos_dir)):
+        if not fname.lower().endswith(IMG_EXTS):
+            continue
+        roll_no = os.path.splitext(fname)[0]
+        img = cv2.imread(os.path.join(req.erp_photos_dir, fname))
+        if img is None:
+            continue
+        faces = face_app.get(img)
+        if not faces:
+            logger.warning(f"No face detected in ERP photo: {fname}")
+            continue
+        emb  = faces[0].embedding
+        norm = np.linalg.norm(emb)
+        if norm > 0:
+            erp_embs[roll_no] = {"embedding": emb / norm, "photo": fname}
+
+    logger.info(f"[ERP Match] Built embeddings for {len(erp_embs)} ERP students")
+
+    if not erp_embs:
+        raise HTTPException(status_code=400, detail="No faces detected in any ERP photo")
+
+    # Stack all ERP embeddings for fast matrix multiply
+    erp_rolls  = list(erp_embs.keys())
+    erp_matrix = np.array([erp_embs[r]["embedding"] for r in erp_rolls])  # (N, 512)
+
+    # ── Step 2: Match each person_XXX cluster ───────────────────
+    matches = {}
+    for folder_name in sorted(os.listdir(req.batch_dir)):
+        if not re.match(r"^person_\d+$", folder_name, re.IGNORECASE):
+            continue
+        folder_path = os.path.join(req.batch_dir, folder_name)
+        img_files   = [f for f in os.listdir(folder_path) if f.lower().endswith(IMG_EXTS)]
+
+        cluster_embs = []
+        for img_file in img_files[:10]:   # use up to 10 images for the mean
+            img = cv2.imread(os.path.join(folder_path, img_file))
+            if img is None:
+                continue
+            faces = face_app.get(img)
+            if faces:
+                emb  = faces[0].embedding
+                norm = np.linalg.norm(emb)
+                if norm > 0:
+                    cluster_embs.append(emb / norm)
+
+        if not cluster_embs:
+            matches[folder_name] = {"error": "no faces detected in cluster images"}
+            continue
+
+        mean_emb = np.mean(cluster_embs, axis=0)
+        mean_emb = mean_emb / np.linalg.norm(mean_emb)
+
+        # Cosine similarity with all ERP photos at once
+        scores  = erp_matrix @ mean_emb          # (N,)
+        top_idx = np.argsort(scores)[::-1][:req.top_k]
+
+        candidates = [
+            {
+                "rollNo":     erp_rolls[i],
+                "confidence": round(float(scores[i]), 4),
+                "erpPhoto":   erp_embs[erp_rolls[i]]["photo"],
+            }
+            for i in top_idx
+        ]
+
+        matches[folder_name] = {
+            "best":          candidates[0],
+            "candidates":    candidates,
+            "image_count":   len(img_files),
+            "preview_images": img_files[:6],
+        }
+        logger.info(f"[ERP Match] {folder_name} → {candidates[0]['rollNo']} "
+                    f"({candidates[0]['confidence']:.3f})")
+
+    return {
+        "matches":      matches,
+        "erp_students": len(erp_embs),
+        "clusters":     len(matches),
+    }
 
 
 # ─── Streaming Clustering (live SSE progress) ─────────────────

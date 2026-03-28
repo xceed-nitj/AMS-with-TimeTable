@@ -175,10 +175,10 @@ router.post('/process-with-rolllist', upload.single('rollList'), async (req, res
             `${ML_URL}/process-video-with-rolllist`,
             {
                 videoPath,
-                threshold:              parseFloat(threshold)    || 0.45,
-                frame_skip:             parseInt(frameSkip)       || 10,
+                threshold:              parseFloat(threshold)      || 0.45,
+                frame_skip:             parseInt(frameSkip)         || 10,
                 roll_list:              rollList,
-                auto_present_threshold: parseFloat(autoThreshold) || 0.60,
+                auto_present_threshold: parseFloat(autoThreshold)  || 0.60,
                 review_threshold:       parseFloat(reviewThreshold) || 0.40
             },
             { timeout: 600000 }
@@ -341,10 +341,10 @@ router.post('/build-embeddings', async (req, res) => {
 router.post('/download-dataset', async (req, res) => {
     const { outputDir, numStudents, minPhotos, enrollmentRatio } = req.body;
     await pipeStream('download-dataset', {
-        output_dir:       outputDir        || '../test-data',
-        num_students:     parseInt(numStudents)       || 20,
-        min_photos:       parseInt(minPhotos)         || 4,
-        enrollment_ratio: parseFloat(enrollmentRatio) || 0.6
+        output_dir:       outputDir                      || '../test-data',
+        num_students:     parseInt(numStudents)          || 20,
+        min_photos:       parseInt(minPhotos)            || 4,
+        enrollment_ratio: parseFloat(enrollmentRatio)   || 0.6
     }, res);
 });
 
@@ -355,8 +355,8 @@ router.post('/test-pipeline', async (req, res) => {
     await pipeStream('test-pipeline', {
         video_path:         videoPath,
         ground_truth_file:  groundTruthFile || '',
-        threshold:          parseFloat(threshold)  || 0.45,
-        frame_skip:         parseInt(frameSkip)     || 10
+        threshold:          parseFloat(threshold) || 0.45,
+        frame_skip:         parseInt(frameSkip)    || 10
     }, res);
 });
 
