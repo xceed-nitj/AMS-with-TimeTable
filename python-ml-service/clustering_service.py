@@ -32,6 +32,9 @@ def extract_all_faces(video_path, face_app, frame_skip=10):
         if frame_count % frame_skip != 0:
             continue
 
+        if frame_count % 100 == 0:
+            print(f"[Clustering] Processing frame {frame_count}, faces found so far: {len(all_embeddings)}")
+
         faces = face_app.get(frame)
         timestamp = frame_count / fps
 
@@ -55,7 +58,7 @@ def extract_all_faces(video_path, face_app, frame_skip=10):
                 all_timestamps.append(round(timestamp, 2))
 
     cap.release()
-    print(f"[Clustering] Extracted {len(all_embeddings)} faces total")
+    print(f"[Clustering] Extracted {len(all_embeddings)} faces from {frame_count} total frames (processed every {frame_skip} frames)")
     return all_embeddings, all_face_images, all_timestamps
 
 

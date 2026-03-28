@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import QuillBetterTable from "quill-better-table";
@@ -481,8 +482,8 @@ const Location = () => {
                                     <div 
                                         className="tw-min-h-[200px] tw-max-h-[300px] tw-p-4 tw-border tw-rounded tw-bg-gray-50 tw-overflow-auto"
                                         style={htmlPreviewStyles}
-                                        dangerouslySetInnerHTML={{ 
-                                            __html: formData.description || '<p style="color: #9CA3AF; font-style: italic;">Start typing in the description editor to see the live preview here...</p>' 
+                                        dangerouslySetInnerHTML={{
+                                            __html: DOMPurify.sanitize(formData.description || '<p style="color: #9CA3AF; font-style: italic;">Start typing in the description editor to see the live preview here...</p>')
                                         }}
                                     />
                                 </div>
@@ -574,8 +575,8 @@ const Location = () => {
                                 <div
                                     className="tw-min-h-[200px] tw-p-4 tw-border tw-rounded tw-bg-gray-50"
                                     style={htmlPreviewStyles}
-                                    dangerouslySetInnerHTML={{ 
-                                        __html: formData.description || '<p style="color: #9CA3AF; font-style: italic;">Description will appear here...</p>' 
+                                    dangerouslySetInnerHTML={{
+                                        __html: DOMPurify.sanitize(formData.description || '<p style="color: #9CA3AF; font-style: italic;">Description will appear here...</p>')
                                     }}
                                 />
                             </div>

@@ -10,8 +10,7 @@ const getEnvironmentURL =require('../../../getEnvironmentURL.js')
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const ExcelJS = require('exceljs');
-const jwtSecret =
-  "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
+const jwtSecret = process.env.JWT_SECRET;
 
 const app = express();
 app.use(
@@ -378,7 +377,7 @@ const removeReviewer = async (req,res)=>{
 
 const addAuthor = async (req, res) => {
   const { name, email, designation, eventId } = req.body;
-  const password = "1234"; // A random password could be used
+  const password = require("crypto").randomBytes(8).toString("hex");
   console.log("email: ", email, "\neventid: ",eventId);
 
   try {

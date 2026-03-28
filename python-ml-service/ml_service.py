@@ -3,10 +3,11 @@ import pickle
 import time
 import numpy as np
 import cv2
+import base64
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from clustering_service import process_video_with_clustering
+from clustering_service import process_video_with_clustering, extract_all_faces, cluster_faces
 from pydantic import BaseModel
 from typing import List
 import uvicorn
@@ -33,8 +34,9 @@ ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, '..'))
 
 DB_PATH = os.path.join(BASE_DIR, "embeddings_db.pkl")
 
+# Ground truth photos are stored by the Node server under server/ground_truth/
 CLIENT_GROUND_TRUTH = os.path.join(
-    ROOT_DIR, 'client', 'public', 'ground-truth'
+    ROOT_DIR, 'server', 'ground_truth'
 )
 
 logger.info(f"ROOT_DIR: {ROOT_DIR}")
@@ -74,11 +76,10 @@ class TestPipelineRequest(BaseModel):
     frame_skip: int = 10
 
 class ExtractFacesRequest(BaseModel):
-    videoUrl: str
-    degree: str
-    department: str
-    year: str
-    frame_skip: int = 10
+    videoPath: str
+    frame_skip: int = 5
+    cluster_threshold: float = 0.45
+    min_samples: int = 2
 
 # ─── Static Files (serve student photos) ─────────────────────
 
@@ -173,6 +174,134 @@ def enrolled_students():
 def reload_embeddings():
     load_embeddings()
     return {"status": "ok", "students_enrolled": len(embeddings_db)}
+
+
+from fastapi.responses import StreamingResponse
+import json
+
+@app.post("/extract-faces-stream")
+def extract_faces_stream(req: ExtractFacesRequest):
+    def generate():
+        # Step 1: yield progress during frame extraction
+        cap = cv2.VideoCapture(req.videoPath)
+        fps = cap.get(cv2.CAP_PROP_FPS) or 25
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        all_embeddings, all_face_images, all_timestamps = [], [], []
+        frame_count = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame_count += 1
+            if frame_count % req.frame_skip != 0:
+                continue
+
+            faces = face_app.get(frame)
+            for face in faces:
+                emb = face.embedding
+                norm = np.linalg.norm(emb)
+                if norm > 0:
+                    emb = emb / norm
+                bbox = face.bbox.astype(int)
+                x1,y1,x2,y2 = max(0,bbox[0]),max(0,bbox[1]),min(frame.shape[1],bbox[2]),min(frame.shape[0],bbox[3])
+                crop = frame[y1:y2, x1:x2]
+                if crop.size > 0:
+                    all_embeddings.append(emb)
+                    all_face_images.append(crop)
+                    all_timestamps.append(round(frame_count/fps, 2))
+
+            # Stream progress every 100 frames
+            if frame_count % 100 == 0:
+                progress = round((frame_count / total_frames) * 100, 1)
+                yield f"data: {json.dumps({'type':'progress','frame':frame_count,'faces':len(all_embeddings),'progress':progress})}\n\n"
+
+        cap.release()
+
+        # Step 2: yield clustering progress
+        yield f"data: {json.dumps({'type':'status','message':f'Clustering {len(all_embeddings)} faces...'})}\n\n"
+
+        if not all_embeddings:
+            yield f"data: {json.dumps({'type':'done','faces':[],'total_detections':0,'unique_faces':0})}\n\n"
+            return
+
+        labels, unique_labels = cluster_faces(all_embeddings, req.cluster_threshold, req.min_samples)
+
+        # Step 3: yield final result with face images
+        faces_out = []
+        for cluster_id in unique_labels:
+            indices = np.where(labels == cluster_id)[0]
+            best_idx = max(indices, key=lambda i: all_face_images[i].shape[0]*all_face_images[i].shape[1] if all_face_images[i].size > 0 else 0)
+            face_img = all_face_images[best_idx]
+            if face_img.size == 0:
+                continue
+            success, buffer = cv2.imencode('.jpg', face_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+            if not success:
+                continue
+            b64 = base64.b64encode(buffer.tobytes()).decode('utf-8')
+            faces_out.append({
+                "id": f"cluster_{cluster_id}",
+                "imageData": f"data:image/jpeg;base64,{b64}",
+                "frameCount": len(indices),
+                "firstSeenSec": round(float(all_timestamps[indices[0]]), 1),
+            })
+
+        yield f"data: {json.dumps({'type':'done','faces':faces_out,'total_detections':len(all_embeddings),'unique_faces':len(faces_out)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"}
+    )
+
+# ─── Extract Faces (non-streaming, called directly by browser) ────
+
+@app.post("/extract-faces")
+def extract_faces_for_tagging(req: ExtractFacesRequest):
+    if not os.path.exists(req.videoPath):
+        raise HTTPException(status_code=404, detail=f"Video not found: {req.videoPath}")
+    if face_app is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    all_embeddings, all_face_images, all_timestamps = extract_all_faces(
+        req.videoPath, face_app, req.frame_skip
+    )
+
+    if not all_embeddings:
+        return {"faces": [], "total_detections": 0, "unique_faces": 0}
+
+    labels, unique_labels = cluster_faces(
+        all_embeddings, req.cluster_threshold, req.min_samples
+    )
+
+    faces_out = []
+    for cluster_id in unique_labels:
+        indices = np.where(labels == cluster_id)[0]
+        best_idx = max(indices, key=lambda i: (
+            all_face_images[i].shape[0] * all_face_images[i].shape[1]
+            if all_face_images[i].size > 0 else 0
+        ))
+        face_img = all_face_images[best_idx]
+        if face_img.size == 0:
+            continue
+        success, buffer = cv2.imencode('.jpg', face_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if not success:
+            continue
+        b64 = base64.b64encode(buffer.tobytes()).decode('utf-8')
+        faces_out.append({
+            "id": f"cluster_{cluster_id}",
+            "imageData": f"data:image/jpeg;base64,{b64}",
+            "frameCount": len(indices),
+            "firstSeenSec": round(float(all_timestamps[indices[0]]), 1),
+        })
+
+    logger.info(f"/extract-faces: {len(faces_out)} unique faces from {len(all_embeddings)} detections")
+    return {
+        "faces": faces_out,
+        "total_detections": len(all_embeddings),
+        "unique_faces": len(faces_out),
+    }
 
 # ─── Extract Faces from Video (Ground Truth Generation) ───────
 

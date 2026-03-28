@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -175,7 +176,7 @@ const LivePreviewSection = ({ title, html }) => {
               }
             }}
           >
-            <div dangerouslySetInnerHTML={{ __html: html || '<p>No content available</p>' }} />
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html || '<p>No content available</p>') }} />
           </Box>
         </VStack>
       </Box>

@@ -6,8 +6,7 @@ const UserController = new userController();
 const { upload } = require("../helper/multer.helper");
 
 const jwt = require("jsonwebtoken");
-const jwtSecret =
-  "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
+const jwtSecret = process.env.JWT_SECRET;
 const { checkRole } = require("../../checkRole.middleware");
 
 const verifyToken = (req, res, next) => {

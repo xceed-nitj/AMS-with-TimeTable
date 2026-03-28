@@ -45,7 +45,7 @@ const addPatient = async (req, res) => {
         .json({ message: 'User with this email already exists' })
     }
 
-    const defaultPassword = '12345'
+    const defaultPassword = require('crypto').randomBytes(8).toString('hex')
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
     const newUser = new User({

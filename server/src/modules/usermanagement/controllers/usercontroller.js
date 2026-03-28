@@ -2,8 +2,7 @@ const User = require("../../../models/usermanagement/user");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const jwtSecret =
-  "ad8cfdfe03c3076a4acb369ec18fbfc26b28bc78577b64da02646cd7bd0fe9c7d97cab";
+const jwtSecret = process.env.JWT_SECRET;
 
 const OTP = require("../../../models/usermanagement/otp");
 const otpGenerator = require("otp-generator");
@@ -52,7 +51,7 @@ exports.register = async (req, res, next) => {
         });
 
         // Generate a JWT token
-        const maxAge = 3 * 60 * 60 * 60; // 3 hours in seconds
+        const maxAge = 3 * 60 * 60; // 3 hours in seconds
         const token = jwt.sign(
           { id: user._id, name: email, email: email, role: user.role },
           jwtSecret,
@@ -65,6 +64,8 @@ exports.register = async (req, res, next) => {
         res.cookie("jwt", token, {
           httpOnly: true,
           maxAge: maxAge * 1000,
+          secure: true,
+          sameSite: "none",
         });
 
         const otp = await sendOTP(email);
@@ -165,7 +166,7 @@ exports.login = async (req, res, next) => {
         // Set the JWT token as a cookie
         res.cookie("jwt", token, {
           httpOnly: true,
-          maxAge: maxAge * 10000,
+          maxAge: maxAge * 1000,
           // domain: "nitjtt.netlify.app",
           secure: true,
           sameSite: "none",

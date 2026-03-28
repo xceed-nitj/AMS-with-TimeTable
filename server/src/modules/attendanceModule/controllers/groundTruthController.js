@@ -9,6 +9,14 @@ const FormData = require('form-data');
 // Python ML service base URL
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
+// Helper: human-readable error from axios
+function mlError(err) {
+    if (err.code === 'ECONNREFUSED') {
+        return `Python ML service is not running at ${ML_SERVICE_URL}. Start it with: python ml_service.py`;
+    }
+    return err.response?.data?.detail || err.message || 'Unknown ML service error';
+}
+
 // Ground truth & embeddings directories (at server root level)
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
 const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
@@ -109,23 +117,42 @@ class GroundTruthController {
         }
     }
 
-    // ─── Extract faces from video via Python ──────────────────────
-    // Sends video link to FastAPI → returns array of unique face crops (base64)
+    // ─── Extract faces from video via Python (SSE streaming) ──────
     async extractFaces(req, res) {
         try {
             const { videoLink, batch } = req.body;
             if (!videoLink) {
                 return res.status(400).json({ error: 'videoLink is required' });
             }
+
+            let videoPath = videoLink.trim().replace(/^["']+|["']+$/g, '').trim();
+            console.log('[extractFaces] videoPath received:', videoPath);
+
+            // Set SSE headers
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.flushHeaders();
+
+            // Call Python with axios stream
             const response = await axios.post(
-                `${ML_SERVICE_URL}/extract-faces-from-video`,
-                { video_url: videoLink, batch },
-                { timeout: 300000 }
+                `${ML_SERVICE_URL}/extract-faces-stream`,
+                { videoPath, frame_skip: 5, cluster_threshold: 0.45, min_samples: 2 },
+                { responseType: 'stream', timeout: 0 }
             );
-            res.json(response.data);
+
+            // Pipe Python SSE stream directly to browser
+            response.data.pipe(res);
+            response.data.on('end', () => res.end());
+            response.data.on('error', (err) => {
+                res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
+                res.end();
+            });
+
         } catch (err) {
-            const msg = err.response?.data?.detail || err.message;
-            res.status(500).json({ error: msg });
+            console.error('extractFaces error:', err.code, err.response?.data);
+            res.write(`data: ${JSON.stringify({ type: 'error', message: mlError(err) })}\n\n`);
+            res.end();
         }
     }
 
@@ -264,14 +291,17 @@ class GroundTruthController {
             if (!batch) return res.status(400).json({ error: 'batch is required' });
 
             const response = await axios.post(
-                `${ML_SERVICE_URL}/generate-embeddings`,
-                { batch, ground_truth_dir: GROUND_TRUTH_DIR },
+                `${ML_SERVICE_URL}/build-embeddings-sync`,
+                {
+                    photos_dir: path.join(GROUND_TRUTH_DIR, batch),
+                    output_path: path.join(EMBEDDINGS_DIR, `${batch}.pkl`)
+                },
                 { timeout: 180000 }
             );
             res.json(response.data);
         } catch (err) {
-            const msg = err.response?.data?.detail || err.message;
-            res.status(500).json({ error: msg });
+            console.error('generateEmbeddings error:', err.code, err.response?.data);
+            res.status(500).json({ error: mlError(err) });
         }
     }
 
@@ -284,8 +314,16 @@ class GroundTruthController {
             }
 
             const response = await axios.post(
-                `${ML_SERVICE_URL}/run-attendance`,
-                { video_url: videoLink, batch, embeddings_dir: EMBEDDINGS_DIR },
+                `${ML_SERVICE_URL}/process-video-with-rolllist`,
+                {
+                    videoPath: videoLink.trim(),
+                    threshold: 0.45,
+                    frame_skip: 10,
+                    roll_list: [],
+                    auto_present_threshold: 0.6,
+                    review_threshold: 0.4,
+                    min_detections: 3
+                },
                 { timeout: 600000 }
             );
 
@@ -294,8 +332,8 @@ class GroundTruthController {
                 metadata: { room, date, timeSlot, faculty, subject, batch }
             });
         } catch (err) {
-            const msg = err.response?.data?.detail || err.message;
-            res.status(500).json({ error: msg });
+            console.error('runAttendance error:', err.code, err.response?.data);
+            res.status(500).json({ error: mlError(err) });
         }
     }
 }
