@@ -5,12 +5,15 @@ import { useState, useCallback, useRef } from 'react';
 import { API_BASE, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset } from './config';
 
 export default function GroundTruthGen() {
-    const [degree,     setDegree]     = useState('BTECH');
-    const [department, setDepartment] = useState('');
-    const [year,       setYear]       = useState('');
-    const [videoLink,  setVideoLink]  = useState('');
-    const [detSize,    setDetSize]    = useState(320);  // 320=Fast, 640=Accurate
-    const [frameSkip,  setFrameSkip]  = useState(10);   // process every N frames
+    const [degree,       setDegree]       = useState('BTECH');
+    const [department,   setDepartment]   = useState('');
+    const [year,         setYear]         = useState('');
+    const [videoLink,    setVideoLink]    = useState('');
+    const [detSize,      setDetSize]      = useState(320);   // 320=Fast, 640=Accurate
+    const [frameSkip,    setFrameSkip]    = useState(10);    // process every N frames
+    const [minFaceSize,  setMinFaceSize]  = useState(80);    // min bbox dimension (px)
+    const [lapThreshold, setLapThreshold] = useState(100);   // Laplacian blur threshold
+    const [topN,         setTopN]         = useState(10);    // max images saved per person
 
     const [extracting,   setExtracting]   = useState(false);
     const [progress,     setProgress]     = useState(0);
@@ -65,7 +68,11 @@ export default function GroundTruthGen() {
             const response = await fetch(`${API_BASE}/extract-and-save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ videoLink: videoLink.trim(), batch: batchName, detSize, frameSkip })
+                body: JSON.stringify({
+                    videoLink: videoLink.trim(), batch: batchName,
+                    detSize, frameSkip,
+                    minFaceSize, lapThreshold, topN,
+                })
             });
 
             if (!response.ok) {
@@ -123,7 +130,7 @@ export default function GroundTruthGen() {
         } finally {
             setExtracting(false);
         }
-    }, [batchName, videoLink, degree, department, year, detSize, frameSkip]);
+    }, [batchName, videoLink, degree, department, year, detSize, frameSkip, minFaceSize, lapThreshold, topN]);
 
     const stageLabel = {
         start:      '🚀 Starting…',
@@ -257,6 +264,128 @@ export default function GroundTruthGen() {
                     </div>
                 </div>
 
+                {/* Min face size */}
+                <div style={{ marginBottom: 20 }}>
+                    <label style={styles.label}>
+                        Min Face Size
+                        <span style={{ marginLeft: 6, fontSize: '11px', color: theme.textMuted, fontWeight: 400 }}>
+                            — skip faces smaller than this (unreliable embeddings)
+                        </span>
+                    </label>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                        {[
+                            { value: 0,   label: 'Off',     hint: 'No size filter' },
+                            { value: 60,  label: '60 px',   hint: 'Loose filter — allows distant faces' },
+                            { value: 80,  label: '80 px',   hint: 'Recommended — good quality threshold' },
+                            { value: 100, label: '100 px',  hint: 'Strict — only close-up faces' },
+                            { value: 120, label: '120 px',  hint: 'Very strict — frontrow only' },
+                        ].map(opt => (
+                            <button
+                                key={opt.value}
+                                onClick={() => setMinFaceSize(opt.value)}
+                                title={opt.hint}
+                                style={{
+                                    padding: '7px 14px', borderRadius: 6, cursor: 'pointer',
+                                    fontSize: '13px', fontWeight: 600, border: '1px solid',
+                                    borderColor: minFaceSize === opt.value ? theme.accent : theme.border,
+                                    background:  minFaceSize === opt.value ? theme.accentDim : 'transparent',
+                                    color:       minFaceSize === opt.value ? theme.accent : theme.textMuted,
+                                    transition:  'all 0.15s',
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 5 }}>
+                        {minFaceSize === 0   && 'No size filter — all detected faces included'}
+                        {minFaceSize === 60  && '60×60 px minimum — allows faces up to ~3–4 m away'}
+                        {minFaceSize === 80  && '80×80 px minimum — recommended for reliable embeddings'}
+                        {minFaceSize === 100 && '100×100 px minimum — close-up faces only'}
+                        {minFaceSize === 120 && '120×120 px minimum — front-row seats only'}
+                    </div>
+                </div>
+
+                {/* Blur / Laplacian threshold */}
+                <div style={{ marginBottom: 20 }}>
+                    <label style={styles.label}>
+                        Blur Filter (Laplacian Variance)
+                        <span style={{ marginLeft: 6, fontSize: '11px', color: theme.textMuted, fontWeight: 400 }}>
+                            — skip motion-blurred faces
+                        </span>
+                    </label>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                        {[
+                            { value: 0,   label: 'Off',    hint: 'No blur filter' },
+                            { value: 50,  label: 'Loose',  hint: 'Only remove very blurry frames' },
+                            { value: 100, label: 'Medium', hint: 'Recommended — removes motion blur' },
+                            { value: 200, label: 'Strict', hint: 'Requires sharp, well-lit faces' },
+                        ].map(opt => (
+                            <button
+                                key={opt.value}
+                                onClick={() => setLapThreshold(opt.value)}
+                                title={opt.hint}
+                                style={{
+                                    padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
+                                    fontSize: '13px', fontWeight: 600, border: '1px solid',
+                                    borderColor: lapThreshold === opt.value ? theme.accent : theme.border,
+                                    background:  lapThreshold === opt.value ? theme.accentDim : 'transparent',
+                                    color:       lapThreshold === opt.value ? theme.accent : theme.textMuted,
+                                    transition:  'all 0.15s',
+                                }}
+                            >
+                                {opt.label} {opt.value > 0 ? `(${opt.value})` : ''}
+                            </button>
+                        ))}
+                    </div>
+                    <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 5 }}>
+                        {lapThreshold === 0   && 'No blur filter — all sharp and blurry faces included'}
+                        {lapThreshold === 50  && 'Loose (≥50) — removes severely blurry frames only'}
+                        {lapThreshold === 100 && 'Medium (≥100) — recommended, removes motion blur'}
+                        {lapThreshold === 200 && 'Strict (≥200) — requires well-focused faces'}
+                    </div>
+                </div>
+
+                {/* Top-N images per person */}
+                <div style={{ marginBottom: 20 }}>
+                    <label style={styles.label}>
+                        Images per Person
+                        <span style={{ marginLeft: 6, fontSize: '11px', color: theme.textMuted, fontWeight: 400 }}>
+                            — top 5 used for embedding, rest kept as backup
+                        </span>
+                    </label>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                        {[
+                            { value: 5,  hint: 'Minimal storage, embedding = all 5' },
+                            { value: 8,  hint: '5 embed + 3 backup' },
+                            { value: 10, hint: '5 embed + 5 backup (recommended)' },
+                            { value: 15, hint: '5 embed + 10 backup' },
+                        ].map(opt => (
+                            <button
+                                key={opt.value}
+                                onClick={() => setTopN(opt.value)}
+                                title={opt.hint}
+                                style={{
+                                    padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
+                                    fontSize: '13px', fontWeight: 600, border: '1px solid',
+                                    borderColor: topN === opt.value ? theme.accent : theme.border,
+                                    background:  topN === opt.value ? theme.accentDim : 'transparent',
+                                    color:       topN === opt.value ? theme.accent : theme.textMuted,
+                                    transition:  'all 0.15s',
+                                }}
+                            >
+                                {opt.value} imgs
+                            </button>
+                        ))}
+                    </div>
+                    <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 5 }}>
+                        {topN === 5  && '5 images — all used for embedding, no backup'}
+                        {topN === 8  && '8 images — top 5 for embedding, 3 backup for manual review'}
+                        {topN === 10 && '10 images — top 5 for embedding, 5 backup (recommended)'}
+                        {topN === 15 && '15 images — top 5 for embedding, 10 backup for diversity'}
+                    </div>
+                </div>
+
                 {/* Folder preview + Extract button */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{
@@ -376,8 +505,9 @@ export default function GroundTruthGen() {
                     <div style={{ marginTop: 12, fontSize: '13px', color: theme.textMuted }}>
                         Folders named <strong style={{ color: theme.text }}>person_001</strong>,&nbsp;
                         <strong style={{ color: theme.text }}>person_002</strong>, … — go to
-                        &nbsp;<strong style={{ color: theme.accent }}>Page 2 (Select Best Photos)</strong>&nbsp;
-                        to assign roll numbers and curate images.
+                        &nbsp;<strong style={{ color: theme.accent }}>Edit Ground Truth</strong>&nbsp;
+                        to curate images, then to&nbsp;<strong style={{ color: theme.accent }}>Assign Roll Numbers</strong>&nbsp;
+                        to map clusters to students.
                     </div>
                 </div>
             )}

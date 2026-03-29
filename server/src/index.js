@@ -11,7 +11,11 @@ const rateLimit = require("express-rate-limit");
 const v1router = require("./routes");
 
 // Security headers
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false,
+}));
 
 // Rate limiting for auth endpoints
 const authLimiter = rateLimit({

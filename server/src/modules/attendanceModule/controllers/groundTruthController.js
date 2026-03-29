@@ -83,18 +83,42 @@ class GroundTruthController {
             const students = [];
 
             for (const entry of entries) {
-                if (!entry.isDirectory()) continue;
+                if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
                 const studentPath = path.join(batchPath, entry.name);
                 const files = await fsPromises.readdir(studentPath);
-                const photos = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+                const allImages = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).sort();
+
+                // Read _info.json for embedding/backup split
+                const infoPath = path.join(studentPath, '_info.json');
+                let embeddingFiles = [];
+                let backupFiles    = [];
+                let scores         = {};
+                if (fs.existsSync(infoPath)) {
+                    try {
+                        const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                        embeddingFiles = (info.embedding_files || []).filter(f => allImages.includes(f));
+                        backupFiles    = (info.backup_files    || []).filter(f => allImages.includes(f));
+                        scores         = info.scores || {};
+                    } catch (_) {}
+                }
+                const tracked   = new Set([...embeddingFiles, ...backupFiles]);
+                const untracked = allImages.filter(f => !tracked.has(f));
+
+                const makeList = (fnames) => fnames.map(f => ({
+                    filename: f,
+                    url: `/attendancemodule/ground-truth/photo/${batch}/${entry.name}/${f}`,
+                    score: scores[f] || null,
+                }));
 
                 students.push({
-                    rollNo: entry.name,
-                    photoCount: photos.length,
-                    photos: photos.map(p => ({
-                        filename: p,
-                        url: `/api/attendance/ground-truth/photo/${batch}/${entry.name}/${p}`
-                    }))
+                    rollNo:         entry.name,
+                    photoCount:     allImages.length,
+                    embeddingFiles: makeList(embeddingFiles),
+                    backupFiles:    makeList(backupFiles),
+                    untrackedFiles: makeList(untracked),
+                    hasInfo:        embeddingFiles.length > 0 || backupFiles.length > 0,
+                    // legacy flat list for backward compat
+                    photos: makeList(allImages),
                 });
             }
             res.json({ batch, students });
@@ -159,7 +183,10 @@ class GroundTruthController {
     // ─── Extract + auto-save to serial folders (no roll-no needed) ──
     async extractAndSaveToFolders(req, res) {
         try {
-            const { videoLink, batch, frameSkip, minImages, detSize, matchThreshold } = req.body;
+            const {
+                videoLink, batch, frameSkip, minImages, detSize, matchThreshold,
+                minFaceSize, lapThreshold, topN
+            } = req.body;
             if (!videoLink || !batch) {
                 return res.status(400).json({ error: 'videoLink and batch required' });
             }
@@ -175,11 +202,14 @@ class GroundTruthController {
                 `${ML_SERVICE_URL}/extract-save-ground-truth`,
                 {
                     videoPath,
-                    batchName:       batch,
-                    frame_skip:      parseInt(frameSkip)     || 5,
-                    min_images:      parseInt(minImages)     || 10,
-                    det_size:        parseInt(detSize)       || 320,
-                    match_threshold: parseFloat(matchThreshold) || 0.55,
+                    batchName:            batch,
+                    frame_skip:           parseInt(frameSkip)      || 5,
+                    min_images:           parseInt(minImages)       || 10,
+                    det_size:             parseInt(detSize)         || 320,
+                    match_threshold:      parseFloat(matchThreshold) || 0.55,
+                    min_face_size:        minFaceSize != null ? parseInt(minFaceSize) : 80,
+                    laplacian_threshold:  lapThreshold != null ? parseFloat(lapThreshold) : 100.0,
+                    top_n:                parseInt(topN)            || 10,
                 },
                 { responseType: 'stream', timeout: 0 }
             );
@@ -326,6 +356,73 @@ class GroundTruthController {
         }
     }
 
+    // ─── Get student ground truth images with embedding/backup split ──
+    async getStudentGroundTruth(req, res) {
+        try {
+            const { batch, rollNo } = req.params;
+            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+            if (!fs.existsSync(studentDir)) {
+                return res.status(404).json({ error: 'Student not found' });
+            }
+
+            const files = await fsPromises.readdir(studentDir);
+            const allImages = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).sort();
+
+            // Read _info.json if present
+            const infoPath = path.join(studentDir, '_info.json');
+            let embeddingFiles = [];
+            let backupFiles    = [];
+            let scores         = {};
+
+            if (fs.existsSync(infoPath)) {
+                const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                embeddingFiles = (info.embedding_files || []).filter(f => allImages.includes(f));
+                backupFiles    = (info.backup_files    || []).filter(f => allImages.includes(f));
+                scores         = info.scores || {};
+            }
+
+            const tracked    = new Set([...embeddingFiles, ...backupFiles]);
+            const untracked  = allImages.filter(f => !tracked.has(f));
+
+            const makePhotoList = (fnames) => fnames.map(f => ({
+                filename: f,
+                url: `/attendancemodule/ground-truth/photo/${batch}/${rollNo}/${f}`,
+                score: scores[f] || null,
+            }));
+
+            res.json({
+                batch,
+                rollNo,
+                embeddingFiles: makePhotoList(embeddingFiles),
+                backupFiles:    makePhotoList(backupFiles),
+                untrackedFiles: makePhotoList(untracked),
+                totalImages:    allImages.length,
+                hasInfo:        embeddingFiles.length > 0 || backupFiles.length > 0,
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ─── Update embedding for a student (manual file selection) ──────
+    async updateStudentEmbedding(req, res) {
+        try {
+            const { batch, rollNo, embeddingFiles } = req.body;
+            if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length === 0) {
+                return res.status(400).json({ error: 'batch, rollNo, and embeddingFiles[] required' });
+            }
+            const response = await axios.post(
+                `${ML_SERVICE_URL}/update-student-embedding`,
+                { batch_name: batch, roll_no: rollNo, embedding_files: embeddingFiles },
+                { timeout: 60000 }
+            );
+            res.json(response.data);
+        } catch (err) {
+            console.error('updateStudentEmbedding error:', err.code, err.response?.data);
+            res.status(500).json({ error: mlError(err) });
+        }
+    }
+
     // ─── Generate embeddings for a batch ──────────────────────────
     async generateEmbeddings(req, res) {
         try {
@@ -364,7 +461,11 @@ class GroundTruthController {
                     roll_list: [],
                     auto_present_threshold: 0.6,
                     review_threshold: 0.4,
-                    min_detections: 3
+                    min_detections: 3,
+                    batch_name: batch,
+                    auto_enroll: true,
+                    auto_enroll_threshold: 0.6,
+                    max_gt_images: 10
                 },
                 { timeout: 600000 }
             );

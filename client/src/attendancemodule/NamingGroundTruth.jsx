@@ -35,7 +35,19 @@ export default function NamingGroundTruth() {
         try {
             const res = await fetch(`${API_BASE}/batches/${batchName}/students`);
             const data = await res.json();
-            setStudents(data.students || []);
+            // Server returns relative URLs — rewrite to absolute so <img> resolves to API host
+            const fixUrls = (list, rollNo) =>
+                (list || []).map(p => ({
+                    ...p,
+                    url: `${API_BASE}/photo/${encodeURIComponent(batchName)}/${encodeURIComponent(rollNo)}/${encodeURIComponent(p.filename)}`,
+                }));
+            setStudents((data.students || []).map(s => ({
+                ...s,
+                photos:         fixUrls(s.photos,         s.rollNo),
+                embeddingFiles: fixUrls(s.embeddingFiles, s.rollNo),
+                backupFiles:    fixUrls(s.backupFiles,    s.rollNo),
+                untrackedFiles: fixUrls(s.untrackedFiles, s.rollNo),
+            })));
         } catch (err) {
             showToast('Failed to load students', 'error');
         }

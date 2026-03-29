@@ -1,0 +1,20 @@
+{
+  "embedding_files": [
+    "emb_26.7s_f164.jpg",
+    "emb_20.0s_f108.jpg",
+    "emb_28.3s_f183.jpg",
+    "emb_25.0s_f153.jpg",
+    "emb_21.7s_f128.jpg"
+  ],
+  "backup_files": [
+    "bak_23.3s_f141.jpg"
+  ],
+  "scores": {
+    "emb_26.7s_f164.jpg": 14.4645,
+    "emb_20.0s_f108.jpg": 14.2634,
+    "emb_28.3s_f183.jpg": 14.1761,
+    "emb_25.0s_f153.jpg": 12.7631,
+    "emb_21.7s_f128.jpg": 11.142,
+    "bak_23.3s_f141.jpg": 10.18
+  }
+}

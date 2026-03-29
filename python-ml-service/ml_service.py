@@ -1,4 +1,5 @@
 import os
+import re
 import pickle
 import time
 import numpy as np
@@ -60,6 +61,11 @@ class CompareRequest(BaseModel):
     auto_present_threshold: float = 0.60
     review_threshold: float = 0.40
     min_detections: int = 3
+    # Auto-enrollment params
+    batch_name: str = ""
+    auto_enroll: bool = False
+    auto_enroll_threshold: float = 0.6
+    max_gt_images: int = 10
 
 class BuildEmbeddingsRequest(BaseModel):
     photos_dir: str = CLIENT_GROUND_TRUTH
@@ -301,7 +307,7 @@ def extract_faces_for_tagging(req: ExtractFacesRequest):
     if face_app is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
-    all_embeddings, all_face_images, all_timestamps = extract_all_faces(
+    all_embeddings, all_face_images, all_timestamps, _ = extract_all_faces(
         req.videoPath, face_app, req.frame_skip
     )
 
@@ -422,6 +428,155 @@ def extract_faces_from_video(req: ExtractFacesRequest):
         "frames_processed": frame_count // req.frame_skip,
         "files": saved_faces
     }
+
+# ─── Helper: Auto-Enroll from High-Confidence Attendance Matches ──
+
+def _auto_enroll_helper(video_path, attendance, batch_name, enroll_threshold, max_images):
+    """
+    Second pass through video: collect best face crops for students whose
+    attendance confidence exceeded enroll_threshold, then save to ground truth.
+    Keeps at most max_images per student (top 5 → embedding_files, rest → backup).
+    """
+    if not batch_name or not attendance:
+        return
+
+    batch_dir = os.path.join(CLIENT_GROUND_TRUTH, batch_name)
+    if not os.path.isdir(batch_dir):
+        logger.warning(f"[AutoEnroll] batch_dir not found: {batch_dir}")
+        return
+
+    # Only enroll high-confidence present students
+    enroll_ids = {
+        sid for sid, data in attendance.items()
+        if data.get("status") == "present" and
+           data.get("avg_confidence", 0) >= enroll_threshold
+    }
+    if not enroll_ids:
+        return
+
+    logger.info(f"[AutoEnroll] Collecting faces for {len(enroll_ids)} students from {video_path}")
+
+    # Collect best face crop per student (highest quality score)
+    best_crops = {}   # sid → (crop, quality, conf)
+
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        logger.warning(f"[AutoEnroll] Cannot open video: {video_path}")
+        return
+
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25
+    vid_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    scale = min(1.0, 640 / vid_width) if vid_width > 640 else 1.0
+    frame_count = 0
+    SKIP = 15
+    MIN_SIZE = 80
+
+    while True:
+        if not cap.grab():
+            break
+        frame_count += 1
+        if frame_count % SKIP != 0:
+            continue
+        ret, frame = cap.retrieve()
+        if not ret:
+            continue
+        if scale < 1.0:
+            frame = cv2.resize(frame, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+
+        for face in face_app.get(frame):
+            emb = face.embedding
+            norm = np.linalg.norm(emb)
+            if norm == 0:
+                continue
+            emb = emb / norm
+
+            # Match against enrolled students (only enroll_ids)
+            best_sid, best_score = None, -1
+            for sid in enroll_ids:
+                if sid not in embeddings_db:
+                    continue
+                score = float(np.dot(emb, embeddings_db[sid]["embedding"]))
+                if score > best_score:
+                    best_score = score
+                    best_sid = sid
+
+            if best_sid is None or best_score < enroll_threshold:
+                continue
+
+            bbox = face.bbox.astype(int)
+            x1 = max(0, bbox[0]); y1 = max(0, bbox[1])
+            x2 = min(frame.shape[1], bbox[2]); y2 = min(frame.shape[0], bbox[3])
+            w, h = x2 - x1, y2 - y1
+            if w < MIN_SIZE or h < MIN_SIZE:
+                continue
+            crop = frame[y1:y2, x1:x2]
+            if crop.size == 0:
+                continue
+
+            gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            lap = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            det_score = float(getattr(face, 'det_score', 1.0))
+            quality = float(det_score * (float(int(w)) * float(int(h))) ** 0.5 * min(lap, 500.0) / 500.0)
+
+            if best_sid not in best_crops or quality > best_crops[best_sid][1]:
+                best_crops[best_sid] = (crop.copy(), quality, best_score)
+
+    cap.release()
+
+    # Save crops and update ground truth
+    ts = int(time.time() * 1000)
+    for sid, (crop, quality, _) in best_crops.items():
+        student_dir = os.path.join(batch_dir, sid)
+        if not os.path.isdir(student_dir):
+            logger.warning(f"[AutoEnroll] Student dir not found: {student_dir}, skipping")
+            continue
+
+        # Load existing _info.json
+        info_path = os.path.join(student_dir, "_info.json")
+        info = {"embedding_files": [], "backup_files": [], "scores": {}}
+        if os.path.exists(info_path):
+            try:
+                with open(info_path) as _fi:
+                    info = json.load(_fi)
+            except Exception:
+                pass
+
+        # Save new face crop
+        filename = f"ae_{ts}_{sid}.jpg"
+        cv2.imwrite(os.path.join(student_dir, filename), crop)
+        info["scores"][filename] = round(quality, 4)
+
+        # Get all images and their scores
+        all_imgs = [fn for fn in os.listdir(student_dir)
+                    if fn.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))]
+        for fn in all_imgs:
+            if fn not in info["scores"]:
+                info["scores"][fn] = 0.5  # default score for unscored files
+
+        # Sort by quality descending
+        sorted_imgs = sorted(
+            [fn for fn in all_imgs if fn in info["scores"]],
+            key=lambda fn: info["scores"][fn], reverse=True
+        )
+
+        # Keep at most max_images; delete the worst
+        if len(sorted_imgs) > max_images:
+            to_delete = sorted_imgs[max_images:]
+            sorted_imgs = sorted_imgs[:max_images]
+            for fn in to_delete:
+                try:
+                    os.remove(os.path.join(student_dir, fn))
+                    info["scores"].pop(fn, None)
+                except Exception:
+                    pass
+
+        info["embedding_files"] = sorted_imgs[:5]
+        info["backup_files"]    = sorted_imgs[5:10]
+
+        with open(info_path, "w") as _fi:
+            json.dump(info, _fi, indent=2)
+
+        logger.info(f"[AutoEnroll] {sid}: saved {filename} (quality={quality:.3f})")
 
 # ─── Helper: Process Video Frames ─────────────────────────────
 
@@ -609,6 +764,23 @@ def process_video_with_rolllist(req: CompareRequest):
     review  = sum(1 for v in attendance.values() if v["status"] == "review")
     absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
 
+    # ── Auto-enroll high-confidence matches back into ground truth ──
+    enrolled_count = 0
+    if req.auto_enroll and req.batch_name:
+        try:
+            _auto_enroll_helper(
+                req.videoPath, attendance, req.batch_name,
+                req.auto_enroll_threshold, req.max_gt_images
+            )
+            enrolled_count = sum(
+                1 for v in attendance.values()
+                if v.get("status") == "present" and
+                   v.get("avg_confidence", 0) >= req.auto_enroll_threshold
+            )
+            logger.info(f"[AutoEnroll] Completed for {enrolled_count} students")
+        except Exception as _ae:
+            logger.error(f"[AutoEnroll] Failed: {_ae}")
+
     return {
         "attendance": attendance,
         "comparison": comparison,
@@ -627,7 +799,8 @@ def process_video_with_rolllist(req: CompareRequest):
             "not_enrolled": sum(1 for c in comparison if not c["in_ml_db"]),
             "extra_in_db": len(extra_students),
             "processing_time": round(elapsed, 2),
-            "frames_processed": processed
+            "frames_processed": processed,
+            "auto_enrolled": enrolled_count
         }
     }
 
@@ -753,10 +926,24 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
         name = parts[1].replace("_", " ") if len(parts) > 1 else folder
         folder_path = os.path.join(photos_dir, folder)
 
-        photos = [
+        all_photos = [
             f for f in os.listdir(folder_path)
             if f.lower().endswith((".jpg", ".jpeg", ".png"))
         ]
+
+        # If _info.json exists, use only the designated embedding files
+        info_path = os.path.join(folder_path, "_info.json")
+        if os.path.exists(info_path):
+            try:
+                with open(info_path) as _fi:
+                    _info = json.load(_fi)
+                embed_files = [f for f in _info.get("embedding_files", [])
+                               if os.path.exists(os.path.join(folder_path, f))]
+                photos = embed_files if embed_files else all_photos
+            except Exception:
+                photos = all_photos
+        else:
+            photos = all_photos
 
         embeddings = []
         for photo in photos:
@@ -797,6 +984,152 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
         "output_path": output_path
     }
 
+# ─── Update Student Embedding (manual selection) ─────────────
+
+class UpdateEmbeddingRequest(BaseModel):
+    batch_name: str           # e.g. "BTECH_ECE_2023"
+    roll_no: str              # student folder name
+    embedding_files: List[str]  # filenames to use for embedding
+
+@app.post("/update-student-embedding")
+def update_student_embedding(req: UpdateEmbeddingRequest):
+    """
+    Rebuild embedding for a student from manually selected files.
+    Updates _info.json, in-memory embeddings_db, and DB_PATH pkl.
+    """
+    student_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch_name, req.roll_no)
+    if not os.path.isdir(student_dir):
+        raise HTTPException(status_code=404, detail=f"Student dir not found: {student_dir}")
+    if face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+
+    new_embeddings = []
+    missing = []
+    for filename in req.embedding_files:
+        if filename.startswith("_"):
+            continue
+        filepath = os.path.join(student_dir, filename)
+        if not os.path.exists(filepath):
+            missing.append(filename)
+            continue
+        img = cv2.imread(filepath)
+        if img is None:
+            continue
+        faces = face_app.get(img)
+        if faces:
+            emb = faces[0].embedding
+            norm = np.linalg.norm(emb)
+            if norm > 0:
+                new_embeddings.append(emb / norm)
+
+    if not new_embeddings:
+        raise HTTPException(status_code=400,
+                            detail=f"No faces detected in selected files. Missing: {missing}")
+
+    mean_emb = np.mean(new_embeddings, axis=0)
+    mean_emb = mean_emb / np.linalg.norm(mean_emb)
+
+    # Update in-memory embeddings_db
+    global embeddings_db
+    if req.roll_no in embeddings_db:
+        embeddings_db[req.roll_no]["embedding"] = mean_emb
+        embeddings_db[req.roll_no]["num_photos"] = len(new_embeddings)
+    else:
+        embeddings_db[req.roll_no] = {
+            "name": req.roll_no,
+            "embedding": mean_emb,
+            "num_photos": len(new_embeddings)
+        }
+
+    # Persist to DB_PATH (always-loaded pkl)
+    with open(DB_PATH, "wb") as _f:
+        pickle.dump(embeddings_db, _f)
+
+    # Also update batch-specific pkl if it exists
+    batch_pkl = os.path.join(ROOT_DIR, "server", "embeddings", f"{req.batch_name}.pkl")
+    if os.path.exists(batch_pkl):
+        try:
+            with open(batch_pkl, "rb") as _f:
+                batch_db = pickle.load(_f)
+            if req.roll_no in batch_db:
+                batch_db[req.roll_no]["embedding"] = mean_emb
+                batch_db[req.roll_no]["num_photos"] = len(new_embeddings)
+                with open(batch_pkl, "wb") as _f:
+                    pickle.dump(batch_db, _f)
+        except Exception as _e:
+            logger.warning(f"Could not update batch pkl: {_e}")
+
+    # Update _info.json
+    info_path = os.path.join(student_dir, "_info.json")
+    info = {}
+    if os.path.exists(info_path):
+        try:
+            with open(info_path) as _fi:
+                info = json.load(_fi)
+        except Exception:
+            info = {}
+
+    all_imgs = [fn for fn in os.listdir(student_dir)
+                if fn.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))]
+    info["embedding_files"] = [f for f in req.embedding_files if f in all_imgs]
+    info["backup_files"] = [f for f in all_imgs if f not in req.embedding_files][:5]
+
+    with open(info_path, "w") as _fi:
+        json.dump(info, _fi, indent=2)
+
+    logger.info(f"[UpdateEmbed] {req.roll_no}: rebuilt from {len(new_embeddings)} files")
+    return {
+        "status": "ok",
+        "roll_no": req.roll_no,
+        "embedding_files_used": len(new_embeddings),
+        "total_selected": len(req.embedding_files),
+        "missing_files": missing
+    }
+
+# ─── Get Student Ground Truth Info ────────────────────────────
+
+@app.get("/student-ground-truth/{batch_name}/{roll_no}")
+def get_student_ground_truth(batch_name: str, roll_no: str):
+    """
+    Return all images for a student split into embedding_files and backup_files.
+    """
+    student_dir = os.path.join(CLIENT_GROUND_TRUTH, batch_name, roll_no)
+    if not os.path.isdir(student_dir):
+        raise HTTPException(status_code=404, detail="Student dir not found")
+
+    all_imgs = sorted([
+        fn for fn in os.listdir(student_dir)
+        if fn.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+    ])
+
+    info_path = os.path.join(student_dir, "_info.json")
+    info = {}
+    if os.path.exists(info_path):
+        try:
+            with open(info_path) as _fi:
+                info = json.load(_fi)
+        except Exception:
+            info = {}
+
+    embedding_files = [f for f in info.get("embedding_files", []) if f in all_imgs]
+    backup_files    = [f for f in info.get("backup_files", [])    if f in all_imgs]
+    scores          = info.get("scores", {})
+
+    # Files not tracked in info
+    tracked = set(embedding_files) | set(backup_files)
+    untracked = [f for f in all_imgs if f not in tracked]
+
+    return {
+        "batch_name": batch_name,
+        "roll_no": roll_no,
+        "embedding_files": embedding_files,
+        "backup_files": backup_files,
+        "untracked_files": untracked,
+        "scores": scores,
+        "total_images": len(all_imgs),
+        "has_info": bool(embedding_files or backup_files),
+    }
+
 # ─── Extract + Save Ground Truth (serial folders, no roll-no needed) ──
 
 class ExtractSaveGTRequest(BaseModel):
@@ -808,6 +1141,10 @@ class ExtractSaveGTRequest(BaseModel):
     min_images: int = 10         # images to save per person
     det_size: int = 320          # 320 = Fast, 640 = Accurate
     match_threshold: float = 0.55  # cosine similarity to match existing folder (dedup)
+    # Smart frame selection controls
+    min_face_size: int = 80          # min face bbox dimension in pixels (0 = disabled)
+    laplacian_threshold: float = 100.0  # blur filter threshold (0 = disabled)
+    top_n: int = 10                  # max images per person (top 5 → embedding, rest → backup)
 
 @app.post("/extract-save-ground-truth")
 def extract_save_ground_truth(req: ExtractSaveGTRequest):
@@ -856,8 +1193,11 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
                    "total_frames": total_frames, "duration_sec": duration_sec})
 
         all_embeddings, all_face_images, all_timestamps = [], [], []
+        all_quality_scores = []   # quality score per detection for smart selection
         frame_count = 0
         last_emit   = _t.time()
+        skipped_small = 0
+        skipped_blur  = 0
 
         while True:
             if not cap.grab():
@@ -880,11 +1220,30 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
                 bbox = face.bbox.astype(int)
                 x1 = max(0, bbox[0]); y1 = max(0, bbox[1])
                 x2 = min(frame.shape[1], bbox[2]); y2 = min(frame.shape[0], bbox[3])
+                w, h = x2 - x1, y2 - y1
+                # ── Filter: minimum face size ──────────────────────
+                if req.min_face_size > 0 and min(w, h) < req.min_face_size:
+                    skipped_small += 1
+                    continue
                 crop = frame[y1:y2, x1:x2]
-                if crop.size > 0:
-                    all_embeddings.append(emb)
-                    all_face_images.append(crop)
-                    all_timestamps.append(round(frame_count / fps, 2))
+                if crop.size == 0:
+                    continue
+                # ── Filter: Laplacian variance (blur detection) ────
+                gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+                lap_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                if req.laplacian_threshold > 0 and lap_var < req.laplacian_threshold:
+                    skipped_blur += 1
+                    continue
+                # ── Quality score: det_score × sqrt(area) × sharpness ─
+                area = int(w) * int(h)            # force Python int to avoid numpy dtype
+                sharpness = min(lap_var, 500.0) / 500.0
+                det_score = float(getattr(face, 'det_score', 1.0))
+                quality = float(det_score * (area ** 0.5) * sharpness)  # explicit Python float
+
+                all_embeddings.append(emb)
+                all_face_images.append(crop.copy())  # copy so frame buffer can be reused safely
+                all_timestamps.append(round(frame_count / fps, 2))
+                all_quality_scores.append(quality)
 
             now = _t.time()
             if now - last_emit >= EMIT:
@@ -893,8 +1252,10 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
                            "frame": frame_count, "total_frames": total_frames,
                            "faces_found": len(all_embeddings), "progress": pct,
                            "elapsed_sec": round(now - start, 1),
+                           "skipped_small": skipped_small, "skipped_blur": skipped_blur,
                            "message": f"Frame {frame_count:,}/{total_frames:,} ({pct}%) "
-                                      f"— {len(all_embeddings)} faces"})
+                                      f"— {len(all_embeddings)} faces kept "
+                                      f"(filtered: {skipped_small} small, {skipped_blur} blurry)"})
                 last_emit = now
 
         cap.release()
@@ -923,22 +1284,37 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
                    "clusters_found": len(unique_labels),
                    "elapsed_sec": round(_t.time() - start, 1)})
 
-        # ── Load mean embeddings for existing person folders (deduplication) ──
-        existing_person_dirs = sorted([
-            d for d in os.listdir(batch_dir)
-            if os.path.isdir(os.path.join(batch_dir, d)) and d.startswith("person_")
-        ])
-        existing_mean_embs = {}  # folder_name -> mean L2-normalised embedding
+        # ── Load mean embeddings for ALL existing folders (person_XXX AND assigned) ──
+        # This ensures Day-2+ videos recognise students whose roll numbers are already assigned.
+        IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+        existing_mean_embs = {}   # folder_name → L2-normalised mean embedding
 
-        if existing_person_dirs:
+        all_existing_dirs = sorted([
+            d for d in os.listdir(batch_dir)
+            if os.path.isdir(os.path.join(batch_dir, d)) and not d.startswith("_")
+        ])
+
+        if all_existing_dirs:
             yield sse({"type": "stage", "stage": "dedup",
-                       "message": f"Loading {len(existing_person_dirs)} existing folders for deduplication…"})
-            for folder_name in existing_person_dirs:
+                       "message": f"Loading {len(all_existing_dirs)} existing folders for deduplication "
+                                  f"(includes assigned roll-number folders)…"})
+            for folder_name in all_existing_dirs:
                 folder_path = os.path.join(batch_dir, folder_name)
-                img_files   = [f for f in os.listdir(folder_path)
-                               if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+                img_files   = [f for f in os.listdir(folder_path) if f.lower().endswith(IMG_EXTS)]
+                # Prefer embedding_files from _info.json for the mean (more representative)
+                info_p = os.path.join(folder_path, "_info.json")
+                if os.path.exists(info_p):
+                    try:
+                        with open(info_p) as _fi:
+                            _info = json.load(_fi)
+                        embed_imgs = [f for f in _info.get("embedding_files", [])
+                                      if f in img_files]
+                        if embed_imgs:
+                            img_files = embed_imgs
+                    except Exception:
+                        pass
                 folder_embs = []
-                for img_file in img_files[:5]:   # up to 5 images is enough for a mean
+                for img_file in img_files[:5]:
                     img = cv2.imread(os.path.join(folder_path, img_file))
                     if img is None:
                         continue
@@ -952,12 +1328,83 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
                     mean_emb = np.mean(folder_embs, axis=0)
                     existing_mean_embs[folder_name] = mean_emb / np.linalg.norm(mean_emb)
 
-        # Next serial starts after ALL existing dirs (not just person_XXX)
-        all_existing = [d for d in os.listdir(batch_dir)
-                        if os.path.isdir(os.path.join(batch_dir, d))]
-        next_serial = len(all_existing) + 1
+        # Next person_XXX serial number (safe even if some dirs are roll-number folders)
+        existing_person_nums = [
+            int(d.split("_")[1]) for d in all_existing_dirs
+            if re.match(r"^person_\d+$", d, re.IGNORECASE)
+        ]
+        next_serial = (max(existing_person_nums) + 1) if existing_person_nums else 1
 
-        # ── Save ≥min_images per person; deduplicate against existing folders ──
+        # ── Helper: merge new images into a folder and update _info.json ──────
+        top_n  = getattr(req, 'top_n', req.min_images)
+        EMBED_N = 5
+
+        def _merge_and_save(folder_path, new_detections_quality):
+            """
+            Save new face images (each a (crop, quality_score, timestamp, idx) tuple),
+            then merge with existing images in the folder.
+            Re-rank all images by quality, keep top top_n, update _info.json.
+            Returns number of newly saved files.
+            """
+            # Load existing _info scores
+            info_path = os.path.join(folder_path, "_info.json")
+            info = {"embedding_files": [], "backup_files": [], "scores": {}}
+            if os.path.exists(info_path):
+                try:
+                    with open(info_path) as _fi:
+                        info = json.load(_fi)
+                except Exception:
+                    pass
+
+            # Save new images with unique timestamp-based names
+            newly_saved = 0
+            for (crop, quality, ts, idx) in new_detections_quality:
+                if crop.size == 0:
+                    continue
+                fname = f"gt_{ts:.1f}s_f{idx}.jpg"
+                cv2.imwrite(os.path.join(folder_path, fname), crop)
+                info["scores"][fname] = round(quality, 4)
+                newly_saved += 1
+
+            # Collect ALL images currently in folder
+            all_imgs = [f for f in os.listdir(folder_path) if f.lower().endswith(IMG_EXTS)]
+
+            # Assign default score to any image not yet scored (e.g. pre-existing without metadata)
+            for f in all_imgs:
+                if f not in info["scores"]:
+                    # Try to compute score from the image itself
+                    img = cv2.imread(os.path.join(folder_path, f))
+                    if img is not None:
+                        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        lap  = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                        h, w = img.shape[:2]
+                        info["scores"][f] = round((w * h) ** 0.5 * min(lap, 500) / 500, 4)
+                    else:
+                        info["scores"][f] = 0.5
+
+            # Sort by score descending, keep top top_n
+            scored = [(f, info["scores"].get(f, 0)) for f in all_imgs if f in info["scores"]]
+            scored.sort(key=lambda x: x[1], reverse=True)
+
+            if len(scored) > top_n:
+                to_delete = scored[top_n:]
+                scored    = scored[:top_n]
+                for (fn, _) in to_delete:
+                    try:
+                        os.remove(os.path.join(folder_path, fn))
+                        info["scores"].pop(fn, None)
+                    except Exception:
+                        pass
+
+            info["embedding_files"] = [f for (f, _) in scored[:EMBED_N]]
+            info["backup_files"]    = [f for (f, _) in scored[EMBED_N:]]
+
+            with open(info_path, "w") as _fi:
+                json.dump(info, _fi, indent=2)
+
+            return newly_saved
+
+        # ── Per-cluster: match or create, then save images ────────────────────
         saved_total = 0
         for cluster_id in unique_labels:
             indices = np.where(labels == cluster_id)[0]
@@ -968,7 +1415,7 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
             cluster_mean = np.mean(cluster_embs, axis=0)
             cluster_mean = cluster_mean / np.linalg.norm(cluster_mean)
 
-            # Check if this cluster matches an existing person folder
+            # Match against ALL existing folders (person_XXX and assigned roll-no)
             best_folder = None
             best_score  = 0.0
             for fname, existing_emb in existing_mean_embs.items():
@@ -978,13 +1425,10 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
                     best_folder = fname
 
             if best_folder and best_score >= req.match_threshold:
-                # Append to existing folder (same person seen in different video)
-                folder = os.path.join(batch_dir, best_folder)
+                folder      = os.path.join(batch_dir, best_folder)
                 folder_label = f"{best_folder} (matched, score={best_score:.2f})"
-                # Update mean so later clusters in this run can also match
-                existing_mean_embs[best_folder] = cluster_mean
+                existing_mean_embs[best_folder] = cluster_mean  # update mean in-place
             else:
-                # New person — create next serial folder
                 folder_name = f"person_{next_serial:03d}"
                 next_serial += 1
                 folder = os.path.join(batch_dir, folder_name)
@@ -992,23 +1436,19 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
                 existing_mean_embs[folder_name] = cluster_mean
                 folder_label = f"new {folder_name}"
 
-            if n <= req.min_images:
-                chosen = list(indices)
-            else:
-                step   = n / req.min_images
-                chosen = [indices[int(i * step)] for i in range(req.min_images)]
+            # Pick top-N quality detections from this cluster to merge
+            cluster_quality = sorted(
+                [(all_face_images[i], all_quality_scores[i], all_timestamps[i], i)
+                 for i in indices],
+                key=lambda x: x[1], reverse=True
+            )
+            new_detections = cluster_quality[:top_n]  # only bring best candidates
 
-            for idx in chosen:
-                img = all_face_images[idx]
-                if img.size > 0:
-                    cv2.imwrite(
-                        os.path.join(folder, f"t{all_timestamps[idx]}s_f{idx}.jpg"),
-                        img
-                    )
-                    saved_total += 1
+            newly_saved = _merge_and_save(folder, new_detections)
+            saved_total += newly_saved
 
             logger.info(f"[GT] cluster {cluster_id}: {n} detections → {folder_label}, "
-                        f"{len(chosen)} images")
+                        f"{newly_saved} new images saved (folder capped at {top_n})")
 
         elapsed = round(_t.time() - start, 2)
         yield sse({"type": "done",
@@ -1021,6 +1461,120 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
 
     return StreamingResponse(generate(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# ─── Match Clusters to ERP Photos ────────────────────────────
+
+class MatchClustersRequest(BaseModel):
+    batch_dir: str        # absolute path to e.g. ground_truth/BTECH_CSE_2023/
+    erp_photos_dir: str   # absolute path to erp_photos/
+    top_k: int = 3        # return top-k candidates per cluster
+
+@app.post("/match-clusters-to-erp")
+def match_clusters_to_erp(req: MatchClustersRequest):
+    """
+    SSE stream: for each person_XXX folder emit progress events, then a final 'done' event.
+    """
+    if face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+    if not os.path.isdir(req.batch_dir):
+        raise HTTPException(status_code=404, detail=f"batch_dir not found: {req.batch_dir}")
+    if not os.path.isdir(req.erp_photos_dir):
+        raise HTTPException(status_code=404, detail=f"erp_photos_dir not found: {req.erp_photos_dir}")
+
+    IMG_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
+
+    def generate():
+        def evt(obj):
+            return f"data: {json.dumps(obj)}\n\n"
+
+        # ── Step 1: Build ERP embeddings ────────────────────────
+        yield evt({"type": "status", "msg": "Loading ERP photos…", "step": "erp"})
+
+        erp_embs = {}
+        erp_list = [f for f in sorted(os.listdir(req.erp_photos_dir))
+                    if f.lower().endswith(IMG_EXTS)]
+        for i, fname in enumerate(erp_list):
+            roll_no = os.path.splitext(fname)[0]
+            img = cv2.imread(os.path.join(req.erp_photos_dir, fname))
+            if img is None:
+                continue
+            faces = face_app.get(img)
+            if not faces:
+                logger.warning(f"No face in ERP photo: {fname}")
+                continue
+            emb  = faces[0].embedding
+            norm = np.linalg.norm(emb)
+            if norm > 0:
+                erp_embs[roll_no] = {"embedding": emb / norm, "photo": fname}
+            yield evt({"type": "erp_progress", "done": i + 1, "total": len(erp_list),
+                       "msg": f"ERP photos: {i+1}/{len(erp_list)}"})
+
+        if not erp_embs:
+            yield evt({"type": "error", "msg": "No faces detected in any ERP photo"})
+            return
+
+        yield evt({"type": "status",
+                   "msg": f"Loaded {len(erp_embs)} ERP embeddings. Matching clusters…",
+                   "step": "matching"})
+
+        erp_rolls  = list(erp_embs.keys())
+        erp_matrix = np.array([erp_embs[r]["embedding"] for r in erp_rolls])
+
+        # ── Step 2: Match each person_XXX cluster ───────────────
+        cluster_dirs = sorted([
+            d for d in os.listdir(req.batch_dir)
+            if re.match(r"^person_\d+$", d, re.IGNORECASE)
+            and os.path.isdir(os.path.join(req.batch_dir, d))
+        ])
+        matches = {}
+
+        for idx, folder_name in enumerate(cluster_dirs):
+            folder_path = os.path.join(req.batch_dir, folder_name)
+            img_files   = [f for f in os.listdir(folder_path) if f.lower().endswith(IMG_EXTS)]
+
+            yield evt({"type": "cluster_progress",
+                       "done": idx + 1, "total": len(cluster_dirs),
+                       "current": folder_name,
+                       "msg": f"Matching {folder_name} ({idx+1}/{len(cluster_dirs)})…"})
+
+            cluster_embs = []
+            for img_file in img_files[:10]:
+                img = cv2.imread(os.path.join(folder_path, img_file))
+                if img is None:
+                    continue
+                faces = face_app.get(img)
+                if faces:
+                    emb  = faces[0].embedding
+                    norm = np.linalg.norm(emb)
+                    if norm > 0:
+                        cluster_embs.append(emb / norm)
+
+            if not cluster_embs:
+                matches[folder_name] = {"error": "no faces detected"}
+                continue
+
+            mean_emb = np.mean(cluster_embs, axis=0)
+            mean_emb = mean_emb / np.linalg.norm(mean_emb)
+            scores   = erp_matrix @ mean_emb
+            top_idx  = np.argsort(scores)[::-1][:req.top_k]
+
+            candidates = [
+                {"rollNo": erp_rolls[i], "confidence": round(float(scores[i]), 4),
+                 "erpPhoto": erp_embs[erp_rolls[i]]["photo"]}
+                for i in top_idx
+            ]
+            matches[folder_name] = {
+                "best": candidates[0], "candidates": candidates,
+                "image_count": len(img_files), "preview_images": img_files[:6],
+            }
+
+        yield evt({"type": "done",
+                   "matches": matches,
+                   "erp_students": len(erp_embs),
+                   "clusters": len(matches)})
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 # ─── Streaming Clustering (live SSE progress) ─────────────────
