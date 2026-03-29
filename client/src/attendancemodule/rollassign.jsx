@@ -29,18 +29,27 @@ export default function RollAssign() {
     const [year,       setYear]       = useState('');
 
     const [loading,    setLoading]    = useState(false);
-    const [matching,   setMatching]   = useState(false);
-    const [saving,     setSaving]     = useState(null);
-    const [toast,      setToast]      = useState(null);
+    const [matching,      setMatching]      = useState(false);
+    const [matchProgress, setMatchProgress] = useState(null); // { msg, done, total, step }
+    const [matchDone,     setMatchDone]     = useState(false); // true once first match completes
+    const [saving,        setSaving]        = useState(null);
+    const [toast,         setToast]         = useState(null);
 
     const [unassigned, setUnassigned] = useState([]);
     const [assigned,   setAssigned]   = useState([]);
     const [matches,    setMatches]    = useState({});   // folderName → match data
     const [matchError, setMatchError] = useState(null);
 
-    // Modal state
-    const [modal, setModal]         = useState(null);  // { item, match }
+    // Verify modal (unassigned clusters)
+    const [modal, setModal]               = useState(null);  // { item, match }
     const [overrideRoll, setOverrideRoll] = useState('');
+
+    // GT modal (assigned clusters — image selection)
+    const [gtModal,      setGtModal]      = useState(null);  // { rollNo }
+    const [gtData,       setGtData]       = useState(null);  // API response
+    const [gtLoading,    setGtLoading]    = useState(false);
+    const [gtSelected,   setGtSelected]   = useState(new Set()); // selected filenames
+    const [gtSaving,     setGtSaving]     = useState(false);
 
     const batchName = degree && department && year
         ? `${degree}_${department}_${year}`.toUpperCase()
@@ -64,6 +73,7 @@ export default function RollAssign() {
         setAssigned([]);
         setMatches({});
         setMatchError(null);
+        setMatchDone(false);
         try {
             const res  = await fetch(`${RA_BASE}/clusters/${batchName}`);
             const data = await res.json();
@@ -77,29 +87,65 @@ export default function RollAssign() {
         }
     }, [batchName]);
 
-    // ── Auto-match against ERP photos ──────────────────────────────
+    // ── Auto-match against ERP photos (SSE stream) ────────────────
     const runAutoMatch = useCallback(async () => {
         if (!batchName) return;
         setMatching(true);
         setMatchError(null);
+        setMatchProgress({ msg: 'Starting…', done: 0, total: 0, step: 'init' });
+
         try {
-            const res  = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Match failed');
-            setMatches(data.matches || {});
-            showToast(`Matched ${data.clusters} clusters against ${data.erp_students} ERP photos`);
+            const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Match failed');
+            }
+
+            const reader  = res.body.getReader();
+            const decoder = new TextDecoder();
+            let   buf     = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buf += decoder.decode(value, { stream: true });
+                const lines = buf.split('\n');
+                buf = lines.pop(); // keep incomplete line
+                for (const line of lines) {
+                    if (!line.startsWith('data:')) continue;
+                    try {
+                        const evt = JSON.parse(line.slice(5).trim());
+                        if (evt.type === 'erp_progress') {
+                            setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
+                        } else if (evt.type === 'cluster_progress') {
+                            setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'cluster', current: evt.current });
+                        } else if (evt.type === 'status') {
+                            setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
+                        } else if (evt.type === 'done') {
+                            setMatches(evt.matches || {});
+                            setMatchDone(true);
+                            showToast(`Matching complete — ${evt.clusters} clusters matched`);
+                        } else if (evt.type === 'error') {
+                            throw new Error(evt.msg);
+                        }
+                    } catch (parseErr) { /* ignore malformed lines */ }
+                }
+            }
         } catch (err) {
             setMatchError(err.message);
             showToast(err.message, 'error');
         } finally {
             setMatching(false);
+            setMatchProgress(null);
         }
     }, [batchName]);
 
     useEffect(() => { loadClusters(); }, [loadClusters]);
 
-    // ── Open modal ────────────────────────────────────────────────
+    // ── Open modal — requires match to have run first for unassigned clusters ──
     const openModal = (item) => {
+        if (matching) return;
+        if (!matchDone && !item.flagged) return; // block until ERP match done
         setModal({ item, match: matches[item.folderName] || null });
         setOverrideRoll(matches[item.folderName]?.best?.rollNo || '');
     };
@@ -131,6 +177,63 @@ export default function RollAssign() {
             setSaving(null);
         }
     };
+
+    // ── Open GT modal for an assigned cluster ────────────────────
+    const openGtModal = useCallback(async (rollNo) => {
+        setGtModal({ rollNo });
+        setGtData(null);
+        setGtSelected(new Set());
+        setGtLoading(true);
+        try {
+            const res  = await fetch(`${RA_BASE}/student-ground-truth/${batchName}/${rollNo}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load');
+            // Server returns relative URLs — rewrite to absolute so <img> resolves to API host
+            const fixUrls = (list) =>
+                (list || []).map(f => ({
+                    ...f,
+                    url: `${RA_BASE}/photo/${encodeURIComponent(batchName)}/${encodeURIComponent(rollNo)}/${encodeURIComponent(f.filename)}`,
+                }));
+            setGtData({
+                ...data,
+                embeddingFiles: fixUrls(data.embeddingFiles),
+                backupFiles:    fixUrls(data.backupFiles),
+                untrackedFiles: fixUrls(data.untrackedFiles),
+            });
+            // Pre-select current embedding files
+            setGtSelected(new Set((data.embeddingFiles || []).map(f => f.filename)));
+        } catch (err) {
+            showToast(err.message, 'error');
+            setGtModal(null);
+        } finally {
+            setGtLoading(false);
+        }
+    }, [batchName]);
+
+    // ── Update embedding from selected GT images ──────────────────
+    const handleUpdateEmbedding = useCallback(async () => {
+        if (!gtModal || gtSelected.size === 0) return;
+        setGtSaving(true);
+        try {
+            const res  = await fetch(`${RA_BASE.replace('roll-assign', 'ground-truth')}/update-embedding`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({
+                    batch:          batchName,
+                    rollNo:         gtModal.rollNo,
+                    embeddingFiles: [...gtSelected],
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            showToast(`✓ Embedding updated for ${gtModal.rollNo} (${data.embedding_files_used} files)`);
+            setGtModal(null);
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            setGtSaving(false);
+        }
+    }, [gtModal, gtSelected, batchName]);
 
     // ── Flag ──────────────────────────────────────────────────────
     const handleFlag = async (folderName, match) => {
@@ -185,7 +288,7 @@ export default function RollAssign() {
                 </div>
             )}
 
-            {/* Modal */}
+            {/* Verify modal (unassigned clusters) */}
             {modal && (
                 <VerifyModal
                     item={modal.item}
@@ -199,6 +302,20 @@ export default function RollAssign() {
                     onApprove={() => handleApprove(modal.item.folderName, overrideRoll)}
                     onFlag={() => handleFlag(modal.item.folderName, modal.match)}
                     onClose={() => setModal(null)}
+                />
+            )}
+
+            {/* GT modal (assigned clusters — image selection) */}
+            {gtModal && (
+                <GTModal
+                    rollNo={gtModal.rollNo}
+                    loading={gtLoading}
+                    data={gtData}
+                    selected={gtSelected}
+                    setSelected={setGtSelected}
+                    saving={gtSaving}
+                    onSave={handleUpdateEmbedding}
+                    onClose={() => setGtModal(null)}
                 />
             )}
 
@@ -245,15 +362,66 @@ export default function RollAssign() {
                         {matching ? '🔄 Matching…' : '🔍 Match with ERP Photos'}
                     </button>
                 </div>
+                {/* Progress bar while matching */}
+                {matching && matchProgress && (
+                    <div style={{ marginTop: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between',
+                                      fontSize: '12px', color: theme.textMuted, marginBottom: 6 }}>
+                            <span>{matchProgress.msg}</span>
+                            {matchProgress.total > 0 && (
+                                <span style={{ fontFamily: theme.fontMono }}>
+                                    {matchProgress.done}/{matchProgress.total}
+                                </span>
+                            )}
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: theme.border, overflow: 'hidden' }}>
+                            <div style={{
+                                height: '100%', borderRadius: 3,
+                                background: matchProgress.step === 'erp' ? theme.warning : theme.accent,
+                                width: matchProgress.total > 0
+                                    ? `${(matchProgress.done / matchProgress.total) * 100}%`
+                                    : '5%',
+                                transition: 'width 0.3s ease',
+                            }} />
+                        </div>
+                        {matchProgress.current && (
+                            <div style={{ marginTop: 4, fontSize: '11px', color: theme.textMuted,
+                                          fontFamily: theme.fontMono }}>
+                                Processing: {matchProgress.current}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {matchError && (
                     <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6,
                                   background: '#3f1212', color: '#f87171', fontSize: '12px' }}>
                         {matchError}
                     </div>
                 )}
-                {Object.keys(matches).length > 0 && (
-                    <div style={{ marginTop: 10, fontSize: '12px', color: theme.textMuted }}>
-                        ✓ Matching complete — click any card to verify and approve
+                {!matching && matchDone && (
+                    <div style={{
+                        marginTop: 14, padding: '10px 14px', borderRadius: 7,
+                        background: theme.successDim, border: `1px solid ${theme.success}44`,
+                        display: 'flex', alignItems: 'center', gap: 10,
+                    }}>
+                        <span style={{ color: theme.success, fontWeight: 700, fontSize: '13px' }}>
+                            ✓ Matching complete
+                        </span>
+                        <span style={{ color: theme.textMuted, fontSize: '12px' }}>
+                            {Object.keys(matches).length} clusters matched against {
+                                [...new Set(Object.values(matches).map(m => m.best?.rollNo).filter(Boolean))].length
+                            } unique ERP identities — click any cluster card to review and confirm the roll number
+                        </span>
+                    </div>
+                )}
+                {!matching && !matchDone && unassigned.length > 0 && (
+                    <div style={{
+                        marginTop: 14, padding: '10px 14px', borderRadius: 7,
+                        background: theme.accentDim, border: `1px solid ${theme.accent}44`,
+                        fontSize: '12px', color: theme.textMuted,
+                    }}>
+                        Click <strong style={{ color: theme.accent }}>Match with ERP Photos</strong> first — clusters cannot be reviewed until ERP matching is done
                     </div>
                 )}
             </div>
@@ -268,7 +436,11 @@ export default function RollAssign() {
                 <>
                     {/* Unassigned + flagged */}
                     {unflagged.length > 0 && (
-                        <Section title="Pending Review" count={unflagged.length} accentColor={theme.accent}>
+                        <Section
+                            title={matchDone ? 'Pending Review' : 'Clusters — ERP match required'}
+                            count={unflagged.length}
+                            accentColor={matchDone ? theme.accent : theme.textMuted}
+                        >
                             {unflagged.map(item => (
                                 <ClusterCard
                                     key={item.folderName}
@@ -278,6 +450,8 @@ export default function RollAssign() {
                                     photoUrl={photoUrl}
                                     erpPhotoUrl={erpPhotoUrl}
                                     onClick={() => openModal(item)}
+                                    disabled={matching || !matchDone}
+                                    matchDone={matchDone}
                                 />
                             ))}
                         </Section>
@@ -310,6 +484,7 @@ export default function RollAssign() {
                                     photoUrl={photoUrl}
                                     erpPhotoUrl={erpPhotoUrl}
                                     isAssigned
+                                    onClick={() => openGtModal(item.rollNo)}
                                 />
                             ))}
                         </Section>
@@ -365,13 +540,13 @@ function Section({ title, count, accentColor, children }) {
 }
 
 // ── Cluster card ──────────────────────────────────────────────
-function ClusterCard({ item, match, batchName, photoUrl, erpPhotoUrl, onClick, isAssigned, isFlagged }) {
+function ClusterCard({ item, match, batchName, photoUrl, erpPhotoUrl, onClick, isAssigned, isFlagged, disabled, matchDone }) {
     const best = match?.best;
     const conf = best?.confidence;
 
     return (
         <div
-            onClick={!isAssigned ? onClick : undefined}
+            onClick={disabled ? undefined : onClick}
             style={{
                 background: theme.surface,
                 border: `1px solid ${
@@ -380,13 +555,18 @@ function ClusterCard({ item, match, batchName, photoUrl, erpPhotoUrl, onClick, i
                     theme.border
                 }`,
                 borderRadius: 10,
+                opacity: disabled ? 0.5 : 1,
                 overflow: 'hidden',
-                cursor: isAssigned ? 'default' : 'pointer',
+                cursor: disabled ? 'not-allowed' : 'pointer',
                 transition: 'border-color 0.15s, transform 0.1s',
             }}
-            onMouseEnter={e => { if (!isAssigned) e.currentTarget.style.borderColor = theme.accent; }}
-            onMouseLeave={e => { if (!isAssigned) e.currentTarget.style.borderColor =
-                isFlagged ? theme.warning + '66' : theme.border; }}
+            onMouseEnter={e => {
+                e.currentTarget.style.borderColor = isAssigned ? theme.success : theme.accent;
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.borderColor = isAssigned ? theme.success + '44' :
+                    isFlagged ? theme.warning + '66' : theme.border;
+            }}
         >
             {/* Face strip */}
             <div style={{ display: 'flex', height: 80, overflow: 'hidden', background: '#000', gap: 1 }}>
@@ -442,11 +622,250 @@ function ClusterCard({ item, match, batchName, photoUrl, erpPhotoUrl, onClick, i
                         <span style={{ fontSize: '11px', color: theme.textMuted }}>→</span>
                     </div>
                 ) : (
-                    <div style={{ fontSize: '12px', color: theme.textMuted, textAlign: 'center',
-                                  padding: '4px 0' }}>
-                        {match ? '⚠ No ERP face detected' : 'Click to assign'}
+                    <div style={{
+                        fontSize: '11px', textAlign: 'center', padding: '5px 8px',
+                        borderRadius: 5,
+                        background: match ? '#3f2a0022' : theme.border + '44',
+                        color: match ? theme.warning : theme.textMuted,
+                    }}>
+                        {match
+                            ? '⚠ No ERP face detected'
+                            : matchDone
+                                ? '— no match found'
+                                : '⟳ Run ERP match first'}
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+// ── GT Modal (assigned student — image selection for embedding) ──
+function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave, onClose }) {
+    const toggleFile = (filename) => {
+        setSelected(prev => {
+            const next = new Set(prev);
+            if (next.has(filename)) next.delete(filename);
+            else next.add(filename);
+            return next;
+        });
+    };
+
+    const selectAll = (files) => setSelected(prev => {
+        const next = new Set(prev);
+        files.forEach(f => next.add(f.filename));
+        return next;
+    });
+
+    const deselectAll = (files) => setSelected(prev => {
+        const next = new Set(prev);
+        files.forEach(f => next.delete(f.filename));
+        return next;
+    });
+
+    return (
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.80)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+        }}
+             onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div style={{
+                background: theme.surface,
+                border: `1px solid ${theme.border}`,
+                borderRadius: 12,
+                width: '100%', maxWidth: 860,
+                maxHeight: '90vh',
+                display: 'flex', flexDirection: 'column',
+                overflow: 'hidden',
+            }}>
+                {/* Header */}
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '16px 20px', borderBottom: `1px solid ${theme.border}`,
+                }}>
+                    <div>
+                        <span style={{ fontWeight: 700, fontSize: '15px', color: theme.text }}>
+                            Ground Truth — {rollNo}
+                        </span>
+                        <span style={{ marginLeft: 10, fontSize: '12px', color: theme.textMuted }}>
+                            Select up to 5 images for embedding · rest kept as backup
+                        </span>
+                    </div>
+                    <button onClick={onClose}
+                            style={{ background: 'none', border: 'none', color: theme.textMuted,
+                                     fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+                </div>
+
+                {/* Body */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+                    {loading && (
+                        <div style={{ textAlign: 'center', padding: '40px 0', color: theme.textMuted }}>
+                            Loading images…
+                        </div>
+                    )}
+
+                    {!loading && data && (() => {
+                        const renderSection = (title, files, accent, hint) => {
+                            if (!files.length) return null;
+                            return (
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                                        <span style={{ fontSize: '12px', fontWeight: 700,
+                                                       color: accent, textTransform: 'uppercase',
+                                                       letterSpacing: '0.05em' }}>
+                                            {title}
+                                        </span>
+                                        <span style={{ fontSize: '11px', color: theme.textMuted }}>
+                                            {hint}
+                                        </span>
+                                        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                                            <button onClick={() => selectAll(files)}
+                                                    style={{ fontSize: '11px', color: accent,
+                                                             background: 'none', border: 'none',
+                                                             cursor: 'pointer', padding: '2px 6px' }}>
+                                                Select all
+                                            </button>
+                                            <button onClick={() => deselectAll(files)}
+                                                    style={{ fontSize: '11px', color: theme.textMuted,
+                                                             background: 'none', border: 'none',
+                                                             cursor: 'pointer', padding: '2px 6px' }}>
+                                                Deselect all
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'grid',
+                                                  gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+                                                  gap: 8 }}>
+                                        {files.map(f => {
+                                            const isSel = selected.has(f.filename);
+                                            return (
+                                                <div key={f.filename}
+                                                     onClick={() => toggleFile(f.filename)}
+                                                     style={{
+                                                         position: 'relative', cursor: 'pointer',
+                                                         borderRadius: 6, overflow: 'hidden',
+                                                         border: `2px solid ${isSel ? accent : theme.border}`,
+                                                         transition: 'border-color 0.12s',
+                                                         background: isSel ? accent + '11' : 'transparent',
+                                                     }}>
+                                                    <img src={f.url} alt=""
+                                                         style={{ width: '100%', aspectRatio: '1',
+                                                                  objectFit: 'cover', display: 'block' }}
+                                                         onError={e => {
+                                                             e.target.style.display = 'none';
+                                                             e.target.nextSibling.style.display = 'flex';
+                                                         }} />
+                                                    {/* fallback */}
+                                                    <div style={{ display: 'none', width: '100%',
+                                                                  aspectRatio: '1', alignItems: 'center',
+                                                                  justifyContent: 'center', background: theme.bg,
+                                                                  fontSize: '10px', color: theme.textMuted }}>
+                                                        No image
+                                                    </div>
+                                                    {/* Checkmark overlay */}
+                                                    {isSel && (
+                                                        <div style={{
+                                                            position: 'absolute', top: 4, right: 4,
+                                                            width: 18, height: 18, borderRadius: '50%',
+                                                            background: accent, color: '#000',
+                                                            display: 'flex', alignItems: 'center',
+                                                            justifyContent: 'center', fontSize: '11px',
+                                                            fontWeight: 800,
+                                                        }}>✓</div>
+                                                    )}
+                                                    {/* Score badge */}
+                                                    {f.score != null && (
+                                                        <div style={{
+                                                            position: 'absolute', bottom: 3, left: 3,
+                                                            fontSize: '9px', fontWeight: 700,
+                                                            background: 'rgba(0,0,0,0.65)', color: '#fff',
+                                                            padding: '1px 4px', borderRadius: 3,
+                                                        }}>
+                                                            {f.score.toFixed(0)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        };
+
+                        return (
+                            <>
+                                {renderSection(
+                                    'Used for Embedding',
+                                    data.embeddingFiles,
+                                    theme.success,
+                                    '— currently active in face recognition'
+                                )}
+                                {renderSection(
+                                    'Backup Images',
+                                    data.backupFiles,
+                                    theme.accent,
+                                    '— saved but not used for embedding'
+                                )}
+                                {renderSection(
+                                    'Untracked',
+                                    data.untrackedFiles,
+                                    theme.textMuted,
+                                    '— manually added photos'
+                                )}
+                            </>
+                        );
+                    })()}
+
+                    {!loading && !data && (
+                        <div style={{ textAlign: 'center', color: theme.textMuted, padding: '40px 0' }}>
+                            No images found for this student.
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div style={{
+                    padding: '14px 20px', borderTop: `1px solid ${theme.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                    <div style={{ fontSize: '12px', color: theme.textMuted }}>
+                        {selected.size} selected
+                        {selected.size > 5 && (
+                            <span style={{ color: theme.warning, marginLeft: 6 }}>
+                                ⚠ Top 5 will be used for embedding (ranked by quality score)
+                            </span>
+                        )}
+                        {selected.size === 0 && (
+                            <span style={{ color: theme.danger || '#f87171', marginLeft: 6 }}>
+                                Select at least 1 image
+                            </span>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={onClose}
+                                style={{ padding: '8px 18px', borderRadius: 7,
+                                         border: `1px solid ${theme.border}`,
+                                         background: 'transparent', color: theme.textMuted,
+                                         fontSize: '13px', cursor: 'pointer' }}>
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onSave}
+                            disabled={saving || selected.size === 0}
+                            style={{
+                                padding: '8px 20px', borderRadius: 7, border: 'none',
+                                background: theme.success, color: '#000',
+                                fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                                opacity: (saving || selected.size === 0) ? 0.5 : 1,
+                            }}
+                        >
+                            {saving ? 'Updating…' : '✓ Update Embedding'}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

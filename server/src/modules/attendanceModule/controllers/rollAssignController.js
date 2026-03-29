@@ -53,10 +53,21 @@ class RollAssignController {
                 const files      = await fsPromises.readdir(folderPath);
                 const images     = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
 
+                // Read _info.json to get embedding files for assigned folders
+                let embeddingFiles = null;
+                const infoPath = path.join(folderPath, '_info.json');
+                if (fs.existsSync(infoPath)) {
+                    try {
+                        const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                        const emb = (info.embedding_files || []).filter(f => images.includes(f));
+                        if (emb.length > 0) embeddingFiles = emb;
+                    } catch (_) {}
+                }
+
                 const item = {
                     folderName:   entry.name,
                     imageCount:   images.length,
-                    previewFiles: images.slice(0, 6),
+                    previewFiles: embeddingFiles || images.slice(0, 6),
                     flagged:      flagged.has(entry.name),
                 };
 
@@ -103,7 +114,7 @@ class RollAssignController {
         }
     }
 
-    // ─── Auto-match clusters to ERP photos (calls Python) ────────
+    // ─── Auto-match clusters to ERP photos (SSE stream from Python) ─
     async autoMatch(req, res) {
         try {
             const { batch } = req.params;
@@ -112,24 +123,37 @@ class RollAssignController {
                 return res.status(404).json({ error: 'Batch not found' });
             }
             if (!fs.existsSync(ERP_PHOTOS_DIR) ||
-                fs.readdirSync(ERP_PHOTOS_DIR).length === 0) {
+                fs.readdirSync(ERP_PHOTOS_DIR).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length === 0) {
                 return res.status(400).json({
-                    error: `No ERP photos found in ${ERP_PHOTOS_DIR}. ` +
-                           'Upload student photos named {rollNo}.jpg to that folder.'
+                    error: 'No ERP photos found. Upload student photos named {rollNo}.jpg to the erp_photos folder.'
                 });
             }
+
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.flushHeaders();
 
             const response = await axios.post(
                 `${ML_SERVICE_URL}/match-clusters-to-erp`,
                 { batch_dir: batchPath, erp_photos_dir: ERP_PHOTOS_DIR, top_k: 3 },
-                { timeout: 300000 }
+                { responseType: 'stream', timeout: 0 }
             );
-            res.json(response.data);
+            response.data.pipe(res);
+            response.data.on('end',   () => res.end());
+            response.data.on('error', (err) => {
+                res.write(`data: ${JSON.stringify({ type: 'error', msg: err.message })}\n\n`);
+                res.end();
+            });
         } catch (err) {
             console.error('autoMatch error:', err.code, err.response?.data);
-            res.status(500).json({
-                error: err.response?.data?.detail || err.message
-            });
+            const msg = err.response?.data?.detail || err.message;
+            if (!res.headersSent) {
+                res.status(500).json({ error: msg });
+            } else {
+                res.write(`data: ${JSON.stringify({ type: 'error', msg })}\n\n`);
+                res.end();
+            }
         }
     }
 
@@ -262,6 +286,53 @@ class RollAssignController {
             await writeFlags(batch, updated);
 
             res.json({ message: `Resolved: ${folderName} → ${trimmedRoll}`, rollNo: trimmedRoll });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ─── Get ground truth images for assigned student ─────────────
+    async getStudentGroundTruth(req, res) {
+        try {
+            const { batch, rollNo } = req.params;
+            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+            if (!fs.existsSync(studentDir)) {
+                return res.status(404).json({ error: 'Student folder not found' });
+            }
+
+            const files     = await fsPromises.readdir(studentDir);
+            const allImages = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).sort();
+
+            const infoPath = path.join(studentDir, '_info.json');
+            let embeddingFiles = [];
+            let backupFiles    = [];
+            let scores         = {};
+
+            if (fs.existsSync(infoPath)) {
+                const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                embeddingFiles = (info.embedding_files || []).filter(f => allImages.includes(f));
+                backupFiles    = (info.backup_files    || []).filter(f => allImages.includes(f));
+                scores         = info.scores || {};
+            }
+
+            const tracked   = new Set([...embeddingFiles, ...backupFiles]);
+            const untracked = allImages.filter(f => !tracked.has(f));
+
+            const makeList = (fnames) => fnames.map(f => ({
+                filename: f,
+                url: `/attendancemodule/roll-assign/photo/${batch}/${rollNo}/${f}`,
+                score: scores[f] || null,
+            }));
+
+            res.json({
+                batch,
+                rollNo,
+                embeddingFiles: makeList(embeddingFiles),
+                backupFiles:    makeList(backupFiles),
+                untrackedFiles: makeList(untracked),
+                totalImages:    allImages.length,
+                hasInfo:        embeddingFiles.length > 0 || backupFiles.length > 0,
+            });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }

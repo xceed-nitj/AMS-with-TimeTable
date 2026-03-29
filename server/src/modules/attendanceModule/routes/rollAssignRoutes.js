@@ -60,4 +60,10 @@ router.post('/resolve-flag', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Get ground truth images for an assigned student (embedding / backup split)
+router.get('/student-ground-truth/:batch/:rollNo', async (req, res) => {
+    try { await controller.getStudentGroundTruth(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

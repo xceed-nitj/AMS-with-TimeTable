@@ -27,16 +27,16 @@ def get_video_clips(video_path, clip_duration_sec=300):
     return clips, fps, total_frames
 
 def extract_all_faces(video_path, face_app, frame_skip=10, max_width=640,
-                      start_frame=0, end_frame=None):
+                      start_frame=0, end_frame=None,
+                      min_face_size=0, laplacian_threshold=0.0):
     """
     Step 1 and 2:
-    Open video → extract frames → detect faces → get embeddings
-    Returns list of all faces found with their images and timestamps
+    Open video → extract frames → detect faces → get embeddings.
+    Returns (embeddings, face_images, timestamps, quality_scores).
 
-    Optimisations:
-    - cap.grab() for skipped frames: no decode for frames we skip
-    - Pre-resize to max_width before face_app.get(): saves memory bandwidth
-    - start_frame / end_frame: process only a clip (for long videos)
+    Filtering params:
+      min_face_size        – skip faces where min(w, h) < this (0 = disabled)
+      laplacian_threshold  – skip blurry faces below this variance (0 = disabled)
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -46,16 +46,17 @@ def extract_all_faces(video_path, face_app, frame_skip=10, max_width=640,
     vid_width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     scale      = min(1.0, max_width / vid_width) if vid_width > max_width else 1.0
 
-    # Seek to start_frame if needed
     if start_frame > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-    all_embeddings  = []
-    all_face_images = []
-    all_timestamps  = []
-    frame_count     = start_frame  # absolute frame number
+    all_embeddings   = []
+    all_face_images  = []
+    all_timestamps   = []
+    all_quality_scores = []
+    frame_count      = start_frame
 
     print(f"[Clustering] Extracting faces (scale={scale:.2f}, skip={frame_skip}, "
+          f"min_face={min_face_size}px, lap_thresh={laplacian_threshold}, "
           f"frames {start_frame}–{end_frame or 'end'})...")
 
     while True:
@@ -95,17 +96,34 @@ def extract_all_faces(video_path, face_app, frame_skip=10, max_width=640,
             y1   = max(0, bbox[1])
             x2   = min(frame.shape[1], bbox[2])
             y2   = min(frame.shape[0], bbox[3])
-            crop = frame[y1:y2, x1:x2]
+            w, h = x2 - x1, y2 - y1
 
-            if crop.size > 0:
-                all_embeddings.append(emb)
-                all_face_images.append(crop)
-                all_timestamps.append(timestamp)
+            # Filter: minimum face size
+            if min_face_size > 0 and min(w, h) < min_face_size:
+                continue
+
+            crop = frame[y1:y2, x1:x2]
+            if crop.size == 0:
+                continue
+
+            # Blur filter + quality score
+            gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            lap_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            if laplacian_threshold > 0 and lap_var < laplacian_threshold:
+                continue
+
+            det_score = float(getattr(face, 'det_score', 1.0))
+            quality   = det_score * ((w * h) ** 0.5) * min(lap_var, 500.0) / 500.0
+
+            all_embeddings.append(emb)
+            all_face_images.append(crop)
+            all_timestamps.append(timestamp)
+            all_quality_scores.append(quality)
 
     cap.release()
     print(f"[Clustering] Extracted {len(all_embeddings)} faces "
           f"(frames {start_frame}–{frame_count}, skip={frame_skip})")
-    return all_embeddings, all_face_images, all_timestamps
+    return all_embeddings, all_face_images, all_timestamps, all_quality_scores
 
 
 def cluster_faces(all_embeddings, cluster_threshold=0.45, min_samples=2):
@@ -219,7 +237,7 @@ def process_video_cluster_only(
     """
     start = time.time()
 
-    all_embeddings, all_face_images, all_timestamps = extract_all_faces(
+    all_embeddings, all_face_images, all_timestamps, all_quality_scores = extract_all_faces(
         video_path, face_app, frame_skip
     )
 
@@ -405,7 +423,7 @@ def process_video_with_clustering(
     start = time.time()
 
     # Step 1+2: Extract all faces
-    all_embeddings, all_face_images, all_timestamps = extract_all_faces(
+    all_embeddings, all_face_images, all_timestamps, _ = extract_all_faces(
         video_path, face_app, frame_skip
     )
 

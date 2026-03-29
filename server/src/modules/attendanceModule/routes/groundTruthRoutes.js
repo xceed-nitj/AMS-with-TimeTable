@@ -90,6 +90,20 @@ router.delete('/photo/:batch/:rollNo/:filename', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── Ground Truth Images & Embedding Management ───────────────────
+
+// Get student images split into embedding / backup / untracked
+router.get('/student-ground-truth/:batch/:rollNo', async (req, res) => {
+    try { await controller.getStudentGroundTruth(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Rebuild embedding from manually selected files
+router.post('/update-embedding', async (req, res) => {
+    try { await controller.updateStudentEmbedding(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── Embeddings & Attendance (Page 4) ─────────────────────────────
 
 router.post('/generate-embeddings', async (req, res) => {
