@@ -12,11 +12,11 @@
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
-    "@chakra-ui/react": "^2.8.2",
+    "@chakra-ui/react": "^3.34.0",
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",
     "@ckeditor/ckeditor5-react": "^9.5.0",
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
@@ -31,10 +31,11 @@
     "axios": "^1.6.3",
     "clsx": "^2.0.0",
     "date-fns": "^4.1.0",
+    "dompurify": ">=3.0.0",
     "eventsource": "^2.0.2",
     "file-saver": "^2.0.5",
     "formik": "^2.4.6",
-    "framer-motion": "^11.2.10",
+    "framer-motion": "^12.38.0",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.1",
@@ -75,8 +76,7 @@
     "vfs": "^0.2.2",
     "xlsx": "^0.18.5",
     "xlsx-populate": "^1.21.0",
-    "yup": "^1.4.0",
-    "dompurify": ">=3.0.0"
+    "yup": "^1.4.0"
   },
   "devDependencies": {
     "@types/katex": "^0.16.7",
