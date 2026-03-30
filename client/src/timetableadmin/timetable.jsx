@@ -4,7 +4,7 @@ import ViewTimetable from './viewtt';
 import getEnvironment from '../getenvironment';
 import TimetableSummary from './ttsummary';
 import ReactToPrint from 'react-to-print';
-import { Container } from '@chakra-ui/layout';
+import { Container } from '@chakra-ui/react';
 import { Heading, Select, Input, Badge, Tooltip, IconButton } from '@chakra-ui/react';
 import {
   CustomTh,
