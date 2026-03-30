@@ -6,7 +6,7 @@ import { Box, Button, HStack, Text } from '@chakra-ui/react';
 import {Grid, GridItem, Icon } from '@chakra-ui/react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
-import { Container } from "@chakra-ui/layout";
+import { Container } from "@chakra-ui/react";
 import Header from "../../components/header";
 import { FaInfoCircle, FaFileAlt, FaUserFriends, FaChartPie, FaEnvelope, FaPlay, FaBullseye } from 'react-icons/fa';
 import { FiCheckCircle } from 'react-icons/fi'

@@ -5,7 +5,7 @@ import getEnvironment from "../getenvironment";
 import ViewTimetable from "./viewtt";
 import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
-import { Container } from "@chakra-ui/layout";
+import { Container } from "@chakra-ui/react";
 import { FormControl, FormLabel, Heading, Select , UnorderedList, ListItem } from "@chakra-ui/react";
 import {
   CustomTh,

@@ -5,7 +5,7 @@ import getEnvironment from '../getenvironment';
 import ViewTimetable from './viewtt';
 import TimetableSummary from './ttsummary';
 import './Timetable.css'
-// import { Container } from "@chakra-ui/layout";
+// import { Container } from "@chakra-ui/react";
 import { Heading } from '@chakra-ui/react';
 import {CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton} from '../styles/customStyles'
 import { Box, Text, Portal, ChakraProvider } from "@chakra-ui/react";

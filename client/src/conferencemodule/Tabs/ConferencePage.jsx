@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useNavigate, Link } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
-import { Container } from "@chakra-ui/layout";
+import { Container } from "@chakra-ui/react";
 import { FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
 import {

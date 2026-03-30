@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container } from "@chakra-ui/layout";
+import { Container } from "@chakra-ui/react";
 import { color, Heading } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton, CustomPlusButton, CustomDeleteButton } from '../styles/customStyles'
 import {

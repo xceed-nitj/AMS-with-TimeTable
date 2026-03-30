@@ -5,7 +5,7 @@ import getEnvironment from '../getenvironment';
 import './Timetable.css';
 import TimetableSummary from './ttsummary';
 import ReactToPrint from 'react-to-print';
-import { Container } from "@chakra-ui/layout";
+import { Container } from "@chakra-ui/react";
 import { 
   Heading, 
   VStack,
