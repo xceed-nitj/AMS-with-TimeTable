@@ -13,7 +13,7 @@ import {
   Th,
   Td,
 } from '@chakra-ui/react';
-import { Button } from "@chakra-ui/button";
+import { Button } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/react";
 import Header from "../../components/header";
 

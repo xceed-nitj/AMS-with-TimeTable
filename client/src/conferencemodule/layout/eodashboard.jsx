@@ -13,10 +13,10 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { Button } from "@chakra-ui/button";
+import { Button } from "@chakra-ui/react";
 import { Center, Square, Circle } from '@chakra-ui/react'
 import Header from "../../components/header";
-import { useDisclosure } from "@chakra-ui/hooks";
+import { useDisclosure } from "@chakra-ui/react";
 
 function EODashboard() {
   const navigate = useNavigate();

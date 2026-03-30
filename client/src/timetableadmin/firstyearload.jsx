@@ -36,7 +36,7 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { Button } from "@chakra-ui/button";
+import { Button } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon, AddIcon, DeleteIcon, ArrowBackIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";

@@ -23,7 +23,7 @@ import {
   AlertIcon,
   AlertDescription,
 } from "@chakra-ui/react";
-import { useDisclosure } from "@chakra-ui/hooks";
+import { useDisclosure } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { ArrowBackIcon, EmailIcon } from "@chakra-ui/icons";
 import Header from "../components/header";

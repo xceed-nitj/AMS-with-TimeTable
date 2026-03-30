@@ -17,7 +17,7 @@ import {
 import { Tooltip, IconButton, Text } from '@chakra-ui/react';
 import { FiEdit, FiUsers, FiLock } from 'react-icons/fi';
 import Header from '../../components/header';
-import { useDisclosure } from '@chakra-ui/hooks';
+import { useDisclosure } from '@chakra-ui/react';
 import {
   CustomTh,
   CustomLink,

@@ -30,7 +30,7 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { Button } from "@chakra-ui/button";
+import { Button } from "@chakra-ui/react";
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import { useToast } from '@chakra-ui/react';
 import Header from '../components/header';

@@ -8,7 +8,7 @@ import {
     chakra,
     Text,
 } from "@chakra-ui/react";
-import { Button } from "@chakra-ui/button";
+import { Button } from "@chakra-ui/react";
 
 function GamificationForm() {
     const [formData, setFormData] = useState({

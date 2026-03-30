@@ -18,7 +18,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { Container } from '@chakra-ui/layout';
+import { Container } from '@chakra-ui/react';
 import Header from '../../components/header';
 import {
   FaInfoCircle,
