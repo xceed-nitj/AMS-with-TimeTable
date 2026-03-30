@@ -10,7 +10,7 @@ import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
-import { Container } from "@chakra-ui/layout";
+import { Container } from "@chakra-ui/react";
 import {
     FormControl, FormLabel, Center, Heading,
     Input, Button, Select, Box, HStack, VStack, Text, Textarea, useToast

@@ -5,7 +5,7 @@ import getEnvironment from "../getenvironment";
 import ViewTimetable from "./viewttmerged";
 import TimetableSummary from "./ttsummary";
 import "./Timetable.css";
-import { Container, Box, VStack, HStack, Flex } from "@chakra-ui/layout";
+import { Container, Box, VStack, HStack, Flex } from "@chakra-ui/react";
 import { 
     FormControl, 
     FormLabel, 

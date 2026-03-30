@@ -9,7 +9,7 @@ import "quill/dist/quill.snow.css";
 import "quill-better-table/dist/quill-better-table.css";
 import QuillBetterTable from "quill-better-table";
 import getEnvironment from "../../getenvironment";
-import { Container } from "@chakra-ui/layout";
+import { Container } from "@chakra-ui/react";
 import { Copy } from "lucide-react";
 import {
     FormControl, FormLabel, Center, Heading,

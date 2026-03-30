@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
-import { Container } from "@chakra-ui/layout";
+import { Container } from "@chakra-ui/react";
 import { FormControl, FormLabel, Heading, Input, Select, useToast } from '@chakra-ui/react';
 import {CustomTh, CustomLink,CustomTealButton} from '../../styles/customStyles'
 import {
