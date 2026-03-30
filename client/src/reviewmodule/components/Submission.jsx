@@ -14,7 +14,7 @@ import  {Table,
   Th,
   Td,
   TableCaption,
-  TableContainer} from '@chakra-ui/table';
+  TableContainer} from '@chakra-ui/react';
 
 function Submission({ activeStep, setActiveStep, handlePrevious }) {
   const apiUrl = getEnvironment();

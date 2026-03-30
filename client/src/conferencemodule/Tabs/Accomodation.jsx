@@ -11,7 +11,7 @@ import {
 import JoditEditor from 'jodit-react';
 
 import { CustomTh } from '../utils/customStyles'
-import {Table,TableContainer,Tbody,Td,Thead,Tr,} from "@chakra-ui/table";
+import {Table,TableContainer,Tbody,Td,Thead,Tr,} from "@chakra-ui/react";
 const Accomodation = () => {
     const params = useParams();
 const IdConf = params.confid;

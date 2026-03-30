@@ -1527,7 +1527,7 @@ def match_clusters_to_erp(req: MatchClustersRequest):
             if re.match(r"^person_\d+$", d, re.IGNORECASE)
             and os.path.isdir(os.path.join(req.batch_dir, d))
         ])
-        matches = {}
+        matched_count = 0
 
         for idx, folder_name in enumerate(cluster_dirs):
             folder_path = os.path.join(req.batch_dir, folder_name)
@@ -1551,7 +1551,8 @@ def match_clusters_to_erp(req: MatchClustersRequest):
                         cluster_embs.append(emb / norm)
 
             if not cluster_embs:
-                matches[folder_name] = {"error": "no faces detected"}
+                yield evt({"type": "match_result", "folder": folder_name,
+                           "match": {"error": "no faces detected"}})
                 continue
 
             mean_emb = np.mean(cluster_embs, axis=0)
@@ -1564,15 +1565,16 @@ def match_clusters_to_erp(req: MatchClustersRequest):
                  "erpPhoto": erp_embs[erp_rolls[i]]["photo"]}
                 for i in top_idx
             ]
-            matches[folder_name] = {
+            match_data = {
                 "best": candidates[0], "candidates": candidates,
                 "image_count": len(img_files), "preview_images": img_files[:6],
             }
+            yield evt({"type": "match_result", "folder": folder_name, "match": match_data})
+            matched_count += 1
 
         yield evt({"type": "done",
-                   "matches": matches,
                    "erp_students": len(erp_embs),
-                   "clusters": len(matches)})
+                   "clusters": matched_count})
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 

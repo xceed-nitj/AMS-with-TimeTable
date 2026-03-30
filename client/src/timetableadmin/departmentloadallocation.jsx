@@ -35,7 +35,7 @@ import {
   Th,
   Thead,
   Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 import { Button } from "@chakra-ui/button";
 import { DownloadIcon, SearchIcon, RepeatIcon } from '@chakra-ui/icons';
 import { FaFilter } from 'react-icons/fa';

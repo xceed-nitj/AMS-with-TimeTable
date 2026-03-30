@@ -16,7 +16,7 @@ import {
     Th,
     Thead,
     Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 import JoditEditor from 'jodit-react';
 
 const HomeConf = () => {

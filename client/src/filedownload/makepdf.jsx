@@ -19,7 +19,7 @@ import {
   Th,
   Thead,
   Tr,
-} from '@chakra-ui/table';
+} from '@chakra-ui/react';
 
 
 // pdfMake.vfs = pdfFonts.vfs;

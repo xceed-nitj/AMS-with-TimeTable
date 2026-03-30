@@ -41,7 +41,7 @@ import {
   Th,
   Thead,
   Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 import { Button } from "@chakra-ui/button";
 import { ArrowBackIcon, ExternalLinkIcon, AddIcon } from "@chakra-ui/icons";
 import { FaGlobe } from "react-icons/fa";
