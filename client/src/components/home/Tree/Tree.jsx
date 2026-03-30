@@ -9,9 +9,9 @@ import {
   Box,
   Flex,
   Spinner,
-  keyframes,
   useBreakpointValue,
 } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 import { GrCertificate } from 'react-icons/gr';
 import { AiOutlineLinkedin } from 'react-icons/ai';
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
