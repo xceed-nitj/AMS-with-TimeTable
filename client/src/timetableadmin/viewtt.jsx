@@ -19,7 +19,7 @@ import {
   Th,
   Thead,
   Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 
 const ViewTimetable = ({ timetableData, tableSummary, headerDetails }) => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];

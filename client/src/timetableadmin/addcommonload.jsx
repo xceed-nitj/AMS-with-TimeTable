@@ -38,7 +38,7 @@ import {
   Th,
   Thead,
   Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 import { Button } from "@chakra-ui/button";
 import { useToast } from "@chakra-ui/react";
 import { ArrowBackIcon, EditIcon, DeleteIcon } from "@chakra-ui/icons";

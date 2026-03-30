@@ -20,7 +20,7 @@ import {
   Th,
   Thead,
   Tr,
-} from '@chakra-ui/table';
+} from '@chakra-ui/react';
 import PDFGenerator from '../filedownload/makepdf';
 
 const TimetableSummary = ({ timetableData, code, type, time, headTitle, subjectData, TTData, notes, commonLoad }) => {

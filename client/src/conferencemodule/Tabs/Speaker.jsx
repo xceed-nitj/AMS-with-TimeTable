@@ -736,7 +736,7 @@ import {
     Th,
     Thead,
     Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 const Speaker = () => {
     const params = useParams();
 const IdConf = params.confid;

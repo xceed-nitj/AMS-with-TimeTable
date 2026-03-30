@@ -23,7 +23,7 @@ import {
     Td,
     Thead,
     Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 
 const Location = () => {
     const params = useParams();

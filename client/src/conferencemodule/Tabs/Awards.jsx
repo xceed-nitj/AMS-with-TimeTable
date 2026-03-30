@@ -19,7 +19,7 @@ import {
     Th,
     Thead,
     Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 const Awards = () => {
     const params = useParams();
   const apiUrl = getEnvironment();

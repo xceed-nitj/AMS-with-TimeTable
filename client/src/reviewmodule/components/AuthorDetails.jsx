@@ -12,7 +12,7 @@ import  {Table,
   Th,
   Td,
   TableCaption,
-  TableContainer} from '@chakra-ui/table';
+  TableContainer} from '@chakra-ui/react';
 import { FaTimes } from 'react-icons/fa'; // Import the close icon from FontAwesome
 import { Link } from 'react-router-dom';
 

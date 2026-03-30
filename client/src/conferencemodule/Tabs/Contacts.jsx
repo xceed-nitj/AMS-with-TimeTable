@@ -17,7 +17,7 @@ import {
     Th,
     Thead,
     Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 const Contacts = () => {
     const params = useParams();
   const apiUrl = getEnvironment();

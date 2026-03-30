@@ -105,31 +105,40 @@ export default function RollAssign() {
             const decoder = new TextDecoder();
             let   buf     = '';
 
+            const processLine = (line) => {
+                if (!line.startsWith('data:')) return;
+                let evt;
+                try { evt = JSON.parse(line.slice(5).trim()); }
+                catch { return; } // malformed SSE line
+                if (evt.type === 'erp_progress') {
+                    setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
+                } else if (evt.type === 'cluster_progress') {
+                    setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'cluster', current: evt.current });
+                } else if (evt.type === 'status') {
+                    setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
+                } else if (evt.type === 'match_result') {
+                    // incremental: one result per cluster — avoids giant single done payload
+                    setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
+                } else if (evt.type === 'done') {
+                    setMatchDone(true);
+                    showToast(`Matching complete — ${evt.clusters} clusters matched`);
+                } else if (evt.type === 'error') {
+                    throw new Error(evt.msg);
+                }
+            };
+
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    // flush decoder and process any remaining buffered line
+                    buf += decoder.decode();
+                    buf.split('\n').forEach(processLine);
+                    break;
+                }
                 buf += decoder.decode(value, { stream: true });
                 const lines = buf.split('\n');
                 buf = lines.pop(); // keep incomplete line
-                for (const line of lines) {
-                    if (!line.startsWith('data:')) continue;
-                    try {
-                        const evt = JSON.parse(line.slice(5).trim());
-                        if (evt.type === 'erp_progress') {
-                            setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
-                        } else if (evt.type === 'cluster_progress') {
-                            setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'cluster', current: evt.current });
-                        } else if (evt.type === 'status') {
-                            setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
-                        } else if (evt.type === 'done') {
-                            setMatches(evt.matches || {});
-                            setMatchDone(true);
-                            showToast(`Matching complete — ${evt.clusters} clusters matched`);
-                        } else if (evt.type === 'error') {
-                            throw new Error(evt.msg);
-                        }
-                    } catch (parseErr) { /* ignore malformed lines */ }
-                }
+                lines.forEach(processLine);
             }
         } catch (err) {
             setMatchError(err.message);

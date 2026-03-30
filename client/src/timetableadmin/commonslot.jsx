@@ -40,7 +40,7 @@ import {
     Th,
     Thead,
     Tr,
-} from "@chakra-ui/table";
+} from "@chakra-ui/react";
 import { Button } from "@chakra-ui/button";
 import Header from "../components/header";
 import { Helmet } from "react-helmet-async";
