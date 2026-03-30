@@ -5,6 +5,8 @@ const fs         = require('fs');
 const fsPromises = require('fs').promises;
 const axios      = require('axios');
 
+const ClusterMatch = require('../../../models/attendanceModule/clusterMatch');
+
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
 const ERP_PHOTOS_DIR   = process.env.ERP_PHOTOS_DIR ||
@@ -16,7 +18,7 @@ function ensureDir(p) {
 ensureDir(GROUND_TRUTH_DIR);
 ensureDir(ERP_PHOTOS_DIR);
 
-// ── Flags stored per batch: ground_truth/{batch}/_flags.json ──
+// ── Flags stored per batch ────────────────────────────────────────
 function flagsPath(batch) {
     return path.join(GROUND_TRUTH_DIR, batch, '_flags.json');
 }
@@ -29,9 +31,42 @@ async function writeFlags(batch, flags) {
     await fsPromises.writeFile(flagsPath(batch), JSON.stringify(flags, null, 2));
 }
 
+// ── Copy image files from src → dest ─────────────────────────────
+async function copyImages(srcDir, destDir) {
+    await fsPromises.mkdir(destDir, { recursive: true });
+    const files  = await fsPromises.readdir(srcDir);
+    const images = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+    await Promise.all(
+        images.map(f =>
+            fsPromises.copyFile(path.join(srcDir, f), path.join(destDir, f))
+        )
+    );
+    return images;
+}
+
+// ── Read image + embedding files for a folder ─────────────────────
+async function readFolderFiles(folderPath) {
+    if (!fs.existsSync(folderPath)) return { imageFiles: [], embeddingFiles: [] };
+
+    const files      = await fsPromises.readdir(folderPath);
+    const imageFiles = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).sort();
+
+    let embeddingFiles = [];
+    const infoPath = path.join(folderPath, '_info.json');
+    if (fs.existsSync(infoPath)) {
+        try {
+            const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+            embeddingFiles = (info.embedding_files || []).filter(f => imageFiles.includes(f));
+        } catch (_) {}
+    }
+    if (!embeddingFiles.length) embeddingFiles = imageFiles.slice(0, 10);
+
+    return { imageFiles, embeddingFiles };
+}
+
 class RollAssignController {
 
-    // ─── List unassigned (person_XXX) and assigned folders in a batch ──
+    // ─── List unprocessed filesystem clusters (no DB record yet) ──
     async listClusters(req, res) {
         try {
             const { batch } = req.params;
@@ -40,53 +75,253 @@ class RollAssignController {
                 return res.status(404).json({ error: 'Batch not found' });
             }
 
-            const flags   = await readFlags(batch);
-            const flagged = new Set(flags.filter(f => !f.resolved).map(f => f.folderName));
+            // Find which person_XXX folders are already tracked in DB
+            const dbRecords  = await ClusterMatch.find({ batch }).lean();
+            const trackedSet = new Set(dbRecords.map(r => r.folderName));
 
             const entries = await fsPromises.readdir(batchPath, { withFileTypes: true });
-            const unassigned = [];
-            const assigned   = [];
+            const unprocessed = [];
 
             for (const entry of entries) {
                 if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
+                if (!(/^person_\d+$/i.test(entry.name))) continue; // only person_XXX
+                if (trackedSet.has(entry.name)) continue;          // already in DB
+
                 const folderPath = path.join(batchPath, entry.name);
                 const files      = await fsPromises.readdir(folderPath);
                 const images     = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
 
-                // Read _info.json to get embedding files for assigned folders
-                let embeddingFiles = null;
-                const infoPath = path.join(folderPath, '_info.json');
-                if (fs.existsSync(infoPath)) {
-                    try {
-                        const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
-                        const emb = (info.embedding_files || []).filter(f => images.includes(f));
-                        if (emb.length > 0) embeddingFiles = emb;
-                    } catch (_) {}
-                }
-
-                const item = {
+                unprocessed.push({
                     folderName:   entry.name,
+                    currentFolder: entry.name,
                     imageCount:   images.length,
-                    previewFiles: embeddingFiles || images.slice(0, 6),
-                    flagged:      flagged.has(entry.name),
-                };
-
-                if (/^person_\d+$/i.test(entry.name)) {
-                    unassigned.push(item);
-                } else {
-                    assigned.push({ ...item, rollNo: entry.name });
-                }
+                    previewFiles: images.slice(0, 6),
+                });
             }
 
-            unassigned.sort((a, b) => a.folderName.localeCompare(b.folderName));
-
-            res.json({ batch, unassigned, assigned });
+            unprocessed.sort((a, b) => a.folderName.localeCompare(b.folderName));
+            res.json({ batch, unprocessed });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     }
 
-    // ─── Serve a photo from any folder (person_XXX or roll-no) ───
+    // ─── Auto-assign all matched clusters immediately after ERP match ──
+    // For each cluster: rename person_XXX → rollNo (best match), save to DB with approved=false.
+    // Unmatched clusters (no face detected) keep their folder and get status=unmatched.
+    async autoAssignAll(req, res) {
+        try {
+            const { batch, matches } = req.body;
+            if (!batch || !matches || typeof matches !== 'object') {
+                return res.status(400).json({ error: 'batch and matches required' });
+            }
+
+            const batchPath = path.join(GROUND_TRUTH_DIR, batch);
+            let renamed = 0, unmatched = 0, conflicts = 0;
+
+            await Promise.all(
+                Object.entries(matches).map(async ([folderName, matchData]) => {
+                    const srcPath = path.join(batchPath, folderName);
+                    const { imageFiles, embeddingFiles } = await readFolderFiles(srcPath);
+
+                    // ── No face detected — save unmatched, keep folder ────
+                    if (matchData.error || !matchData.best) {
+                        await ClusterMatch.findOneAndUpdate(
+                            { batch, folderName },
+                            {
+                                $set: {
+                                    currentFolder:  folderName,
+                                    rollNo:         null,
+                                    status:         'unmatched',
+                                    approved:       false,
+                                    erpPhoto:       null,
+                                    confidence:     null,
+                                    candidates:     [],
+                                    imageFiles,
+                                    embeddingFiles,
+                                    previewFiles:   matchData.preview_images || imageFiles.slice(0, 6),
+                                    imageCount:     matchData.image_count    || imageFiles.length,
+                                    error:          matchData.error          || 'no match',
+                                    updated_at:     new Date(),
+                                },
+                            },
+                            { upsert: true, new: true, setDefaultsOnInsert: true }
+                        );
+                        unmatched++;
+                        return;
+                    }
+
+                    // ── Has a best match — rename folder to rollNo ────────
+                    const suggestedRollNo = matchData.best.rollNo.trim().toUpperCase();
+                    const destPath        = path.join(batchPath, suggestedRollNo);
+
+                    let actualFolder = suggestedRollNo;
+                    let copiedFiles  = imageFiles;
+
+                    if (fs.existsSync(srcPath)) {
+                        if (fs.existsSync(destPath)) {
+                            // Conflict: rollNo folder already exists — keep person_XXX, flag conflict
+                            await ClusterMatch.findOneAndUpdate(
+                                { batch, folderName },
+                                {
+                                    $set: {
+                                        currentFolder: folderName,
+                                        rollNo:        suggestedRollNo,
+                                        status:        'unmatched',
+                                        approved:      false,
+                                        erpPhoto:      matchData.best.erpPhoto,
+                                        confidence:    matchData.best.confidence,
+                                        candidates:    matchData.candidates   || [],
+                                        imageFiles,
+                                        embeddingFiles,
+                                        previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                                        imageCount:    matchData.image_count    || imageFiles.length,
+                                        error:         `Conflict: folder ${suggestedRollNo} already exists`,
+                                        updated_at:    new Date(),
+                                    },
+                                },
+                                { upsert: true, new: true, setDefaultsOnInsert: true }
+                            );
+                            conflicts++;
+                            return;
+                        }
+
+                        // Copy images to rollNo folder, delete person_XXX
+                        copiedFiles  = await copyImages(srcPath, destPath);
+                        await fsPromises.rm(srcPath, { recursive: true, force: true });
+                    }
+
+                    await ClusterMatch.findOneAndUpdate(
+                        { batch, folderName },
+                        {
+                            $set: {
+                                currentFolder: actualFolder,
+                                rollNo:        suggestedRollNo,
+                                status:        'matched',
+                                approved:      false,
+                                erpPhoto:      matchData.best.erpPhoto,
+                                confidence:    matchData.best.confidence,
+                                candidates:    matchData.candidates   || [],
+                                imageFiles:    copiedFiles,
+                                embeddingFiles,
+                                previewFiles:  matchData.preview_images || copiedFiles.slice(0, 6),
+                                imageCount:    matchData.image_count    || copiedFiles.length,
+                                error:         null,
+                                updated_at:    new Date(),
+                            },
+                        },
+                        { upsert: true, new: true, setDefaultsOnInsert: true }
+                    );
+                    renamed++;
+                })
+            );
+
+            res.json({ renamed, unmatched, conflicts, total: Object.keys(matches).length });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ─── Get all DB match records for a batch ─────────────────────
+    async getMatches(req, res) {
+        try {
+            const { batch } = req.params;
+            const records   = await ClusterMatch.find({ batch }).lean();
+
+            // Build matchMap keyed by folderName for the frontend
+            const matchMap = {};
+            records.forEach(r => {
+                matchMap[r.folderName] = {
+                    folderName:    r.folderName,
+                    currentFolder: r.currentFolder || r.folderName,
+                    rollNo:        r.rollNo,
+                    status:        r.status,
+                    approved:      r.approved,
+                    erpPhoto:      r.erpPhoto,
+                    confidence:    r.confidence,
+                    candidates:    r.candidates   || [],
+                    imageFiles:    r.imageFiles   || [],
+                    embeddingFiles: r.embeddingFiles || [],
+                    previewFiles:  r.previewFiles  || [],
+                    imageCount:    r.imageCount    || 0,
+                    error:         r.error         || null,
+                };
+            });
+
+            res.json({ batch, matchMap, total: records.length });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ─── Approve a match (operator confirms ERP suggestion) ───────
+    // If rollNo matches current folder → just set approved=true (no file ops).
+    // If operator overrides rollNo → rename current folder to new rollNo, then approve.
+    async approve(req, res) {
+        try {
+            const { batch, folderName, rollNo: overrideRollNo } = req.body;
+            if (!batch || !folderName) {
+                return res.status(400).json({ error: 'batch and folderName required' });
+            }
+
+            const record = await ClusterMatch.findOne({ batch, folderName });
+            if (!record) {
+                return res.status(404).json({ error: 'No match record found for this cluster' });
+            }
+
+            const currentFolder = record.currentFolder || record.folderName;
+            const finalRollNo   = overrideRollNo
+                ? overrideRollNo.trim().toUpperCase()
+                : record.rollNo;
+
+            if (!finalRollNo) {
+                return res.status(400).json({ error: 'No roll number available — provide rollNo in body' });
+            }
+
+            let imageFiles = record.imageFiles;
+
+            // Rename only when override differs from current folder name
+            if (finalRollNo !== currentFolder) {
+                const batchPath = path.join(GROUND_TRUTH_DIR, batch);
+                const srcPath   = path.join(batchPath, currentFolder);
+                const destPath  = path.join(batchPath, finalRollNo);
+
+                if (fs.existsSync(srcPath)) {
+                    if (fs.existsSync(destPath)) {
+                        return res.status(409).json({
+                            error: `Folder ${finalRollNo} already exists in this batch`,
+                        });
+                    }
+                    imageFiles = await copyImages(srcPath, destPath);
+                    await fsPromises.rm(srcPath, { recursive: true, force: true });
+                }
+            }
+
+            await ClusterMatch.findOneAndUpdate(
+                { batch, folderName },
+                {
+                    $set: {
+                        currentFolder: finalRollNo,
+                        rollNo:        finalRollNo,
+                        status:        'approved',
+                        approved:      true,
+                        imageFiles,
+                        updated_at:    new Date(),
+                    },
+                }
+            );
+
+            // Clear any pending flag for this cluster
+            const flags = await readFlags(batch);
+            await writeFlags(batch, flags.filter(f => f.folderName !== folderName));
+
+            res.json({ approved: true, rollNo: finalRollNo, folderName });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ─── Serve a photo from any folder ───────────────────────────
     async servePhoto(req, res) {
         try {
             const { batch, folder, filename } = req.params;
@@ -114,7 +349,7 @@ class RollAssignController {
         }
     }
 
-    // ─── Auto-match clusters to ERP photos (SSE stream from Python) ─
+    // ─── Auto-match clusters to ERP photos (SSE stream) ──────────
     async autoMatch(req, res) {
         try {
             const { batch } = req.params;
@@ -122,10 +357,12 @@ class RollAssignController {
             if (!fs.existsSync(batchPath)) {
                 return res.status(404).json({ error: 'Batch not found' });
             }
-            if (!fs.existsSync(ERP_PHOTOS_DIR) ||
-                fs.readdirSync(ERP_PHOTOS_DIR).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length === 0) {
+            const erpFiles = fs.existsSync(ERP_PHOTOS_DIR)
+                ? fs.readdirSync(ERP_PHOTOS_DIR).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
+                : [];
+            if (!erpFiles.length) {
                 return res.status(400).json({
-                    error: 'No ERP photos found. Upload student photos named {rollNo}.jpg to the erp_photos folder.'
+                    error: 'No ERP photos found. Upload student photos named {rollNo}.jpg to the erp_photos folder.',
                 });
             }
 
@@ -146,52 +383,13 @@ class RollAssignController {
                 res.end();
             });
         } catch (err) {
-            console.error('autoMatch error:', err.code, err.response?.data);
             const msg = err.response?.data?.detail || err.message;
-            if (!res.headersSent) {
-                res.status(500).json({ error: msg });
-            } else {
-                res.write(`data: ${JSON.stringify({ type: 'error', msg })}\n\n`);
-                res.end();
-            }
+            if (!res.headersSent) res.status(500).json({ error: msg });
+            else { res.write(`data: ${JSON.stringify({ type: 'error', msg })}\n\n`); res.end(); }
         }
     }
 
-    // ─── Rename person_XXX → rollNo (approve) ────────────────────
-    async assignRollNo(req, res) {
-        try {
-            const { batch, folderName, rollNo } = req.body;
-            if (!batch || !folderName || !rollNo) {
-                return res.status(400).json({ error: 'batch, folderName, and rollNo are required' });
-            }
-
-            const trimmedRoll = rollNo.trim().toUpperCase();
-            const batchPath   = path.join(GROUND_TRUTH_DIR, batch);
-            const srcPath     = path.join(batchPath, folderName);
-            const destPath    = path.join(batchPath, trimmedRoll);
-
-            if (!fs.existsSync(srcPath)) {
-                return res.status(404).json({ error: `Folder not found: ${folderName}` });
-            }
-            if (fs.existsSync(destPath)) {
-                return res.status(409).json({
-                    error: `Roll number ${trimmedRoll} already exists in this batch`
-                });
-            }
-
-            await fsPromises.rename(srcPath, destPath);
-
-            // Remove any pending flag for this folder
-            const flags = await readFlags(batch);
-            await writeFlags(batch, flags.filter(f => f.folderName !== folderName));
-
-            res.json({ message: `Renamed ${folderName} → ${trimmedRoll}`, rollNo: trimmedRoll });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    }
-
-    // ─── Flag a folder as incorrect match ────────────────────────
+    // ─── Flag a cluster as incorrect ─────────────────────────────
     async flagCluster(req, res) {
         try {
             const { batch, folderName, suggestedRollNo, confidence, reason } = req.body;
@@ -199,9 +397,13 @@ class RollAssignController {
                 return res.status(400).json({ error: 'batch and folderName required' });
             }
 
-            const flags = await readFlags(batch);
+            await ClusterMatch.findOneAndUpdate(
+                { batch, folderName },
+                { $set: { status: 'flagged', approved: false, updated_at: new Date() } },
+                { upsert: false }
+            );
 
-            // Remove existing flag for this folder, then add new one
+            const flags    = await readFlags(batch);
             const filtered = flags.filter(f => f.folderName !== folderName);
             filtered.push({
                 folderName,
@@ -212,15 +414,15 @@ class RollAssignController {
                 resolved:        false,
                 resolvedRollNo:  null,
             });
-
             await writeFlags(batch, filtered);
+
             res.json({ message: `Flagged ${folderName}`, folderName });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     }
 
-    // ─── List all flagged clusters for a batch ────────────────────
+    // ─── List all flagged clusters ────────────────────────────────
     async listFlagged(req, res) {
         try {
             const { batch } = req.params;
@@ -232,17 +434,20 @@ class RollAssignController {
             const flags = await readFlags(batch);
             const open  = flags.filter(f => !f.resolved);
 
-            // Attach preview images for each flagged folder
             const enriched = await Promise.all(open.map(async (flag) => {
-                const folderPath = path.join(batchPath, flag.folderName);
+                // After auto-assign the folder is named rollNo, not person_XXX
+                const dbRecord = await ClusterMatch.findOne({ batch, folderName: flag.folderName }).lean();
+                const folder   = dbRecord?.currentFolder || flag.folderName;
+                const folderPath = path.join(batchPath, folder);
+
                 let previewFiles = [];
                 if (fs.existsSync(folderPath)) {
                     const files = await fsPromises.readdir(folderPath);
-                    previewFiles = files
-                        .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
-                        .slice(0, 6);
+                    previewFiles = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).slice(0, 6);
+                } else if (dbRecord?.previewFiles?.length) {
+                    previewFiles = dbRecord.previewFiles;
                 }
-                return { ...flag, previewFiles };
+                return { ...flag, currentFolder: folder, previewFiles };
             }));
 
             res.json({ batch, flagged: enriched, total: enriched.length });
@@ -251,7 +456,7 @@ class RollAssignController {
         }
     }
 
-    // ─── Resolve a flagged cluster (manual correct roll no) ───────
+    // ─── Resolve a flagged cluster with correct rollNo ────────────
     async resolveFlag(req, res) {
         try {
             const { batch, folderName, rollNo } = req.body;
@@ -259,43 +464,23 @@ class RollAssignController {
                 return res.status(400).json({ error: 'batch, folderName, rollNo required' });
             }
 
-            const trimmedRoll = rollNo.trim().toUpperCase();
-            const batchPath   = path.join(GROUND_TRUTH_DIR, batch);
-            const srcPath     = path.join(batchPath, folderName);
-            const destPath    = path.join(batchPath, trimmedRoll);
-
-            if (!fs.existsSync(srcPath)) {
-                return res.status(404).json({ error: `Folder not found: ${folderName}` });
-            }
-            if (fs.existsSync(destPath)) {
-                return res.status(409).json({
-                    error: `Roll number ${trimmedRoll} already exists`
-                });
-            }
-
-            await fsPromises.rename(srcPath, destPath);
-
-            // Mark flag as resolved
-            const flags = await readFlags(batch);
-            const updated = flags.map(f =>
-                f.folderName === folderName
-                    ? { ...f, resolved: true, resolvedRollNo: trimmedRoll,
-                              resolvedAt: new Date().toISOString() }
-                    : f
-            );
-            await writeFlags(batch, updated);
-
-            res.json({ message: `Resolved: ${folderName} → ${trimmedRoll}`, rollNo: trimmedRoll });
+            // Delegate to approve (handles rename if needed)
+            req.body.overrideRollNo = rollNo;
+            return this.approve(req, res);
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     }
 
-    // ─── Get ground truth images for assigned student ─────────────
+    // ─── Get ground truth images for an approved student ─────────
     async getStudentGroundTruth(req, res) {
         try {
             const { batch, rollNo } = req.params;
+
+            // Prefer DB record (has embeddingFiles)
+            const dbRecord   = await ClusterMatch.findOne({ batch, rollNo }).lean();
             const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+
             if (!fs.existsSync(studentDir)) {
                 return res.status(404).json({ error: 'Student folder not found' });
             }
@@ -303,16 +488,26 @@ class RollAssignController {
             const files     = await fsPromises.readdir(studentDir);
             const allImages = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).sort();
 
-            const infoPath = path.join(studentDir, '_info.json');
             let embeddingFiles = [];
             let backupFiles    = [];
-            let scores         = {};
 
-            if (fs.existsSync(infoPath)) {
-                const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
-                embeddingFiles = (info.embedding_files || []).filter(f => allImages.includes(f));
-                backupFiles    = (info.backup_files    || []).filter(f => allImages.includes(f));
-                scores         = info.scores || {};
+            if (dbRecord?.embeddingFiles?.length) {
+                embeddingFiles = dbRecord.embeddingFiles.filter(f => allImages.includes(f));
+                const embSet   = new Set(embeddingFiles);
+                backupFiles    = allImages.filter(f => !embSet.has(f));
+            } else {
+                const infoPath = path.join(studentDir, '_info.json');
+                if (fs.existsSync(infoPath)) {
+                    try {
+                        const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                        embeddingFiles = (info.embedding_files || []).filter(f => allImages.includes(f));
+                        backupFiles    = (info.backup_files    || []).filter(f => allImages.includes(f));
+                    } catch (_) {}
+                }
+                if (!embeddingFiles.length) {
+                    embeddingFiles = allImages.slice(0, 10);
+                    backupFiles    = allImages.slice(10);
+                }
             }
 
             const tracked   = new Set([...embeddingFiles, ...backupFiles]);
@@ -321,24 +516,22 @@ class RollAssignController {
             const makeList = (fnames) => fnames.map(f => ({
                 filename: f,
                 url: `/attendancemodule/roll-assign/photo/${batch}/${rollNo}/${f}`,
-                score: scores[f] || null,
+                score: null,
             }));
 
             res.json({
-                batch,
-                rollNo,
+                batch, rollNo,
                 embeddingFiles: makeList(embeddingFiles),
                 backupFiles:    makeList(backupFiles),
                 untrackedFiles: makeList(untracked),
                 totalImages:    allImages.length,
-                hasInfo:        embeddingFiles.length > 0 || backupFiles.length > 0,
             });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     }
 
-    // ─── Bulk assign ──────────────────────────────────────────────
+    // ─── Bulk approve ─────────────────────────────────────────────
     async bulkAssign(req, res) {
         try {
             const { batch, assignments } = req.body;
@@ -346,43 +539,29 @@ class RollAssignController {
                 return res.status(400).json({ error: 'batch and assignments array required' });
             }
 
-            const batchPath = path.join(GROUND_TRUTH_DIR, batch);
-            const results   = [];
-
+            const results = [];
             for (const { folderName, rollNo } of assignments) {
                 if (!folderName || !rollNo) {
                     results.push({ folderName, status: 'skipped', reason: 'missing rollNo' });
                     continue;
                 }
-                const trimmedRoll = rollNo.trim().toUpperCase();
-                const srcPath     = path.join(batchPath, folderName);
-                const destPath    = path.join(batchPath, trimmedRoll);
-
-                if (!fs.existsSync(srcPath)) {
-                    results.push({ folderName, status: 'error', reason: 'folder not found' });
-                    continue;
-                }
-                if (fs.existsSync(destPath)) {
-                    results.push({ folderName, status: 'error', reason: `${trimmedRoll} already exists` });
-                    continue;
-                }
                 try {
-                    await fsPromises.rename(srcPath, destPath);
-                    results.push({ folderName, rollNo: trimmedRoll, status: 'assigned' });
+                    // Reuse approve logic via a synthetic request
+                    const fakeReq = { body: { batch, folderName, rollNo } };
+                    let result;
+                    const fakeRes = {
+                        status: () => ({ json: (d) => { result = { ...d, status: 'error' }; } }),
+                        json:   (d) => { result = { ...d, status: 'approved' }; },
+                    };
+                    await this.approve(fakeReq, fakeRes);
+                    results.push(result || { folderName, rollNo, status: 'approved' });
                 } catch (e) {
                     results.push({ folderName, status: 'error', reason: e.message });
                 }
             }
 
-            // Clear resolved flags
-            const assignedNames = results.filter(r => r.status === 'assigned').map(r => r.folderName);
-            if (assignedNames.length > 0) {
-                const flags = await readFlags(batch);
-                await writeFlags(batch, flags.filter(f => !assignedNames.includes(f.folderName)));
-            }
-
-            const assigned = results.filter(r => r.status === 'assigned').length;
-            res.json({ batch, results, assigned, total: results.length });
+            const approved = results.filter(r => r.status === 'approved').length;
+            res.json({ batch, results, approved, total: results.length });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }

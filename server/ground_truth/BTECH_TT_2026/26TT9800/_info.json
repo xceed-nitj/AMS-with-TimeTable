@@ -1,0 +1,13 @@
+{
+  "embedding_files": [
+    "bak_20.0s_f114.jpg",
+    "bak_23.3s_f142.jpg",
+    "emb_21.7s_f125.jpg",
+    "emb_25.0s_f155.jpg",
+    "emb_26.7s_f166.jpg"
+  ],
+  "backup_files": [
+    "emb_28.3s_f185.jpg",
+    "emb_30.0s_f197.jpg"
+  ]
+}
