@@ -5,6 +5,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const GroundTruthController = require('../controllers/groundTruthController');
+const TimeTable = require('../../../models/timetable');
 
 const controller = new GroundTruthController();
 
@@ -19,6 +20,26 @@ const upload = multer({
 });
 
 // ─── Ground Truth Management ──────────────────────────────────────
+
+// ─── Fetch departments from timetable/addsem routes ─────────────────
+// Returns list of { dept, session, code } from TimeTable collection
+// Used by ground truth generation page so batch folder names always match
+router.get('/departments', async (req, res) => {
+    try {
+        const timetables = await TimeTable.find({}, 'dept session code currentSession').lean();
+        // Deduplicate by dept (case-insensitive)
+        const seen = new Set();
+        const depts = [];
+        for (const tt of timetables) {
+            const key = (tt.dept || '').toUpperCase();
+            if (key && !seen.has(key)) {
+                seen.add(key);
+                depts.push({ dept: tt.dept, session: tt.session, code: tt.code, currentSession: tt.currentSession });
+            }
+        }
+        res.json({ departments: depts });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // List all batches
 router.get('/batches', async (req, res) => {

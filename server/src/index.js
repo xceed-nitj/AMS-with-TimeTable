@@ -10,6 +10,13 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const v1router = require("./routes");
 
+dotenv.config({ path: "../.env" });
+
+console.log("ENV CHECK:", {
+  MONGO_URL: process.env.MONGO_URL,
+  JWT_SECRET: process.env.JWT_SECRET,
+});
+
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -66,7 +73,7 @@ app.use(
 );
 
 // Load environment variables from .env file
-dotenv.config({ path: "../.env" });
+
 
 // Middleware
 
@@ -160,8 +167,19 @@ mongoose
   .then(() => {
     console.log("Connected to MongoDB");
     // Start the Express server once connected to MongoDB
-    app.listen(8010, () => {
-      console.log("Server started on port 8010");
+    const PORT = process.env.PORT || 8010;
+    const server = app.listen(PORT, () => {
+      console.log(`Server started on port ${PORT}`);
+    });
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`\n❌ Port ${PORT} is already in use.`);
+        console.error(`   Run: netstat -ano | findstr :${PORT}`);
+        console.error(`   Then: taskkill /PID <PID> /F`);
+        process.exit(1);
+      } else {
+        throw err;
+      }
     });
   })
   .catch((err) => {

@@ -203,6 +203,7 @@ import RollAssign from './attendancemodule/rollassign';
 import FlaggedAssign from './attendancemodule/flaggedassign';
 import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
+import AttendanceReport from './attendancemodule/AttendanceReport';
 
 function App() {
   return (
@@ -610,6 +611,7 @@ function App() {
           <Route path="groundtruth/edit" element={<EditGroundTruth />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
+          <Route path="reports" element={<AttendanceReport />} />
         </Route>
 
       </Routes>
