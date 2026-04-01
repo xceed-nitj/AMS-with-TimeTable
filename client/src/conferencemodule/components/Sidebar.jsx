@@ -28,9 +28,7 @@ const Sidebar = () => {
   // State for conference name
   const [conferenceName, setConferenceName] = useState('Conference Name');
   const [timeLeft, setTimeLeft] = useState({});
-  const [startDate, setStartDate] = useState('2025-12-31T10:00:00'); 
-  
-  // replace with actual date from API
+  const [startDate, setStartDate] = useState(null);
 
   useEffect(() => {
   if (!startDate) return;
@@ -100,23 +98,11 @@ const Sidebar = () => {
     axios
       .get(`${apiUrl}/conferencemodule/home/conf/${IdConf}`, { withCredentials: true })
       .then(res => {
-        console.log(res);
-        console.log(IdConf);
         setConferenceName(res.data?.confName || 'Conference Name');
+        setStartDate(res.data?.confStartDate || null);
       })
       .catch(err => {
         setConferenceName('Conference Name');
-        console.error('Failed to fetch conference name:', err);
-      });
-
-    {/* start date */ }
-    axios
-      .get(`${apiUrl}/conferencemodule/home/conf/${IdConf}`, { withCredentials: true })
-      .then(res => {
-        setConferenceName(res.data?.confName || 'Conference Name');
-        setStartDate(res.data?.startDate || '2025-12-31T10:00:00'); // adjust key according to your API
-      })
-      .catch(err => {
         console.error('Failed to fetch conference:', err);
       });
 
