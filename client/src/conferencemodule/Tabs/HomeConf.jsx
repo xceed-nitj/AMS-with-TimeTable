@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
 import { Container } from "@chakra-ui/react";
 import formatDate from "../utils/formatDate";
-import { Flex, Box, FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button, useBreakpointValue, Textarea } from '@chakra-ui/react';
+import { Flex, Box, FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button, useBreakpointValue, Textarea, Select, VStack, HStack, Text, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, useDisclosure } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
 
 const HomeConf = () => {
@@ -64,12 +64,75 @@ const HomeConf = () => {
 
     const isMobile = useBreakpointValue({ base: true, md: false });
     const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
+    const toast = useToast();
+    const { isOpen: isImportOpen, onOpen: onImportOpen, onClose: onImportClose } = useDisclosure();
+
+    const [importConferences, setImportConferences] = useState([]);
+    const [selectedImportConf, setSelectedImportConf] = useState("");
+    const [importHomeData, setImportHomeData] = useState(null);
+    const [loadingImport, setLoadingImport] = useState(false);
+    const [importConferenceNames, setImportConferenceNames] = useState({});
 
     const { confName, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
      regLink,flyerLink,brochureLink,posterLink } = formData;
     
      const confStartDate = formData.confStartDate ? new Date(formData.confStartDate).toLocaleDateString('en-CA') : null;
      const confEndDate = formData.confEndDate ? new Date(formData.confEndDate).toLocaleDateString('en-CA') : null;
+
+    const fetchImportConferences = async () => {
+        try {
+            const res = await axios.get(`${apiUrl}/conferencemodule/conf`, { withCredentials: true });
+            const others = res.data.filter((c) => c._id !== IdConf);
+            setImportConferences(others);
+            const names = await Promise.all(
+                others.map(async (conf) => {
+                    try {
+                        const nameRes = await axios.get(`${apiUrl}/conferencemodule/home/conf/${conf._id}`, { withCredentials: true });
+                        return { confId: conf._id, confName: nameRes.data?.confName || `Conference ${conf._id}` };
+                    } catch {
+                        return { confId: conf._id, confName: `Conference ${conf._id}` };
+                    }
+                })
+            );
+            const map = {};
+            names.forEach(({ confId, confName }) => (map[confId] = confName));
+            setImportConferenceNames(map);
+        } catch (err) {
+            console.error('Error fetching conferences for import:', err);
+        }
+    };
+
+    const handleImportConfChange = async (e) => {
+        const confId = e.target.value;
+        setSelectedImportConf(confId);
+        setImportHomeData(null);
+        if (!confId) return;
+        setLoadingImport(true);
+        try {
+            const res = await axios.get(`${apiUrl}/conferencemodule/home/conf/${confId}`, { withCredentials: true });
+            setImportHomeData(res.data);
+        } catch (err) {
+            console.error('Error fetching import conference data:', err);
+            toast({ title: 'Error', description: 'Failed to fetch conference data.', status: 'error', duration: 3000, isClosable: true });
+        } finally {
+            setLoadingImport(false);
+        }
+    };
+
+    const handleApplyImport = () => {
+        if (!importHomeData) return;
+        const { _id, confId, __v, ...rest } = importHomeData;
+        setFormData(prev => ({ ...prev, ...rest, confId: IdConf }));
+        onImportClose();
+        setSelectedImportConf("");
+        setImportHomeData(null);
+        toast({ title: 'Imported!', description: 'Conference details have been filled from the selected conference. Review and save.', status: 'success', duration: 3000, isClosable: true });
+    };
+
+    const handleOpenImport = () => {
+        fetchImportConferences();
+        onImportOpen();
+    };
 
     const parseHtmlTables = (html) => {
         const parser = new DOMParser();
@@ -685,8 +748,11 @@ const HomeConf = () => {
                             <Heading as="h2" size="md" mb={4}>
                                 Add Items
                             </Heading>
-                            <Button colorScheme="blue" onClick={addNewAbout} mb="4" width="100%" size="sm">
+                            <Button colorScheme="blue" onClick={addNewAbout} mb="2" width="100%" size="sm">
                                 Add New About
+                            </Button>
+                            <Button colorScheme="green" onClick={handleOpenImport} mb="4" width="100%" size="sm">
+                                Import from Conference
                             </Button>
                             
                             {/* Back to Form Button */}
@@ -748,6 +814,17 @@ const HomeConf = () => {
                         {/* Form Section */}
                         <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto">
                             <Container maxW='full'>
+                                <HStack justify="space-between" align="center" mb={4}>
+                                    <Box>
+                                        <Text fontSize="xs" color="gray.500" fontWeight="medium">Conference ID</Text>
+                                        <Text fontSize="sm" fontFamily="monospace" color="gray.700" bg="gray.100" px={2} py={1} borderRadius="sm" border="1px solid" borderColor="gray.300">
+                                            {IdConf}
+                                        </Text>
+                                    </Box>
+                                    <Button colorScheme="green" size="sm" onClick={handleOpenImport}>
+                                        Import from Conference
+                                    </Button>
+                                </HStack>
                                 <Center>
                                     <Heading as="h1" size="xl" mt="2" mb="6" color="#3B82F6" textDecoration="underline">
                                         About Conference
@@ -1154,6 +1231,52 @@ const HomeConf = () => {
                     </div>
                 </div>
             )}
+
+            {/* Import from Conference Modal */}
+            <Modal isOpen={isImportOpen} onClose={onImportClose} size="xl">
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Import Conference Details from Another Conference</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <VStack spacing={4} align="stretch">
+                            <FormControl>
+                                <FormLabel>Select Conference:</FormLabel>
+                                <Select placeholder="Choose a conference..." value={selectedImportConf} onChange={handleImportConfChange}>
+                                    {importConferences.map((conf) => (
+                                        <option key={conf._id} value={conf._id}>
+                                            {importConferenceNames[conf._id] || `Conference ${conf._id}`}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            {loadingImport && (
+                                <Center p={4}><LoadingIcon /></Center>
+                            )}
+                            {importHomeData && !loadingImport && (
+                                <Box border="1px solid" borderColor="gray.200" borderRadius="md" p={4} bg="gray.50">
+                                    <Heading as="h4" size="sm" mb={3}>Preview:</Heading>
+                                    <VStack align="start" spacing={1}>
+                                        <Text fontSize="sm"><b>Name:</b> {importHomeData.confName}</Text>
+                                        <Text fontSize="sm"><b>Start Date:</b> {importHomeData.confStartDate ? new Date(importHomeData.confStartDate).toLocaleDateString() : '-'}</Text>
+                                        <Text fontSize="sm"><b>End Date:</b> {importHomeData.confEndDate ? new Date(importHomeData.confEndDate).toLocaleDateString() : '-'}</Text>
+                                        <Text fontSize="sm"><b>Short Name:</b> {importHomeData.shortName || '-'}</Text>
+                                    </VStack>
+                                    <Text fontSize="xs" color="gray.500" mt={3}>
+                                        All conference details (name, dates, links, etc.) will be filled in. You can review and edit before saving.
+                                    </Text>
+                                </Box>
+                            )}
+                        </VStack>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button colorScheme="green" mr={3} onClick={handleApplyImport} isDisabled={!importHomeData}>
+                            Apply Import
+                        </Button>
+                        <Button onClick={onImportClose}>Cancel</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
             {/* About Delete Confirmation Modal */}
             {showAboutDeleteConfirmation && (
