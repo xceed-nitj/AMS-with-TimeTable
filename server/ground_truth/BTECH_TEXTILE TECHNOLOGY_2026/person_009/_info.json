@@ -1,0 +1,13 @@
+{
+  "embedding_files": [
+    "gt_0.7s_f4.jpg",
+    "gt_6.0s_f86.jpg",
+    "gt_1.3s_f16.jpg"
+  ],
+  "backup_files": [],
+  "scores": {
+    "gt_0.7s_f4.jpg": 18.2309,
+    "gt_6.0s_f86.jpg": 17.8858,
+    "gt_1.3s_f16.jpg": 15.8237
+  }
+}

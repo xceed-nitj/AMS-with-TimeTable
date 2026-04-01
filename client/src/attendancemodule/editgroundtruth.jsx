@@ -1,7 +1,8 @@
 // client/src/attendancemodule/editgroundtruth.jsx
 
 import { useState, useEffect, useCallback } from 'react';
-import { API_BASE, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset } from './config';
+import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
+import { useDepartments } from './useDepartments';
 
 function absPhotoUrl(batch, rollNo, filename) {
     return `${API_BASE}/photo/${encodeURIComponent(batch)}/${encodeURIComponent(rollNo)}/${encodeURIComponent(filename)}`;
@@ -93,12 +94,15 @@ export default function EditGroundTruth() {
     const [loading,         setLoading]         = useState(false);
     const [toast,           setToast]           = useState(null);
     const [search,          setSearch]          = useState('');
-    const [busyPhoto,       setBusyPhoto]       = useState(null); // filename currently being acted on
+    const [busyPhoto,       setBusyPhoto]       = useState(null);
 
     const [showAddForm, setShowAddForm] = useState(false);
     const [newRollNo,   setNewRollNo]   = useState('');
     const [newFiles,    setNewFiles]    = useState([]);
     const [uploading,   setUploading]   = useState(false);
+
+    // Departments fetched live from DB — ensures folder names match timetable
+    const { departments, deptLoading, deptError } = useDepartments();
 
     const [showNewBatch, setShowNewBatch] = useState(false);
     const [nbDegree,     setNbDegree]     = useState('BTECH');
@@ -123,7 +127,7 @@ export default function EditGroundTruth() {
 
     useEffect(() => { loadBatches(); }, [loadBatches]);
 
-    // ─── Load / refresh students — preserves expandedStudent ────
+    // ─── Load / refresh students ──────────────────────────────────
     const loadStudents = useCallback(async (batch, keepExpanded = false) => {
         if (!keepExpanded) setExpandedStudent(null);
         setSelectedBatch(batch);
@@ -138,7 +142,7 @@ export default function EditGroundTruth() {
         setLoading(false);
     }, []);
 
-    // ─── Update one student in-place (avoids full reload collapsing rows) ──
+    // ─── Update one student in-place ──────────────────────────────
     const refreshStudent = useCallback(async (batch, rollNo) => {
         try {
             const res  = await fetch(`${API_BASE}/batches/${batch}/students`);
@@ -303,10 +307,20 @@ export default function EditGroundTruth() {
                         </div>
                         <div>
                             <label style={styles.label}>Department</label>
-                            <select value={nbDept} onChange={e => setNbDept(e.target.value)} style={styles.select}>
-                                <option value="">Select...</option>
-                                {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
+                            <select
+                                value={nbDept}
+                                onChange={e => setNbDept(e.target.value)}
+                                style={styles.select}
+                                disabled={deptLoading}
+                            >
+                                <option value="">
+                                    {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
+                                </option>
+                                {departments.map(d => <option key={d}>{d}</option>)}
                             </select>
+                            {deptError && (
+                                <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
+                            )}
                         </div>
                         <div>
                             <label style={styles.label}>Year</label>
@@ -350,7 +364,6 @@ export default function EditGroundTruth() {
             {/* Student list */}
             {selectedBatch && (
                 <div>
-                    {/* Toolbar: title + search + add */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                         <div style={{ ...styles.sectionTitle, marginBottom: 0, flexShrink: 0 }}>
                             {selectedBatch} — {students.length} students
@@ -360,12 +373,7 @@ export default function EditGroundTruth() {
                             placeholder="Search roll number…"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            style={{
-                                ...styles.input,
-                                flex: 1, maxWidth: 260,
-                                padding: '6px 12px', fontSize: '13px',
-                                fontFamily: theme.fontMono,
-                            }}
+                            style={{ ...styles.input, flex: 1, maxWidth: 260, padding: '6px 12px', fontSize: '13px', fontFamily: theme.fontMono }}
                         />
                         {search && (
                             <span style={{ fontSize: '12px', color: theme.textMuted }}>
@@ -405,12 +413,10 @@ export default function EditGroundTruth() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {filteredStudents.map(s => (
                             <div key={s.rollNo} style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
-                                {/* Row header — click to expand */}
                                 <div
                                     onClick={() => setExpandedStudent(expandedStudent === s.rollNo ? null : s.rollNo)}
                                     style={{ padding: '12px 20px', display: 'flex', alignItems: 'center',
-                                             justifyContent: 'space-between', cursor: 'pointer',
-                                             userSelect: 'none' }}
+                                             justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                                         <span style={{ fontWeight: 700, fontSize: '14px', fontFamily: theme.fontMono }}>
@@ -439,11 +445,8 @@ export default function EditGroundTruth() {
                                     }}>▾</span>
                                 </div>
 
-                                {/* Expanded photos */}
                                 {expandedStudent === s.rollNo && (
-                                    <div style={{ padding: '0 20px 20px', paddingTop: 14,
-                                                  borderTop: `1px solid ${theme.border}` }}>
-                                        {/* Delete student link — subtle, not a prominent button */}
+                                    <div style={{ padding: '0 20px 20px', paddingTop: 14, borderTop: `1px solid ${theme.border}` }}>
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
                                             <button
                                                 onClick={e => { e.stopPropagation(); deleteStudent(s.rollNo); }}
@@ -455,8 +458,7 @@ export default function EditGroundTruth() {
                                         </div>
 
                                         {s.photos.length === 0 ? (
-                                            <div style={{ textAlign: 'center', padding: 20,
-                                                          color: theme.textMuted, fontSize: '13px' }}>
+                                            <div style={{ textAlign: 'center', padding: 20, color: theme.textMuted, fontSize: '13px' }}>
                                                 No photos stored
                                             </div>
                                         ) : s.hasInfo ? (
@@ -465,30 +467,27 @@ export default function EditGroundTruth() {
                                                     label="Embedding" accent={theme.accent}
                                                     hint="used for face recognition"
                                                     photos={s.embeddingFiles}
-                                                    onDelete={(f) => deletePhoto(s.rollNo, f)}
-                                                    onMove={(f) => movePhoto(s.rollNo, f, 'demote')}
-                                                    moveLabel="→ Backup"
-                                                    moveTitle="Move to backup"
+                                                    onDelete={f => deletePhoto(s.rollNo, f)}
+                                                    onMove={f => movePhoto(s.rollNo, f, 'demote')}
+                                                    moveLabel="→ Backup" moveTitle="Move to backup"
                                                     busy={busyPhoto}
                                                 />
                                                 <PhotoGroup
                                                     label="Backup" accent={theme.warning}
                                                     hint="stored but not active — click ↑ to promote"
                                                     photos={s.backupFiles}
-                                                    onDelete={(f) => deletePhoto(s.rollNo, f)}
-                                                    onMove={(f) => movePhoto(s.rollNo, f, 'promote')}
-                                                    moveLabel="↑ Embed"
-                                                    moveTitle="Promote to embedding"
+                                                    onDelete={f => deletePhoto(s.rollNo, f)}
+                                                    onMove={f => movePhoto(s.rollNo, f, 'promote')}
+                                                    moveLabel="↑ Embed" moveTitle="Promote to embedding"
                                                     busy={busyPhoto}
                                                 />
                                                 <PhotoGroup
                                                     label="Other" accent={theme.textMuted}
                                                     hint="manually added — click ↑ to include in embedding"
                                                     photos={s.untrackedFiles}
-                                                    onDelete={(f) => deletePhoto(s.rollNo, f)}
-                                                    onMove={(f) => movePhoto(s.rollNo, f, 'promote')}
-                                                    moveLabel="↑ Embed"
-                                                    moveTitle="Add to embedding"
+                                                    onDelete={f => deletePhoto(s.rollNo, f)}
+                                                    onMove={f => movePhoto(s.rollNo, f, 'promote')}
+                                                    moveLabel="↑ Embed" moveTitle="Add to embedding"
                                                     busy={busyPhoto}
                                                 />
                                             </>
@@ -497,7 +496,7 @@ export default function EditGroundTruth() {
                                                 label="Photos" accent={theme.textMuted}
                                                 hint="no embedding metadata yet"
                                                 photos={s.photos}
-                                                onDelete={(f) => deletePhoto(s.rollNo, f)}
+                                                onDelete={f => deletePhoto(s.rollNo, f)}
                                                 busy={busyPhoto}
                                             />
                                         )}

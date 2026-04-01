@@ -6,9 +6,12 @@ const apiUrl = getEnvironment();
 const API_BASE = `${apiUrl}/attendancemodule/ground-truth`;
 const TIMETABLE_API = `${apiUrl}/timetablemodule`;
 
-// Dropdown options matching NIT Jalandhar structure
+// Dropdown options
 const DEGREES = ['BTECH', 'MTECH', 'BSC', 'MSC', 'PHD'];
-const DEPARTMENTS = ['CSE', 'ECE', 'EE', 'ME', 'CE', 'ICE', 'IPE', 'IT', 'BT', 'TT', 'CHE', 'PHY', 'CHEM', 'MATH', 'HUM'];
+// DEPARTMENTS is intentionally removed — always fetched live from /departments
+// to guarantee batch folder names match timetable DB values.
+// Use the useDepartments() hook from useDepartments.js instead.
+const DEPARTMENTS = []; // kept as empty fallback — do not populate here
 
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 7 }, (_, i) => String(currentYear - i));

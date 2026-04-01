@@ -2,19 +2,23 @@
 // Page 2: Select best face photos from extracted frames for each student
 
 import { useState, useEffect, useCallback } from 'react';
-import { API_BASE, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset } from './config';
+import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
+import { useDepartments } from './useDepartments';
 
 export default function NamingGroundTruth() {
-    // Selection
-    const [degree, setDegree] = useState('BTECH');
+    const [degree,     setDegree]     = useState('BTECH');
     const [department, setDepartment] = useState('');
-    const [year, setYear] = useState('');
-    const [students, setStudents] = useState([]);
+    const [year,       setYear]       = useState('');
+
+    // Departments fetched live from DB — ensures folder names match timetable
+    const { departments, deptLoading, deptError } = useDepartments();
+
+    const [students,        setStudents]        = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [selectedPhotos, setSelectedPhotos] = useState(new Set());
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [toast, setToast] = useState(null);
+    const [selectedPhotos,  setSelectedPhotos]  = useState(new Set());
+    const [loading,         setLoading]         = useState(false);
+    const [saving,          setSaving]          = useState(false);
+    const [toast,           setToast]           = useState(null);
 
     const batchName = degree && department && year
         ? `${degree}_${department}_${year}`.toUpperCase()
@@ -33,9 +37,8 @@ export default function NamingGroundTruth() {
         setSelectedPhotos(new Set());
 
         try {
-            const res = await fetch(`${API_BASE}/batches/${batchName}/students`);
+            const res  = await fetch(`${API_BASE}/batches/${batchName}/students`);
             const data = await res.json();
-            // Server returns relative URLs — rewrite to absolute so <img> resolves to API host
             const fixUrls = (list, rollNo) =>
                 (list || []).map(p => ({
                     ...p,
@@ -48,7 +51,7 @@ export default function NamingGroundTruth() {
                 backupFiles:    fixUrls(s.backupFiles,    s.rollNo),
                 untrackedFiles: fixUrls(s.untrackedFiles, s.rollNo),
             })));
-        } catch (err) {
+        } catch {
             showToast('Failed to load students', 'error');
         }
         setLoading(false);
@@ -68,16 +71,11 @@ export default function NamingGroundTruth() {
         });
     };
 
-    // ─── Select all / deselect all ────────────────────────────────
-    const selectAll = () => {
+    const selectAll   = () => {
         if (!selectedStudent) return;
-        const allUrls = selectedStudent.photos.map(p => p.url);
-        setSelectedPhotos(new Set(allUrls));
+        setSelectedPhotos(new Set(selectedStudent.photos.map(p => p.url)));
     };
-
-    const deselectAll = () => {
-        setSelectedPhotos(new Set());
-    };
+    const deselectAll = () => setSelectedPhotos(new Set());
 
     // ─── Save selected photos ─────────────────────────────────────
     const handleSave = async () => {
@@ -88,20 +86,13 @@ export default function NamingGroundTruth() {
 
         setSaving(true);
         try {
-            // For now, the photos are already saved in the folder.
-            // This page is about CURATING — removing the bad ones.
-            // We delete the unselected photos.
             const unselected = selectedStudent.photos.filter(p => !selectedPhotos.has(p.url));
-
             for (const photo of unselected) {
                 await fetch(`${API_BASE}/photo/${batchName}/${selectedStudent.rollNo}/${photo.filename}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
                 });
             }
-
             showToast(`Kept ${selectedPhotos.size} photo(s), removed ${unselected.length} for ${selectedStudent.rollNo}`);
-
-            // Refresh
             await loadStudents();
         } catch (err) {
             showToast('Save failed: ' + err.message, 'error');
@@ -113,13 +104,12 @@ export default function NamingGroundTruth() {
         <div style={styles.page}>
             <style>{cssReset}</style>
 
-            {/* Toast */}
             {toast && (
                 <div style={{
                     position: 'fixed', top: 20, right: 20, zIndex: 999, padding: '12px 24px',
                     borderRadius: '8px', fontSize: '13px', fontWeight: 600, animation: 'fadeIn 0.3s',
                     background: toast.type === 'error' ? theme.dangerDim : theme.successDim,
-                    color: toast.type === 'error' ? theme.danger : theme.success,
+                    color:      toast.type === 'error' ? theme.danger    : theme.success,
                     border: `1px solid ${toast.type === 'error' ? theme.danger : theme.success}`,
                 }}>
                     {toast.msg}
@@ -146,10 +136,20 @@ export default function NamingGroundTruth() {
                     </div>
                     <div>
                         <label style={styles.label}>Department</label>
-                        <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select}>
-                            <option value="">Select...</option>
-                            {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                        <select
+                            value={department}
+                            onChange={e => setDepartment(e.target.value)}
+                            style={styles.select}
+                            disabled={deptLoading}
+                        >
+                            <option value="">
+                                {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
+                            </option>
+                            {departments.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
+                        {deptError && (
+                            <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
+                        )}
                     </div>
                     <div>
                         <label style={styles.label}>Year</label>
@@ -177,10 +177,8 @@ export default function NamingGroundTruth() {
 
                 {/* Student List */}
                 <div style={{ ...styles.card, padding: 0, maxHeight: '70vh', overflowY: 'auto' }}>
-                    <div style={{ ...styles.sectionTitle, padding: '16px 16px 8px' }}>
-                        Students
-                    </div>
-                    {students.map((s) => (
+                    <div style={{ ...styles.sectionTitle, padding: '16px 16px 8px' }}>Students</div>
+                    {students.map(s => (
                         <div
                             key={s.rollNo}
                             onClick={() => {
@@ -188,8 +186,7 @@ export default function NamingGroundTruth() {
                                 setSelectedPhotos(new Set(s.photos.map(p => p.url)));
                             }}
                             style={{
-                                padding: '12px 16px',
-                                cursor: 'pointer',
+                                padding: '12px 16px', cursor: 'pointer',
                                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                 borderLeft: `3px solid ${selectedStudent?.rollNo === s.rollNo ? theme.accent : 'transparent'}`,
                                 background: selectedStudent?.rollNo === s.rollNo ? theme.accentDim : 'transparent',
@@ -233,15 +230,12 @@ export default function NamingGroundTruth() {
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: 8 }}>
-                                    <button onClick={selectAll} style={styles.btnGhost}>Select All</button>
+                                    <button onClick={selectAll}   style={styles.btnGhost}>Select All</button>
                                     <button onClick={deselectAll} style={styles.btnGhost}>Deselect All</button>
                                     <button
                                         onClick={handleSave}
                                         disabled={saving || selectedPhotos.size === 0}
-                                        style={{
-                                            ...styles.btnPrimary,
-                                            opacity: (saving || selectedPhotos.size === 0) ? 0.5 : 1,
-                                        }}
+                                        style={{ ...styles.btnPrimary, opacity: (saving || selectedPhotos.size === 0) ? 0.5 : 1 }}
                                     >
                                         {saving ? 'Saving...' : 'Save Selection'}
                                     </button>
@@ -249,7 +243,7 @@ export default function NamingGroundTruth() {
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-                                {selectedStudent.photos.map((photo) => {
+                                {selectedStudent.photos.map(photo => {
                                     const isSelected = selectedPhotos.has(photo.url);
                                     return (
                                         <div
@@ -259,17 +253,14 @@ export default function NamingGroundTruth() {
                                                 position: 'relative', cursor: 'pointer',
                                                 borderRadius: '8px', overflow: 'hidden',
                                                 border: `2px solid ${isSelected ? theme.accent : theme.border}`,
-                                                aspectRatio: '1',
-                                                transition: 'border-color 0.15s',
+                                                aspectRatio: '1', transition: 'border-color 0.15s',
                                                 opacity: isSelected ? 1 : 0.5,
                                             }}
                                         >
                                             <img
-                                                src={photo.url}
-                                                alt={photo.filename}
+                                                src={photo.url} alt={photo.filename}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                                             />
-                                            {/* Checkbox overlay */}
                                             <div style={{
                                                 position: 'absolute', top: 8, right: 8,
                                                 width: 22, height: 22, borderRadius: '4px',

@@ -2,25 +2,27 @@
 // Page 1: Extract faces from class video → auto-save to serial folders → assign roll numbers later
 
 import { useState, useCallback, useRef } from 'react';
-import { API_BASE, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset } from './config';
+import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
+import { useDepartments } from './useDepartments';
 
 export default function GroundTruthGen() {
     const [degree,       setDegree]       = useState('BTECH');
     const [department,   setDepartment]   = useState('');
+    const { departments, deptLoading, deptError } = useDepartments();
     const [year,         setYear]         = useState('');
     const [videoLink,    setVideoLink]    = useState('');
-    const [detSize,      setDetSize]      = useState(320);   // 320=Fast, 640=Accurate
-    const [frameSkip,    setFrameSkip]    = useState(10);    // process every N frames
-    const [minFaceSize,  setMinFaceSize]  = useState(80);    // min bbox dimension (px)
-    const [lapThreshold, setLapThreshold] = useState(100);   // Laplacian blur threshold
-    const [topN,         setTopN]         = useState(10);    // max images saved per person
+    const [detSize,      setDetSize]      = useState(320);
+    const [frameSkip,    setFrameSkip]    = useState(10);
+    const [minFaceSize,  setMinFaceSize]  = useState(80);
+    const [lapThreshold, setLapThreshold] = useState(100);
+    const [topN,         setTopN]         = useState(10);
 
-    const [extracting,   setExtracting]   = useState(false);
-    const [progress,     setProgress]     = useState(0);
+    const [extracting,    setExtracting]    = useState(false);
+    const [progress,      setProgress]      = useState(0);
     const [progressStage, setProgressStage] = useState('');
-    const [log,          setLog]          = useState([]);   // [{time, msg}]
-    const [result,       setResult]       = useState(null); // {peopleDetected, imagesSaved, batchDir}
-    const [toast,        setToast]        = useState(null);
+    const [log,           setLog]           = useState([]);
+    const [result,        setResult]        = useState(null);
+    const [toast,         setToast]         = useState(null);
 
     const logRef = useRef(null);
 
@@ -35,16 +37,12 @@ export default function GroundTruthGen() {
 
     const addLog = (msg) => {
         const time = new Date().toLocaleTimeString();
-        setLog(prev => {
-            const next = [...prev, { time, msg }].slice(-30);
-            return next;
-        });
+        setLog(prev => [...prev, { time, msg }].slice(-30));
         setTimeout(() => {
             if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
         }, 40);
     };
 
-    // ─── Extract faces and auto-save to serial folders ────────────
     const handleExtract = useCallback(async () => {
         if (!batchName || !videoLink.trim()) {
             showToast('Fill in all fields and provide a video path', 'error');
@@ -57,11 +55,10 @@ export default function GroundTruthGen() {
         setProgressStage('start');
         setLog([]);
 
-        // Ensure batch folder exists
         await fetch(`${API_BASE}/create-batch`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ degree, department, year })
+            body: JSON.stringify({ degree, department, year }),
         });
 
         try {
@@ -70,14 +67,11 @@ export default function GroundTruthGen() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     videoLink: videoLink.trim(), batch: batchName,
-                    detSize, frameSkip,
-                    minFaceSize, lapThreshold, topN,
-                })
+                    detSize, frameSkip, minFaceSize, lapThreshold, topN,
+                }),
             });
 
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
             const reader  = response.body.getReader();
             const decoder = new TextDecoder();
@@ -99,11 +93,9 @@ export default function GroundTruthGen() {
                     if (ev.type === 'stage') {
                         setProgressStage(ev.stage);
                         addLog(`▶ ${ev.message}`);
-
                     } else if (ev.type === 'progress') {
                         setProgress(ev.progress || 0);
                         addLog(`⏳ ${ev.message}`);
-
                     } else if (ev.type === 'done') {
                         setProgress(100);
                         setProgressStage('done');
@@ -115,7 +107,6 @@ export default function GroundTruthGen() {
                         });
                         addLog(`✅ ${ev.message}`);
                         showToast(`${ev.people_detected} people detected, ${ev.images_saved} images saved`);
-
                     } else if (ev.type === 'error') {
                         setProgressStage('error');
                         addLog(`❌ ${ev.message}`);
@@ -170,19 +161,37 @@ export default function GroundTruthGen() {
             {/* Config Card */}
             <div style={{ ...styles.card, marginBottom: 24 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.5fr', gap: 16, marginBottom: 20 }}>
+
+                    {/* Degree */}
                     <div>
                         <label style={styles.label}>Degree</label>
                         <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
                             {DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                     </div>
+
+                    {/* Department — fetched from DB */}
                     <div>
                         <label style={styles.label}>Department</label>
-                        <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select}>
-                            <option value="">Select…</option>
-                            {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                        <select
+                            value={department}
+                            onChange={e => setDepartment(e.target.value)}
+                            style={styles.select}
+                            disabled={deptLoading}
+                        >
+                            <option value="">
+                                {deptLoading ? 'Loading…' : deptError ? 'Error loading' : 'Select…'}
+                            </option>
+                            {departments.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
+                        {deptError && (
+                            <div style={{ fontSize: '11px', color: theme.danger, marginTop: 4 }}>
+                                {deptError} — check DB connection
+                            </div>
+                        )}
                     </div>
+
+                    {/* Year */}
                     <div>
                         <label style={styles.label}>Year (Batch)</label>
                         <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>
@@ -190,6 +199,8 @@ export default function GroundTruthGen() {
                             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
+
+                    {/* Video path */}
                     <div>
                         <label style={styles.label}>Video Path</label>
                         <input
@@ -202,34 +213,29 @@ export default function GroundTruthGen() {
                     </div>
                 </div>
 
-                {/* Detection quality toggle */}
+                {/* Detection quality */}
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>Detection Quality</label>
                     <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
                         {[
-                            { value: 320, label: 'Fast (320)', hint: '~4× faster, good for clear footage' },
+                            { value: 320, label: 'Fast (320)',     hint: '~4× faster, good for clear footage' },
                             { value: 640, label: 'Accurate (640)', hint: 'Better for small/distant faces' },
                         ].map(opt => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setDetSize(opt.value)}
-                                title={opt.hint}
-                                style={{
-                                    padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
-                                    fontSize: '13px', fontWeight: 600, border: '1px solid',
-                                    borderColor: detSize === opt.value ? theme.accent : theme.border,
-                                    background:  detSize === opt.value ? theme.accentDim || theme.accent + '22' : 'transparent',
-                                    color:       detSize === opt.value ? theme.accent : theme.textMuted,
-                                    transition:  'all 0.15s',
-                                }}
-                            >
+                            <button key={opt.value} onClick={() => setDetSize(opt.value)} title={opt.hint} style={{
+                                padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
+                                fontSize: '13px', fontWeight: 600, border: '1px solid',
+                                borderColor: detSize === opt.value ? theme.accent : theme.border,
+                                background:  detSize === opt.value ? (theme.accentDim || theme.accent + '22') : 'transparent',
+                                color:       detSize === opt.value ? theme.accent : theme.textMuted,
+                                transition:  'all 0.15s',
+                            }}>
                                 {opt.label}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Frame skip toggle */}
+                {/* Frame skip */}
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>Frame Skip</label>
                     <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
@@ -239,19 +245,14 @@ export default function GroundTruthGen() {
                             { value: 50,  hint: 'Fast, sparser sampling' },
                             { value: 100, hint: 'Fastest, fewest frames' },
                         ].map(opt => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setFrameSkip(opt.value)}
-                                title={opt.hint}
-                                style={{
-                                    padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
-                                    fontSize: '13px', fontWeight: 600, border: '1px solid',
-                                    borderColor: frameSkip === opt.value ? theme.accent : theme.border,
-                                    background:  frameSkip === opt.value ? theme.accentDim : 'transparent',
-                                    color:       frameSkip === opt.value ? theme.accent : theme.textMuted,
-                                    transition:  'all 0.15s',
-                                }}
-                            >
+                            <button key={opt.value} onClick={() => setFrameSkip(opt.value)} title={opt.hint} style={{
+                                padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
+                                fontSize: '13px', fontWeight: 600, border: '1px solid',
+                                borderColor: frameSkip === opt.value ? theme.accent : theme.border,
+                                background:  frameSkip === opt.value ? theme.accentDim : 'transparent',
+                                color:       frameSkip === opt.value ? theme.accent : theme.textMuted,
+                                transition:  'all 0.15s',
+                            }}>
                                 Every {opt.value}
                             </button>
                         ))}
@@ -274,25 +275,20 @@ export default function GroundTruthGen() {
                     </label>
                     <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
                         {[
-                            { value: 0,   label: 'Off',     hint: 'No size filter' },
-                            { value: 60,  label: '60 px',   hint: 'Loose filter — allows distant faces' },
-                            { value: 80,  label: '80 px',   hint: 'Recommended — good quality threshold' },
-                            { value: 100, label: '100 px',  hint: 'Strict — only close-up faces' },
-                            { value: 120, label: '120 px',  hint: 'Very strict — frontrow only' },
+                            { value: 0,   label: 'Off',    hint: 'No size filter' },
+                            { value: 60,  label: '60 px',  hint: 'Loose filter' },
+                            { value: 80,  label: '80 px',  hint: 'Recommended' },
+                            { value: 100, label: '100 px', hint: 'Strict' },
+                            { value: 120, label: '120 px', hint: 'Very strict' },
                         ].map(opt => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setMinFaceSize(opt.value)}
-                                title={opt.hint}
-                                style={{
-                                    padding: '7px 14px', borderRadius: 6, cursor: 'pointer',
-                                    fontSize: '13px', fontWeight: 600, border: '1px solid',
-                                    borderColor: minFaceSize === opt.value ? theme.accent : theme.border,
-                                    background:  minFaceSize === opt.value ? theme.accentDim : 'transparent',
-                                    color:       minFaceSize === opt.value ? theme.accent : theme.textMuted,
-                                    transition:  'all 0.15s',
-                                }}
-                            >
+                            <button key={opt.value} onClick={() => setMinFaceSize(opt.value)} title={opt.hint} style={{
+                                padding: '7px 14px', borderRadius: 6, cursor: 'pointer',
+                                fontSize: '13px', fontWeight: 600, border: '1px solid',
+                                borderColor: minFaceSize === opt.value ? theme.accent : theme.border,
+                                background:  minFaceSize === opt.value ? theme.accentDim : 'transparent',
+                                color:       minFaceSize === opt.value ? theme.accent : theme.textMuted,
+                                transition:  'all 0.15s',
+                            }}>
                                 {opt.label}
                             </button>
                         ))}
@@ -306,7 +302,7 @@ export default function GroundTruthGen() {
                     </div>
                 </div>
 
-                {/* Blur / Laplacian threshold */}
+                {/* Blur filter */}
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>
                         Blur Filter (Laplacian Variance)
@@ -318,22 +314,17 @@ export default function GroundTruthGen() {
                         {[
                             { value: 0,   label: 'Off',    hint: 'No blur filter' },
                             { value: 50,  label: 'Loose',  hint: 'Only remove very blurry frames' },
-                            { value: 100, label: 'Medium', hint: 'Recommended — removes motion blur' },
+                            { value: 100, label: 'Medium', hint: 'Recommended' },
                             { value: 200, label: 'Strict', hint: 'Requires sharp, well-lit faces' },
                         ].map(opt => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setLapThreshold(opt.value)}
-                                title={opt.hint}
-                                style={{
-                                    padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
-                                    fontSize: '13px', fontWeight: 600, border: '1px solid',
-                                    borderColor: lapThreshold === opt.value ? theme.accent : theme.border,
-                                    background:  lapThreshold === opt.value ? theme.accentDim : 'transparent',
-                                    color:       lapThreshold === opt.value ? theme.accent : theme.textMuted,
-                                    transition:  'all 0.15s',
-                                }}
-                            >
+                            <button key={opt.value} onClick={() => setLapThreshold(opt.value)} title={opt.hint} style={{
+                                padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
+                                fontSize: '13px', fontWeight: 600, border: '1px solid',
+                                borderColor: lapThreshold === opt.value ? theme.accent : theme.border,
+                                background:  lapThreshold === opt.value ? theme.accentDim : 'transparent',
+                                color:       lapThreshold === opt.value ? theme.accent : theme.textMuted,
+                                transition:  'all 0.15s',
+                            }}>
                                 {opt.label} {opt.value > 0 ? `(${opt.value})` : ''}
                             </button>
                         ))}
@@ -346,7 +337,7 @@ export default function GroundTruthGen() {
                     </div>
                 </div>
 
-                {/* Top-N images per person */}
+                {/* Top-N */}
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>
                         Images per Person
@@ -361,19 +352,14 @@ export default function GroundTruthGen() {
                             { value: 10, hint: '5 embed + 5 backup (recommended)' },
                             { value: 15, hint: '5 embed + 10 backup' },
                         ].map(opt => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setTopN(opt.value)}
-                                title={opt.hint}
-                                style={{
-                                    padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
-                                    fontSize: '13px', fontWeight: 600, border: '1px solid',
-                                    borderColor: topN === opt.value ? theme.accent : theme.border,
-                                    background:  topN === opt.value ? theme.accentDim : 'transparent',
-                                    color:       topN === opt.value ? theme.accent : theme.textMuted,
-                                    transition:  'all 0.15s',
-                                }}
-                            >
+                            <button key={opt.value} onClick={() => setTopN(opt.value)} title={opt.hint} style={{
+                                padding: '7px 18px', borderRadius: 6, cursor: 'pointer',
+                                fontSize: '13px', fontWeight: 600, border: '1px solid',
+                                borderColor: topN === opt.value ? theme.accent : theme.border,
+                                background:  topN === opt.value ? theme.accentDim : 'transparent',
+                                color:       topN === opt.value ? theme.accent : theme.textMuted,
+                                transition:  'all 0.15s',
+                            }}>
                                 {opt.value} imgs
                             </button>
                         ))}
@@ -409,9 +395,12 @@ export default function GroundTruthGen() {
                         {extracting ? (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                                 <span style={{
-                                    width: 14, height: 14, border: '2px solid rgba(0,0,0,0.3)',
-                                    borderTopColor: theme.accentText, borderRadius: '50%',
-                                    animation: 'spin 0.8s linear infinite', display: 'inline-block'
+                                    width: 14, height: 14,
+                                    border: '2px solid rgba(0,0,0,0.3)',
+                                    borderTopColor: theme.accentText,
+                                    borderRadius: '50%',
+                                    animation: 'spin 0.8s linear infinite',
+                                    display: 'inline-block',
                                 }} />
                                 Processing…
                             </span>
@@ -423,28 +412,23 @@ export default function GroundTruthGen() {
             {/* Live progress panel */}
             {extracting && (
                 <div style={{ ...styles.card, background: '#0d1117', borderColor: theme.accent, marginBottom: 20 }}>
-                    {/* Stage */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                         <div style={{
                             width: 10, height: 10, borderRadius: '50%',
-                            background: theme.accent, animation: 'pulse 1.5s infinite'
+                            background: theme.accent, animation: 'pulse 1.5s infinite',
                         }} />
                         <span style={{ color: theme.accent, fontWeight: 700, fontSize: '14px' }}>
                             {stageLabel[progressStage] || progressStage}
                         </span>
                     </div>
 
-                    {/* Progress bar (extraction phase) */}
                     {progressStage === 'extracting' && (
                         <div style={{ marginBottom: 14 }}>
-                            <div style={{
-                                width: '100%', height: 8, background: theme.border,
-                                borderRadius: 4, overflow: 'hidden'
-                            }}>
+                            <div style={{ width: '100%', height: 8, background: theme.border, borderRadius: 4, overflow: 'hidden' }}>
                                 <div style={{
                                     width: `${progress}%`, height: '100%',
                                     background: theme.accent, borderRadius: 4,
-                                    transition: 'width 0.4s ease'
+                                    transition: 'width 0.4s ease',
                                 }} />
                             </div>
                             <div style={{ color: theme.textMuted, fontSize: '12px', marginTop: 4, textAlign: 'right' }}>
@@ -453,15 +437,11 @@ export default function GroundTruthGen() {
                         </div>
                     )}
 
-                    {/* Scrollable log */}
-                    <div
-                        ref={logRef}
-                        style={{
-                            maxHeight: 160, overflowY: 'auto',
-                            background: '#000', borderRadius: 6,
-                            padding: '8px 12px', fontFamily: theme.fontMono, fontSize: '12px'
-                        }}
-                    >
+                    <div ref={logRef} style={{
+                        maxHeight: 160, overflowY: 'auto',
+                        background: '#000', borderRadius: 6,
+                        padding: '8px 12px', fontFamily: theme.fontMono, fontSize: '12px',
+                    }}>
                         {log.map((entry, i) => (
                             <div key={i} style={{ display: 'flex', gap: 8, paddingBottom: 2 }}>
                                 <span style={{ color: '#555', flexShrink: 0 }}>{entry.time}</span>
@@ -474,11 +454,7 @@ export default function GroundTruthGen() {
 
             {/* Completion card */}
             {result && !extracting && (
-                <div style={{
-                    ...styles.card,
-                    borderColor: theme.success, background: theme.successDim,
-                    marginBottom: 20
-                }}>
+                <div style={{ ...styles.card, borderColor: theme.success, background: theme.successDim, marginBottom: 20 }}>
                     <div style={{ fontSize: '18px', fontWeight: 700, color: theme.success, marginBottom: 12 }}>
                         ✅ Extraction Complete
                     </div>
@@ -488,18 +464,13 @@ export default function GroundTruthGen() {
                             { label: 'Images Saved',    value: result.imagesSaved    },
                             { label: 'Time Taken',      value: `${result.elapsedSec}s` },
                         ].map(s => (
-                            <div key={s.label} style={{
-                                background: '#fff', borderRadius: 8, padding: '12px 16px', textAlign: 'center'
-                            }}>
+                            <div key={s.label} style={{ background: '#fff', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                                 <div style={{ fontSize: '24px', fontWeight: 800, color: theme.accent }}>{s.value}</div>
                                 <div style={{ fontSize: '12px', color: theme.textMuted, marginTop: 4 }}>{s.label}</div>
                             </div>
                         ))}
                     </div>
-                    <div style={{
-                        padding: '10px 14px', background: theme.bg,
-                        borderRadius: 6, fontFamily: theme.fontMono, fontSize: '12px', color: theme.textMuted
-                    }}>
+                    <div style={{ padding: '10px 14px', background: theme.bg, borderRadius: 6, fontFamily: theme.fontMono, fontSize: '12px', color: theme.textMuted }}>
                         Saved to: <span style={{ color: theme.accent }}>{result.batchDir}</span>
                     </div>
                     <div style={{ marginTop: 12, fontSize: '13px', color: theme.textMuted }}>
@@ -512,16 +483,13 @@ export default function GroundTruthGen() {
                 </div>
             )}
 
-            {/* Post-extraction log (collapsed view) */}
+            {/* Post-extraction log */}
             {result && log.length > 0 && (
                 <div style={{ ...styles.card, padding: '12px 16px' }}>
                     <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, marginBottom: 8 }}>
                         Processing Log
                     </div>
-                    <div style={{
-                        maxHeight: 120, overflowY: 'auto',
-                        fontFamily: theme.fontMono, fontSize: '11px', color: theme.textMuted
-                    }}>
+                    <div style={{ maxHeight: 120, overflowY: 'auto', fontFamily: theme.fontMono, fontSize: '11px', color: theme.textMuted }}>
                         {log.map((entry, i) => (
                             <div key={i}><span style={{ color: '#555' }}>{entry.time}</span>&nbsp;{entry.msg}</div>
                         ))}
@@ -531,14 +499,9 @@ export default function GroundTruthGen() {
 
             {/* Empty state */}
             {!extracting && !result && (
-                <div style={{
-                    ...styles.card, textAlign: 'center',
-                    padding: '60px 20px', borderStyle: 'dashed',
-                }}>
+                <div style={{ ...styles.card, textAlign: 'center', padding: '60px 20px', borderStyle: 'dashed' }}>
                     <div style={{ fontSize: '40px', marginBottom: 12, opacity: 0.4 }}>🎥</div>
-                    <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>
-                        Ready to extract faces
-                    </div>
+                    <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>Ready to extract faces</div>
                     <div style={{ fontSize: '13px', color: theme.textMuted }}>
                         Select batch → paste video path → click "Extract & Save Faces"
                         <br />
