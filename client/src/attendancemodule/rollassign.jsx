@@ -27,64 +27,44 @@ function confidenceLabel(score) {
 }
 
 export default function RollAssign() {
-    // ── All useState hooks at the TOP of the component ──────────────
-    const [degree,       setDegree]       = useState('BTECH');
-    const [department,   setDepartment]   = useState('');
-    const [year,         setYear]         = useState('');
-    const [mode,         setMode]         = useState('manual');
+    const { departments, loading: deptLoading, error: deptError } = useDepartments();
 
-<<<<<<< HEAD
-    // Departments fetched live from DB — ensures folder names match timetable
-    const { departments, deptLoading, deptError } = useDepartments();
+    // ── All useState hooks ───────────────────────────────────────────
+    const [degree,        setDegree]        = useState('BTECH');
+    const [department,    setDepartment]    = useState('');
+    const [year,          setYear]          = useState('');
+    const [mode,          setMode]          = useState('manual');
 
-    const [loading,      setLoading]      = useState(false);
-    const [matching,     setMatching]     = useState(false);
-    const [matchProgress,setMatchProgress]= useState(null);
-    const [matchDone,    setMatchDone]    = useState(false);
-    const [saving,       setSaving]       = useState(null);
-    const [toast,        setToast]        = useState(null);
-=======
     const [loading,       setLoading]       = useState(false);
     const [matching,      setMatching]      = useState(false);
-    const [matchProgress, setMatchProgress] = useState(null);  // { msg, done, total, step }
+    const [matchDone,     setMatchDone]     = useState(false);
+    const [matchProgress, setMatchProgress] = useState(null);
     const [saving,        setSaving]        = useState(null);
     const [toast,         setToast]         = useState(null);
+    const [matchError,    setMatchError]    = useState(null);
+    const [approvingAll,  setApprovingAll]  = useState(false);
 
-    // unprocessed = person_XXX on filesystem with no DB record yet (never matched)
-    const [unprocessed, setUnprocessed] = useState([]);
-    // pendingReview = DB matched records awaiting operator approval
+    const [unprocessed,   setUnprocessed]   = useState([]);
     const [pendingReview, setPendingReview] = useState([]);
-    // approvedItems = DB approved records
     const [approvedItems, setApprovedItems] = useState([]);
-    // unmatchedItems = DB records where no face was detected
-    const [unmatchedItems, setUnmatchedItems] = useState([]);
-    // flaggedItems = DB flagged records
-    const [flaggedItems, setFlaggedItems] = useState([]);
+    const [unmatchedItems,setUnmatchedItems]= useState([]);
+    const [flaggedItems,  setFlaggedItems]  = useState([]);
 
-    const [matchError, setMatchError] = useState(null);
->>>>>>> main
+    const [matches,       setMatches]       = useState({});
+    const [inlineRolls,   setInlineRolls]   = useState({});
 
-    const [unassigned,   setUnassigned]   = useState([]);
-    const [assigned,     setAssigned]     = useState([]);
-    const [matches,      setMatches]      = useState({});
-    const [matchError,   setMatchError]   = useState(null);
+    const [modal,         setModal]         = useState(null);
+    const [overrideRoll,  setOverrideRoll]  = useState('');
 
-    const [inlineRolls,  setInlineRolls]  = useState({});
+    const [gtModal,       setGtModal]       = useState(null);
+    const [gtData,        setGtData]        = useState(null);
+    const [gtLoading,     setGtLoading]     = useState(false);
+    const [gtSelected,    setGtSelected]    = useState(new Set());
+    const [gtSaving,      setGtSaving]      = useState(false);
 
-    const [modal,        setModal]        = useState(null);
-    const [overrideRoll, setOverrideRoll] = useState('');
-
-    const [gtModal,      setGtModal]      = useState(null);
-    const [gtData,       setGtData]       = useState(null);
-    const [gtLoading,    setGtLoading]    = useState(false);
-    const [gtSelected,   setGtSelected]   = useState(new Set());
-    const [gtSaving,     setGtSaving]     = useState(false);
-
-    const [bulkText,     setBulkText]     = useState('');
-    const [bulkOpen,     setBulkOpen]     = useState(false);
-    const [bulkSaving,   setBulkSaving]   = useState(false);
-
-    const [approvingAll, setApprovingAll] = useState(false);
+    const [bulkText,      setBulkText]      = useState('');
+    const [bulkOpen,      setBulkOpen]      = useState(false);
+    const [bulkSaving,    setBulkSaving]    = useState(false);
 
     // ── Derived values ───────────────────────────────────────────────
     const batchName = degree && department && year
@@ -92,7 +72,7 @@ export default function RollAssign() {
         : null;
 
     const highConfCount = matchDone
-        ? unassigned.filter(u => !u.flagged && matches[u.folderName]?.best?.confidence >= HIGH).length
+        ? Object.entries(matches).filter(([, m]) => m?.best?.confidence >= HIGH).length
         : 0;
 
     // ── Helpers ──────────────────────────────────────────────────────
@@ -106,35 +86,22 @@ export default function RollAssign() {
     const erpPhotoUrl = (filename) =>
         `${RA_BASE}/erp-photo/${encodeURIComponent(filename)}`;
 
-<<<<<<< HEAD
-    // ── Load clusters ────────────────────────────────────────────────
-    const loadClusters = useCallback(async () => {
-        if (!batchName) return;
-        setLoading(true);
-        setUnassigned([]); setAssigned([]);
-        setMatches({}); setMatchError(null);
-        setMatchDone(false); setInlineRolls({});
-=======
-    // ── Load clusters from DB + unprocessed from filesystem ────────
+    // ── Load clusters from DB + unprocessed from filesystem ─────────
     const loadClusters = useCallback(async () => {
         if (!batchName) return;
         setLoading(true);
         setMatchError(null);
->>>>>>> main
         try {
             const [clusterRes, matchRes] = await Promise.all([
-                fetch(`${RA_BASE}/clusters/${batchName}`),     // filesystem: person_XXX not in DB
-                fetch(`${RA_BASE}/matches/${batchName}`),       // DB records
+                fetch(`${RA_BASE}/clusters/${batchName}`),
+                fetch(`${RA_BASE}/matches/${batchName}`),
             ]);
 
-            // Unprocessed filesystem clusters (never matched)
             const clusterData = clusterRes.ok ? await clusterRes.json() : { unprocessed: [] };
             setUnprocessed(clusterData.unprocessed || []);
 
-            // DB records → split by status
             if (matchRes.ok) {
                 const { matchMap = {} } = await matchRes.json();
-
                 const records = Object.values(matchMap);
                 setPendingReview(records.filter(r => r.status === 'matched' && !r.approved));
                 setApprovedItems(records.filter(r => r.approved));
@@ -148,25 +115,20 @@ export default function RollAssign() {
         }
     }, [batchName]);
 
-<<<<<<< HEAD
     useEffect(() => { loadClusters(); }, [loadClusters]);
 
-    // ── Inline roll input ────────────────────────────────────────────
-    const setInlineRoll = (folderName, value) =>
-        setInlineRolls(prev => ({ ...prev, [folderName]: value.toUpperCase() }));
-=======
-    // ── Auto-match against ERP photos (SSE) → then auto-assign all ─
+    // ── Auto-match against ERP photos (SSE) → then auto-assign all ──
     const runAutoMatch = useCallback(async () => {
         if (!batchName) return;
         setMatching(true);
+        setMatchDone(false);
         setMatchError(null);
         setMatchProgress({ msg: 'Starting…', done: 0, total: 0, step: 'init' });
 
-        const localMatches  = {};  // accumulate results synchronously during SSE
-        let   sseSucceeded  = false;
+        const localMatches = {};
+        let sseSucceeded   = false;
 
         try {
-            // ── Phase 1: SSE matching ─────────────────────────────
             const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
             if (!res.ok) {
                 const data = await res.json();
@@ -175,13 +137,12 @@ export default function RollAssign() {
 
             const reader  = res.body.getReader();
             const decoder = new TextDecoder();
-            let   buf     = '';
+            let buf = '';
 
             const processLine = (line) => {
                 if (!line.startsWith('data:')) return;
                 let evt;
-                try { evt = JSON.parse(line.slice(5).trim()); }
-                catch { return; }
+                try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
                 if (evt.type === 'erp_progress') {
                     setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
                 } else if (evt.type === 'cluster_progress') {
@@ -190,8 +151,11 @@ export default function RollAssign() {
                     setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
                 } else if (evt.type === 'match_result') {
                     localMatches[evt.folder] = evt.match;
+                    setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
                 } else if (evt.type === 'done') {
                     sseSucceeded = true;
+                    setMatchDone(true);
+                    showToast(`Matching complete — ${evt.clusters} clusters`);
                 } else if (evt.type === 'error') {
                     throw new Error(evt.msg);
                 }
@@ -206,10 +170,9 @@ export default function RollAssign() {
                 lines.forEach(processLine);
             }
 
-            // ── Phase 2: Auto-assign all (rename folders + save DB) ──
+            // Phase 2: Auto-assign all
             if (sseSucceeded && Object.keys(localMatches).length > 0) {
                 setMatchProgress({ msg: 'Renaming folders and saving to database…', done: 0, total: 0, step: 'saving' });
-
                 const assignRes  = await fetch(`${RA_BASE}/auto-assign-all`, {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -220,11 +183,9 @@ export default function RollAssign() {
 
                 showToast(
                     `✓ ${assignData.renamed} clusters auto-assigned` +
-                    (assignData.unmatched  ? `, ${assignData.unmatched} unmatched`  : '') +
-                    (assignData.conflicts  ? `, ${assignData.conflicts} conflicts`  : '')
+                    (assignData.unmatched ? `, ${assignData.unmatched} unmatched` : '') +
+                    (assignData.conflicts ? `, ${assignData.conflicts} conflicts` : '')
                 );
-
-                // Reload from DB so UI reflects renamed folders
                 await loadClusters();
             }
         } catch (err) {
@@ -236,64 +197,97 @@ export default function RollAssign() {
         }
     }, [batchName, loadClusters]);
 
-    useEffect(() => { loadClusters(); }, [loadClusters]);
-
-    // ── Open modal — works for pendingReview and flaggedItems (DB records) ──
+    // ── Open modal ───────────────────────────────────────────────────
     const openModal = (item) => {
         if (matching) return;
-        // item IS the DB record; pass it as both item and match
         setModal({ item, match: item });
         setOverrideRoll(item.rollNo || '');
     };
->>>>>>> main
 
-    // ── Assign single (manual) ───────────────────────────────────────
+    // ── Assign single (manual inline) ────────────────────────────────
     const assignManual = async (folderName) => {
         const rollNo = (inlineRolls[folderName] || '').trim().toUpperCase();
         if (!rollNo) { showToast('Enter a roll number', 'error'); return; }
         setSaving(folderName);
         try {
-<<<<<<< HEAD
-            const res  = await fetch(`${RA_BASE}/assign`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ batch: batchName, folderName, rollNo }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
-            const item = unassigned.find(u => u.folderName === folderName);
-            setUnassigned(prev => prev.filter(u => u.folderName !== folderName));
-            if (item) setAssigned(prev => [...prev, { ...item, folderName: data.rollNo, rollNo: data.rollNo }]);
-            setInlineRolls(prev => { const n = { ...prev }; delete n[folderName]; return n; });
-            showToast(`Assigned ${folderName} to ${data.rollNo}`);
-        } catch (err) { showToast(err.message, 'error'); }
-        finally { setSaving(null); }
-=======
             const res  = await fetch(`${RA_BASE}/approve`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ batch: batchName, folderName, rollNo: trimmed }),
+                body:    JSON.stringify({ batch: batchName, folderName, rollNo }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed');
 
-            // Move from pendingReview → approvedItems
             setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
             setFlaggedItems(prev => prev.filter(r => r.folderName !== folderName));
             setApprovedItems(prev => {
                 const found = [...pendingReview, ...flaggedItems].find(r => r.folderName === folderName);
                 return found ? [...prev, { ...found, rollNo: data.rollNo, approved: true, status: 'approved' }] : prev;
             });
-            setModal(null);
-            showToast(`✓ Approved ${folderName} → ${data.rollNo}`);
+            setInlineRolls(prev => { const n = { ...prev }; delete n[folderName]; return n; });
+            showToast(`✓ Assigned ${folderName} → ${data.rollNo}`);
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
             setSaving(null);
         }
->>>>>>> main
     };
 
-    // ── Bulk assign from textarea ────────────────────────────────────
+    // ── Approve from modal ───────────────────────────────────────────
+    const handleApprove = async (folderName, rollNo) => {
+        const trimmed = rollNo.trim().toUpperCase();
+        if (!trimmed) { showToast('Enter a roll number', 'error'); return; }
+        setSaving(folderName);
+        try {
+            const res  = await fetch(`${RA_BASE}/assign`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batch: batchName, folderName, rollNo: trimmed }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+
+            const found = [...pendingReview, ...flaggedItems].find(r => r.folderName === folderName);
+            setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
+            setFlaggedItems(prev => prev.filter(r => r.folderName !== folderName));
+            if (found) setApprovedItems(prev => [...prev, { ...found, rollNo: data.rollNo, approved: true, status: 'approved' }]);
+            setModal(null);
+            showToast(`Assigned ${folderName} to ${data.rollNo}`);
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            setSaving(null);
+        }
+    };
+
+    // ── Flag ─────────────────────────────────────────────────────────
+    const handleFlag = async (folderName, match) => {
+        setSaving(folderName);
+        try {
+            const res = await fetch(`${RA_BASE}/flag`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    batch: batchName, folderName,
+                    suggestedRollNo: match?.rollNo     || match?.best?.rollNo     || null,
+                    confidence:      match?.confidence || match?.best?.confidence || null,
+                    reason: 'operator_rejected',
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+
+            const found = pendingReview.find(r => r.folderName === folderName);
+            setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
+            if (found) setFlaggedItems(prev => [...prev, { ...found, status: 'flagged' }]);
+            setModal(null);
+            showToast(`⚑ Flagged ${folderName}`);
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            setSaving(null);
+        }
+    };
+
+    // ── Bulk assign ──────────────────────────────────────────────────
     const handleBulkAssign = async () => {
         if (!batchName || !bulkText.trim()) return;
         setBulkSaving(true);
@@ -319,48 +313,20 @@ export default function RollAssign() {
             showToast(`Assigned ${data.assigned} of ${data.total} folders`);
             setBulkText(''); setBulkOpen(false);
             await loadClusters();
-        } catch (err) { showToast(err.message, 'error'); }
-        finally { setBulkSaving(false); }
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            setBulkSaving(false);
+        }
     };
 
-    // ── ERP Auto-match ───────────────────────────────────────────────
-    const runAutoMatch = useCallback(async () => {
-        if (!batchName) return;
-        setMatching(true); setMatchError(null);
-        setMatchProgress({ msg: 'Starting...', done: 0, total: 0, step: 'init' });
-        try {
-            const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
-            if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Match failed'); }
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buf = '';
-            const processLine = (line) => {
-                if (!line.startsWith('data:')) return;
-                let evt; try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
-                if (evt.type === 'erp_progress')          setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
-                else if (evt.type === 'cluster_progress') setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'cluster', current: evt.current });
-                else if (evt.type === 'status')           setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
-                else if (evt.type === 'match_result')     setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
-                else if (evt.type === 'done')             { setMatchDone(true); showToast(`Matching complete — ${evt.clusters} clusters`); }
-                else if (evt.type === 'error')            throw new Error(evt.msg);
-            };
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) { buf += decoder.decode(); buf.split('\n').forEach(processLine); break; }
-                buf += decoder.decode(value, { stream: true });
-                const lines = buf.split('\n'); buf = lines.pop(); lines.forEach(processLine);
-            }
-        } catch (err) { setMatchError(err.message); showToast(err.message, 'error'); }
-        finally { setMatching(false); setMatchProgress(null); }
-    }, [batchName]);
-
-    // ── Approve ALL high-confidence matches at once ──────────────────
+    // ── Approve ALL high-confidence ──────────────────────────────────
     const approveAllHigh = async () => {
         if (!matchDone) { showToast('Run ERP match first', 'error'); return; }
 
-        const candidates = unassigned
-            .filter(u => !u.flagged && matches[u.folderName]?.best?.confidence >= HIGH)
-            .map(u => ({ folderName: u.folderName, match: matches[u.folderName] }));
+        const candidates = pendingReview
+            .filter(r => matches[r.folderName]?.best?.confidence >= HIGH)
+            .map(r => ({ folderName: r.folderName, match: matches[r.folderName] }));
 
         const seen = new Map();
         for (const c of candidates) {
@@ -369,13 +335,11 @@ export default function RollAssign() {
             if (!prev || c.match.best.confidence > prev.match.best.confidence) seen.set(roll, c);
         }
         const toApprove = [...seen.values()];
-
         if (toApprove.length === 0) { showToast('No high-confidence matches found', 'error'); return; }
 
         const lines = toApprove
             .map(c => `${c.folderName} -> ${c.match.best.rollNo} (${(c.match.best.confidence * 100).toFixed(0)}%)`)
             .join('\n');
-
         if (!window.confirm(`Approve all ${toApprove.length} high-confidence matches?\n\n${lines}`)) return;
 
         setApprovingAll(true);
@@ -391,51 +355,11 @@ export default function RollAssign() {
             if (!res.ok) throw new Error(data.error || 'Failed');
             showToast(`Auto-assigned ${data.assigned} high-confidence clusters`);
             await loadClusters();
-        } catch (err) { showToast(err.message, 'error'); }
-        finally { setApprovingAll(false); }
-    };
-
-    // ── ERP modal approve ────────────────────────────────────────────
-    const handleApprove = async (folderName, rollNo) => {
-        const trimmed = rollNo.trim().toUpperCase();
-        if (!trimmed) { showToast('Enter a roll number', 'error'); return; }
-        setSaving(folderName);
-        try {
-            const res  = await fetch(`${RA_BASE}/assign`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ batch: batchName, folderName, rollNo: trimmed }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
-            const item = unassigned.find(u => u.folderName === folderName);
-            setUnassigned(prev => prev.filter(u => u.folderName !== folderName));
-            if (item) setAssigned(prev => [...prev, { ...item, folderName: data.rollNo, rollNo: data.rollNo }]);
-            setModal(null);
-            showToast(`Assigned ${folderName} to ${data.rollNo}`);
-        } catch (err) { showToast(err.message, 'error'); }
-        finally { setSaving(null); }
-    };
-
-    // ── Flag ─────────────────────────────────────────────────────────
-    const handleFlag = async (folderName, match) => {
-        setSaving(folderName);
-        try {
-            const res = await fetch(`${RA_BASE}/flag`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    batch: batchName, folderName,
-                    suggestedRollNo: match?.best?.rollNo || null,
-                    confidence: match?.best?.confidence || null,
-                    reason: 'operator_rejected',
-                }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
-            setUnassigned(prev => prev.map(u => u.folderName === folderName ? { ...u, flagged: true } : u));
-            setModal(null);
-            showToast(`Flagged ${folderName}`);
-        } catch (err) { showToast(err.message, 'error'); }
-        finally { setSaving(null); }
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            setApprovingAll(false);
+        }
     };
 
     // ── GT modal ─────────────────────────────────────────────────────
@@ -456,8 +380,12 @@ export default function RollAssign() {
                 untrackedFiles: fixUrls(data.untrackedFiles),
             });
             setGtSelected(new Set((data.embeddingFiles || []).map(f => f.filename)));
-        } catch (err) { showToast(err.message, 'error'); setGtModal(null); }
-        finally { setGtLoading(false); }
+        } catch (err) {
+            showToast(err.message, 'error');
+            setGtModal(null);
+        } finally {
+            setGtLoading(false);
+        }
     }, [batchName]);
 
     const handleUpdateEmbedding = useCallback(async () => {
@@ -472,65 +400,19 @@ export default function RollAssign() {
             if (!res.ok) throw new Error(data.error || 'Failed');
             showToast(`Embedding updated for ${gtModal.rollNo}`);
             setGtModal(null);
-        } catch (err) { showToast(err.message, 'error'); }
-        finally { setGtSaving(false); }
-    }, [gtModal, gtSelected, batchName]);
-
-    // ── Generate embeddings ──────────────────────────────────────────
-    const generateEmbeddings = async () => {
-        if (!batchName) return;
-        setSaving('__generating__');
-        try {
-<<<<<<< HEAD
-            const res  = await fetch(`${GT_BASE}/generate-embeddings`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ batch: batchName }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
-            showToast(`Embeddings built — ${data.students_enrolled} students enrolled`);
-        } catch (err) { showToast(err.message, 'error'); }
-        finally { setSaving(null); }
-    };
-
-    const unflagged = unassigned.filter(u => !u.flagged);
-    const flagged   = unassigned.filter(u =>  u.flagged);
-=======
-            const res = await fetch(`${RA_BASE}/flag`, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({
-                    batch:           batchName,
-                    folderName,
-                    suggestedRollNo: match?.rollNo     || null,
-                    confidence:      match?.confidence || null,
-                    reason:          'operator_rejected',
-                }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to flag');
-
-            // Move from pendingReview → flaggedItems
-            const found = pendingReview.find(r => r.folderName === folderName);
-            setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
-            if (found) setFlaggedItems(prev => [...prev, { ...found, status: 'flagged' }]);
-            setModal(null);
-            showToast(`⚑ Flagged ${folderName}`);
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
-            setSaving(null);
+            setGtSaving(false);
         }
-    };
-
-    // ── Render ────────────────────────────────────────────────────
->>>>>>> main
+    }, [gtModal, gtSelected, batchName]);
 
     // ── Render ───────────────────────────────────────────────────────
     return (
         <div style={styles.page}>
             <style>{cssReset}</style>
 
+            {/* Toast */}
             {toast && (
                 <div style={{
                     position: 'fixed', top: 20, right: 20, zIndex: 9999,
@@ -541,6 +423,7 @@ export default function RollAssign() {
                 }}>{toast.msg}</div>
             )}
 
+            {/* Verify Modal */}
             {modal && (
                 <VerifyModal
                     item={modal.item} match={modal.match}
@@ -553,6 +436,7 @@ export default function RollAssign() {
                 />
             )}
 
+            {/* GT Modal */}
             {gtModal && (
                 <GTModal
                     rollNo={gtModal.rollNo} loading={gtLoading} data={gtData}
@@ -599,23 +483,6 @@ export default function RollAssign() {
                             {YEARS.map(y => <option key={y}>{y}</option>)}
                         </select>
                     </div>
-<<<<<<< HEAD
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <button
-                            onClick={generateEmbeddings}
-                            disabled={saving === '__generating__' || !batchName || assigned.length === 0}
-                            style={{
-                                ...styles.btnPrimary, fontSize: '12px', padding: '9px 14px',
-                                opacity: (saving === '__generating__' || !batchName || assigned.length === 0) ? 0.4 : 1,
-                            }}
-                        >
-                            {saving === '__generating__' ? 'Building...' : 'Generate Embeddings'}
-                        </button>
-                        <div style={{ fontSize: '10px', color: theme.textMuted, textAlign: 'center' }}>
-                            {assigned.length} assigned · {unassigned.length} pending
-                        </div>
-                    </div>
-=======
                     <button
                         onClick={runAutoMatch}
                         disabled={matching || !batchName || unprocessed.length === 0}
@@ -627,7 +494,6 @@ export default function RollAssign() {
                     >
                         {matching ? '🔄 Matching…' : `🔍 Match with ERP Photos${unprocessed.length > 0 ? ` (${unprocessed.length})` : ''}`}
                     </button>
->>>>>>> main
                 </div>
 
                 {/* Mode + action buttons row */}
@@ -651,37 +517,46 @@ export default function RollAssign() {
                         Bulk Assign
                     </button>
 
-                    {mode === 'erp' && (
-                        <>
-                            <button
-                                onClick={runAutoMatch}
-                                disabled={matching || !batchName || unassigned.length === 0}
-                                style={{
-                                    ...styles.btnPrimary, padding: '6px 16px', fontSize: '12px',
-                                    opacity: (matching || !batchName || unassigned.length === 0) ? 0.5 : 1,
-                                }}>
-                                {matching ? 'Matching...' : 'Match ERP Photos'}
-                            </button>
-
-                            {matchDone && highConfCount > 0 && (
-                                <button
-                                    onClick={approveAllHigh}
-                                    disabled={approvingAll}
-                                    style={{
-                                        padding: '6px 16px', borderRadius: '999px', fontSize: '12px',
-                                        fontWeight: 700, cursor: 'pointer', border: 'none',
-                                        background: theme.success, color: '#000',
-                                        opacity: approvingAll ? 0.5 : 1,
-                                    }}
-                                >
-                                    {approvingAll ? 'Assigning...' : `Approve All High (${highConfCount})`}
-                                </button>
-                            )}
-                        </>
+                    {matchDone && highConfCount > 0 && (
+                        <button
+                            onClick={approveAllHigh}
+                            disabled={approvingAll}
+                            style={{
+                                padding: '6px 16px', borderRadius: '999px', fontSize: '12px',
+                                fontWeight: 700, cursor: 'pointer', border: 'none',
+                                background: theme.success, color: '#000',
+                                opacity: approvingAll ? 0.5 : 1,
+                            }}
+                        >
+                            {approvingAll ? 'Assigning...' : `Approve All High (${highConfCount})`}
+                        </button>
                     )}
                 </div>
 
-                {/* ERP progress bar */}
+                {/* Bulk assign panel */}
+                {bulkOpen && (
+                    <div style={{ marginTop: 14, padding: 14, borderRadius: 8, background: theme.bg, border: `1px solid ${theme.border}` }}>
+                        <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: 6 }}>
+                            One per line: <code>person_001 26TT1234</code>
+                        </div>
+                        <textarea
+                            value={bulkText}
+                            onChange={e => setBulkText(e.target.value)}
+                            rows={6}
+                            placeholder={'person_001 26TT1234\nperson_002 26TT5678'}
+                            style={{ ...styles.input, width: '100%', fontFamily: theme.fontMono, fontSize: '12px', resize: 'vertical' }}
+                        />
+                        <button
+                            onClick={handleBulkAssign}
+                            disabled={bulkSaving || !bulkText.trim()}
+                            style={{ ...styles.btnPrimary, marginTop: 8, opacity: (bulkSaving || !bulkText.trim()) ? 0.5 : 1 }}
+                        >
+                            {bulkSaving ? 'Assigning...' : 'Bulk Assign'}
+                        </button>
+                    </div>
+                )}
+
+                {/* Progress bar */}
                 {matching && matchProgress && (
                     <div style={{ marginTop: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: theme.textMuted, marginBottom: 4 }}>
@@ -706,58 +581,20 @@ export default function RollAssign() {
                         {matchError}
                     </div>
                 )}
-<<<<<<< HEAD
 
-                {!matching && matchDone && (
-=======
                 {!matching && pendingReview.length > 0 && (
->>>>>>> main
                     <div style={{
                         marginTop: 12, padding: '8px 14px', borderRadius: 6,
                         background: theme.successDim, border: `1px solid ${theme.success}44`,
-<<<<<<< HEAD
-                        fontSize: '12px', color: theme.textMuted,
-                    }}>
-                        Matching complete — {Object.keys(matches).length} clusters matched.
-                        {highConfCount > 0
-                            ? ` Click "Approve All High (${highConfCount})" to auto-assign all high-confidence matches.`
-                            : ' All high-confidence clusters assigned.'}
-                    </div>
-                )}
-
-                {/* Bulk assign panel */}
-                {bulkOpen && (
-                    <div style={{ marginTop: 16, padding: 16, borderRadius: 8, background: theme.bg, border: `1px solid ${theme.border}` }}>
-                        <div style={{ ...styles.label, marginBottom: 8 }}>
-                            One mapping per line: <span style={{ fontFamily: theme.fontMono, color: theme.accent }}>person_001 26TT1234</span>
-                        </div>
-                        <textarea
-                            value={bulkText}
-                            onChange={e => setBulkText(e.target.value)}
-                            placeholder={'person_001 26TT1217\nperson_002 26TT1898\nperson_003 26TT1973'}
-                            style={{ ...styles.input, height: 160, fontFamily: theme.fontMono, fontSize: '12px', resize: 'vertical', display: 'block' }}
-                        />
-                        <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                            <button
-                                onClick={handleBulkAssign}
-                                disabled={bulkSaving || !bulkText.trim()}
-                                style={{ ...styles.btnPrimary, opacity: (bulkSaving || !bulkText.trim()) ? 0.5 : 1 }}
-                            >
-                                {bulkSaving ? 'Assigning...' : 'Bulk Assign'}
-                            </button>
-                            <button onClick={() => { setBulkOpen(false); setBulkText(''); }} style={styles.btnGhost}>Cancel</button>
-                        </div>
-=======
                         display: 'flex', alignItems: 'center', gap: 10,
                     }}>
-                        <span style={{ color: theme.success, fontWeight: 700, fontSize: '13px' }}>
-                            ✓ Auto-assignment done
-                        </span>
+                        <span style={{ color: theme.success, fontWeight: 700, fontSize: '13px' }}>✓ Auto-assignment done</span>
                         <span style={{ color: theme.textMuted, fontSize: '12px' }}>
                             {pendingReview.length} pending review · click any card to verify and approve
                         </span>
                     </div>
                 )}
+
                 {!matching && unprocessed.length > 0 && (
                     <div style={{
                         marginTop: 14, padding: '10px 14px', borderRadius: 7,
@@ -765,7 +602,6 @@ export default function RollAssign() {
                         fontSize: '12px', color: theme.textMuted,
                     }}>
                         <strong style={{ color: theme.accent }}>{unprocessed.length} unprocessed clusters</strong> — click <strong>Match with ERP Photos</strong> to auto-assign them
->>>>>>> main
                     </div>
                 )}
             </div>
@@ -778,71 +614,7 @@ export default function RollAssign() {
 
             {!loading && batchName && (
                 <>
-<<<<<<< HEAD
-                    {mode === 'manual' && unflagged.length > 0 && (
-                        <Section title="Unassigned Clusters" count={unflagged.length} accentColor={theme.accent}>
-                            {unflagged.map(item => (
-                                <ManualCard
-                                    key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl}
-                                    rollValue={inlineRolls[item.folderName] || ''}
-                                    onRollChange={v => setInlineRoll(item.folderName, v)}
-                                    onAssign={() => assignManual(item.folderName)}
-                                    saving={saving === item.folderName}
-                                />
-                            ))}
-                        </Section>
-                    )}
-
-                    {mode === 'erp' && unflagged.length > 0 && (
-                        <Section
-                            title={matchDone ? 'Pending Review' : 'Clusters — run ERP match first'}
-                            count={unflagged.length}
-                            accentColor={matchDone ? theme.accent : theme.textMuted}
-                        >
-                            {unflagged.map(item => (
-                                <ClusterCard
-                                    key={item.folderName} item={item} match={matches[item.folderName]}
-                                    batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
-                                    onClick={() => {
-                                        if (matching || !matchDone) return;
-                                        setModal({ item, match: matches[item.folderName] || null });
-                                        setOverrideRoll(matches[item.folderName]?.best?.rollNo || '');
-                                    }}
-                                    disabled={matching || !matchDone} matchDone={matchDone}
-                                />
-                            ))}
-                        </Section>
-                    )}
-
-                    {flagged.length > 0 && (
-                        <Section title="Flagged" count={flagged.length} accentColor={theme.warning}>
-                            {flagged.map(item => (
-                                mode === 'manual' ? (
-                                    <ManualCard
-                                        key={item.folderName} item={item} batchName={batchName}
-                                        photoUrl={photoUrl} isFlagged
-                                        rollValue={inlineRolls[item.folderName] || ''}
-                                        onRollChange={v => setInlineRoll(item.folderName, v)}
-                                        onAssign={() => assignManual(item.folderName)}
-                                        saving={saving === item.folderName}
-                                    />
-                                ) : (
-                                    <ClusterCard
-                                        key={item.folderName} item={item} match={matches[item.folderName]}
-                                        batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl} isFlagged
-                                        onClick={() => {
-                                            setModal({ item, match: matches[item.folderName] || null });
-                                            setOverrideRoll(matches[item.folderName]?.best?.rollNo || '');
-                                        }}
-                                    />
-                                )
-                            ))}
-                        </Section>
-                    )}
-=======
-                    {/* Pending operator review (auto-assigned, not yet approved) */}
-                    <Section title="Pending Review" count={pendingReview.length} accentColor={theme.accent}
-                             emptyText="No clusters pending review">
+                    <Section title="Pending Review" count={pendingReview.length} accentColor={theme.accent} emptyText="No clusters pending review">
                         {pendingReview.map(item => (
                             <ClusterCard
                                 key={item.folderName}
@@ -850,15 +622,18 @@ export default function RollAssign() {
                                 batchName={batchName}
                                 photoUrl={photoUrl}
                                 erpPhotoUrl={erpPhotoUrl}
+                                mode={mode}
+                                rollValue={inlineRolls[item.folderName] || ''}
+                                onRollChange={v => setInlineRolls(prev => ({ ...prev, [item.folderName]: v }))}
+                                onAssign={() => assignManual(item.folderName)}
+                                saving={saving === item.folderName}
                                 onClick={() => openModal(item)}
                                 disabled={matching}
                             />
                         ))}
                     </Section>
 
-                    {/* Approved / confirmed */}
-                    <Section title="Approved" count={approvedItems.length} accentColor={theme.success}
-                             emptyText="No approved clusters yet">
+                    <Section title="Approved" count={approvedItems.length} accentColor={theme.success} emptyText="No approved clusters yet">
                         {approvedItems.map(item => (
                             <ClusterCard
                                 key={item.folderName}
@@ -866,16 +641,14 @@ export default function RollAssign() {
                                 batchName={batchName}
                                 photoUrl={photoUrl}
                                 erpPhotoUrl={erpPhotoUrl}
+                                mode={mode}
                                 isAssigned
                                 onClick={() => openGtModal(item.rollNo)}
                             />
                         ))}
                     </Section>
->>>>>>> main
 
-                    {/* Flagged by operator */}
-                    <Section title="Flagged" count={flaggedItems.length} accentColor={theme.warning}
-                             emptyText="No flagged clusters">
+                    <Section title="Flagged" count={flaggedItems.length} accentColor={theme.warning} emptyText="No flagged clusters">
                         {flaggedItems.map(item => (
                             <ClusterCard
                                 key={item.folderName}
@@ -883,15 +656,18 @@ export default function RollAssign() {
                                 batchName={batchName}
                                 photoUrl={photoUrl}
                                 erpPhotoUrl={erpPhotoUrl}
+                                mode={mode}
+                                rollValue={inlineRolls[item.folderName] || ''}
+                                onRollChange={v => setInlineRolls(prev => ({ ...prev, [item.folderName]: v }))}
+                                onAssign={() => assignManual(item.folderName)}
+                                saving={saving === item.folderName}
                                 onClick={() => openModal(item)}
                                 isFlagged
                             />
                         ))}
                     </Section>
 
-                    {/* No face detected */}
-                    <Section title="No Face Detected" count={unmatchedItems.length} accentColor={theme.textMuted}
-                             emptyText="No undetected clusters">
+                    <Section title="No Face Detected" count={unmatchedItems.length} accentColor={theme.textMuted} emptyText="No undetected clusters">
                         {unmatchedItems.map(item => (
                             <ClusterCard
                                 key={item.folderName}
@@ -899,29 +675,24 @@ export default function RollAssign() {
                                 batchName={batchName}
                                 photoUrl={photoUrl}
                                 erpPhotoUrl={erpPhotoUrl}
+                                mode={mode}
                                 isUnmatched
                                 disabled
                             />
                         ))}
                     </Section>
 
-                    {/* Unprocessed filesystem clusters (never matched) */}
                     {unprocessed.length > 0 && (
                         <Section title="Unprocessed" count={unprocessed.length} accentColor={theme.textMuted}>
                             {unprocessed.map(item => (
                                 <ClusterCard
-<<<<<<< HEAD
-                                    key={item.folderName} item={item} batchName={batchName}
-                                    photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl} isAssigned
-                                    onClick={() => openGtModal(item.rollNo)}
-=======
                                     key={item.folderName}
                                     item={item}
                                     batchName={batchName}
                                     photoUrl={photoUrl}
                                     erpPhotoUrl={erpPhotoUrl}
+                                    mode={mode}
                                     disabled
->>>>>>> main
                                 />
                             ))}
                         </Section>
@@ -949,13 +720,7 @@ export default function RollAssign() {
     );
 }
 
-<<<<<<< HEAD
-// ── Manual card ───────────────────────────────────────────────────
-function ManualCard({ item, batchName, photoUrl, rollValue, onRollChange, onAssign, saving, isFlagged }) {
-    return (
-        <div style={{ background: theme.surface, border: `1px solid ${isFlagged ? theme.warning + '66' : theme.border}`, borderRadius: 10, overflow: 'hidden' }}>
-=======
-// ── Section wrapper ────────────────────────────────────────────
+// ── Section wrapper ───────────────────────────────────────────────
 function Section({ title, count, accentColor, children, emptyText }) {
     return (
         <div style={{ marginBottom: 32 }}>
@@ -990,15 +755,19 @@ function Section({ title, count, accentColor, children, emptyText }) {
     );
 }
 
-// ── Cluster card ──────────────────────────────────────────────
-function ClusterCard({ item, batchName, photoUrl, erpPhotoUrl, onClick, isAssigned, isFlagged, isUnmatched, disabled }) {
-    const conf        = item.confidence;
+// ── Cluster card ──────────────────────────────────────────────────
+function ClusterCard({
+    item, batchName, photoUrl, erpPhotoUrl, mode,
+    onClick, isAssigned, isFlagged, isUnmatched, disabled,
+    rollValue, onRollChange, onAssign, saving,
+}) {
+    const conf           = item.confidence;
     const folderForPhoto = item.currentFolder || item.folderName;
-    const previews    = item.previewFiles || [];
+    const previews       = item.previewFiles || [];
 
     const borderColor = isAssigned  ? theme.success + '44' :
                         isFlagged   ? theme.warning + '66' :
-                        isUnmatched ? theme.border + '88'  : theme.border;
+                        isUnmatched ? theme.border  + '88' : theme.border;
 
     return (
         <div
@@ -1021,7 +790,6 @@ function ClusterCard({ item, batchName, photoUrl, erpPhotoUrl, onClick, isAssign
             }}
         >
             {/* Face strip */}
->>>>>>> main
             <div style={{ display: 'flex', height: 80, overflow: 'hidden', background: '#000', gap: 1 }}>
                 {previews.slice(0, 4).map((f, i) => (
                     <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt=""
@@ -1035,95 +803,23 @@ function ClusterCard({ item, batchName, photoUrl, erpPhotoUrl, onClick, isAssign
                     </div>
                 )}
             </div>
+
             <div style={{ padding: '10px 12px' }}>
-<<<<<<< HEAD
-=======
-                {/* Folder / roll no label + image count */}
->>>>>>> main
+                {/* Folder label + image count */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{ fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 700, color: theme.text }}>{item.folderName}</span>
+                    <span style={{ fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 700, color: theme.text }}>
+                        {item.folderName}
+                    </span>
                     <span style={{ fontSize: '11px', color: theme.textMuted }}>{item.imageCount} img</span>
                 </div>
-                {isFlagged && <div style={{ fontSize: '10px', color: theme.warning, marginBottom: 6, fontWeight: 600 }}>Flagged</div>}
-                <div style={{ display: 'flex', gap: 6 }}>
-                    <input
-                        type="text" placeholder="Roll No e.g. 26TT1234" value={rollValue}
-                        onChange={e => onRollChange(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') onAssign(); }}
-                        style={{ ...styles.input, flex: 1, padding: '6px 10px', fontSize: '12px',
-                            fontFamily: theme.fontMono, fontWeight: 700, textTransform: 'uppercase', margin: 0 }}
-                    />
-                    <button
-                        onClick={onAssign} disabled={saving || !rollValue.trim()}
-                        style={{ padding: '6px 12px', borderRadius: 6, border: 'none',
-                            background: theme.success, color: '#000', fontSize: '12px',
-                            fontWeight: 700, cursor: 'pointer',
-                            opacity: (saving || !rollValue.trim()) ? 0.4 : 1, flexShrink: 0 }}>
-                        {saving ? '...' : 'OK'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
 
-<<<<<<< HEAD
-// ── Section wrapper ───────────────────────────────────────────────
-function Section({ title, count, accentColor, children }) {
-    return (
-        <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: theme.text, marginBottom: 14 }}>
-                {title}
-                <span style={{ marginLeft: 8, fontSize: '12px', fontWeight: 600,
-                    background: accentColor + '22', color: accentColor, padding: '2px 8px', borderRadius: 10 }}>
-                    {count}
-                </span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-                {children}
-            </div>
-        </div>
-    );
-}
-
-// ── ERP Cluster card ──────────────────────────────────────────────
-function ClusterCard({ item, match, batchName, photoUrl, erpPhotoUrl, onClick, isAssigned, isFlagged, disabled, matchDone }) {
-    const best = match?.best;
-    const conf = best?.confidence;
-    return (
-        <div
-            onClick={disabled ? undefined : onClick}
-            style={{
-                background: theme.surface,
-                border: `1px solid ${isAssigned ? theme.success + '44' : isFlagged ? theme.warning + '66' : theme.border}`,
-                borderRadius: 10, overflow: 'hidden',
-                opacity: disabled ? 0.5 : 1,
-                cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
-            onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = isAssigned ? theme.success : theme.accent; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = isAssigned ? theme.success + '44' : isFlagged ? theme.warning + '66' : theme.border; }}
-        >
-            <div style={{ display: 'flex', height: 80, overflow: 'hidden', background: '#000', gap: 1 }}>
-                {item.previewFiles.slice(0, 4).map((f, i) => (
-                    <img key={i} src={photoUrl(batchName, item.folderName, f)} alt=""
-                         style={{ flex: 1, height: '100%', objectFit: 'cover', minWidth: 0 }}
-                         onError={e => { e.target.style.display = 'none'; }} />
-                ))}
-            </div>
-            <div style={{ padding: '10px 12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{ fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 700, color: theme.text }}>{item.folderName}</span>
-                    <span style={{ fontSize: '11px', color: theme.textMuted }}>{item.imageCount} img</span>
-                </div>
-=======
-                {/* Status badge */}
->>>>>>> main
+                {/* Status badge / inline input */}
                 {isAssigned ? (
                     <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.successDim,
                         color: theme.success, fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>
                         {item.rollNo}
                     </div>
-                ) : isFlagged ? (
+                ) : isFlagged && mode !== 'manual' ? (
                     <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.warning + '22',
                         color: theme.warning, fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>
                         Flagged
@@ -1134,20 +830,8 @@ function ClusterCard({ item, match, batchName, photoUrl, erpPhotoUrl, onClick, i
                                   fontSize: '11px', textAlign: 'center' }}>
                         ⚠ No face detected
                     </div>
-                ) : item.rollNo ? (
+                ) : item.rollNo && mode !== 'manual' ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-<<<<<<< HEAD
-                        {best.erpPhoto && (
-                            <img src={erpPhotoUrl(best.erpPhoto)} alt="ERP"
-                                 style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover',
-                                          border: `2px solid ${confidenceColor(conf)}`, flexShrink: 0 }}
-                                 onError={e => { e.target.style.display = 'none'; }} />
-                        )}
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontSize: '12px', fontWeight: 700, color: theme.text }}>{best.rollNo}</div>
-                            <div style={{ fontSize: '11px', color: confidenceColor(conf) }}>
-                                {confidenceLabel(conf)} · {(conf * 100).toFixed(0)}%
-=======
                         {item.erpPhoto && (
                             <img src={erpPhotoUrl(item.erpPhoto)} alt="ERP"
                                  style={{ width: 32, height: 32, borderRadius: '50%',
@@ -1159,7 +843,6 @@ function ClusterCard({ item, match, batchName, photoUrl, erpPhotoUrl, onClick, i
                             <div style={{ fontSize: '12px', fontWeight: 700, color: theme.text,
                                           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {item.rollNo}
->>>>>>> main
                             </div>
                             {conf != null && (
                                 <div style={{ fontSize: '11px', color: confidenceColor(conf) }}>
@@ -1169,15 +852,31 @@ function ClusterCard({ item, match, batchName, photoUrl, erpPhotoUrl, onClick, i
                         </div>
                     </div>
                 ) : (
-<<<<<<< HEAD
-                    <div style={{ fontSize: '11px', textAlign: 'center', padding: '5px 8px', borderRadius: 5,
-                        background: theme.border + '44', color: theme.textMuted }}>
-                        {matchDone ? 'No match' : 'Run ERP match first'}
-=======
-                    <div style={{ fontSize: '11px', textAlign: 'center', padding: '5px 8px',
-                                  borderRadius: 5, background: theme.border + '44', color: theme.textMuted }}>
-                        ⟳ Not yet matched
->>>>>>> main
+                    /* Manual inline input */
+                    <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                        <input
+                            type="text"
+                            placeholder="Roll No e.g. 26TT1234"
+                            value={rollValue || ''}
+                            onChange={e => onRollChange && onRollChange(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && onAssign) onAssign(); }}
+                            style={{
+                                ...styles.input, flex: 1, padding: '6px 10px', fontSize: '12px',
+                                fontFamily: theme.fontMono, fontWeight: 700,
+                                textTransform: 'uppercase', margin: 0,
+                            }}
+                        />
+                        <button
+                            onClick={onAssign}
+                            disabled={saving || !(rollValue || '').trim()}
+                            style={{
+                                padding: '6px 12px', borderRadius: 6, border: 'none',
+                                background: theme.success, color: '#000', fontSize: '12px',
+                                fontWeight: 700, cursor: 'pointer',
+                                opacity: (saving || !(rollValue || '').trim()) ? 0.4 : 1, flexShrink: 0,
+                            }}>
+                            {saving ? '...' : 'OK'}
+                        </button>
                     </div>
                 )}
             </div>
@@ -1243,7 +942,7 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '16px 20px', borderBottom: `1px solid ${theme.border}` }}>
                     <span style={{ fontWeight: 700, fontSize: '15px', color: theme.text }}>Ground Truth — {rollNo}</span>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer' }}>x</button>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer' }}>×</button>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
                     {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: theme.textMuted }}>Loading...</div>}
@@ -1258,11 +957,13 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
                     <span style={{ fontSize: '12px', color: theme.textMuted }}>{selected.size} selected</span>
                     <div style={{ display: 'flex', gap: 10 }}>
                         <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7,
-                            border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+                            border: `1px solid ${theme.border}`, background: 'transparent',
+                            color: theme.textMuted, fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
                         <button onClick={onSave} disabled={saving || selected.size === 0}
                             style={{ padding: '8px 20px', borderRadius: 7, border: 'none',
                                 background: theme.success, color: '#000', fontSize: '13px',
-                                fontWeight: 700, cursor: 'pointer', opacity: (saving || selected.size === 0) ? 0.5 : 1 }}>
+                                fontWeight: 700, cursor: 'pointer',
+                                opacity: (saving || selected.size === 0) ? 0.5 : 1 }}>
                             {saving ? 'Updating...' : 'Update Embedding'}
                         </button>
                     </div>
@@ -1272,23 +973,14 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
     );
 }
 
-<<<<<<< HEAD
-// ── Verify Modal (ERP mode) ───────────────────────────────────────
-function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl, overrideRoll, setOverrideRoll, saving, onApprove, onFlag, onClose }) {
-    const best       = match?.best;
-    const candidates = match?.candidates || [];
-    const conf       = best?.confidence;
-=======
-// ── Verify Modal ───────────────────────────────────────────────
+// ── Verify Modal ──────────────────────────────────────────────────
 function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                        overrideRoll, setOverrideRoll,
                        saving, onApprove, onFlag, onClose }) {
-    // match is now a flat DB record (rollNo, erpPhoto, confidence, candidates[])
-    const conf        = match?.confidence;
-    const candidates  = match?.candidates || [];
+    const conf           = match?.confidence;
+    const candidates     = match?.candidates || [];
     const folderForPhoto = item.currentFolder || item.folderName;
 
->>>>>>> main
     return (
         <div
             style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.75)',
@@ -1303,17 +995,10 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                         Verify — {item.folderName}
                         <span style={{ marginLeft: 8, fontSize: '12px', color: theme.textMuted, fontWeight: 400 }}>{item.imageCount} images</span>
                     </div>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer' }}>x</button>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer' }}>×</button>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20 }}>
                     <div>
-<<<<<<< HEAD
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, marginBottom: 10, textTransform: 'uppercase' }}>Extracted Faces</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
-                            {item.previewFiles.map((f, i) => (
-                                <img key={i} src={photoUrl(batchName, item.folderName, f)} alt=""
-                                     style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, border: `1px solid ${theme.border}` }}
-=======
                         <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted,
                                       marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Extracted Face Images
@@ -1323,60 +1008,39 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                                 <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt=""
                                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover',
                                               borderRadius: 6, border: `1px solid ${theme.border}` }}
->>>>>>> main
                                      onError={e => { e.target.style.display = 'none'; }} />
                             ))}
                         </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         <div>
-<<<<<<< HEAD
-                            <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, marginBottom: 8, textTransform: 'uppercase' }}>ERP Match</div>
-                            {best ? (
-                                <div style={{ textAlign: 'center' }}>
-                                    <img src={erpPhotoUrl(best.erpPhoto)} alt="ERP"
-                                         style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, border: `3px solid ${confidenceColor(conf)}` }}
-                                         onError={e => { e.target.style.display = 'none'; }} />
-                                    <div style={{ marginTop: 8, fontSize: '15px', fontWeight: 800, color: theme.text }}>{best.rollNo}</div>
-=======
                             <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted,
                                           marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 ERP Match
                             </div>
-
                             {match?.erpPhoto ? (
                                 <div style={{ textAlign: 'center' }}>
                                     <img
                                         src={erpPhotoUrl(match.erpPhoto)}
                                         alt="ERP"
                                         style={{ width: 120, height: 120, objectFit: 'cover',
-                                                 borderRadius: 8,
-                                                 border: `3px solid ${confidenceColor(conf)}` }}
-                                        onError={e => {
-                                            e.target.style.display = 'none';
-                                            e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
-                                        }}
+                                                 borderRadius: 8, border: `3px solid ${confidenceColor(conf)}` }}
+                                        onError={e => { e.target.style.display = 'none'; }}
                                     />
-                                    <div style={{ display: 'none', width: 120, height: 120,
-                                                  background: theme.bg, borderRadius: 8,
-                                                  alignItems: 'center', justifyContent: 'center',
-                                                  fontSize: '11px', color: theme.textMuted,
-                                                  border: `1px solid ${theme.border}` }}>
-                                        No photo
-                                    </div>
-                                    <div style={{ marginTop: 8, fontSize: '15px', fontWeight: 800,
-                                                  color: theme.text }}>
+                                    <div style={{ marginTop: 8, fontSize: '15px', fontWeight: 800, color: theme.text }}>
                                         {match.rollNo}
                                     </div>
->>>>>>> main
                                     <div style={{ fontSize: '12px', color: confidenceColor(conf), fontWeight: 600 }}>
                                         {confidenceLabel(conf)} · {(conf * 100).toFixed(1)}%
                                     </div>
                                 </div>
                             ) : (
-                                <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: '13px', padding: '20px 0' }}>No ERP match. Enter manually.</div>
+                                <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: '13px', padding: '20px 0' }}>
+                                    No ERP match. Enter manually.
+                                </div>
                             )}
                         </div>
+
                         {candidates.length > 1 && (
                             <div>
                                 <div style={{ fontSize: '11px', color: theme.textMuted, fontWeight: 600, marginBottom: 6 }}>Other candidates</div>
@@ -1399,6 +1063,7 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                                 ))}
                             </div>
                         )}
+
                         <div>
                             <div style={{ fontSize: '11px', color: theme.textMuted, fontWeight: 600, marginBottom: 5 }}>Roll Number</div>
                             <input
@@ -1408,17 +1073,20 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                                 style={{ ...styles.input, margin: 0, fontSize: '14px', fontWeight: 700, textTransform: 'uppercase' }}
                             />
                         </div>
+
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
                             <button
                                 onClick={onApprove} disabled={saving || !overrideRoll.trim()}
                                 style={{ padding: '10px 0', borderRadius: 7, border: 'none',
                                     background: theme.success, color: '#000', fontSize: '13px',
-                                    fontWeight: 700, cursor: 'pointer', opacity: (saving || !overrideRoll.trim()) ? 0.5 : 1 }}>
+                                    fontWeight: 700, cursor: 'pointer',
+                                    opacity: (saving || !overrideRoll.trim()) ? 0.5 : 1 }}>
                                 {saving ? 'Assigning...' : 'Approve & Assign'}
                             </button>
                             <button
                                 onClick={onFlag} disabled={saving}
-                                style={{ padding: '10px 0', borderRadius: 7, border: `1px solid ${theme.warning}`,
+                                style={{ padding: '10px 0', borderRadius: 7,
+                                    border: `1px solid ${theme.warning}`,
                                     background: 'transparent', color: theme.warning, fontSize: '13px',
                                     fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>
                                 Flag as Incorrect
