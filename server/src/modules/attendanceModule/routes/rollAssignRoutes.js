@@ -1,69 +1,47 @@
 // server/src/modules/attendanceModule/routes/rollAssignRoutes.js
 
-const express = require('express');
-const router  = express.Router();
+const express    = require('express');
+const router     = express.Router();
 const RollAssignController = require('../controllers/rollAssignController');
 
-const controller = new RollAssignController();
-
-// List unassigned (person_XXX) and assigned folders
-router.get('/clusters/:batch', async (req, res) => {
-    try { await controller.listClusters(req, res); }
+const ctrl = new RollAssignController();
+const wrap = (fn) => async (req, res) => {
+    try { await fn.call(ctrl, req, res); }
     catch (e) { res.status(500).json({ error: e.message }); }
-});
+};
 
-// Serve a face-crop photo from any ground_truth subfolder
-router.get('/photo/:batch/:folder/:filename', async (req, res) => {
-    try { await controller.servePhoto(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
-
+// ── Filesystem ────────────────────────────────────────────────────
+// List person_XXX folders not yet tracked in DB
+router.get('/clusters/:batch',                        wrap(ctrl.listClusters));
+// Serve a face-crop photo from any subfolder
+router.get('/photo/:batch/:folder/:filename',         wrap(ctrl.servePhoto));
 // Serve an ERP photo
-router.get('/erp-photo/:filename', async (req, res) => {
-    try { await controller.serveErpPhoto(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
+router.get('/erp-photo/:filename',                    wrap(ctrl.serveErpPhoto));
 
-// Auto-match clusters against ERP photos (calls Python ML service)
-router.post('/auto-match/:batch', async (req, res) => {
-    try { await controller.autoMatch(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
+// ── Matching ──────────────────────────────────────────────────────
+// SSE stream: match clusters against ERP photos via Python ML service
+router.post('/auto-match/:batch',                     wrap(ctrl.autoMatch));
+// After SSE done: rename all person_XXX → rollNo + save to DB with approved=false
+router.post('/auto-assign-all',                       wrap(ctrl.autoAssignAll));
 
-// Approve: rename person_XXX → rollNo
-router.post('/assign', async (req, res) => {
-    try { await controller.assignRollNo(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
+// ── DB records ────────────────────────────────────────────────────
+// Load all match records for a batch (for page reload)
+router.get('/matches/:batch',                         wrap(ctrl.getMatches));
 
-// Bulk approve
-router.post('/bulk-assign', async (req, res) => {
-    try { await controller.bulkAssign(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
+// ── Verification ──────────────────────────────────────────────────
+// Operator approves a match (sets approved=true; renames folder if rollNo overridden)
+router.post('/approve',                               wrap(ctrl.approve));
+// Flag a cluster as incorrect
+router.post('/flag',                                  wrap(ctrl.flagCluster));
+// List open flags
+router.get('/flagged/:batch',                         wrap(ctrl.listFlagged));
+// Resolve a flag with corrected rollNo
+router.post('/resolve-flag',                          wrap(ctrl.resolveFlag));
 
-// Flag a cluster as incorrect match
-router.post('/flag', async (req, res) => {
-    try { await controller.flagCluster(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
+// ── Ground truth images for an approved student ───────────────────
+router.get('/student-ground-truth/:batch/:rollNo',    wrap(ctrl.getStudentGroundTruth));
 
-// List all open (unresolved) flags for a batch
-router.get('/flagged/:batch', async (req, res) => {
-    try { await controller.listFlagged(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Resolve a flag with correct roll number
-router.post('/resolve-flag', async (req, res) => {
-    try { await controller.resolveFlag(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Get ground truth images for an assigned student (embedding / backup split)
-router.get('/student-ground-truth/:batch/:rollNo', async (req, res) => {
-    try { await controller.getStudentGroundTruth(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
+// ── Bulk operations ───────────────────────────────────────────────
+router.post('/bulk-assign',                           wrap(ctrl.bulkAssign));
 
 module.exports = router;
