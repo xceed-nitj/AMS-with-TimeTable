@@ -1,0 +1,83 @@
+[
+  {
+    "folderName": "person_002",
+    "suggestedRollNo": "26TT9956",
+    "confidence": 0.4035,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:04:41.921Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_003",
+    "suggestedRollNo": "26TT9286",
+    "confidence": 0.2218,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:04:48.637Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_005",
+    "suggestedRollNo": "26TT9956",
+    "confidence": 0.3566,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:05:02.455Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_011",
+    "suggestedRollNo": "26TT6507",
+    "confidence": 0.4144,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:05:39.767Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_015",
+    "suggestedRollNo": "26TT9827",
+    "confidence": 0.2936,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:06:03.514Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_016",
+    "suggestedRollNo": "26TT6414",
+    "confidence": 0.3446,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:06:08.637Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_018",
+    "suggestedRollNo": "26TT2819",
+    "confidence": 0.2074,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:06:18.856Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_020",
+    "suggestedRollNo": "26TT9956",
+    "confidence": 0.3813,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:06:28.694Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_021",
+    "suggestedRollNo": null,
+    "confidence": null,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-03-31T18:06:35.377Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  }
+]
