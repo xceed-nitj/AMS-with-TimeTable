@@ -9,7 +9,8 @@ const convertToObject = async (eventId, formData, files, url) => {
     const form = {}
     try {
         // console.log(formData)
-        form["verifiableLink"] = formData.verifiableLink == "true"
+        form["verifiableLink"] =
+            formData.verifiableLink === true || formData.verifiableLink === "true"
         form["certiType"] = formData.certiType
         form["templateId"] = formData.templateId
         form["footer"] = { "footer": "" }
