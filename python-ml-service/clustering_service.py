@@ -1,71 +1,328 @@
 import os
+import time
+import logging
+import pickle
+import json
+
 import cv2
 import numpy as np
-import time
-import json
 from sklearn.cluster import DBSCAN
 
+logger = logging.getLogger(__name__)
 
-def get_video_clips(video_path, clip_duration_sec=300):
+# ─────────────────────────────────────────────────────────────────────────────
+# Tuning knobs — edit here only
+# ─────────────────────────────────────────────────────────────────────────────
+
+# FIX-A: skip opening seconds (screen-recorder dialog)
+START_SKIP_SEC = 12
+
+# FIX-C: tile detection grid
+TILE_ROWS    = 4
+TILE_COLS    = 5
+TILE_OVERLAP = 0.25      # 25 % overlap between adjacent tiles
+TILE_UPSCALE = 3.0       # upscale factor before InsightFace
+
+# FIX-B: student seating zone (fraction of frame height)
+ROI_TOP_FRAC    = 0.08   # skip ceiling / timestamp
+ROI_BOTTOM_FRAC = 0.50   # skip empty chairs / floor below
+
+# NMS
+NMS_IOU_THRESH = 0.35
+
+# Quality filter
+MIN_SHARPNESS = 30.0     # Laplacian variance
+MIN_FACE_PX   = 15       # minimum face side in original-frame pixels
+
+# FIX-F: tight crop to avoid bleeding into neighbour's face
+FACE_CROP_PAD_FRAC = 0.10   # was 0.25
+
+# InsightFace
+INSIGHTFACE_DET_SIZE = 640   # always 640; must match build_embeddings_db.py
+
+# FIX-G: post-cluster merge threshold (cosine similarity)
+MERGE_THRESHOLD = 0.68   # clusters more similar than this → same person
+
+IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FIX-E — UI mask regions (CP IP Cam + RecForth, calibrated to 1080 p)
+# Format: (y1, y2, x1, x2)  in 1080 p reference pixels
+# ─────────────────────────────────────────────────────────────────────────────
+UI_MASK_REGIONS_1080P = [
+    (   0,  65,  870, 1920),   # timestamp banner  (top-right)
+    ( 610, 730,    0,  290),   # RecForth logo     (bottom-left)
+    (1000, 1080,   0, 1920),   # taskbar / progress bar (bottom strip)
+]
+
+
+def _build_ui_mask(H: int, W: int) -> np.ndarray:
+    """Return uint8 mask: 0 = UI overlay, 255 = valid region."""
+    mask = np.ones((H, W), dtype=np.uint8) * 255
+    sy, sx = H / 1080.0, W / 1920.0
+    for (y1r, y2r, x1r, x2r) in UI_MASK_REGIONS_1080P:
+        y1 = int(y1r * sy); y2 = int(y2r * sy)
+        x1 = int(x1r * sx); x2 = int(x2r * sx)
+        mask[y1:y2, x1:x2] = 0
+    return mask
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FIX-D — CLAHE for per-tile contrast enhancement
+# ─────────────────────────────────────────────────────────────────────────────
+_clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
+def _apply_clahe(bgr: np.ndarray) -> np.ndarray:
+    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    return cv2.cvtColor(cv2.merge((_clahe.apply(l), a, b)), cv2.COLOR_LAB2BGR)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FIX-G — Post-DBSCAN cluster merge
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _merge_split_clusters(labels: np.ndarray,
+                           embeddings: list,
+                           merge_threshold: float = MERGE_THRESHOLD):
     """
-    Returns a list of (start_frame, end_frame) pairs for a video,
-    each covering at most clip_duration_sec seconds.
-    For short videos returns a single pair covering the whole video.
+    After DBSCAN, compute mean embedding per cluster and merge any two
+    clusters whose cosine similarity > merge_threshold.
+
+    This fixes the "same person split into multiple folders" bug caused by
+    pose/illumination variation dropping a few frames below DBSCAN's eps.
+
+    Returns a new labels array (noise stays -1; merged clusters get the
+    lower of the two original cluster IDs).
     """
-    cap = cv2.VideoCapture(video_path)
-    fps         = cap.get(cv2.CAP_PROP_FPS) or 25
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    cap.release()
+    unique = sorted(set(labels) - {-1})
+    if len(unique) < 2:
+        return labels
 
-    frames_per_clip = int(fps * clip_duration_sec)
-    clips = []
-    start = 0
-    while start < total_frames:
-        end = min(start + frames_per_clip, total_frames)
-        clips.append((start, end))
-        start = end
-    return clips, fps, total_frames
+    arr = np.array(embeddings, dtype=np.float32)
 
-def extract_all_faces(video_path, face_app, frame_skip=10, max_width=640,
-                      start_frame=0, end_frame=None,
-                      min_face_size=0, laplacian_threshold=0.0):
+    # Compute mean embedding per cluster
+    means = {}
+    for cid in unique:
+        idx = np.where(labels == cid)[0]
+        m   = arr[idx].mean(axis=0)
+        n   = np.linalg.norm(m)
+        means[cid] = m / n if n > 0 else m
+
+    # Build merge map using union-find
+    parent = {cid: cid for cid in unique}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            # Always keep smaller ID as root
+            if ra < rb:
+                parent[rb] = ra
+            else:
+                parent[ra] = rb
+
+    # Compare every pair of cluster means
+    cids = list(unique)
+    mean_matrix = np.stack([means[c] for c in cids])   # (N, 512)
+    sim_matrix  = mean_matrix @ mean_matrix.T            # cosine similarities
+
+    merged_count = 0
+    for i in range(len(cids)):
+        for j in range(i + 1, len(cids)):
+            if sim_matrix[i, j] > merge_threshold:
+                union(cids[i], cids[j])
+                merged_count += 1
+
+    if merged_count == 0:
+        return labels   # nothing to do
+
+    # Re-label: map every cluster ID to its root
+    new_labels = labels.copy()
+    for cid in unique:
+        root = find(cid)
+        if root != cid:
+            new_labels[labels == cid] = root
+
+    new_unique = sorted(set(new_labels) - {-1})
+    logger.info(f"[merge_clusters] {len(unique)} → {len(new_unique)} clusters "
+                f"after merging {merged_count} pair(s) "
+                f"(threshold={merge_threshold})")
+    return new_labels
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tiled face detection
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _detect_faces_tiled(face_app, frame: np.ndarray,
+                        ui_mask: np.ndarray = None) -> list:
     """
-    Step 1 and 2:
-    Open video → extract frames → detect faces → get embeddings.
-    Returns (embeddings, face_images, timestamps, quality_scores).
+    Run InsightFace on a 4×5 overlapping tile grid.
+    Each tile is CLAHE-enhanced then upscaled 3× before detection.
+    All coordinates are mapped back to original frame space.
 
-    Filtering params:
-      min_face_size        – skip faces where min(w, h) < this (0 = disabled)
-      laplacian_threshold  – skip blurry faces below this variance (0 = disabled)
+    Returns list of dicts: {bbox, embedding, det_score, quality, crop}
+    """
+    H, W = frame.shape[:2]
+
+    if ui_mask is not None:
+        frame = frame.copy()
+        frame[ui_mask == 0] = 0
+
+    # Student ROI  (FIX-B)
+    roi_y1 = int(H * ROI_TOP_FRAC)
+    roi_y2 = int(H * ROI_BOTTOM_FRAC)
+    roi    = frame[roi_y1:roi_y2, :]
+    roi_H, roi_W = roi.shape[:2]
+
+    step_h = roi_H // TILE_ROWS
+    step_w = roi_W // TILE_COLS
+    tile_h = int(step_h * (1 + TILE_OVERLAP))
+    tile_w = int(step_w * (1 + TILE_OVERLAP))
+
+    raw = []   # (x1, y1, x2, y2, embedding, det_score)
+
+    for r in range(TILE_ROWS):
+        for c in range(TILE_COLS):
+            ty1 = r * step_h
+            tx1 = c * step_w
+            ty2 = min(ty1 + tile_h, roi_H)
+            tx2 = min(tx1 + tile_w, roi_W)
+            tile = roi[ty1:ty2, tx1:tx2]
+            if tile.size == 0:
+                continue
+
+            # FIX-D + FIX-C
+            tile_up = cv2.resize(
+                _apply_clahe(tile),
+                (int(tile.shape[1] * TILE_UPSCALE),
+                 int(tile.shape[0] * TILE_UPSCALE)),
+                interpolation=cv2.INTER_LANCZOS4
+            )
+
+            try:
+                faces = face_app.get(tile_up)
+            except Exception as e:
+                logger.warning(f"InsightFace error tile({r},{c}): {e}")
+                continue
+
+            for face in faces:
+                b  = face.bbox
+                x1 = int(tx1 + b[0] / TILE_UPSCALE)
+                y1 = int(ty1 + b[1] / TILE_UPSCALE) + roi_y1
+                x2 = int(tx1 + b[2] / TILE_UPSCALE)
+                y2 = int(ty1 + b[3] / TILE_UPSCALE) + roi_y1
+                x1 = max(0, x1); y1 = max(0, y1)
+                x2 = min(W, x2); y2 = min(H, y2)
+                raw.append((x1, y1, x2, y2, face.embedding,
+                             float(getattr(face, "det_score", 1.0))))
+
+    if not raw:
+        return []
+
+    # NMS across all tiles
+    boxes_wh   = [(x1, y1, x2-x1, y2-y1) for (x1,y1,x2,y2,_,__) in raw]
+    keep_idx   = []
+    keep_boxes = []
+    for i, (x1,y1,w,h) in enumerate(boxes_wh):
+        dup = False
+        for (kx,ky,kw,kh) in keep_boxes:
+            ix    = max(0, min(x1+w, kx+kw) - max(x1, kx))
+            iy    = max(0, min(y1+h, ky+kh) - max(y1, ky))
+            inter = ix * iy
+            union = w*h + kw*kh - inter
+            if union > 0 and inter/union > NMS_IOU_THRESH:
+                dup = True; break
+        if not dup:
+            keep_idx.append(i)
+            keep_boxes.append((x1,y1,w,h))
+
+    results = []
+    for i in keep_idx:
+        x1, y1, x2, y2, emb, det_score = raw[i]
+        fw, fh = x2-x1, y2-y1
+        if min(fw, fh) < MIN_FACE_PX:
+            continue
+
+        # FIX-F: tight crop (10 % pad, was 25 %)
+        pad  = int(max(fw, fh) * FACE_CROP_PAD_FRAC)
+        cx1  = max(0, x1-pad); cy1 = max(0, y1-pad)
+        cx2  = min(W, x2+pad); cy2 = min(H, y2+pad)
+        crop = frame[cy1:cy2, cx1:cx2]
+        if crop.size == 0:
+            continue
+
+        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        lap  = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        if lap < MIN_SHARPNESS:
+            continue
+
+        quality = float(det_score * ((fw*fh)**0.5) * min(lap, 500) / 500)
+
+        norm = np.linalg.norm(emb)
+        if norm == 0:
+            continue
+
+        results.append({
+            "bbox":      [x1, y1, x2, y2],
+            "embedding": emb / norm,
+            "det_score": det_score,
+            "quality":   quality,
+            "crop":      crop,
+        })
+
+    return results
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Public API — extract_all_faces
+# ─────────────────────────────────────────────────────────────────────────────
+
+def extract_all_faces(video_path: str,
+                      face_app,
+                      frame_skip: int = 5,
+                      progress_cb=None):
+    """
+    Extract faces from every frame_skip-th frame, skipping the first
+    START_SKIP_SEC seconds (FIX-A).
+
+    Returns: embeddings, face_images, timestamps, quality_scores
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        raise Exception(f"Cannot open video: {video_path}")
+        raise RuntimeError(f"Cannot open video: {video_path}")
 
-    fps        = cap.get(cv2.CAP_PROP_FPS) or 25
-    vid_width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    scale      = min(1.0, max_width / vid_width) if vid_width > max_width else 1.0
+    fps          = cap.get(cv2.CAP_PROP_FPS) or 25
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    H            = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    W            = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
+    # FIX-A: skip opening dialog
+    start_frame = int(fps * START_SKIP_SEC)
     if start_frame > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+        logger.info(f"[extract_all_faces] Skipping first {START_SKIP_SEC}s "
+                    f"({start_frame} frames)")
 
-    all_embeddings   = []
-    all_face_images  = []
-    all_timestamps   = []
-    all_quality_scores = []
-    frame_count      = start_frame
+    ui_mask     = _build_ui_mask(H, W)
+    embeddings, face_images, timestamps, quality_scores = [], [], [], []
+    frame_count = start_frame
 
-    print(f"[Clustering] Extracting faces (scale={scale:.2f}, skip={frame_skip}, "
-          f"min_face={min_face_size}px, lap_thresh={laplacian_threshold}, "
-          f"frames {start_frame}–{end_frame or 'end'})...")
+    logger.info(f"[extract_all_faces] {video_path}  {total_frames} frames  "
+                f"skip={frame_skip}  {W}×{H}  "
+                f"ROI={ROI_TOP_FRAC*100:.0f}%-{ROI_BOTTOM_FRAC*100:.0f}%  "
+                f"tiles={TILE_ROWS}×{TILE_COLS}  upscale={TILE_UPSCALE}×  "
+                f"pad={FACE_CROP_PAD_FRAC}")
 
     while True:
-        if end_frame is not None and frame_count >= end_frame:
-            break
-
         if not cap.grab():
             break
-
         frame_count += 1
         if frame_count % frame_skip != 0:
             continue
@@ -74,413 +331,312 @@ def extract_all_faces(video_path, face_app, frame_skip=10, max_width=640,
         if not ret:
             continue
 
-        if frame_count % 200 == 0:
-            print(f"[Clustering] Frame {frame_count}, faces so far: {len(all_embeddings)}")
+        for d in _detect_faces_tiled(face_app, frame, ui_mask):
+            embeddings.append(d["embedding"])
+            face_images.append(d["crop"])
+            timestamps.append(round(frame_count / fps, 2))
+            quality_scores.append(d["quality"])
 
-        if scale < 1.0:
-            frame = cv2.resize(frame, None, fx=scale, fy=scale,
-                               interpolation=cv2.INTER_LINEAR)
-
-        faces     = face_app.get(frame)
-        timestamp = round(frame_count / fps, 2)
-
-        for face in faces:
-            emb  = face.embedding
-            norm = np.linalg.norm(emb)
-            if norm == 0:
-                continue
-            emb = emb / norm
-
-            bbox = face.bbox.astype(int)
-            x1   = max(0, bbox[0])
-            y1   = max(0, bbox[1])
-            x2   = min(frame.shape[1], bbox[2])
-            y2   = min(frame.shape[0], bbox[3])
-            w, h = x2 - x1, y2 - y1
-
-            # Filter: minimum face size
-            if min_face_size > 0 and min(w, h) < min_face_size:
-                continue
-
-            crop = frame[y1:y2, x1:x2]
-            if crop.size == 0:
-                continue
-
-            # Blur filter + quality score
-            gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-            lap_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-            if laplacian_threshold > 0 and lap_var < laplacian_threshold:
-                continue
-
-            det_score = float(getattr(face, 'det_score', 1.0))
-            quality   = det_score * ((w * h) ** 0.5) * min(lap_var, 500.0) / 500.0
-
-            all_embeddings.append(emb)
-            all_face_images.append(crop)
-            all_timestamps.append(timestamp)
-            all_quality_scores.append(quality)
+        if progress_cb and frame_count % 50 == 0:
+            pct = round(frame_count / total_frames * 100, 1) if total_frames else 0
+            progress_cb(frame_count, total_frames, len(embeddings), pct)
 
     cap.release()
-    print(f"[Clustering] Extracted {len(all_embeddings)} faces "
-          f"(frames {start_frame}–{frame_count}, skip={frame_skip})")
-    return all_embeddings, all_face_images, all_timestamps, all_quality_scores
+    logger.info(f"[extract_all_faces] done — {len(embeddings)} faces from "
+                f"{(frame_count - start_frame) // frame_skip} processed frames")
+    return embeddings, face_images, timestamps, quality_scores
 
 
-def cluster_faces(all_embeddings, cluster_threshold=0.45, min_samples=2):
+# ─────────────────────────────────────────────────────────────────────────────
+# Public API — cluster_faces
+# ─────────────────────────────────────────────────────────────────────────────
+
+def cluster_faces(embeddings: list,
+                  cluster_threshold: float = 0.45,
+                  min_samples: int = 3):
     """
-    Step 3:
-    Group similar faces together using DBSCAN
-    Similar faces = same person = same cluster
+    DBSCAN clustering followed by a post-merge pass (FIX-G).
 
-    Optimisation: embeddings are already L2-normalised, so cosine distance
-    and Euclidean distance are mathematically equivalent:
-        euclidean_dist² = 2 * cosine_dist   (for unit vectors)
-    Switching to metric='euclidean' lets DBSCAN use algorithm='ball_tree'
-    which is O(n log n) instead of the brute-force O(n²) required for cosine.
-    n_jobs=-1 uses all CPU cores for the distance queries.
+    cluster_threshold : cosine similarity to be in the same cluster
+                        default lowered from 0.50 → 0.45 so that the same
+                        person's pose-variant frames stay together
+    min_samples       : raised from 2 → 3 to suppress noise micro-clusters
+
+    Returns: labels (np.ndarray), unique_labels (list[int])
     """
-    if len(all_embeddings) == 0:
-        return [], set()
+    if not embeddings:
+        return np.array([]), []
 
-    print(f"[Clustering] Clustering {len(all_embeddings)} faces...")
-
-    embeddings_array = np.array(all_embeddings)  # already L2-normalised
-
-    # Convert cosine eps → euclidean eps for unit vectors:
-    #   euclidean_eps = sqrt(2 * cosine_eps) = sqrt(2 * (1 - threshold))
-    cosine_eps     = 1.0 - cluster_threshold
-    euclidean_eps  = float(np.sqrt(2.0 * cosine_eps))
+    arr           = np.array(embeddings, dtype=np.float32)
+    euclidean_eps = float(np.sqrt(2.0 * (1.0 - cluster_threshold)))
 
     clustering = DBSCAN(
         eps=euclidean_eps,
         min_samples=min_samples,
-        metric='euclidean',
-        algorithm='ball_tree',   # O(n log n) spatial tree instead of O(n²) brute
-        n_jobs=-1,               # parallelise across all CPU cores
-    ).fit(embeddings_array)
+        metric="euclidean",
+        algorithm="ball_tree",
+        n_jobs=-1,
+    ).fit(arr)
 
     labels = clustering.labels_
-    unique_labels = set(labels)
-    unique_labels.discard(-1)  # -1 = noise/unclassified
 
-    print(f"[Clustering] Found {len(unique_labels)} unique people")
+    # FIX-G: merge clusters that are the same person
+    labels = _merge_split_clusters(labels, embeddings)
+
+    unique_labels = sorted(set(labels) - {-1})
+    logger.info(f"[cluster_faces] {len(unique_labels)} final clusters from "
+                f"{len(embeddings)} detections  eps={euclidean_eps:.4f}")
     return labels, unique_labels
 
 
-def save_clusters_serial(
-    labels, unique_labels,
-    all_face_images, all_timestamps,
-    output_dir,
-    min_images=5
-):
+# ─────────────────────────────────────────────────────────────────────────────
+# Public API — identify_clusters
+# ─────────────────────────────────────────────────────────────────────────────
+
+def identify_clusters(labels, unique_labels,
+                      all_embeddings, all_face_images, all_timestamps,
+                      embeddings_db: dict,
+                      output_dir: str,
+                      auto_present_threshold: float = 0.60,
+                      review_threshold: float = 0.40,
+                      quality_scores: list = None):
     """
-    Save each cluster to a serial-numbered folder (cluster_001, cluster_002, ...)
-    WITHOUT requiring roll number assignment.
-    Saves at least min_images images per cluster, evenly spaced for variety.
+    Match each cluster to the closest enrolled student.
+    Returns: attendance dict, cluster_results list
     """
     os.makedirs(output_dir, exist_ok=True)
-    cluster_results = []
 
-    for serial, cluster_id in enumerate(sorted(unique_labels), start=1):
-        folder_name = f"cluster_{serial:03d}"
-        cluster_folder = os.path.join(output_dir, folder_name)
-        os.makedirs(cluster_folder, exist_ok=True)
+    if quality_scores is None:
+        quality_scores = [1.0] * len(all_embeddings)
 
-        indices = np.where(labels == cluster_id)[0]
+    enrolled_ids = list(embeddings_db.keys())
+    if enrolled_ids:
+        enroll_matrix = np.array(
+            [embeddings_db[sid]["embedding"] for sid in enrolled_ids],
+            dtype=np.float32
+        )
+    else:
+        enroll_matrix = None
 
-        # Pick evenly spaced indices to get variety across the full cluster
-        total = len(indices)
-        if total <= min_images:
-            chosen = list(indices)
-        else:
-            # Space them evenly, always include first and last
-            step = total / min_images
-            chosen = [indices[int(i * step)] for i in range(min_images)]
-
-        saved = 0
-        for idx in chosen:
-            face_img = all_face_images[idx]
-            if face_img.size > 0:
-                img_path = os.path.join(
-                    cluster_folder,
-                    f"t{all_timestamps[idx]}s_frame{idx}.jpg"
-                )
-                cv2.imwrite(img_path, face_img)
-                saved += 1
-
-        cluster_results.append({
-            "cluster_id":      int(cluster_id),
-            "serial":          serial,
-            "folder_name":     folder_name,
-            "detection_count": total,
-            "saved_images":    saved,
-            "first_seen_sec":  round(float(all_timestamps[indices[0]]), 1),
-            "roll_no":         None,
-            "assigned_name":   None,
-        })
-        print(f"[Clustering] cluster_{serial:03d}: {total} detections, {saved} images saved")
-
-    return cluster_results
-
-
-def process_video_cluster_only(
-    video_path, face_app,
-    frame_skip=10,
-    cluster_threshold=0.45,
-    min_samples=2,
-    min_images_per_cluster=5,
-    output_base_dir="./clustering_output"
-):
-    """
-    Cluster faces in a video and save to serial-numbered folders.
-    Does NOT require an embeddings DB — roll numbers assigned later.
-    """
-    start = time.time()
-
-    all_embeddings, all_face_images, all_timestamps, all_quality_scores = extract_all_faces(
-        video_path, face_app, frame_skip
-    )
-
-    if not all_embeddings:
-        return {"error": "No faces detected in video"}
-
-    labels, unique_labels = cluster_faces(all_embeddings, cluster_threshold, min_samples)
-
-    video_name = os.path.splitext(os.path.basename(video_path))[0]
-    output_dir = os.path.join(output_base_dir, video_name)
-
-    cluster_results = save_clusters_serial(
-        labels, unique_labels,
-        all_face_images, all_timestamps,
-        output_dir,
-        min_images=min_images_per_cluster
-    )
-
-    elapsed = time.time() - start
-
-    metadata = {
-        "video":      video_path,
-        "output_dir": output_dir,
-        "clusters":   cluster_results,
-        "summary": {
-            "total_faces_extracted": len(all_embeddings),
-            "unique_clusters_found": len(unique_labels),
-            "processing_time":       round(elapsed, 2)
+    attendance = {
+        sid: {
+            "name":            embeddings_db[sid]["name"],
+            "status":          "absent",
+            "detections":      0,
+            "avg_confidence":  0.0,
+            "confidence_zone": "low",
+            "cluster_folder":  None,
+            "first_seen_sec":  None,
         }
+        for sid in enrolled_ids
     }
-
-    metadata_path = os.path.join(output_dir, "cluster_metadata.json")
-    with open(metadata_path, "w") as f:
-        json.dump(metadata, f, indent=2)
-
-    print(f"[Clustering] Done in {elapsed:.1f}s — {len(unique_labels)} clusters → {output_dir}")
-    return metadata
-
-
-def identify_clusters(
-    labels, unique_labels,
-    all_embeddings, all_face_images, all_timestamps,
-    embeddings_db, output_dir,
-    auto_present_threshold=0.60,
-    review_threshold=0.40
-):
-    """
-    Step 4 and 5:
-    For each cluster:
-    - Compute mean embedding
-    - Compare with ground truth database
-    - Identify who it is
-    - Save face images to folder named as roll number
-    - Decide present/review/absent
-    """
-    embeddings_array = np.array(all_embeddings)
-    os.makedirs(output_dir, exist_ok=True)
-
-    attendance = {}
     cluster_results = []
 
     for cluster_id in unique_labels:
-        # get all face indices in this cluster
         indices = np.where(labels == cluster_id)[0]
+        n       = len(indices)
 
-        # compute mean embedding for this cluster
-        cluster_embeddings = embeddings_array[indices]
-        mean_emb = np.mean(cluster_embeddings, axis=0)
-        mean_emb = mean_emb / np.linalg.norm(mean_emb)
+        cluster_embs = np.array([all_embeddings[i] for i in indices], dtype=np.float32)
+        cluster_mean = cluster_embs.mean(axis=0)
+        cluster_mean /= np.linalg.norm(cluster_mean)
 
-        # compare with every student in ground truth DB
-        best_id    = None
-        best_score = -1
-        for sid, data in embeddings_db.items():
-            score = float(np.dot(mean_emb, data["embedding"]))
-            if score > best_score:
-                best_score = score
-                best_id    = sid
+        # Save best-quality crop
+        qs   = [quality_scores[i] for i in indices]
+        best = indices[int(np.argmax(qs))]
+        folder_name = f"cluster_{cluster_id:03d}"
+        folder_path = os.path.join(output_dir, folder_name)
+        os.makedirs(folder_path, exist_ok=True)
+        best_crop = all_face_images[best]
+        if best_crop.size > 0:
+            cv2.imwrite(os.path.join(folder_path, "best.jpg"), best_crop)
 
-        # decide status based on confidence
-        if best_score >= auto_present_threshold:
-            status = "present"
-            confidence_zone = "high"
-            # folder named as roll number
-            folder_name = f"{best_id}_{embeddings_db[best_id]['name'].replace(' ', '_')}"
+        first_seen = float(all_timestamps[indices[0]])
 
-        elif best_score >= review_threshold:
-            status = "review"
-            confidence_zone = "medium"
-            # folder flagged for review
-            folder_name = f"REVIEW_{best_id}_conf{best_score:.2f}"
+        match_sid   = None
+        match_score = 0.0
+        if enroll_matrix is not None:
+            scores      = enroll_matrix @ cluster_mean
+            best_idx    = int(np.argmax(scores))
+            match_score = float(scores[best_idx])
+            if match_score >= review_threshold:
+                match_sid = enrolled_ids[best_idx]
 
+        if match_score >= auto_present_threshold:
+            status = "present"; zone = "high"
+        elif match_score >= review_threshold:
+            status = "review";  zone = "medium"
         else:
-            status = "unknown"
-            confidence_zone = "low"
-            best_id = None
-            # unknown person
-            folder_name = f"UNKNOWN_cluster_{cluster_id}"
+            status = "unknown"; zone = "low"
 
-        # create folder for this cluster
-        cluster_folder = os.path.join(output_dir, folder_name)
-        os.makedirs(cluster_folder, exist_ok=True)
+        cluster_results.append({
+            "cluster_id":     cluster_id,
+            "folder_name":    folder_name,
+            "detections":     n,
+            "first_seen_sec": round(first_seen, 1),
+            "avg_quality":    round(float(np.mean(qs)), 3),
+            "matched_id":     match_sid,
+            "match_score":    round(match_score, 4),
+            "status":         status if match_sid else "unknown",
+        })
 
-        # save at least 5 face images, evenly spaced for variety
-        MIN_IMAGES = 5
-        total_in_cluster = len(indices)
-        if total_in_cluster <= MIN_IMAGES:
-            chosen = list(indices)
-        else:
-            step = total_in_cluster / MIN_IMAGES
-            chosen = [indices[int(i * step)] for i in range(MIN_IMAGES)]
+        if match_sid:
+            rec = attendance[match_sid]
+            rec["detections"]    += n
+            rec["cluster_folder"] = folder_name
+            rec["first_seen_sec"] = round(first_seen, 1)
+            prev_avg = rec["avg_confidence"]
+            prev_n   = rec["detections"] - n
+            rec["avg_confidence"]  = round(
+                (prev_avg * prev_n + match_score * n) / rec["detections"], 4
+            )
+            rec["status"]          = status
+            rec["confidence_zone"] = zone
 
-        saved = 0
-        for idx in chosen:
-            face_img = all_face_images[idx]
-            if face_img.size > 0:
-                img_path = os.path.join(
-                    cluster_folder,
-                    f"t{all_timestamps[idx]}s_frame{idx}.jpg"
-                )
-                cv2.imwrite(img_path, face_img)
-                saved += 1
-
-        # record result
-        cluster_result = {
-            "cluster_id":      int(cluster_id),
-            "folder_name":     folder_name,
-            "detection_count": len(indices),
-            "avg_confidence":  round(float(best_score), 4),
-            "confidence_zone": confidence_zone,
-            "status":          status,
-            "identified_as":   best_id,
-            "name": embeddings_db[best_id]["name"] if best_id else "Unknown",
-            "first_seen_sec":  round(float(all_timestamps[indices[0]]), 1),
-            "saved_images":    saved
-        }
-        cluster_results.append(cluster_result)
-
-        # add to attendance if identified
-        if best_id:
-            # keep highest confidence if same student appears in multiple clusters
-            if best_id not in attendance or \
-               best_score > attendance[best_id]["avg_confidence"]:
-                attendance[best_id] = {
-                    "name":            embeddings_db[best_id]["name"],
-                    "status":          status,
-                    "detection_count": len(indices),
-                    "avg_confidence":  round(float(best_score), 4),
-                    "confidence_zone": confidence_zone,
-                    "cluster_folder":  folder_name,
-                    "first_seen_sec":  round(float(all_timestamps[indices[0]]), 1)
-                }
-
-    # students not detected at all = absent
-    for sid, data in embeddings_db.items():
-        if sid not in attendance:
-            attendance[sid] = {
-                "name":            data["name"],
-                "status":          "absent",
-                "detection_count": 0,
-                "avg_confidence":  0,
-                "confidence_zone": "low",
-                "cluster_folder":  None,
-                "first_seen_sec":  None
-            }
+    with open(os.path.join(output_dir, "cluster_metadata.json"), "w") as f:
+        json.dump({"clusters": cluster_results}, f, indent=2)
 
     return attendance, cluster_results
 
 
-def process_video_with_clustering(
-    video_path, embeddings_db, face_app,
-    frame_skip=10,
-    cluster_threshold=0.45,
-    min_samples=2,
-    auto_present_threshold=0.60,
-    review_threshold=0.40,
-    output_base_dir="./clustering_output"
-):
-    """
-    Main function — combines all steps:
-    Video → Extract → Cluster → Identify → Save → Return result
-    """
+# ─────────────────────────────────────────────────────────────────────────────
+# Public API — process_video_with_clustering
+# ─────────────────────────────────────────────────────────────────────────────
+
+def process_video_with_clustering(video_path: str,
+                                  embeddings_db: dict,
+                                  face_app,
+                                  frame_skip: int = 5,
+                                  cluster_threshold: float = 0.45,
+                                  min_samples: int = 3,
+                                  auto_present_threshold: float = 0.60,
+                                  review_threshold: float = 0.40,
+                                  output_base_dir: str = "./clustering_output"):
     start = time.time()
 
-    # Step 1+2: Extract all faces
-    all_embeddings, all_face_images, all_timestamps, _ = extract_all_faces(
+    embeddings, face_images, timestamps, quality_scores = extract_all_faces(
         video_path, face_app, frame_skip
     )
 
-    if len(all_embeddings) == 0:
-        return {"error": "No faces detected in video"}
+    if not embeddings:
+        return {
+            "video": video_path, "attendance": {}, "clusters": [],
+            "summary": {"total_faces_extracted": 0, "unique_clusters_found": 0,
+                        "processing_time": round(time.time()-start, 2)}
+        }
 
-    # Step 3: Cluster similar faces
-    labels, unique_labels = cluster_faces(
-        all_embeddings, cluster_threshold, min_samples
-    )
+    labels, unique_labels = cluster_faces(embeddings, cluster_threshold, min_samples)
 
-    # Create output folder named after video
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     output_dir = os.path.join(output_base_dir, video_name)
 
-    # Step 4+5: Identify clusters + save folders
     attendance, cluster_results = identify_clusters(
         labels, unique_labels,
-        all_embeddings, all_face_images, all_timestamps,
+        embeddings, face_images, timestamps,
         embeddings_db, output_dir,
-        auto_present_threshold, review_threshold
+        auto_present_threshold, review_threshold,
+        quality_scores
     )
 
-    elapsed = time.time() - start
-
+    elapsed = round(time.time() - start, 2)
     present = sum(1 for v in attendance.values() if v["status"] == "present")
     review  = sum(1 for v in attendance.values() if v["status"] == "review")
     absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
     unknown = sum(1 for c in cluster_results   if c["status"] == "unknown")
 
-    result = {
-        "video":      video_path,
-        "output_dir": output_dir,
-        "attendance": attendance,
-        "clusters":   cluster_results,
+    return {
+        "video": video_path, "output_dir": output_dir,
+        "attendance": attendance, "clusters": cluster_results,
         "summary": {
-            "total_faces_extracted": len(all_embeddings),
+            "total_faces_extracted": len(embeddings),
             "unique_clusters_found": len(unique_labels),
             "unknown_faces":         unknown,
             "total_enrolled":        len(embeddings_db),
             "present":               present,
             "review":                review,
             "absent":                absent,
-            "processing_time":       round(elapsed, 2)
+            "processing_time":       elapsed,
         }
     }
 
-    # save result JSON
-    result_path = os.path.join(output_dir, "attendance_result.json")
-    with open(result_path, "w") as f:
-        json.dump(
-            {k: v for k, v in result.items() if k != "attendance"},
-            f, indent=2
-        )
 
-    print(f"[Clustering] Done in {elapsed:.1f}s")
-    print(f"[Clustering] Present:{present} Review:{review} Absent:{absent} Unknown:{unknown}")
-    print(f"[Clustering] Output: {output_dir}")
+# ─────────────────────────────────────────────────────────────────────────────
+# Public API — process_video_cluster_only
+# ─────────────────────────────────────────────────────────────────────────────
 
-    return result
+def process_video_cluster_only(video_path: str,
+                               face_app,
+                               frame_skip: int = 5,
+                               cluster_threshold: float = 0.45,
+                               min_samples: int = 3,
+                               min_images_per_cluster: int = 5,
+                               output_base_dir: str = "./clustering_output"):
+    """
+    Cluster without matching enrolled students.
+    Saves top-N quality crops per cluster to cluster_001, cluster_002, …
+    """
+    start = time.time()
+    embeddings, face_images, timestamps, quality_scores = extract_all_faces(
+        video_path, face_app, frame_skip
+    )
+
+    if not embeddings:
+        return {"clusters": [], "total_detections": 0, "unique_faces": 0}
+
+    labels, unique_labels = cluster_faces(embeddings, cluster_threshold, min_samples)
+
+    video_name = os.path.splitext(os.path.basename(video_path))[0]
+    output_dir = os.path.join(output_base_dir, video_name)
+    os.makedirs(output_dir, exist_ok=True)
+
+    clusters_out = []
+    for cluster_id in unique_labels:
+        indices    = np.where(labels == cluster_id)[0]
+        n          = len(indices)
+        idx_sorted = sorted(indices, key=lambda i: quality_scores[i], reverse=True)
+        top_idx    = idx_sorted[:min_images_per_cluster]
+
+        folder_name = f"cluster_{cluster_id + 1:03d}"
+        folder_path = os.path.join(output_dir, folder_name)
+        os.makedirs(folder_path, exist_ok=True)
+
+        saved = 0; scores_map = {}
+        for rank, i in enumerate(top_idx):
+            crop = face_images[i]
+            if crop.size == 0: continue
+            fname = f"face_{rank:02d}_q{quality_scores[i]:.1f}.jpg"
+            cv2.imwrite(os.path.join(folder_path, fname), crop)
+            scores_map[fname] = round(quality_scores[i], 3)
+            saved += 1
+
+        info = {
+            "cluster_id":       cluster_id,
+            "total_detections": n,
+            "embedding_files":  list(scores_map.keys())[:5],
+            "backup_files":     list(scores_map.keys())[5:],
+            "scores":           scores_map,
+            "first_seen_sec":   round(float(timestamps[indices[0]]), 1),
+        }
+        with open(os.path.join(folder_path, "_info.json"), "w") as f:
+            json.dump(info, f, indent=2)
+
+        clusters_out.append({
+            "folder_name":    folder_name,
+            "detections":     n,
+            "images_saved":   saved,
+            "first_seen_sec": info["first_seen_sec"],
+            "roll_no":        None,
+            "assigned_name":  None,
+        })
+
+    meta = {
+        "video": video_path, "output_dir": output_dir,
+        "total_detections": len(embeddings),
+        "unique_faces":     len(unique_labels),
+        "clusters":         clusters_out,
+        "processing_time":  round(time.time()-start, 2),
+    }
+    with open(os.path.join(output_dir, "cluster_metadata.json"), "w") as f:
+        json.dump(meta, f, indent=2)
+
+    logger.info(f"[cluster_only] {len(unique_labels)} clusters in {meta['processing_time']}s")
+    return meta
