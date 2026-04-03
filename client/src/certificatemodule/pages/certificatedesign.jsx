@@ -40,7 +40,8 @@ import Signaturemodal from './signaturemodal';
 const CertificateForm = () => {
   const apiUrl = getEnvironment();
   const toast = useToast();
-  const [type, setType] = useState('');
+  const [isCertificateLoading, setIsCertificateLoading] = useState(false);
+  const [isResolvingInitialType, setIsResolvingInitialType] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const date = new Date();
   const a = date.getMonth() > 8 ? '' : 0;
@@ -141,6 +142,120 @@ const CertificateForm = () => {
   const currentURL = window.location.pathname;
   const parts = currentURL.split('/');
   const eventId = parts[parts.length - 1];
+  const certificateTypes = ['participant', 'winner', 'speaker', 'organizer'];
+
+  const getDefaultSignature = () => ({
+    name: {
+      name: '',
+      fontSize: 12,
+      fontFamily: '',
+      bold: 'normal',
+      italic: 'normal',
+      fontColor: 'black',
+    },
+    position: {
+      position: '',
+      fontSize: 10,
+      fontFamily: '',
+      bold: 'normal',
+      italic: 'normal',
+      fontColor: 'black',
+    },
+    url: { url: '', size: 100 },
+  });
+
+  const normalizeSignature = (signature) => {
+    const fallback = getDefaultSignature();
+    if (!signature || typeof signature !== 'object') {
+      return fallback;
+    }
+
+    const normalizedName =
+      signature.name && typeof signature.name === 'object'
+        ? {
+            ...fallback.name,
+            ...signature.name,
+            name: signature.name.name ?? fallback.name.name,
+          }
+        : {
+            ...fallback.name,
+            name: signature.name ?? fallback.name.name,
+          };
+
+    const normalizedPosition =
+      signature.position && typeof signature.position === 'object'
+        ? {
+            ...fallback.position,
+            ...signature.position,
+            position: signature.position.position ?? fallback.position.position,
+          }
+        : {
+            ...fallback.position,
+            position: signature.position ?? fallback.position.position,
+          };
+
+    const normalizedUrl =
+      signature.url && typeof signature.url === 'object'
+        ? {
+            ...fallback.url,
+            ...signature.url,
+            url: signature.url.url ?? fallback.url.url,
+          }
+        : {
+            ...fallback.url,
+            url: signature.url ?? fallback.url.url,
+          };
+
+    return {
+      name: normalizedName,
+      position: normalizedPosition,
+      url: normalizedUrl,
+    };
+  };
+
+  useEffect(() => {
+    const resolveInitialType = async () => {
+      if (formData.certiType) {
+        setIsResolvingInitialType(false);
+        return;
+      }
+
+      try {
+        for (const certType of certificateTypes) {
+          const response = await fetch(
+            `${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${certType}`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+            }
+          );
+
+          if (!response.ok) {
+            continue;
+          }
+
+          const responseData = await response.json();
+          if (
+            responseData &&
+            Array.isArray(responseData) &&
+            responseData.length > 0
+          ) {
+            setFormData((prev) => ({ ...prev, certiType: certType }));
+            break;
+          }
+        }
+      } catch (error) {
+        console.error('Error resolving certificate type:', error);
+      } finally {
+        setIsResolvingInitialType(false);
+      }
+    };
+
+    resolveInitialType();
+  }, [apiUrl, eventId, formData.certiType]);
 
   {
     /* Purpose: Resets form when certificate type changes and fetches existing certificate data from the API*/
@@ -169,27 +284,7 @@ const CertificateForm = () => {
         fontColor: 'black',
       },
       footer: { footer: defaultDate },
-      signatures: [
-        {
-          name: {
-            name: '',
-            fontSize: 12,
-            fontFamily: '',
-            bold: 'normal',
-            italic: 'normal',
-            fontColor: 'black',
-          },
-          position: {
-            position: '',
-            fontSize: 10,
-            fontFamily: '',
-            bold: 'normal',
-            italic: 'normal',
-            fontColor: 'black',
-          },
-          url: { url: '', size: 100 },
-        },
-      ],
+      signatures: [getDefaultSignature()],
       certiType: certType,
       templateId: '0', //Template Design Number
       title: [
@@ -237,6 +332,7 @@ const CertificateForm = () => {
       },
     });
     const fetchData = async () => {
+      setIsCertificateLoading(true);
       try {
         const response = await fetch(
           `${apiUrl}/certificatemodule/certificate/getcertificatedetails/${eventId}/${formData.certiType}`,
@@ -268,108 +364,135 @@ const CertificateForm = () => {
               templateId,
               verifiableLink,
             } = responseData[0];
-            let Signatures = [];
-            if (signatures[0].name.name || signatures[0].name.name == '') {
-              Signatures = signatures;
-              if (!signatures[0].url.url) {
-                signatures.forEach((elem, index) => {
-                  Signatures[index].url = { url: elem.url, size: 100 };
-                });
-              }
-            } else {
-              signatures.forEach((element) => {
-                let sign = {
-                  name: {
-                    name: element.name,
-                    fontSize: '',
-                    fontFamily: '',
-                    bold: 'normal',
-                    italic: 'normal',
-                    fontColor: 'black',
-                  },
-                  position: {
-                    position: element.position,
-                    fontSize: '',
-                    fontFamily: '',
-                    bold: 'normal',
-                    italic: 'normal',
-                    fontColor: 'black',
-                  },
-                  url: { url: element.url, size: 100 },
-                };
-                Signatures.push(sign);
-              });
-            }
+            const Signatures =
+              Array.isArray(signatures) && signatures.length > 0
+                ? signatures.map((signatureItem) =>
+                    normalizeSignature(signatureItem)
+                  )
+                : [getDefaultSignature()];
+            const defaultHeader = {
+              header: '',
+              fontSize: 22,
+              fontFamily: '',
+              bold: 'bold',
+              italic: 'normal',
+              fontColor: 'black',
+            };
+            const defaultBody = {
+              body: '',
+              fontSize: 16,
+              fontFamily: '',
+              bold: 'normal',
+              italic: 'normal',
+              fontColor: 'black',
+            };
+            const defaultCertificateOf = {
+              certificateOf: 'CERTIFICATE OF APPRECIATION',
+              fontSize: 32,
+              fontFamily: '',
+              bold: 'bold',
+              italic: 'normal',
+              fontColor: 'black',
+            };
+
             //for logos
-            let Logos = [];
-            if (logos[0].url || logos[0].url == '') {
-              Logos = logos;
-            } else {
-              logos.forEach((element) => {
-                let str = '';
-                for (let key in element) {
-                  parseInt(key) || key == '0' ? (str = str + element[key]) : '';
-                }
-                let logo = { url: str, width: 80, height: 80 };
-                Logos.push(logo);
-              });
-            }
-            //for header
-            let Header = [];
-            if (header[0].header || header[0].header == '') {
-              Header = header;
-            } else {
-              header.forEach((element) => {
-                let str = '';
-                for (let key in element) {
-                  parseInt(key) || key == '0' ? (str = str + element[key]) : '';
-                }
-                let head = {
-                  header: str,
-                  fontSize: '',
-                  fontFamily: '',
-                  bold: 'bold',
-                  italic: 'normal',
-                  fontColor: 'black',
-                };
-                Header.push(head);
-              });
-            }
+            const Logos =
+              Array.isArray(logos) && logos.length > 0
+                ? logos.map((logoItem) => {
+                    if (logoItem && typeof logoItem === 'object') {
+                      if (logoItem.url || logoItem.url === '') {
+                        return {
+                          url: logoItem.url,
+                          height: logoItem.height ?? 80,
+                          width: logoItem.width ?? 80,
+                        };
+                      }
+
+                      let str = '';
+                      for (let key in logoItem) {
+                        parseInt(key) || key == '0'
+                          ? (str = str + logoItem[key])
+                          : '';
+                      }
+                      return { url: str, width: 80, height: 80 };
+                    }
+
+                    return { url: logoItem || '', width: 80, height: 80 };
+                  })
+                : [{ url: '', height: 80, width: 80 }];
+
+            //for header (department/club)
+            const Header =
+              Array.isArray(header) && header.length > 0
+                ? header.map((headerItem) => {
+                    if (headerItem && typeof headerItem === 'object') {
+                      if (headerItem.header || headerItem.header === '') {
+                        return {
+                          ...defaultHeader,
+                          ...headerItem,
+                        };
+                      }
+
+                      let str = '';
+                      for (let key in headerItem) {
+                        parseInt(key) || key == '0'
+                          ? (str = str + headerItem[key])
+                          : '';
+                      }
+                      return {
+                        ...defaultHeader,
+                        header: str,
+                      };
+                    }
+
+                    return {
+                      ...defaultHeader,
+                      header: headerItem || '',
+                    };
+                  })
+                : [defaultHeader];
+
             // for footer
-            let Footer = {};
-            if (Array.isArray(footer)) {
-              Footer = formData.footer;
-            } else {
-              Footer = footer;
-            }
+            const Footer =
+              footer && typeof footer === 'object' && !Array.isArray(footer)
+                ? { footer: footer.footer ?? defaultDate }
+                : { footer: defaultDate };
+
             //for certificateOf
-            let CertificateOf = {};
-            console.log(!certificateOf);
-            if (!certificateOf || certificateOf == '') {
-              console.log('hey');
-              CertificateOf = formData.certificateOf;
-            } else {
-              CertificateOf = certificateOf;
-            }
-            console.log(CertificateOf);
+            const CertificateOf =
+              certificateOf &&
+              typeof certificateOf === 'object' &&
+              !Array.isArray(certificateOf)
+                ? {
+                    ...defaultCertificateOf,
+                    ...certificateOf,
+                    certificateOf:
+                      certificateOf.certificateOf ??
+                      defaultCertificateOf.certificateOf,
+                  }
+                : defaultCertificateOf;
+
             // for body
-            let Body = formData.body;
-            if (body.body || body.body == '') {
-              Body = body;
-            } else {
-              Body.body = body;
-            }
-            // console.log(title)
+            const Body =
+              body && typeof body === 'object' && !Array.isArray(body)
+                ? {
+                    ...defaultBody,
+                    ...body,
+                    body: body.body ?? defaultBody.body,
+                  }
+                : {
+                    ...defaultBody,
+                    body: body || defaultBody.body,
+                  };
+
             //for title
             let Title = [];
-            if (title[0] || title[0] == '') {
-              if (title[0][0] || title[0][0] == '') {
+            if (Array.isArray(title) && title.length > 0) {
+              if (title[0] && (title[0][0] || title[0][0] == '')) {
                 title.forEach((element) => {
                   let str = '';
                   for (let key in element) {
-                    parseInt(key) || key == '0'
-                      ? (str = str + element[key])
-                      : '';
+                    parseInt(key) || key == '0' ? (str = str + element[key]) : '';
                   }
                   let obj = {
                     name: str,
@@ -384,7 +507,8 @@ const CertificateForm = () => {
               } else if (title[0]['name'] || title[0]['name'] == '') {
                 Title = title;
               }
-            } else {
+            }
+            if (Title.length === 0) {
               Title = [
                 {
                   name: 'डॉ बी आर अम्बेडकर राष्ट्रीय प्रौद्योगिकी संस्थान जालंधर',
@@ -422,10 +546,10 @@ const CertificateForm = () => {
             }
             // console.log(verifiableLink)
             //for verifiableLink
-            if (verifiableLink === true) {
-              verifiableLink = true;
+            if (typeof verifiableLink === 'string') {
+              verifiableLink = verifiableLink === 'true';
             } else {
-              verifiableLink = false;
+              verifiableLink = !!verifiableLink;
             }
 
             // console.log(Title,Body,Footer,Header,Signatures)
@@ -453,6 +577,8 @@ const CertificateForm = () => {
         }
       } catch (error) {
         console.error('Error fetching form data:', error);
+      } finally {
+        setIsCertificateLoading(false);
       }
     };
 
@@ -1589,7 +1715,7 @@ const CertificateForm = () => {
                     <HStack width="100%">
                       <Input
                         name="certificateOf.certificateOf"
-                        // value={formData.certificateOf.certificateOf}
+                        value={formData.certificateOf.certificateOf}
                         onChange={(e) => handleChange(e, 'certificateOf', null)}
                         placeholder="Type of Certificate (e.g., Certificate of Participation)"
                         width="100%"
@@ -2087,6 +2213,7 @@ const CertificateForm = () => {
 
                                 <HStack spacing={4}>
                                   <Checkbox
+                                    name={`signatures[${index}].position.bold`}
                                     isChecked={
                                       signature.position.bold === 'bold'
                                     }
@@ -2098,6 +2225,7 @@ const CertificateForm = () => {
                                   </Checkbox>
 
                                   <Checkbox
+                                    name={`signatures[${index}].position.italic`}
                                     isChecked={
                                       signature.position.italic === 'italic'
                                     }
@@ -2185,7 +2313,17 @@ const CertificateForm = () => {
                               <Text>Size</Text>
                               <Input
                                 type="number"
+                                name={`signatures[${index}].url.size`}
                                 value={signature.url.size}
+                                onChange={(e) =>
+                                  handleChange(e, 'signatures', index)
+                                }
+                              />
+
+                              <Input
+                                type="hidden"
+                                name={`signatures[${index}].url.url`}
+                                value={signature.url.url || ''}
                                 onChange={(e) =>
                                   handleChange(e, 'signatures', index)
                                 }
@@ -2295,6 +2433,13 @@ const CertificateForm = () => {
                   },
                 }}
               />
+
+              <Input
+                type="hidden"
+                name="verifiableLink"
+                value={formData.verifiableLink ? 'true' : 'false'}
+                onChange={(e) => handleChange(e, 'verifiableLink', null)}
+              />
             </Box>
 
             {/* Date of issue */}
@@ -2334,20 +2479,34 @@ const CertificateForm = () => {
         </Box>
       </Container>
       <Box flex="1" p="4" style={{ margin: '0px', padding: '0px' }}>
-        <SelectCertficate
-          eventId={eventId}
-          templateId={formData.templateId}
-          contentBody={formData.body}
-          certiType={formData.certiType}
-          title={formData.title}
-          certificateOf={formData.certificateOf}
-          verifiableLink={formData.verifiableLink.toString()}
-          logos={formData.logos}
-          participantDetail={{}}
-          signature={formData.signatures}
-          header={formData.header}
-          footer={formData.footer}
-        />
+        {isResolvingInitialType || isCertificateLoading ? (
+          <Center width="100%" height="100%" minHeight="320px">
+            <Text fontSize="lg" fontWeight="semibold" color="gray.600">
+              Loading Certificate
+            </Text>
+          </Center>
+        ) : formData.certiType ? (
+          <SelectCertficate
+            eventId={eventId}
+            templateId={formData.templateId}
+            contentBody={formData.body}
+            certiType={formData.certiType}
+            title={formData.title}
+            certificateOf={formData.certificateOf}
+            verifiableLink={formData.verifiableLink.toString()}
+            logos={formData.logos}
+            participantDetail={{}}
+            signature={formData.signatures}
+            header={formData.header}
+            footer={formData.footer}
+          />
+        ) : (
+          <Center width="100%" height="100%" minHeight="320px">
+            <Text fontSize="md" color="gray.600">
+              No certificate configuration found for this event.
+            </Text>
+          </Center>
+        )}
       </Box>
     </Flex>
   );
