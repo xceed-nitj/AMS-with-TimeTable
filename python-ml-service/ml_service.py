@@ -25,6 +25,44 @@ from sklearn.cluster import DBSCAN as _DBSCAN
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("ml_service")
 
+# ─── Quality + Alignment Enhancements ─────────────────────
+
+def compute_face_quality(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
+    brightness = np.mean(gray)
+    brightness_score = 1 - abs(brightness - 127) / 127
+    h, w = img.shape[:2]
+    size_score = np.sqrt(h * w)
+    return sharpness * 0.6 + brightness_score * 50 + size_score * 0.1
+
+def normalize_lighting(img):
+    ycrcb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+    ycrcb[:, :, 0] = cv2.equalizeHist(ycrcb[:, :, 0])
+    return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
+
+def get_aligned_face(face_app, frame, face, min_face_size=50):
+    x1, y1, x2, y2 = map(int, face.bbox)
+    w, h = x2 - x1, y2 - y1
+
+    if min(w, h) < min_face_size:
+        return None
+
+    if face.det_score < 0.6:
+        return None
+
+    if face.kps is not None:
+        left_eye, right_eye = face.kps[0], face.kps[1]
+        if np.linalg.norm(left_eye - right_eye) < 20:
+            return None
+
+    aligned = face_app.norm_crop(frame, landmark=face.kps)
+    aligned = cv2.resize(aligned, (160, 160))
+    aligned = normalize_lighting(aligned)
+
+    return aligned
+
+
 app = FastAPI(title="Facial Recognition ML Service")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
@@ -147,7 +185,7 @@ def load_model(det_size: int = INSIGHTFACE_DET_SIZE):
     current_det_size = det_size
     logger.info(f"Loading InsightFace buffalo_s (CPU, det_size={det_size})…")
     face_app = FaceAnalysis(name="buffalo_s", providers=["CPUExecutionProvider"])
-    face_app.prepare(ctx_id=0, det_size=(det_size, det_size))
+    face_app.prepare(ctx_id=0, det_size=(640, 640))
     logger.info("Model loaded.")
 
 def load_embeddings():
@@ -855,7 +893,14 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
             if img is None: continue
             faces = face_app.get(img)
             if faces:
-                emb  = faces[0].embedding
+                face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
+                aligned = get_aligned_face(face_app, img, face)
+                if aligned is None:
+                    continue
+                quality = compute_face_quality(aligned)
+                if quality < 80:
+                    continue
+                emb  = face.embedding
                 norm = np.linalg.norm(emb)
                 if norm > 0: embeddings.append(emb/norm)
 
@@ -914,6 +959,191 @@ def cluster_only(req: ClusterOnlyRequest):
         req.cluster_threshold, req.min_samples,
         req.min_images_per_cluster, req.output_dir
     )
+
+
+class MatchClustersRequest(BaseModel):
+    batch_dir: str
+    erp_photos_dir: str
+    top_k: int = 3
+
+
+@app.post("/match-clusters-to-erp")
+def match_clusters_to_erp(req: MatchClustersRequest):
+    """
+    SSE stream: for each person_XXX folder emit progress events, then a final 'done' event.
+    """
+
+    if face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+
+    if not os.path.isdir(req.batch_dir):
+        raise HTTPException(status_code=404, detail=f"batch_dir not found: {req.batch_dir}")
+
+    if not os.path.isdir(req.erp_photos_dir):
+        raise HTTPException(status_code=404, detail=f"erp_photos_dir not found: {req.erp_photos_dir}")
+
+    IMG_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
+
+    def generate():
+        def evt(obj):
+            return f"data: {json.dumps(obj)}\n\n"
+
+        # ── Step 1: Build ERP embeddings ────────────────────────
+        yield evt({"type": "status", "msg": "Loading ERP photos…", "step": "erp"})
+
+        erp_embs = {}
+        erp_list = [
+            f for f in sorted(os.listdir(req.erp_photos_dir))
+            if f.lower().endswith(IMG_EXTS)
+        ]
+
+        for i, fname in enumerate(erp_list):
+            roll_no = os.path.splitext(fname)[0]
+            img = cv2.imread(os.path.join(req.erp_photos_dir, fname))
+
+            if img is None:
+                continue
+
+            faces = face_app.get(img)
+            if not faces:
+                logger.warning(f"No face in ERP photo: {fname}")
+                continue
+
+            emb = faces[0].embedding
+            norm = np.linalg.norm(emb)
+
+            if norm > 0:
+                erp_embs[roll_no] = {
+                    "embedding": emb / norm,
+                    "photo": fname
+                }
+
+            yield evt({
+                "type": "erp_progress",
+                "done": i + 1,
+                "total": len(erp_list),
+                "msg": f"ERP photos: {i+1}/{len(erp_list)}"
+            })
+
+        if not erp_embs:
+            yield evt({"type": "error", "msg": "No faces detected in any ERP photo"})
+            return
+
+        yield evt({
+            "type": "status",
+            "msg": f"Loaded {len(erp_embs)} ERP embeddings. Matching clusters…",
+            "step": "matching"
+        })
+
+        erp_rolls = list(erp_embs.keys())
+        erp_matrix = np.array([erp_embs[r]["embedding"] for r in erp_rolls])
+
+        # ── Step 2: Match each person_XXX cluster ───────────────
+        cluster_dirs = sorted([
+            d for d in os.listdir(req.batch_dir)
+            if re.match(r"^person_\d+$", d, re.IGNORECASE)
+            and os.path.isdir(os.path.join(req.batch_dir, d))
+        ])
+
+        matched_count = 0
+
+        for idx, folder_name in enumerate(cluster_dirs):
+            folder_path = os.path.join(req.batch_dir, folder_name)
+            img_files = [
+                f for f in os.listdir(folder_path)
+                if f.lower().endswith(IMG_EXTS)
+            ]
+
+            yield evt({
+                "type": "cluster_progress",
+                "done": idx + 1,
+                "total": len(cluster_dirs),
+                "current": folder_name,
+                "msg": f"Matching {folder_name} ({idx+1}/{len(cluster_dirs)})…"
+            })
+
+            cluster_embs = []
+
+            for img_file in img_files[:10]:
+                img = cv2.imread(os.path.join(folder_path, img_file))
+
+                if img is None:
+                    continue
+
+                faces = face_app.get(img)
+                if faces:
+                    emb = faces[0].embedding
+                    norm = np.linalg.norm(emb)
+
+                    if norm > 0:
+                        cluster_embs.append(emb / norm)
+
+            if not cluster_embs:
+                yield evt({
+                    "type": "match_result",
+                    "folder": folder_name,
+                    "match": {"error": "no faces detected"}
+                })
+                continue
+
+            mean_emb = np.mean(cluster_embs, axis=0)
+            mean_emb = mean_emb / np.linalg.norm(mean_emb)
+
+            scores = erp_matrix @ mean_emb
+            top_idx = np.argsort(scores)[::-1][:req.top_k]
+
+            candidates = [
+                {
+                    "rollNo": erp_rolls[i],
+                    "confidence": round(float(scores[i]), 4),
+                    "erpPhoto": erp_embs[erp_rolls[i]]["photo"]
+                }
+                for i in top_idx
+            ]
+
+            match_data = {
+                "best": candidates[0],
+                "candidates": candidates,
+                "image_count": len(img_files),
+                "preview_images": img_files[:6],
+            }
+
+            yield evt({
+                "type": "match_result",
+                "folder": folder_name,
+                "match": match_data
+            })
+
+            matched_count += 1
+
+        yield evt({
+            "type": "done",
+            "erp_students": len(erp_embs),
+            "clusters": matched_count
+        })
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+# ─── Streaming Clustering Request ─────────────────────────────
+
+class ClusterStreamRequest(BaseModel):
+    videoPath: str
+    frame_skip: int = 10
+    cluster_threshold: float = 0.45
+    min_samples: int = 2
+    auto_present_threshold: float = 0.
+    review_threshold: float = 0.40
+    output_dir: str = "./clustering_output"
+    roll_list: List[str] = []
+
 
 @app.post("/process-video-clustering")
 def process_video_clustering(req: ClusterRequest):

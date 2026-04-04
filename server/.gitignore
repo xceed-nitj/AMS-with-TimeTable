@@ -1,4 +1,5 @@
 node_modules
+ground_truth
 .yarnrc.yml
 yarn.lock
 .yarn
