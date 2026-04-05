@@ -35,7 +35,7 @@ MIN_SHARPNESS = 30.0     # Laplacian variance
 MIN_FACE_PX   = 30      # minimum face side in original-frame pixels
 
 # FIX-F: tight crop to avoid bleeding into neighbour's face
-FACE_CROP_PAD_FRAC = 0.10   # was 0.25
+FACE_CROP_PAD_FRAC = 1.5   # was 0.25
 
 # InsightFace
 INSIGHTFACE_DET_SIZE = 640   # always 640; must match build_embeddings_db.py
@@ -160,22 +160,22 @@ def _merge_split_clusters(labels: np.ndarray,
 # Tuning knobs — edit here only
 # ─────────────────────────────────────────────────────────────────────────────
 
-START_SKIP_SEC = 12
+# START_SKIP_SEC = 12
 
-TILE_ROWS    = 4
-TILE_COLS    = 5
-TILE_OVERLAP = 0.25
+# TILE_ROWS    = 4
+# TILE_COLS    = 5
+# TILE_OVERLAP = 0.25
 
-NMS_IOU_THRESH = 0.35
+# NMS_IOU_THRESH = 0.35
 
-MIN_SHARPNESS      = 10.0
-MIN_FACE_PX        = 15
-FACE_CROP_PAD_FRAC = 1.5
+# MIN_SHARPNESS      = 10.0
+# MIN_FACE_PX        = 15
+# FACE_CROP_PAD_FRAC = 1.5
 
-INSIGHTFACE_DET_SIZE = 640
-MERGE_THRESHOLD      = 0.68
+# INSIGHTFACE_DET_SIZE = 640
+# MERGE_THRESHOLD      = 0.68
 
-IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+# IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Digital zoom passes
@@ -512,8 +512,8 @@ def extract_all_faces(video_path: str,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def cluster_faces(embeddings: list,
-                  cluster_threshold: float = 0.45,
-                  min_samples: int = 3):
+                  cluster_threshold: float = 0.5,
+                  min_samples: int = 5):
     """
     DBSCAN clustering followed by a post-merge pass (FIX-G).
 
@@ -726,8 +726,8 @@ def process_video_with_clustering(video_path: str,
 def process_video_cluster_only(video_path: str,
                                face_app,
                                frame_skip: int = 5,
-                               cluster_threshold: float = 0.45,
-                               min_samples: int = 3,
+                               cluster_threshold: float = 0.5,
+                               min_samples: int = 5,
                                min_images_per_cluster: int = 5,
                                output_base_dir: str = "./clustering_output"):
     """
