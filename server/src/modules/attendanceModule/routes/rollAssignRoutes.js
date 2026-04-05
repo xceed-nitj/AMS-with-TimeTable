@@ -13,9 +13,16 @@ const wrap = (fn) => async (req, res) => {
 // ── Filesystem ────────────────────────────────────────────────────
 // List person_XXX folders not yet tracked in DB
 router.get('/clusters/:batch',                        wrap(ctrl.listClusters));
+// List ALL person_XXX folders (tracked or not) — for pre-ERP photo editing
+router.get('/all-clusters/:batch',                    wrap(ctrl.listAllClusters));
+// Delete an entire cluster folder (and its DB record if any)
+router.delete('/cluster/:batch/:folder',              wrap(ctrl.deleteCluster));
+// Delete a single photo from a cluster folder
+router.delete('/cluster-photo/:batch/:folder/:filename', wrap(ctrl.deleteClusterPhoto));
 // Serve a face-crop photo from any subfolder
 router.get('/photo/:batch/:folder/:filename',         wrap(ctrl.servePhoto));
-// Serve an ERP photo
+// Serve an ERP photo — batch-specific (new) or flat (legacy)
+router.get('/erp-photo/:batch/:filename',             wrap(ctrl.serveErpPhoto));
 router.get('/erp-photo/:filename',                    wrap(ctrl.serveErpPhoto));
 
 // ── Matching ──────────────────────────────────────────────────────

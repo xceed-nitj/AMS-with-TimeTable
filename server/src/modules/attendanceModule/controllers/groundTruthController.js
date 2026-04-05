@@ -130,30 +130,90 @@ class GroundTruthController {
                 const allImages   = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).sort();
 
                 const infoPath = path.join(studentPath, '_info.json');
-                let embeddingFiles = [], backupFiles = [], scores = {};
+                let embeddingFiles = [], backupFiles = [], approvedFiles = [], scores = {};
+                let hasInfoFile = false;
                 if (fs.existsSync(infoPath)) {
                     try {
                         const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
                         embeddingFiles = (info.embedding_files || []).filter(f => allImages.includes(f));
                         backupFiles    = (info.backup_files    || []).filter(f => allImages.includes(f));
+                        approvedFiles  = (info.approved_files  || []).filter(f => allImages.includes(f));
                         scores         = info.scores || {};
+                        hasInfoFile    = true;
                     } catch (_) {}
                 }
-                const tracked   = new Set([...embeddingFiles, ...backupFiles]);
-                const untracked = allImages.filter(f => !tracked.has(f));
-                const makeList  = fnames => fnames.map(f => ({
+
+                // No _info.json or no embedding list: apply the ≤5 rule
+                if (!hasInfoFile || embeddingFiles.length === 0) {
+                    if (allImages.length <= 5) {
+                        embeddingFiles = [...allImages];
+                        backupFiles    = [];
+                    } else {
+                        embeddingFiles = allImages.slice(0, 5);
+                        backupFiles    = allImages.slice(5);
+                    }
+                }
+
+                // If approved_files not set, retroactively approve all existing classified photos
+                if (approvedFiles.length === 0 && (embeddingFiles.length > 0 || backupFiles.length > 0)) {
+                    approvedFiles = [...new Set([...embeddingFiles, ...backupFiles])];
+                }
+
+                // Persist resolved state if _info.json is missing or incomplete
+                if (!hasInfoFile) {
+                    try {
+                        await fsPromises.writeFile(infoPath, JSON.stringify({
+                            embedding_files: embeddingFiles,
+                            backup_files:    backupFiles,
+                            approved_files:  approvedFiles,
+                        }, null, 2));
+                    } catch (_) {}
+                } else if (approvedFiles.length > 0) {
+                    // Patch in approved_files if it was missing from an existing file
+                    try {
+                        const current = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                        if (!current.approved_files || current.approved_files.length === 0) {
+                            current.approved_files = approvedFiles;
+                            await fsPromises.writeFile(infoPath, JSON.stringify(current, null, 2));
+                        }
+                    } catch (_) {}
+                }
+
+                const approvedSet = new Set(approvedFiles);
+                const trackedSet  = new Set([...embeddingFiles, ...backupFiles]);
+                const untracked   = allImages.filter(f => !trackedSet.has(f));
+                const unapproved  = allImages.filter(f => !approvedSet.has(f));
+
+                // Collect file mtime for "added on" display
+                const statMap = {};
+                for (const f of allImages) {
+                    try {
+                        const st = await fsPromises.stat(path.join(studentPath, f));
+                        statMap[f] = (st.birthtime && st.birthtime.getTime() > 0 ? st.birthtime : st.mtime).toISOString();
+                    } catch (_) { statMap[f] = null; }
+                }
+
+                const makeList = fnames => fnames.map(f => ({
                     filename: f,
-                    url:   `/attendancemodule/ground-truth/photo/${batch}/${entry.name}/${f}`,
-                    score: scores[f] || null,
+                    url:      `/attendancemodule/ground-truth/photo/${batch}/${entry.name}/${f}`,
+                    score:    scores[f] || null,
+                    addedAt:  statMap[f] || null,
                 }));
 
                 students.push({
-                    rollNo: entry.name, photoCount: allImages.length,
+                    rollNo:         entry.name,
+                    photoCount:     allImages.length,
                     embeddingFiles: makeList(embeddingFiles),
                     backupFiles:    makeList(backupFiles),
                     untrackedFiles: makeList(untracked),
-                    hasInfo: embeddingFiles.length > 0 || backupFiles.length > 0,
-                    photos:  makeList(allImages),
+                    unapprovedFiles:makeList(unapproved),
+                    hasInfo:        embeddingFiles.length > 0 || backupFiles.length > 0,
+                    photos:         makeList(allImages),
+                    // Stats
+                    approvedCount:  approvedFiles.length,
+                    embeddingCount: embeddingFiles.length,
+                    backupCount:    backupFiles.length,
+                    unapprovedCount:unapproved.length,
                 });
             }
             res.json({ batch, students });
@@ -215,8 +275,8 @@ class GroundTruthController {
                     min_images:          parseInt(minImages)        || 10,
                     det_size:            parseInt(detSize)          || 320,
                     match_threshold:     parseFloat(matchThreshold) || 0.55,
-                    min_face_size:       minFaceSize != null ? parseInt(minFaceSize) : 80,
-                    laplacian_threshold: lapThreshold != null ? parseFloat(lapThreshold) : 100.0,
+                    min_face_size:       minFaceSize != null ? parseInt(minFaceSize) : 40,
+                    laplacian_threshold: lapThreshold != null ? parseFloat(lapThreshold) : 20.0,
                     top_n:               parseInt(topN)             || 10,
                 },
                 { responseType: 'stream', timeout: 0 }
@@ -353,6 +413,68 @@ class GroundTruthController {
                 untrackedFiles: makeList(untracked),
                 totalImages: allImages.length,
                 hasInfo: embeddingFiles.length > 0 || backupFiles.length > 0,
+            });
+        } catch (err) { res.status(500).json({ error: err.message }); }
+    }
+
+    // ─── Approve photos for a student ────────────────────────────────────────
+    // Marks photos as approved and adds them to embedding (or backup if already have enough).
+    // After approving, calls ML service to rebuild the embedding.
+    async approvePhotos(req, res) {
+        try {
+            const { batch, rollNo, filenames } = req.body;
+            if (!batch || !rollNo || !Array.isArray(filenames) || filenames.length === 0)
+                return res.status(400).json({ error: 'batch, rollNo, and filenames[] required' });
+
+            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+            if (!fs.existsSync(studentDir))
+                return res.status(404).json({ error: 'Student folder not found' });
+
+            const allFiles = (await fsPromises.readdir(studentDir))
+                .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+
+            const infoPath = path.join(studentDir, '_info.json');
+            let info = { embedding_files: [], backup_files: [], approved_files: [], scores: {} };
+            if (fs.existsSync(infoPath)) {
+                try { info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8')); } catch (_) {}
+            }
+
+            const validFiles = filenames.filter(f => allFiles.includes(f));
+            const approvedSet  = new Set([...(info.approved_files  || []), ...validFiles]);
+            const embeddingSet = new Set(info.embedding_files || []);
+            const backupSet    = new Set(info.backup_files    || []);
+
+            // Add newly approved photos to embedding (they become active for recognition)
+            for (const f of validFiles) {
+                embeddingSet.add(f);
+                backupSet.delete(f);
+            }
+
+            info.approved_files  = [...approvedSet].filter(f => allFiles.includes(f));
+            info.embedding_files = [...embeddingSet].filter(f => allFiles.includes(f));
+            info.backup_files    = [...backupSet].filter(f => allFiles.includes(f));
+
+            await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
+
+            // Rebuild embedding in ML service
+            let mlResult = {};
+            try {
+                const response = await axios.post(
+                    `${ML_SERVICE_URL}/update-student-embedding`,
+                    { batch_name: batch, roll_no: rollNo, embedding_files: info.embedding_files },
+                    { timeout: 60000 }
+                );
+                mlResult = response.data;
+            } catch (mlErr) {
+                mlResult = { warning: mlError(mlErr) };
+            }
+
+            res.json({
+                ok: true,
+                approvedCount:  info.approved_files.length,
+                embeddingCount: info.embedding_files.length,
+                backupCount:    info.backup_files.length,
+                ...mlResult,
             });
         } catch (err) { res.status(500).json({ error: err.message }); }
     }
