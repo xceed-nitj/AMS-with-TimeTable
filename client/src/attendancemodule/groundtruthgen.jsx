@@ -13,8 +13,8 @@ export default function GroundTruthGen() {
     const [videoLink,    setVideoLink]    = useState('');
     const [detSize,      setDetSize]      = useState(320);
     const [frameSkip,    setFrameSkip]    = useState(10);
-    const [minFaceSize,  setMinFaceSize]  = useState(40);
-    const [lapThreshold, setLapThreshold] = useState(20);
+    const [minFaceSize,  setMinFaceSize]  = useState(80);
+    const [lapThreshold, setLapThreshold] = useState(100);
     const [topN,         setTopN]         = useState(10);
 
     const [extracting,    setExtracting]    = useState(false);
@@ -90,9 +90,7 @@ export default function GroundTruthGen() {
                     let ev;
                     try { ev = JSON.parse(line.slice(6)); } catch { continue; }
 
-                    if (ev.type === 'ping') {
-                        // keepalive — ignore
-                    } else if (ev.type === 'stage') {
+                    if (ev.type === 'stage') {
                         setProgressStage(ev.stage);
                         addLog(`▶ ${ev.message}`);
                     } else if (ev.type === 'progress') {
@@ -129,7 +127,6 @@ export default function GroundTruthGen() {
         start:      '🚀 Starting…',
         extracting: '🎞 Extracting faces from video',
         clustering: '🔵 Clustering unique faces',
-        dedup:      '🔍 Matching against existing folders…',
         saving:     '💾 Saving images to folders',
         done:       '✅ Completed',
         error:      '❌ Error',

@@ -40,7 +40,7 @@ def load_model(det_size: int = INSIGHTFACE_DET_SIZE):
     state.current_det_size = det_size
     logger.info(f"Loading InsightFace buffalo_s (CPU, det_size={det_size})…")
     state.face_app = FaceAnalysis(name="buffalo_s", providers=["CPUExecutionProvider"])
-    state.face_app.prepare(ctx_id=0, det_size=(640, 640),det_thresh=0.3)
+    state.face_app.prepare(ctx_id=0, det_size=(640, 640))
     logger.info("Model loaded.")
 
 
