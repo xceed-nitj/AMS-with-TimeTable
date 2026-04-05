@@ -125,6 +125,12 @@ router.post('/update-embedding', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Approve new photos for a student (adds to approved_files + embedding)
+router.post('/approve-photos', async (req, res) => {
+    try { await controller.approvePhotos(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── Embeddings & Attendance (Page 4) ─────────────────────────────
 
 router.post('/generate-embeddings', async (req, res) => {

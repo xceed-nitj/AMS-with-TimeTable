@@ -31,17 +31,20 @@ async function writeFlags(batch, flags) {
     await fsPromises.writeFile(flagsPath(batch), JSON.stringify(flags, null, 2));
 }
 
-// ── Copy image files from src → dest ─────────────────────────────
+// ── Copy image files (+ _info.json) from src → dest ──────────────
 async function copyImages(srcDir, destDir) {
     await fsPromises.mkdir(destDir, { recursive: true });
     const files  = await fsPromises.readdir(srcDir);
     const images = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+    const toCopy = [...images];
+    // Also carry over the metadata file if it exists
+    if (files.includes('_info.json')) toCopy.push('_info.json');
     await Promise.all(
-        images.map(f =>
+        toCopy.map(f =>
             fsPromises.copyFile(path.join(srcDir, f), path.join(destDir, f))
         )
     );
-    return images;
+    return images; // only image filenames returned (not _info.json)
 }
 
 // ── Read image + embedding files for a folder ─────────────────────
@@ -106,6 +109,86 @@ class RollAssignController {
         }
     }
 
+    // ─── List ALL person_XXX folders in a batch (for pre-ERP photo editing) ──
+    async listAllClusters(req, res) {
+        try {
+            const { batch } = req.params;
+            const batchPath = path.join(GROUND_TRUTH_DIR, batch);
+            if (!fs.existsSync(batchPath)) {
+                return res.status(404).json({ error: 'Batch not found' });
+            }
+
+            const entries = await fsPromises.readdir(batchPath, { withFileTypes: true });
+            const clusters = [];
+
+            for (const entry of entries) {
+                if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
+                if (!(/^person_\d+$/i.test(entry.name))) continue;
+
+                const folderPath = path.join(batchPath, entry.name);
+                const files      = await fsPromises.readdir(folderPath);
+                const images     = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).sort();
+
+                // Collect per-file mtime for "added on" display
+                const imageFilesWithDate = await Promise.all(images.map(async img => {
+                    let addedAt = null;
+                    try {
+                        const st = await fsPromises.stat(path.join(folderPath, img));
+                        addedAt = (st.birthtime && st.birthtime.getTime() > 0 ? st.birthtime : st.mtime).toISOString();
+                    } catch (_) {}
+                    return { filename: img, addedAt };
+                }));
+
+                clusters.push({
+                    folderName:   entry.name,
+                    imageCount:   images.length,
+                    imageFiles:   imageFilesWithDate,
+                });
+            }
+
+            clusters.sort((a, b) => a.folderName.localeCompare(b.folderName));
+            res.json({ batch, clusters });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ─── Delete an entire cluster folder + its DB record ──────────────
+    async deleteCluster(req, res) {
+        try {
+            const { batch, folder } = req.params;
+            if (!(/^person_\d+$/i.test(folder))) {
+                return res.status(400).json({ error: 'Only person_XXX folders can be deleted here' });
+            }
+            const folderPath = path.join(GROUND_TRUTH_DIR, batch, folder);
+            if (fs.existsSync(folderPath)) {
+                await fsPromises.rm(folderPath, { recursive: true, force: true });
+            }
+            await ClusterMatch.deleteOne({ batch, folderName: folder });
+            res.json({ ok: true, deleted: folder });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ─── Delete a single photo from a cluster folder ───────────────────
+    async deleteClusterPhoto(req, res) {
+        try {
+            const { batch, folder, filename } = req.params;
+            if (!(/^person_\d+$/i.test(folder))) {
+                return res.status(400).json({ error: 'Only person_XXX folders supported' });
+            }
+            const safeFilename = path.basename(filename);
+            const photoPath    = path.join(GROUND_TRUTH_DIR, batch, folder, safeFilename);
+            if (fs.existsSync(photoPath)) {
+                await fsPromises.unlink(photoPath);
+            }
+            res.json({ ok: true, deleted: safeFilename });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     // ─── Auto-assign all matched clusters immediately after ERP match ──
     // For each cluster: rename person_XXX → rollNo (best match), save to DB with approved=false.
     // Unmatched clusters (no face detected) keep their folder and get status=unmatched.
@@ -160,23 +243,41 @@ class RollAssignController {
 
                     if (fs.existsSync(srcPath)) {
                         if (fs.existsSync(destPath)) {
-                            // Conflict: rollNo folder already exists — keep person_XXX, flag conflict
+                            // ── Conflict: rollNo folder already exists ────────
+                            // Merge new photos in as UNAPPROVED (not added to approved_files).
+                            // They will show up in the assign page for the operator to review.
+                            const srcFiles = await fsPromises.readdir(srcPath);
+                            const srcImages = srcFiles.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+                            const prefix    = `new_${Date.now()}_`;
+                            const mergedNames = [];
+                            for (const img of srcImages) {
+                                const newName = prefix + img;
+                                await fsPromises.copyFile(
+                                    path.join(srcPath, img),
+                                    path.join(destPath, newName)
+                                );
+                                mergedNames.push(newName);
+                            }
+                            // Delete person_XXX
+                            await fsPromises.rm(srcPath, { recursive: true, force: true });
+                            // DO NOT add mergedNames to approved_files — they stay unapproved
+
                             await ClusterMatch.findOneAndUpdate(
                                 { batch, folderName },
                                 {
                                     $set: {
-                                        currentFolder: folderName,
+                                        currentFolder: suggestedRollNo,
                                         rollNo:        suggestedRollNo,
-                                        status:        'unmatched',
+                                        status:        'merged_unapproved',
                                         approved:      false,
                                         erpPhoto:      matchData.best.erpPhoto,
                                         confidence:    matchData.best.confidence,
-                                        candidates:    matchData.candidates   || [],
-                                        imageFiles,
-                                        embeddingFiles,
-                                        previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
-                                        imageCount:    matchData.image_count    || imageFiles.length,
-                                        error:         `Conflict: folder ${suggestedRollNo} already exists`,
+                                        candidates:    matchData.candidates  || [],
+                                        imageFiles:    mergedNames,
+                                        embeddingFiles: [],
+                                        previewFiles:  mergedNames.slice(0, 6),
+                                        imageCount:    mergedNames.length,
+                                        error:         null,
                                         updated_at:    new Date(),
                                     },
                                 },
@@ -186,9 +287,33 @@ class RollAssignController {
                             return;
                         }
 
-                        // Copy images to rollNo folder, delete person_XXX
+                        // Copy images (+ _info.json) to rollNo folder, delete person_XXX
                         copiedFiles  = await copyImages(srcPath, destPath);
                         await fsPromises.rm(srcPath, { recursive: true, force: true });
+                    }
+
+                    // ── Write _info.json to rollNo folder ─────────────────
+                    // Rule: ≤5 photos → all as embedding; >5 → ML-suggested as embedding, rest backup
+                    // All initial photos are APPROVED (first extraction is pre-approved by operator via ERP match).
+                    {
+                        const allFiles = copiedFiles;
+                        let finalEmbeds;
+                        if (allFiles.length <= 5) {
+                            finalEmbeds = [...allFiles];
+                        } else {
+                            finalEmbeds = embeddingFiles.filter(f => allFiles.includes(f));
+                            if (finalEmbeds.length === 0) finalEmbeds = allFiles.slice(0, 5);
+                        }
+                        const finalBackups = allFiles.filter(f => !finalEmbeds.includes(f));
+                        await fsPromises.writeFile(
+                            path.join(GROUND_TRUTH_DIR, batch, actualFolder, '_info.json'),
+                            JSON.stringify({
+                                embedding_files: finalEmbeds,
+                                backup_files:    finalBackups,
+                                approved_files:  [...allFiles], // all initial photos pre-approved
+                            }, null, 2)
+                        );
+                        embeddingFiles = finalEmbeds;
                     }
 
                     await ClusterMatch.findOneAndUpdate(
@@ -256,7 +381,9 @@ class RollAssignController {
 
     // ─── Approve a match (operator confirms ERP suggestion) ───────
     // If rollNo matches current folder → just set approved=true (no file ops).
-    // If operator overrides rollNo → rename current folder to new rollNo, then approve.
+    // If override rollNo differs from current folder:
+    //   - dest folder doesn't exist → rename src → dest
+    //   - dest folder exists         → merge src photos into dest as approved
     async approve(req, res) {
         try {
             const { batch, folderName, rollNo: overrideRollNo } = req.body;
@@ -264,23 +391,28 @@ class RollAssignController {
                 return res.status(400).json({ error: 'batch and folderName required' });
             }
 
-            const record = await ClusterMatch.findOne({ batch, folderName });
-            if (!record) {
-                return res.status(404).json({ error: 'No match record found for this cluster' });
-            }
-
-            const currentFolder = record.currentFolder || record.folderName;
-            const finalRollNo   = overrideRollNo
+            // Allow approving even without a prior DB record (e.g. manual assignment
+            // of a person_XXX folder directly). Create a minimal record if missing.
+            let record = await ClusterMatch.findOne({ batch, folderName });
+            const finalRollNo = overrideRollNo
                 ? overrideRollNo.trim().toUpperCase()
-                : record.rollNo;
+                : record?.rollNo || null;
 
             if (!finalRollNo) {
                 return res.status(400).json({ error: 'No roll number available — provide rollNo in body' });
             }
 
-            let imageFiles = record.imageFiles;
+            if (!record) {
+                // No prior DB record: treat folderName as currentFolder
+                record = { batch, folderName, currentFolder: folderName, rollNo: finalRollNo,
+                           imageFiles: [], embeddingFiles: [] };
+            }
 
-            // Rename only when override differs from current folder name
+            const currentFolder    = record.currentFolder || record.folderName;
+            let   imageFiles       = [...(record.imageFiles || [])];
+            let   mergedIntoExisting = false;
+
+            // ── File operations when dest differs from current ────────
             if (finalRollNo !== currentFolder) {
                 const batchPath = path.join(GROUND_TRUTH_DIR, batch);
                 const srcPath   = path.join(batchPath, currentFolder);
@@ -288,15 +420,79 @@ class RollAssignController {
 
                 if (fs.existsSync(srcPath)) {
                     if (fs.existsSync(destPath)) {
-                        return res.status(409).json({
-                            error: `Folder ${finalRollNo} already exists in this batch`,
-                        });
+                        // Merge: copy photos into existing folder with timestamp prefix
+                        const srcFiles  = await fsPromises.readdir(srcPath);
+                        const srcImages = srcFiles.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+                        const prefix    = `new_${Date.now()}_`;
+                        imageFiles = [];
+                        for (const img of srcImages) {
+                            const newName = prefix + img;
+                            await fsPromises.copyFile(
+                                path.join(srcPath, img),
+                                path.join(destPath, newName)
+                            );
+                            imageFiles.push(newName);
+                        }
+                        await fsPromises.rm(srcPath, { recursive: true, force: true });
+                        mergedIntoExisting = true;
+                    } else {
+                        // Simple rename: copy all files + _info.json, delete src
+                        imageFiles = await copyImages(srcPath, destPath);
+                        await fsPromises.rm(srcPath, { recursive: true, force: true });
                     }
-                    imageFiles = await copyImages(srcPath, destPath);
-                    await fsPromises.rm(srcPath, { recursive: true, force: true });
                 }
             }
 
+            // ── Update _info.json in the final folder ─────────────────
+            const EMBED_N    = 5;
+            const folderPath = path.join(GROUND_TRUTH_DIR, batch, finalRollNo);
+            const infoPath   = path.join(folderPath, '_info.json');
+
+            if (fs.existsSync(folderPath)) {
+                const dirFiles = await fsPromises.readdir(folderPath);
+                const allFiles = dirFiles.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+
+                let info = { embedding_files: [], backup_files: [], approved_files: [], scores: {} };
+                if (fs.existsSync(infoPath)) {
+                    try { info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8')); } catch (_) {}
+                }
+
+                if (mergedIntoExisting) {
+                    // Add newly merged photos to approved_files + embed/backup slots
+                    const approvedSet = new Set(info.approved_files || []);
+                    imageFiles.forEach(f => approvedSet.add(f));
+                    info.approved_files = [...approvedSet];
+
+                    const existingEmbeds  = (info.embedding_files || []).filter(f => allFiles.includes(f));
+                    const existingBackups = (info.backup_files    || []).filter(f => allFiles.includes(f));
+                    const embedSlots      = EMBED_N - existingEmbeds.length;
+
+                    if (embedSlots > 0) {
+                        const addToEmbed  = imageFiles.slice(0, embedSlots);
+                        const addToBackup = imageFiles.slice(embedSlots);
+                        info.embedding_files = [...existingEmbeds, ...addToEmbed];
+                        info.backup_files    = [...existingBackups, ...addToBackup];
+                    } else {
+                        info.backup_files = [...existingBackups, ...imageFiles];
+                    }
+                } else {
+                    // Fresh or renamed folder: set embedding/backup from DB hints or defaults
+                    if (!info.embedding_files?.length) {
+                        const dbEmbeds = (record.embeddingFiles || []).filter(f => allFiles.includes(f));
+                        info.embedding_files = dbEmbeds.length > 0 ? dbEmbeds
+                            : allFiles.length <= EMBED_N ? [...allFiles] : allFiles.slice(0, EMBED_N);
+                        info.backup_files = allFiles.filter(f => !info.embedding_files.includes(f));
+                    }
+                    // Mark all present files as approved
+                    if (!info.approved_files?.length) {
+                        info.approved_files = [...allFiles];
+                    }
+                }
+
+                await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
+            }
+
+            // ── Upsert DB record ──────────────────────────────────────
             await ClusterMatch.findOneAndUpdate(
                 { batch, folderName },
                 {
@@ -308,7 +504,8 @@ class RollAssignController {
                         imageFiles,
                         updated_at:    new Date(),
                     },
-                }
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
             );
 
             // Clear any pending flag for this cluster
@@ -336,14 +533,36 @@ class RollAssignController {
     }
 
     // ─── Serve an ERP photo ───────────────────────────────────────
+    // Supports both:
+    //   /erp-photo/:batch/:filename  → erp_photos/{batch}/{filename}
+    //   /erp-photo/:filename         → erp_photos/{filename}  (legacy fallback)
     async serveErpPhoto(req, res) {
         try {
-            const { filename } = req.params;
-            const filePath = path.join(ERP_PHOTOS_DIR, filename);
-            if (!fs.existsSync(filePath)) {
-                return res.status(404).json({ error: 'ERP photo not found' });
+            const { batch, filename } = req.params;
+            const safeFilename = path.basename(filename);
+            const safeBatch    = batch ? path.basename(batch) : null;
+
+            // Try batch subfolder first (new structure)
+            if (safeBatch) {
+                const batchPath = path.join(ERP_PHOTOS_DIR, safeBatch, safeFilename);
+                if (fs.existsSync(batchPath)) return res.sendFile(batchPath);
             }
-            res.sendFile(filePath);
+
+            // Fall back to flat root (legacy)
+            const flatPath = path.join(ERP_PHOTOS_DIR, safeFilename);
+            if (fs.existsSync(flatPath)) return res.sendFile(flatPath);
+
+            // Search all batch subfolders
+            if (fs.existsSync(ERP_PHOTOS_DIR)) {
+                const dirs = fs.readdirSync(ERP_PHOTOS_DIR, { withFileTypes: true })
+                    .filter(e => e.isDirectory()).map(e => e.name);
+                for (const dir of dirs) {
+                    const p = path.join(ERP_PHOTOS_DIR, dir, safeFilename);
+                    if (fs.existsSync(p)) return res.sendFile(p);
+                }
+            }
+
+            res.status(404).json({ error: 'ERP photo not found' });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
@@ -357,12 +576,17 @@ class RollAssignController {
             if (!fs.existsSync(batchPath)) {
                 return res.status(404).json({ error: 'Batch not found' });
             }
-            const erpFiles = fs.existsSync(ERP_PHOTOS_DIR)
-                ? fs.readdirSync(ERP_PHOTOS_DIR).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
+            // Prefer batch-specific ERP subfolder: erp_photos/{batch}/
+            // Fall back to root erp_photos/ for backward compatibility
+            const batchErpDir = path.join(ERP_PHOTOS_DIR, batch);
+            const erpDir      = fs.existsSync(batchErpDir) ? batchErpDir : ERP_PHOTOS_DIR;
+
+            const erpFiles = fs.existsSync(erpDir)
+                ? fs.readdirSync(erpDir).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
                 : [];
             if (!erpFiles.length) {
                 return res.status(400).json({
-                    error: 'No ERP photos found. Upload student photos named {rollNo}.jpg to the erp_photos folder.',
+                    error: `No ERP photos found. Place student photos named {rollNo}.jpg in erp_photos/${batch}/`,
                 });
             }
 
@@ -373,7 +597,7 @@ class RollAssignController {
 
             const response = await axios.post(
                 `${ML_SERVICE_URL}/match-clusters-to-erp`,
-                { batch_dir: batchPath, erp_photos_dir: ERP_PHOTOS_DIR, top_k: 3 },
+                { batch_dir: batchPath, erp_photos_dir: erpDir, top_k: 3 },
                 { responseType: 'stream', timeout: 0 }
             );
             response.data.pipe(res);

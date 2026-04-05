@@ -205,6 +205,7 @@ import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
 import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
+import PhotoEdit from './attendancemodule/photoedit';
 
 function App() {
   return (
@@ -611,6 +612,7 @@ function App() {
           <Route path="groundtruth/flagged" element={<FlaggedAssign />} />
           <Route path="groundtruth/edit" element={<EditGroundTruth />} />
           <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
+          <Route path="groundtruth/photos" element={<PhotoEdit />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
           <Route path="reports" element={<AttendanceReport />} />
