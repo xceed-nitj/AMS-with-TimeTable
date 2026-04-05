@@ -6,7 +6,6 @@ import json
 import time
 import logging
 import threading
-import queue
 
 import cv2
 import numpy as np
@@ -34,59 +33,18 @@ _stop_event = threading.Event()
 _preview_frame = None
 _preview_lock  = threading.Lock()
 
-# FIX: Removed the global `cap_global` / `get_capture()` helper.
-# A shared global VideoCapture causes silent stale-handle reuse across
-# requests, which manifests as network errors on the frontend.
-# Each request now owns its own capture and releases it on exit.
-
-# READ_TIMEOUT_SEC: how long cap.read() is allowed to block before we treat
-# the frame as dropped and attempt a reconnect.
-READ_TIMEOUT_SEC = 5.0
-
-
-def _read_frame_with_timeout(cap, timeout=READ_TIMEOUT_SEC):
-    """
-    Run cap.read() in a daemon thread so the caller is never blocked
-    longer than `timeout` seconds.  Returns (ret, frame) or (False, None).
-    """
-    result_q = queue.Queue(maxsize=1)
-
-    def _worker():
-        try:
-            result_q.put(cap.read())
-        except Exception:
-            result_q.put((False, None))
-
-    t = threading.Thread(target=_worker, daemon=True)
-    t.start()
-    try:
-        return result_q.get(timeout=timeout)
-    except queue.Empty:
-        logger.warning("cap.read() timed out after %ss", timeout)
-        return False, None
-
-
-def _open_capture(rtsp_url: str) -> cv2.VideoCapture:
-    """Open a fresh RTSP capture with TCP transport."""
-    url = rtsp_url if "rtsp_transport" in rtsp_url else rtsp_url + "?rtsp_transport=tcp"
-    cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
-    # Keep internal buffer tiny so we always get the latest frame.
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
-    return cap
-
-
 def _update_preview(frame, zoom_boxes, current_pass=0):
     """Draw zoom overlay on frame and store as MJPEG jpeg."""
     global _preview_frame
     vis    = frame.copy()
     colors = [
-        (0, 255, 0),
-        (255, 0, 0),
-        (0, 0, 255),
-        (255, 255, 0),
-        (0, 255, 255),
-        (255, 0, 255),
-        (0, 128, 255),
+        (0, 255, 0),     # green   — full frame
+        (255, 0, 0),     # blue    — left 2x
+        (0, 0, 255),     # red     — right 2x
+        (255, 255, 0),   # cyan    — center 2x
+        (0, 255, 255),   # yellow  — top-left 3x
+        (255, 0, 255),   # magenta — top-right 3x
+        (0, 128, 255),   # orange  — top-center 3x
     ]
 
     for idx, box in enumerate(zoom_boxes):
@@ -129,30 +87,18 @@ class RTSPRequest(BaseModel):
 
 @router.get("/rtsp-preview")
 def rtsp_preview():
-    """
-    MJPEG preview stream.
-
-    FIX: The original generator looped forever with no exit condition,
-    leaking the HTTP connection after the SSE stream finished.  We now
-    check _stop_event so the preview stream tears down together with the
-    acquisition stream, and add a GeneratorExit guard so the connection
-    is cleaned up if the client disconnects.
-    """
     def generate():
-        try:
-            while not _stop_event.is_set():
-                with _preview_lock:
-                    frame = _preview_frame
-                if frame:
-                    yield (
-                        b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n'
-                        + frame +
-                        b'\r\n'
-                    )
-                time.sleep(0.1)
-        except GeneratorExit:
-            pass  # client closed the connection — clean exit
+        while True:
+            with _preview_lock:
+                frame = _preview_frame
+            if frame:
+                yield (
+                    b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n'
+                    + frame +
+                    b'\r\n'
+                )
+            time.sleep(0.1)
 
     return StreamingResponse(
         generate(),
@@ -181,8 +127,6 @@ def extract_rtsp_stream(req: RTSPRequest):
 
     def generate():
         def sse(obj):
-            # FIX: include charset so browsers/proxies don't misinterpret the
-            # stream encoding and drop buffered SSE chunks.
             return f"data: {json.dumps(obj)}\n\n"
 
         _stop_event.clear()
@@ -194,9 +138,8 @@ def extract_rtsp_stream(req: RTSPRequest):
 
         yield sse({"type": "stage", "message": f"Connecting to {req.rtspUrl}…"})
 
-        # FIX: Use _open_capture() instead of the removed global helper so
-        # every request gets a fresh handle with TCP transport enforced.
-        cap = _open_capture(req.rtspUrl)
+        cap = cv2.VideoCapture(req.rtspUrl, cv2.CAP_FFMPEG)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
 
         if not cap.isOpened():
             yield sse({"type": "error",
@@ -219,7 +162,7 @@ def extract_rtsp_stream(req: RTSPRequest):
 
         CLUSTER_EVERY = max(req.minSamples * 5, 20)
 
-        person_counts:      dict[str, int]        = {}
+        person_counts:      dict[str, int]       = {}
         existing_mean_embs: dict[str, np.ndarray] = {}
         _load_existing_folders(batch_dir, existing_mean_embs)
 
@@ -235,154 +178,65 @@ def extract_rtsp_stream(req: RTSPRequest):
         detections_since = 0
         last_progress_t  = time.time()
         PROGRESS_EVERY   = 10
-        reconnect_attempts = 0
-        MAX_RECONNECTS     = 5   # give up after this many consecutive failures
-
-        # FIX: track clustering passes and person roster size so the completion
-        # check can confirm the roster has stabilised before auto-stopping.
-        _cluster_passes    = 0
-        _last_person_count = 0
 
         # ── Frame loop ────────────────────────────────────────────────────────
-        try:
-            while True:
-                if _stop_event.is_set():
-                    yield sse({"type": "stage",
-                               "message": "Stop signal received — finishing up…"})
-                    break
+        while True:
+            if _stop_event.is_set():
+                yield sse({"type": "stage",
+                           "message": "Stop signal received — finishing up…"})
+                break
 
-                # FIX: wrap cap.read() with a timeout so a stale/frozen RTSP
-                # source can't block the generator thread indefinitely.
-                ret, frame = _read_frame_with_timeout(cap, READ_TIMEOUT_SEC)
-
-                if not ret:
-                    reconnect_attempts += 1
-                    if reconnect_attempts > MAX_RECONNECTS:
-                        yield sse({"type": "error",
-                                   "message": "Stream reconnect failed — stopping"})
-                        break
-
-                    yield sse({"type": "stage",
-                               "message": f"Stream dropped — reconnect attempt "
-                                          f"{reconnect_attempts}/{MAX_RECONNECTS}…"})
+            ret, frame = cap.read()
+            if not ret:
+                yield sse({"type": "stage",
+                           "message": "Stream ended or dropped — retrying…"})
+                time.sleep(0.5)
+                for _ in range(3):
                     cap.release()
-                    time.sleep(1)
-                    cap = _open_capture(req.rtspUrl)
+                    cap = cv2.VideoCapture(req.rtspUrl, cv2.CAP_FFMPEG)
+                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
                     if cap.isOpened():
-                        reconnect_attempts = 0
-                        yield sse({"type": "stage", "message": "Stream reconnected"})
-                    continue
-
-                # Successful read — reset counter
-                reconnect_attempts = 0
-
-                frame_count += 1
-                if frame_count % req.frameSkip != 0:
-                    continue
-
-                ts = round(frame_count / fps, 2)
-
-                detections = _detect_faces_tiled(
-                    state.face_app, frame, ui_mask,
-                    preview_cb=_update_preview,
-                )
-                faces_this_frame = len(detections)
-
-                for d in detections:
-                    all_embeddings.append(d["embedding"])
-                    all_face_images.append(d["crop"])
-                    all_timestamps.append(ts)
-                    all_quality.append(d["quality"])
-                    detections_since += 1
-
-                yield sse({
-                    "type":             "frame",
-                    "frame":            frame_count,
-                    "faces_this_frame": faces_this_frame,
-                })
-
-                # Incremental clustering
-                if (detections_since >= CLUSTER_EVERY
-                        and len(all_embeddings) >= req.minSamples):
-                    detections_since = 0
-
-                    labels, unique_labels = _cluster(
-                        all_embeddings, req.clusterThreshold, req.minSamples)
-
-                    next_serial, updated = _save_clusters(
-                        labels, unique_labels,
-                        all_embeddings, all_face_images,
-                        all_timestamps, all_quality,
-                        batch_dir, existing_mean_embs, next_serial,
-                        req.targetImgsPerPerson, person_counts,
-                        req.clusterThreshold,
-                    )
-
-                    _cluster_passes    += 1
-                    _last_person_count  = len(person_counts)
-
-                    for person_id, new_count in updated.items():
-                        done = new_count >= req.targetImgsPerPerson
-                        yield sse({
-                            "type":      "person_update",
-                            "person_id": person_id,
-                            "count":     new_count,
-                            "target":    req.targetImgsPerPerson,
-                            "done":      done,
-                        })
-
-                # Periodic progress
-                now = time.time()
-                if now - last_progress_t >= PROGRESS_EVERY:
-                    last_progress_t = now
-                    n_persons = len(person_counts)
-                    n_done    = sum(
-                        1 for c in person_counts.values()
-                        if c >= req.targetImgsPerPerson)
-                    yield sse({
-                        "type":    "progress",
-                        "message": (
-                            f"Frame {frame_count} | "
-                            f"{len(all_embeddings)} detections | "
-                            f"{n_persons} people | "
-                            f"{n_done}/{n_persons} done"
-                        ),
-                    })
-
-                # Check completion
-                # FIX: The original check fired as soon as person_counts was
-                # non-empty and every *known* person was done.  The problem is
-                # that clustering is incremental — after the first CLUSTER_EVERY
-                # detections only one person may have been discovered yet.  If
-                # that person happens to have reached the target, the stream
-                # stopped before the second, third, etc. people were ever found.
-                #
-                # Guard: only allow auto-stop after at least two clustering
-                # passes have run AND no new persons appeared in the last pass.
-                # `_cluster_passes` counts completed passes; `_last_person_count`
-                # tracks how many persons were known at the previous pass.
-                if (person_counts
-                        and _cluster_passes >= 2
-                        and len(person_counts) == _last_person_count
-                        and all(c >= req.targetImgsPerPerson
-                                for c in person_counts.values())):
-                    yield sse({"type": "stage",
-                               "message": "All persons reached target — stopping"})
+                        yield sse({"type": "stage",
+                                   "message": "Stream reconnected"})
+                        break
+                    time.sleep(1)
+                else:
+                    yield sse({"type": "error",
+                               "message": "Stream reconnect failed — stopping"})
                     break
+                continue
 
-        finally:
-            # FIX: always release the capture — even on unhandled exceptions —
-            # so the OS-level socket/file descriptor is freed immediately.
-            cap.release()
-            logger.info("VideoCapture released for %s", req.rtspUrl)
+            frame_count += 1
+            if frame_count % req.frameSkip != 0:
+                continue
 
-        # ── Final save pass ───────────────────────────────────────────────────
-        # Run one last cluster+save on all accumulated embeddings so faces
-        # detected before Stop was clicked are never discarded.
-        if len(all_embeddings) >= req.minSamples:
-            yield sse({"type": "stage",
-                       "message": f"Saving {len(all_embeddings)} buffered detections…"})
-            try:
+            ts = round(frame_count / fps, 2)
+
+            # Detect with preview callback
+            detections = _detect_faces_tiled(
+                state.face_app, frame, ui_mask,
+                preview_cb=_update_preview,
+            )
+            faces_this_frame = len(detections)
+
+            for d in detections:
+                all_embeddings.append(d["embedding"])
+                all_face_images.append(d["crop"])
+                all_timestamps.append(ts)
+                all_quality.append(d["quality"])
+                detections_since += 1
+
+            yield sse({
+                "type":             "frame",
+                "frame":            frame_count,
+                "faces_this_frame": faces_this_frame,
+            })
+
+            # Incremental clustering
+            if (detections_since >= CLUSTER_EVERY
+                    and len(all_embeddings) >= req.minSamples):
+                detections_since = 0
+
                 labels, unique_labels = _cluster(
                     all_embeddings, req.clusterThreshold, req.minSamples)
 
@@ -396,17 +250,44 @@ def extract_rtsp_stream(req: RTSPRequest):
                 )
 
                 for person_id, new_count in updated.items():
+                    done = new_count >= req.targetImgsPerPerson
                     yield sse({
                         "type":      "person_update",
                         "person_id": person_id,
                         "count":     new_count,
                         "target":    req.targetImgsPerPerson,
-                        "done":      new_count >= req.targetImgsPerPerson,
+                        "done":      done,
                     })
-            except Exception as exc:
-                logger.exception("Final clustering pass failed: %s", exc)
+
+            # Periodic progress
+            now = time.time()
+            if now - last_progress_t >= PROGRESS_EVERY:
+                last_progress_t = now
+                n_persons = len(person_counts)
+                n_done    = sum(
+                    1 for c in person_counts.values()
+                    if c >= req.targetImgsPerPerson)
+                yield sse({
+                    "type":    "progress",
+                    "message": (
+                        f"Frame {frame_count} | "
+                        f"{len(all_embeddings)} detections | "
+                        f"{n_persons} people | "
+                        f"{n_done}/{n_persons} done"
+                    ),
+                })
+
+            # Check completion
+            if (person_counts
+                    and all(c >= req.targetImgsPerPerson
+                            for c in person_counts.values())):
+                yield sse({"type": "stage",
+                           "message": "All persons reached target — stopping"})
+                break
 
         # ── End of loop ───────────────────────────────────────────────────────
+        cap.release()
+
         images_saved = sum(person_counts.values())
         elapsed      = round(time.time() - start, 2)
 
@@ -428,14 +309,7 @@ def extract_rtsp_stream(req: RTSPRequest):
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
-        # FIX: charset=utf-8 prevents proxies (nginx, Caddy) from buffering
-        # the SSE stream, which causes the frontend to see a network error
-        # instead of a stream of events.
-        headers={
-            "Cache-Control":    "no-cache",
-            "X-Accel-Buffering": "no",
-            "Content-Type":     "text/event-stream; charset=utf-8",
-        },
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 

@@ -129,9 +129,7 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
                 continue
 
             ts = round(frame_count / fps, 2)
-            for d in _detect_faces_tiled(state.face_app, frame, ui_mask,
-                                         min_face_px=max(20, req.min_face_size),
-                                         lap_threshold=max(0.0, req.laplacian_threshold)):
+            for d in _detect_faces_tiled(state.face_app, frame, ui_mask):
                 if d["quality"] > 0:
                     all_embeddings.append(d["embedding"])
                     all_face_images.append(d["crop"])
