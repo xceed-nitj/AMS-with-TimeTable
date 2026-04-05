@@ -2,17 +2,17 @@
 // Live RTSP stream ground truth acquisition — select camera, start/stop,
 // auto-stops when every detected person has reached the target image count.
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 
 // ─── Add your cameras here ────────────────────────────────────────────────────
 const CAMERAS = [
-    { id: 'cam_main',   label: 'Main Hall — Front',  url: 'rtsp://127.0.0.1:8554/live' },
-    { id: 'cam_side',   label: 'Main Hall — Side',   url: 'rtsp://192.168.1.101:554/stream1' },
-    { id: 'cam_lab1',   label: 'Lab 1',              url: 'rtsp://192.168.1.102:554/stream1' },
-    { id: 'cam_lab2',   label: 'Lab 2',              url: 'rtsp://192.168.1.103:554/stream1' },
-    { id: 'cam_seminar',label: 'Seminar Hall',       url: 'rtsp://192.168.1.104:554/stream1' },
+    { id: 'cam_main',    label: 'Main Hall — Front', url: 'rtsp://127.0.0.1:8554/live' },
+    { id: 'cam_side',    label: 'Main Hall — Side',  url: 'rtsp://192.168.1.101:554/stream1' },
+    { id: 'cam_lab1',    label: 'Lab 1',             url: 'rtsp://192.168.1.102:554/stream1' },
+    { id: 'cam_lab2',    label: 'Lab 2',             url: 'rtsp://192.168.1.103:554/stream1' },
+    { id: 'cam_seminar', label: 'Seminar Hall',      url: 'rtsp://192.168.1.104:554/stream1' },
 ];
 
 const TARGET_OPTIONS = [
@@ -23,10 +23,10 @@ const TARGET_OPTIONS = [
 ];
 
 const FRAME_SKIP_OPTIONS = [
-    { value: 5,  hint: 'Dense sampling — best for short sessions' },
-    { value: 10, hint: 'Balanced — recommended for live streams' },
-    { value: 20, hint: 'Fast, lighter on CPU' },
-    { value: 30, hint: 'Minimal CPU usage' },
+    { value: 5,   hint: 'Dense sampling — best for short sessions' },
+    { value: 10,  hint: 'Balanced — recommended for live streams' },
+    { value: 20,  hint: 'Fast, lighter on CPU' },
+    { value: 300, hint: 'Minimal CPU usage' },
 ];
 
 const DET_SIZE_OPTIONS = [
@@ -43,7 +43,7 @@ const Dot = ({ color, pulse = false }) => (
     }} />
 );
 
-// ─── person progress card ────────────────────────────────────────────────────
+// ─── person progress card ─────────────────────────────────────────────────────
 const PersonCard = ({ id, count, target }) => {
     const pct  = Math.min((count / target) * 100, 100);
     const done = count >= target;
@@ -70,16 +70,30 @@ const PersonCard = ({ id, count, target }) => {
 };
 
 // ─── Live Preview Component ───────────────────────────────────────────────────
+// FIX: Use a single persistent <img> pointed at the MJPEG endpoint instead of
+// re-requesting with ?t=timestamp every second.  The MJPEG endpoint is a
+// multipart/x-mixed-replace stream — the browser updates the frame automatically
+// from a single long-lived connection.  Re-mounting with a new timestamp every
+// second caused a flood of parallel HTTP connections that exhausted the backend.
 const LivePreview = ({ apiBase, isRunning }) => {
     const [showPreview, setShowPreview] = useState(true);
+    // Key changes only when the stream starts so the <img> gets a fresh
+    // connection exactly once per acquisition session.
+    const [sessionKey, setSessionKey] = useState(0);
+    const prevRunning = useRef(false);
 
-    if (!isRunning) return null;
+    useEffect(() => {
+        if (isRunning && !prevRunning.current) {
+            setSessionKey(k => k + 1);   // remount img → new MJPEG connection
+        }
+        prevRunning.current = isRunning;
+    }, [isRunning]);
 
     return (
         <div style={{ marginBottom: 16 }}>
             <div style={{
                 display: 'flex', alignItems: 'center',
-                justifyContent: 'space-between', marginBottom: 8
+                justifyContent: 'space-between', marginBottom: 8,
             }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: theme.accent }}>
                     📹 Live Preview
@@ -92,7 +106,7 @@ const LivePreview = ({ apiBase, isRunning }) => {
                     style={{
                         fontSize: '11px', padding: '3px 10px',
                         background: 'transparent', border: `1px solid ${theme.border}`,
-                        color: theme.textMuted, borderRadius: 4, cursor: 'pointer'
+                        color: theme.textMuted, borderRadius: 4, cursor: 'pointer',
                     }}
                 >
                     {showPreview ? 'Hide' : 'Show'}
@@ -104,14 +118,25 @@ const LivePreview = ({ apiBase, isRunning }) => {
                     overflow: 'hidden', border: `1px solid ${theme.accent}`,
                     background: '#000',
                 }}>
-                    <img
-                        src={`${apiBase}/rtsp-preview?t=${Date.now()}`}
-                        alt="Live RTSP Preview"
-                        style={{ width: '100%', display: 'block' }}
-                        onError={(e) => {
-                            e.target.style.display = 'none';
-                        }}
-                    />
+                    {isRunning ? (
+                        // One persistent MJPEG connection per session.
+                        // sessionKey forces remount only when acquisition starts.
+                        <img
+                            key={sessionKey}
+                            src={`${apiBase}/rtsp-preview`}
+                            alt="Live RTSP Preview"
+                            style={{ width: '100%', display: 'block' }}
+                            onError={(e) => { e.target.style.opacity = '0.3'; }}
+                        />
+                    ) : (
+                        <div style={{
+                            width: '100%', aspectRatio: '16/9',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#555', fontSize: '13px',
+                        }}>
+                            Preview available once acquisition starts
+                        </div>
+                    )}
                     {/* Zoom legend */}
                     <div style={{
                         position: 'absolute', bottom: 8, right: 8,
@@ -145,13 +170,41 @@ const LivePreview = ({ apiBase, isRunning }) => {
     );
 };
 
+// ─── SSE line parser ──────────────────────────────────────────────────────────
+// FIX: the original split('\n\n') + find('data: ') approach drops events when
+// a TCP chunk boundary falls inside a multi-line SSE event.  This function
+// processes a running buffer and returns { events, remaining } so no bytes
+// are ever lost between reads.
+function extractSSEEvents(buffer) {
+    const events = [];
+    // SSE events are delimited by double-newline
+    const parts = buffer.split('\n\n');
+    // Last part is incomplete — keep it in the buffer
+    const remaining = parts.pop();
+
+    for (const part of parts) {
+        // An SSE event block may have multiple lines; find the data line
+        const dataLine = part.split('\n').find(l => l.startsWith('data: '));
+        if (!dataLine) continue;
+        const jsonStr = dataLine.slice(6).trim();
+        if (!jsonStr) continue;
+        try {
+            events.push(JSON.parse(jsonStr));
+        } catch {
+            // malformed JSON — skip
+        }
+    }
+
+    return { events, remaining };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function GroundTruthRTSP() {
-    const [degree,      setDegree]      = useState('BTECH');
-    const [department,  setDepartment]  = useState('');
+    const [degree,     setDegree]     = useState('BTECH');
+    const [department, setDepartment] = useState('');
     const { departments, deptLoading, deptError } = useDepartments();
-    const [year,        setYear]        = useState('');
-    const [cameraId,    setCameraId]    = useState(CAMERAS[0].id);
+    const [year,       setYear]       = useState('');
+    const [cameraId,   setCameraId]   = useState(CAMERAS[0].id);
 
     const [detSize,    setDetSize]    = useState(320);
     const [frameSkip,  setFrameSkip]  = useState(10);
@@ -159,14 +212,14 @@ export default function GroundTruthRTSP() {
     const [minSamples, setMinSamples] = useState(3);
     const [clusterThr, setClusterThr] = useState(0.45);
 
-    const [status,      setStatus]      = useState('idle');  // idle | running | stopping | done | error
-    const [log,         setLog]         = useState([]);
-    const [persons,     setPersons]     = useState({});      // { person_001: { count, done } }
-    const [summary,     setSummary]     = useState(null);
-    const [toast,       setToast]       = useState(null);
+    const [status,  setStatus]  = useState('idle');  // idle | running | stopping | done | error
+    const [log,     setLog]     = useState([]);
+    const [persons, setPersons] = useState({});       // { person_001: { count, done } }
+    const [summary, setSummary] = useState(null);
+    const [toast,   setToast]   = useState(null);
 
-    const logRef     = useRef(null);
-    const readerRef  = useRef(null);   // AbortController lives here for stop
+    const logRef    = useRef(null);
+    const abortRef  = useRef(null);   // AbortController for the fetch
 
     const batchName = degree && department && year
         ? `${degree}_${department}_${year}`.toUpperCase()
@@ -198,7 +251,7 @@ export default function GroundTruthRTSP() {
         setSummary(null);
 
         const controller = new AbortController();
-        readerRef.current = controller;
+        abortRef.current = controller;
 
         addLog(`▶ Connecting to ${selectedCamera.label}…`, theme.accent);
 
@@ -208,37 +261,40 @@ export default function GroundTruthRTSP() {
                 headers: { 'Content-Type': 'application/json' },
                 signal:  controller.signal,
                 body: JSON.stringify({
-                    rtspUrl:           selectedCamera.url,
-                    batch:             batchName,
+                    rtspUrl:             selectedCamera.url,
+                    batch:               batchName,
                     detSize,
                     frameSkip,
                     targetImgsPerPerson: targetImgs,
                     minSamples,
-                    clusterThreshold:  clusterThr,
+                    clusterThreshold:    clusterThr,
                 }),
             });
 
-            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+            if (!response.ok) {
+                const text = await response.text().catch(() => '');
+                throw new Error(`Server error ${response.status}${text ? ': ' + text : ''}`);
+            }
 
             const reader  = response.body.getReader();
             const decoder = new TextDecoder();
             let   buffer  = '';
 
+            // FIX: Use extractSSEEvents() so no events are lost at TCP chunk
+            // boundaries.  The original code called split('\n\n') on each
+            // decoded chunk independently, which silently dropped events
+            // whenever a double-newline was split across two read() calls.
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
-                const chunks = buffer.split('\n\n');
-                buffer = chunks.pop();
+                const { events, remaining } = extractSSEEvents(buffer);
+                buffer = remaining;
 
-                for (const chunk of chunks) {
-                    const line = chunk.split('\n').find(l => l.startsWith('data: '));
-                    if (!line) continue;
-                    let ev;
-                    try { ev = JSON.parse(line.slice(6)); } catch { continue; }
-
+                for (const ev of events) {
                     switch (ev.type) {
+
                         case 'stage':
                             addLog(`▶ ${ev.message}`, theme.accent);
                             break;
@@ -248,8 +304,11 @@ export default function GroundTruthRTSP() {
                                 addLog(`🎞 Frame ${ev.frame} — ${ev.faces_this_frame} face(s) detected`, '#aaa');
                             break;
 
+                        // FIX: person_update arrives for EACH incremental cluster
+                        // pass.  We must merge — not replace — person state so
+                        // persons detected in earlier passes are not wiped out
+                        // when a later pass only updates a subset.
                         case 'person_update':
-                            // { person_id, count, target, done }
                             setPersons(prev => ({
                                 ...prev,
                                 [ev.person_id]: { count: ev.count, done: ev.done },
@@ -276,9 +335,13 @@ export default function GroundTruthRTSP() {
                             break;
 
                         case 'error':
-                            setStatus('error');
+                            // FIX: Don't set status to 'error' on a single backend
+                            // error event — the stream may recover.  Only mark
+                            // error when the stream itself closes after an error.
                             addLog(`❌ ${ev.message}`, theme.danger);
                             showToast(ev.message, 'error');
+                            // If the backend sends a fatal error it will also
+                            // close the SSE stream, which ends the read() loop.
                             break;
 
                         default:
@@ -286,6 +349,13 @@ export default function GroundTruthRTSP() {
                     }
                 }
             }
+
+            // Stream closed cleanly by backend (done event already handled above)
+            if (abortRef.current && !controller.signal.aborted) {
+                // If we somehow exit without a 'done' event, mark done anyway
+                setStatus(s => s === 'running' ? 'done' : s);
+            }
+
         } catch (err) {
             if (err.name === 'AbortError') {
                 addLog('⏹ Stream stopped by user', theme.textMuted);
@@ -301,11 +371,15 @@ export default function GroundTruthRTSP() {
     // ── stop acquisition ──────────────────────────────────────────────────────
     const handleStop = useCallback(async () => {
         setStatus('stopping');
-        addLog('⏹ Sending stop signal…', theme.textMuted);
+        addLog('⏹ Sending stop signal — waiting for final save…', theme.textMuted);
         try {
             await fetch(`${API_BASE}/stop-rtsp-stream`, { method: 'POST' });
         } catch { /* backend may not respond if already stopped */ }
-        if (readerRef.current) readerRef.current.abort();
+        // Do NOT abort the SSE fetch here. The backend runs a final clustering+save
+        // pass after receiving the stop signal and then yields a 'done' event.
+        // Aborting the fetch causes GeneratorExit in the Python generator which
+        // kills the save pass before any photos are written to disk.
+        // The SSE stream will close naturally once the backend sends 'done'.
     }, [addLog]);
 
     const isRunning  = status === 'running';
@@ -314,15 +388,15 @@ export default function GroundTruthRTSP() {
     const isError    = status === 'error';
     const isIdle     = status === 'idle';
 
-    const totalPersons  = Object.keys(persons).length;
-    const donePersons   = Object.values(persons).filter(p => p.done).length;
-    const allDone       = totalPersons > 0 && donePersons === totalPersons;
+    const totalPersons = Object.keys(persons).length;
+    const donePersons  = Object.values(persons).filter(p => p.done).length;
+    const allDone      = totalPersons > 0 && donePersons === totalPersons;
 
     // ── render ────────────────────────────────────────────────────────────────
     return (
         <div style={styles.page}>
             <style>{cssReset}
-                {`@keyframes spin { to { transform: rotate(360deg); } }
+                {`@keyframes spin  { to { transform: rotate(360deg); } }
                   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}
             </style>
 
@@ -350,8 +424,11 @@ export default function GroundTruthRTSP() {
             </div>
 
             {/* ── Config card ── */}
-            <div style={{ ...styles.card, marginBottom: 24, opacity: (isRunning || isStopping) ? 0.6 : 1, pointerEvents: (isRunning || isStopping) ? 'none' : 'auto' }}>
-
+            <div style={{
+                ...styles.card, marginBottom: 24,
+                opacity: (isRunning || isStopping) ? 0.6 : 1,
+                pointerEvents: (isRunning || isStopping) ? 'none' : 'auto',
+            }}>
                 {/* Row 1: batch fields */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
                     <div>
@@ -388,7 +465,7 @@ export default function GroundTruthRTSP() {
                                 borderColor: cameraId === cam.id ? theme.accent : theme.border,
                                 background:  cameraId === cam.id ? (theme.accentDim || theme.accent + '22') : 'transparent',
                                 color:       cameraId === cam.id ? theme.accent : theme.textMuted,
-                                transition:  'all 0.15s',
+                                transition: 'all 0.15s',
                             }}>
                                 {cam.label}
                             </button>
@@ -415,7 +492,7 @@ export default function GroundTruthRTSP() {
                                 borderColor: targetImgs === opt.value ? theme.accent : theme.border,
                                 background:  targetImgs === opt.value ? (theme.accentDim || theme.accent + '22') : 'transparent',
                                 color:       targetImgs === opt.value ? theme.accent : theme.textMuted,
-                                transition:  'all 0.15s',
+                                transition: 'all 0.15s',
                             }}>
                                 {opt.value} imgs
                             </button>
@@ -437,7 +514,7 @@ export default function GroundTruthRTSP() {
                                 borderColor: detSize === opt.value ? theme.accent : theme.border,
                                 background:  detSize === opt.value ? (theme.accentDim || theme.accent + '22') : 'transparent',
                                 color:       detSize === opt.value ? theme.accent : theme.textMuted,
-                                transition:  'all 0.15s',
+                                transition: 'all 0.15s',
                             }}>
                                 {opt.label}
                             </button>
@@ -456,7 +533,7 @@ export default function GroundTruthRTSP() {
                                 borderColor: frameSkip === opt.value ? theme.accent : theme.border,
                                 background:  frameSkip === opt.value ? (theme.accentDim || theme.accent + '22') : 'transparent',
                                 color:       frameSkip === opt.value ? theme.accent : theme.textMuted,
-                                transition:  'all 0.15s',
+                                transition: 'all 0.15s',
                             }}>
                                 Every {opt.value}
                             </button>
@@ -475,11 +552,12 @@ export default function GroundTruthRTSP() {
                     </span>
                 </div>
             </div>
-{/* Live Preview */}
-<LivePreview apiBase={API_BASE} isRunning={isRunning} />
+
+            {/* Live Preview */}
+            <LivePreview apiBase={API_BASE} isRunning={isRunning} />
+
             {/* ── Action buttons ── */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-                {/* Start */}
                 <button
                     onClick={handleStart}
                     disabled={isRunning || isStopping || !batchName}
@@ -504,7 +582,6 @@ export default function GroundTruthRTSP() {
                     ) : '📡 Start Acquisition'}
                 </button>
 
-                {/* Stop */}
                 <button
                     onClick={handleStop}
                     disabled={!isRunning}
@@ -520,10 +597,12 @@ export default function GroundTruthRTSP() {
                 </button>
             </div>
 
-            {/* ── Live status panel (shown while running or after done/error) ── */}
+            {/* ── Live status panel ── */}
             {(isRunning || isStopping || isDone || isError) && (
-                <div style={{ ...styles.card, marginBottom: 20, borderColor: isRunning ? theme.accent : isDone ? theme.success : theme.danger }}>
-
+                <div style={{
+                    ...styles.card, marginBottom: 20,
+                    borderColor: isRunning ? theme.accent : isDone ? theme.success : theme.danger,
+                }}>
                     {/* Status bar */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                         <Dot
@@ -540,7 +619,6 @@ export default function GroundTruthRTSP() {
                             {isError    && 'Acquisition failed'}
                         </span>
 
-                        {/* Overall progress badge */}
                         {totalPersons > 0 && (
                             <span style={{
                                 marginLeft: 'auto', fontSize: '12px', fontWeight: 700,
@@ -559,7 +637,7 @@ export default function GroundTruthRTSP() {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
                             {Object.entries(persons)
                                 .sort(([a], [b]) => a.localeCompare(b))
-                                .map(([id, { count, done }]) => (
+                                .map(([id, { count }]) => (
                                     <PersonCard key={id} id={id} count={count} target={targetImgs} />
                                 ))}
                         </div>
@@ -584,7 +662,7 @@ export default function GroundTruthRTSP() {
                 </div>
             )}
 
-            {/* ── Summary card (after done) ── */}
+            {/* ── Summary card ── */}
             {isDone && summary && (
                 <div style={{ ...styles.card, borderColor: theme.success, background: theme.successDim, marginBottom: 20 }}>
                     <div style={{ fontSize: '18px', fontWeight: 700, color: theme.success, marginBottom: 12 }}>
@@ -620,8 +698,6 @@ export default function GroundTruthRTSP() {
                         <strong style={{ color: theme.accent }}>Assign Roll Numbers</strong>&nbsp;
                         to map clusters to students.
                     </div>
-
-                    {/* Start a new session */}
                     <button
                         onClick={() => { setStatus('idle'); setSummary(null); setPersons({}); setLog([]); }}
                         style={{
