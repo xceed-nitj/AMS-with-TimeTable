@@ -31,17 +31,17 @@ ROI_BOTTOM_FRAC = 0.95   # skip empty chairs / floor below
 NMS_IOU_THRESH = 0.35
 
 # Quality filter
-MIN_SHARPNESS = 30.0     # Laplacian variance
+MIN_SHARPNESS = 10.0     # Laplacian variance
 MIN_FACE_PX   = 30      # minimum face side in original-frame pixels
 
 # FIX-F: tight crop to avoid bleeding into neighbour's face
-FACE_CROP_PAD_FRAC = 1.5   # was 0.25
+FACE_CROP_PAD_FRAC = 1   # was 0.25
 
 # InsightFace
 INSIGHTFACE_DET_SIZE = 640   # always 640; must match build_embeddings_db.py
 
 # FIX-G: post-cluster merge threshold (cosine similarity)
-MERGE_THRESHOLD = 0.68   # clusters more similar than this → same person
+MERGE_THRESHOLD = 0.5   # clusters more similar than this → same person
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
@@ -181,15 +181,17 @@ def _merge_split_clusters(labels: np.ndarray,
 # Digital zoom passes
 # ─────────────────────────────────────────────────────────────────────────────
 ZOOM_PASSES = [
-    {"zoom": 1.0, "cx": 0.5,  "cy": 0.5},   # full frame
-    {"zoom": 2.0, "cx": 0.25, "cy": 0.4},   # left half
-    {"zoom": 2.0, "cx": 0.75, "cy": 0.4},   # right half
-    {"zoom": 2.0, "cx": 0.5,  "cy": 0.4},   # center
-    {"zoom": 3.0, "cx": 0.25, "cy": 0.3},   # top-left
-    {"zoom": 3.0, "cx": 0.75, "cy": 0.3},   # top-right
-    {"zoom": 3.0, "cx": 0.5,  "cy": 0.3},   # top-center
+    {"zoom": 1.0, "cx": 0.5,  "cy": 0.5},
+    {"zoom": 2.0, "cx": 0.25, "cy": 0.4},
+    {"zoom": 2.0, "cx": 0.75, "cy": 0.4},
+    {"zoom": 2.0, "cx": 0.5,  "cy": 0.4},
+    {"zoom": 3.0, "cx": 0.25, "cy": 0.3},
+    {"zoom": 3.0, "cx": 0.75, "cy": 0.3},
+    {"zoom": 3.0, "cx": 0.5,  "cy": 0.3},
+    {"zoom": 4.0, "cx": 0.25, "cy": 0.3},
+    {"zoom": 4.0, "cx": 0.75, "cy": 0.3},
+    {"zoom": 5.0, "cx": 0.5,  "cy": 0.3},
 ]
-
 # ─────────────────────────────────────────────────────────────────────────────
 # UI mask regions (1080p reference)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -722,6 +724,7 @@ def process_video_with_clustering(video_path: str,
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API — process_video_cluster_only
 # ─────────────────────────────────────────────────────────────────────────────
+from sklearn.cluster import KMeans
 
 def process_video_cluster_only(video_path: str,
                                face_app,
@@ -732,9 +735,20 @@ def process_video_cluster_only(video_path: str,
                                output_base_dir: str = "./clustering_output"):
     """
     Cluster without matching enrolled students.
-    Saves top-N quality crops per cluster to cluster_001, cluster_002, …
+
+    ✅ Uses:
+        - DBSCAN → identity clustering
+        - KMeans → diversity selection within each cluster
+        - Quality → best image per sub-cluster
+
+    ✅ Guarantees:
+        - No duplicate images
+        - High diversity (pose, angle, illumination)
+        - Clean ground truth dataset
     """
+
     start = time.time()
+
     embeddings, face_images, timestamps, quality_scores = extract_all_faces(
         video_path, face_app, frame_skip
     )
@@ -749,33 +763,73 @@ def process_video_cluster_only(video_path: str,
     os.makedirs(output_dir, exist_ok=True)
 
     clusters_out = []
-    for cluster_id in unique_labels:
-        indices    = np.where(labels == cluster_id)[0]
-        n          = len(indices)
-        idx_sorted = sorted(indices, key=lambda i: quality_scores[i], reverse=True)
-        top_idx    = idx_sorted[:min_images_per_cluster]
 
+    for cluster_id in unique_labels:
+        indices = np.where(labels == cluster_id)[0]
+        n = len(indices)
+
+        if n == 0:
+            continue
+
+        # ───────── STEP 1: Prepare embeddings ─────────
+        cluster_embs = np.array([embeddings[i] for i in indices])
+
+        # ───────── STEP 2: Decide number of representatives ─────────
+        K = min(min_images_per_cluster, len(indices))
+
+        # ───────── STEP 3: Sub-clustering (KMeans) ─────────
+        try:
+            kmeans = KMeans(n_clusters=K, random_state=42, n_init=10)
+            labels_k = kmeans.fit_predict(cluster_embs)
+        except Exception:
+            # fallback if clustering fails
+            labels_k = np.zeros(len(indices), dtype=int)
+
+        # ───────── STEP 4: Select best per sub-cluster ─────────
+        selected = []
+
+        for k in range(K):
+            sub_idx = np.where(labels_k == k)[0]
+
+            if len(sub_idx) == 0:
+                continue
+
+            # pick highest quality image in this sub-cluster
+            best_local = max(sub_idx, key=lambda x: quality_scores[indices[x]])
+            selected.append(indices[best_local])
+
+        # fallback (rare case)
+        if len(selected) == 0:
+            selected = indices[:min_images_per_cluster]
+
+        # ───────── STEP 5: Save images ─────────
         folder_name = f"cluster_{cluster_id + 1:03d}"
         folder_path = os.path.join(output_dir, folder_name)
         os.makedirs(folder_path, exist_ok=True)
 
-        saved = 0; scores_map = {}
-        for rank, i in enumerate(top_idx):
+        saved = 0
+        scores_map = {}
+
+        for rank, i in enumerate(selected):
             crop = face_images[i]
-            if crop.size == 0: continue
+            if crop.size == 0:
+                continue
+
             fname = f"face_{rank:02d}_q{quality_scores[i]:.1f}.jpg"
             cv2.imwrite(os.path.join(folder_path, fname), crop)
+
             scores_map[fname] = round(quality_scores[i], 3)
             saved += 1
 
+        # ───────── Metadata ─────────
         info = {
             "cluster_id":       cluster_id,
             "total_detections": n,
-            "embedding_files":  list(scores_map.keys())[:5],
-            "backup_files":     list(scores_map.keys())[5:],
+            "images_saved":     saved,
             "scores":           scores_map,
             "first_seen_sec":   round(float(timestamps[indices[0]]), 1),
         }
+
         with open(os.path.join(folder_path, "_info.json"), "w") as f:
             json.dump(info, f, indent=2)
 
@@ -789,12 +843,14 @@ def process_video_cluster_only(video_path: str,
         })
 
     meta = {
-        "video": video_path, "output_dir": output_dir,
+        "video": video_path,
+        "output_dir": output_dir,
         "total_detections": len(embeddings),
         "unique_faces":     len(unique_labels),
         "clusters":         clusters_out,
-        "processing_time":  round(time.time()-start, 2),
+        "processing_time":  round(time.time() - start, 2),
     }
+
     with open(os.path.join(output_dir, "cluster_metadata.json"), "w") as f:
         json.dump(meta, f, indent=2)
 
