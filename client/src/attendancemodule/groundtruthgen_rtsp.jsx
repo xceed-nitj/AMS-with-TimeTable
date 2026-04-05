@@ -371,13 +371,15 @@ export default function GroundTruthRTSP() {
     // ── stop acquisition ──────────────────────────────────────────────────────
     const handleStop = useCallback(async () => {
         setStatus('stopping');
-        addLog('⏹ Sending stop signal…', theme.textMuted);
+        addLog('⏹ Sending stop signal — waiting for final save…', theme.textMuted);
         try {
             await fetch(`${API_BASE}/stop-rtsp-stream`, { method: 'POST' });
         } catch { /* backend may not respond if already stopped */ }
-        // Abort the SSE fetch after the stop signal so the frontend stream
-        // closes cleanly rather than waiting for the backend to drain.
-        if (abortRef.current) abortRef.current.abort();
+        // Do NOT abort the SSE fetch here. The backend runs a final clustering+save
+        // pass after receiving the stop signal and then yields a 'done' event.
+        // Aborting the fetch causes GeneratorExit in the Python generator which
+        // kills the save pass before any photos are written to disk.
+        // The SSE stream will close naturally once the backend sends 'done'.
     }, [addLog]);
 
     const isRunning  = status === 'running';

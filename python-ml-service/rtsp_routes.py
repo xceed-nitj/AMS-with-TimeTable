@@ -376,6 +376,36 @@ def extract_rtsp_stream(req: RTSPRequest):
             cap.release()
             logger.info("VideoCapture released for %s", req.rtspUrl)
 
+        # ── Final save pass ───────────────────────────────────────────────────
+        # Run one last cluster+save on all accumulated embeddings so faces
+        # detected before Stop was clicked are never discarded.
+        if len(all_embeddings) >= req.minSamples:
+            yield sse({"type": "stage",
+                       "message": f"Saving {len(all_embeddings)} buffered detections…"})
+            try:
+                labels, unique_labels = _cluster(
+                    all_embeddings, req.clusterThreshold, req.minSamples)
+
+                next_serial, updated = _save_clusters(
+                    labels, unique_labels,
+                    all_embeddings, all_face_images,
+                    all_timestamps, all_quality,
+                    batch_dir, existing_mean_embs, next_serial,
+                    req.targetImgsPerPerson, person_counts,
+                    req.clusterThreshold,
+                )
+
+                for person_id, new_count in updated.items():
+                    yield sse({
+                        "type":      "person_update",
+                        "person_id": person_id,
+                        "count":     new_count,
+                        "target":    req.targetImgsPerPerson,
+                        "done":      new_count >= req.targetImgsPerPerson,
+                    })
+            except Exception as exc:
+                logger.exception("Final clustering pass failed: %s", exc)
+
         # ── End of loop ───────────────────────────────────────────────────────
         images_saved = sum(person_counts.values())
         elapsed      = round(time.time() - start, 2)

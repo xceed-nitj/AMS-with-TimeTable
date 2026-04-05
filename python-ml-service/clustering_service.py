@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 # FIX-A: skip opening seconds (screen-recorder dialog)
-START_SKIP_SEC = 12
+START_SKIP_SEC = 1
 
 # FIX-C: tile detection grid
 TILE_ROWS    = 4
@@ -28,11 +28,11 @@ ROI_TOP_FRAC    = 0.05   # skip ceiling / timestamp
 ROI_BOTTOM_FRAC = 0.95   # skip empty chairs / floor below
 
 # NMS
-NMS_IOU_THRESH = 0.35
+NMS_IOU_THRESH = 0.5
 
 # Quality filter
 MIN_SHARPNESS = 10.0     # Laplacian variance
-MIN_FACE_PX   = 30      # minimum face side in original-frame pixels
+MIN_FACE_PX   = 15      # minimum face side in original-frame pixels
 
 # FIX-F: tight crop to avoid bleeding into neighbour's face
 FACE_CROP_PAD_FRAC = 1   # was 0.25
@@ -272,16 +272,22 @@ def _digital_zoom(frame: np.ndarray, zoom_factor: float,
 # ─────────────────────────────────────────────────────────────────────────────
 def _detect_faces_tiled(face_app, frame: np.ndarray,
                         ui_mask: np.ndarray = None,
-                        preview_cb=None) -> list:
+                        preview_cb=None,
+                        min_face_px: int = None,
+                        lap_threshold: float = None) -> list:
     """
     Run InsightFace across multiple digital zoom passes.
     Crops are taken from the ZOOMED frame for maximum quality.
     Coordinates are mapped back to original frame space for NMS.
 
-    preview_cb: optional callback(frame, zoom_boxes, current_pass_idx)
+    preview_cb:    optional callback(frame, zoom_boxes, current_pass_idx)
+    min_face_px:   override MIN_FACE_PX constant (smallest accepted face side)
+    lap_threshold: override MIN_SHARPNESS constant (Laplacian variance cutoff)
 
     Returns list of dicts: {bbox, embedding, det_score, quality, crop}
     """
+    _min_face_px   = min_face_px   if min_face_px   is not None else MIN_FACE_PX
+    _lap_threshold = lap_threshold if lap_threshold is not None else MIN_SHARPNESS
     H, W = frame.shape[:2]
 
     if ui_mask is not None:
@@ -379,7 +385,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         # Face size in original frame (for MIN_FACE_PX filter)
         fw = orig_x2 - orig_x1
         fh = orig_y2 - orig_y1
-        if min(fw, fh) < MIN_FACE_PX:
+        if min(fw, fh) < _min_face_px:
             continue
 
         # ── Crop from ZOOMED frame — real zoomed pixels ──
@@ -395,7 +401,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         # Sharpness filter
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         lap  = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-        if lap < MIN_SHARPNESS:
+        if lap < _lap_threshold:
             continue
 
         # Quality score based on original frame face size
@@ -430,18 +436,6 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         })
 
     return results
-# Tiled face detection
-# ─────────────────────────────────────────────────────────────────────────────
-# Digital zoom settings
-ZOOM_PASSES = [
-    {"zoom": 1.0, "cx": 0.5, "cy": 0.5},   # full frame pass
-    {"zoom": 2.0, "cx": 0.25, "cy": 0.4},  # left half zoomed
-    {"zoom": 2.0, "cx": 0.75, "cy": 0.4},  # right half zoomed
-    {"zoom": 2.0, "cx": 0.5,  "cy": 0.4},  # center zoomed
-    {"zoom": 3.0, "cx": 0.25, "cy": 0.3},  # top-left zoomed
-    {"zoom": 3.0, "cx": 0.75, "cy": 0.3},  # top-right zoomed
-    {"zoom": 3.0, "cx": 0.5,  "cy": 0.3},  # top-center zoomed
-]
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API — extract_all_faces
 # ─────────────────────────────────────────────────────────────────────────────
