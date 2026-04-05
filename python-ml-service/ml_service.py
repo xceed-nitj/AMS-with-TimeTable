@@ -15,9 +15,10 @@ from fastapi.staticfiles import StaticFiles
 import state
 from models import SetDetSizeRequest, BuildEmbeddingsRequest
 from clustering_service import INSIGHTFACE_DET_SIZE
-from video_processing   import router as video_router
-from clustering_routes  import router as cluster_router
+from video_processing    import router as video_router
+from clustering_routes   import router as cluster_router
 from ground_truth_routes import router as gt_router
+from rtsp_routes         import router as rtsp_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("ml_service")
@@ -77,6 +78,8 @@ app.add_middleware(
 app.include_router(video_router)
 app.include_router(cluster_router)
 app.include_router(gt_router)
+# app.include_router(rtsp_router)
+app.include_router(rtsp_router)
 
 # Serve ground-truth photos as static files
 if os.path.exists(CLIENT_GROUND_TRUTH):
@@ -112,6 +115,21 @@ def set_det_size(req: SetDetSizeRequest):
         load_model(det_size=req.det_size)
     return {"status": "ok", "det_size": state.current_det_size}
 
+
+@app.get("/test-detection")
+def test_detection():
+    import cv2
+    frame = cv2.imread("test_frame.jpg")
+    if frame is None:
+        return {"error": "Cannot read test_frame.jpg"}
+    faces = state.face_app.get(frame)
+    return {
+        "faces_found": len(faces),
+        "faces": [
+            {"det_score": round(float(f.det_score), 3), "bbox": [round(float(x)) for x in f.bbox]}
+            for f in faces
+        ]
+    }
 
 @app.post("/reload-embeddings")
 def reload_embeddings_ep():

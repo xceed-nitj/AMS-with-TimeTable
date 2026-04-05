@@ -24,18 +24,18 @@ TILE_OVERLAP = 0.25      # 25 % overlap between adjacent tiles
 TILE_UPSCALE = 3.0       # upscale factor before InsightFace
 
 # FIX-B: student seating zone (fraction of frame height)
-ROI_TOP_FRAC    = 0.08   # skip ceiling / timestamp
-ROI_BOTTOM_FRAC = 0.50   # skip empty chairs / floor below
+ROI_TOP_FRAC    = 0.05   # skip ceiling / timestamp
+ROI_BOTTOM_FRAC = 0.95   # skip empty chairs / floor below
 
 # NMS
 NMS_IOU_THRESH = 0.35
 
 # Quality filter
 MIN_SHARPNESS = 30.0     # Laplacian variance
-MIN_FACE_PX   = 15       # minimum face side in original-frame pixels
+MIN_FACE_PX   = 30      # minimum face side in original-frame pixels
 
 # FIX-F: tight crop to avoid bleeding into neighbour's face
-FACE_CROP_PAD_FRAC = 0.10   # was 0.25
+FACE_CROP_PAD_FRAC = 1.5   # was 0.25
 
 # InsightFace
 INSIGHTFACE_DET_SIZE = 640   # always 640; must match build_embeddings_db.py
@@ -157,15 +157,126 @@ def _merge_split_clusters(labels: np.ndarray,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Tiled face detection
+# Tuning knobs — edit here only
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _detect_faces_tiled(face_app, frame: np.ndarray,
-                        ui_mask: np.ndarray = None) -> list:
+# START_SKIP_SEC = 12
+
+# TILE_ROWS    = 4
+# TILE_COLS    = 5
+# TILE_OVERLAP = 0.25
+
+# NMS_IOU_THRESH = 0.35
+
+# MIN_SHARPNESS      = 10.0
+# MIN_FACE_PX        = 15
+# FACE_CROP_PAD_FRAC = 1.5
+
+# INSIGHTFACE_DET_SIZE = 640
+# MERGE_THRESHOLD      = 0.68
+
+# IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Digital zoom passes
+# ─────────────────────────────────────────────────────────────────────────────
+ZOOM_PASSES = [
+    {"zoom": 1.0, "cx": 0.5,  "cy": 0.5},   # full frame
+    {"zoom": 2.0, "cx": 0.25, "cy": 0.4},   # left half
+    {"zoom": 2.0, "cx": 0.75, "cy": 0.4},   # right half
+    {"zoom": 2.0, "cx": 0.5,  "cy": 0.4},   # center
+    {"zoom": 3.0, "cx": 0.25, "cy": 0.3},   # top-left
+    {"zoom": 3.0, "cx": 0.75, "cy": 0.3},   # top-right
+    {"zoom": 3.0, "cx": 0.5,  "cy": 0.3},   # top-center
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UI mask regions (1080p reference)
+# ─────────────────────────────────────────────────────────────────────────────
+UI_MASK_REGIONS_1080P = [
+    (   0,  65,  870, 1920),
+    ( 610, 730,    0,  290),
+    (1000, 1080,   0, 1920),
+]
+
+
+def _build_ui_mask(H: int, W: int) -> np.ndarray:
+    mask = np.ones((H, W), dtype=np.uint8) * 255
+    sy, sx = H / 1080.0, W / 1920.0
+    for (y1r, y2r, x1r, x2r) in UI_MASK_REGIONS_1080P:
+        y1 = int(y1r * sy); y2 = int(y2r * sy)
+        x1 = int(x1r * sx); x2 = int(x2r * sx)
+        mask[y1:y2, x1:x2] = 0
+    return mask
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CLAHE enhancement
+# ─────────────────────────────────────────────────────────────────────────────
+_clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
+def _apply_clahe(bgr: np.ndarray) -> np.ndarray:
+    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    return cv2.cvtColor(cv2.merge((_clahe.apply(l), a, b)), cv2.COLOR_LAB2BGR)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Digital zoom helper
+# ─────────────────────────────────────────────────────────────────────────────
+def _digital_zoom(frame: np.ndarray, zoom_factor: float,
+                  cx_frac: float = 0.5, cy_frac: float = 0.4):
     """
-    Run InsightFace on a 4×5 overlapping tile grid.
-    Each tile is CLAHE-enhanced then upscaled 3× before detection.
-    All coordinates are mapped back to original frame space.
+    Crop a region and stretch it back to full frame size.
+    Returns:
+        zoomed      : stretched frame (same W×H as input)
+        off_x       : x offset of crop in original frame
+        off_y       : y offset of crop in original frame
+        scale_back  : multiply zoomed coords by this to get original coords
+        bbox        : (x1, y1, x2, y2) of zoom region in original frame
+    """
+    H, W = frame.shape[:2]
+
+    crop_w = int(W / zoom_factor)
+    crop_h = int(H / zoom_factor)
+
+    cx = int(W * cx_frac)
+    cy = int(H * cy_frac)
+
+    x1 = max(0, cx - crop_w // 2)
+    y1 = max(0, cy - crop_h // 2)
+    x2 = min(W, x1 + crop_w)
+    y2 = min(H, y1 + crop_h)
+
+    # Adjust if hitting edges
+    if x2 == W: x1 = max(0, W - crop_w)
+    if y2 == H: y1 = max(0, H - crop_h)
+    x2 = min(W, x1 + crop_w)
+    y2 = min(H, y1 + crop_h)
+
+    zoomed_crop = frame[y1:y2, x1:x2]
+    zoomed      = cv2.resize(zoomed_crop, (W, H),
+                             interpolation=cv2.INTER_LANCZOS4)
+
+    # scale_back: zoomed pixel → original frame pixel
+    # zoomed is W wide but represents crop_w original pixels
+    scale_back = crop_w / W   # = 1 / zoom_factor
+
+    return zoomed, x1, y1, scale_back, (x1, y1, x2, y2)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main detection function
+# ─────────────────────────────────────────────────────────────────────────────
+def _detect_faces_tiled(face_app, frame: np.ndarray,
+                        ui_mask: np.ndarray = None,
+                        preview_cb=None) -> list:
+    """
+    Run InsightFace across multiple digital zoom passes.
+    Crops are taken from the ZOOMED frame for maximum quality.
+    Coordinates are mapped back to original frame space for NMS.
+
+    preview_cb: optional callback(frame, zoom_boxes, current_pass_idx)
 
     Returns list of dicts: {bbox, embedding, det_score, quality, crop}
     """
@@ -175,102 +286,141 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         frame = frame.copy()
         frame[ui_mask == 0] = 0
 
-    # Student ROI  (FIX-B)
-    roi_y1 = int(H * ROI_TOP_FRAC)
-    roi_y2 = int(H * ROI_BOTTOM_FRAC)
-    roi    = frame[roi_y1:roi_y2, :]
-    roi_H, roi_W = roi.shape[:2]
+    # raw entries: (orig_x1, orig_y1, orig_x2, orig_y2,
+    #               embedding, det_score,
+    #               zoomed_frame, zx1, zy1, zx2, zy2)
+    raw        = []
+    zoom_boxes = []
 
-    step_h = roi_H // TILE_ROWS
-    step_w = roi_W // TILE_COLS
-    tile_h = int(step_h * (1 + TILE_OVERLAP))
-    tile_w = int(step_w * (1 + TILE_OVERLAP))
+    for pass_idx, pass_cfg in enumerate(ZOOM_PASSES):
 
-    raw = []   # (x1, y1, x2, y2, embedding, det_score)
+        zoomed, off_x, off_y, scale_back, bbox = _digital_zoom(
+            frame,
+            zoom_factor=pass_cfg["zoom"],
+            cx_frac=pass_cfg["cx"],
+            cy_frac=pass_cfg["cy"],
+        )
+        zoom_boxes.append(bbox)
 
-    for r in range(TILE_ROWS):
-        for c in range(TILE_COLS):
-            ty1 = r * step_h
-            tx1 = c * step_w
-            ty2 = min(ty1 + tile_h, roi_H)
-            tx2 = min(tx1 + tile_w, roi_W)
-            tile = roi[ty1:ty2, tx1:tx2]
-            if tile.size == 0:
-                continue
+        # Send preview with current pass highlighted
+        if preview_cb:
+            preview_cb(frame, zoom_boxes, pass_idx)
 
-            # FIX-D + FIX-C
-            tile_up = cv2.resize(
-                _apply_clahe(tile),
-                (int(tile.shape[1] * TILE_UPSCALE),
-                 int(tile.shape[0] * TILE_UPSCALE)),
-                interpolation=cv2.INTER_LANCZOS4
-            )
+        # CLAHE enhance the zoomed frame
+        enhanced = _apply_clahe(zoomed)
 
-            try:
-                faces = face_app.get(tile_up)
-            except Exception as e:
-                logger.warning(f"InsightFace error tile({r},{c}): {e}")
-                continue
+        try:
+            faces = face_app.get(enhanced)
+        except Exception as e:
+            logger.warning(
+                f"InsightFace error pass={pass_idx} "
+                f"zoom={pass_cfg['zoom']}: {e}")
+            continue
 
-            for face in faces:
-                b  = face.bbox
-                x1 = int(tx1 + b[0] / TILE_UPSCALE)
-                y1 = int(ty1 + b[1] / TILE_UPSCALE) + roi_y1
-                x2 = int(tx1 + b[2] / TILE_UPSCALE)
-                y2 = int(ty1 + b[3] / TILE_UPSCALE) + roi_y1
-                x1 = max(0, x1); y1 = max(0, y1)
-                x2 = min(W, x2); y2 = min(H, y2)
-                raw.append((x1, y1, x2, y2, face.embedding,
-                             float(getattr(face, "det_score", 1.0))))
+        for face in faces:
+            b = face.bbox  # coords in zoomed (W×H) space
+
+            # ── Map back to original frame coordinates ──
+            orig_x1 = int(off_x + b[0] * scale_back)
+            orig_y1 = int(off_y + b[1] * scale_back)
+            orig_x2 = int(off_x + b[2] * scale_back)
+            orig_y2 = int(off_y + b[3] * scale_back)
+            orig_x1 = max(0, orig_x1); orig_y1 = max(0, orig_y1)
+            orig_x2 = min(W, orig_x2); orig_y2 = min(H, orig_y2)
+
+            # ── Keep bbox in zoomed space for high-quality crop ──
+            zx1 = max(0, int(b[0]))
+            zy1 = max(0, int(b[1]))
+            zx2 = min(W, int(b[2]))
+            zy2 = min(H, int(b[3]))
+
+            raw.append((
+                orig_x1, orig_y1, orig_x2, orig_y2,
+                face.embedding,
+                float(getattr(face, "det_score", 1.0)),
+                enhanced,       # zoomed+CLAHE frame
+                zx1, zy1, zx2, zy2,
+            ))
 
     if not raw:
         return []
 
-    # NMS across all tiles
-    boxes_wh   = [(x1, y1, x2-x1, y2-y1) for (x1,y1,x2,y2,_,__) in raw]
+    # ── NMS in original frame coordinates ────────────────────────────────────
     keep_idx   = []
     keep_boxes = []
-    for i, (x1,y1,w,h) in enumerate(boxes_wh):
+
+    for i, (x1, y1, x2, y2, *_rest) in enumerate(raw):
+        w = x2 - x1
+        h = y2 - y1
         dup = False
-        for (kx,ky,kw,kh) in keep_boxes:
+        for (kx, ky, kw, kh) in keep_boxes:
             ix    = max(0, min(x1+w, kx+kw) - max(x1, kx))
             iy    = max(0, min(y1+h, ky+kh) - max(y1, ky))
             inter = ix * iy
             union = w*h + kw*kh - inter
-            if union > 0 and inter/union > NMS_IOU_THRESH:
-                dup = True; break
+            if union > 0 and inter / union > NMS_IOU_THRESH:
+                dup = True
+                break
         if not dup:
             keep_idx.append(i)
-            keep_boxes.append((x1,y1,w,h))
+            keep_boxes.append((x1, y1, w, h))
 
+    # ── Build results — crop from zoomed frame ────────────────────────────────
     results = []
+
     for i in keep_idx:
-        x1, y1, x2, y2, emb, det_score = raw[i]
-        fw, fh = x2-x1, y2-y1
+        (orig_x1, orig_y1, orig_x2, orig_y2,
+         emb, det_score,
+         zoomed_frame,
+         zx1, zy1, zx2, zy2) = raw[i]
+
+        # Face size in original frame (for MIN_FACE_PX filter)
+        fw = orig_x2 - orig_x1
+        fh = orig_y2 - orig_y1
         if min(fw, fh) < MIN_FACE_PX:
             continue
 
-        # FIX-F: tight crop (10 % pad, was 25 %)
-        pad  = int(max(fw, fh) * FACE_CROP_PAD_FRAC)
-        cx1  = max(0, x1-pad); cy1 = max(0, y1-pad)
-        cx2  = min(W, x2+pad); cy2 = min(H, y2+pad)
-        crop = frame[cy1:cy2, cx1:cx2]
+        # ── Crop from ZOOMED frame — real zoomed pixels ──
+        zfw = zx2 - zx1
+        zfh = zy2 - zy1
+        pad = int(max(zfw, zfh) * FACE_CROP_PAD_FRAC)
+        cx1 = max(0, zx1 - pad); cy1 = max(0, zy1 - pad)
+        cx2 = min(W, zx2 + pad); cy2 = min(H, zy2 + pad)
+        crop = zoomed_frame[cy1:cy2, cx1:cx2]
         if crop.size == 0:
             continue
 
+        # Sharpness filter
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         lap  = float(cv2.Laplacian(gray, cv2.CV_64F).var())
         if lap < MIN_SHARPNESS:
             continue
 
-        quality = float(det_score * ((fw*fh)**0.5) * min(lap, 500) / 500)
+        # Quality score based on original frame face size
+        quality = float(
+            det_score * ((fw * fh) ** 0.5) * min(lap, 500) / 500)
 
         norm = np.linalg.norm(emb)
         if norm == 0:
             continue
 
+        # ── Upscale to minimum 400×400 if still small ──
+        ch, cw = crop.shape[:2]
+        target = 400
+        if cw < target or ch < target:
+            scale_up = max(target / cw, target / ch)
+            new_w    = int(cw * scale_up)
+            new_h    = int(ch * scale_up)
+            crop     = cv2.resize(crop, (new_w, new_h),
+                                  interpolation=cv2.INTER_LANCZOS4)
+
+        # ── Unsharp mask sharpening ──
+        blur = cv2.GaussianBlur(crop, (0, 0), 3)
+        crop = cv2.addWeighted(crop, 1.8, blur, -0.8, 0)
+        crop = np.clip(crop, 0, 255).astype(np.uint8)
+
         results.append({
-            "bbox":      [x1, y1, x2, y2],
+            "bbox":      [orig_x1, orig_y1, orig_x2, orig_y2],
             "embedding": emb / norm,
             "det_score": det_score,
             "quality":   quality,
@@ -278,8 +428,18 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         })
 
     return results
-
-
+# Tiled face detection
+# ─────────────────────────────────────────────────────────────────────────────
+# Digital zoom settings
+ZOOM_PASSES = [
+    {"zoom": 1.0, "cx": 0.5, "cy": 0.5},   # full frame pass
+    {"zoom": 2.0, "cx": 0.25, "cy": 0.4},  # left half zoomed
+    {"zoom": 2.0, "cx": 0.75, "cy": 0.4},  # right half zoomed
+    {"zoom": 2.0, "cx": 0.5,  "cy": 0.4},  # center zoomed
+    {"zoom": 3.0, "cx": 0.25, "cy": 0.3},  # top-left zoomed
+    {"zoom": 3.0, "cx": 0.75, "cy": 0.3},  # top-right zoomed
+    {"zoom": 3.0, "cx": 0.5,  "cy": 0.3},  # top-center zoomed
+]
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API — extract_all_faces
 # ─────────────────────────────────────────────────────────────────────────────
@@ -352,8 +512,8 @@ def extract_all_faces(video_path: str,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def cluster_faces(embeddings: list,
-                  cluster_threshold: float = 0.45,
-                  min_samples: int = 3):
+                  cluster_threshold: float = 0.5,
+                  min_samples: int = 5):
     """
     DBSCAN clustering followed by a post-merge pass (FIX-G).
 
@@ -566,8 +726,8 @@ def process_video_with_clustering(video_path: str,
 def process_video_cluster_only(video_path: str,
                                face_app,
                                frame_skip: int = 5,
-                               cluster_threshold: float = 0.45,
-                               min_samples: int = 3,
+                               cluster_threshold: float = 0.5,
+                               min_samples: int = 5,
                                min_images_per_cluster: int = 5,
                                output_base_dir: str = "./clustering_output"):
     """
