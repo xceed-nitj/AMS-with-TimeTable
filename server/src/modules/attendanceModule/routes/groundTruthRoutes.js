@@ -137,4 +137,108 @@ router.post('/run-attendance', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+
+
+// ─── Live RTSP Ground Truth (SSE streaming) ───────────────────────
+
+const http = require('http');
+
+router.post('/extract-rtsp-stream', (req, res) => {
+    const body = JSON.stringify(req.body);
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8500,
+        path: '/extract-rtsp-stream',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+        },
+    };
+
+    const proxy = http.request(options, (mlRes) => {
+        mlRes.on('data', (chunk) => {
+            if (!res.writableEnded) res.write(chunk);
+        });
+
+        mlRes.on('end', () => {
+            if (!res.writableEnded) res.end();
+        });
+
+        mlRes.on('error', (err) => {
+            console.error('ML stream error:', err.message);
+            if (!res.writableEnded) res.end();
+        });
+    });
+
+    proxy.on('error', (err) => {
+        console.error('RTSP proxy error:', err.message);
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: 'ML service unavailable' })}\n\n`);
+            res.end();
+        }
+    });
+
+    // Only destroy proxy when response is closed, not request
+    res.on('close', () => {
+        console.log('Response closed — aborting ML stream');
+        proxy.destroy();
+    });
+
+    proxy.write(body);
+    proxy.end();
+});
+
+router.post('/stop-rtsp-stream', (req, res) => {
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8500,
+        path: '/stop-rtsp-stream',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    };
+
+    const proxy = http.request(options, (mlRes) => {
+        let data = '';
+        mlRes.on('data', chunk => data += chunk);
+        mlRes.on('end', () => {
+            try { res.json(JSON.parse(data)); }
+            catch { res.json({ status: 'ok' }); }
+        });
+    });
+
+    proxy.on('error', (err) => {
+        console.error('Stop proxy error:', err.message);
+        res.status(502).json({ error: 'ML service unavailable' });
+    });
+
+    proxy.end();
+});
+
+router.get('/rtsp-preview', (req, res) => {
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8500,
+        path: '/rtsp-preview',
+        method: 'GET',
+    };
+    const proxy = http.request(options, (mlRes) => {
+        res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=frame');
+        res.setHeader('Cache-Control', 'no-cache');
+        mlRes.pipe(res);
+    });
+    proxy.on('error', (err) => {
+        res.status(502).end();
+    });
+    res.on('close', () => proxy.destroy());
+    proxy.end();
+});
+
 module.exports = router;

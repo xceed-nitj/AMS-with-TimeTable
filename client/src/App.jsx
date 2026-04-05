@@ -204,6 +204,7 @@ import FlaggedAssign from './attendancemodule/flaggedassign';
 import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
 import AttendanceReport from './attendancemodule/AttendanceReport';
+import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
 
 function App() {
   return (
@@ -609,6 +610,7 @@ function App() {
           <Route path="groundtruth/assign" element={<RollAssign />} />
           <Route path="groundtruth/flagged" element={<FlaggedAssign />} />
           <Route path="groundtruth/edit" element={<EditGroundTruth />} />
+          <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
           <Route path="reports" element={<AttendanceReport />} />
