@@ -216,7 +216,7 @@ def extract_rtsp_stream(req: RTSPRequest):
     def generate():
         def sse(obj):
             return f"data: {json.dumps(obj)}\n\n"
-
+        print("🟢 GENERATOR STARTED", flush=True)   
         _stop_event.clear()
 
         batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
@@ -234,7 +234,7 @@ def extract_rtsp_stream(req: RTSPRequest):
                     req.targetImgsPerPerson, req.minSamples, req.clusterThreshold)
 
         yield sse({"type": "stage", "message": f"Connecting to {req.rtspUrl}…"})
-
+        
         cap = _open_capture(req.rtspUrl)
 
         if not cap.isOpened():
@@ -345,14 +345,21 @@ def extract_rtsp_stream(req: RTSPRequest):
                 logger.debug("Frame #%d  seq=%d  t=%.2fs  shape=%s",
                              frame_count, seq, ts, frame.shape)
 
+                # t_detect = time.time()
+                print(f"⏳ Frame {frame_count} — starting detection t={ts}s", flush=True)
                 t_detect = time.time()
-                detections = _detect_faces_tiled(
-                    state.face_app, frame, ui_mask,
-                    preview_cb=_update_preview,
-                )
+                try:
+                    detections = _detect_faces_tiled(
+                        state.face_app, frame, ui_mask,
+                        preview_cb=_update_preview,
+                    )
+                except Exception as e:
+                    print(f"🔴 DETECTION CRASHED frame={frame_count}: {type(e).__name__}: {e}", flush=True)
+                    import traceback; traceback.print_exc()
+                    detections = []
                 detect_ms        = (time.time() - t_detect) * 1000
                 faces_this_frame = len(detections)
-
+                print(f"✅ Frame {frame_count} done | {detect_ms:.0f}ms | {faces_this_frame} faces | total={len(all_embeddings)}", flush=True)
                 for d in detections:
                     all_embeddings.append(d["embedding"])
                     all_face_images.append(d["crop"])
@@ -368,6 +375,8 @@ def extract_rtsp_stream(req: RTSPRequest):
                     "frame":            frame_count,
                     "faces_this_frame": faces_this_frame,
                 })
+                yield sse({"type": "ping"})
+
 
                 # ── Collect finished clustering results ───────────────────────
                 if cluster_future is not None and cluster_future.done():
@@ -475,6 +484,7 @@ def extract_rtsp_stream(req: RTSPRequest):
             logger.info("Session summary: frames=%d  embeddings=%d  persons=%d  elapsed=%.1fs",
                         frame_count, len(all_embeddings), len(person_counts),
                         time.time() - start)
+            print("GENERATOR FINALLY BLOCK REACHED", flush=True)
 
         # ── Final save pass ───────────────────────────────────────────────────
         # Run one last cluster+save on all accumulated embeddings so faces

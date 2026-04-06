@@ -21,6 +21,7 @@ import numpy as np
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from sklearn.cluster import DBSCAN as _DBSCAN
+from fastapi import Body
 
 import state
 from models import (
@@ -99,8 +100,11 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
 
         import time
         start = time.time()
-
-        cap          = cv2.VideoCapture(req.videoPath)
+# REPLACE WITH:
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+    "rtsp_transport;tcp|buffer_size;1048576|max_delay;500000"
+)
+        cap = cv2.VideoCapture(req.videoPath, cv2.CAP_FFMPEG)
         fps          = cap.get(cv2.CAP_PROP_FPS) or 25
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         H            = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -232,8 +236,9 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
             for (crop, quality, ts_, idx) in new_dets:
                 if crop.size == 0:
                     continue
-                fname = f"gt_{ts_:.1f}s_f{idx}.jpg"
-                cv2.imwrite(os.path.join(folder_path, fname), crop)
+                fname = f"gt_{ts_:.1f}s_f{idx}.png"
+                cv2.imwrite(os.path.join(folder_path, fname), crop,
+            [cv2.IMWRITE_PNG_COMPRESSION, 1]) 
                 info["scores"][fname] = round(quality, 4)
                 saved += 1
             all_imgs = [f for f in os.listdir(folder_path) if f.lower().endswith(IMG_EXTS)]
@@ -550,3 +555,104 @@ def get_student_ground_truth(batch_name: str, roll_no: str):
         "total_images":     len(all_imgs),
         "has_info":         bool(ef or bf),
     }
+
+# ─── RTSP Live Preview (MJPEG) ───────────────────────────────────────────────
+
+import threading
+
+_preview_frame      = None
+_preview_lock       = threading.Lock()
+_preview_cap        = None
+_preview_thread     = None
+_preview_stop_event = threading.Event()
+
+
+def _preview_reader(rtsp_url: str, stop_event: threading.Event):
+    """Background thread — continuously reads latest frame from RTSP."""
+    global _preview_frame, _preview_cap
+
+    os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+        "rtsp_transport;tcp|buffer_size;1048576|max_delay;500000"
+    )
+    cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+    _preview_cap = cap
+
+    while not stop_event.is_set():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Enforce minimum 960px width for preview quality
+        h, w = frame.shape[:2]
+        if w < 960:
+            scale = 960 / w
+            frame = cv2.resize(frame, (960, int(h * scale)),
+                               interpolation=cv2.INTER_LANCZOS4)
+
+        with _preview_lock:
+            _preview_frame = frame.copy()
+
+    cap.release()
+
+
+@router.post("/start-preview")
+def start_preview(body: dict = Body(...)):
+    global _preview_thread, _preview_stop_event
+
+    rtsp_url = body.get("rtspUrl")
+    if not rtsp_url:
+        raise HTTPException(status_code=400, detail="rtspUrl required")
+
+    # Stop existing preview thread if running
+    _preview_stop_event.set()
+    if _preview_thread and _preview_thread.is_alive():
+        _preview_thread.join(timeout=3)
+
+    _preview_stop_event = threading.Event()
+    _preview_thread = threading.Thread(
+        target=_preview_reader,
+        args=(rtsp_url, _preview_stop_event),
+        daemon=True,
+    )
+    _preview_thread.start()
+    return {"status": "ok"}
+
+
+@router.get("/rtsp-preview")
+def rtsp_preview(quality: int = 92, scale: float = 1.0):
+    """MJPEG stream endpoint — one persistent connection per session."""
+
+    def frame_generator():
+        while True:
+            with _preview_lock:
+                frame = _preview_frame.copy() if _preview_frame is not None else None
+
+            if frame is None:
+                import time; time.sleep(0.05)
+                continue
+
+            # Optional downscale for bandwidth (scale param from frontend)
+            if scale != 1.0 and 0.1 < scale < 1.0:
+                h, w  = frame.shape[:2]
+                frame = cv2.resize(frame,
+                                   (int(w * scale), int(h * scale)),
+                                   interpolation=cv2.INTER_AREA)
+
+            # High-quality JPEG encode — quality param from frontend
+            encode_params = [cv2.IMWRITE_JPEG_QUALITY, min(max(quality, 50), 95)]
+            _, buf = cv2.imencode('.jpg', frame, encode_params)
+
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n"
+                + buf.tobytes()
+                + b"\r\n"
+            )
+
+            import time; time.sleep(1 / 15)  # 15 fps preview
+
+    return StreamingResponse(
+        frame_generator(),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={"Cache-Control": "no-cache"},
+    )
