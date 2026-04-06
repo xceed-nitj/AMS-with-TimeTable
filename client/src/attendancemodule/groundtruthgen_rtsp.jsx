@@ -212,14 +212,30 @@ export default function GroundTruthRTSP() {
     const [minSamples, setMinSamples] = useState(3);
     const [clusterThr, setClusterThr] = useState(0.45);
 
-    const [status,  setStatus]  = useState('idle');  // idle | running | stopping | done | error
-    const [log,     setLog]     = useState([]);
-    const [persons, setPersons] = useState({});       // { person_001: { count, done } }
-    const [summary, setSummary] = useState(null);
-    const [toast,   setToast]   = useState(null);
+    const [status,        setStatus]        = useState('idle');  // idle | running | stopping | retrying | done | error
+    const [log,           setLog]           = useState([]);
+    const [persons,       setPersons]       = useState({});
+    const [summary,       setSummary]       = useState(null);
+    const [toast,         setToast]         = useState(null);
+    const [retryCount,    setRetryCount]    = useState(0);
+    const [retryCountdown, setRetryCountdown] = useState(0);
 
-    const logRef    = useRef(null);
-    const abortRef  = useRef(null);   // AbortController for the fetch
+    const logRef          = useRef(null);
+    const abortRef        = useRef(null);
+    const retryTimerRef   = useRef(null);
+    const retryTickRef    = useRef(null);
+    const handleStartRef  = useRef(null);   // always points to latest handleStart
+
+    const RETRY_DELAY = 5;   // seconds before auto-restart
+
+    const clearRetry = useCallback(() => {
+        if (retryTimerRef.current)  { clearTimeout(retryTimerRef.current);   retryTimerRef.current  = null; }
+        if (retryTickRef.current)   { clearInterval(retryTickRef.current);   retryTickRef.current   = null; }
+        setRetryCountdown(0);
+    }, []);
+
+    // Clean up timers on unmount
+    useEffect(() => () => clearRetry(), [clearRetry]);
 
     const batchName = degree && department && year
         ? `${degree}_${department}_${year}`.toUpperCase()
@@ -245,6 +261,7 @@ export default function GroundTruthRTSP() {
     const handleStart = useCallback(async () => {
         if (!batchName) { showToast('Fill in Degree, Department and Year', 'error'); return; }
 
+        clearRetry();
         setStatus('running');
         setLog([]);
         setPersons({});
@@ -322,6 +339,7 @@ export default function GroundTruthRTSP() {
                             break;
 
                         case 'done':
+                            setRetryCount(0);
                             setStatus('done');
                             setSummary({
                                 peopleDetected: ev.people_detected,
@@ -359,32 +377,47 @@ export default function GroundTruthRTSP() {
         } catch (err) {
             if (err.name === 'AbortError') {
                 addLog('⏹ Stream stopped by user', theme.textMuted);
+                setRetryCount(0);
                 setStatus('done');
             } else {
-                addLog(`❌ ${err.message}`, theme.danger);
-                showToast('Acquisition failed: ' + err.message, 'error');
-                setStatus('error');
+                const attempt = retryCount + 1;
+                setRetryCount(attempt);
+                addLog(`❌ ${err.message} — retrying in ${RETRY_DELAY}s (attempt ${attempt})…`, theme.danger);
+                setStatus('retrying');
+                setRetryCountdown(RETRY_DELAY);
+
+                retryTickRef.current = setInterval(() => {
+                    setRetryCountdown(n => {
+                        if (n <= 1) { clearInterval(retryTickRef.current); retryTickRef.current = null; return 0; }
+                        return n - 1;
+                    });
+                }, 1000);
+
+                retryTimerRef.current = setTimeout(() => {
+                    handleStartRef.current?.();
+                }, RETRY_DELAY * 1000);
             }
         }
-    }, [batchName, selectedCamera, detSize, frameSkip, targetImgs, minSamples, clusterThr, addLog]);
+    }, [batchName, selectedCamera, detSize, frameSkip, targetImgs, minSamples, clusterThr, addLog, retryCount, clearRetry]);
+
+    // keep ref in sync so retry timeout always calls the latest handleStart
+    handleStartRef.current = handleStart;
 
     // ── stop acquisition ──────────────────────────────────────────────────────
     const handleStop = useCallback(async () => {
+        clearRetry();
+        setRetryCount(0);
         setStatus('stopping');
         addLog('⏹ Sending stop signal — waiting for final save…', theme.textMuted);
         try {
             await fetch(`${API_BASE}/stop-rtsp-stream`, { method: 'POST' });
         } catch { /* backend may not respond if already stopped */ }
-        // Do NOT abort the SSE fetch here. The backend runs a final clustering+save
-        // pass after receiving the stop signal and then yields a 'done' event.
-        // Aborting the fetch causes GeneratorExit in the Python generator which
-        // kills the save pass before any photos are written to disk.
-        // The SSE stream will close naturally once the backend sends 'done'.
-    }, [addLog]);
+    }, [addLog, clearRetry]);
 
-    const isRunning  = status === 'running';
-    const isStopping = status === 'stopping';
-    const isDone     = status === 'done';
+    const isRunning   = status === 'running';
+    const isStopping  = status === 'stopping';
+    const isRetrying  = status === 'retrying';
+    const isDone      = status === 'done';
     const isError    = status === 'error';
     const isIdle     = status === 'idle';
 
@@ -560,10 +593,10 @@ export default function GroundTruthRTSP() {
             <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
                 <button
                     onClick={handleStart}
-                    disabled={isRunning || isStopping || !batchName}
+                    disabled={isRunning || isStopping || isRetrying || !batchName}
                     style={{
                         ...styles.btnPrimary,
-                        opacity: (isRunning || isStopping || !batchName) ? 0.5 : 1,
+                        opacity: (isRunning || isStopping || isRetrying || !batchName) ? 0.5 : 1,
                         minWidth: 200,
                     }}
                 >
@@ -584,24 +617,55 @@ export default function GroundTruthRTSP() {
 
                 <button
                     onClick={handleStop}
-                    disabled={!isRunning}
+                    disabled={!isRunning && !isRetrying}
                     style={{
-                        padding: '10px 24px', borderRadius: 8, cursor: isRunning ? 'pointer' : 'default',
+                        padding: '10px 24px', borderRadius: 8,
+                        cursor: (isRunning || isRetrying) ? 'pointer' : 'default',
                         fontSize: '14px', fontWeight: 700, border: `1px solid ${theme.danger}`,
-                        background: isRunning ? theme.dangerDim : 'transparent',
-                        color: isRunning ? theme.danger : theme.border,
-                        transition: 'all 0.15s', opacity: isRunning ? 1 : 0.4,
+                        background: (isRunning || isRetrying) ? theme.dangerDim : 'transparent',
+                        color: (isRunning || isRetrying) ? theme.danger : theme.border,
+                        transition: 'all 0.15s', opacity: (isRunning || isRetrying) ? 1 : 0.4,
                     }}
                 >
                     {isStopping ? '⏳ Stopping…' : '⏹ Stop'}
                 </button>
             </div>
 
+            {/* ── Auto-retry banner ── */}
+            {isRetrying && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
+                    padding: '12px 16px', borderRadius: 8,
+                    background: theme.dangerDim, border: `1px solid ${theme.danger}`,
+                }}>
+                    <span style={{ fontSize: '20px', lineHeight: 1 }}>⚠</span>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: theme.danger }}>
+                            Network error — reconnecting in {retryCountdown}s
+                        </div>
+                        <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
+                            Attempt #{retryCount} · persons kept from previous run
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleStop}
+                        style={{
+                            padding: '6px 14px', borderRadius: 6, cursor: 'pointer',
+                            fontSize: '12px', fontWeight: 700,
+                            border: `1px solid ${theme.danger}`,
+                            background: 'transparent', color: theme.danger,
+                        }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            )}
+
             {/* ── Live status panel ── */}
-            {(isRunning || isStopping || isDone || isError) && (
+            {(isRunning || isStopping || isRetrying || isDone || isError) && (
                 <div style={{
                     ...styles.card, marginBottom: 20,
-                    borderColor: isRunning ? theme.accent : isDone ? theme.success : theme.danger,
+                    borderColor: isRunning ? theme.accent : isDone ? theme.success : isRetrying ? theme.danger : theme.danger,
                 }}>
                     {/* Status bar */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -613,10 +677,11 @@ export default function GroundTruthRTSP() {
                             fontWeight: 700, fontSize: '14px',
                             color: isRunning ? theme.accent : isDone ? theme.success : theme.danger,
                         }}>
-                            {isRunning  && `Acquiring from ${selectedCamera?.label}…`}
-                            {isStopping && 'Stopping stream…'}
-                            {isDone     && 'Acquisition complete'}
-                            {isError    && 'Acquisition failed'}
+                            {isRunning   && `Acquiring from ${selectedCamera?.label}…`}
+                            {isStopping  && 'Stopping stream…'}
+                            {isRetrying  && `Reconnecting… (attempt #${retryCount})`}
+                            {isDone      && 'Acquisition complete'}
+                            {isError     && 'Acquisition failed'}
                         </span>
 
                         {totalPersons > 0 && (
