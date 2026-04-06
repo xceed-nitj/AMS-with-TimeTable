@@ -6,7 +6,7 @@ import json
 import time
 import logging
 import threading
-import queue
+from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 import numpy as np
@@ -39,39 +39,73 @@ _preview_lock  = threading.Lock()
 # requests, which manifests as network errors on the frontend.
 # Each request now owns its own capture and releases it on exit.
 
-# READ_TIMEOUT_SEC: how long cap.read() is allowed to block before we treat
-# the frame as dropped and attempt a reconnect.
-READ_TIMEOUT_SEC = 5.0
 
-
-def _read_frame_with_timeout(cap, timeout=READ_TIMEOUT_SEC):
+class _RTSPReader:
     """
-    Run cap.read() in a daemon thread so the caller is never blocked
-    longer than `timeout` seconds.  Returns (ret, frame) or (False, None).
+    Background thread that drains the RTSP stream at full TCP speed.
+
+    For every frame it calls cap.grab() — which reads the compressed packet
+    off the network socket without decoding (~0.1 ms).  Only every
+    `decode_every` grabs does it also call cap.retrieve() to decode the
+    frame.  This keeps the TCP socket drained regardless of how slow face
+    detection is, while still delivering decoded frames to the main loop.
+
+    grab() and retrieve() are both called from the same background thread,
+    which is the only safe way to interleave them per OpenCV docs.
     """
-    result_q = queue.Queue(maxsize=1)
 
-    def _worker():
-        try:
-            result_q.put(cap.read())
-        except Exception:
-            result_q.put((False, None))
+    def __init__(self, cap: cv2.VideoCapture, decode_every: int = 1):
+        self._cap          = cap
+        self._decode_every = max(decode_every, 1)
+        self._lock         = threading.Lock()
+        self._frame        = None
+        self._ok           = True
+        self._seq          = 0
+        self._n            = 0          # grab counter
+        self._stop         = threading.Event()
+        self._t            = threading.Thread(target=self._run, daemon=True)
+        self._t.start()
 
-    t = threading.Thread(target=_worker, daemon=True)
-    t.start()
-    try:
-        return result_q.get(timeout=timeout)
-    except queue.Empty:
-        logger.warning("cap.read() timed out after %ss", timeout)
-        return False, None
+    def _run(self):
+        # Always use cap.read() (grab + decode) — never mix grab-only with
+        # read() on the same capture.  Mixing them leaves the FFmpeg async
+        # decoder in an inconsistent state and triggers the assertion:
+        #   "Assertion fctx->async_lock failed at pthread_frame.c"
+        # We decode every frame but only store every decode_every-th one.
+        # The CPU cost of discarded decodes is negligible compared to detection.
+        while not self._stop.is_set():
+            try:
+                ret, frame = self._cap.read()
+            except Exception as exc:
+                logger.debug("_RTSPReader._run exiting: %s", exc)
+                with self._lock:
+                    self._ok = False
+                break
+            with self._lock:
+                self._ok = ret
+                if ret and self._n % self._decode_every == 0:
+                    self._frame = frame
+                    self._seq  += 1
+            self._n += 1
+            if not ret:
+                break   # stream died — main loop will reconnect
+
+    def latest(self):
+        """Return (ok, frame, seq, grab_n). Non-blocking."""
+        with self._lock:
+            return self._ok, self._frame, self._seq, self._n
+
+    def release(self):
+        self._stop.set()
+        self._cap.release()
 
 
 def _open_capture(rtsp_url: str) -> cv2.VideoCapture:
     """Open a fresh RTSP capture with TCP transport."""
     url = rtsp_url if "rtsp_transport" in rtsp_url else rtsp_url + "?rtsp_transport=tcp"
     cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
-    # Keep internal buffer tiny so we always get the latest frame.
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
+    # Minimal buffer — we drain the stream via grab() so 1 slot is enough.
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
     return cap
 
 
@@ -181,8 +215,6 @@ def extract_rtsp_stream(req: RTSPRequest):
 
     def generate():
         def sse(obj):
-            # FIX: include charset so browsers/proxies don't misinterpret the
-            # stream encoding and drop buffered SSE chunks.
             return f"data: {json.dumps(obj)}\n\n"
 
         _stop_event.clear()
@@ -192,13 +224,21 @@ def extract_rtsp_stream(req: RTSPRequest):
 
         start = time.time()
 
+        logger.info("─" * 60)
+        logger.info("RTSP session starting")
+        logger.info("  url        : %s", req.rtspUrl)
+        logger.info("  batch      : %s", req.batch)
+        logger.info("  frameSkip  : %s  (decode every %s frames)", req.frameSkip, req.frameSkip)
+        logger.info("  detSize    : %s", req.detSize)
+        logger.info("  target/person: %s  minSamples: %s  clusterThr: %s",
+                    req.targetImgsPerPerson, req.minSamples, req.clusterThreshold)
+
         yield sse({"type": "stage", "message": f"Connecting to {req.rtspUrl}…"})
 
-        # FIX: Use _open_capture() instead of the removed global helper so
-        # every request gets a fresh handle with TCP transport enforced.
         cap = _open_capture(req.rtspUrl)
 
         if not cap.isOpened():
+            logger.error("RTSP open FAILED: %s", req.rtspUrl)
             yield sse({"type": "error",
                        "message": f"Cannot open RTSP stream: {req.rtspUrl}"})
             return
@@ -207,6 +247,9 @@ def extract_rtsp_stream(req: RTSPRequest):
         H       = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         W       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         ui_mask = _build_ui_mask(H, W)
+
+        logger.info("Stream open — %dx%d @ %.1f fps", W, H, fps)
+        logger.info("Reader thread: grab every frame, decode every %s", req.frameSkip)
 
         yield sse({"type": "stage",
                    "message": f"Stream open — {W}×{H} @ {fps:.1f}fps, "
@@ -238,26 +281,36 @@ def extract_rtsp_stream(req: RTSPRequest):
         reconnect_attempts = 0
         MAX_RECONNECTS     = 5   # give up after this many consecutive failures
 
-        # FIX: track clustering passes and person roster size so the completion
-        # check can confirm the roster has stabilised before auto-stopping.
-        _cluster_passes    = 0
-        _last_person_count = 0
+        _cluster_passes      = 0
+        _last_person_count   = 0
+        _last_new_person_t   = time.time()   # wall time when a new person was last discovered
+        NEW_PERSON_TIMEOUT   = 60            # stop only after this many seconds with no new person
+
+        reader   = _RTSPReader(cap, decode_every=req.frameSkip)
+        last_seq = 0
+        logger.info("_RTSPReader started (decode_every=%s)", req.frameSkip)
+
+        # Background clustering pool — 1 worker so passes don't pile up.
+        cluster_pool   = ThreadPoolExecutor(max_workers=1)
+        cluster_future = None   # Future | None
 
         # ── Frame loop ────────────────────────────────────────────────────────
         try:
             while True:
                 if _stop_event.is_set():
+                    logger.info("Stop signal received")
                     yield sse({"type": "stage",
                                "message": "Stop signal received — finishing up…"})
                     break
 
-                # FIX: wrap cap.read() with a timeout so a stale/frozen RTSP
-                # source can't block the generator thread indefinitely.
-                ret, frame = _read_frame_with_timeout(cap, READ_TIMEOUT_SEC)
+                ok, frame, seq, grab_n = reader.latest()
 
-                if not ret:
+                if not ok:
                     reconnect_attempts += 1
+                    logger.warning("Stream lost — reconnect attempt %d/%d",
+                                   reconnect_attempts, MAX_RECONNECTS)
                     if reconnect_attempts > MAX_RECONNECTS:
+                        logger.error("Max reconnects reached — giving up")
                         yield sse({"type": "error",
                                    "message": "Stream reconnect failed — stopping"})
                         break
@@ -265,27 +318,39 @@ def extract_rtsp_stream(req: RTSPRequest):
                     yield sse({"type": "stage",
                                "message": f"Stream dropped — reconnect attempt "
                                           f"{reconnect_attempts}/{MAX_RECONNECTS}…"})
-                    cap.release()
+                    reader.release()
                     time.sleep(1)
-                    cap = _open_capture(req.rtspUrl)
-                    if cap.isOpened():
+                    new_cap = _open_capture(req.rtspUrl)
+                    reader   = _RTSPReader(new_cap, decode_every=req.frameSkip)
+                    last_seq = 0
+                    if new_cap.isOpened():
                         reconnect_attempts = 0
+                        logger.info("Reconnected successfully")
                         yield sse({"type": "stage", "message": "Stream reconnected"})
+                    else:
+                        logger.warning("Reconnect attempt %d failed (cap not opened)",
+                                       reconnect_attempts)
                     continue
 
-                # Successful read — reset counter
+                # No new frame yet — yield the thread briefly and retry.
+                if seq == last_seq or frame is None:
+                    time.sleep(0.005)
+                    continue
+
+                last_seq           = seq
                 reconnect_attempts = 0
+                frame_count       += 1
+                ts                 = round(time.time() - start, 2)
 
-                frame_count += 1
-                if frame_count % req.frameSkip != 0:
-                    continue
+                logger.debug("Frame #%d  seq=%d  t=%.2fs  shape=%s",
+                             frame_count, seq, ts, frame.shape)
 
-                ts = round(frame_count / fps, 2)
-
+                t_detect = time.time()
                 detections = _detect_faces_tiled(
                     state.face_app, frame, ui_mask,
                     preview_cb=_update_preview,
                 )
+                detect_ms        = (time.time() - t_detect) * 1000
                 faces_this_frame = len(detections)
 
                 for d in detections:
@@ -295,41 +360,78 @@ def extract_rtsp_stream(req: RTSPRequest):
                     all_quality.append(d["quality"])
                     detections_since += 1
 
+                logger.info("Processed #%d (video frame ~%d) | t=%.2fs | detect=%.0fms | faces=%d | total_embs=%d",
+                            frame_count, grab_n, ts, detect_ms, faces_this_frame, len(all_embeddings))
+
                 yield sse({
                     "type":             "frame",
                     "frame":            frame_count,
                     "faces_this_frame": faces_this_frame,
                 })
 
-                # Incremental clustering
-                if (detections_since >= CLUSTER_EVERY
+                # ── Collect finished clustering results ───────────────────────
+                if cluster_future is not None and cluster_future.done():
+                    try:
+                        new_serial, updated, new_mean_embs, new_pcounts = cluster_future.result()
+                        next_serial = new_serial
+                        existing_mean_embs.update(new_mean_embs)
+                        person_counts.update(new_pcounts)
+                        _cluster_passes += 1
+                        if len(person_counts) > _last_person_count:
+                            _last_new_person_t = time.time()
+                            logger.info("New person(s) discovered — roster now %d", len(person_counts))
+                        _last_person_count = len(person_counts)
+                        for person_id, new_count in updated.items():
+                            done = new_count >= req.targetImgsPerPerson
+                            logger.info("  %s → %d/%d images%s",
+                                        person_id, new_count, req.targetImgsPerPerson,
+                                        " ✓ DONE" if done else "")
+                            yield sse({
+                                "type":      "person_update",
+                                "person_id": person_id,
+                                "count":     new_count,
+                                "target":    req.targetImgsPerPerson,
+                                "done":      done,
+                            })
+                    except Exception as exc:
+                        logger.exception("Background clustering failed: %s", exc)
+                    cluster_future = None
+
+                # ── Submit next clustering pass if ready ──────────────────────
+                if (cluster_future is None
+                        and detections_since >= CLUSTER_EVERY
                         and len(all_embeddings) >= req.minSamples):
                     detections_since = 0
+                    pass_num   = _cluster_passes + 1
+                    embs_snap  = list(all_embeddings)
+                    imgs_snap  = list(all_face_images)
+                    ts_snap    = list(all_timestamps)
+                    q_snap     = list(all_quality)
+                    mean_snap  = {k: v.copy() for k, v in existing_mean_embs.items()}
+                    pc_snap    = dict(person_counts)
+                    serial_now = next_serial
 
-                    labels, unique_labels = _cluster(
-                        all_embeddings, req.clusterThreshold, req.minSamples)
+                    logger.info("Clustering pass #%d submitted — %d embeddings, %d persons",
+                                pass_num, len(embs_snap), len(pc_snap))
 
-                    next_serial, updated = _save_clusters(
-                        labels, unique_labels,
-                        all_embeddings, all_face_images,
-                        all_timestamps, all_quality,
-                        batch_dir, existing_mean_embs, next_serial,
-                        req.targetImgsPerPerson, person_counts,
-                        req.clusterThreshold,
+                    def _cluster_job(embs, imgs, tss, qs, mean_embs, pcounts, serial, p):
+                        t0 = time.time()
+                        lbl, ulbl = _cluster(embs, req.clusterThreshold, req.minSamples)
+                        logger.info("  pass #%d: DBSCAN %.0fms — %d clusters",
+                                    p, (time.time() - t0) * 1000, len(ulbl))
+                        new_s, upd = _save_clusters(
+                            lbl, ulbl, embs, imgs, tss, qs,
+                            batch_dir, mean_embs, serial,
+                            req.targetImgsPerPerson, pcounts,
+                            req.clusterThreshold,
+                        )
+                        return new_s, upd, mean_embs, pcounts
+
+                    cluster_future = cluster_pool.submit(
+                        _cluster_job,
+                        embs_snap, imgs_snap, ts_snap, q_snap,
+                        mean_snap, pc_snap, serial_now, pass_num,
                     )
-
-                    _cluster_passes    += 1
-                    _last_person_count  = len(person_counts)
-
-                    for person_id, new_count in updated.items():
-                        done = new_count >= req.targetImgsPerPerson
-                        yield sse({
-                            "type":      "person_update",
-                            "person_id": person_id,
-                            "count":     new_count,
-                            "target":    req.targetImgsPerPerson,
-                            "done":      done,
-                        })
 
                 # Periodic progress
                 now = time.time()
@@ -349,32 +451,30 @@ def extract_rtsp_stream(req: RTSPRequest):
                         ),
                     })
 
-                # Check completion
-                # FIX: The original check fired as soon as person_counts was
-                # non-empty and every *known* person was done.  The problem is
-                # that clustering is incremental — after the first CLUSTER_EVERY
-                # detections only one person may have been discovered yet.  If
-                # that person happens to have reached the target, the stream
-                # stopped before the second, third, etc. people were ever found.
-                #
-                # Guard: only allow auto-stop after at least two clustering
-                # passes have run AND no new persons appeared in the last pass.
-                # `_cluster_passes` counts completed passes; `_last_person_count`
-                # tracks how many persons were known at the previous pass.
+                # Auto-stop: all known persons are done AND no new person has
+                # appeared for NEW_PERSON_TIMEOUT seconds.  The timeout guard
+                # prevents stopping too early when more students are still
+                # coming into frame later in the video.
+                secs_since_new = time.time() - _last_new_person_t
                 if (person_counts
-                        and _cluster_passes >= 2
-                        and len(person_counts) == _last_person_count
                         and all(c >= req.targetImgsPerPerson
-                                for c in person_counts.values())):
+                                for c in person_counts.values())
+                        and secs_since_new >= NEW_PERSON_TIMEOUT):
+                    logger.info(
+                        "All %d persons reached target and no new person for %.0fs — auto-stopping",
+                        len(person_counts), secs_since_new)
                     yield sse({"type": "stage",
-                               "message": "All persons reached target — stopping"})
+                               "message": f"All persons reached target — no new person for "
+                                          f"{int(secs_since_new)}s, stopping"})
                     break
 
         finally:
-            # FIX: always release the capture — even on unhandled exceptions —
-            # so the OS-level socket/file descriptor is freed immediately.
-            cap.release()
+            reader.release()
+            cluster_pool.shutdown(wait=False, cancel_futures=True)
             logger.info("VideoCapture released for %s", req.rtspUrl)
+            logger.info("Session summary: frames=%d  embeddings=%d  persons=%d  elapsed=%.1fs",
+                        frame_count, len(all_embeddings), len(person_counts),
+                        time.time() - start)
 
         # ── Final save pass ───────────────────────────────────────────────────
         # Run one last cluster+save on all accumulated embeddings so faces

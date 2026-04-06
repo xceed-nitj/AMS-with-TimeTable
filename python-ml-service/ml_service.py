@@ -5,7 +5,12 @@
 import os
 import pickle
 import logging
+import warnings
 from contextlib import asynccontextmanager
+
+# insightface uses deprecated APIs in scikit-image / numpy — suppress until upstream fixes.
+warnings.filterwarnings("ignore", message=r"`estimate` is deprecated",  category=FutureWarning)
+warnings.filterwarnings("ignore", message=r"`rcond` parameter will change", category=FutureWarning)
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
