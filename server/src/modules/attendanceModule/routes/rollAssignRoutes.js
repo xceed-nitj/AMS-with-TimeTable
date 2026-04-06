@@ -28,6 +28,8 @@ router.get('/erp-photo/:filename',                    wrap(ctrl.serveErpPhoto));
 // ── Matching ──────────────────────────────────────────────────────
 // SSE stream: match clusters against ERP photos via Python ML service
 router.post('/auto-match/:batch',                     wrap(ctrl.autoMatch));
+// Save a single match result to DB immediately during SSE stream
+router.post('/save-match-result',                     wrap(ctrl.saveMatchResult));
 // After SSE done: rename all person_XXX → rollNo + save to DB with approved=false
 router.post('/auto-assign-all',                       wrap(ctrl.autoAssignAll));
 

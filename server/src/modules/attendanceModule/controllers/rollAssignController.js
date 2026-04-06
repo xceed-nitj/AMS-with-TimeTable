@@ -238,8 +238,9 @@ class RollAssignController {
                     const suggestedRollNo = matchData.best.rollNo.trim().toUpperCase();
                     const destPath        = path.join(batchPath, suggestedRollNo);
 
-                    let actualFolder = suggestedRollNo;
-                    let copiedFiles  = imageFiles;
+                    let actualFolder  = suggestedRollNo;
+                    let copiedFiles   = imageFiles;
+                    let alreadyRenamed = false;
 
                     if (fs.existsSync(srcPath)) {
                         if (fs.existsSync(destPath)) {
@@ -290,12 +291,20 @@ class RollAssignController {
                         // Copy images (+ _info.json) to rollNo folder, delete person_XXX
                         copiedFiles  = await copyImages(srcPath, destPath);
                         await fsPromises.rm(srcPath, { recursive: true, force: true });
+
+                    } else if (fs.existsSync(destPath)) {
+                        // ── Already renamed in a previous partial run ────────
+                        // person_XXX is gone, rollNo folder already exists.
+                        // Re-read files from the destination and just fix up the DB record.
+                        const destData = await readFolderFiles(destPath);
+                        copiedFiles    = destData.imageFiles;
+                        embeddingFiles = destData.embeddingFiles;
+                        alreadyRenamed = true;
                     }
 
                     // ── Write _info.json to rollNo folder ─────────────────
-                    // Rule: ≤5 photos → all as embedding; >5 → ML-suggested as embedding, rest backup
-                    // All initial photos are APPROVED (first extraction is pre-approved by operator via ERP match).
-                    {
+                    // Skip if the folder was already set up in a previous run (_info.json exists).
+                    if (!alreadyRenamed) {
                         const allFiles = copiedFiles;
                         let finalEmbeds;
                         if (allFiles.length <= 5) {
@@ -347,6 +356,75 @@ class RollAssignController {
         }
     }
 
+
+     async saveMatchResult(req, res) {
+        try {
+            const { batch, folderName, matchData } = req.body;
+            if (!batch || !folderName) {
+                return res.status(400).json({ error: 'batch and folderName required' });
+            }
+ 
+            const batchPath = path.join(GROUND_TRUTH_DIR, batch);
+            const srcPath   = path.join(batchPath, folderName);
+            const { imageFiles, embeddingFiles } = await readFolderFiles(srcPath);
+ 
+            // ── No face detected — save unmatched, keep folder ────
+            if (matchData.error || !matchData.best) {
+                await ClusterMatch.findOneAndUpdate(
+                    { batch, folderName },
+                    {
+                        $set: {
+                            currentFolder:  folderName,
+                            rollNo:         null,
+                            status:         'unmatched',
+                            approved:       false,
+                            erpPhoto:       null,
+                            confidence:     null,
+                            candidates:     [],
+                            imageFiles,
+                            embeddingFiles,
+                            previewFiles:   matchData.preview_images || imageFiles.slice(0, 6),
+                            imageCount:     matchData.image_count    || imageFiles.length,
+                            error:          matchData.error          || 'no match',
+                            updated_at:     new Date(),
+                        },
+                    },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+                return res.json({ ok: true, status: 'unmatched', folderName });
+            }
+ 
+            // ── Has a best match — save with matched status (NOT renamed yet) ────
+            const suggestedRollNo = matchData.best.rollNo.trim().toUpperCase();
+ 
+            await ClusterMatch.findOneAndUpdate(
+                { batch, folderName },
+                {
+                    $set: {
+                        currentFolder:  folderName,           // still person_XXX for now
+                        rollNo:         suggestedRollNo,      // suggested target rollNo
+                        status:         'matched',
+                        approved:       false,
+                        erpPhoto:       matchData.best.erpPhoto,
+                        confidence:     matchData.best.confidence,
+                        candidates:     matchData.candidates  || [],
+                        imageFiles,
+                        embeddingFiles,
+                        previewFiles:   matchData.preview_images || imageFiles.slice(0, 6),
+                        imageCount:     matchData.image_count    || imageFiles.length,
+                        error:          null,
+                        updated_at:     new Date(),
+                    },
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+ 
+            res.json({ ok: true, status: 'matched', folderName, rollNo: suggestedRollNo });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+ 
     // ─── Get all DB match records for a batch ─────────────────────
     async getMatches(req, res) {
         try {
@@ -354,11 +432,45 @@ class RollAssignController {
             const records   = await ClusterMatch.find({ batch }).lean();
 
             // Build matchMap keyed by folderName for the frontend
-            const matchMap = {};
-            records.forEach(r => {
+            const batchPath = path.join(GROUND_TRUTH_DIR, batch);
+            const matchMap  = {};
+            const repairs   = [];
+
+            for (const r of records) {
+                let currentFolder = r.currentFolder || r.folderName;
+
+                // ── Self-healing: if stored currentFolder no longer exists on disk
+                // but the rollNo folder does, the folder was already renamed in a
+                // previous run that failed before the DB update.  Fix it now.
+                if (
+                    r.rollNo &&
+                    currentFolder !== r.rollNo &&
+                    !fs.existsSync(path.join(batchPath, currentFolder)) &&
+                    fs.existsSync(path.join(batchPath, r.rollNo))
+                ) {
+                    currentFolder = r.rollNo;
+                    const destData = await readFolderFiles(path.join(batchPath, r.rollNo));
+                    repairs.push(
+                        ClusterMatch.findOneAndUpdate(
+                            { batch, folderName: r.folderName },
+                            {
+                                $set: {
+                                    currentFolder:  r.rollNo,
+                                    imageFiles:     destData.imageFiles,
+                                    embeddingFiles: destData.embeddingFiles,
+                                    previewFiles:   destData.imageFiles.slice(0, 6),
+                                    imageCount:     destData.imageFiles.length,
+                                    updated_at:     new Date(),
+                                },
+                            },
+                            { new: true }
+                        )
+                    );
+                }
+
                 matchMap[r.folderName] = {
                     folderName:    r.folderName,
-                    currentFolder: r.currentFolder || r.folderName,
+                    currentFolder,
                     rollNo:        r.rollNo,
                     status:        r.status,
                     approved:      r.approved,
@@ -371,7 +483,10 @@ class RollAssignController {
                     imageCount:    r.imageCount    || 0,
                     error:         r.error         || null,
                 };
-            });
+            }
+
+            // Fire-and-forget DB repairs (don't block the response)
+            if (repairs.length) Promise.all(repairs).catch(() => {});
 
             res.json({ batch, matchMap, total: records.length });
         } catch (err) {
