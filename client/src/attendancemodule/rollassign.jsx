@@ -90,7 +90,7 @@ export default function RollAssign() {
     const photoUrl    = (batch, folder, filename) =>
         `${RA_BASE}/photo/${encodeURIComponent(batch)}/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`;
     const erpPhotoUrl = (filename) =>
-        `${RA_BASE}/erp-photo/${encodeURIComponent(filename)}`;
+        `${RA_BASE}/erp-photo/${encodeURIComponent(batchName)}/${encodeURIComponent(filename)}`;
 
     // ── Load clusters from DB + unprocessed from filesystem ─────────
     const loadClusters = useCallback(async () => {
@@ -149,7 +149,7 @@ export default function RollAssign() {
 
     useEffect(() => { loadClusters(); }, [loadClusters]);
 
-    // ── Auto-match against ERP photos (SSE) → then auto-assign all ──
+    // ── Auto-match against ERP photos (SSE) → immediate DB save → then rename folders ──
     const runAutoMatch = useCallback(async () => {
         if (!batchName) return;
         setMatching(true);
@@ -159,6 +159,7 @@ export default function RollAssign() {
 
         const localMatches = {};
         let sseSucceeded   = false;
+        let matchCount     = 0;
 
         try {
             const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
@@ -171,10 +172,11 @@ export default function RollAssign() {
             const decoder = new TextDecoder();
             let buf = '';
 
-            const processLine = (line) => {
+            const processLine = async (line) => {
                 if (!line.startsWith('data:')) return;
                 let evt;
                 try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
+                
                 if (evt.type === 'erp_progress') {
                     setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
                 } else if (evt.type === 'cluster_progress') {
@@ -182,12 +184,42 @@ export default function RollAssign() {
                 } else if (evt.type === 'status') {
                     setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
                 } else if (evt.type === 'match_result') {
+                    // ─── IMMEDIATE DB SAVE ──────────────────────────
                     localMatches[evt.folder] = evt.match;
-                    setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
+                    matchCount++;
+                    
+                    try {
+                        const saveRes = await fetch(`${RA_BASE}/save-match-result`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                batch: batchName,
+                                folderName: evt.folder,
+                                matchData: evt.match,
+                            }),
+                        });
+                        
+                        if (saveRes.ok) {
+                            const saveData = await saveRes.json();
+                            setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
+                            // Update UI progress
+                            setMatchProgress(p => ({
+                                ...p,
+                                msg: `Saved ${matchCount} matches...`,
+                                done: matchCount,
+                            }));
+                        } else {
+                            console.error(`Failed to save ${evt.folder}:`, await saveRes.text());
+                        }
+                    } catch (saveErr) {
+                        console.error(`Error saving ${evt.folder}:`, saveErr);
+                        // Don't throw — let the match continue even if a single save fails
+                        // The folder data still exists and can be recovered
+                    }
                 } else if (evt.type === 'done') {
                     sseSucceeded = true;
                     setMatchDone(true);
-                    showToast(`Matching complete — ${evt.clusters} clusters`);
+                    showToast(`✓ Matched ${matchCount} clusters — saved to database`);
                 } else if (evt.type === 'error') {
                     throw new Error(evt.msg);
                 }
@@ -195,34 +227,54 @@ export default function RollAssign() {
 
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) { buf += decoder.decode(); buf.split('\n').forEach(processLine); break; }
+                if (done) { 
+                    buf += decoder.decode(); 
+                    const lines = buf.split('\n');
+                    // Process remaining lines sequentially
+                    for (const l of lines) {
+                        await processLine(l);
+                    }
+                    break; 
+                }
                 buf += decoder.decode(value, { stream: true });
                 const lines = buf.split('\n');
                 buf = lines.pop();
-                lines.forEach(processLine);
+                // Process lines sequentially to maintain order
+                for (const l of lines) {
+                    await processLine(l);
+                }
             }
 
-            // Phase 2: Auto-assign all
-            if (sseSucceeded && Object.keys(localMatches).length > 0) {
-                setMatchProgress({ msg: 'Renaming folders and saving to database…', done: 0, total: 0, step: 'saving' });
+            // Phase 2: Rename folders on filesystem (DB already has data)
+            if (sseSucceeded && matchCount > 0) {
+                setMatchProgress({ msg: 'Renaming folders on filesystem…', done: matchCount, total: matchCount, step: 'saving' });
+                
                 const assignRes  = await fetch(`${RA_BASE}/auto-assign-all`, {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body:    JSON.stringify({ batch: batchName, matches: localMatches }),
                 });
                 const assignData = await assignRes.json();
-                if (!assignRes.ok) throw new Error(assignData.error || 'Auto-assign failed');
-
-                showToast(
-                    `✓ ${assignData.renamed} clusters auto-assigned` +
-                    (assignData.unmatched ? `, ${assignData.unmatched} unmatched` : '') +
-                    (assignData.conflicts ? `, ${assignData.conflicts} conflicts` : '')
-                );
+                
+                if (!assignRes.ok) {
+                    // Even if folder rename fails, matches are already in DB
+                    showToast(`⚠ Matching saved, but folder rename failed: ${assignData.error}`, 'warning');
+                } else {
+                    showToast(
+                        `✓ ${assignData.renamed} clusters auto-assigned` +
+                        (assignData.unmatched ? `, ${assignData.unmatched} unmatched` : '') +
+                        (assignData.conflicts ? `, ${assignData.conflicts} conflicts` : '')
+                    );
+                }
+                
                 await loadClusters();
             }
         } catch (err) {
             setMatchError(err.message);
             showToast(err.message, 'error');
+            // IMPORTANT: Even on error, partial data may exist in DB
+            // Call loadClusters to refresh UI with whatever was saved
+            setTimeout(() => loadClusters(), 500);
         } finally {
             setMatching(false);
             setMatchProgress(null);

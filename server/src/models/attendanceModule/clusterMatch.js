@@ -32,7 +32,7 @@ const clusterMatchSchema = new mongoose.Schema({
     //   flagged   — operator flagged as incorrect
     status: {
         type:    String,
-        enum:    ['unmatched', 'matched', 'approved', 'flagged'],
+        enum:    ['unmatched', 'matched', 'approved', 'flagged', 'merged_unapproved'],
         default: 'unmatched',
     },
 
