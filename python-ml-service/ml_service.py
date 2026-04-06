@@ -43,8 +43,8 @@ logger.info(f"CLIENT_GROUND_TRUTH: {CLIENT_GROUND_TRUTH}")
 def load_model(det_size: int = INSIGHTFACE_DET_SIZE):
     from insightface.app import FaceAnalysis
     state.current_det_size = det_size
-    logger.info(f"Loading InsightFace buffalo_s (CPU, det_size={det_size})…")
-    state.face_app = FaceAnalysis(name="buffalo_s", providers=["CPUExecutionProvider"])
+    logger.info(f"Loading InsightFace buffalo_l (CPU, det_size={det_size})…")
+    state.face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
     state.face_app.prepare(ctx_id=0, det_size=(640, 640),det_thresh=0.3)
     logger.info("Model loaded.")
 
@@ -145,4 +145,6 @@ def reload_embeddings_ep():
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    uvicorn.run("ml_service:app", host="0.0.0.0", port=8500, reload=False)
+    uvicorn.run("ml_service:app", host="0.0.0.0", port=8500, reload=False, timeout_keep_alive=120,   # keep SSE connection alive 2 minutes
+    ws_ping_interval=30,
+    ws_ping_timeout=120)

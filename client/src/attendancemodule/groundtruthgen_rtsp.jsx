@@ -9,8 +9,8 @@ import { useDepartments } from './useDepartments';
 // ─── Add your cameras here ────────────────────────────────────────────────────
 const CAMERAS = [
     { id: 'cam_main',    label: 'Main Hall — Front', url: 'rtsp://127.0.0.1:8554/live' },
-    { id: 'cam_side',    label: 'Main Hall — Side',  url: 'rtsp://192.168.1.101:554/stream1' },
-    { id: 'cam_lab1',    label: 'Lab 1',             url: 'rtsp://192.168.1.102:554/stream1' },
+    { id: 'cam_side',    label: 'LT103L',  url: 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp'},
+    { id: 'cam_lab1',    label: 'LT103R',             url: 'rtsp://admin:Admin.123@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp' },
     { id: 'cam_lab2',    label: 'Lab 2',             url: 'rtsp://192.168.1.103:554/stream1' },
     { id: 'cam_seminar', label: 'Seminar Hall',      url: 'rtsp://192.168.1.104:554/stream1' },
 ];
@@ -123,7 +123,7 @@ const LivePreview = ({ apiBase, isRunning }) => {
                         // sessionKey forces remount only when acquisition starts.
                         <img
                             key={sessionKey}
-                            src={`${apiBase}/rtsp-preview`}
+                            src={`${apiBase}/rtsp-preview?quality=95&scale=1.0`}
                             alt="Live RTSP Preview"
                             style={{ width: '100%', display: 'block' }}
                             onError={(e) => { e.target.style.opacity = '0.3'; }}
@@ -271,6 +271,11 @@ export default function GroundTruthRTSP() {
         abortRef.current = controller;
 
         addLog(`▶ Connecting to ${selectedCamera.label}…`, theme.accent);
+        await fetch(`${API_BASE}/start-preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rtspUrl: selectedCamera.url }),
+}).catch(() => {}); // don't block acquisition if preview fails
 
         try {
             const response = await fetch(`${API_BASE}/extract-rtsp-stream`, {

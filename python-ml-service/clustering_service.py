@@ -1,3 +1,4 @@
+# from curses import raw
 import os
 import time
 import logging
@@ -28,20 +29,20 @@ ROI_TOP_FRAC    = 0.05   # skip ceiling / timestamp
 ROI_BOTTOM_FRAC = 0.95   # skip empty chairs / floor below
 
 # NMS
-NMS_IOU_THRESH = 0.5
+NMS_IOU_THRESH = 0.35
 
 # Quality filter
 MIN_SHARPNESS = 10.0     # Laplacian variance
-MIN_FACE_PX   = 15      # minimum face side in original-frame pixels
+MIN_FACE_PX   = 20      # minimum face side in original-frame pixels
 
 # FIX-F: tight crop to avoid bleeding into neighbour's face
 FACE_CROP_PAD_FRAC = 1   # was 0.25
 
 # InsightFace
-INSIGHTFACE_DET_SIZE = 640   # always 640; must match build_embeddings_db.py
+INSIGHTFACE_DET_SIZE = 320   # always 640; must match build_embeddings_db.py
 
 # FIX-G: post-cluster merge threshold (cosine similarity)
-MERGE_THRESHOLD = 0.5   # clusters more similar than this → same person
+MERGE_THRESHOLD = 0.75   # clusters more similar than this → same person
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
@@ -73,10 +74,10 @@ def _build_ui_mask(H: int, W: int) -> np.ndarray:
 _clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
 def _apply_clahe(bgr: np.ndarray) -> np.ndarray:
+    bgr = cv2.bilateralFilter(bgr, 5, 50, 50)   # suppress RTSP artifacts
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     return cv2.cvtColor(cv2.merge((_clahe.apply(l), a, b)), cv2.COLOR_LAB2BGR)
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # FIX-G — Post-DBSCAN cluster merge
@@ -183,44 +184,18 @@ def _merge_split_clusters(labels: np.ndarray,
 ZOOM_PASSES = [
     {"zoom": 1.0, "cx": 0.5,  "cy": 0.5},
     {"zoom": 2.0, "cx": 0.25, "cy": 0.4},
-    {"zoom": 2.0, "cx": 0.75, "cy": 0.4},
+    # {"zoom": 2.0, "cx": 0.75, "cy": 0.4},
     {"zoom": 2.0, "cx": 0.5,  "cy": 0.4},
-    {"zoom": 3.0, "cx": 0.25, "cy": 0.3},
+    # {"zoom": 3.0, "cx": 0.25, "cy": 0.3},
     {"zoom": 3.0, "cx": 0.75, "cy": 0.3},
-    {"zoom": 3.0, "cx": 0.5,  "cy": 0.3},
+    # {"zoom": 3.0, "cx": 0.5,  "cy": 0.3},
     {"zoom": 4.0, "cx": 0.25, "cy": 0.3},
-    {"zoom": 4.0, "cx": 0.75, "cy": 0.3},
+    # {"zoom": 4.0, "cx": 0.75, "cy": 0.3},
     {"zoom": 5.0, "cx": 0.5,  "cy": 0.3},
 ]
 # ─────────────────────────────────────────────────────────────────────────────
 # UI mask regions (1080p reference)
 # ─────────────────────────────────────────────────────────────────────────────
-UI_MASK_REGIONS_1080P = [
-    (   0,  65,  870, 1920),
-    ( 610, 730,    0,  290),
-    (1000, 1080,   0, 1920),
-]
-
-
-def _build_ui_mask(H: int, W: int) -> np.ndarray:
-    mask = np.ones((H, W), dtype=np.uint8) * 255
-    sy, sx = H / 1080.0, W / 1920.0
-    for (y1r, y2r, x1r, x2r) in UI_MASK_REGIONS_1080P:
-        y1 = int(y1r * sy); y2 = int(y2r * sy)
-        x1 = int(x1r * sx); x2 = int(x2r * sx)
-        mask[y1:y2, x1:x2] = 0
-    return mask
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# CLAHE enhancement
-# ─────────────────────────────────────────────────────────────────────────────
-_clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-
-def _apply_clahe(bgr: np.ndarray) -> np.ndarray:
-    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    return cv2.cvtColor(cv2.merge((_clahe.apply(l), a, b)), cv2.COLOR_LAB2BGR)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -258,7 +233,7 @@ def _digital_zoom(frame: np.ndarray, zoom_factor: float,
 
     zoomed_crop = frame[y1:y2, x1:x2]
     zoomed      = cv2.resize(zoomed_crop, (W, H),
-                             interpolation=cv2.INTER_LANCZOS4)
+                             interpolation=cv2.INTER_LINEAR)
 
     # scale_back: zoomed pixel → original frame pixel
     # zoomed is W wide but represents crop_w original pixels
@@ -352,6 +327,8 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
 
     if not raw:
         return []
+    # Sort by det_score descending so best detection wins NMS
+    raw.sort(key=lambda r: r[5], reverse=True)
 
     # ── NMS in original frame coordinates ────────────────────────────────────
     keep_idx   = []
@@ -414,13 +391,13 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
 
         # ── Upscale to minimum 400×400 if still small ──
         ch, cw = crop.shape[:2]
-        target = 400
+        target = 200
         if cw < target or ch < target:
             scale_up = max(target / cw, target / ch)
             new_w    = int(cw * scale_up)
             new_h    = int(ch * scale_up)
             crop     = cv2.resize(crop, (new_w, new_h),
-                                  interpolation=cv2.INTER_LANCZOS4)
+                                  interpolation=cv2.INTER_LINEAR)
 
         # ── Unsharp mask sharpening ──
         blur = cv2.GaussianBlur(crop, (0, 0), 3)
@@ -450,7 +427,10 @@ def extract_all_faces(video_path: str,
 
     Returns: embeddings, face_images, timestamps, quality_scores
     """
-    cap = cv2.VideoCapture(video_path)
+    # cap = cv2.VideoCapture(video_path)
+    os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+    "rtsp_transport;tcp|buffer_size;1048576|max_delay;500000")
+    cap = cv2.VideoCapture(video_path, cv2.CAP_FFMPEG)
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open video: {video_path}")
 
@@ -482,6 +462,8 @@ def extract_all_faces(video_path: str,
         frame_count += 1
         if frame_count % frame_skip != 0:
             continue
+        cap.grab()
+        cap.grab()
 
         ret, frame = cap.retrieve()
         if not ret:
@@ -604,7 +586,7 @@ def identify_clusters(labels, unique_labels,
         os.makedirs(folder_path, exist_ok=True)
         best_crop = all_face_images[best]
         if best_crop.size > 0:
-            cv2.imwrite(os.path.join(folder_path, "best.jpg"), best_crop)
+            cv2.imwrite(os.path.join(folder_path, "best.png"), best_crop)
 
         first_seen = float(all_timestamps[indices[0]])
 
@@ -809,7 +791,7 @@ def process_video_cluster_only(video_path: str,
             if crop.size == 0:
                 continue
 
-            fname = f"face_{rank:02d}_q{quality_scores[i]:.1f}.jpg"
+            fname = f"face_{rank:02d}_q{quality_scores[i]:.1f}.png"
             cv2.imwrite(os.path.join(folder_path, fname), crop)
 
             scores_map[fname] = round(quality_scores[i], 3)
