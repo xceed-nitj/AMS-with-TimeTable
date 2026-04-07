@@ -107,15 +107,25 @@ export default function RollAssign() {
             const clusterData = clusterRes.ok ? await clusterRes.json() : { unprocessed: [] };
             setUnprocessed(clusterData.unprocessed || []);
 
-            if (matchRes.ok) {
-                const { matchMap = {} } = await matchRes.json();
-                const records = Object.values(matchMap);
-                setPendingReview(records.filter(r => r.status === 'matched' && !r.approved));
-                setApprovedItems(records.filter(r => r.approved));
-                setUnmatchedItems(records.filter(r => r.status === 'unmatched'));
-                setFlaggedItems(records.filter(r => r.status === 'flagged'));
-                setMergedItems(records.filter(r => r.status === 'merged_unapproved'));
-            }
+           console.log('Fetching with batchName:', batchName);
+console.log('clusterRes status:', clusterRes.status);
+console.log('matchRes status:', matchRes.status);
+
+if (matchRes.ok) {
+    const matchData = await matchRes.json();
+    console.log('matchData keys:', Object.keys(matchData));
+    console.log('raw matchData:', matchData);
+
+    const { matchMap = {} } = matchData;
+    console.log('matchMap length:', Object.values(matchMap).length);
+    
+    const records = Object.values(matchMap);
+    setPendingReview(records.filter(r => r.status === 'matched' && !r.approved));
+    setApprovedItems(records.filter(r => r.approved));
+    setUnmatchedItems(records.filter(r => r.status === 'unmatched'));
+    setFlaggedItems(records.filter(r => r.status === 'flagged'));
+    setMergedItems(records.filter(r => r.status === 'merged_unapproved'));
+}
 
             // Build per-student unapproved photo map and stats
             if (studentsRes.ok) {
