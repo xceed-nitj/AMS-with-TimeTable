@@ -7,6 +7,7 @@ import time
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from tracemalloc import start
 
 import cv2
 import numpy as np
@@ -163,15 +164,6 @@ class RTSPRequest(BaseModel):
 
 @router.get("/rtsp-preview")
 def rtsp_preview():
-    """
-    MJPEG preview stream.
-
-    FIX: The original generator looped forever with no exit condition,
-    leaking the HTTP connection after the SSE stream finished.  We now
-    check _stop_event so the preview stream tears down together with the
-    acquisition stream, and add a GeneratorExit guard so the connection
-    is cleaned up if the client disconnects.
-    """
     def generate():
         try:
             while not _stop_event.is_set():
@@ -184,16 +176,20 @@ def rtsp_preview():
                         + frame +
                         b'\r\n'
                     )
-                time.sleep(0.1)
+                    time.sleep(0.033)   # ~30 fps cap — was 0.1 (10 fps)
+                else:
+                    time.sleep(0.05)    # no frame yet — poll faster
         except GeneratorExit:
-            pass  # client closed the connection — clean exit
+            pass
+
+    # Clear stop so the loop runs from the moment the img connects
+    _stop_event.clear()   # ← move it here, out of start-preview
 
     return StreamingResponse(
         generate(),
         media_type="multipart/x-mixed-replace; boundary=frame",
-        headers={"Cache-Control": "no-cache"},
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
-
 
 # ── Stop endpoint ─────────────────────────────────────────────────────────────
 
@@ -340,7 +336,18 @@ def extract_rtsp_stream(req: RTSPRequest):
                 last_seq           = seq
                 reconnect_attempts = 0
                 frame_count       += 1
-                ts                 = round(time.time() - start, 2)
+                ts = round(time.time() - start, 2)
+
+# ── Seed preview with raw frame immediately so the browser
+#    img gets MJPEG data before the first detection completes.
+#    _detect_faces_tiled will overwrite this with the annotated version.
+                try:
+                    prev_raw = cv2.resize(frame, (960, 540))
+                    _, raw_buf = cv2.imencode('.jpg', prev_raw, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                    with _preview_lock:
+                      _preview_frame = raw_buf.tobytes()
+                except Exception:
+                        pass
 
                 logger.debug("Frame #%d  seq=%d  t=%.2fs  shape=%s",
                              frame_count, seq, ts, frame.shape)
@@ -722,3 +729,29 @@ def _update_info(folder_path, new_scores, top_n, embed_n):
 
     with open(info_path, "w") as fi:
         json.dump(info, fi, indent=2)
+
+
+class PreviewRequest(BaseModel):
+    rtspUrl: str
+
+@router.post("/start-preview")
+def start_preview(req: PreviewRequest):
+    """
+    Called by the frontend before acquisition starts.
+    Clears the stop event so the MJPEG stream loop runs,
+    and seeds _preview_frame with a placeholder so the
+    browser img gets an immediate MJPEG boundary.
+    """
+    global _preview_frame
+    _stop_event.clear()
+
+    # Seed a black placeholder frame so the MJPEG boundary
+    # is established immediately — browser fires onLoad right away.
+    placeholder = np.zeros((540, 960, 3), dtype=np.uint8)
+    cv2.putText(placeholder, "Connecting to stream...", (300, 270),
+                cv2.FONT_HERSHEY_SIMPLEX, 1.2, (80, 80, 80), 2, cv2.LINE_AA)
+    _, buf = cv2.imencode('.jpg', placeholder, [cv2.IMWRITE_JPEG_QUALITY, 70])
+    with _preview_lock:
+        _preview_frame = buf.tobytes()
+
+    return {"status": "ok"}

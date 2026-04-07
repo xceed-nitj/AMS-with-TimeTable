@@ -247,4 +247,32 @@ router.get('/rtsp-preview', (req, res) => {
     proxy.end();
 });
 
+router.post('/start-preview', (req, res) => {
+    const body = JSON.stringify(req.body);
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8500,
+        path: '/start-preview',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+        },
+    };
+    const proxy = http.request(options, (mlRes) => {
+        let data = '';
+        mlRes.on('data', chunk => data += chunk);
+        mlRes.on('end', () => {
+            try { res.json(JSON.parse(data)); }
+            catch { res.json({ status: 'ok' }); }
+        });
+    });
+    proxy.on('error', (err) => {
+        console.error('start-preview proxy error:', err.message);
+        res.status(502).json({ error: 'ML service unavailable' });
+    });
+    proxy.write(body);
+    proxy.end();
+});
+
 module.exports = router;

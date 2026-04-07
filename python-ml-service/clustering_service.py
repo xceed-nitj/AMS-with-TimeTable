@@ -36,10 +36,10 @@ MIN_SHARPNESS = 10.0     # Laplacian variance
 MIN_FACE_PX   = 20      # minimum face side in original-frame pixels
 
 # FIX-F: tight crop to avoid bleeding into neighbour's face
-FACE_CROP_PAD_FRAC = 1   # was 0.25
+FACE_CROP_PAD_FRAC = 0.8   # was 0.25
 
 # InsightFace
-INSIGHTFACE_DET_SIZE = 320   # always 640; must match build_embeddings_db.py
+INSIGHTFACE_DET_SIZE = 640   # always 640; must match build_embeddings_db.py
 
 # FIX-G: post-cluster merge threshold (cosine similarity)
 MERGE_THRESHOLD = 0.75   # clusters more similar than this → same person
@@ -156,47 +156,24 @@ def _merge_split_clusters(labels: np.ndarray,
                 f"(threshold={merge_threshold})")
     return new_labels
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Tuning knobs — edit here only
-# ─────────────────────────────────────────────────────────────────────────────
-
-# START_SKIP_SEC = 12
-
-# TILE_ROWS    = 4
-# TILE_COLS    = 5
-# TILE_OVERLAP = 0.25
-
-# NMS_IOU_THRESH = 0.35
-
-# MIN_SHARPNESS      = 10.0
-# MIN_FACE_PX        = 15
-# FACE_CROP_PAD_FRAC = 1.5
-
-# INSIGHTFACE_DET_SIZE = 640
-# MERGE_THRESHOLD      = 0.68
-
-# IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Digital zoom passes
-# ─────────────────────────────────────────────────────────────────────────────
 ZOOM_PASSES = [
-    {"zoom": 1.0, "cx": 0.5,  "cy": 0.5},
-    {"zoom": 2.0, "cx": 0.25, "cy": 0.4},
-    # {"zoom": 2.0, "cx": 0.75, "cy": 0.4},
-    {"zoom": 2.0, "cx": 0.5,  "cy": 0.4},
-    # {"zoom": 3.0, "cx": 0.25, "cy": 0.3},
-    {"zoom": 3.0, "cx": 0.75, "cy": 0.3},
-    # {"zoom": 3.0, "cx": 0.5,  "cy": 0.3},
-    {"zoom": 4.0, "cx": 0.25, "cy": 0.3},
-    # {"zoom": 4.0, "cx": 0.75, "cy": 0.3},
-    {"zoom": 5.0, "cx": 0.5,  "cy": 0.3},
-]
-# ─────────────────────────────────────────────────────────────────────────────
-# UI mask regions (1080p reference)
-# ─────────────────────────────────────────────────────────────────────────────
+    {"zoom": 1.0, "cx": 0.50, "cy": 0.50, "min_sharpness": 18.0, "min_face_px": 40},
 
+    {"zoom": 2.0, "cx": 0.28, "cy": 0.38, "min_sharpness": 12.0, "min_face_px": 28},
+    {"zoom": 2.0, "cx": 0.72, "cy": 0.38, "min_sharpness": 12.0, "min_face_px": 28},
+
+    {"zoom": 3.0, "cx": 0.22, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
+    {"zoom": 3.0, "cx": 0.50, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
+    {"zoom": 3.0, "cx": 0.78, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
+
+    {"zoom": 4.0, "cx": 0.22, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
+    {"zoom": 4.0, "cx": 0.50, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
+    {"zoom": 4.0, "cx": 0.78, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
+
+    {"zoom": 5.0, "cx": 0.25, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
+    {"zoom": 5.0, "cx": 0.50, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
+    {"zoom": 5.0, "cx": 0.75, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
+]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Digital zoom helper
@@ -250,17 +227,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                         preview_cb=None,
                         min_face_px: int = None,
                         lap_threshold: float = None) -> list:
-    """
-    Run InsightFace across multiple digital zoom passes.
-    Crops are taken from the ZOOMED frame for maximum quality.
-    Coordinates are mapped back to original frame space for NMS.
 
-    preview_cb:    optional callback(frame, zoom_boxes, current_pass_idx)
-    min_face_px:   override MIN_FACE_PX constant (smallest accepted face side)
-    lap_threshold: override MIN_SHARPNESS constant (Laplacian variance cutoff)
-
-    Returns list of dicts: {bbox, embedding, det_score, quality, crop}
-    """
     _min_face_px   = min_face_px   if min_face_px   is not None else MIN_FACE_PX
     _lap_threshold = lap_threshold if lap_threshold is not None else MIN_SHARPNESS
     H, W = frame.shape[:2]
@@ -269,13 +236,14 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         frame = frame.copy()
         frame[ui_mask == 0] = 0
 
-    # raw entries: (orig_x1, orig_y1, orig_x2, orig_y2,
-    #               embedding, det_score,
-    #               zoomed_frame, zx1, zy1, zx2, zy2)
     raw        = []
     zoom_boxes = []
 
     for pass_idx, pass_cfg in enumerate(ZOOM_PASSES):
+
+        # ── Per-pass thresholds (fall back to function args / globals) ────────
+        pass_lap_threshold = pass_cfg.get("min_sharpness", _lap_threshold)  # ← add
+        pass_min_face_px   = pass_cfg.get("min_face_px",   _min_face_px)    # ← add
 
         zoomed, off_x, off_y, scale_back, bbox = _digital_zoom(
             frame,
@@ -285,11 +253,9 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         )
         zoom_boxes.append(bbox)
 
-        # Send preview with current pass highlighted
         if preview_cb:
             preview_cb(frame, zoom_boxes, pass_idx)
 
-        # CLAHE enhance the zoomed frame
         enhanced = _apply_clahe(zoomed)
 
         try:
@@ -301,9 +267,8 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             continue
 
         for face in faces:
-            b = face.bbox  # coords in zoomed (W×H) space
+            b = face.bbox
 
-            # ── Map back to original frame coordinates ──
             orig_x1 = int(off_x + b[0] * scale_back)
             orig_y1 = int(off_y + b[1] * scale_back)
             orig_x2 = int(off_x + b[2] * scale_back)
@@ -311,7 +276,6 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             orig_x1 = max(0, orig_x1); orig_y1 = max(0, orig_y1)
             orig_x2 = min(W, orig_x2); orig_y2 = min(H, orig_y2)
 
-            # ── Keep bbox in zoomed space for high-quality crop ──
             zx1 = max(0, int(b[0]))
             zy1 = max(0, int(b[1]))
             zx2 = min(W, int(b[2]))
@@ -321,16 +285,17 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                 orig_x1, orig_y1, orig_x2, orig_y2,
                 face.embedding,
                 float(getattr(face, "det_score", 1.0)),
-                enhanced,       # zoomed+CLAHE frame
+                zoomed,
                 zx1, zy1, zx2, zy2,
+                pass_lap_threshold,   # ← add (was missing entirely)
+                pass_min_face_px,     # ← add (was missing entirely)
             ))
 
     if not raw:
         return []
-    # Sort by det_score descending so best detection wins NMS
+
     raw.sort(key=lambda r: r[5], reverse=True)
 
-    # ── NMS in original frame coordinates ────────────────────────────────────
     keep_idx   = []
     keep_boxes = []
 
@@ -350,22 +315,22 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             keep_idx.append(i)
             keep_boxes.append((x1, y1, w, h))
 
-    # ── Build results — crop from zoomed frame ────────────────────────────────
     results = []
 
     for i in keep_idx:
         (orig_x1, orig_y1, orig_x2, orig_y2,
          emb, det_score,
          zoomed_frame,
-         zx1, zy1, zx2, zy2) = raw[i]
+         zx1, zy1, zx2, zy2,
+         pass_lap_threshold,    # ← unpack (was missing)
+         pass_min_face_px,      # ← unpack (was missing)
+        ) = raw[i]
 
-        # Face size in original frame (for MIN_FACE_PX filter)
         fw = orig_x2 - orig_x1
         fh = orig_y2 - orig_y1
-        if min(fw, fh) < _min_face_px:
+        if min(fw, fh) < pass_min_face_px:      # ← was _min_face_px
             continue
 
-        # ── Crop from ZOOMED frame — real zoomed pixels ──
         zfw = zx2 - zx1
         zfh = zy2 - zy1
         pad = int(max(zfw, zfh) * FACE_CROP_PAD_FRAC)
@@ -375,13 +340,11 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         if crop.size == 0:
             continue
 
-        # Sharpness filter
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         lap  = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-        if lap < _lap_threshold:
+        if lap < pass_lap_threshold:             # ← was _lap_threshold
             continue
 
-        # Quality score based on original frame face size
         quality = float(
             det_score * ((fw * fh) ** 0.5) * min(lap, 500) / 500)
 
@@ -389,7 +352,6 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         if norm == 0:
             continue
 
-        # ── Upscale to minimum 400×400 if still small ──
         ch, cw = crop.shape[:2]
         target = 200
         if cw < target or ch < target:
@@ -399,7 +361,6 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             crop     = cv2.resize(crop, (new_w, new_h),
                                   interpolation=cv2.INTER_LINEAR)
 
-        # ── Unsharp mask sharpening ──
         blur = cv2.GaussianBlur(crop, (0, 0), 3)
         crop = cv2.addWeighted(crop, 1.8, blur, -0.8, 0)
         crop = np.clip(crop, 0, 255).astype(np.uint8)
@@ -413,9 +374,6 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         })
 
     return results
-# ─────────────────────────────────────────────────────────────────────────────
-# Public API — extract_all_faces
-# ─────────────────────────────────────────────────────────────────────────────
 
 def extract_all_faces(video_path: str,
                       face_app,
