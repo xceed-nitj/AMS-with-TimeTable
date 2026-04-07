@@ -104,14 +104,18 @@ async function lookupLocksem(room, slot, date) {
     try {
         // Get day-of-week from the date string (YYYY-MM-DD)
         const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-        const dayName = DAYS[new Date(date).getDay()];
+        // Parse date as local time to avoid UTC offset shifting the day
+const [y, m, d] = date.split('-').map(Number);
+const dayName = DAYS[new Date(y, m - 1, d).getDay()];
 
         // Find all LockSem records for this slot + day that have this room in slotData
-        const records = await LockSem.aggregate([
+       // Match by slot + room only — do NOT filter by day.
+        // The day field in LockSem may be empty or stored differently.
+        // slot + room is sufficient to uniquely identify the class.
+        let records = await LockSem.aggregate([
             {
                 $match: {
-                    slot: slot,
-                    day:  dayName,
+                    slot: { $regex: new RegExp(`^${slot}$`, 'i') },
                     'slotData.room': { $regex: new RegExp(`^${room}$`, 'i') },
                 }
             },
@@ -123,11 +127,50 @@ async function lookupLocksem(room, slot, date) {
                     as:           'timetableData',
                 }
             },
-            { $unwind: '$timetableData' },
-            // Only active/published timetables
+            { $unwind: { path: '$timetableData', preserveNullAndEmptyArrays: false } },
             { $match: { 'timetableData.currentSession': true } },
             { $limit: 1 }
         ]);
+
+        // Fallback: if currentSession filter returns nothing, try without it
+        if (!records.length) {
+            records = await LockSem.aggregate([
+                {
+                    $match: {
+                        slot: slot,
+                        'slotData.room': { $regex: new RegExp(`^${room}$`, 'i') },
+                    }
+                },
+                {
+                    $lookup: {
+                        from:         'timetables',
+                        localField:   'timetable',
+                        foreignField: '_id',
+                        as:           'timetableData',
+                    }
+                },
+                { $unwind: { path: '$timetableData', preserveNullAndEmpty: false } },
+                { $limit: 1 }
+            ]);
+        }
+
+        // Third fallback: timetable ObjectId ref is null — join via code field
+        if (!records.length) {
+            const rawRecs = await LockSem.find({
+                slot: slot,
+                'slotData.room': { $regex: new RegExp(`^${room}$`, 'i') },
+            }).limit(5).lean();
+
+            for (const raw of rawRecs) {
+                if (raw.code) {
+                    const tt2 = await TimeTable.findOne({ code: raw.code }).lean();
+                    if (tt2) {
+                        records = [{ ...raw, timetableData: tt2 }];
+                        break;
+                    }
+                }
+            }
+        }
 
         if (!records.length) return null;
 
@@ -142,12 +185,28 @@ async function lookupLocksem(room, slot, date) {
 
         // session is like "2023-2027" or "2024-2028"
         // batch year = start year of session (first 4 digits)
-        const session   = tt.session || '';
-        const batchYear = session.split('-')[0] || String(new Date().getFullYear());
+        const session = tt.session || '';
+// Extract start year from session like "2025-2026 (Even)" → 2025
+const sessionStartYear = parseInt(session.split('-')[0]) || new Date().getFullYear();
+
+// Extract sem number from rec.sem like "B.Tech-ECE-6" or "6" or "sem6"
+const semRaw = (rec.sem || '').toString();
+const semMatch = semRaw.match(/\d+/);
+const semNum = semMatch ? parseInt(semMatch[0]) : 0;
+
+// sem 1-2 = year 1, 3-4 = year 2, 5-6 = year 3, 7-8 = year 4
+const yearOfStudy = semNum > 0 ? Math.ceil(semNum / 2) : 1;
+
+// admission year = current session start year - (yearOfStudy - 1)
+const batchYear = String(sessionStartYear - (yearOfStudy - 1));
 
         // timetable.name is like "BTECH" or "B.TECH", dept is like "CSE"
         // Sanitize: uppercase, remove dots/spaces
-        const degree = (tt.name || 'BTECH').toUpperCase().replace(/[\s.]/g, '');
+        const ttNameUpper = (tt.name || '').toUpperCase();
+let degree = 'BTECH'; // safe default
+for (const d of ['MTECH', 'PHD', 'BSC', 'MSC', 'MBA', 'MCA', 'BTECH', 'B.TECH', 'M.TECH']) {
+    if (ttNameUpper.includes(d.replace('.', ''))) { degree = d.replace('.', ''); break; }
+}
         const dept   = (tt.dept  || '').trim().toUpperCase().replace(/\s+/g, '_');
 
         // batch folder name: BTECH_CSE_2023

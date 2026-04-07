@@ -30,10 +30,15 @@ export default function AttendanceReport() {
     const [slot,     setSlot]     = useState('');
     const [rtspUrl,  setRtspUrl]  = useState('');
     const [date,     setDate]     = useState(new Date().toISOString().split('T')[0]);
-    const [duration, setDuration] = useState(60);
+    const [duration, setDuration] = useState(120);
+    // ── Room list from DB ─────────────────────────────────────────
+    const [rooms,        setRooms]        = useState([]);
+    const [roomSearch,   setRoomSearch]   = useState('');
+    const [showRoomDrop, setShowRoomDrop] = useState(false);
 
     // ── Timetable auto-lookup state ───────────────────────────────
-    const [ttStatus, setTtStatus] = useState(null); // null|'loading'|'found'|'notfound'
+    // null | 'loading' | 'found' | 'notfound'
+    const [ttStatus, setTtStatus] = useState(null);
 
     // ── Fallback batch (if LockSem lookup fails) ──────────────────
     const [degree,     setDegree]     = useState('BTECH');
@@ -69,124 +74,43 @@ export default function AttendanceReport() {
         setTimeout(() => setToast(null), 5000);
     };
 
-   // ── Timetable auto-lookup when room + slot change ─────────────
-// Uses existing routes:
-//   POST /timetablemodule/timetable/get-current-session  → { codes: [...] }
-//   GET  /timetablemodule/timetable/alldetails/:code     → { dept, session, name }
-//   GET  /timetablemodule/lock/viewroom/:session/:room   → { timetableData: { day: { slot: [[{subject,faculty,sem}]] } } }
-useEffect(() => {
-    if (!room || !slot) { setDerivedCtx(null); setTtStatus(null); return; }
+    // ── Fetch room list from DB on mount ──────────────────────────
+    useEffect(() => {
+        (async () => {
+            try {
+                const res  = await fetch(`${apiUrl}/timetablemodule/lock/rooms`);
+                const data = await res.json();
+                setRooms(data.rooms || []);
+            } catch { /* silently ignore */ }
+        })();
+    }, []);
 
-    const ctrl = new AbortController();
-    const signal = ctrl.signal;
-    setTtStatus('loading');
-
-    (async () => {
-        try {
-            // Step 1: get all current-session timetable codes
-            const sessRes = await fetch(
-                `${apiUrl}/timetablemodule/timetable/get-current-session`,
-                { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}), signal }
-            );
-            if (!sessRes.ok) throw new Error('session fetch failed');
-            const sessData = await sessRes.json();
-            const codes = sessData.codes || [];
-            if (!codes.length) throw new Error('no active session');
-
-            const today = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
-
-            // Step 2+3: for each code, fetch alldetails then viewroom
-            let match = null;
-            for (const code of codes) {
-                if (signal.aborted) return;
-                try {
-                    // Get dept + session for this code
-                    const detailRes = await fetch(
-                        `${apiUrl}/timetablemodule/timetable/alldetails/${code}`,
-                        { signal }
-                    );
-                    if (!detailRes.ok) continue;
-                    const detail = await detailRes.json();
-                    const session = detail.session;
-                    const dept    = detail.dept || '';
-                    const ttName  = (detail.name || code).toUpperCase();
-
-                    // Get room timetable for this session
-                    // NEW
-                    // Try room as-is, then lowercase, then uppercase
-let roomData = null;
-for (const roomVariant of [room, room.toLowerCase(), room.toUpperCase()]) {
-    try {
-        const r = await fetch(
-            `${apiUrl}/timetablemodule/lock/viewroom/${encodeURIComponent(session)}/${encodeURIComponent(roomVariant)}`,
-            { signal }
-        );
-        if (!r.ok) continue;
-        const d = await r.json();
-        const keys = Object.keys(d.timetableData || {});
-        console.log(`viewroom hit with variant="${roomVariant}" keys=`, keys);
-        if (keys.length > 0) { roomData = d; break; }
-    } catch { continue; }
-}
-if (!roomData) continue;
-                    //const ttData   = roomData.timetableData || {};
-                    const ttData = roomData.timetableData || {};
-
-
-                    // Step 4: find today's day → matching slot
-                    const dayData    = ttData[today];
-                    if (!dayData) continue;
-                    const slotArr = dayData[slot];
-                    if (!slotArr || !slotArr.length) continue;
-
-                    // viewroom returns [ [{subject,faculty,sem}], ... ] — array of arrays
-                   // flatten and find first entry with a subject
-                let entry = null;
-                for (const group of slotArr) {
-                    const arr = Array.isArray(group) ? group : [group];
-                    const found = arr.find(e => e && e.subject);
-                    if (found) { entry = found; break; }
+    // ── Timetable auto-lookup when room + slot change ─────────────
+    // Date is NOT used for lookup — only room + slot identify the class.
+    // Date is only used when saving the report.
+    useEffect(() => {
+        if (!room || !slot) { setDerivedCtx(null); setTtStatus(null); return; }
+        const ctrl = new AbortController();
+        setTtStatus('loading');
+        (async () => {
+            try {
+                const params = new URLSearchParams({ room, slot });
+                const res = await fetch(
+                    `${apiUrl}/timetablemodule/lock/attendance-lookup?${params}`,
+                    { signal: ctrl.signal }
+                );
+                if (!res.ok) throw new Error('not found');
+                const data = await res.json();
+                setDerivedCtx(data);
+                setTtStatus('found');
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                setDerivedCtx(null);
+                setTtStatus('notfound');
             }
-                if (!entry) continue;
-
-                    // Step 5: derive batch from dept + session + sem
-                    const semNum      = parseInt(entry.sem) || 0;
-                    const semYear     = semNum > 0 ? Math.ceil(semNum / 2) : 1;
-                    const startYear   = parseInt((session || '').split('-')[0]);
-                    const admYear     = !isNaN(startYear) ? String(startYear + semYear - 1) : '';
-
-                    let degree = 'BTECH';
-                    for (const d of ['MTECH','PHD','BSC','MSC','MBA','MCA']) {
-                        if (ttName.includes(d)) { degree = d; break; }
-                    }
-
-                    const sanitizedDept = dept.trim().replace(/\s+/g, '_').toUpperCase();
-                    const batch = `${degree}_${sanitizedDept}_${admYear}`.toUpperCase();
-
-                    match = {
-                        batch,
-                        subject:   entry.subject || '',
-                        faculty:   entry.faculty || '',
-                        sem:       entry.sem     || '',
-                        dept:      sanitizedDept,
-                        degree,
-                    };
-                    break; // found — stop checking other codes
-                } catch { continue; }
-            }
-
-            if (!match) throw new Error('not found');
-            setDerivedCtx(match);
-            setTtStatus('found');
-        } catch (e) {
-            if (e.name === 'AbortError') return;
-            setDerivedCtx(null);
-            setTtStatus('notfound');
-        }
-    })();
-
-    return () => ctrl.abort();
-}, [room, slot]);
+        })();
+        return () => ctrl.abort();
+    }, [room, slot]); // ← only room + slot, NOT date
 
     // ── Fetch saved reports ───────────────────────────────────────
     const fetchReports = useCallback(async () => {
@@ -204,11 +128,12 @@ if (!roomData) continue;
 
     useEffect(() => { if (tab === 'history') fetchReports(); }, [tab, fetchReports]);
 
-    // ── Run attendance (SSE stream) ───────────────────────────────
+    // ── Run attendance — SSE stream ───────────────────────────────
     const runAttendance = async () => {
         if (!rtspUrl.trim()) { showToast('Paste the RTSP URL', 'error'); return; }
         if (!room)           { showToast('Enter room number', 'error'); return; }
         if (!slot)           { showToast('Select a slot', 'error'); return; }
+
         const effectiveBatch = derivedCtx?.batch || manualBatch;
         if (!effectiveBatch) {
             showToast('Batch not found — expand "Batch override" and fill in Degree/Dept/Year', 'error');
@@ -225,7 +150,8 @@ if (!roomData) continue;
                 body: JSON.stringify({
                     rtspUrl:     rtspUrl.trim(),
                     batch:       effectiveBatch,
-                    room, slot, date,
+                    room, slot,
+                    date,        // date sent only for saving, NOT for LockSem lookup
                     durationSec: duration,
                     frameSkip:   10,
                     subject:     derivedCtx?.subject   || '',
@@ -235,8 +161,15 @@ if (!roomData) continue;
                 }),
             });
 
-            if (!response.ok) throw new Error(`Server error ${response.status}`);
+            if (!response.ok) {
+                // Non-SSE error response (e.g. 400 batch not found)
+                const errData = await response.json().catch(() => ({}));
+                showToast(errData.error || `Server error ${response.status}`, 'error');
+                setProcessing(false);
+                return;
+            }
 
+            // Read SSE stream
             const reader  = response.body.getReader();
             const decoder = new TextDecoder();
             let   buffer  = '';
@@ -246,7 +179,7 @@ if (!roomData) continue;
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
                 const parts = buffer.split('\n\n');
-                buffer = parts.pop();
+                buffer = parts.pop(); // keep incomplete last chunk
                 for (const part of parts) {
                     const dataLine = part.split('\n').find(l => l.startsWith('data: '));
                     if (!dataLine) continue;
@@ -399,11 +332,47 @@ if (!roomData) continue;
 
                         {/* Room + Slot + Date */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-                            <div>
+                            <div style={{ position: 'relative' }}>
                                 <label style={styles.label}>Room No</label>
-                                <input placeholder="e.g. lt103" value={room}
-                                    onChange={e => setRoom(e.target.value)}
-                                    style={styles.input} />
+                                <input
+                                    placeholder="Search room..."
+                                    value={showRoomDrop ? roomSearch : room}
+                                    onChange={e => { setRoomSearch(e.target.value); setShowRoomDrop(true); }}
+                                    onFocus={() => { setRoomSearch(''); setShowRoomDrop(true); }}
+                                    onBlur={() => setTimeout(() => setShowRoomDrop(false), 150)}
+                                    style={styles.input}
+                                />
+                                {showRoomDrop && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', left: 0, right: 0,
+                                        background: '#1a2035', border: `1px solid ${theme.border}`,
+                                        borderRadius: '6px', zIndex: 100,
+                                        maxHeight: 220, overflowY: 'auto',
+                                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                    }}>
+                                        {rooms
+                                            .filter(r => r.toLowerCase().includes(roomSearch.toLowerCase()))
+                                            .map(r => (
+                                                <div key={r}
+                                                    onMouseDown={() => { setRoom(r); setRoomSearch(''); setShowRoomDrop(false); }}
+                                                    style={{
+                                                        padding: '9px 14px', cursor: 'pointer',
+                                                        fontSize: '13px', color: theme.text,
+                                                        borderBottom: `1px solid ${theme.border}`,
+                                                        background: r === room ? theme.accentDim : 'transparent',
+                                                    }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = theme.accentDim}
+                                                    onMouseLeave={e => e.currentTarget.style.background = r === room ? theme.accentDim : 'transparent'}
+                                                >{r}</div>
+                                            ))
+                                        }
+                                        {rooms.filter(r => r.toLowerCase().includes(roomSearch.toLowerCase())).length === 0 && (
+                                            <div style={{ padding: '9px 14px', color: theme.textMuted, fontSize: '12px' }}>
+                                                No rooms match "{roomSearch}"
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label style={styles.label}>Slot</label>
@@ -415,7 +384,7 @@ if (!roomData) continue;
                                 </select>
                             </div>
                             <div>
-                                <label style={styles.label}>Date</label>
+                                <label style={styles.label}>Date (for saving only)</label>
                                 <input type="date" value={date}
                                     onChange={e => setDate(e.target.value)}
                                     style={styles.input} />
@@ -438,11 +407,11 @@ if (!roomData) continue;
                                 background: theme.warningDim, border: `1px solid ${theme.warning}`,
                                 fontSize: '12px', color: theme.warning,
                             }}>
-                                ⚠️ No timetable entry found for this room/slot — expand "Batch override" below.
+                                ⚠️ No timetable entry found for this room/slot — expand "Batch override" below and fill in manually.
                             </div>
                         )}
 
-                        {/* Derived context display */}
+                        {/* Derived context display after timetable lookup */}
                         {derivedCtx && ttStatus === 'found' && (
                             <div style={{
                                 padding: '10px 14px', borderRadius: '6px', marginBottom: 14,
@@ -505,12 +474,12 @@ if (!roomData) continue;
                             )}
                         </details>
 
-                        {/* RTSP URL + Duration + Run button */}
+                        {/* RTSP URL + Duration + Run */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, alignItems: 'flex-end' }}>
                             <div>
                                 <label style={styles.label}>RTSP URL</label>
                                 <input
-                                    placeholder="rtsp://admin:pass@10.10.177.249:554/video/live"
+                                    placeholder="rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp"
                                     value={rtspUrl}
                                     onChange={e => setRtspUrl(e.target.value)}
                                     style={{ ...styles.input, fontFamily: theme.fontMono }}
