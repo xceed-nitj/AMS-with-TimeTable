@@ -28,21 +28,25 @@ TILE_UPSCALE = 3.0       # upscale factor before InsightFace
 ROI_TOP_FRAC    = 0.05   # skip ceiling / timestamp
 ROI_BOTTOM_FRAC = 0.95   # skip empty chairs / floor below
 
-# NMS
-NMS_IOU_THRESH = 0.35
-
-# Quality filter
-MIN_SHARPNESS = 10.0     # Laplacian variance
-MIN_FACE_PX   = 20      # minimum face side in original-frame pixels
-
-# FIX-F: tight crop to avoid bleeding into neighbour's face
-FACE_CROP_PAD_FRAC = 0.8   # was 0.25
-
 # InsightFace
 INSIGHTFACE_DET_SIZE = 640   # always 640; must match build_embeddings_db.py
 
-# FIX-G: post-cluster merge threshold (cosine similarity)
-MERGE_THRESHOLD = 0.75   # clusters more similar than this → same person
+# ── Quality filters ──────────────────────────────────────────────
+MIN_SHARPNESS    = 8.0
+MIN_FACE_PX      = 20
+MIN_DET_SCORE    = 0.45    # NEW: reject low-confidence detections
+
+# ── Pose filter ──────────────────────────────────────────────────
+MAX_YAW_DEG      = 45      # NEW: skip profiles
+MAX_PITCH_DEG    = 30      # NEW: skip looking-down (your main bug)
+
+# ── Crop padding ─────────────────────────────────────────────────
+FACE_CROP_PAD_FRAC = 0.5  # was 0.8 — stops neighbour bleed
+
+# ── Clustering ───────────────────────────────────────────────────
+MERGE_THRESHOLD  = 0.55    # was 0.75 — merges pose-split clusters
+NMS_IOU_THRESH   = 0.35
+
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
@@ -157,22 +161,22 @@ def _merge_split_clusters(labels: np.ndarray,
     return new_labels
 
 ZOOM_PASSES = [
-    {"zoom": 1.0, "cx": 0.50, "cy": 0.50, "min_sharpness": 18.0, "min_face_px": 40},
+    {"zoom": 1.0, "cx": 0.50, "cy": 0.50, "min_sharpness": 18.0, "min_face_px": 60},
 
-    {"zoom": 2.0, "cx": 0.28, "cy": 0.38, "min_sharpness": 12.0, "min_face_px": 28},
-    {"zoom": 2.0, "cx": 0.72, "cy": 0.38, "min_sharpness": 12.0, "min_face_px": 28},
+    {"zoom": 2.0, "cx": 0.28, "cy": 0.38, "min_sharpness": 12.0, "min_face_px": 40},
+    {"zoom": 2.0, "cx": 0.72, "cy": 0.38, "min_sharpness": 12.0, "min_face_px": 40},
 
-    {"zoom": 3.0, "cx": 0.22, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
-    {"zoom": 3.0, "cx": 0.50, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
-    {"zoom": 3.0, "cx": 0.78, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
+    {"zoom": 3.0, "cx": 0.22, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 30},
+    {"zoom": 3.0, "cx": 0.50, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 30},
+    {"zoom": 3.0, "cx": 0.78, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 30},
 
-    {"zoom": 4.0, "cx": 0.22, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
-    {"zoom": 4.0, "cx": 0.50, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
-    {"zoom": 4.0, "cx": 0.78, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
+    {"zoom": 4.0, "cx": 0.22, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 20},
+    {"zoom": 4.0, "cx": 0.50, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 20},
+    {"zoom": 4.0, "cx": 0.78, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 20},
 
-    {"zoom": 5.0, "cx": 0.25, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
-    {"zoom": 5.0, "cx": 0.50, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
-    {"zoom": 5.0, "cx": 0.75, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
+    {"zoom": 5.0, "cx": 0.25, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 15},
+    {"zoom": 5.0, "cx": 0.50, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 15},
+    {"zoom": 5.0, "cx": 0.75, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 15},
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -217,6 +221,26 @@ def _digital_zoom(frame: np.ndarray, zoom_factor: float,
     scale_back = crop_w / W   # = 1 / zoom_factor
 
     return zoomed, x1, y1, scale_back, (x1, y1, x2, y2)
+
+def _landmarks_valid(kps) -> bool:
+    """
+    kps shape: (5, 2) → [left_eye, right_eye, nose, left_mouth, right_mouth]
+    Basic geometry: eyes must be above nose, nose above mouth.
+    """
+    if kps is None or kps.shape != (5, 2):
+        return True   # can't check, let it pass
+    left_eye, right_eye, nose, left_mouth, right_mouth = kps
+    # Eyes should be above nose (smaller y)
+    if nose[1] < left_eye[1] or nose[1] < right_eye[1]:
+        return False
+    # Nose should be above mouth
+    mouth_y = (left_mouth[1] + right_mouth[1]) / 2
+    if mouth_y < nose[1]:
+        return False
+    # Eyes should be roughly at same height (not wildly tilted)
+    if abs(left_eye[1] - right_eye[1]) > abs(left_eye[0] - right_eye[0]) * 0.7:
+        return False
+    return True
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -267,6 +291,24 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             continue
 
         for face in faces:
+
+                        # ── det_score gate ──────────────────────────────────────────
+            det_score = float(getattr(face, "det_score", 1.0))
+            if det_score < MIN_DET_SCORE:
+                continue
+
+            # ── pose gate ───────────────────────────────────────────────
+            pose = getattr(face, "pose", None)
+            if pose is not None:
+                yaw   = float(pose[0])
+                pitch = float(pose[1])
+                if abs(yaw) > MAX_YAW_DEG or abs(pitch) > MAX_PITCH_DEG:
+                    continue   # looking down / sideways — skip
+
+            # ── landmark geometry check ─────────────────────────────────
+            kps = getattr(face, "kps", None)
+            if not _landmarks_valid(kps):
+                continue
             b = face.bbox
 
             orig_x1 = int(off_x + b[0] * scale_back)
@@ -284,7 +326,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             raw.append((
                 orig_x1, orig_y1, orig_x2, orig_y2,
                 face.embedding,
-                float(getattr(face, "det_score", 1.0)),
+                det_score,
                 zoomed,
                 zx1, zy1, zx2, zy2,
                 pass_lap_threshold,   # ← add (was missing entirely)
@@ -420,8 +462,6 @@ def extract_all_faces(video_path: str,
         frame_count += 1
         if frame_count % frame_skip != 0:
             continue
-        cap.grab()
-        cap.grab()
 
         ret, frame = cap.retrieve()
         if not ret:
@@ -448,8 +488,8 @@ def extract_all_faces(video_path: str,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def cluster_faces(embeddings: list,
-                  cluster_threshold: float = 0.5,
-                  min_samples: int = 5):
+                  cluster_threshold: float = 0.35,
+                  min_samples: int = 3):
     """
     DBSCAN clustering followed by a post-merge pass (FIX-G).
 
@@ -483,6 +523,7 @@ def cluster_faces(embeddings: list,
     logger.info(f"[cluster_faces] {len(unique_labels)} final clusters from "
                 f"{len(embeddings)} detections  eps={euclidean_eps:.4f}")
     return labels, unique_labels
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -621,7 +662,16 @@ def process_video_with_clustering(video_path: str,
         }
 
     labels, unique_labels = cluster_faces(embeddings, cluster_threshold, min_samples)
-
+   
+    # ADD THIS BLOCK
+    noise_count = int(np.sum(labels == -1))
+    total = len(labels)
+    print(f"Total embeddings : {total}")
+    print(f"Noise points (-1): {noise_count}  ({100*noise_count/total:.1f}%)")
+    print(f"Clusters found   : {len(unique_labels)}")
+    if unique_labels:
+        sizes = [int(np.sum(labels == l)) for l in unique_labels]
+        print(f"Cluster sizes    : min={min(sizes)}, max={max(sizes)}, mean={np.mean(sizes):.1f}")
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     output_dir = os.path.join(output_base_dir, video_name)
 
@@ -663,8 +713,8 @@ from sklearn.cluster import KMeans
 def process_video_cluster_only(video_path: str,
                                face_app,
                                frame_skip: int = 5,
-                               cluster_threshold: float = 0.5,
-                               min_samples: int = 5,
+                               cluster_threshold: float = 0.35,
+                               min_samples: int = 3,
                                min_images_per_cluster: int = 5,
                                output_base_dir: str = "./clustering_output"):
     """
