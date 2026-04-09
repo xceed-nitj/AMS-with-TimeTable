@@ -10,7 +10,7 @@ import { useDepartments } from './useDepartments';
 const CAMERAS = [
     { id: 'cam_main',    label: 'Main Hall — Front', url: 'rtsp://127.0.0.1:8554/live' },
     { id: 'cam_side',    label: 'LT103L',  url: 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp'},
-    { id: 'cam_lab1',    label: 'LT103R',             url: 'rtsp://admin:Admin.123@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp' },
+    { id: 'cam_lab1',    label: 'LT103R',             url: 'rtsp://admin:Admin%401234%23@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp' },
     { id: 'cam_lab2',    label: 'Lab 2',             url: 'rtsp://192.168.1.103:554/stream1' },
     { id: 'cam_seminar', label: 'Seminar Hall',      url: 'rtsp://192.168.1.104:554/stream1' },
 ];
