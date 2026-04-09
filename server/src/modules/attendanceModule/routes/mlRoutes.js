@@ -6,9 +6,12 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
+
 const mlClient = require('../controllers/mlServiceClient');
 const { processVideoFile } = require('../controllers/videoWatcher');
 const mlProcess = require('../controllers/mlProcessController');
+const LockSem = require('../../../models/locksem');
+const TimeTable = require('../../../models/timetable');
 
 const ML_URL = 'http://localhost:8500';
 
@@ -71,20 +74,105 @@ function parseRollList(filePath) {
 
 // ─── Helper: Pipe SSE Stream from Python to Frontend ──────────
 async function pipeStream(pythonEndpoint, body, res) {
+    // Set SSE headers BEFORE the axios call so the browser
+    // receives them immediately without buffering.
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
     try {
         const result = await axios.post(
             `${ML_URL}/${pythonEndpoint}`,
             body,
-            { timeout: 600000, responseType: 'stream' }
+            { timeout: 600000, responseType: 'stream', headers: { 'Content-Type': 'application/json' } }
         );
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('X-Accel-Buffering', 'no');
         result.data.pipe(res);
+        result.data.on('error', () => { if (!res.writableEnded) res.end(); });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: e.message })}\n\n`);
+            res.end();
+        }
     }
 }
+
+// ─── Helper: LockSem lookup by room + slot ────────────────────
+// Queries LockSem for today's day, matches room inside slotData,
+// joins timetable to get dept/session, and returns context object.
+async function lookupLocksem(room, slot, date) {
+    try {
+        // Get day-of-week from the date string (YYYY-MM-DD)
+        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const dayName = DAYS[new Date(date).getDay()];
+
+        // Find all LockSem records for this slot + day that have this room in slotData
+        const records = await LockSem.aggregate([
+            {
+                $match: {
+                    slot: slot,
+                    day:  dayName,
+                    'slotData.room': { $regex: new RegExp(`^${room}$`, 'i') },
+                }
+            },
+            {
+                $lookup: {
+                    from:         'timetables',
+                    localField:   'timetable',
+                    foreignField: '_id',
+                    as:           'timetableData',
+                }
+            },
+            { $unwind: '$timetableData' },
+            // Only active/published timetables
+            { $match: { 'timetableData.currentSession': true } },
+            { $limit: 1 }
+        ]);
+
+        if (!records.length) return null;
+
+        const rec       = records[0];
+        const tt        = rec.timetableData;
+        // slotData may have multiple entries; find the one with this room
+        const slotEntry = rec.slotData.find(
+            s => s.room && s.room.toLowerCase() === room.toLowerCase()
+        );
+
+        if (!slotEntry) return null;
+
+        // session is like "2023-2027" or "2024-2028"
+        // batch year = start year of session (first 4 digits)
+        const session   = tt.session || '';
+        const batchYear = session.split('-')[0] || String(new Date().getFullYear());
+
+        // timetable.name is like "BTECH" or "B.TECH", dept is like "CSE"
+        // Sanitize: uppercase, remove dots/spaces
+        const degree = (tt.name || 'BTECH').toUpperCase().replace(/[\s.]/g, '');
+        const dept   = (tt.dept  || '').trim().toUpperCase().replace(/\s+/g, '_');
+
+        // batch folder name: BTECH_CSE_2023
+        const batch = `${degree}_${dept}_${batchYear}`;
+
+        return {
+            batch,
+            subject:   slotEntry.subject  || '',
+            faculty:   slotEntry.faculty  || '',
+            sem:       rec.sem            || '',
+            dept,
+            degree,
+            session,
+            batchYear,
+            locksemId: rec._id.toString(),
+            timetableId: tt._id.toString(),
+            timetableName: tt.name,
+            day: dayName,
+        };
+    } catch (err) {
+        console.error('[lookupLocksem] error:', err.message);
+        return null;
+    }
+}
+
 
 // ─── ML Service Health ────────────────────────────────────────
 router.get('/health', async (req, res) => {
@@ -357,6 +445,56 @@ router.post('/test-pipeline', async (req, res) => {
         ground_truth_file:  groundTruthFile || '',
         threshold:          parseFloat(threshold) || 0.45,
         frame_skip:         parseInt(frameSkip)    || 10
+    }, res);
+});
+
+// ─── Run Attendance via RTSP ───────────────────────────────────
+// 1. Lookup LockSem using room + slot + date to get batch/subject/faculty
+// 2. Derive ground truth folder name from timetable session
+// 3. Stream SSE from Python ML service
+router.post('/run-attendance-rtsp', async (req, res) => {
+    const { room, slot, date, rtspUrl, durationSec, frameSkip, batch: manualBatch,
+            subject: manualSubject, faculty: manualFaculty, semester: manualSem,
+            locksemId: manualLocksemId } = req.body;
+
+    // Step 1: Try to auto-resolve context from LockSem
+    let ctx = null;
+    if (room && slot && date) {
+        ctx = await lookupLocksem(room, slot, date);
+        if (ctx) {
+            console.log(`[AttendanceRTSP] LockSem matched → batch=${ctx.batch} subject=${ctx.subject} faculty=${ctx.faculty}`);
+        } else {
+            console.warn(`[AttendanceRTSP] No LockSem match for room=${room} slot=${slot} date=${date} — using manual batch`);
+        }
+    }
+
+    // Step 2: Build final payload, preferring LockSem data over manual inputs
+    const resolvedBatch   = ctx?.batch    || manualBatch || '';
+    const resolvedSubject = ctx?.subject  || manualSubject || '';
+    const resolvedFaculty = ctx?.faculty  || manualFaculty || '';
+    const resolvedSem     = ctx?.sem      || manualSem    || '';
+    const resolvedLocksem = ctx?.locksemId|| manualLocksemId || '';
+
+    if (!resolvedBatch) {
+        return res.status(400).json({
+            error: 'Could not determine batch. Either timetable not found for this room/slot/date, or select batch manually.',
+            room, slot, date,
+            hint: 'Make sure the timetable is locked (LockSem) and currentSession=true on the timetable.'
+        });
+    }
+
+    console.log(`[AttendanceRTSP] Running with batch=${resolvedBatch} rtsp=${rtspUrl} duration=${durationSec}s`);
+
+    // Step 3: Pipe to Python with resolved context injected
+    await pipeStream('run-attendance-rtsp', {
+        ...req.body,
+        batch:     resolvedBatch,
+        subject:   resolvedSubject,
+        faculty:   resolvedFaculty,
+        semester:  resolvedSem,
+        locksemId: resolvedLocksem,
+        // Pass context back so the frontend can display it after 'done' event
+        _resolvedCtx: ctx || null,
     }, res);
 });
 
