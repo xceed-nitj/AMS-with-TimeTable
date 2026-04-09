@@ -143,7 +143,7 @@ def _update_preview(frame, zoom_boxes, current_pass=0):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
     prev = cv2.resize(vis, (960, 540))
-    _, buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 70])
+    _, buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 95])
     with _preview_lock:
         _preview_frame = buf.tobytes()
 
@@ -343,7 +343,7 @@ def extract_rtsp_stream(req: RTSPRequest):
 #    _detect_faces_tiled will overwrite this with the annotated version.
                 try:
                     prev_raw = cv2.resize(frame, (960, 540))
-                    _, raw_buf = cv2.imencode('.jpg', prev_raw, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                    _, raw_buf = cv2.imencode('.jpg', prev_raw, [cv2.IMWRITE_JPEG_QUALITY, 95])
                     with _preview_lock:
                       _preview_frame = raw_buf.tobytes()
                 except Exception:
@@ -662,7 +662,7 @@ def _save_clusters(
             fname = f"gt_{ts:.1f}s_f{idx}.jpg"
             fpath = os.path.join(folder_path, fname)
             if not os.path.exists(fpath):
-                cv2.imwrite(fpath, crop)
+                cv2.imwrite(fpath, crop, [cv2.IMWRITE_JPEG_QUALITY, 100])
                 saved += 1
             scores[fname] = round(quality, 4)
 

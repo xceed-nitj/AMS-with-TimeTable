@@ -9,3 +9,4 @@ uploads/
 .cache
 
 .vscode
+server/ground_truth/

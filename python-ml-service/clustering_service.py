@@ -71,7 +71,7 @@ def _build_ui_mask(H: int, W: int) -> np.ndarray:
 # ─────────────────────────────────────────────────────────────────────────────
 # FIX-D — CLAHE for per-tile contrast enhancement
 # ─────────────────────────────────────────────────────────────────────────────
-_clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+_clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
 
 def _apply_clahe(bgr: np.ndarray) -> np.ndarray:
     bgr = cv2.bilateralFilter(bgr, 5, 50, 50)   # suppress RTSP artifacts
@@ -353,16 +353,16 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             continue
 
         ch, cw = crop.shape[:2]
-        target = 200
+        target = 400
         if cw < target or ch < target:
             scale_up = max(target / cw, target / ch)
             new_w    = int(cw * scale_up)
             new_h    = int(ch * scale_up)
             crop     = cv2.resize(crop, (new_w, new_h),
-                                  interpolation=cv2.INTER_LINEAR)
+                                  interpolation=cv2.INTER_CUBIC)
 
-        blur = cv2.GaussianBlur(crop, (0, 0), 3)
-        crop = cv2.addWeighted(crop, 1.8, blur, -0.8, 0)
+        blur = cv2.GaussianBlur(crop, (0, 0), 1.5)
+        crop = cv2.addWeighted(crop, 1.5, blur, -0.5, 0)
         crop = np.clip(crop, 0, 255).astype(np.uint8)
 
         results.append({
