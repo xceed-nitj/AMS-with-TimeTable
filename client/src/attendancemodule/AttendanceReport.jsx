@@ -1,13 +1,14 @@
 // client/src/attendancemodule/AttendanceReport.jsx
-// Input: room + slot + video → auto-lookup from LockSem → attendance report
+// Input: room + slot + RTSP URL → auto-lookup from LockSem → attendance report
 
 import { useState, useEffect, useCallback } from 'react';
-import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
+import { DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 import getEnvironment from '../getenvironment';
 
-const apiUrl = getEnvironment();
+const apiUrl     = getEnvironment();
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
+const ML_API     = `${apiUrl}/ml`;
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 
 const SLOT_LABELS = {
@@ -22,50 +23,96 @@ const SLOT_LABELS = {
 };
 
 export default function AttendanceReport() {
-    const [tab, setTab]               = useState('run');
+    const [tab, setTab] = useState('run');
 
-    // ── Inputs: only room + slot + video ─────────────────────────
-    const [room,      setRoom]      = useState('');
-    const [slot,      setSlot]      = useState('');
-    const [videoLink, setVideoLink] = useState('');
-    const [date,      setDate]      = useState(new Date().toISOString().split('T')[0]);
+    // ── Inputs ────────────────────────────────────────────────────
+    const [room,     setRoom]     = useState('');
+    const [slot,     setSlot]     = useState('');
+    const [rtspUrl,  setRtspUrl]  = useState('');
+    const [date,     setDate]     = useState(new Date().toISOString().split('T')[0]);
+    const [duration, setDuration] = useState(120);
+    // ── Room list from DB ─────────────────────────────────────────
+    const [rooms,        setRooms]        = useState([]);
+    const [roomSearch,   setRoomSearch]   = useState('');
+    const [showRoomDrop, setShowRoomDrop] = useState(false);
+
+    // ── Timetable auto-lookup state ───────────────────────────────
+    // null | 'loading' | 'found' | 'notfound'
+    const [ttStatus, setTtStatus] = useState(null);
 
     // ── Fallback batch (if LockSem lookup fails) ──────────────────
     const [degree,     setDegree]     = useState('BTECH');
     const [department, setDepartment] = useState('');
     const [year,       setYear]       = useState('');
-    // Departments from DB — ensures folder names match timetable exactly
     const { departments, deptLoading, deptError } = useDepartments();
-    // Sanitize dept: replace spaces with _ so folder paths are valid
     const sanitizeDept = (d) => (d || '').trim().replace(/\s+/g, '_').toUpperCase();
     const manualBatch = degree && department && year
         ? `${degree}_${sanitizeDept(department)}_${year}` : null;
 
     // ── Run state ─────────────────────────────────────────────────
-    const [processing,   setProcessing]   = useState(false);
-    const [saving,       setSaving]       = useState(false);
-    const [mlResult,     setMlResult]     = useState(null);
-    const [savedReport,  setSavedReport]  = useState(null);
-    const [derivedCtx,   setDerivedCtx]   = useState(null);
+    const [processing,  setProcessing]  = useState(false);
+    const [streamLog,   setStreamLog]   = useState([]);
+    const [liveStats,   setLiveStats]   = useState(null);
+    const [saving,      setSaving]      = useState(false);
+    const [mlResult,    setMlResult]    = useState(null);
+    const [savedReport, setSavedReport] = useState(null);
+    const [derivedCtx,  setDerivedCtx]  = useState(null);
 
     // ── History ───────────────────────────────────────────────────
-    const [reports,      setReports]      = useState([]);
-    const [histLoading,  setHistLoading]  = useState(false);
-    const [filterBatch,  setFilterBatch]  = useState('');
-    const [filterDate,   setFilterDate]   = useState('');
+    const [reports,     setReports]     = useState([]);
+    const [histLoading, setHistLoading] = useState(false);
+    const [filterBatch, setFilterBatch] = useState('');
+    const [filterDate,  setFilterDate]  = useState('');
 
     // ── Detail ────────────────────────────────────────────────────
-    const [detailReport,   setDetailReport]   = useState(null);
-    const [detailLoading,  setDetailLoading]  = useState(false);
+    const [detailReport,  setDetailReport]  = useState(null);
+    const [detailLoading, setDetailLoading] = useState(false);
 
     const [toast, setToast] = useState(null);
-
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 5000);
     };
 
-    // ── Fetch reports ─────────────────────────────────────────────
+    // ── Fetch room list from DB on mount ──────────────────────────
+    useEffect(() => {
+        (async () => {
+            try {
+                const res  = await fetch(`${apiUrl}/timetablemodule/lock/rooms`);
+                const data = await res.json();
+                setRooms(data.rooms || []);
+            } catch { /* silently ignore */ }
+        })();
+    }, []);
+
+    // ── Timetable auto-lookup when room + slot change ─────────────
+    // Date is NOT used for lookup — only room + slot identify the class.
+    // Date is only used when saving the report.
+    useEffect(() => {
+        if (!room || !slot) { setDerivedCtx(null); setTtStatus(null); return; }
+        const ctrl = new AbortController();
+        setTtStatus('loading');
+        (async () => {
+            try {
+                const params = new URLSearchParams({ room, slot });
+                const res = await fetch(
+                    `${apiUrl}/timetablemodule/lock/attendance-lookup?${params}`,
+                    { signal: ctrl.signal }
+                );
+                if (!res.ok) throw new Error('not found');
+                const data = await res.json();
+                setDerivedCtx(data);
+                setTtStatus('found');
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                setDerivedCtx(null);
+                setTtStatus('notfound');
+            }
+        })();
+        return () => ctrl.abort();
+    }, [room, slot]); // ← only room + slot, NOT date
+
+    // ── Fetch saved reports ───────────────────────────────────────
     const fetchReports = useCallback(async () => {
         setHistLoading(true);
         try {
@@ -81,32 +128,93 @@ export default function AttendanceReport() {
 
     useEffect(() => { if (tab === 'history') fetchReports(); }, [tab, fetchReports]);
 
-    // ── Run attendance ────────────────────────────────────────────
+    // ── Run attendance — SSE stream ───────────────────────────────
     const runAttendance = async () => {
-        if (!videoLink.trim()) { showToast('Paste the video file path', 'error'); return; }
-        if (!room)             { showToast('Enter room number', 'error'); return; }
-        if (!slot)             { showToast('Select a slot', 'error'); return; }
+        if (!rtspUrl.trim()) { showToast('Paste the RTSP URL', 'error'); return; }
+        if (!room)           { showToast('Enter room number', 'error'); return; }
+        if (!slot)           { showToast('Select a slot', 'error'); return; }
 
-        setProcessing(true); setMlResult(null); setSavedReport(null); setDerivedCtx(null);
+        const effectiveBatch = derivedCtx?.batch || manualBatch;
+        if (!effectiveBatch) {
+            showToast('Batch not found — expand "Batch override" and fill in Degree/Dept/Year', 'error');
+            return;
+        }
+
+        setProcessing(true); setMlResult(null); setSavedReport(null);
+        setStreamLog([]); setLiveStats(null);
+
         try {
-            const res = await fetch(`${API_BASE}/run-attendance`, {
-                method: 'POST',
+            const response = await fetch(`${ML_API}/run-attendance-rtsp`, {
+                method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    videoLink: videoLink.trim(),
-                    room, slot, date,
-                    batch: manualBatch, // fallback
+                    rtspUrl:     rtspUrl.trim(),
+                    batch:       effectiveBatch,
+                    room, slot,
+                    date,        // date sent only for saving, NOT for LockSem lookup
+                    durationSec: duration,
+                    frameSkip:   10,
+                    subject:     derivedCtx?.subject   || '',
+                    faculty:     derivedCtx?.faculty   || '',
+                    semester:    derivedCtx?.sem        || '',
+                    locksemId:   derivedCtx?.locksemId || '',
                 }),
             });
-            const data = await res.json();
-            if (data.error) showToast(data.error, 'error');
-            else {
-                setMlResult(data);
-                if (data.metadata) setDerivedCtx(data.metadata);
-                showToast('Processed — review and save');
+
+            if (!response.ok) {
+                // Non-SSE error response (e.g. 400 batch not found)
+                const errData = await response.json().catch(() => ({}));
+                showToast(errData.error || `Server error ${response.status}`, 'error');
+                setProcessing(false);
+                return;
             }
-        } catch (e) { showToast('Failed: ' + e.message, 'error'); }
-        setProcessing(false);
+
+            // Read SSE stream
+            const reader  = response.body.getReader();
+            const decoder = new TextDecoder();
+            let   buffer  = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const parts = buffer.split('\n\n');
+                buffer = parts.pop(); // keep incomplete last chunk
+                for (const part of parts) {
+                    const dataLine = part.split('\n').find(l => l.startsWith('data: '));
+                    if (!dataLine) continue;
+                    try {
+                        const ev = JSON.parse(dataLine.slice(6).trim());
+                        if (ev.type === 'stage') {
+                            setStreamLog(prev => [...prev, ev.message]);
+                        }
+                        if (ev.type === 'frame') {
+                            setLiveStats({
+                                frames:    ev.frame,
+                                faces:     ev.total_embs,
+                                elapsed:   ev.elapsed,
+                                remaining: ev.remaining,
+                            });
+                        }
+                        if (ev.type === 'done') {
+                            setMlResult(ev.result);
+                            if (ev.result?.metadata) {
+                                setDerivedCtx(prev => ({ ...prev, ...ev.result.metadata }));
+                            }
+                            showToast('Processed — review and save');
+                            setProcessing(false);
+                        }
+                        if (ev.type === 'error') {
+                            showToast(ev.message, 'error');
+                            setProcessing(false);
+                        }
+                    } catch {}
+                }
+            }
+        } catch (e) {
+            showToast('Failed: ' + e.message, 'error');
+            setProcessing(false);
+        }
     };
 
     // ── Save report ───────────────────────────────────────────────
@@ -125,8 +233,8 @@ export default function AttendanceReport() {
                     subject:    ctx.subject    || '',
                     faculty:    ctx.faculty    || '',
                     room, date, timeSlot: slot,
-                    locksemId: ctx.locksemId   || null,
-                    videoLink: videoLink.trim(),
+                    locksemId:  ctx.locksemId  || null,
+                    videoLink:  rtspUrl.trim(),
                     mlResult,
                 }),
             });
@@ -180,17 +288,6 @@ export default function AttendanceReport() {
         } catch { showToast('Delete failed', 'error'); }
     };
 
-    const mlStats = (() => {
-        if (!mlResult?.attendance) return null;
-        const arr = Object.values(mlResult.attendance);
-        return {
-            present: arr.filter(s => s.status === 'present').length,
-            review:  arr.filter(s => s.status === 'review').length,
-            absent:  arr.filter(s => s.status === 'absent').length,
-            total:   arr.length,
-        };
-    })();
-
     return (
         <div style={styles.page}>
             <style>{cssReset}</style>
@@ -209,7 +306,7 @@ export default function AttendanceReport() {
             <div style={{ marginBottom: 24 }}>
                 <div style={styles.heading}>Attendance Reports</div>
                 <div style={styles.subheading}>
-                    Enter room + slot + video — faculty, subject, batch auto-fetched from timetable
+                    Enter room + slot + RTSP URL — faculty, subject, batch auto-fetched from timetable
                 </div>
             </div>
 
@@ -233,13 +330,49 @@ export default function AttendanceReport() {
                     <div style={{ ...styles.card, marginBottom: 16 }}>
                         <div style={{ ...styles.sectionTitle, marginBottom: 14 }}>Class Identification</div>
 
-                        {/* Primary inputs: room + slot + date */}
+                        {/* Room + Slot + Date */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-                            <div>
+                            <div style={{ position: 'relative' }}>
                                 <label style={styles.label}>Room No</label>
-                                <input placeholder="e.g. lt101" value={room}
-                                    onChange={e => setRoom(e.target.value)}
-                                    style={styles.input} />
+                                <input
+                                    placeholder="Search room..."
+                                    value={showRoomDrop ? roomSearch : room}
+                                    onChange={e => { setRoomSearch(e.target.value); setShowRoomDrop(true); }}
+                                    onFocus={() => { setRoomSearch(''); setShowRoomDrop(true); }}
+                                    onBlur={() => setTimeout(() => setShowRoomDrop(false), 150)}
+                                    style={styles.input}
+                                />
+                                {showRoomDrop && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', left: 0, right: 0,
+                                        background: '#1a2035', border: `1px solid ${theme.border}`,
+                                        borderRadius: '6px', zIndex: 100,
+                                        maxHeight: 220, overflowY: 'auto',
+                                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                    }}>
+                                        {rooms
+                                            .filter(r => r.toLowerCase().includes(roomSearch.toLowerCase()))
+                                            .map(r => (
+                                                <div key={r}
+                                                    onMouseDown={() => { setRoom(r); setRoomSearch(''); setShowRoomDrop(false); }}
+                                                    style={{
+                                                        padding: '9px 14px', cursor: 'pointer',
+                                                        fontSize: '13px', color: theme.text,
+                                                        borderBottom: `1px solid ${theme.border}`,
+                                                        background: r === room ? theme.accentDim : 'transparent',
+                                                    }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = theme.accentDim}
+                                                    onMouseLeave={e => e.currentTarget.style.background = r === room ? theme.accentDim : 'transparent'}
+                                                >{r}</div>
+                                            ))
+                                        }
+                                        {rooms.filter(r => r.toLowerCase().includes(roomSearch.toLowerCase())).length === 0 && (
+                                            <div style={{ padding: '9px 14px', color: theme.textMuted, fontSize: '12px' }}>
+                                                No rooms match "{roomSearch}"
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label style={styles.label}>Slot</label>
@@ -251,21 +384,41 @@ export default function AttendanceReport() {
                                 </select>
                             </div>
                             <div>
-                                <label style={styles.label}>Date</label>
+                                <label style={styles.label}>Date (for saving only)</label>
                                 <input type="date" value={date}
                                     onChange={e => setDate(e.target.value)}
                                     style={styles.input} />
                             </div>
                         </div>
 
-                        {/* Derived context display after run */}
-                        {derivedCtx && (
+                        {/* Timetable lookup status banners */}
+                        {ttStatus === 'loading' && (
+                            <div style={{
+                                padding: '8px 14px', borderRadius: '6px', marginBottom: 14,
+                                background: theme.accentDim, border: `1px solid ${theme.accent}`,
+                                fontSize: '12px', color: theme.accent,
+                            }}>
+                                🔍 Looking up timetable for {room} / {SLOT_LABELS[slot]}…
+                            </div>
+                        )}
+                        {ttStatus === 'notfound' && (
+                            <div style={{
+                                padding: '8px 14px', borderRadius: '6px', marginBottom: 14,
+                                background: theme.warningDim, border: `1px solid ${theme.warning}`,
+                                fontSize: '12px', color: theme.warning,
+                            }}>
+                                ⚠️ No timetable entry found for this room/slot — expand "Batch override" below and fill in manually.
+                            </div>
+                        )}
+
+                        {/* Derived context display after timetable lookup */}
+                        {derivedCtx && ttStatus === 'found' && (
                             <div style={{
                                 padding: '10px 14px', borderRadius: '6px', marginBottom: 14,
                                 background: theme.successDim, border: `1px solid ${theme.success}`,
                                 fontSize: '12px', display: 'flex', gap: 20, flexWrap: 'wrap',
                             }}>
-                                <span style={{ color: theme.success, fontWeight: 700 }}>Timetable matched</span>
+                                <span style={{ color: theme.success, fontWeight: 700 }}>✓ Timetable matched</span>
                                 {[
                                     ['Batch',   derivedCtx.batch],
                                     ['Subject', derivedCtx.subject],
@@ -281,10 +434,10 @@ export default function AttendanceReport() {
                             </div>
                         )}
 
-                        {/* Fallback batch selector (collapsed by default) */}
+                        {/* Fallback batch selector */}
                         <details style={{ marginBottom: 14 }}>
                             <summary style={{ fontSize: '12px', color: theme.textMuted, cursor: 'pointer', marginBottom: 10 }}>
-                                Batch override (if timetable lookup fails)
+                                ▶ Batch override (if timetable lookup fails)
                             </summary>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginTop: 10 }}>
                                 <div>
@@ -295,12 +448,8 @@ export default function AttendanceReport() {
                                 </div>
                                 <div>
                                     <label style={styles.label}>Department</label>
-                                    <select
-                                        value={department}
-                                        onChange={e => setDepartment(e.target.value)}
-                                        style={styles.select}
-                                        disabled={deptLoading}
-                                    >
+                                    <select value={department} onChange={e => setDepartment(e.target.value)}
+                                        style={styles.select} disabled={deptLoading}>
                                         <option value="">
                                             {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
                                         </option>
@@ -320,28 +469,38 @@ export default function AttendanceReport() {
                             </div>
                             {manualBatch && (
                                 <div style={{ marginTop: 10, fontSize: '12px', color: theme.accent, fontFamily: theme.fontMono }}>
-                                    Fallback: {manualBatch}
+                                    Fallback batch: {manualBatch}
                                 </div>
                             )}
                         </details>
 
-                        {/* Video path + Run */}
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-                            <div style={{ flex: 1 }}>
-                                <label style={styles.label}>Video File Path</label>
+                        {/* RTSP URL + Duration + Run */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, alignItems: 'flex-end' }}>
+                            <div>
+                                <label style={styles.label}>RTSP URL</label>
                                 <input
-                                    placeholder="C:\Videos\class_recording.mp4"
-                                    value={videoLink}
-                                    onChange={e => setVideoLink(e.target.value)}
+                                    placeholder="rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp"
+                                    value={rtspUrl}
+                                    onChange={e => setRtspUrl(e.target.value)}
                                     style={{ ...styles.input, fontFamily: theme.fontMono }}
                                 />
                             </div>
+                            <div>
+                                <label style={styles.label}>Duration</label>
+                                <select value={duration} onChange={e => setDuration(Number(e.target.value))} style={styles.select}>
+                                    <option value={30}>30 seconds</option>
+                                    <option value={60}>60 seconds</option>
+                                    <option value={120}>120 seconds</option>
+                                    <option value={180}>180 seconds</option>
+                                    <option value={300}>300 seconds</option>
+                                </select>
+                            </div>
                             <button
                                 onClick={runAttendance}
-                                disabled={processing || !videoLink.trim() || !room || !slot}
+                                disabled={processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
                                 style={{
                                     ...styles.btnPrimary, minWidth: 170,
-                                    opacity: (processing || !videoLink.trim() || !room || !slot) ? 0.5 : 1,
+                                    opacity: (processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)) ? 0.5 : 1,
                                 }}
                             >
                                 {processing ? (
@@ -353,71 +512,101 @@ export default function AttendanceReport() {
                                             borderRadius: '50%', animation: 'spin 0.8s linear infinite',
                                             display: 'inline-block',
                                         }} />
-                                        Processing...
+                                        {liveStats ? `${liveStats.remaining}s left…` : 'Connecting…'}
                                     </span>
                                 ) : 'Run Attendance'}
                             </button>
                         </div>
+
+                        {/* Live stream log while processing */}
+                        {processing && streamLog.length > 0 && (
+                            <div style={{
+                                marginTop: 14, padding: '10px 14px', background: theme.bg,
+                                borderRadius: 6, fontFamily: theme.fontMono, fontSize: '12px',
+                                color: theme.textMuted, maxHeight: 120, overflowY: 'auto',
+                            }}>
+                                {streamLog.map((msg, i) => <div key={i}>{msg}</div>)}
+                                {liveStats && (
+                                    <div style={{ color: theme.accent, marginTop: 4 }}>
+                                        Frame {liveStats.frames} | {liveStats.faces} faces | {liveStats.remaining}s remaining
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {processing && (
                         <div style={{ ...styles.card, textAlign: 'center', padding: '48px 20px' }}>
-                            <div style={{ width: 40, height: 40, margin: '0 auto 16px',
+                            <div style={{
+                                width: 40, height: 40, margin: '0 auto 16px',
                                 border: `3px solid ${theme.border}`, borderTopColor: theme.accent,
-                                borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                            <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>Processing Video</div>
+                                borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+                            }} />
+                            <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>Processing Stream</div>
                             <div style={{ fontSize: '13px', color: theme.textMuted }}>
-                                Detecting faces and matching against ground truth embeddings...
+                                Detecting faces and matching against ground truth embeddings…
                             </div>
                         </div>
                     )}
 
-                    {mlResult && !processing && (
-                        <div style={{ animation: 'fadeIn 0.4s' }}>
-                            <StatBar stats={[
-                                { label: 'Total',   val: mlStats.total,   color: theme.text    },
-                                { label: 'Present', val: mlStats.present, color: theme.success  },
-                                { label: 'Review',  val: mlStats.review,  color: theme.warning  },
-                                { label: 'Absent',  val: mlStats.absent,  color: theme.danger   },
-                            ]} theme={theme} styles={styles} />
+                    {mlResult && !processing && (() => {
+                        const arr = Object.values(mlResult.attendance || {});
+                        const stats = {
+                            present: arr.filter(s => s.status === 'present').length,
+                            review:  arr.filter(s => s.status === 'review').length,
+                            absent:  arr.filter(s => s.status === 'absent').length,
+                            total:   arr.length,
+                        };
+                        return (
+                            <div style={{ animation: 'fadeIn 0.4s' }}>
+                                <StatBar stats={[
+                                    { label: 'Total',   val: stats.total,   color: theme.text    },
+                                    { label: 'Present', val: stats.present, color: theme.success  },
+                                    { label: 'Review',  val: stats.review,  color: theme.warning  },
+                                    { label: 'Absent',  val: stats.absent,  color: theme.danger   },
+                                ]} theme={theme} styles={styles} />
 
-                            <div style={{ ...styles.card, marginBottom: 16,
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                                <div>
-                                    <div style={{ fontSize: '14px', fontWeight: 600 }}>Save to Database</div>
-                                    <div style={{ fontSize: '12px', color: theme.textMuted, marginTop: 2 }}>
-                                        {derivedCtx
-                                            ? `${derivedCtx.batch} · ${derivedCtx.subject || '—'} · ${derivedCtx.faculty || '—'}`
-                                            : 'Persist for later review and finalization'}
+                                <div style={{
+                                    ...styles.card, marginBottom: 16,
+                                    display: 'flex', alignItems: 'center',
+                                    justifyContent: 'space-between', gap: 12,
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: '14px', fontWeight: 600 }}>Save to Database</div>
+                                        <div style={{ fontSize: '12px', color: theme.textMuted, marginTop: 2 }}>
+                                            {derivedCtx
+                                                ? `${derivedCtx.batch} · ${derivedCtx.subject || '—'} · ${derivedCtx.faculty || '—'}`
+                                                : 'Persist for later review and finalization'}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                        {savedReport && <span style={{ ...styles.badge('success'), fontSize: '12px' }}>Saved</span>}
+                                        <button onClick={saveReport} disabled={saving || !!savedReport}
+                                            style={{ ...styles.btnPrimary, opacity: (saving || !!savedReport) ? 0.5 : 1 }}>
+                                            {saving ? 'Saving...' : savedReport ? 'Saved' : 'Save Report'}
+                                        </button>
+                                        {savedReport && (
+                                            <button onClick={() => openDetail(savedReport.reportId)} style={styles.btnGhost}>
+                                                View Detail
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                    {savedReport && <span style={{ ...styles.badge('success'), fontSize: '12px' }}>Saved</span>}
-                                    <button onClick={saveReport} disabled={saving || !!savedReport}
-                                        style={{ ...styles.btnPrimary, opacity: (saving || !!savedReport) ? 0.5 : 1 }}>
-                                        {saving ? 'Saving...' : savedReport ? 'Saved' : 'Save Report'}
-                                    </button>
-                                    {savedReport && (
-                                        <button onClick={() => openDetail(savedReport.reportId)} style={styles.btnGhost}>
-                                            View Detail
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
 
-                            <AttendanceTable
-                                rows={Object.entries(mlResult.attendance || {}).map(([rollNo, d]) => ({
-                                    rollNo,
-                                    status:         d.status,
-                                    avgConfidence:  d.avg_confidence,
-                                    confidenceZone: d.confidence_zone,
-                                    firstSeenSec:   d.first_seen_sec,
-                                    finalStatus: d.status === 'present' ? 'P' : d.status === 'review' ? 'R' : 'A',
-                                }))}
-                                readOnly theme={theme} styles={styles}
-                            />
-                        </div>
-                    )}
+                                <AttendanceTable
+                                    rows={Object.entries(mlResult.attendance || {}).map(([rollNo, d]) => ({
+                                        rollNo,
+                                        status:         d.status,
+                                        avgConfidence:  d.avg_confidence,
+                                        confidenceZone: d.confidence_zone,
+                                        firstSeenSec:   d.first_seen_sec,
+                                        finalStatus: d.status === 'present' ? 'P' : d.status === 'review' ? 'R' : 'A',
+                                    }))}
+                                    readOnly theme={theme} styles={styles}
+                                />
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
 
