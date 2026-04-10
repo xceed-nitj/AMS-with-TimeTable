@@ -4,6 +4,5 @@ package-lock.json
 package.json
 node_modules
 yarn.lock
-
 .vs
-server/ground_truth/
+ server/ground_truth/
