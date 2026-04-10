@@ -730,6 +730,280 @@ def _update_info(folder_path, new_scores, top_n, embed_n):
     with open(info_path, "w") as fi:
         json.dump(info, fi, indent=2)
 
+class RTSPAttendanceRequest(BaseModel):
+    rtspUrl:          str
+    batch:            str
+    room:             str
+    slot:             str
+    date:             str
+    durationSec:      int   = 120
+    frameSkip:        int   = 10
+    clusterThreshold: float = 0.45
+    minSamples:       int   = 3
+    autoThreshold:    float = 0.60
+    reviewThreshold:  float = 0.40
+    subject:          str   = ''
+    faculty:          str   = ''
+    semester:         str   = ''
+    locksemId:        str   = ''
+
+@router.post("/run-attendance-rtsp")
+def run_attendance_rtsp(req: RTSPAttendanceRequest):
+    if state.face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+
+    def generate():
+        def sse(obj):
+            return f"data: {json.dumps(obj)}\n\n"
+
+        # ── Step 1: Load ground truth embeddings from batch folder ────────
+        batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
+        logger.info("[run-attendance-rtsp] batch_dir=%s", batch_dir)
+
+        if not os.path.isdir(batch_dir):
+            yield sse({"type": "error",
+                       "message": f"Ground truth folder not found: {batch_dir}. "
+                                  f"Run ground truth acquisition for batch '{req.batch}' first."})
+            return
+
+        yield sse({"type": "stage",
+                   "message": f"Loading ground truth for batch: {req.batch}…"})
+
+        enrolled = {}   # { roll_no: normalized mean embedding }
+        IMG_EXTS_LOCAL = (".jpg", ".jpeg", ".png", ".webp")
+
+        for folder in sorted(os.listdir(batch_dir)):
+            fp = os.path.join(batch_dir, folder)
+            if not os.path.isdir(fp):
+                continue
+            # Skip unassigned person_XXX folders — only roll-number folders count
+            if re.match(r'^person_\d+$', folder, re.IGNORECASE):
+                logger.debug("Skipping unassigned folder: %s", folder)
+                continue
+
+            roll_no = folder  # folder name IS the roll number
+
+            # Use embedding_files from _info.json if available (best quality images)
+            info_path = os.path.join(fp, '_info.json')
+            photos = []
+            if os.path.exists(info_path):
+                try:
+                    with open(info_path) as fi:
+                        info = json.load(fi)
+                    photos = [f for f in info.get('embedding_files', [])
+                              if os.path.exists(os.path.join(fp, f))]
+                except Exception:
+                    photos = []
+
+            if not photos:
+                photos = [f for f in os.listdir(fp)
+                          if f.lower().endswith(IMG_EXTS_LOCAL)
+                          and not f.startswith('_')]
+
+            embs = []
+            for photo in photos[:5]:
+                img = cv2.imread(os.path.join(fp, photo))
+                if img is None:
+                    continue
+                faces = state.face_app.get(img)
+                if faces:
+                    emb  = faces[0].embedding
+                    norm = np.linalg.norm(emb)
+                    if norm > 0:
+                        embs.append(emb / norm)
+
+            if embs:
+                mean_emb = np.mean(embs, axis=0)
+                enrolled[roll_no] = mean_emb / np.linalg.norm(mean_emb)
+
+        if not enrolled:
+            yield sse({"type": "error",
+                       "message": f"No enrolled (roll-number named) students found in '{batch_dir}'. "
+                                  f"Make sure you have assigned roll numbers to person folders."})
+            return
+
+        yield sse({"type": "stage",
+                   "message": f"{len(enrolled)} students loaded — connecting to RTSP camera…"})
+
+        # ── Step 2: Open RTSP stream ──────────────────────────────────────
+        cap = _open_capture(req.rtspUrl)
+        if not cap.isOpened():
+            yield sse({"type": "error",
+                       "message": f"Cannot open RTSP stream: {req.rtspUrl}"})
+            return
+
+        H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+
+        # Downscale 4K → 1080p for speed
+        scale  = min(1.0, 1080 / H) if H > 1080 else 1.0
+        disp_H = int(H * scale)
+        disp_W = int(W * scale)
+        ui_mask = _build_ui_mask(disp_H, disp_W)
+
+        yield sse({"type": "stage",
+                   "message": f"Stream open {W}×{H} — recording for {req.durationSec}s…"})
+
+        # ── Step 3: Collect face embeddings for durationSec seconds ───────
+        all_embeddings  = []
+        all_face_images = []
+        all_timestamps  = []
+        all_quality     = []
+
+        reader      = _RTSPReader(cap, decode_every=req.frameSkip)
+        last_seq    = 0
+        start_t     = time.time()
+        frame_count = 0
+
+        try:
+            while True:
+                elapsed = time.time() - start_t
+                if elapsed >= req.durationSec:
+                    break
+
+                ok, frame, seq, _ = reader.latest()
+                if not ok or frame is None or seq == last_seq:
+                    time.sleep(0.01)
+                    continue
+
+                last_seq     = seq
+                frame_count += 1
+
+                if scale < 1.0:
+                    frame   = cv2.resize(frame, (disp_W, disp_H),
+                                         interpolation=cv2.INTER_AREA)
+
+                detections = _detect_faces_tiled(state.face_app, frame, ui_mask)
+                for d in detections:
+                    all_embeddings.append(d["embedding"])
+                    all_face_images.append(d["crop"])
+                    all_timestamps.append(round(elapsed, 2))
+                    all_quality.append(d["quality"])
+
+                yield sse({
+                    "type":       "frame",
+                    "frame":      frame_count,
+                    "faces":      len(detections),
+                    "total_embs": len(all_embeddings),
+                    "elapsed":    round(elapsed, 1),
+                    "remaining":  round(req.durationSec - elapsed, 1),
+                })
+        finally:
+            reader.release()
+
+        if not all_embeddings:
+            yield sse({"type": "error", "message": "No faces detected in the RTSP stream during recording."})
+            return
+
+        yield sse({"type": "stage",
+                   "message": f"{len(all_embeddings)} face embeddings collected — clustering…"})
+
+        # ── Step 4: DBSCAN cluster detected faces ─────────────────────────
+        labels, unique_labels = _cluster(
+            all_embeddings, req.clusterThreshold, req.minSamples)
+
+        yield sse({"type": "stage",
+                   "message": f"{len(unique_labels)} unique person clusters — matching against {len(enrolled)} enrolled students…"})
+
+        # ── Step 5: Match each cluster → nearest enrolled student ─────────
+        enrolled_ids  = list(enrolled.keys())
+        enroll_matrix = np.array([enrolled[r] for r in enrolled_ids], dtype=np.float32)
+
+        # Initialize all students as absent
+        attendance = {
+            roll_no: {
+                "status":          "absent",
+                "avg_confidence":  0.0,
+                "confidence_zone": "low",
+                "first_seen_sec":  None,
+                "detections":      0,
+            }
+            for roll_no in enrolled_ids
+        }
+
+        for cluster_id in unique_labels:
+            indices      = np.where(labels == cluster_id)[0]
+            cluster_embs = np.array([all_embeddings[i] for i in indices], dtype=np.float32)
+            cluster_mean = cluster_embs.mean(axis=0)
+            norm         = np.linalg.norm(cluster_mean)
+            if norm == 0:
+                continue
+            cluster_mean /= norm
+
+            # Cosine similarity against all enrolled embeddings at once
+            scores   = enroll_matrix @ cluster_mean
+            best_idx = int(np.argmax(scores))
+            score    = float(scores[best_idx])
+
+            # Only consider if above review threshold
+            if score >= req.reviewThreshold:
+                roll_no = enrolled_ids[best_idx]
+                rec     = attendance[roll_no]
+
+                if score >= req.autoThreshold:
+                    status = "present"
+                    zone   = "high"
+                else:
+                    status = "review"
+                    zone   = "medium"
+
+                # Weighted average confidence across multiple clusters of same person
+                n        = len(indices)
+                prev_n   = rec["detections"]
+                prev_avg = rec["avg_confidence"]
+                new_avg  = ((prev_avg * prev_n) + (score * n)) / (prev_n + n)
+
+                # Only upgrade status (present > review > absent), never downgrade
+                if rec["status"] == "absent" or \
+                   (rec["status"] == "review" and status == "present"):
+                    rec["status"]          = status
+                    rec["confidence_zone"] = zone
+
+                rec["avg_confidence"] = round(new_avg, 4)
+                rec["detections"]     = prev_n + n
+
+                if rec["first_seen_sec"] is None:
+                    rec["first_seen_sec"] = round(float(all_timestamps[indices[0]]), 1)
+
+        present = sum(1 for v in attendance.values() if v["status"] == "present")
+        review  = sum(1 for v in attendance.values() if v["status"] == "review")
+        absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
+
+        yield sse({
+            "type": "done",
+            "result": {
+                "attendance": attendance,
+                "metadata": {
+                    "batch":     req.batch,
+                    "subject":   req.subject,
+                    "faculty":   req.faculty,
+                    "sem":       req.semester,
+                    "locksemId": req.locksemId,
+                    "dept":      req.batch.split("_")[1] if "_" in req.batch else "",
+                },
+                "summary": {
+                    "total_faces_extracted":  len(all_embeddings),
+                    "unique_clusters_found":  len(unique_labels),
+                    "total_enrolled":         len(enrolled),
+                    "present":                present,
+                    "review":                 review,
+                    "absent":                 absent,
+                    "processing_time":        round(time.time() - start_t, 2),
+                    "frames_read":            frame_count,
+                    "duration_sec":           req.durationSec,
+                },
+            },
+        })
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control":     "no-cache",
+            "X-Accel-Buffering": "no",
+            "Content-Type":      "text/event-stream; charset=utf-8",
+        },
+    )
 
 class PreviewRequest(BaseModel):
     rtspUrl: str
