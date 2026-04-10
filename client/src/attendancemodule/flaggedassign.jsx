@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import getEnvironment from '../getenvironment';
-import { DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset } from './config';
+import { DEGREES, YEARS, theme, styles, cssReset } from './config';
+import { useDepartments } from './useDepartments';
 
 const apiUrl  = getEnvironment();
 const RA_BASE = `${apiUrl}/attendancemodule/roll-assign`;
@@ -13,11 +14,13 @@ export default function FlaggedAssign() {
     const [department, setDepartment] = useState('');
     const [year,       setYear]       = useState('');
 
-    const [loading,  setLoading]  = useState(false);
-    const [flagged,  setFlagged]  = useState([]);
-    const [saving,   setSaving]   = useState(null);
-    const [toast,    setToast]    = useState(null);
-    const [modal,    setModal]    = useState(null);    // flagged item
+    const { departments, loading: deptLoading, error: deptError } = useDepartments();
+
+    const [loading,   setLoading]   = useState(false);
+    const [flagged,   setFlagged]   = useState([]);
+    const [saving,    setSaving]    = useState(null);
+    const [toast,     setToast]     = useState(null);
+    const [modal,     setModal]     = useState(null);
     const [rollInput, setRollInput] = useState('');
 
     const batchName = degree && department && year
@@ -134,10 +137,20 @@ export default function FlaggedAssign() {
                     </div>
                     <div>
                         <label style={styles.label}>Department</label>
-                        <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select}>
-                            <option value="">Select…</option>
-                            {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                        <select
+                            value={department}
+                            onChange={e => setDepartment(e.target.value)}
+                            style={styles.select}
+                            disabled={deptLoading}
+                        >
+                            <option value="">
+                                {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
+                            </option>
+                            {departments.map(d => <option key={d}>{d}</option>)}
                         </select>
+                        {deptError && (
+                            <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
+                        )}
                     </div>
                     <div>
                         <label style={styles.label}>Year (Batch)</label>
