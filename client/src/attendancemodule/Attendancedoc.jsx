@@ -150,7 +150,7 @@ export default function Attendancedoc() {
                         style={{
                             padding: '8px 20px', borderRadius: '999px', fontSize: '13px', fontWeight: 600,
                             cursor: 'pointer', transition: 'all 0.15s',
-                            border: `1px solid ${mode === m.id ? theme.accent : theme.border}`,
+                            border: `2px solid ${mode === m.id ? theme.accent : theme.border}`,
                             background: mode === m.id ? theme.accentDim : 'transparent',
                             color: mode === m.id ? theme.accent : theme.textMuted,
                         }}

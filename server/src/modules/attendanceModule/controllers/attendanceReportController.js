@@ -1,22 +1,4 @@
 // server/src/modules/attendanceModule/controllers/attendanceReportController.js
-//
-// Roadmap coverage:
-//   • saveReport        — called after ML processes a video; saves slot result + merges final
-//   • getReports        — list all reports for a batch (with filters)
-//   • getReportById     — full detail of one report
-//   • getReportByDate   — reports for a batch on a specific date
-//   • finalizeReport    — lock the report (draft → finalized)
-//   • deleteReport      — remove a draft report
-//   • getStudentHistory — all sessions for a specific roll number in a batch
-//
-// Logic (from notebook bottom-left):
-//   "Along with present/absent, gives confidence score.
-//    By merging both, logic gives final status."
-//
-//   Merge rule per student across slots:
-//     • If any slot = present with high/medium confidence → final P
-//     • If all slots = absent → final A
-//     • If mix of present(low) and absent → final R (Review)
 
 const AttendanceReport = require('../../../models/attendanceReport');
 const LockSem          = require('../../../models/locksem');

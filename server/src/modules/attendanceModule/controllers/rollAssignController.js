@@ -190,8 +190,9 @@ class RollAssignController {
     }
 
     // ─── Auto-assign all matched clusters immediately after ERP match ──
-    // For each cluster: rename person_XXX → rollNo (best match), save to DB with approved=false.
-    // Unmatched clusters (no face detected) keep their folder and get status=unmatched.
+    // *** CHANGED: No longer renames any folders. ***
+    // Saves DB records with currentFolder = original person_XXX name.
+    // Folder rename happens only when operator clicks Approve (via approve()).
     async autoAssignAll(req, res) {
         try {
             const { batch, matches } = req.body;
@@ -200,20 +201,20 @@ class RollAssignController {
             }
 
             const batchPath = path.join(GROUND_TRUTH_DIR, batch);
-            let renamed = 0, unmatched = 0, conflicts = 0;
+            let saved = 0, unmatched = 0, conflicts = 0;
 
             await Promise.all(
                 Object.entries(matches).map(async ([folderName, matchData]) => {
                     const srcPath = path.join(batchPath, folderName);
                     const { imageFiles, embeddingFiles } = await readFolderFiles(srcPath);
 
-                    // ── No face detected — save unmatched, keep folder ────
+                    // ── No face detected — save unmatched, keep folder as-is ─
                     if (matchData.error || !matchData.best) {
                         await ClusterMatch.findOneAndUpdate(
                             { batch, folderName },
                             {
                                 $set: {
-                                    currentFolder:  folderName,
+                                    currentFolder:  folderName,   // stays person_XXX
                                     rollNo:         null,
                                     status:         'unmatched',
                                     approved:       false,
@@ -234,140 +235,64 @@ class RollAssignController {
                         return;
                     }
 
-                    // ── Has a best match — rename folder to rollNo ────────
+                    // ── Has a best match — save to DB only, folder stays as person_XXX ─
                     const suggestedRollNo = matchData.best.rollNo.trim().toUpperCase();
-                    const destPath        = path.join(batchPath, suggestedRollNo);
 
-                    let actualFolder  = suggestedRollNo;
-                    let copiedFiles   = imageFiles;
-                    let alreadyRenamed = false;
+                    // Check if another cluster is already matched/approved to this rollNo
+                    const existingForRoll = await ClusterMatch.findOne({
+                        batch,
+                        rollNo: suggestedRollNo,
+                        folderName: { $ne: folderName },
+                        approved: true,
+                    }).lean();
 
-                    if (fs.existsSync(srcPath)) {
-                        if (fs.existsSync(destPath)) {
-                            // ── Conflict: rollNo folder already exists ────────
-                            // Merge new photos in as UNAPPROVED (not added to approved_files).
-                            // They will show up in the assign page for the operator to review.
-                            const srcFiles = await fsPromises.readdir(srcPath);
-                            const srcImages = srcFiles.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
-                            const prefix    = `new_${Date.now()}_`;
-                            const mergedNames = [];
-                            for (const img of srcImages) {
-                                const newName = prefix + img;
-                                await fsPromises.copyFile(
-                                    path.join(srcPath, img),
-                                    path.join(destPath, newName)
-                                );
-                                mergedNames.push(newName);
-                            }
-                            // Delete person_XXX
-                            await fsPromises.rm(srcPath, { recursive: true, force: true });
-                            // DO NOT add mergedNames to approved_files — they stay unapproved
-
-                            await ClusterMatch.findOneAndUpdate(
-                                { batch, folderName },
-                                {
-                                    $set: {
-                                        currentFolder: suggestedRollNo,
-                                        rollNo:        suggestedRollNo,
-                                        status:        'merged_unapproved',
-                                        approved:      false,
-                                        erpPhoto:      matchData.best.erpPhoto,
-                                        confidence:    matchData.best.confidence,
-                                        candidates:    matchData.candidates  || [],
-                                        imageFiles:    mergedNames,
-                                        embeddingFiles: [],
-                                        previewFiles:  mergedNames.slice(0, 6),
-                                        imageCount:    mergedNames.length,
-                                        error:         null,
-                                        updated_at:    new Date(),
-                                    },
-                                },
-                                { upsert: true, new: true, setDefaultsOnInsert: true }
-                            );
-                            conflicts++;
-                            return;
-                        }
-
-                        // Copy images (+ _info.json) to rollNo folder, delete person_XXX
-                        copiedFiles  = await copyImages(srcPath, destPath);
-                        await fsPromises.rm(srcPath, { recursive: true, force: true });
-
-                    } else if (fs.existsSync(destPath)) {
-                        // ── Already renamed in a previous partial run ────────
-                        // person_XXX is gone, rollNo folder already exists.
-                        // Re-read files from the destination and just fix up the DB record.
-                        const destData = await readFolderFiles(destPath);
-                        copiedFiles    = destData.imageFiles;
-                        embeddingFiles = destData.embeddingFiles;
-                        alreadyRenamed = true;
-                    }
-
-                    // ── Write _info.json to rollNo folder ─────────────────
-                    // Skip if the folder was already set up in a previous run (_info.json exists).
-                    if (!alreadyRenamed) {
-                        const allFiles = copiedFiles;
-                        let finalEmbeds;
-                        if (allFiles.length <= 5) {
-                            finalEmbeds = [...allFiles];
-                        } else {
-                            finalEmbeds = embeddingFiles.filter(f => allFiles.includes(f));
-                            if (finalEmbeds.length === 0) finalEmbeds = allFiles.slice(0, 5);
-                        }
-                        const finalBackups = allFiles.filter(f => !finalEmbeds.includes(f));
-                        await fsPromises.writeFile(
-                            path.join(GROUND_TRUTH_DIR, batch, actualFolder, '_info.json'),
-                            JSON.stringify({
-                                embedding_files: finalEmbeds,
-                                backup_files:    finalBackups,
-                                approved_files:  [...allFiles], // all initial photos pre-approved
-                            }, null, 2)
-                        );
-                        embeddingFiles = finalEmbeds;
-                    }
+                    const status = existingForRoll ? 'matched' : 'matched';
+                    // Note: we always use 'matched' here — conflict detection happens
+                    // at approve time when the folder rename is actually attempted.
 
                     await ClusterMatch.findOneAndUpdate(
                         { batch, folderName },
                         {
                             $set: {
-                                currentFolder: actualFolder,
-                                rollNo:        suggestedRollNo,
-                                status:        'matched',
-                                approved:      false,
-                                erpPhoto:      matchData.best.erpPhoto,
-                                confidence:    matchData.best.confidence,
-                                candidates:    matchData.candidates   || [],
-                                imageFiles:    copiedFiles,
+                                currentFolder:  folderName,       // stays person_XXX until approved
+                                rollNo:         suggestedRollNo,  // suggested only
+                                status,
+                                approved:       false,
+                                erpPhoto:       matchData.best.erpPhoto,
+                                confidence:     matchData.best.confidence,
+                                candidates:     matchData.candidates  || [],
+                                imageFiles,
                                 embeddingFiles,
-                                previewFiles:  matchData.preview_images || copiedFiles.slice(0, 6),
-                                imageCount:    matchData.image_count    || copiedFiles.length,
-                                error:         null,
-                                updated_at:    new Date(),
+                                previewFiles:   matchData.preview_images || imageFiles.slice(0, 6),
+                                imageCount:     matchData.image_count    || imageFiles.length,
+                                error:          null,
+                                updated_at:     new Date(),
                             },
                         },
                         { upsert: true, new: true, setDefaultsOnInsert: true }
                     );
-                    renamed++;
+                    saved++;
                 })
             );
 
-            res.json({ renamed, unmatched, conflicts, total: Object.keys(matches).length });
+            res.json({ renamed: saved, unmatched, conflicts, total: Object.keys(matches).length });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     }
 
 
-     async saveMatchResult(req, res) {
+    async saveMatchResult(req, res) {
         try {
             const { batch, folderName, matchData } = req.body;
             if (!batch || !folderName) {
                 return res.status(400).json({ error: 'batch and folderName required' });
             }
- 
+
             const batchPath = path.join(GROUND_TRUTH_DIR, batch);
             const srcPath   = path.join(batchPath, folderName);
             const { imageFiles, embeddingFiles } = await readFolderFiles(srcPath);
- 
+
             // ── No face detected — save unmatched, keep folder ────
             if (matchData.error || !matchData.best) {
                 await ClusterMatch.findOneAndUpdate(
@@ -393,16 +318,16 @@ class RollAssignController {
                 );
                 return res.json({ ok: true, status: 'unmatched', folderName });
             }
- 
-            // ── Has a best match — save with matched status (NOT renamed yet) ────
+
+            // ── Has a best match — save with matched status, folder stays person_XXX ─
             const suggestedRollNo = matchData.best.rollNo.trim().toUpperCase();
- 
+
             await ClusterMatch.findOneAndUpdate(
                 { batch, folderName },
                 {
                     $set: {
-                        currentFolder:  folderName,           // still person_XXX for now
-                        rollNo:         suggestedRollNo,      // suggested target rollNo
+                        currentFolder:  folderName,           // stays person_XXX until approved
+                        rollNo:         suggestedRollNo,
                         status:         'matched',
                         approved:       false,
                         erpPhoto:       matchData.best.erpPhoto,
@@ -418,20 +343,19 @@ class RollAssignController {
                 },
                 { upsert: true, new: true, setDefaultsOnInsert: true }
             );
- 
+
             res.json({ ok: true, status: 'matched', folderName, rollNo: suggestedRollNo });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     }
- 
+
     // ─── Get all DB match records for a batch ─────────────────────
     async getMatches(req, res) {
         try {
             const { batch } = req.params;
             const records   = await ClusterMatch.find({ batch }).lean();
 
-            // Build matchMap keyed by folderName for the frontend
             const batchPath = path.join(GROUND_TRUTH_DIR, batch);
             const matchMap  = {};
             const repairs   = [];
@@ -439,10 +363,10 @@ class RollAssignController {
             for (const r of records) {
                 let currentFolder = r.currentFolder || r.folderName;
 
-                // ── Self-healing: if stored currentFolder no longer exists on disk
-                // but the rollNo folder does, the folder was already renamed in a
-                // previous run that failed before the DB update.  Fix it now.
+                // ── Self-healing: folder was already renamed but DB wasn't updated ──
+                // Only applies to approved records where currentFolder should be rollNo.
                 if (
+                    r.approved &&
                     r.rollNo &&
                     currentFolder !== r.rollNo &&
                     !fs.existsSync(path.join(batchPath, currentFolder)) &&
@@ -485,7 +409,7 @@ class RollAssignController {
                 };
             }
 
-            // Fire-and-forget DB repairs (don't block the response)
+            // Fire-and-forget DB repairs
             if (repairs.length) Promise.all(repairs).catch(() => {});
 
             res.json({ batch, matchMap, total: records.length });
@@ -494,7 +418,7 @@ class RollAssignController {
         }
     }
 
-    // ─── Approve a match (operator confirms ERP suggestion) ───────
+    // ─── Approve a match — THIS is where folder rename happens ───
     // If rollNo matches current folder → just set approved=true (no file ops).
     // If override rollNo differs from current folder:
     //   - dest folder doesn't exist → rename src → dest
@@ -506,8 +430,6 @@ class RollAssignController {
                 return res.status(400).json({ error: 'batch and folderName required' });
             }
 
-            // Allow approving even without a prior DB record (e.g. manual assignment
-            // of a person_XXX folder directly). Create a minimal record if missing.
             let record = await ClusterMatch.findOne({ batch, folderName });
             const finalRollNo = overrideRollNo
                 ? overrideRollNo.trim().toUpperCase()
@@ -518,7 +440,6 @@ class RollAssignController {
             }
 
             if (!record) {
-                // No prior DB record: treat folderName as currentFolder
                 record = { batch, folderName, currentFolder: folderName, rollNo: finalRollNo,
                            imageFiles: [], embeddingFiles: [] };
             }
@@ -527,7 +448,7 @@ class RollAssignController {
             let   imageFiles       = [...(record.imageFiles || [])];
             let   mergedIntoExisting = false;
 
-            // ── File operations when dest differs from current ────────
+            // ── File operations: rename person_XXX → rollNo ───────────
             if (finalRollNo !== currentFolder) {
                 const batchPath = path.join(GROUND_TRUTH_DIR, batch);
                 const srcPath   = path.join(batchPath, currentFolder);
@@ -535,7 +456,7 @@ class RollAssignController {
 
                 if (fs.existsSync(srcPath)) {
                     if (fs.existsSync(destPath)) {
-                        // Merge: copy photos into existing folder with timestamp prefix
+                        // Merge: rollNo folder already exists (another student approved earlier)
                         const srcFiles  = await fsPromises.readdir(srcPath);
                         const srcImages = srcFiles.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
                         const prefix    = `new_${Date.now()}_`;
@@ -573,7 +494,6 @@ class RollAssignController {
                 }
 
                 if (mergedIntoExisting) {
-                    // Add newly merged photos to approved_files + embed/backup slots
                     const approvedSet = new Set(info.approved_files || []);
                     imageFiles.forEach(f => approvedSet.add(f));
                     info.approved_files = [...approvedSet];
@@ -591,14 +511,12 @@ class RollAssignController {
                         info.backup_files = [...existingBackups, ...imageFiles];
                     }
                 } else {
-                    // Fresh or renamed folder: set embedding/backup from DB hints or defaults
                     if (!info.embedding_files?.length) {
                         const dbEmbeds = (record.embeddingFiles || []).filter(f => allFiles.includes(f));
                         info.embedding_files = dbEmbeds.length > 0 ? dbEmbeds
                             : allFiles.length <= EMBED_N ? [...allFiles] : allFiles.slice(0, EMBED_N);
                         info.backup_files = allFiles.filter(f => !info.embedding_files.includes(f));
                     }
-                    // Mark all present files as approved
                     if (!info.approved_files?.length) {
                         info.approved_files = [...allFiles];
                     }
@@ -648,26 +566,20 @@ class RollAssignController {
     }
 
     // ─── Serve an ERP photo ───────────────────────────────────────
-    // Supports both:
-    //   /erp-photo/:batch/:filename  → erp_photos/{batch}/{filename}
-    //   /erp-photo/:filename         → erp_photos/{filename}  (legacy fallback)
     async serveErpPhoto(req, res) {
         try {
             const { batch, filename } = req.params;
             const safeFilename = path.basename(filename);
             const safeBatch    = batch ? path.basename(batch) : null;
 
-            // Try batch subfolder first (new structure)
             if (safeBatch) {
                 const batchPath = path.join(ERP_PHOTOS_DIR, safeBatch, safeFilename);
                 if (fs.existsSync(batchPath)) return res.sendFile(batchPath);
             }
 
-            // Fall back to flat root (legacy)
             const flatPath = path.join(ERP_PHOTOS_DIR, safeFilename);
             if (fs.existsSync(flatPath)) return res.sendFile(flatPath);
 
-            // Search all batch subfolders
             if (fs.existsSync(ERP_PHOTOS_DIR)) {
                 const dirs = fs.readdirSync(ERP_PHOTOS_DIR, { withFileTypes: true })
                     .filter(e => e.isDirectory()).map(e => e.name);
@@ -691,8 +603,7 @@ class RollAssignController {
             if (!fs.existsSync(batchPath)) {
                 return res.status(404).json({ error: 'Batch not found' });
             }
-            // Prefer batch-specific ERP subfolder: erp_photos/{batch}/
-            // Fall back to root erp_photos/ for backward compatibility
+
             const batchErpDir = path.join(ERP_PHOTOS_DIR, batch);
             const erpDir      = fs.existsSync(batchErpDir) ? batchErpDir : ERP_PHOTOS_DIR;
 
@@ -774,7 +685,6 @@ class RollAssignController {
             const open  = flags.filter(f => !f.resolved);
 
             const enriched = await Promise.all(open.map(async (flag) => {
-                // After auto-assign the folder is named rollNo, not person_XXX
                 const dbRecord = await ClusterMatch.findOne({ batch, folderName: flag.folderName }).lean();
                 const folder   = dbRecord?.currentFolder || flag.folderName;
                 const folderPath = path.join(batchPath, folder);
@@ -803,7 +713,6 @@ class RollAssignController {
                 return res.status(400).json({ error: 'batch, folderName, rollNo required' });
             }
 
-            // Delegate to approve (handles rename if needed)
             req.body.overrideRollNo = rollNo;
             return this.approve(req, res);
         } catch (err) {
@@ -816,7 +725,6 @@ class RollAssignController {
         try {
             const { batch, rollNo } = req.params;
 
-            // Prefer DB record (has embeddingFiles)
             const dbRecord   = await ClusterMatch.findOne({ batch, rollNo }).lean();
             const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
 
@@ -885,7 +793,6 @@ class RollAssignController {
                     continue;
                 }
                 try {
-                    // Reuse approve logic via a synthetic request
                     const fakeReq = { body: { batch, folderName, rollNo } };
                     let result;
                     const fakeRes = {
