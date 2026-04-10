@@ -353,28 +353,36 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
         else:
             photos = all_photos
 
-        embeddings = []
+        embeddings  = []
+        emb_weights = []
         for photo in photos:
             img = cv2.imread(os.path.join(fp, photo))
             if img is None:
                 continue
             faces = state.face_app.get(img)
-            if faces:
-                face    = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
-                aligned = get_aligned_face(state.face_app, img, face)
-                if aligned is None:
-                    continue
-                quality = compute_face_quality(aligned)
-                if quality < 80:
-                    continue
-                emb  = face.embedding
-                norm = np.linalg.norm(emb)
-                if norm > 0:
-                    embeddings.append(emb / norm)
+            if not faces:
+                continue
+            face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
+            aligned = get_aligned_face(state.face_app, img, face)
+            if aligned is None:
+                continue
+            quality = compute_face_quality(aligned)
+            if quality < 80:
+                continue
+            det_score = float(getattr(face, 'det_score', 1.0))
+            emb  = face.embedding
+            norm = np.linalg.norm(emb)
+            if norm == 0:
+                continue
+            embeddings.append(emb / norm)
+            emb_weights.append(max(quality * det_score, 0.01))
 
         if embeddings:
-            mean_emb = np.mean(embeddings, axis=0)
-            mean_emb /= np.linalg.norm(mean_emb)
+            weights  = np.array(emb_weights, dtype=np.float32)
+            weights /= weights.sum()
+            mean_emb = np.average(np.array(embeddings, dtype=np.float32), axis=0, weights=weights)
+            norm     = np.linalg.norm(mean_emb)
+            mean_emb = mean_emb / norm
             db[student_id] = {"name": name, "embedding": mean_emb, "num_photos": len(embeddings)}
         else:
             logger.warning(f"✗ {student_id}: no faces detected")
@@ -461,6 +469,7 @@ def update_student_embedding(req: UpdateEmbeddingRequest):
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     new_embeddings = []
+    new_weights    = []
     missing        = []
     for filename in req.embedding_files:
         if filename.startswith("_"):
@@ -473,17 +482,35 @@ def update_student_embedding(req: UpdateEmbeddingRequest):
         if img is None:
             continue
         faces = state.face_app.get(img)
-        if faces:
-            emb  = faces[0].embedding
-            norm = np.linalg.norm(emb)
-            if norm > 0:
-                new_embeddings.append(emb / norm)
+        if not faces:
+            continue
+        face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
+        det_score = float(getattr(face, 'det_score', 1.0))
+        if det_score < 0.5:
+            continue
+        emb  = face.embedding
+        norm = np.linalg.norm(emb)
+        if norm == 0:
+            continue
+        x1, y1, x2, y2 = map(int, face.bbox)
+        crop = img[max(0,y1):y2, max(0,x1):x2]
+        if crop.size > 0:
+            gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            lap     = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            quality = det_score * min(lap, 500) / 500
+        else:
+            quality = det_score
+        new_embeddings.append(emb / norm)
+        new_weights.append(max(quality, 0.01))
 
     if not new_embeddings:
         raise HTTPException(status_code=400, detail=f"No faces detected. Missing: {missing}")
 
-    mean_emb = np.mean(new_embeddings, axis=0)
-    mean_emb /= np.linalg.norm(mean_emb)
+    weights  = np.array(new_weights, dtype=np.float32)
+    weights /= weights.sum()
+    mean_emb = np.average(np.array(new_embeddings, dtype=np.float32), axis=0, weights=weights)
+    norm     = np.linalg.norm(mean_emb)
+    mean_emb = mean_emb / norm
 
     if req.roll_no in state.embeddings_db:
         state.embeddings_db[req.roll_no]["embedding"]  = mean_emb
