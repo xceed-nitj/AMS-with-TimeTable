@@ -71,12 +71,23 @@ def build_embeddings(photos_dir: str, output_path: str):
                     faces  = app.get(img_up)
 
                 if faces:
-                    # Pick the largest face (most likely the subject)
                     face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
+                    det_score = float(getattr(face, 'det_score', 1.0))
+                    if det_score < 0.5:
+                        print(f"    ⚠ Low det_score ({det_score:.2f}), skipping: {photo}")
+                        continue
                     emb  = face.embedding
                     norm = np.linalg.norm(emb)
                     if norm > 0:
-                        face_embeddings.append(emb / norm)
+                        x1, y1, x2, y2 = map(int, face.bbox)
+                        crop = img[max(0,y1):y2, max(0,x1):x2]
+                        if crop.size > 0:
+                            gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+                            lap     = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                            quality = det_score * min(lap, 500) / 500
+                        else:
+                            quality = det_score
+                        face_embeddings.append((emb / norm, max(quality, 0.01)))
                 else:
                     print(f"    ⚠ No face detected: {photo}")
 
@@ -84,7 +95,10 @@ def build_embeddings(photos_dir: str, output_path: str):
                 print(f"    ⚠ Error processing {photo}: {e}")
 
         if face_embeddings:
-            mean_emb = np.mean(face_embeddings, axis=0)
+            embs    = np.array([e for e, _ in face_embeddings], dtype=np.float32)
+            weights = np.array([w for _, w in face_embeddings], dtype=np.float32)
+            weights /= weights.sum()
+            mean_emb = np.average(embs, axis=0, weights=weights)
             norm     = np.linalg.norm(mean_emb)
             mean_emb = mean_emb / norm
             embeddings_db[student_id] = {

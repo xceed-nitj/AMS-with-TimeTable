@@ -587,21 +587,40 @@ def _load_existing_folders(batch_dir, existing_mean_embs):
                     imgs = ef
             except Exception:
                 pass
-        folder_embs = []
+        folder_embs    = []
+        folder_weights = []
         for img_f in imgs[:5]:
             img = cv2.imread(os.path.join(fp, img_f))
             if img is None:
                 continue
             faces = state.face_app.get(img)
-            if faces:
-                emb  = faces[0].embedding
-                norm = np.linalg.norm(emb)
-                if norm > 0:
-                    folder_embs.append(emb / norm)
+            if not faces:
+                continue
+            face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
+            det_score = float(getattr(face, 'det_score', 1.0))
+            if det_score < 0.5:
+                continue
+            emb  = face.embedding
+            norm = np.linalg.norm(emb)
+            if norm == 0:
+                continue
+            x1, y1, x2, y2 = map(int, face.bbox)
+            crop = img[max(0,y1):y2, max(0,x1):x2]
+            if crop.size > 0:
+                gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+                lap     = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                quality = det_score * min(lap, 500) / 500
+            else:
+                quality = det_score
+            folder_embs.append(emb / norm)
+            folder_weights.append(max(quality, 0.01))
         if folder_embs:
-            mean_emb = np.mean(folder_embs, axis=0)
-            existing_mean_embs[folder_name] = (
-                mean_emb / np.linalg.norm(mean_emb))
+            weights  = np.array(folder_weights, dtype=np.float32)
+            weights /= weights.sum()
+            mean_emb = np.average(np.array(folder_embs, dtype=np.float32), axis=0, weights=weights)
+            norm     = np.linalg.norm(mean_emb)
+            if norm > 0:
+                existing_mean_embs[folder_name] = mean_emb / norm
 
 
 def _save_clusters(
@@ -800,21 +819,48 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
                           if f.lower().endswith(IMG_EXTS_LOCAL)
                           and not f.startswith('_')]
 
-            embs = []
+            embs        = []
+            emb_weights = []
+
             for photo in photos[:5]:
                 img = cv2.imread(os.path.join(fp, photo))
                 if img is None:
                     continue
                 faces = state.face_app.get(img)
-                if faces:
-                    emb  = faces[0].embedding
-                    norm = np.linalg.norm(emb)
-                    if norm > 0:
-                        embs.append(emb / norm)
+                if not faces:
+                    continue
+                face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
+                fw = face.bbox[2] - face.bbox[0]
+                fh = face.bbox[3] - face.bbox[1]
+                if min(fw, fh) < 40:
+                    continue
+                det_score = float(getattr(face, 'det_score', 1.0))
+                if det_score < 0.5:
+                    continue
+                emb  = face.embedding
+                norm = np.linalg.norm(emb)
+                if norm == 0:
+                    continue
+                x1, y1, x2, y2 = map(int, face.bbox)
+                crop = img[max(0,y1):y2, max(0,x1):x2]
+                if crop.size > 0:
+                    gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+                    lap     = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                    quality = det_score * min(lap, 500) / 500
+                else:
+                    quality = det_score
+                embs.append(emb / norm)
+                emb_weights.append(max(quality, 0.01))
 
             if embs:
-                mean_emb = np.mean(embs, axis=0)
-                enrolled[roll_no] = mean_emb / np.linalg.norm(mean_emb)
+                weights  = np.array(emb_weights, dtype=np.float32)
+                weights /= weights.sum()
+                mean_emb = np.average(np.array(embs, dtype=np.float32), axis=0, weights=weights)
+                norm     = np.linalg.norm(mean_emb)
+                if norm > 0:
+                    enrolled[roll_no] = mean_emb / norm
+                    logger.info("Enrolled %s — %d photos, weights=%s",
+                                roll_no, len(embs), [round(float(w),3) for w in weights]) 
 
         if not enrolled:
             yield sse({"type": "error",
