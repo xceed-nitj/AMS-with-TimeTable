@@ -1,0 +1,159 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\App.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:client\\src\\App.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\timetableadmin\\viewsummary.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:client\\src\\timetableadmin\\viewsummary.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\masterclasstable.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:server\\src\\modules\\timetableModule\\controllers\\masterclasstable.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\locktimetable.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:server\\src\\modules\\timetableModule\\controllers\\locktimetable.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\lockfaculty.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:server\\src\\modules\\timetableModule\\controllers\\lockfaculty.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\models\\masterclasstable.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:server\\src\\models\\masterclasstable.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\timetableadmin\\instituteload.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:client\\src\\timetableadmin\\instituteload.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "App.jsx",
+              "DocumentMoniker": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\App.jsx",
+              "RelativeDocumentMoniker": "client\\src\\App.jsx",
+              "ToolTip": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\App.jsx",
+              "RelativeToolTip": "client\\src\\App.jsx",
+              "ViewState": "AQIAAPMAAAAAAAAAAAApwAIBAABCAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
+              "WhenOpened": "2024-12-29T06:57:05.433Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "viewsummary.jsx",
+              "DocumentMoniker": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\timetableadmin\\viewsummary.jsx",
+              "RelativeDocumentMoniker": "client\\src\\timetableadmin\\viewsummary.jsx",
+              "ToolTip": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\timetableadmin\\viewsummary.jsx",
+              "RelativeToolTip": "client\\src\\timetableadmin\\viewsummary.jsx",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
+              "WhenOpened": "2024-12-29T06:56:58.881Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "masterclasstable.js",
+              "DocumentMoniker": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\masterclasstable.js",
+              "RelativeDocumentMoniker": "server\\src\\modules\\timetableModule\\controllers\\masterclasstable.js",
+              "ToolTip": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\masterclasstable.js",
+              "RelativeToolTip": "server\\src\\modules\\timetableModule\\controllers\\masterclasstable.js",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAsAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-12-29T06:39:50.514Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "locktimetable.js",
+              "DocumentMoniker": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\locktimetable.js",
+              "RelativeDocumentMoniker": "server\\src\\modules\\timetableModule\\controllers\\locktimetable.js",
+              "ToolTip": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\locktimetable.js",
+              "RelativeToolTip": "server\\src\\modules\\timetableModule\\controllers\\locktimetable.js",
+              "ViewState": "AQIAADAAAAAAAAAAAAAAAD0AAAA4AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-12-29T06:38:51.686Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "lockfaculty.js",
+              "DocumentMoniker": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\lockfaculty.js",
+              "RelativeDocumentMoniker": "server\\src\\modules\\timetableModule\\controllers\\lockfaculty.js",
+              "ToolTip": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\modules\\timetableModule\\controllers\\lockfaculty.js",
+              "RelativeToolTip": "server\\src\\modules\\timetableModule\\controllers\\lockfaculty.js",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-12-29T06:38:34.396Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "masterclasstable.js",
+              "DocumentMoniker": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\models\\masterclasstable.js",
+              "RelativeDocumentMoniker": "server\\src\\models\\masterclasstable.js",
+              "ToolTip": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\server\\src\\models\\masterclasstable.js",
+              "RelativeToolTip": "server\\src\\models\\masterclasstable.js",
+              "ViewState": "AQIAACoAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-12-29T06:34:30.673Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:2:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "instituteload.jsx",
+              "DocumentMoniker": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\timetableadmin\\instituteload.jsx",
+              "RelativeDocumentMoniker": "client\\src\\timetableadmin\\instituteload.jsx",
+              "ToolTip": "C:\\Users\\harim\\source\\repos\\AMS-with-TimeTable\\client\\src\\timetableadmin\\instituteload.jsx",
+              "RelativeToolTip": "client\\src\\timetableadmin\\instituteload.jsx",
+              "ViewState": "AQIAAJUAAAAAAAAAAAAAwL8AAAA1AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
+              "WhenOpened": "2024-08-02T02:46:40.558Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:3:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
