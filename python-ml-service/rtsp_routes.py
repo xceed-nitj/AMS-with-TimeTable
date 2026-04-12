@@ -767,6 +767,7 @@ class RTSPAttendanceRequest(BaseModel):
     faculty:          str   = ''
     semester:         str   = ''
     locksemId:        str   = ''
+    enrolledRollNos:  list  = [] 
 
 @router.post("/run-attendance-rtsp")
 def run_attendance_rtsp(req: RTSPAttendanceRequest):
@@ -780,7 +781,9 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
         # ── Step 1: Load ground truth embeddings from batch folder ────────
         batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
         logger.info("[run-attendance-rtsp] batch_dir=%s", batch_dir)
-
+        
+        # Clear stop so the MJPEG preview endpoint streams during attendance
+        _stop_event.clear()
         if not os.path.isdir(batch_dir):
             yield sse({"type": "error",
                        "message": f"Ground truth folder not found: {batch_dir}. "
@@ -870,8 +873,33 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
                                   f"Make sure you have assigned roll numbers to person folders."})
             return
 
-        yield sse({"type": "stage",
-                   "message": f"{len(enrolled)} students loaded — connecting to RTSP camera…"})
+        # ── Apply sir's roll number filter ────────────────────────────────
+        # If enrolledRollNos is provided, only match against those roll numbers.
+        # Students in ground truth but NOT in sir's list → still load but mark flagged.
+        sir_list = [r.strip().upper() for r in req.enrolledRollNos if r.strip()]
+        has_sir_list = len(sir_list) > 0
+
+        if has_sir_list:
+            logger.info("[run-attendance-rtsp] Sir's list: %d roll nos — %s", len(sir_list), sir_list[:5])
+            # Split enrolled into: in_list (will be matched) and not_in_list (flagged)
+            enrolled_in_list     = {k: v for k, v in enrolled.items() if k.upper() in sir_list}
+            enrolled_not_in_list = {k: v for k, v in enrolled.items() if k.upper() not in sir_list}
+
+            # Warn about roll nos in sir's list but missing from ground truth
+            missing_from_gt = [r for r in sir_list if r not in {k.upper() for k in enrolled}]
+            if missing_from_gt:
+                logger.warning("[run-attendance-rtsp] Roll nos in sir's list but NO ground truth photos: %s", missing_from_gt)
+                yield sse({"type": "stage",
+                           "message": f"⚠️ {len(missing_from_gt)} roll nos have no ground truth photos: {missing_from_gt[:5]}"})
+
+            yield sse({"type": "stage",
+                       "message": f"{len(enrolled_in_list)} students in sir's list loaded, "
+                                  f"{len(enrolled_not_in_list)} others will be flagged if detected — connecting…"})
+        else:
+            enrolled_in_list     = enrolled
+            enrolled_not_in_list = {}
+            yield sse({"type": "stage",
+                       "message": f"{len(enrolled)} students loaded — connecting to RTSP camera…"})
 
         # ── Step 2: Open RTSP stream ──────────────────────────────────────
         cap = _open_capture(req.rtspUrl)
@@ -946,7 +974,15 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
                 if scale < 1.0:
                     frame = cv2.resize(frame, (disp_W, disp_H),
                                        interpolation=cv2.INTER_AREA)
-
+                    
+                # ── Update MJPEG preview so frontend img tag shows live frame ──
+                try:
+                    prev_small = cv2.resize(frame, (960, 540)) if frame.shape[1] > 960 else frame.copy()
+                    _, prev_buf = cv2.imencode('.jpg', prev_small, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                    with _preview_lock:
+                        _preview_frame = prev_buf.tobytes()
+                except Exception:
+                    pass
                 detections = _detect_faces_tiled(state.face_app, frame, ui_mask)
                 faces_this_frame = len(detections)
 
@@ -983,6 +1019,7 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
                 })
         finally:
             reader.release()
+            _stop_event.set()   # stop MJPEG preview after attendance ends
 
         # ── Save frame snapshots to disk ──────────────────────────────────
         SNAPSHOT_DIR = os.path.join(BASE_DIR, "frame-snapshots")
@@ -1023,11 +1060,14 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
         yield sse({"type": "stage",
                    "message": f"{len(unique_labels)} unique person clusters — matching against {len(enrolled)} enrolled students…"})
 
-        # ── Step 5: Match each cluster → nearest enrolled student ─────────
-        enrolled_ids  = list(enrolled.keys())
-        enroll_matrix = np.array([enrolled[r] for r in enrolled_ids], dtype=np.float32)
+         
 
-        # Initialize all students as absent
+        # ── Use sir's list if provided, else full ground truth ────────────
+        match_enrolled    = enrolled_in_list if has_sir_list else enrolled
+        enrolled_ids      = list(match_enrolled.keys())
+        enroll_matrix     = np.array([match_enrolled[r] for r in enrolled_ids], dtype=np.float32) if enrolled_ids else np.array([])
+
+        # Initialize attendance — only for students in sir's list (or all if no list)
         attendance = {
             roll_no: {
                 "status":          "absent",
@@ -1035,9 +1075,25 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
                 "confidence_zone": "low",
                 "first_seen_sec":  None,
                 "detections":      0,
+                "in_list":         True,    # these are in sir's list
+                "flagged":         False,
             }
             for roll_no in enrolled_ids
         }
+
+        # Add roll nos from sir's list that have NO ground truth photos — mark as no_photo
+        if has_sir_list:
+            for roll_no in sir_list:
+                if roll_no not in {k.upper() for k in attendance}:
+                    attendance[roll_no] = {
+                        "status":          "no_photo",
+                        "avg_confidence":  0.0,
+                        "confidence_zone": "low",
+                        "first_seen_sec":  None,
+                        "detections":      0,
+                        "in_list":         True,
+                        "flagged":         False,
+                    }
 
         for cluster_id in unique_labels:
             indices      = np.where(labels == cluster_id)[0]
@@ -1111,6 +1167,37 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
         if unmatched_clusters:
             logger.warning("[attendance-rtsp] %d unmatched face cluster(s): %s",
                            len(unmatched_clusters), unmatched_clusters)
+        # ── Flag detected faces that match ground truth but NOT in sir's list ──
+        if has_sir_list and enrolled_not_in_list:
+            not_in_list_ids    = list(enrolled_not_in_list.keys())
+            not_in_list_matrix = np.array([enrolled_not_in_list[r] for r in not_in_list_ids], dtype=np.float32)
+
+            for cluster_id in unique_labels:
+                indices      = np.where(labels == cluster_id)[0]
+                cluster_embs = np.array([all_embeddings[i] for i in indices], dtype=np.float32)
+                cluster_mean = cluster_embs.mean(axis=0)
+                norm         = np.linalg.norm(cluster_mean)
+                if norm == 0:
+                    continue
+                cluster_mean /= norm
+
+                scores   = not_in_list_matrix @ cluster_mean
+                best_idx = int(np.argmax(scores))
+                score    = float(scores[best_idx])
+
+                if score >= req.autoThreshold:
+                    flagged_roll = not_in_list_ids[best_idx]
+                    attendance[flagged_roll] = {
+                        "status":          "present",
+                        "avg_confidence":  round(score, 4),
+                        "confidence_zone": "high",
+                        "first_seen_sec":  round(float(all_timestamps[indices[0]]), 1),
+                        "detections":      int(len(indices)),
+                        "in_list":         False,
+                        "flagged":         True,
+                    }
+                    logger.warning("[run-attendance-rtsp] 🚩 FLAGGED: %s detected but NOT in sir's list (score=%.3f)",
+                                   flagged_roll, score)
 
         yield sse({
             "type": "done",
@@ -1132,6 +1219,7 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
                     "review":                 review,
                     "absent":                 absent,
                     "unmatched_faces":        len(unmatched_clusters),
+                    "flagged_faces":          sum(1 for v in attendance.values() if v.get("flagged")),
                     "processing_time":        round(time.time() - start_t, 2),
                     "frames_read":            frame_count,
                     "duration_sec":           req.durationSec,
