@@ -751,11 +751,13 @@ def _update_info(folder_path, new_scores, top_n, embed_n):
 
 class RTSPAttendanceRequest(BaseModel):
     rtspUrl:          str
+    rtspUrl2:         str   = ''        # second camera (optional)
     batch:            str
     room:             str
     slot:             str
     date:             str
-    durationSec:      int   = 120
+    durationSec:      int   = 60
+    checkIntervalMin: int   = 5         # interval between checks within a slot
     frameSkip:        int   = 10
     clusterThreshold: float = 0.45
     minSamples:       int   = 3
@@ -890,22 +892,48 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
         yield sse({"type": "stage",
                    "message": f"Stream open {W}×{H} — recording for {req.durationSec}s…"})
 
-        # ── Step 3: Collect face embeddings for durationSec seconds ───────
+        # ── Step 3: Collect face embeddings — switch cameras every 30s ────
         all_embeddings  = []
         all_face_images = []
         all_timestamps  = []
         all_quality     = []
 
-        reader      = _RTSPReader(cap, decode_every=req.frameSkip)
-        last_seq    = 0
-        start_t     = time.time()
-        frame_count = 0
+        CAMERA_SWITCH_SEC = 30   # switch between cam1 and cam2 every 30s
+        cameras = [req.rtspUrl]
+        if req.rtspUrl2:
+            cameras.append(req.rtspUrl2)
+
+        # Frame snapshot storage — save best frame per camera switch window
+        frame_snapshots = []   # list of { cam_idx, elapsed, frame_jpeg_bytes, faces_count }
+
+        start_t      = time.time()
+        frame_count  = 0
+        cam_idx      = 0
+        last_switch  = 0.0
+        snapshot_taken_this_window = False
+
+        reader   = _RTSPReader(cap, decode_every=req.frameSkip)
+        last_seq = 0
 
         try:
             while True:
                 elapsed = time.time() - start_t
                 if elapsed >= req.durationSec:
                     break
+
+                # ── Camera switch every 30 seconds ────────────────────────
+                if len(cameras) > 1 and (elapsed - last_switch) >= CAMERA_SWITCH_SEC:
+                    reader.release()
+                    cam_idx = (cam_idx + 1) % len(cameras)
+                    new_cap = _open_capture(cameras[cam_idx])
+                    reader  = _RTSPReader(new_cap, decode_every=req.frameSkip)
+                    last_seq = 0
+                    last_switch = elapsed
+                    snapshot_taken_this_window = False
+                    yield sse({
+                        "type":    "stage",
+                        "message": f"Switched to camera {cam_idx + 1} at {round(elapsed)}s",
+                    })
 
                 ok, frame, seq, _ = reader.latest()
                 if not ok or frame is None or seq == last_seq:
@@ -916,26 +944,70 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
                 frame_count += 1
 
                 if scale < 1.0:
-                    frame   = cv2.resize(frame, (disp_W, disp_H),
-                                         interpolation=cv2.INTER_AREA)
+                    frame = cv2.resize(frame, (disp_W, disp_H),
+                                       interpolation=cv2.INTER_AREA)
 
                 detections = _detect_faces_tiled(state.face_app, frame, ui_mask)
+                faces_this_frame = len(detections)
+
                 for d in detections:
                     all_embeddings.append(d["embedding"])
                     all_face_images.append(d["crop"])
                     all_timestamps.append(round(elapsed, 2))
                     all_quality.append(d["quality"])
 
+                # ── Save one frame snapshot per camera window ──────────────
+                # Pick the first frame that has the most faces (good frame)
+                if not snapshot_taken_this_window and faces_this_frame > 0:
+                    _, jpeg_buf = cv2.imencode('.jpg', frame,
+                                               [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    frame_snapshots.append({
+                        "cam_idx":     cam_idx,
+                        "cam_url":     cameras[cam_idx],
+                        "elapsed_sec": round(elapsed, 1),
+                        "faces_count": faces_this_frame,
+                        "jpeg_bytes":  jpeg_buf.tobytes(),
+                    })
+                    snapshot_taken_this_window = True
+                    logger.info("[attendance-rtsp] Snapshot saved — cam%d at %.1fs — %d faces",
+                                cam_idx + 1, elapsed, faces_this_frame)
+
                 yield sse({
                     "type":       "frame",
                     "frame":      frame_count,
-                    "faces":      len(detections),
+                    "faces":      faces_this_frame,
                     "total_embs": len(all_embeddings),
                     "elapsed":    round(elapsed, 1),
                     "remaining":  round(req.durationSec - elapsed, 1),
+                    "camera":     cam_idx + 1,
                 })
         finally:
             reader.release()
+
+        # ── Save frame snapshots to disk ──────────────────────────────────
+        SNAPSHOT_DIR = os.path.join(BASE_DIR, "frame-snapshots")
+        os.makedirs(SNAPSHOT_DIR, exist_ok=True)
+        saved_snapshot_paths = []
+
+        for snap in frame_snapshots:
+            fname = (f"{req.date}_{req.slot}_cam{snap['cam_idx']+1}"
+                     f"_{int(snap['elapsed_sec'])}s_{snap['faces_count']}faces.jpg")
+            fpath = os.path.join(SNAPSHOT_DIR, fname)
+            with open(fpath, 'wb') as f:
+                f.write(snap["jpeg_bytes"])
+            saved_snapshot_paths.append({
+                "path":        fpath,
+                "cam":         snap["cam_idx"] + 1,
+                "elapsed_sec": snap["elapsed_sec"],
+                "faces_count": snap["faces_count"],
+            })
+            logger.info("[attendance-rtsp] Frame saved: %s (%d faces)", fname, snap["faces_count"])
+
+        yield sse({
+            "type":      "stage",
+            "message":   f"Frames saved: {[s['path'] for s in saved_snapshot_paths]}",
+            "snapshots": saved_snapshot_paths,
+        })
 
         if not all_embeddings:
             yield sse({"type": "error", "message": "No faces detected in the RTSP stream during recording."})
@@ -1015,6 +1087,31 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
         review  = sum(1 for v in attendance.values() if v["status"] == "review")
         absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
 
+        # ── Collect unmatched clusters (faces detected but not in enrolled) ─
+        unmatched_clusters = []
+        for cluster_id in unique_labels:
+            indices      = np.where(labels == cluster_id)[0]
+            cluster_embs = np.array([all_embeddings[i] for i in indices], dtype=np.float32)
+            cluster_mean = cluster_embs.mean(axis=0)
+            norm         = np.linalg.norm(cluster_mean)
+            if norm == 0:
+                continue
+            cluster_mean /= norm
+            scores   = enroll_matrix @ cluster_mean
+            score    = float(np.max(scores))
+            if score < req.reviewThreshold:
+                # This cluster matched nobody — unmatched face
+                unmatched_clusters.append({
+                    "cluster_id":  int(cluster_id),
+                    "detections":  int(len(indices)),
+                    "best_score":  round(score, 4),
+                    "first_seen":  round(float(all_timestamps[indices[0]]), 1),
+                })
+
+        if unmatched_clusters:
+            logger.warning("[attendance-rtsp] %d unmatched face cluster(s): %s",
+                           len(unmatched_clusters), unmatched_clusters)
+
         yield sse({
             "type": "done",
             "result": {
@@ -1034,10 +1131,13 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
                     "present":                present,
                     "review":                 review,
                     "absent":                 absent,
+                    "unmatched_faces":        len(unmatched_clusters),
                     "processing_time":        round(time.time() - start_t, 2),
                     "frames_read":            frame_count,
                     "duration_sec":           req.durationSec,
                 },
+                "unmatched_clusters": unmatched_clusters,
+                "frame_snapshots":    saved_snapshot_paths,
             },
         })
 
