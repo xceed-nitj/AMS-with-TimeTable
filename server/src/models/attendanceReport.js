@@ -21,6 +21,7 @@ const studentAttendanceSchema = new Schema({
 const slotResultSchema = new Schema({
     slot:        { type: String, required: true },   // e.g. "8:30-9:30"
     videoLink:   { type: String, default: '' },
+    frameSnapshot: { type: String, default: '' },
     processedAt: { type: Date,   default: Date.now },
     students:    [studentAttendanceSchema],
     summary: {

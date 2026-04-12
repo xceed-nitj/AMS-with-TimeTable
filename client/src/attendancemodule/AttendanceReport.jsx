@@ -31,6 +31,8 @@ export default function AttendanceReport() {
     const [rtspUrl,  setRtspUrl]  = useState('');
     const [date,     setDate]     = useState(new Date().toISOString().split('T')[0]);
     const [duration, setDuration] = useState(120);
+    const [rtspUrl2,         setRtspUrl2]         = useState('');
+    const [checkIntervalMin, setCheckIntervalMin] = useState(5);
     // ── Room list from DB ─────────────────────────────────────────
     const [rooms,        setRooms]        = useState([]);
     const [roomSearch,   setRoomSearch]   = useState('');
@@ -148,7 +150,8 @@ export default function AttendanceReport() {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    rtspUrl:     rtspUrl.trim(),
+                    rtspUrl1:     rtspUrl.trim(),
+                    rtspUrl2:     rtspUrl2.trim(),
                     batch:       effectiveBatch,
                     room, slot,
                     date,        // date sent only for saving, NOT for LockSem lookup
@@ -474,19 +477,39 @@ export default function AttendanceReport() {
                             )}
                         </details>
 
-                        {/* RTSP URL + Duration + Run */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, alignItems: 'flex-end' }}>
+                        {/* Camera URLs + Interval + Duration + Run */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                             <div>
-                                <label style={styles.label}>RTSP URL</label>
+                                <label style={styles.label}>Camera 1 — RTSP URL</label>
                                 <input
-                                    placeholder="rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp"
+                                    placeholder="rtsp://...camera1..."
                                     value={rtspUrl}
                                     onChange={e => setRtspUrl(e.target.value)}
                                     style={{ ...styles.input, fontFamily: theme.fontMono }}
                                 />
                             </div>
                             <div>
-                                <label style={styles.label}>Duration</label>
+                                <label style={styles.label}>Camera 2 — RTSP URL (optional)</label>
+                                <input
+                                    placeholder="rtsp://...camera2..."
+                                    value={rtspUrl2}
+                                    onChange={e => setRtspUrl2(e.target.value)}
+                                    style={{ ...styles.input, fontFamily: theme.fontMono }}
+                                />
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'flex-end' }}>
+                            <div>
+                                <label style={styles.label}>Check interval (mins)</label>
+                                <input
+                                    type="number" min={1} max={30} value={checkIntervalMin}
+                                    onChange={e => setCheckIntervalMin(Number(e.target.value))}
+                                    style={styles.input}
+                                    placeholder="e.g. 5"
+                                />
+                            </div>
+                            <div>
+                                <label style={styles.label}>Duration per check</label>
                                 <select value={duration} onChange={e => setDuration(Number(e.target.value))} style={styles.select}>
                                     <option value={30}>30 seconds</option>
                                     <option value={60}>60 seconds</option>
