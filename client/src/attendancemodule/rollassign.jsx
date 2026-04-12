@@ -1,8 +1,3 @@
-// client/src/attendancemodule/rollassign.jsx
-// Assign roll numbers to person_XXX clusters
-// Mode A: Auto-match against ERP photos
-// Mode B: Manual assignment — type roll number directly on each card
-
 import { useState, useEffect, useCallback } from 'react';
 import getEnvironment from '../getenvironment';
 import { DEGREES, YEARS, theme, styles, cssReset } from './config';
@@ -51,10 +46,9 @@ export default function RollAssign() {
     const [flaggedItems,     setFlaggedItems]     = useState([]);
     const [mergedItems,      setMergedItems]      = useState([]);
 
-    // unapproved photos per approved student: { rollNo -> [{ filename, url, addedAt }] }
     const [unapprovedMap,    setUnapprovedMap]    = useState({});
-    const [approvedStats,    setApprovedStats]    = useState({}); // rollNo -> { approvedCount, embeddingCount, backupCount }
-    const [approvingPhoto,   setApprovingPhoto]   = useState(null); // "rollNo::filename"
+    const [approvedStats,    setApprovedStats]    = useState({});
+    const [approvingPhoto,   setApprovingPhoto]   = useState(null);
 
     const [matches,       setMatches]       = useState({});
     const [inlineRolls,   setInlineRolls]   = useState({});
@@ -107,33 +101,32 @@ export default function RollAssign() {
             const clusterData = clusterRes.ok ? await clusterRes.json() : { unprocessed: [] };
             setUnprocessed(clusterData.unprocessed || []);
 
-           console.log('Fetching with batchName:', batchName);
-console.log('clusterRes status:', clusterRes.status);
-console.log('matchRes status:', matchRes.status);
+            console.log('Fetching with batchName:', batchName);
+            console.log('clusterRes status:', clusterRes.status);
+            console.log('matchRes status:', matchRes.status);
 
-if (matchRes.ok) {
-    const matchData = await matchRes.json();
-    console.log('matchData keys:', Object.keys(matchData));
-    console.log('raw matchData:', matchData);
+            if (matchRes.ok) {
+                const matchData = await matchRes.json();
+                console.log('matchData keys:', Object.keys(matchData));
+                console.log('raw matchData:', matchData);
 
-    const { matchMap = {} } = matchData;
-    console.log('matchMap length:', Object.values(matchMap).length);
-    
-    const records = Object.values(matchMap);
-    setPendingReview(records.filter(r => r.status === 'matched' && !r.approved));
-    setApprovedItems(records.filter(r => r.approved));
-    setUnmatchedItems(records.filter(r => r.status === 'unmatched'));
-    setFlaggedItems(records.filter(r => r.status === 'flagged'));
-    setMergedItems(records.filter(r => r.status === 'merged_unapproved'));
-}
+                const { matchMap = {} } = matchData;
+                console.log('matchMap length:', Object.values(matchMap).length);
 
-            // Build per-student unapproved photo map and stats
+                const records = Object.values(matchMap);
+                setPendingReview(records.filter(r => r.status === 'matched' && !r.approved));
+                setApprovedItems(records.filter(r => r.approved));
+                setUnmatchedItems(records.filter(r => r.status === 'unmatched'));
+                setFlaggedItems(records.filter(r => r.status === 'flagged'));
+                setMergedItems(records.filter(r => r.status === 'merged_unapproved'));
+            }
+
             if (studentsRes.ok) {
                 const { students = [] } = await studentsRes.json();
                 const newUnapprovedMap = {};
                 const newStatsMap = {};
                 for (const s of students) {
-                    if (/^person_\d+$/i.test(s.rollNo)) continue; // skip unassigned
+                    if (/^person_\d+$/i.test(s.rollNo)) continue;
                     if ((s.unapprovedFiles || []).length > 0) {
                         newUnapprovedMap[s.rollNo] = (s.unapprovedFiles || []).map(f => ({
                             ...f,
@@ -159,7 +152,24 @@ if (matchRes.ok) {
 
     useEffect(() => { loadClusters(); }, [loadClusters]);
 
-    // ── Auto-match against ERP photos (SSE) → immediate DB save → then rename folders ──
+    // ── Listen for refresh broadcasts ────────────────────────────────
+    useEffect(() => {
+        if (!batchName) return;
+        let channel;
+        try {
+            channel = new BroadcastChannel('attendance_refresh');
+            channel.onmessage = (e) => {
+                if (e.data?.type === 'refresh' && e.data?.batch === batchName) {
+                    loadClusters();
+                }
+            };
+        } catch (_) {}
+        return () => {
+            try { channel?.close(); } catch (_) {}
+        };
+    }, [batchName, loadClusters]);
+
+    // ── Auto-match against ERP photos (SSE) ─────────────────────────
     const runAutoMatch = useCallback(async () => {
         if (!batchName) return;
         setMatching(true);
@@ -186,7 +196,7 @@ if (matchRes.ok) {
                 if (!line.startsWith('data:')) return;
                 let evt;
                 try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
-                
+
                 if (evt.type === 'erp_progress') {
                     setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
                 } else if (evt.type === 'cluster_progress') {
@@ -194,10 +204,8 @@ if (matchRes.ok) {
                 } else if (evt.type === 'status') {
                     setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
                 } else if (evt.type === 'match_result') {
-                    // ─── IMMEDIATE DB SAVE ──────────────────────────
                     localMatches[evt.folder] = evt.match;
                     matchCount++;
-                    
                     try {
                         const saveRes = await fetch(`${RA_BASE}/save-match-result`, {
                             method: 'POST',
@@ -208,11 +216,8 @@ if (matchRes.ok) {
                                 matchData: evt.match,
                             }),
                         });
-                        
                         if (saveRes.ok) {
-                            const saveData = await saveRes.json();
                             setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
-                            // Update UI progress
                             setMatchProgress(p => ({
                                 ...p,
                                 msg: `Saved ${matchCount} matches...`,
@@ -223,8 +228,6 @@ if (matchRes.ok) {
                         }
                     } catch (saveErr) {
                         console.error(`Error saving ${evt.folder}:`, saveErr);
-                        // Don't throw — let the match continue even if a single save fails
-                        // The folder data still exists and can be recovered
                     }
                 } else if (evt.type === 'done') {
                     sseSucceeded = true;
@@ -237,37 +240,29 @@ if (matchRes.ok) {
 
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) { 
-                    buf += decoder.decode(); 
+                if (done) {
+                    buf += decoder.decode();
                     const lines = buf.split('\n');
-                    // Process remaining lines sequentially
-                    for (const l of lines) {
-                        await processLine(l);
-                    }
-                    break; 
+                    for (const l of lines) { await processLine(l); }
+                    break;
                 }
                 buf += decoder.decode(value, { stream: true });
                 const lines = buf.split('\n');
                 buf = lines.pop();
-                // Process lines sequentially to maintain order
-                for (const l of lines) {
-                    await processLine(l);
-                }
+                for (const l of lines) { await processLine(l); }
             }
 
-            // Phase 2: Rename folders on filesystem (DB already has data)
             if (sseSucceeded && matchCount > 0) {
                 setMatchProgress({ msg: 'Renaming folders on filesystem…', done: matchCount, total: matchCount, step: 'saving' });
-                
+
                 const assignRes  = await fetch(`${RA_BASE}/auto-assign-all`, {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body:    JSON.stringify({ batch: batchName, matches: localMatches }),
                 });
                 const assignData = await assignRes.json();
-                
+
                 if (!assignRes.ok) {
-                    // Even if folder rename fails, matches are already in DB
                     showToast(`⚠ Matching saved, but folder rename failed: ${assignData.error}`, 'warning');
                 } else {
                     showToast(
@@ -276,14 +271,12 @@ if (matchRes.ok) {
                         (assignData.conflicts ? `, ${assignData.conflicts} conflicts` : '')
                     );
                 }
-                
+
                 await loadClusters();
             }
         } catch (err) {
             setMatchError(err.message);
             showToast(err.message, 'error');
-            // IMPORTANT: Even on error, partial data may exist in DB
-            // Call loadClusters to refresh UI with whatever was saved
             setTimeout(() => loadClusters(), 500);
         } finally {
             setMatching(false);
@@ -291,7 +284,7 @@ if (matchRes.ok) {
         }
     }, [batchName, loadClusters]);
 
-    // ── Review queue: all items needing operator action ──────────────
+    // ── Review queue ─────────────────────────────────────────────────
     const reviewQueue = [...pendingReview, ...mergedItems, ...flaggedItems];
 
     // ── Open modal ───────────────────────────────────────────────────
@@ -301,7 +294,7 @@ if (matchRes.ok) {
         setOverrideRoll(item.rollNo || '');
     };
 
-    // ── Navigate to next/prev in the queue ───────────────────────────
+    // ── Navigate queue ───────────────────────────────────────────────
     const openQueueItem = (queue, currentFolderName, direction) => {
         const idx = queue.findIndex(r => r.folderName === currentFolderName);
         const next = queue[idx + direction];
@@ -348,7 +341,6 @@ if (matchRes.ok) {
         if (!trimmed) { showToast('Enter a roll number', 'error'); return; }
         setSaving(folderName);
 
-        // Capture queue snapshot before async state updates
         const queueSnapshot = [...pendingReview, ...mergedItems, ...flaggedItems];
 
         try {
@@ -360,7 +352,6 @@ if (matchRes.ok) {
             try { data = await res.json(); } catch { data = {}; }
             if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
 
-            // Remove from all review lists, add to approved
             const found = queueSnapshot.find(r => r.folderName === folderName);
             setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
             setMergedItems(prev  => prev.filter(r => r.folderName !== folderName));
@@ -368,8 +359,6 @@ if (matchRes.ok) {
             if (found) setApprovedItems(prev => [...prev, { ...found, rollNo: data.rollNo || trimmed, approved: true, status: 'approved' }]);
 
             showToast(`Assigned ${folderName} → ${data.rollNo || trimmed}`);
-
-            // Auto-advance to next item
             openQueueItem(queueSnapshot, folderName, +1);
         } catch (err) {
             showToast(err.message, 'error');
@@ -399,10 +388,17 @@ if (matchRes.ok) {
             try { data = await res.json(); } catch { data = {}; }
             if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
 
+            // ── FIX: check if already flagged before adding ──────────
+            const alreadyFlagged = flaggedItems.some(r => r.folderName === folderName);
+
             const found = queueSnapshot.find(r => r.folderName === folderName);
             setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
             setMergedItems(prev  => prev.filter(r => r.folderName !== folderName));
-            if (found) setFlaggedItems(prev => [...prev, { ...found, status: 'flagged' }]);
+
+            // Only add to flaggedItems if it wasn't already there
+            if (found && !alreadyFlagged) {
+                setFlaggedItems(prev => [...prev, { ...found, status: 'flagged' }]);
+            }
 
             showToast(`⚑ Flagged ${folderName}`);
 
@@ -535,7 +531,7 @@ if (matchRes.ok) {
         }
     }, [gtModal, gtSelected, batchName]);
 
-    // ── Approve individual new photos for an already-assigned student ─
+    // ── Approve individual new photos ────────────────────────────────
     const approvePhoto = useCallback(async (rollNo, filename) => {
         const key = `${rollNo}::${filename}`;
         setApprovingPhoto(key);
@@ -547,7 +543,6 @@ if (matchRes.ok) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed');
             showToast(`Approved & added to embedding`);
-            // Remove from unapprovedMap
             setUnapprovedMap(prev => {
                 const updated = { ...(prev[rollNo] ? { [rollNo]: prev[rollNo].filter(f => f.filename !== filename) } : {}) };
                 if (updated[rollNo]?.length === 0) delete updated[rollNo];
@@ -832,7 +827,6 @@ if (matchRes.ok) {
                         ))}
                     </Section>
 
-                    {/* ── New Photos Pending Approval ─────────────────────── */}
                     {Object.keys(unapprovedMap).length > 0 && (
                         <Section
                             title="New Photos — Pending Approval"
@@ -963,21 +957,17 @@ if (matchRes.ok) {
     );
 }
 
-// ── Unapproved photo card (per-student, per-photo approval) ──────
+// ── Unapproved photo card ────────────────────────────────────────
 function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApproveAll }) {
     const fmtDate = (iso) => {
         if (!iso) return null;
         return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     };
     return (
-        <div style={{ background: theme.surface, border: `1px solid ${theme.warning}55`,
-            borderRadius: 10, overflow: 'hidden' }}>
-            {/* Header */}
+        <div style={{ background: theme.surface, border: `1px solid ${theme.warning}55`, borderRadius: 10, overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: `1px solid ${theme.border}`,
                 display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: theme.fontMono, fontSize: '13px', fontWeight: 700, flex: 1 }}>
-                    {rollNo}
-                </span>
+                <span style={{ fontFamily: theme.fontMono, fontSize: '13px', fontWeight: 700, flex: 1 }}>{rollNo}</span>
                 {stats && (
                     <span style={{ fontSize: '10px', color: theme.textMuted }}>
                         {stats.embeddingCount}E · {stats.backupCount}B · {stats.approvedCount}✓
@@ -988,20 +978,16 @@ function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApprove
                     disabled={busy === `${rollNo}::all`}
                     style={{ padding: '4px 10px', borderRadius: 6, border: 'none',
                         background: theme.success, color: '#000', fontSize: '11px',
-                        fontWeight: 700, cursor: 'pointer',
-                        opacity: busy === `${rollNo}::all` ? 0.5 : 1 }}>
+                        fontWeight: 700, cursor: 'pointer', opacity: busy === `${rollNo}::all` ? 0.5 : 1 }}>
                     {busy === `${rollNo}::all` ? '…' : `Approve All (${photos.length})`}
                 </button>
             </div>
-            {/* Photo grid */}
-            <div style={{ padding: 10, display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8 }}>
+            <div style={{ padding: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8 }}>
                 {photos.map(photo => {
                     const photoKey = `${rollNo}::${photo.filename}`;
                     return (
-                        <div key={photo.filename} style={{ position: 'relative', borderRadius: 6,
-                            overflow: 'hidden', border: `1.5px solid ${theme.warning}55`,
-                            opacity: busy === photoKey ? 0.4 : 1, transition: 'opacity 0.15s' }}>
+                        <div key={photo.filename} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden',
+                            border: `1.5px solid ${theme.warning}55`, opacity: busy === photoKey ? 0.4 : 1, transition: 'opacity 0.15s' }}>
                             <img src={photo.url} alt={photo.filename}
                                 style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
                                 onError={e => { e.target.style.opacity = '0.15'; }} />
@@ -1016,13 +1002,11 @@ function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApprove
                                 onClick={() => onApprove(rollNo, photo.filename)}
                                 disabled={!!busy}
                                 title="Approve & add to embedding"
-                                style={{ position: 'absolute', top: 4, right: 4,
-                                    width: 22, height: 22, borderRadius: '50%',
-                                    background: theme.success, border: 'none',
+                                style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22,
+                                    borderRadius: '50%', background: theme.success, border: 'none',
                                     color: '#000', cursor: busy ? 'not-allowed' : 'pointer',
                                     fontSize: '12px', fontWeight: 800,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    padding: 0 }}>✓</button>
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>✓</button>
                         </div>
                     );
                 })}
@@ -1046,19 +1030,12 @@ function Section({ title, count, accentColor, children, emptyText }) {
                 </span>
             </div>
             {count === 0 && emptyText ? (
-                <div style={{
-                    padding: '14px 16px', borderRadius: 8, fontSize: '12px',
-                    color: theme.textMuted, background: theme.surface,
-                    border: `1px dashed ${theme.border}`,
-                }}>
+                <div style={{ padding: '14px 16px', borderRadius: 8, fontSize: '12px',
+                    color: theme.textMuted, background: theme.surface, border: `1px dashed ${theme.border}` }}>
                     {emptyText}
                 </div>
             ) : (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                    gap: 14,
-                }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
                     {children}
                 </div>
             )}
@@ -1086,23 +1063,13 @@ function ClusterCard({
         <div
             onClick={disabled ? undefined : onClick}
             style={{
-                background: theme.surface,
-                border: `1px solid ${borderColor}`,
-                borderRadius: 10,
-                opacity: disabled ? 0.6 : 1,
-                overflow: 'hidden',
-                cursor: disabled ? 'default' : 'pointer',
-                transition: 'border-color 0.15s',
+                background: theme.surface, border: `1px solid ${borderColor}`,
+                borderRadius: 10, opacity: disabled ? 0.6 : 1, overflow: 'hidden',
+                cursor: disabled ? 'default' : 'pointer', transition: 'border-color 0.15s',
             }}
-            onMouseEnter={e => {
-                if (!disabled) e.currentTarget.style.borderColor =
-                    isAssigned ? theme.success : theme.accent;
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.borderColor = borderColor;
-            }}
+            onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = isAssigned ? theme.success : theme.accent; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = borderColor; }}
         >
-            {/* Face strip */}
             <div style={{ display: 'flex', height: 80, overflow: 'hidden', background: '#000', gap: 1 }}>
                 {previews.slice(0, 4).map((f, i) => (
                     <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt=""
@@ -1111,14 +1078,11 @@ function ClusterCard({
                 ))}
                 {previews.length === 0 && (
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: theme.textMuted, fontSize: '11px' }}>
-                        No images
-                    </div>
+                                  color: theme.textMuted, fontSize: '11px' }}>No images</div>
                 )}
             </div>
 
             <div style={{ padding: '10px 12px' }}>
-                {/* Folder label + image count */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <span style={{ fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 700, color: theme.text }}>
                         {item.folderName}
@@ -1126,7 +1090,6 @@ function ClusterCard({
                     <span style={{ fontSize: '11px', color: theme.textMuted }}>{item.imageCount} img</span>
                 </div>
 
-                {/* Status badge / inline input */}
                 {isAssigned ? (
                     <div>
                         <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.successDim,
@@ -1137,18 +1100,12 @@ function ClusterCard({
                         {stats && (
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
                                 <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99,
-                                    background: theme.accentDim, color: theme.accent }}>
-                                    {stats.embeddingCount} embed
-                                </span>
+                                    background: theme.accentDim, color: theme.accent }}>{stats.embeddingCount} embed</span>
                                 <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99,
-                                    background: theme.warningDim, color: theme.warning }}>
-                                    {stats.backupCount} backup
-                                </span>
+                                    background: theme.warningDim, color: theme.warning }}>{stats.backupCount} backup</span>
                                 {unapprovedCount > 0 && (
                                     <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99,
-                                        background: theme.dangerDim, color: theme.danger }}>
-                                        {unapprovedCount} new
-                                    </span>
+                                        background: theme.dangerDim, color: theme.danger }}>{unapprovedCount} new</span>
                                 )}
                             </div>
                         )}
@@ -1159,16 +1116,14 @@ function ClusterCard({
                         Flagged
                     </div>
                 ) : isUnmatched ? (
-                    <div style={{ padding: '5px 8px', borderRadius: 5,
-                                  background: theme.border + '44', color: theme.textMuted,
-                                  fontSize: '11px', textAlign: 'center' }}>
+                    <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.border + '44',
+                                  color: theme.textMuted, fontSize: '11px', textAlign: 'center' }}>
                         ⚠ No face detected
                     </div>
                 ) : isMerged ? (
                     <div>
                         <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.warningDim,
-                            color: theme.warning, fontSize: '12px', fontWeight: 600, textAlign: 'center',
-                            marginBottom: 4 }}>
+                            color: theme.warning, fontSize: '12px', fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
                             Merged → {item.rollNo}
                         </div>
                         <div style={{ fontSize: '10px', color: theme.textMuted, textAlign: 'center' }}>
@@ -1179,9 +1134,8 @@ function ClusterCard({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         {item.erpPhoto && (
                             <img src={erpPhotoUrl(item.erpPhoto)} alt="ERP"
-                                 style={{ width: 32, height: 32, borderRadius: '50%',
-                                          objectFit: 'cover', border: `2px solid ${confidenceColor(conf)}`,
-                                          flexShrink: 0 }}
+                                 style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover',
+                                          border: `2px solid ${confidenceColor(conf)}`, flexShrink: 0 }}
                                  onError={e => { e.target.style.display = 'none'; }} />
                         )}
                         <div style={{ minWidth: 0, flex: 1 }}>
@@ -1197,29 +1151,23 @@ function ClusterCard({
                         </div>
                     </div>
                 ) : (
-                    /* Manual inline input */
                     <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                         <input
-                            type="text"
-                            placeholder="Roll No e.g. 26TT1234"
+                            type="text" placeholder="Roll No e.g. 26TT1234"
                             value={rollValue || ''}
                             onChange={e => onRollChange && onRollChange(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter' && onAssign) onAssign(); }}
-                            style={{
-                                ...styles.input, flex: 1, padding: '6px 10px', fontSize: '12px',
+                            style={{ ...styles.input, flex: 1, padding: '6px 10px', fontSize: '12px',
                                 fontFamily: theme.fontMono, fontWeight: 700,
-                                textTransform: 'uppercase', margin: 0,
-                            }}
+                                textTransform: 'uppercase', margin: 0 }}
                         />
                         <button
                             onClick={onAssign}
                             disabled={saving || !(rollValue || '').trim()}
-                            style={{
-                                padding: '6px 12px', borderRadius: 6, border: 'none',
+                            style={{ padding: '6px 12px', borderRadius: 6, border: 'none',
                                 background: theme.success, color: '#000', fontSize: '12px',
                                 fontWeight: 700, cursor: 'pointer',
-                                opacity: (saving || !(rollValue || '').trim()) ? 0.4 : 1, flexShrink: 0,
-                            }}>
+                                opacity: (saving || !(rollValue || '').trim()) ? 0.4 : 1, flexShrink: 0 }}>
                             {saving ? '...' : 'OK'}
                         </button>
                     </div>
@@ -1277,11 +1225,9 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
     };
 
     return (
-        <div
-            style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.80)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-            onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-        >
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.80)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+            onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
             <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12,
                 width: '100%', maxWidth: 860, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1307,8 +1253,7 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
                         <button onClick={onSave} disabled={saving || selected.size === 0}
                             style={{ padding: '8px 20px', borderRadius: 7, border: 'none',
                                 background: theme.success, color: '#000', fontSize: '13px',
-                                fontWeight: 700, cursor: 'pointer',
-                                opacity: (saving || selected.size === 0) ? 0.5 : 1 }}>
+                                fontWeight: 700, cursor: 'pointer', opacity: (saving || selected.size === 0) ? 0.5 : 1 }}>
                             {saving ? 'Updating...' : 'Update Embedding'}
                         </button>
                     </div>
@@ -1327,7 +1272,6 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
     const candidates     = match?.candidates || [];
     const folderForPhoto = item.currentFolder || item.folderName;
 
-    // Keyboard navigation
     useEffect(() => {
         const handler = (e) => {
             if (e.key === 'ArrowLeft'  && hasPrev && !saving) onPrev();
@@ -1343,24 +1287,18 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
         background: enabled ? theme.surface : 'transparent',
         color: enabled ? theme.text : theme.textMuted,
         cursor: enabled ? 'pointer' : 'default',
-        fontSize: '14px', fontWeight: 700, opacity: enabled ? 1 : 0.3,
-        lineHeight: 1,
+        fontSize: '14px', fontWeight: 700, opacity: enabled ? 1 : 0.3, lineHeight: 1,
     });
 
     return (
-        <div
-            style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.75)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-            onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-        >
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.75)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+            onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
             <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12,
                 width: '100%', maxWidth: 760, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 16px', borderBottom: `1px solid ${theme.border}`, gap: 10 }}>
-                    {/* Prev arrow */}
                     <button onClick={onPrev} disabled={!hasPrev || saving} style={navBtnStyle(hasPrev && !saving)}>&#8592;</button>
-
-                    {/* Title */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: '14px', color: theme.text, display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontFamily: theme.fontMono }}>{item.folderName}</span>
@@ -1373,13 +1311,10 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                             )}
                         </div>
                     </div>
-
-                    {/* Next arrow */}
                     <button onClick={onNext} disabled={!hasNext || saving} style={navBtnStyle(hasNext && !saving)}>&#8594;</button>
-
-                    {/* Close */}
                     <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer', marginLeft: 4 }}>×</button>
                 </div>
+
                 <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20 }}>
                     <div>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted,
@@ -1403,13 +1338,10 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                             </div>
                             {match?.erpPhoto ? (
                                 <div style={{ textAlign: 'center' }}>
-                                    <img
-                                        src={erpPhotoUrl(match.erpPhoto)}
-                                        alt="ERP"
+                                    <img src={erpPhotoUrl(match.erpPhoto)} alt="ERP"
                                         style={{ width: 120, height: 120, objectFit: 'cover',
                                                  borderRadius: 8, border: `3px solid ${confidenceColor(conf)}` }}
-                                        onError={e => { e.target.style.display = 'none'; }}
-                                    />
+                                        onError={e => { e.target.style.display = 'none'; }} />
                                     <div style={{ marginTop: 8, fontSize: '15px', fontWeight: 800, color: theme.text }}>
                                         {match.rollNo}
                                     </div>
@@ -1440,16 +1372,13 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                                                  transition: 'all 0.12s' }}>
                                             {c.erpPhoto && (
                                                 <img src={erpPhotoUrl(c.erpPhoto)} alt=""
-                                                     style={{ width: 64, height: 64, borderRadius: 6,
-                                                              objectFit: 'cover', flexShrink: 0,
-                                                              border: `2px solid ${confidenceColor(c.confidence)}` }}
+                                                     style={{ width: 64, height: 64, borderRadius: 6, objectFit: 'cover',
+                                                              flexShrink: 0, border: `2px solid ${confidenceColor(c.confidence)}` }}
                                                      onError={e => { e.target.style.display = 'none'; }} />
                                             )}
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '13px', fontWeight: 700, color: theme.text,
-                                                              fontFamily: theme.fontMono }}>{c.rollNo}</div>
-                                                <div style={{ fontSize: '11px', color: confidenceColor(c.confidence),
-                                                              fontWeight: 600, marginTop: 2 }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 700, color: theme.text, fontFamily: theme.fontMono }}>{c.rollNo}</div>
+                                                <div style={{ fontSize: '11px', color: confidenceColor(c.confidence), fontWeight: 600, marginTop: 2 }}>
                                                     {confidenceLabel(c.confidence)} · {(c.confidence * 100).toFixed(1)}%
                                                 </div>
                                             </div>
@@ -1473,16 +1402,14 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
-                            <button
-                                onClick={onApprove} disabled={saving || !overrideRoll.trim()}
+                            <button onClick={onApprove} disabled={saving || !overrideRoll.trim()}
                                 style={{ padding: '10px 0', borderRadius: 7, border: 'none',
                                     background: theme.success, color: '#000', fontSize: '13px',
                                     fontWeight: 700, cursor: 'pointer',
                                     opacity: (saving || !overrideRoll.trim()) ? 0.5 : 1 }}>
                                 {saving ? 'Assigning...' : 'Approve & Assign'}
                             </button>
-                            <button
-                                onClick={onFlag} disabled={saving}
+                            <button onClick={onFlag} disabled={saving}
                                 style={{ padding: '10px 0', borderRadius: 7,
                                     border: `1px solid ${theme.warning}`,
                                     background: 'transparent', color: theme.warning, fontSize: '13px',
