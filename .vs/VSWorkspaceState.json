@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\client",
+    "\\client\\src",
+    "\\client\\src\\filedownload",
+    "\\client\\src\\timetableadmin",
+    "\\server",
+    "\\server\\src",
+    "\\server\\src\\modules",
+    "\\server\\src\\modules\\timetableModule",
+    "\\server\\src\\modules\\timetableModule\\controllers"
+  ],
+  "SelectedNode": "\\client\\src\\App.jsx",
+  "PreviewInSolutionExplorer": false
+}
