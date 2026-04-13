@@ -556,5 +556,23 @@ router.post('/run-attendance-rtsp', async (req, res) => {
         _resolvedCtx: ctx || null,
     }, res);
 });
+// ─── MJPEG Frame Preview Proxy ────────────────────────────────
+// Proxies the MJPEG stream from Python so the browser iframe can show it
+router.get('/rtsp-frame-preview', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/rtsp-preview`, {
+            responseType: 'stream',
+            timeout: 0,   // no timeout — stream is long-lived
+        });
+        res.setHeader('Content-Type', result.headers['content-type'] || 'multipart/x-mixed-replace; boundary=frame');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('X-Accel-Buffering', 'no');
+        result.data.pipe(res);
+        result.data.on('error', () => { if (!res.writableEnded) res.end(); });
+        req.on('close', () => result.data.destroy());
+    } catch (e) {
+        if (!res.writableEnded) res.status(502).end();
+    }
+});
 
 module.exports = router;
