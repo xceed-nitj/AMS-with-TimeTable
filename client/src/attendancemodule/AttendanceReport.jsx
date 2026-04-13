@@ -414,7 +414,7 @@ export default function AttendanceReport() {
                         {/* Timetable lookup status banners */}
                         {ttStatus === 'loading' && (
                             <div style={{
-                                padding: '8px 14px', borderRadius: '6px', marginBottom: 14,
+                                padding: '8px 13px', borderRadius: '6px', marginBottom: 14,
                                 background: theme.accentDim, border: `1px solid ${theme.accent}`,
                                 fontSize: '12px', color: theme.accent,
                             }}>
