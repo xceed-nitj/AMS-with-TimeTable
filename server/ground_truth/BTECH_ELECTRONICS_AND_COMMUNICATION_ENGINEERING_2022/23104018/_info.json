@@ -1,0 +1,20 @@
+{
+  "embedding_files": [
+    "gt_144.1s_f34.jpg",
+    "gt_164.3s_f37.jpg",
+    "gt_213.7s_f72.jpg",
+    "gt_82.8s_f12.jpg",
+    "gt_67.9s_f11.jpg"
+  ],
+  "backup_files": [
+    "gt_271.0s_f68.jpg"
+  ],
+  "approved_files": [
+    "gt_144.1s_f34.jpg",
+    "gt_164.3s_f37.jpg",
+    "gt_213.7s_f72.jpg",
+    "gt_271.0s_f68.jpg",
+    "gt_67.9s_f11.jpg",
+    "gt_82.8s_f12.jpg"
+  ]
+}

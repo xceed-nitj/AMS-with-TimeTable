@@ -1,0 +1,17 @@
+{
+  "embedding_files": [
+    "gt_2.5s_f2.jpg",
+    "gt_238.3s_f48.jpg",
+    "gt_238.3s_f51.jpg",
+    "gt_2.5s_f4.jpg",
+    "gt_140.9s_f23.jpg"
+  ],
+  "backup_files": [],
+  "scores": {
+    "gt_2.5s_f2.jpg": 20.3755,
+    "gt_238.3s_f48.jpg": 19.1924,
+    "gt_238.3s_f51.jpg": 9.5651,
+    "gt_2.5s_f4.jpg": 2.4649,
+    "gt_140.9s_f23.jpg": 1.6315
+  }
+}
