@@ -1,0 +1,13 @@
+{
+  "embedding_files": [
+    "gt_164.3s_f29.jpg",
+    "gt_271.0s_f55.jpg",
+    "gt_82.8s_f9.jpg"
+  ],
+  "backup_files": [],
+  "approved_files": [
+    "gt_164.3s_f29.jpg",
+    "gt_271.0s_f55.jpg",
+    "gt_82.8s_f9.jpg"
+  ]
+}
