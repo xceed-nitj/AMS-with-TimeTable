@@ -33,14 +33,14 @@ export default function AttendanceReport() {
     const [duration, setDuration] = useState(120);
     const [rtspUrl2,         setRtspUrl2]         = useState('');
     const [checkIntervalMin, setCheckIntervalMin] = useState(5);
+
     // ── Room list from DB ─────────────────────────────────────────
     const [rooms,        setRooms]        = useState([]);
     const [roomSearch,   setRoomSearch]   = useState('');
     const [showRoomDrop, setShowRoomDrop] = useState(false);
 
     // ── Timetable auto-lookup state ───────────────────────────────
-    // null | 'loading' | 'found' | 'notfound'
-    const [ttStatus, setTtStatus] = useState(null);
+    const [ttStatus, setTtStatus] = useState(null); // null | 'loading' | 'found' | 'notfound'
 
     // ── Fallback batch (if LockSem lookup fails) ──────────────────
     const [degree,     setDegree]     = useState('BTECH');
@@ -52,13 +52,18 @@ export default function AttendanceReport() {
         ? `${degree}_${sanitizeDept(department)}_${year}` : null;
 
     // ── Run state ─────────────────────────────────────────────────
-    const [processing,  setProcessing]  = useState(false);
-    const [streamLog,   setStreamLog]   = useState([]);
-    const [liveStats,   setLiveStats]   = useState(null);
-    const [saving,      setSaving]      = useState(false);
-    const [mlResult,    setMlResult]    = useState(null);
-    const [savedReport, setSavedReport] = useState(null);
-    const [derivedCtx,  setDerivedCtx]  = useState(null);
+    const [processing,      setProcessing]      = useState(false);
+    const [streamLog,       setStreamLog]       = useState([]);
+    const [liveStats,       setLiveStats]       = useState(null);
+    const [liveFrame,       setLiveFrame]       = useState(null);
+    const [snapshots,       setSnapshots]       = useState([]);
+    const [previewActive,   setPreviewActive]   = useState(false);
+    const [enrolledRollNos, setEnrolledRollNos] = useState('');
+    const [showRollInput,   setShowRollInput]   = useState(false);
+    const [saving,          setSaving]          = useState(false);
+    const [mlResult,        setMlResult]        = useState(null);
+    const [savedReport,     setSavedReport]     = useState(null);
+    const [derivedCtx,      setDerivedCtx]      = useState(null);
 
     // ── History ───────────────────────────────────────────────────
     const [reports,     setReports]     = useState([]);
@@ -88,8 +93,6 @@ export default function AttendanceReport() {
     }, []);
 
     // ── Timetable auto-lookup when room + slot change ─────────────
-    // Date is NOT used for lookup — only room + slot identify the class.
-    // Date is only used when saving the report.
     useEffect(() => {
         if (!room || !slot) { setDerivedCtx(null); setTtStatus(null); return; }
         const ctrl = new AbortController();
@@ -112,7 +115,7 @@ export default function AttendanceReport() {
             }
         })();
         return () => ctrl.abort();
-    }, [room, slot]); // ← only room + slot, NOT date
+    }, [room, slot]);
 
     // ── Fetch saved reports ───────────────────────────────────────
     const fetchReports = useCallback(async () => {
@@ -142,7 +145,13 @@ export default function AttendanceReport() {
             return;
         }
 
+        // ── Parse sir's roll number list ──────────────────────────
+        const parsedRollNos = enrolledRollNos.trim()
+            ? enrolledRollNos.trim().split(/[\n,]+/).map(r => r.trim()).filter(Boolean)
+            : [];
+
         setProcessing(true); setMlResult(null); setSavedReport(null);
+        setSnapshots([]); setLiveFrame(null); setPreviewActive(true);
         setStreamLog([]); setLiveStats(null);
 
         try {
@@ -150,29 +159,29 @@ export default function AttendanceReport() {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    rtspUrl1:     rtspUrl.trim(),
-                    rtspUrl2:     rtspUrl2.trim(),
-                    batch:       effectiveBatch,
+                    rtspUrl:         rtspUrl.trim(),
+                    rtspUrl2:        rtspUrl2.trim(),
+                    batch:           effectiveBatch,
                     room, slot,
-                    date,        // date sent only for saving, NOT for LockSem lookup
-                    durationSec: duration,
-                    frameSkip:   10,
-                    subject:     derivedCtx?.subject   || '',
-                    faculty:     derivedCtx?.faculty   || '',
-                    semester:    derivedCtx?.sem        || '',
-                    locksemId:   derivedCtx?.locksemId || '',
+                    date,
+                    durationSec:     duration,
+                    frameSkip:       10,
+                    subject:         derivedCtx?.subject   || '',
+                    faculty:         derivedCtx?.faculty   || '',
+                    semester:        derivedCtx?.sem        || '',
+                    locksemId:       derivedCtx?.locksemId || '',
+                    enrolledRollNos: parsedRollNos,  // ← sir's list sent to Python
                 }),
             });
 
             if (!response.ok) {
-                // Non-SSE error response (e.g. 400 batch not found)
                 const errData = await response.json().catch(() => ({}));
                 showToast(errData.error || `Server error ${response.status}`, 'error');
                 setProcessing(false);
+                setPreviewActive(false);
                 return;
             }
 
-            // Read SSE stream
             const reader  = response.body.getReader();
             const decoder = new TextDecoder();
             let   buffer  = '';
@@ -182,7 +191,7 @@ export default function AttendanceReport() {
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
                 const parts = buffer.split('\n\n');
-                buffer = parts.pop(); // keep incomplete last chunk
+                buffer = parts.pop();
                 for (const part of parts) {
                     const dataLine = part.split('\n').find(l => l.startsWith('data: '));
                     if (!dataLine) continue;
@@ -198,17 +207,25 @@ export default function AttendanceReport() {
                                 elapsed:   ev.elapsed,
                                 remaining: ev.remaining,
                             });
+                            setLiveFrame({
+                                faces:   ev.faces,
+                                camera:  ev.camera,
+                                elapsed: ev.elapsed,
+                            });
                         }
                         if (ev.type === 'done') {
                             setMlResult(ev.result);
                             if (ev.result?.metadata) {
                                 setDerivedCtx(prev => ({ ...prev, ...ev.result.metadata }));
                             }
+                            setSnapshots(ev.result?.frame_snapshots || []);
+                            setPreviewActive(false);
                             showToast('Processed — review and save');
                             setProcessing(false);
                         }
                         if (ev.type === 'error') {
                             showToast(ev.message, 'error');
+                            setPreviewActive(false);
                             setProcessing(false);
                         }
                     } catch {}
@@ -477,6 +494,40 @@ export default function AttendanceReport() {
                             )}
                         </details>
 
+                        {/* ── Enrolled Roll Numbers — sir's list ── */}
+                        <details
+                            open={showRollInput}
+                            style={{ marginBottom: 14 }}
+                            onToggle={e => setShowRollInput(e.target.open)}
+                        >
+                            <summary style={{ fontSize: '12px', color: theme.accent, cursor: 'pointer', fontWeight: 600, marginBottom: 8 }}>
+                                📋 Enrolled Roll Numbers (sir's list — optional but recommended)
+                            </summary>
+                            <div style={{ marginTop: 10 }}>
+                                <label style={styles.label}>
+                                    Paste roll numbers — one per line or comma separated.
+                                    Only these appear in the report. Faces detected outside this list are flagged.
+                                </label>
+                                <textarea
+                                    value={enrolledRollNos}
+                                    onChange={e => setEnrolledRollNos(e.target.value)}
+                                    placeholder={'CS001\nCS002\nCS003\n...\nor: CS001, CS002, CS003'}
+                                    rows={6}
+                                    style={{
+                                        ...styles.input,
+                                        fontFamily: theme.fontMono,
+                                        resize: 'vertical',
+                                        marginTop: 6,
+                                    }}
+                                />
+                                {enrolledRollNos.trim() && (
+                                    <div style={{ fontSize: '11px', color: theme.accent, marginTop: 4, fontFamily: theme.fontMono }}>
+                                        {enrolledRollNos.trim().split(/[\n,]+/).filter(r => r.trim()).length} roll numbers entered
+                                    </div>
+                                )}
+                            </div>
+                        </details>
+
                         {/* Camera URLs + Interval + Duration + Run */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                             <div>
@@ -558,16 +609,65 @@ export default function AttendanceReport() {
                         )}
                     </div>
 
+                    {/* Live frame preview while processing */}
                     {processing && (
-                        <div style={{ ...styles.card, textAlign: 'center', padding: '48px 20px' }}>
+                        <div style={{ ...styles.card, marginBottom: 16 }}>
+                            <div style={{ position: 'relative', marginBottom: 12 }}>
+                                <img
+                                    src={previewActive ? `${ML_API.replace('/ml', '')}/ml/rtsp-frame-preview` : undefined}
+                                    alt="Live frame"
+                                    style={{
+                                        width: '100%', borderRadius: 8,
+                                        background: '#0a0e1a', minHeight: 200,
+                                        display: 'block', objectFit: 'contain',
+                                    }}
+                                    onError={e => { e.target.style.display = 'none'; }}
+                                />
+                                {liveFrame?.camera && (
+                                    <div style={{
+                                        position: 'absolute', top: 10, left: 10,
+                                        background: 'rgba(0,0,0,0.7)',
+                                        color: theme.accent, fontSize: '11px',
+                                        fontWeight: 700, padding: '4px 10px',
+                                        borderRadius: 4, fontFamily: theme.fontMono,
+                                    }}>
+                                        CAM {liveFrame.camera}
+                                    </div>
+                                )}
+                                {liveFrame !== null && (
+                                    <div style={{
+                                        position: 'absolute', top: 10, right: 10,
+                                        background: liveFrame.faces > 0 ? 'rgba(0,200,100,0.85)' : 'rgba(200,60,60,0.8)',
+                                        color: '#fff', fontSize: '12px',
+                                        fontWeight: 700, padding: '4px 12px',
+                                        borderRadius: 4, fontFamily: theme.fontMono,
+                                    }}>
+                                        {liveFrame.faces} face{liveFrame.faces !== 1 ? 's' : ''} detected
+                                    </div>
+                                )}
+                            </div>
                             <div style={{
-                                width: 40, height: 40, margin: '0 auto 16px',
-                                border: `3px solid ${theme.border}`, borderTopColor: theme.accent,
-                                borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                            }} />
-                            <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>Processing Stream</div>
-                            <div style={{ fontSize: '13px', color: theme.textMuted }}>
-                                Detecting faces and matching against ground truth embeddings…
+                                display: 'flex', gap: 20, fontSize: '12px',
+                                color: theme.textMuted, fontFamily: theme.fontMono,
+                                flexWrap: 'wrap', alignItems: 'center',
+                            }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{
+                                        width: 8, height: 8, borderRadius: '50%',
+                                        background: theme.accent,
+                                        animation: 'spin 1s linear infinite',
+                                        display: 'inline-block',
+                                    }} />
+                                    Processing…
+                                </span>
+                                {liveStats && (
+                                    <>
+                                        <span>Frame <b style={{ color: theme.text }}>{liveStats.frames}</b></span>
+                                        <span>Total faces <b style={{ color: theme.success }}>{liveStats.faces}</b></span>
+                                        <span>Elapsed <b style={{ color: theme.text }}>{liveStats.elapsed}s</b></span>
+                                        <span>Remaining <b style={{ color: theme.warning }}>{liveStats.remaining}s</b></span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
@@ -575,10 +675,11 @@ export default function AttendanceReport() {
                     {mlResult && !processing && (() => {
                         const arr = Object.values(mlResult.attendance || {});
                         const stats = {
-                            present: arr.filter(s => s.status === 'present').length,
-                            review:  arr.filter(s => s.status === 'review').length,
-                            absent:  arr.filter(s => s.status === 'absent').length,
-                            total:   arr.length,
+                            present:  arr.filter(s => s.status === 'present').length,
+                            review:   arr.filter(s => s.status === 'review').length,
+                            absent:   arr.filter(s => s.status === 'absent').length,
+                            flagged:  arr.filter(s => s.flagged === true).length,
+                            total:    arr.length,
                         };
                         return (
                             <div style={{ animation: 'fadeIn 0.4s' }}>
@@ -587,7 +688,37 @@ export default function AttendanceReport() {
                                     { label: 'Present', val: stats.present, color: theme.success  },
                                     { label: 'Review',  val: stats.review,  color: theme.warning  },
                                     { label: 'Absent',  val: stats.absent,  color: theme.danger   },
+                                    ...(stats.flagged > 0 ? [{ label: 'Flagged 🚩', val: stats.flagged, color: theme.warning }] : []),
                                 ]} theme={theme} styles={styles} />
+
+                                {/* Saved frame snapshots */}
+                                {snapshots.length > 0 && (
+                                    <div style={{ ...styles.card, marginBottom: 16 }}>
+                                        <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: 10 }}>
+                                            Captured Frames ({snapshots.length})
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                            {snapshots.map((snap, i) => (
+                                                <div key={i} style={{
+                                                    background: theme.bg, borderRadius: 6,
+                                                    padding: '8px 12px', fontSize: '11px',
+                                                    fontFamily: theme.fontMono, color: theme.textMuted,
+                                                    border: `1px solid ${theme.border}`,
+                                                }}>
+                                                    <div style={{ color: theme.accent, fontWeight: 700 }}>
+                                                        Cam {snap.cam} — {snap.elapsed_sec}s
+                                                    </div>
+                                                    <div style={{ color: snap.faces_count > 0 ? theme.success : theme.danger }}>
+                                                        {snap.faces_count} face{snap.faces_count !== 1 ? 's' : ''}
+                                                    </div>
+                                                    <div style={{ color: theme.textMuted, fontSize: '10px', marginTop: 2, wordBreak: 'break-all' }}>
+                                                        {snap.path?.split(/[\\/]/).pop()}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div style={{
                                     ...styles.card, marginBottom: 16,
@@ -623,7 +754,10 @@ export default function AttendanceReport() {
                                         avgConfidence:  d.avg_confidence,
                                         confidenceZone: d.confidence_zone,
                                         firstSeenSec:   d.first_seen_sec,
-                                        finalStatus: d.status === 'present' ? 'P' : d.status === 'review' ? 'R' : 'A',
+                                        inList:         d.in_list,
+                                        flagged:        d.flagged,
+                                        finalStatus:    d.status === 'present' ? 'P'
+                                                      : d.status === 'review'  ? 'R' : 'A',
                                     }))}
                                     readOnly theme={theme} styles={styles}
                                 />
@@ -787,7 +921,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                     <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
-                        {['#','Roll No','ML Status','Confidence','Zone','First Seen','Final',
+                        {['#', 'Roll No', 'In List', 'ML Status', 'Confidence', 'Zone', 'First Seen', 'Final',
                           !readOnly && 'Override'].filter(Boolean).map(h => (
                             <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontSize: '10px',
                                 color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>{h}</th>
@@ -796,15 +930,46 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                 </thead>
                 <tbody>
                     {rows.map((s, i) => (
-                        <tr key={s.rollNo} style={{ borderBottom: `1px solid ${theme.border}`,
-                            background: s.finalStatus === 'R' ? theme.warningDim : 'transparent' }}>
+                        <tr key={s.rollNo} style={{
+                            borderBottom: `1px solid ${theme.border}`,
+                            background: s.flagged
+                                ? 'rgba(251,191,36,0.07)'
+                                : s.finalStatus === 'R'
+                                    ? theme.warningDim
+                                    : 'transparent',
+                        }}>
                             <td style={{ padding: '10px 14px', color: theme.textMuted }}>{i + 1}</td>
                             <td style={{ padding: '10px 14px', fontFamily: theme.fontMono, fontWeight: 600 }}>{s.rollNo}</td>
+
+                            {/* ── In List column ── */}
+                            <td style={{ padding: '10px 14px' }}>
+                                {s.flagged === true ? (
+                                    <span style={{
+                                        padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700,
+                                        background: 'rgba(251,191,36,0.15)', color: theme.warning,
+                                    }}>
+                                        🚩 Flagged
+                                    </span>
+                                ) : s.inList === true ? (
+                                    <span style={{ fontSize: '13px', color: theme.success }}>✓</span>
+                                ) : s.inList === false ? (
+                                    <span style={{ fontSize: '11px', color: theme.textMuted }}>—</span>
+                                ) : (
+                                    <span style={{ fontSize: '11px', color: theme.textMuted }}>—</span>
+                                )}
+                            </td>
+
                             <td style={{ padding: '10px 14px' }}>
                                 <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600,
-                                    background: s.status === 'present' ? theme.successDim : s.status === 'review' ? theme.warningDim : theme.dangerDim,
-                                    color:      s.status === 'present' ? theme.success    : s.status === 'review' ? theme.warning    : theme.danger }}>
-                                    {s.status || '—'}
+                                    background: s.status === 'present'  ? theme.successDim
+                                              : s.status === 'review'   ? theme.warningDim
+                                              : s.status === 'no_photo' ? theme.accentDim
+                                              : theme.dangerDim,
+                                    color:      s.status === 'present'  ? theme.success
+                                              : s.status === 'review'   ? theme.warning
+                                              : s.status === 'no_photo' ? theme.accent
+                                              : theme.danger }}>
+                                    {s.status === 'no_photo' ? 'no photo' : (s.status || '—')}
                                 </span>
                             </td>
                             <td style={{ padding: '10px 14px' }}>
@@ -825,7 +990,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                 {s.confidenceZone || '—'}
                             </td>
                             <td style={{ padding: '10px 14px', color: theme.textMuted, fontFamily: theme.fontMono, fontSize: '12px' }}>
-                                {s.firstSeenSec != null ? `${Math.floor(s.firstSeenSec/60)}m ${Math.round(s.firstSeenSec%60)}s` : '—'}
+                                {s.firstSeenSec != null ? `${Math.floor(s.firstSeenSec / 60)}m ${Math.round(s.firstSeenSec % 60)}s` : '—'}
                             </td>
                             <td style={{ padding: '10px 14px' }}>
                                 <span style={{ padding: '3px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700,
@@ -838,7 +1003,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                             {!readOnly && (
                                 <td style={{ padding: '10px 14px' }}>
                                     <div style={{ display: 'flex', gap: 4 }}>
-                                        {['P','A','R'].map(st => (
+                                        {['P', 'A', 'R'].map(st => (
                                             <button key={st} onClick={() => onOverride(s.rollNo, st)}
                                                 disabled={s.finalStatus === st}
                                                 style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '11px',
