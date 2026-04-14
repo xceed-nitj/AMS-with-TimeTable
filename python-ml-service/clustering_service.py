@@ -157,24 +157,43 @@ def _merge_split_clusters(labels: np.ndarray,
     return new_labels
 
 ZOOM_PASSES = [
+    # 1x: full frame
     {"zoom": 1.0, "cx": 0.50, "cy": 0.50, "min_sharpness": 18.0, "min_face_px": 40},
-
+ 
+    # 2x: front half
     {"zoom": 2.0, "cx": 0.28, "cy": 0.38, "min_sharpness": 12.0, "min_face_px": 28},
     {"zoom": 2.0, "cx": 0.72, "cy": 0.38, "min_sharpness": 12.0, "min_face_px": 28},
-
+ 
+    # 3x: middle rows
     {"zoom": 3.0, "cx": 0.22, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
     {"zoom": 3.0, "cx": 0.50, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
     {"zoom": 3.0, "cx": 0.78, "cy": 0.28, "min_sharpness": 6.0,  "min_face_px": 18},
-
+ 
+    # 4x: back-middle rows
     {"zoom": 4.0, "cx": 0.22, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
     {"zoom": 4.0, "cx": 0.50, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
     {"zoom": 4.0, "cx": 0.78, "cy": 0.22, "min_sharpness": 4.0,  "min_face_px": 12},
-
-    {"zoom": 5.0, "cx": 0.25, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
-    {"zoom": 5.0, "cx": 0.50, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
-    {"zoom": 5.0, "cx": 0.75, "cy": 0.18, "min_sharpness": 3.0,  "min_face_px": 8},
+ 
+    # 5x: back rows — 5 positions (was 3)
+    {"zoom": 5.0, "cx": 0.15, "cy": 0.18, "min_sharpness": 2.5,  "min_face_px": 8},
+    {"zoom": 5.0, "cx": 0.35, "cy": 0.18, "min_sharpness": 2.5,  "min_face_px": 8},
+    {"zoom": 5.0, "cx": 0.50, "cy": 0.18, "min_sharpness": 2.5,  "min_face_px": 8},
+    {"zoom": 5.0, "cx": 0.65, "cy": 0.18, "min_sharpness": 2.5,  "min_face_px": 8},
+    {"zoom": 5.0, "cx": 0.85, "cy": 0.18, "min_sharpness": 2.5,  "min_face_px": 8},
+ 
+    # 6x: second-to-last row — 4 positions (NEW)
+    {"zoom": 6.0, "cx": 0.18, "cy": 0.15, "min_sharpness": 2.0,  "min_face_px": 6},
+    {"zoom": 6.0, "cx": 0.40, "cy": 0.15, "min_sharpness": 2.0,  "min_face_px": 6},
+    {"zoom": 6.0, "cx": 0.60, "cy": 0.15, "min_sharpness": 2.0,  "min_face_px": 6},
+    {"zoom": 6.0, "cx": 0.82, "cy": 0.15, "min_sharpness": 2.0,  "min_face_px": 6},
+ 
+    # 7x: very last row — 5 positions (NEW)
+    {"zoom": 7.0, "cx": 0.15, "cy": 0.12, "min_sharpness": 1.5,  "min_face_px": 5},
+    {"zoom": 7.0, "cx": 0.32, "cy": 0.12, "min_sharpness": 1.5,  "min_face_px": 5},
+    {"zoom": 7.0, "cx": 0.50, "cy": 0.12, "min_sharpness": 1.5,  "min_face_px": 5},
+    {"zoom": 7.0, "cx": 0.68, "cy": 0.12, "min_sharpness": 1.5,  "min_face_px": 5},
+    {"zoom": 7.0, "cx": 0.85, "cy": 0.12, "min_sharpness": 1.5,  "min_face_px": 5},
 ]
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Digital zoom helper
 # ─────────────────────────────────────────────────────────────────────────────
@@ -222,29 +241,66 @@ def _digital_zoom(frame: np.ndarray, zoom_factor: float,
 # ─────────────────────────────────────────────────────────────────────────────
 # Main detection function
 # ─────────────────────────────────────────────────────────────────────────────
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# clustering_service.py — REPLACE only _detect_faces_tiled with this.
+# Everything else in the file stays exactly the same.
+#
+# GROUND TRUTH PATH (extract-rtsp-stream):
+#   Calls:  _detect_faces_tiled(face_app, frame, ui_mask, preview_cb=...)
+#   debug_dir = None (default) → ZERO extra saves, ZERO behaviour change.
+#
+# ATTENDANCE PATH (run-attendance-rtsp):
+#   Calls:  _detect_faces_tiled(..., debug_dir=..., debug_frame_id=...)
+#   → saves to {debug_dir}/raw/  /rejected/  /accepted/
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# clustering_service.py — REPLACE _detect_faces_tiled with this version.
+# Keep everything else in the file exactly as is.
+#
+# WHY: Your rtsp_routes.py attendance code passes debug_dir= and
+#      debug_frame_id= to this function, but the current version
+#      doesn't accept those parameters → TypeError → silently caught
+#      → detections=[] → no crops saved.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 def _detect_faces_tiled(face_app, frame: np.ndarray,
                         ui_mask: np.ndarray = None,
                         preview_cb=None,
                         min_face_px: int = None,
-                        lap_threshold: float = None) -> list:
-
+                        lap_threshold: float = None,
+                        debug_dir: str = None,
+                        debug_frame_id: int = 0,
+                        ) -> list:
+ 
     _min_face_px   = min_face_px   if min_face_px   is not None else MIN_FACE_PX
     _lap_threshold = lap_threshold if lap_threshold is not None else MIN_SHARPNESS
     H, W = frame.shape[:2]
-
+ 
+    _debug = debug_dir is not None
+    if _debug:
+        raw_dir      = os.path.join(debug_dir, "raw")
+        rejected_dir = os.path.join(debug_dir, "rejected")
+        accepted_dir = os.path.join(debug_dir, "accepted")
+        os.makedirs(raw_dir, exist_ok=True)
+        os.makedirs(rejected_dir, exist_ok=True)
+        os.makedirs(accepted_dir, exist_ok=True)
+ 
     if ui_mask is not None:
         frame = frame.copy()
         frame[ui_mask == 0] = 0
-
+ 
     raw        = []
     zoom_boxes = []
-
+    _raw_counter = 0
+ 
     for pass_idx, pass_cfg in enumerate(ZOOM_PASSES):
-
-        # ── Per-pass thresholds (fall back to function args / globals) ────────
-        pass_lap_threshold = pass_cfg.get("min_sharpness", _lap_threshold)  # ← add
-        pass_min_face_px   = pass_cfg.get("min_face_px",   _min_face_px)    # ← add
-
+ 
+        pass_lap_threshold = pass_cfg.get("min_sharpness", _lap_threshold)
+        pass_min_face_px   = pass_cfg.get("min_face_px",   _min_face_px)
+ 
         zoomed, off_x, off_y, scale_back, bbox = _digital_zoom(
             frame,
             zoom_factor=pass_cfg["zoom"],
@@ -252,12 +308,12 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             cy_frac=pass_cfg["cy"],
         )
         zoom_boxes.append(bbox)
-
+ 
         if preview_cb:
             preview_cb(frame, zoom_boxes, pass_idx)
-
+ 
         enhanced = _apply_clahe(zoomed)
-
+ 
         try:
             faces = face_app.get(enhanced)
         except Exception as e:
@@ -265,40 +321,71 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                 f"InsightFace error pass={pass_idx} "
                 f"zoom={pass_cfg['zoom']}: {e}")
             continue
-
+ 
         for face in faces:
             b = face.bbox
-
+ 
+            # Original-frame coordinates (for bbox output and NMS)
             orig_x1 = int(off_x + b[0] * scale_back)
             orig_y1 = int(off_y + b[1] * scale_back)
             orig_x2 = int(off_x + b[2] * scale_back)
             orig_y2 = int(off_y + b[3] * scale_back)
             orig_x1 = max(0, orig_x1); orig_y1 = max(0, orig_y1)
             orig_x2 = min(W, orig_x2); orig_y2 = min(H, orig_y2)
-
+ 
+            # Zoomed-frame coordinates (for size check and cropping)
             zx1 = max(0, int(b[0]))
             zy1 = max(0, int(b[1]))
-            zx2 = min(W, int(b[2]))
-            zy2 = min(H, int(b[3]))
-
+            zx2 = min(zoomed.shape[1], int(b[2]))
+            zy2 = min(zoomed.shape[0], int(b[3]))
+ 
+            # Save raw crop BEFORE any filter (attendance debug only)
+            if _debug:
+                try:
+                    zfw_d = zx2 - zx1
+                    zfh_d = zy2 - zy1
+                    pad_d = int(max(zfw_d, zfh_d) * FACE_CROP_PAD_FRAC)
+                    cx1_d = max(0, zx1 - pad_d)
+                    cy1_d = max(0, zy1 - pad_d)
+                    cx2_d = min(zoomed.shape[1], zx2 + pad_d)
+                    cy2_d = min(zoomed.shape[0], zy2 + pad_d)
+                    raw_crop = zoomed[cy1_d:cy2_d, cx1_d:cx2_d]
+                    if raw_crop.size > 0:
+                        det_s = float(getattr(face, 'det_score', 0))
+                        fname = (f"fr{debug_frame_id:04d}_p{pass_idx:02d}_"
+                                 f"z{pass_cfg['zoom']:.0f}_"
+                                 f"det{det_s:.2f}_"
+                                 f"orig{orig_x2-orig_x1}x{orig_y2-orig_y1}_"
+                                 f"zoom{zx2-zx1}x{zy2-zy1}_"
+                                 f"n{_raw_counter:03d}.jpg")
+                        cv2.imwrite(os.path.join(raw_dir, fname), raw_crop,
+                                    [cv2.IMWRITE_JPEG_QUALITY, 95])
+                        _raw_counter += 1
+                except Exception:
+                    pass
+ 
             raw.append((
                 orig_x1, orig_y1, orig_x2, orig_y2,
                 face.embedding,
                 float(getattr(face, "det_score", 1.0)),
                 zoomed,
                 zx1, zy1, zx2, zy2,
-                pass_lap_threshold,   # ← add (was missing entirely)
-                pass_min_face_px,     # ← add (was missing entirely)
+                pass_lap_threshold,
+                pass_min_face_px,
             ))
-
+ 
     if not raw:
+        if _debug:
+            logger.info("[debug] Frame %d: 0 faces across all %d zoom passes",
+                        debug_frame_id, len(ZOOM_PASSES))
         return []
-
+ 
     raw.sort(key=lambda r: r[5], reverse=True)
-
+ 
+    # NMS (uses original-frame coords — correct for dedup across zoom levels)
     keep_idx   = []
     keep_boxes = []
-
+ 
     for i, (x1, y1, x2, y2, *_rest) in enumerate(raw):
         w = x2 - x1
         h = y2 - y1
@@ -314,57 +401,112 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         if not dup:
             keep_idx.append(i)
             keep_boxes.append((x1, y1, w, h))
-
+ 
+    if _debug and (len(raw) - len(keep_idx)) > 0:
+        logger.info("[debug] Frame %d: NMS removed %d/%d duplicates",
+                    debug_frame_id, len(raw) - len(keep_idx), len(raw))
+ 
+    # Quality filters
     results = []
-
+ 
     for i in keep_idx:
         (orig_x1, orig_y1, orig_x2, orig_y2,
          emb, det_score,
          zoomed_frame,
          zx1, zy1, zx2, zy2,
-         pass_lap_threshold,    # ← unpack (was missing)
-         pass_min_face_px,      # ← unpack (was missing)
+         pass_lap_threshold,
+         pass_min_face_px,
         ) = raw[i]
-
-        fw = orig_x2 - orig_x1
-        fh = orig_y2 - orig_y1
-        if min(fw, fh) < pass_min_face_px:      # ← was _min_face_px
-            continue
-
+ 
+        # ┌─────────────────────────────────────────────────────────────────┐
+        # │ FIX: Use ZOOMED frame size for the min_face_px check.          │
+        # │                                                                │
+        # │ Old code checked (orig_x2 - orig_x1) which is tiny at high    │
+        # │ zoom — a 100px zoomed face = 14px in original at 7x zoom.     │
+        # │ That's what caused all the REJECT_SMALL for back rows.         │
+        # │                                                                │
+        # │ The zoomed size is what InsightFace actually saw and what      │
+        # │ determines whether the embedding is usable.                    │
+        # └─────────────────────────────────────────────────────────────────┘
         zfw = zx2 - zx1
         zfh = zy2 - zy1
+ 
+        if min(zfw, zfh) < pass_min_face_px:
+            if _debug:
+                try:
+                    pad2 = int(max(zfw, zfh) * FACE_CROP_PAD_FRAC)
+                    rc = zoomed_frame[
+                        max(0, zy1-pad2):min(zoomed_frame.shape[0], zy2+pad2),
+                        max(0, zx1-pad2):min(zoomed_frame.shape[1], zx2+pad2)]
+                    if rc.size > 0:
+                        fname = (f"fr{debug_frame_id:04d}_REJECT_SMALL_"
+                                 f"zoom{zfw}x{zfh}_min{pass_min_face_px}.jpg")
+                        cv2.imwrite(os.path.join(rejected_dir, fname), rc,
+                                    [cv2.IMWRITE_JPEG_QUALITY, 90])
+                except Exception:
+                    pass
+            continue
+ 
         pad = int(max(zfw, zfh) * FACE_CROP_PAD_FRAC)
         cx1 = max(0, zx1 - pad); cy1 = max(0, zy1 - pad)
-        cx2 = min(W, zx2 + pad); cy2 = min(H, zy2 + pad)
+        cx2 = min(zoomed_frame.shape[1], zx2 + pad)
+        cy2 = min(zoomed_frame.shape[0], zy2 + pad)
         crop = zoomed_frame[cy1:cy2, cx1:cx2]
         if crop.size == 0:
             continue
-
+ 
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         lap  = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-        if lap < pass_lap_threshold:             # ← was _lap_threshold
+ 
+        # Filter: too blurry
+        if lap < pass_lap_threshold:
+            if _debug:
+                try:
+                    fname = (f"fr{debug_frame_id:04d}_REJECT_BLUR_"
+                             f"lap{lap:.1f}_thr{pass_lap_threshold:.1f}_"
+                             f"det{det_score:.2f}.jpg")
+                    cv2.imwrite(os.path.join(rejected_dir, fname), crop,
+                                [cv2.IMWRITE_JPEG_QUALITY, 90])
+                except Exception:
+                    pass
             continue
-
+ 
+        # Quality score — use zoomed dimensions for fair scoring
         quality = float(
-            det_score * ((fw * fh) ** 0.5) * min(lap, 500) / 500)
-
+            det_score * ((zfw * zfh) ** 0.5) * min(lap, 500) / 500)
+ 
         norm = np.linalg.norm(emb)
         if norm == 0:
             continue
-
+ 
+        # Upscale small crops for better saved images
         ch, cw = crop.shape[:2]
-        target = 400
+        target = 300
         if cw < target or ch < target:
             scale_up = max(target / cw, target / ch)
             new_w    = int(cw * scale_up)
             new_h    = int(ch * scale_up)
             crop     = cv2.resize(crop, (new_w, new_h),
                                   interpolation=cv2.INTER_CUBIC)
-
+ 
+        # Sharpen
         blur = cv2.GaussianBlur(crop, (0, 0), 1.5)
         crop = cv2.addWeighted(crop, 1.5, blur, -0.5, 0)
         crop = np.clip(crop, 0, 255).astype(np.uint8)
-
+ 
+        # Save accepted crop (attendance debug only)
+        if _debug:
+            try:
+                fname = (f"fr{debug_frame_id:04d}_OK_"
+                         f"det{det_score:.2f}_"
+                         f"lap{lap:.1f}_"
+                         f"q{quality:.1f}_"
+                         f"zoom{zfw}x{zfh}.jpg")
+                cv2.imwrite(os.path.join(accepted_dir, fname), crop,
+                            [cv2.IMWRITE_JPEG_QUALITY, 95])
+            except Exception:
+                pass
+ 
         results.append({
             "bbox":      [orig_x1, orig_y1, orig_x2, orig_y2],
             "embedding": emb / norm,
@@ -372,7 +514,11 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             "quality":   quality,
             "crop":      crop,
         })
-
+ 
+    if _debug:
+        logger.info("[debug] Frame %d: raw=%d → NMS=%d → accepted=%d",
+                    debug_frame_id, len(raw), len(keep_idx), len(results))
+ 
     return results
 
 def extract_all_faces(video_path: str,
