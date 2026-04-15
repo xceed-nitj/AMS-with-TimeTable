@@ -1,0 +1,24 @@
+{
+  "embedding_files": [
+    "gt_310.5s_f7.jpg",
+    "gt_431.4s_f33.jpg",
+    "gt_890.5s_f103.jpg",
+    "gt_1051.3s_f125.jpg",
+    "gt_589.5s_f63.jpg"
+  ],
+  "backup_files": [],
+  "scores": {
+    "gt_310.5s_f7.jpg": 49.684,
+    "gt_431.4s_f33.jpg": 37.118,
+    "gt_890.5s_f103.jpg": 10.0428,
+    "gt_1051.3s_f125.jpg": 9.5381,
+    "gt_589.5s_f63.jpg": 6.4023
+  },
+  "approved_files": [
+    "gt_310.5s_f7.jpg",
+    "gt_431.4s_f33.jpg",
+    "gt_890.5s_f103.jpg",
+    "gt_1051.3s_f125.jpg",
+    "gt_589.5s_f63.jpg"
+  ]
+}
