@@ -15,6 +15,10 @@ const CAMERAS = [
     { id: 'cam_seminar', label: 'Seminar Hall',      url: 'rtsp://192.168.1.104:554/stream1' },
 ];
 
+// ─── Combined-mode camera pair ────────────────────────────────────────────────
+const COMBINED_CAMERAS = ['cam_side', 'cam_lab1'];  // LT103L ↔ LT103R
+const COMBINED_SWITCH_INTERVAL = 5 * 60;            // 5 minutes in seconds
+
 const TARGET_OPTIONS = [
     { value: 5,  hint: 'Minimal storage — embedding uses all 5' },
     { value: 8,  hint: '5 embed + 3 backup' },
@@ -70,11 +74,6 @@ const PersonCard = ({ id, count, target }) => {
 };
 
 // ─── Live Preview Component ───────────────────────────────────────────────────
-// FIX: Use a single persistent <img> pointed at the MJPEG endpoint instead of
-// re-requesting with ?t=timestamp every second.  The MJPEG endpoint is a
-// multipart/x-mixed-replace stream — the browser updates the frame automatically
-// from a single long-lived connection.  Re-mounting with a new timestamp every
-// second caused a flood of parallel HTTP connections that exhausted the backend.
 const LivePreview = ({ apiBase, isRunning }) => {
     const [showPreview, setShowPreview] = useState(true);
     const [loaded, setLoaded]           = useState(false);
@@ -94,14 +93,13 @@ const LivePreview = ({ apiBase, isRunning }) => {
         prevRunning.current = isRunning;
     }, [isRunning]);
 
-    // Clean up on unmount only
     useEffect(() => () => clearTimeout(retryTimer.current), []);
 
     const handleImgError = useCallback(() => {
         setLoaded(false);
         clearTimeout(retryTimer.current);
         retryTimer.current = setTimeout(() => {
-            setSessionKey(k => k + 1);   // remount → fresh MJPEG connection
+            setSessionKey(k => k + 1);
         }, 3000);
     }, []);
 
@@ -139,7 +137,6 @@ const LivePreview = ({ apiBase, isRunning }) => {
                     overflow: 'hidden', border: `1px solid ${theme.accent}`,
                     background: '#000', minHeight: 120,
                 }}>
-                    {/* Always-visible status overlay — sits on top until img loads */}
                     {(!isRunning || !loaded) && (
                         <div style={{
                             position: isRunning ? 'absolute' : 'relative',
@@ -153,7 +150,6 @@ const LivePreview = ({ apiBase, isRunning }) => {
                         </div>
                     )}
 
-                    {/* Img is always mounted while running — no delay, no state gate */}
                     {isRunning && (
                         <img
                             key={sessionKey}
@@ -164,8 +160,6 @@ const LivePreview = ({ apiBase, isRunning }) => {
                             onError={handleImgError}
                         />
                     )}
-
-                    {/* legend — unchanged */}
                 </div>
             )}
         </div>
@@ -173,19 +167,12 @@ const LivePreview = ({ apiBase, isRunning }) => {
 };
 
 // ─── SSE line parser ──────────────────────────────────────────────────────────
-// FIX: the original split('\n\n') + find('data: ') approach drops events when
-// a TCP chunk boundary falls inside a multi-line SSE event.  This function
-// processes a running buffer and returns { events, remaining } so no bytes
-// are ever lost between reads.
 function extractSSEEvents(buffer) {
     const events = [];
-    // SSE events are delimited by double-newline
     const parts = buffer.split('\n\n');
-    // Last part is incomplete — keep it in the buffer
     const remaining = parts.pop();
 
     for (const part of parts) {
-        // An SSE event block may have multiple lines; find the data line
         const dataLine = part.split('\n').find(l => l.startsWith('data: '));
         if (!dataLine) continue;
         const jsonStr = dataLine.slice(6).trim();
@@ -222,13 +209,20 @@ export default function GroundTruthRTSP() {
     const [retryCount,    setRetryCount]    = useState(0);
     const [retryCountdown, setRetryCountdown] = useState(0);
 
+    // ── Combined-mode state ───────────────────────────────────────────────────
+    const [combinedMode,     setCombinedMode]     = useState(false);
+    const [combinedIdx,      setCombinedIdx]      = useState(0);       // index into COMBINED_CAMERAS
+    const [switchCountdown,  setSwitchCountdown]  = useState(0);       // seconds until next camera switch
+    const combinedTimerRef   = useRef(null);   // the 1-second tick interval
+    const combinedAbortRef   = useRef(false);  // flag to cancel the cycle
+
     const logRef          = useRef(null);
     const abortRef        = useRef(null);
     const retryTimerRef   = useRef(null);
     const retryTickRef    = useRef(null);
-    const handleStartRef  = useRef(null);   // always points to latest handleStart
+    const handleStartRef  = useRef(null);
 
-    const RETRY_DELAY = 5;   // seconds before auto-restart
+    const RETRY_DELAY = 5;
 
     const clearRetry = useCallback(() => {
         if (retryTimerRef.current)  { clearTimeout(retryTimerRef.current);   retryTimerRef.current  = null; }
@@ -236,8 +230,10 @@ export default function GroundTruthRTSP() {
         setRetryCountdown(0);
     }, []);
 
-    // Clean up timers on unmount
-    useEffect(() => () => clearRetry(), [clearRetry]);
+    useEffect(() => () => {
+        clearRetry();
+        clearInterval(combinedTimerRef.current);
+    }, [clearRetry]);
 
     const batchName = degree && department && year
         ? `${degree}_${department}_${year}`.toUpperCase()
@@ -259,42 +255,56 @@ export default function GroundTruthRTSP() {
         }, 40);
     }, []);
 
-    // ── start acquisition ─────────────────────────────────────────────────────
-    const handleStart = useCallback(async () => {
+    // ── stop acquisition (shared by single & combined) ────────────────────────
+    const stopStream = useCallback(async () => {
+        try {
+            await fetch(`${API_BASE}/stop-rtsp-stream`, { method: 'POST' });
+        } catch { /* backend may not respond if already stopped */ }
+    }, []);
+
+    // ── single-camera start acquisition ───────────────────────────────────────
+    const handleStart = useCallback(async (overrideCamera) => {
         if (!batchName) { showToast('Fill in Degree, Department and Year', 'error'); return; }
+
+        const cam = overrideCamera || selectedCamera;
 
         clearRetry();
         setStatus('running');
-        setLog([]);
-        setPersons({});
-        setSummary(null);
+        if (!overrideCamera) {
+            // Fresh start — clear previous state (but in combined mode keep persons across switches)
+            if (!combinedMode) {
+                setLog([]);
+                setPersons({});
+                setSummary(null);
+            }
+        }
 
         const controller = new AbortController();
         abortRef.current = controller;
 
-        addLog(`▶ Connecting to ${selectedCamera.label}…`, theme.accent);
-try {
-    const previewRes = await Promise.race([
-        fetch(`${API_BASE}/start-preview`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rtspUrl: selectedCamera.url }),
-        }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('preview timeout')), 4000)),
-    ]);
-    if (!previewRes.ok) addLog('⚠ Preview stream unavailable', theme.textMuted);
-} catch (e) {
-    addLog(`⚠ Preview: ${e.message}`, theme.textMuted);
-}
+        addLog(`▶ Connecting to ${cam.label}…`, theme.accent);
+        try {
+            const previewRes = await Promise.race([
+                fetch(`${API_BASE}/start-preview`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rtspUrl: cam.url }),
+                }),
+                new Promise((_, rej) => setTimeout(() => rej(new Error('preview timeout')), 4000)),
+            ]);
+            if (!previewRes.ok) addLog('⚠ Preview stream unavailable', theme.textMuted);
+        } catch (e) {
+            addLog(`⚠ Preview: ${e.message}`, theme.textMuted);
+        }
 
-   await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 200));
         try {
             const response = await fetch(`${API_BASE}/extract-rtsp-stream`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 signal:  controller.signal,
                 body: JSON.stringify({
-                    rtspUrl:             selectedCamera.url,
+                    rtspUrl:             cam.url,
                     batch:               batchName,
                     detSize,
                     frameSkip,
@@ -313,10 +323,6 @@ try {
             const decoder = new TextDecoder();
             let   buffer  = '';
 
-            // FIX: Use extractSSEEvents() so no events are lost at TCP chunk
-            // boundaries.  The original code called split('\n\n') on each
-            // decoded chunk independently, which silently dropped events
-            // whenever a double-newline was split across two read() calls.
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -337,10 +343,6 @@ try {
                                 addLog(`🎞 Frame ${ev.frame} — ${ev.faces_this_frame} face(s) detected`, '#aaa');
                             break;
 
-                        // FIX: person_update arrives for EACH incremental cluster
-                        // pass.  We must merge — not replace — person state so
-                        // persons detected in earlier passes are not wiped out
-                        // when a later pass only updates a subset.
                         case 'person_update':
                             setPersons(prev => ({
                                 ...prev,
@@ -356,7 +358,11 @@ try {
 
                         case 'done':
                             setRetryCount(0);
-                            setStatus('done');
+                            // In combined mode, don't set status to 'done' here —
+                            // the cycle manager will handle the switch or final stop.
+                            if (!combinedMode) {
+                                setStatus('done');
+                            }
                             setSummary({
                                 peopleDetected: ev.people_detected,
                                 imagesSaved:    ev.images_saved,
@@ -365,17 +371,14 @@ try {
                                 framesRead:     ev.frames_read,
                             });
                             addLog(`✅ ${ev.message}`, theme.success);
-                            showToast(`${ev.people_detected} people — ${ev.images_saved} images saved`);
+                            if (!combinedMode) {
+                                showToast(`${ev.people_detected} people — ${ev.images_saved} images saved`);
+                            }
                             break;
 
                         case 'error':
-                            // FIX: Don't set status to 'error' on a single backend
-                            // error event — the stream may recover.  Only mark
-                            // error when the stream itself closes after an error.
                             addLog(`❌ ${ev.message}`, theme.danger);
                             showToast(ev.message, 'error');
-                            // If the backend sends a fatal error it will also
-                            // close the SSE stream, which ends the read() loop.
                             break;
 
                         default:
@@ -384,17 +387,19 @@ try {
                 }
             }
 
-            // Stream closed cleanly by backend (done event already handled above)
             if (abortRef.current && !controller.signal.aborted) {
-                // If we somehow exit without a 'done' event, mark done anyway
-                setStatus(s => s === 'running' ? 'done' : s);
+                if (!combinedMode) {
+                    setStatus(s => s === 'running' ? 'done' : s);
+                }
             }
 
         } catch (err) {
             if (err.name === 'AbortError') {
-                addLog('⏹ Stream stopped by user', theme.textMuted);
-                setRetryCount(0);
-                setStatus('done');
+                addLog(`⏹ Stream stopped (${cam.label})`, theme.textMuted);
+                if (!combinedMode) {
+                    setRetryCount(0);
+                    setStatus('done');
+                }
             } else {
                 const attempt = retryCount + 1;
                 setRetryCount(attempt);
@@ -414,32 +419,135 @@ try {
                 }, RETRY_DELAY * 1000);
             }
         }
-    }, [batchName, selectedCamera, detSize, frameSkip, targetImgs, minSamples, clusterThr, addLog, retryCount, clearRetry]);
+    }, [batchName, selectedCamera, detSize, frameSkip, targetImgs, minSamples, clusterThr, addLog, retryCount, clearRetry, combinedMode]);
 
-    // keep ref in sync so retry timeout always calls the latest handleStart
     handleStartRef.current = handleStart;
 
-    // ── stop acquisition ──────────────────────────────────────────────────────
+    // ── stop (user-initiated) ─────────────────────────────────────────────────
     const handleStop = useCallback(async () => {
         clearRetry();
         setRetryCount(0);
+
+        // If combined mode is active, cancel the cycle
+        if (combinedMode) {
+            combinedAbortRef.current = true;
+            clearInterval(combinedTimerRef.current);
+            combinedTimerRef.current = null;
+            setCombinedMode(false);
+            setSwitchCountdown(0);
+        }
+
         setStatus('stopping');
         addLog('⏹ Sending stop signal — waiting for final save…', theme.textMuted);
-        try {
-            await fetch(`${API_BASE}/stop-rtsp-stream`, { method: 'POST' });
-        } catch { /* backend may not respond if already stopped */ }
-    }, [addLog, clearRetry]);
+
+        // Abort the fetch stream
+        if (abortRef.current) {
+            abortRef.current.abort();
+            abortRef.current = null;
+        }
+
+        await stopStream();
+        setStatus('done');
+    }, [addLog, clearRetry, combinedMode, stopStream]);
+
+    // ── combined-mode: start cycling ──────────────────────────────────────────
+    const handleStartCombined = useCallback(async () => {
+        if (!batchName) { showToast('Fill in Degree, Department and Year', 'error'); return; }
+
+        // Reset state
+        setCombinedMode(true);
+        combinedAbortRef.current = false;
+        setCombinedIdx(0);
+        setLog([]);
+        setPersons({});
+        setSummary(null);
+        setRetryCount(0);
+        clearRetry();
+
+        const runCycle = async (startIdx) => {
+            let idx = startIdx;
+
+            while (!combinedAbortRef.current) {
+                const camId = COMBINED_CAMERAS[idx % COMBINED_CAMERAS.length];
+                const cam   = CAMERAS.find(c => c.id === camId);
+                if (!cam) break;
+
+                setCombinedIdx(idx % COMBINED_CAMERAS.length);
+                setCameraId(camId);
+                addLog(`🔄 Combined mode — switching to ${cam.label}`, '#f0c040');
+
+                // Start the countdown timer
+                setSwitchCountdown(COMBINED_SWITCH_INTERVAL);
+                clearInterval(combinedTimerRef.current);
+
+                const countdownDone = new Promise((resolve) => {
+                    combinedTimerRef.current = setInterval(() => {
+                        setSwitchCountdown(n => {
+                            if (n <= 1) {
+                                clearInterval(combinedTimerRef.current);
+                                combinedTimerRef.current = null;
+                                resolve();
+                                return 0;
+                            }
+                            return n - 1;
+                        });
+                    }, 1000);
+                });
+
+                // Start streaming this camera (don't clear persons/log on switch)
+                // We fire handleStart but also need to abort it after the interval
+                const streamPromise = handleStartRef.current(cam);
+
+                // Wait for the switch interval to elapse
+                await countdownDone;
+
+                if (combinedAbortRef.current) break;
+
+                // Stop the current stream before switching
+                addLog(`⏸ Stopping ${cam.label} for camera switch…`, '#f0c040');
+                if (abortRef.current) {
+                    abortRef.current.abort();
+                    abortRef.current = null;
+                }
+                await stopStream();
+
+                // Brief pause to let backend clean up
+                await new Promise(r => setTimeout(r, 1500));
+
+                if (combinedAbortRef.current) break;
+
+                idx++;
+            }
+
+            // Cycle ended
+            if (!combinedAbortRef.current) {
+                setCombinedMode(false);
+                setStatus('done');
+            }
+        };
+
+        runCycle(0);
+    }, [batchName, addLog, clearRetry, stopStream]);
 
     const isRunning   = status === 'running';
     const isStopping  = status === 'stopping';
     const isRetrying  = status === 'retrying';
     const isDone      = status === 'done';
-    const isError    = status === 'error';
-    const isIdle     = status === 'idle';
+    const isError     = status === 'error';
+    const isIdle      = status === 'idle';
 
     const totalPersons = Object.keys(persons).length;
     const donePersons  = Object.values(persons).filter(p => p.done).length;
     const allDone      = totalPersons > 0 && donePersons === totalPersons;
+
+    // Format mm:ss for switch countdown
+    const switchMM = String(Math.floor(switchCountdown / 60)).padStart(2, '0');
+    const switchSS = String(switchCountdown % 60).padStart(2, '0');
+
+    // Active camera label in combined mode
+    const combinedActiveCam = combinedMode
+        ? CAMERAS.find(c => c.id === COMBINED_CAMERAS[combinedIdx])
+        : null;
 
     // ── render ────────────────────────────────────────────────────────────────
     return (
@@ -606,17 +714,17 @@ try {
             <LivePreview apiBase={API_BASE} isRunning={isRunning} />
 
             {/* ── Action buttons ── */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
                 <button
-                    onClick={handleStart}
-                    disabled={isRunning || isStopping || isRetrying || !batchName}
+                    onClick={() => handleStart()}
+                    disabled={isRunning || isStopping || isRetrying || !batchName || combinedMode}
                     style={{
                         ...styles.btnPrimary,
-                        opacity: (isRunning || isStopping || isRetrying || !batchName) ? 0.5 : 1,
+                        opacity: (isRunning || isStopping || isRetrying || !batchName || combinedMode) ? 0.5 : 1,
                         minWidth: 200,
                     }}
                 >
-                    {isRunning ? (
+                    {(isRunning && !combinedMode) ? (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                             <span style={{
                                 width: 14, height: 14,
@@ -631,21 +739,79 @@ try {
                     ) : '📡 Start Acquisition'}
                 </button>
 
+                {/* ── Combined L+R button ── */}
                 <button
-                    onClick={handleStop}
-                    disabled={!isRunning && !isRetrying}
+                    onClick={handleStartCombined}
+                    disabled={isRunning || isStopping || isRetrying || !batchName || combinedMode}
                     style={{
                         padding: '10px 24px', borderRadius: 8,
-                        cursor: (isRunning || isRetrying) ? 'pointer' : 'default',
+                        cursor: (isRunning || isStopping || isRetrying || !batchName || combinedMode) ? 'default' : 'pointer',
+                        fontSize: '14px', fontWeight: 700,
+                        border: `1px solid ${combinedMode ? '#f0c040' : '#f0c040'}`,
+                        background: combinedMode ? 'rgba(240,192,64,0.15)' : 'transparent',
+                        color: (isRunning || isStopping || isRetrying || !batchName) && !combinedMode
+                            ? theme.border : '#f0c040',
+                        transition: 'all 0.15s',
+                        opacity: (isRunning || isStopping || isRetrying || !batchName) && !combinedMode ? 0.4 : 1,
+                        minWidth: 200,
+                        display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
+                    }}
+                >
+                    {combinedMode ? (
+                        <>
+                            <span style={{
+                                width: 14, height: 14,
+                                border: '2px solid rgba(240,192,64,0.3)',
+                                borderTopColor: '#f0c040',
+                                borderRadius: '50%',
+                                animation: 'spin 0.8s linear infinite',
+                                display: 'inline-block',
+                            }} />
+                            Combined ({combinedActiveCam?.label}) {switchMM}:{switchSS}
+                        </>
+                    ) : '🔄 Combined L ↔ R'}
+                </button>
+
+                <button
+                    onClick={handleStop}
+                    disabled={!isRunning && !isRetrying && !combinedMode}
+                    style={{
+                        padding: '10px 24px', borderRadius: 8,
+                        cursor: (isRunning || isRetrying || combinedMode) ? 'pointer' : 'default',
                         fontSize: '14px', fontWeight: 700, border: `1px solid ${theme.danger}`,
-                        background: (isRunning || isRetrying) ? theme.dangerDim : 'transparent',
-                        color: (isRunning || isRetrying) ? theme.danger : theme.border,
-                        transition: 'all 0.15s', opacity: (isRunning || isRetrying) ? 1 : 0.4,
+                        background: (isRunning || isRetrying || combinedMode) ? theme.dangerDim : 'transparent',
+                        color: (isRunning || isRetrying || combinedMode) ? theme.danger : theme.border,
+                        transition: 'all 0.15s',
+                        opacity: (isRunning || isRetrying || combinedMode) ? 1 : 0.4,
                     }}
                 >
                     {isStopping ? '⏳ Stopping…' : '⏹ Stop'}
                 </button>
             </div>
+
+            {/* ── Combined-mode banner ── */}
+            {combinedMode && isRunning && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
+                    padding: '12px 16px', borderRadius: 8,
+                    background: 'rgba(240,192,64,0.08)',
+                    border: '1px solid rgba(240,192,64,0.4)',
+                }}>
+                    <span style={{ fontSize: '20px', lineHeight: 1 }}>🔄</span>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#f0c040' }}>
+                            Combined Mode — {combinedActiveCam?.label}
+                        </div>
+                        <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
+                            Switching to {CAMERAS.find(c => c.id === COMBINED_CAMERAS[(combinedIdx + 1) % COMBINED_CAMERAS.length])?.label} in{' '}
+                            <span style={{ fontWeight: 700, color: '#f0c040', fontFamily: theme.fontMono }}>
+                                {switchMM}:{switchSS}
+                            </span>
+                            {' '}· persons are preserved across switches
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Auto-retry banner ── */}
             {isRetrying && (
@@ -803,6 +969,8 @@ try {
                         Select batch + camera → set target images → click "Start Acquisition"
                         <br />
                         Stream stops automatically once every person reaches the target
+                        <br />
+                        <span style={{ color: '#f0c040' }}>🔄 Combined L ↔ R</span> alternates LT103L and LT103R every 5 min
                     </div>
                 </div>
             )}
