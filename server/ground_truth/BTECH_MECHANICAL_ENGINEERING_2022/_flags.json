@@ -1,0 +1,38 @@
+[
+  {
+    "folderName": "person_009",
+    "suggestedRollNo": "22109019",
+    "confidence": 0.0995,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-04-15T08:41:01.193Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_008",
+    "suggestedRollNo": "22109057",
+    "confidence": 0.1696,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-04-15T08:41:17.769Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_019",
+    "suggestedRollNo": "22109081",
+    "confidence": 0.4746,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-04-15T08:57:50.896Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_015",
+    "suggestedRollNo": "22109053",
+    "confidence": 0.6372,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-04-15T09:30:54.679Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  }
+]
