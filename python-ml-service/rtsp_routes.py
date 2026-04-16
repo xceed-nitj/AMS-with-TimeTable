@@ -12,7 +12,7 @@ from tracemalloc import start
 import cv2
 import numpy as np
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 from sklearn.cluster import DBSCAN as _DBSCAN
 
@@ -108,7 +108,7 @@ def _update_preview(frame, zoom_boxes, current_pass=0):
         _preview_frame = buf.tobytes()
 
 
-# ── Request model ─────────────────────────────────────────────────────────────
+# ── Request models ────────────────────────────────────────────────────────────
 
 class RTSPRequest(BaseModel):
     rtspUrl:             str
@@ -118,6 +118,27 @@ class RTSPRequest(BaseModel):
     targetImgsPerPerson: int   = 10
     minSamples:          int   = 3
     clusterThreshold:    float = 0.45
+
+
+class RTSPAttendanceRequest(BaseModel):
+    rtspUrl:          str
+    rtspUrl2:         str   = ''
+    batch:            str
+    room:             str
+    slot:             str
+    date:             str
+    durationSec:      int   = 60
+    checkIntervalMin: int   = 5
+    frameSkip:        int   = 10
+    clusterThreshold: float = 0.45
+    minSamples:       int   = 2
+    autoThreshold:    float = 0.40
+    reviewThreshold:  float = 0.20
+    subject:          str   = ''
+    faculty:          str   = ''
+    semester:         str   = ''
+    locksemId:        str   = ''
+    enrolledRollNos:  list  = []
 
 
 # ── Preview endpoint ──────────────────────────────────────────────────────────
@@ -151,7 +172,6 @@ def stop_rtsp_stream():
 
 
 # ── Ground Truth SSE acquisition endpoint ─────────────────────────────────────
-# NOTE: This does NOT pass debug_dir — ground truth is unaffected.
 
 @router.post("/extract-rtsp-stream")
 def extract_rtsp_stream(req: RTSPRequest):
@@ -281,7 +301,6 @@ def extract_rtsp_stream(req: RTSPRequest):
 
                 t_detect = time.time()
                 try:
-                    # Ground truth: NO debug_dir, NO debug_frame_id
                     detections = _detect_faces_tiled(
                         state.face_app, frame, ui_mask,
                         preview_cb=_update_preview,
@@ -397,13 +416,498 @@ def extract_rtsp_stream(req: RTSPRequest):
                  "Content-Type": "text/event-stream; charset=utf-8"})
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# ATTENDANCE PIPELINE — shared generator (yields plain dicts, not SSE strings)
+# Both the SSE route and the sync route consume this.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _attendance_pipeline(req: RTSPAttendanceRequest):
+    """
+    Core attendance logic as a regular (synchronous) generator.
+    Yields plain dicts: {"type": "stage"|"frame"|"done"|"error", ...}
+    No SSE wrapping here — callers decide how to use the events.
+    """
+    batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
+    logger.info("[attendance] batch_dir=%s", batch_dir)
+    _stop_event.clear()
+
+    if not os.path.isdir(batch_dir):
+        yield {"type": "error", "message": f"Ground truth folder not found: {batch_dir}."}
+        return
+
+    yield {"type": "stage", "message": f"Loading ground truth for batch: {req.batch}…"}
+
+    enrolled = {}
+    IMG_EXTS_LOCAL = (".jpg", ".jpeg", ".png", ".webp")
+
+    for folder in sorted(os.listdir(batch_dir)):
+        fp = os.path.join(batch_dir, folder)
+        if not os.path.isdir(fp):
+            continue
+        if re.match(r'^person_\d+$', folder, re.IGNORECASE):
+            continue
+        roll_no = folder
+        info_path = os.path.join(fp, '_info.json')
+        photos = []
+        if os.path.exists(info_path):
+            try:
+                with open(info_path) as fi:
+                    info = json.load(fi)
+                photos = [f for f in info.get('embedding_files', [])
+                          if os.path.exists(os.path.join(fp, f))]
+            except Exception:
+                photos = []
+        if not photos:
+            photos = [f for f in os.listdir(fp)
+                      if f.lower().endswith(IMG_EXTS_LOCAL) and not f.startswith('_')]
+
+        embs, emb_weights = [], []
+        for photo in photos[:5]:
+            img = cv2.imread(os.path.join(fp, photo))
+            if img is None:
+                continue
+            faces = state.face_app.get(img)
+            if not faces:
+                continue
+            face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
+            fw, fh = face.bbox[2] - face.bbox[0], face.bbox[3] - face.bbox[1]
+            if min(fw, fh) < 40:
+                continue
+            det_score = float(getattr(face, 'det_score', 1.0))
+            if det_score < 0.5:
+                continue
+            emb = face.embedding
+            norm = np.linalg.norm(emb)
+            if norm == 0:
+                continue
+            x1, y1, x2, y2 = map(int, face.bbox)
+            crop = img[max(0,y1):y2, max(0,x1):x2]
+            quality = (det_score * min(float(cv2.Laplacian(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY),
+                       cv2.CV_64F).var()), 500) / 500) if crop.size > 0 else det_score
+            embs.append(emb / norm)
+            emb_weights.append(max(quality, 0.01))
+
+        if embs:
+            weights = np.array(emb_weights, dtype=np.float32)
+            weights /= weights.sum()
+            mean_emb = np.average(np.array(embs, dtype=np.float32), axis=0, weights=weights)
+            norm = np.linalg.norm(mean_emb)
+            if norm > 0:
+                enrolled[roll_no] = mean_emb / norm
+
+    if not enrolled:
+        yield {"type": "error", "message": f"No enrolled students found in '{batch_dir}'."}
+        return
+
+    # Sir's list filter
+    sir_list = [r.strip().upper() for r in req.enrolledRollNos if r.strip()]
+    has_sir_list = len(sir_list) > 0
+    if has_sir_list:
+        enrolled_in_list     = {k: v for k, v in enrolled.items() if k.upper() in sir_list}
+        enrolled_not_in_list = {k: v for k, v in enrolled.items() if k.upper() not in sir_list}
+        missing_from_gt      = [r for r in sir_list if r not in {k.upper() for k in enrolled}]
+        if missing_from_gt:
+            yield {"type": "stage", "message": f"⚠️ {len(missing_from_gt)} roll nos have no ground truth photos"}
+        yield {"type": "stage", "message": f"{len(enrolled_in_list)} in list, {len(enrolled_not_in_list)} others flagged if detected"}
+    else:
+        enrolled_in_list     = enrolled
+        enrolled_not_in_list = {}
+        yield {"type": "stage", "message": f"{len(enrolled)} students loaded — connecting…"}
+
+    # Open RTSP
+    cap = _open_capture(req.rtspUrl)
+    if not cap.isOpened():
+        yield {"type": "error", "message": f"Cannot open RTSP stream: {req.rtspUrl}"}
+        return
+
+    H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    scale = min(1.0, 1080 / H) if H > 1080 else 1.0
+    disp_H, disp_W = int(H * scale), int(W * scale)
+    ui_mask = _build_ui_mask(disp_H, disp_W)
+
+    yield {"type": "stage", "message": f"Stream open {W}×{H} — recording {req.durationSec}s…"}
+
+    all_embeddings, all_face_images, all_timestamps, all_quality = [], [], [], []
+    CAMERA_SWITCH_SEC = 30
+    cameras = [req.rtspUrl]
+    if req.rtspUrl2:
+        cameras.append(req.rtspUrl2)
+    frame_snapshots = []
+
+    DEBUG_CROP_DIR = os.path.join(BASE_DIR, "attendance-debug-crops", f"{req.date}_{req.slot}")
+    os.makedirs(DEBUG_CROP_DIR, exist_ok=True)
+    crop_counter = 0
+    logger.info("[attendance] Debug crops → %s", DEBUG_CROP_DIR)
+    yield {"type": "stage", "message": f"Debug crops → attendance-debug-crops/{req.date}_{req.slot}/"}
+
+    start_t = time.time()
+    frame_count, cam_idx, last_switch = 0, 0, 0.0
+    SNAPSHOT_INTERVAL_SEC = 5
+    last_snapshot_elapsed = -999.0
+    reader  = _RTSPReader(cap, decode_every=req.frameSkip)
+    last_seq = 0
+
+    try:
+        while True:
+            elapsed = time.time() - start_t
+            if elapsed >= req.durationSec:
+                break
+
+            if len(cameras) > 1 and (elapsed - last_switch) >= CAMERA_SWITCH_SEC:
+                reader.release()
+                cam_idx = (cam_idx + 1) % len(cameras)
+                new_cap = _open_capture(cameras[cam_idx])
+                reader  = _RTSPReader(new_cap, decode_every=req.frameSkip)
+                last_seq = 0
+                last_switch = elapsed
+                last_snapshot_elapsed = -999.0
+                yield {"type": "stage", "message": f"Switched to camera {cam_idx+1} at {round(elapsed)}s"}
+
+            ok, frame, seq, _ = reader.latest()
+            if not ok or frame is None or seq == last_seq:
+                time.sleep(0.01)
+                continue
+
+            last_seq = seq
+            frame_count += 1
+
+            if scale < 1.0:
+                frame = cv2.resize(frame, (disp_W, disp_H), interpolation=cv2.INTER_AREA)
+
+            # MJPEG preview
+            try:
+                prev = cv2.resize(frame, (960, 540)) if frame.shape[1] > 960 else frame.copy()
+                _, prev_buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                with _preview_lock:
+                    _preview_frame = prev_buf.tobytes()
+            except Exception:
+                pass
+
+            detections = _detect_faces_tiled(
+                state.face_app, frame, ui_mask,
+                debug_dir=DEBUG_CROP_DIR,
+                debug_frame_id=frame_count,
+            )
+            faces_this_frame = len(detections)
+
+            for d in detections:
+                all_embeddings.append(d["embedding"])
+                all_face_images.append(d["crop"])
+                all_timestamps.append(round(elapsed, 2))
+                all_quality.append(d["quality"])
+                crop_counter += 1
+
+            # Annotated full frame
+            if faces_this_frame > 0:
+                try:
+                    ann = frame.copy()
+                    for d in detections:
+                        bx1, by1, bx2, by2 = d["bbox"]
+                        cv2.rectangle(ann, (bx1, by1), (bx2, by2), (0, 255, 0), 2)
+                        cv2.putText(ann, f"q={d['quality']:.1f}", (bx1, by1 - 5),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                    ann_dir = os.path.join(DEBUG_CROP_DIR, "annotated_frames")
+                    os.makedirs(ann_dir, exist_ok=True)
+                    cv2.imwrite(
+                        os.path.join(ann_dir, f"fr{frame_count:04d}_cam{cam_idx+1}_{faces_this_frame}faces.jpg"),
+                        ann, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                except Exception:
+                    pass
+
+            # Frame snapshot every N seconds
+            if faces_this_frame > 0 and (elapsed - last_snapshot_elapsed) >= SNAPSHOT_INTERVAL_SEC:
+                _, jpeg_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                frame_snapshots.append({
+                    "cam_idx":     cam_idx,
+                    "cam_url":     cameras[cam_idx],
+                    "elapsed_sec": round(elapsed, 1),
+                    "faces_count": faces_this_frame,
+                    "jpeg_bytes":  jpeg_buf.tobytes(),
+                })
+                last_snapshot_elapsed = elapsed
+
+            yield {"type": "frame", "frame": frame_count, "faces": faces_this_frame,
+                   "total_embs": len(all_embeddings), "elapsed": round(elapsed, 1),
+                   "remaining": round(req.durationSec - elapsed, 1), "camera": cam_idx + 1}
+    finally:
+        reader.release()
+        _stop_event.set()
+
+    # Save frame snapshots to disk (strip jpeg_bytes before returning paths)
+    SNAPSHOT_DIR = os.path.join(BASE_DIR, "frame-snapshots")
+    os.makedirs(SNAPSHOT_DIR, exist_ok=True)
+    saved_snapshot_paths = []
+    for snap in frame_snapshots:
+        fname = (f"{req.date}_{req.slot}_cam{snap['cam_idx']+1}"
+                 f"_{int(snap['elapsed_sec'])}s_{snap['faces_count']}faces.jpg")
+        fpath = os.path.join(SNAPSHOT_DIR, fname)
+        with open(fpath, 'wb') as f:
+            f.write(snap["jpeg_bytes"])
+        # Only plain JSON-serialisable types here
+        saved_snapshot_paths.append({
+            "path":        str(fpath),
+            "cam":         int(snap["cam_idx"] + 1),
+            "elapsed_sec": float(snap["elapsed_sec"]),
+            "faces_count": int(snap["faces_count"]),
+        })
+
+    yield {"type": "stage",
+           "message": (f"📁 {crop_counter} accepted crops | {len(saved_snapshot_paths)} snapshots"
+                       f" | Check attendance-debug-crops/{req.date}_{req.slot}/")}
+
+    if not all_embeddings:
+        yield {"type": "error",
+               "message": "No faces detected. Check attendance-debug-crops/raw/ and /rejected/ for diagnostics."}
+        return
+
+    yield {"type": "stage", "message": f"{len(all_embeddings)} embeddings — clustering…"}
+
+    labels, unique_labels = _cluster(all_embeddings, req.clusterThreshold, req.minSamples)
+    yield {"type": "stage", "message": f"{len(unique_labels)} clusters — matching {len(enrolled)} enrolled…"}
+
+    match_enrolled = enrolled_in_list if has_sir_list else enrolled
+    enrolled_ids   = list(match_enrolled.keys())
+    enroll_matrix  = (np.array([match_enrolled[r] for r in enrolled_ids], dtype=np.float32)
+                      if enrolled_ids else np.array([]))
+
+    attendance = {
+        roll_no: {
+            "status": "absent", "avg_confidence": 0.0, "confidence_zone": "low",
+            "first_seen_sec": None, "detections": 0, "in_list": True, "flagged": False,
+        }
+        for roll_no in enrolled_ids
+    }
+    if has_sir_list:
+        for roll_no in sir_list:
+            if roll_no not in {k.upper() for k in attendance}:
+                # 'no_photo' is not a valid Mongoose enum value — use 'absent'
+                # (students with no ground truth cannot be matched, so absent is correct)
+                attendance[roll_no] = {
+                    "status": "absent", "avg_confidence": 0.0, "confidence_zone": "low",
+                    "first_seen_sec": None, "detections": 0, "in_list": True, "flagged": False,
+                }
+
+    for cluster_id in unique_labels:
+        indices      = np.where(labels == cluster_id)[0]
+        cluster_embs = np.array([all_embeddings[i] for i in indices], dtype=np.float32)
+        cluster_mean = cluster_embs.mean(axis=0)
+        norm = np.linalg.norm(cluster_mean)
+        if norm == 0:
+            continue
+        cluster_mean /= norm
+        scores   = enroll_matrix @ cluster_mean
+        best_idx = int(np.argmax(scores))
+        score    = float(scores[best_idx])
+
+        if score >= req.reviewThreshold:
+            roll_no = enrolled_ids[best_idx]
+            rec     = attendance[roll_no]
+            status  = "present" if score >= req.autoThreshold else "review"
+            zone    = "high"    if score >= req.autoThreshold else "medium"
+            n       = len(indices)
+            prev_n, prev_avg = rec["detections"], rec["avg_confidence"]
+            new_avg = ((prev_avg * prev_n) + (score * n)) / (prev_n + n)
+            if rec["status"] == "absent" or (rec["status"] == "review" and status == "present"):
+                rec["status"], rec["confidence_zone"] = status, zone
+            rec["avg_confidence"] = round(new_avg, 4)
+            rec["detections"]     = prev_n + n
+            if rec["first_seen_sec"] is None:
+                rec["first_seen_sec"] = round(float(all_timestamps[indices[0]]), 1)
+
+    present = sum(1 for v in attendance.values() if v["status"] == "present")
+    review  = sum(1 for v in attendance.values() if v["status"] == "review")
+    absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
+
+    # Unmatched clusters
+    unmatched_clusters = []
+    for cluster_id in unique_labels:
+        indices      = np.where(labels == cluster_id)[0]
+        cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
+        norm = np.linalg.norm(cluster_mean)
+        if norm == 0:
+            continue
+        cluster_mean /= norm
+        score = float(np.max(enroll_matrix @ cluster_mean))
+        if score < req.reviewThreshold:
+            unmatched_clusters.append({
+                "cluster_id": int(cluster_id),
+                "detections": int(len(indices)),
+                "best_score": round(score, 4),
+                "first_seen": round(float(all_timestamps[indices[0]]), 1),
+            })
+
+    # Flag not-in-list
+    if has_sir_list and enrolled_not_in_list:
+        not_in_list_ids    = list(enrolled_not_in_list.keys())
+        not_in_list_matrix = np.array([enrolled_not_in_list[r] for r in not_in_list_ids], dtype=np.float32)
+        for cluster_id in unique_labels:
+            indices      = np.where(labels == cluster_id)[0]
+            cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
+            norm = np.linalg.norm(cluster_mean)
+            if norm == 0:
+                continue
+            cluster_mean /= norm
+            scores   = not_in_list_matrix @ cluster_mean
+            best_idx = int(np.argmax(scores))
+            score    = float(scores[best_idx])
+            if score >= req.autoThreshold:
+                flagged_roll = not_in_list_ids[best_idx]
+                attendance[flagged_roll] = {
+                    "status":          "present",
+                    "avg_confidence":  round(score, 4),
+                    "confidence_zone": "high",
+                    "first_seen_sec":  round(float(all_timestamps[indices[0]]), 1),
+                    "detections":      int(len(indices)),
+                    "in_list":         False,
+                    "flagged":         True,
+                }
+
+    # Save per-cluster matched crops
+    MATCH_CROP_DIR = os.path.join(BASE_DIR, "attendance-matched-crops", f"{req.date}_{req.slot}")
+    os.makedirs(MATCH_CROP_DIR, exist_ok=True)
+
+    for cluster_id in unique_labels:
+        indices      = np.where(labels == cluster_id)[0]
+        cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
+        norm = np.linalg.norm(cluster_mean)
+        if norm == 0:
+            continue
+        cluster_mean /= norm
+        if len(enroll_matrix) > 0:
+            scores       = enroll_matrix @ cluster_mean
+            best_idx     = int(np.argmax(scores))
+            score        = float(scores[best_idx])
+            matched_roll = enrolled_ids[best_idx] if score >= req.reviewThreshold else "UNMATCHED"
+        else:
+            matched_roll, score = "UNMATCHED", 0.0
+
+        folder_name      = f"{matched_roll}_c{cluster_id:03d}_s{score:.3f}"
+        cluster_crop_dir = os.path.join(MATCH_CROP_DIR, folder_name)
+        os.makedirs(cluster_crop_dir, exist_ok=True)
+        sorted_indices = sorted(indices, key=lambda i: all_quality[i], reverse=True)
+        for rank, idx in enumerate(sorted_indices):
+            crop = all_face_images[idx]
+            if crop is not None and crop.size > 0:
+                fname = f"rank{rank:02d}_t{all_timestamps[idx]:.1f}s_q{all_quality[idx]:.2f}.jpg"
+                cv2.imwrite(os.path.join(cluster_crop_dir, fname), crop, [cv2.IMWRITE_JPEG_QUALITY, 95])
+
+    logger.info("[attendance] Matched crops → %s", MATCH_CROP_DIR)
+    yield {"type": "stage", "message": f"✅ {len(unique_labels)} cluster folders saved for verification"}
+
+    # Final result event
+    yield {
+        "type": "done",
+        "result": {
+            "attendance": attendance,
+            "metadata": {
+                "batch":     req.batch,
+                "subject":   req.subject,
+                "faculty":   req.faculty,
+                "sem":       req.semester,
+                "locksemId": req.locksemId,
+                "dept":      req.batch.split("_")[1] if "_" in req.batch else "",
+            },
+            "summary": {
+                "total_faces_extracted": int(len(all_embeddings)),
+                "unique_clusters_found": int(len(unique_labels)),
+                "total_enrolled":        int(len(enrolled)),
+                "present":               int(present),
+                "review":                int(review),
+                "absent":                int(absent),
+                "unmatched_faces":       int(len(unmatched_clusters)),
+                "flagged_faces":         int(sum(1 for v in attendance.values() if v.get("flagged"))),
+                "processing_time":       round(time.time() - start_t, 2),
+                "frames_read":           int(frame_count),
+                "duration_sec":          int(req.durationSec),
+                "debug_crops_saved":     int(crop_counter),
+                "debug_crops_dir":       str(DEBUG_CROP_DIR),
+                "matched_crops_dir":     str(MATCH_CROP_DIR),
+            },
+            "unmatched_clusters": unmatched_clusters,
+            "frame_snapshots":    saved_snapshot_paths,
+        },
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ATTENDANCE ROUTES
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/run-attendance-rtsp")
+def run_attendance_rtsp(req: RTSPAttendanceRequest):
+    """SSE streaming endpoint — used by the frontend live view."""
+    if state.face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+
+    def generate():
+        def sse(obj):
+            return f"data: {json.dumps(obj)}\n\n"
+        for event in _attendance_pipeline(req):
+            yield sse(event)
+
+    return StreamingResponse(
+        generate(), media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no",
+                 "Content-Type": "text/event-stream; charset=utf-8"})
+
+
+@router.post("/run-attendance-rtsp-sync")
+def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
+    """
+    Synchronous JSON endpoint — called by attendanceSessionController.js
+    (Node.js) via axios.post().  Blocks until done, returns plain JSON.
+    """
+    if state.face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+
+    result_payload = None
+    error_message  = None
+    stages         = []
+
+    for event in _attendance_pipeline(req):
+        t = event.get("type")
+        if t == "done":
+            result_payload = event.get("result")
+        elif t == "error":
+            error_message = event.get("message")
+        elif t == "stage":
+            stages.append(event.get("message", ""))
+        # "frame" events are dropped — too verbose for a sync response
+
+    if error_message:
+        raise HTTPException(status_code=422, detail=error_message)
+    if result_payload is None:
+        raise HTTPException(status_code=500, detail="Pipeline finished without a result")
+
+    return JSONResponse(content={**result_payload, "stages": stages})
+
+
+# ── Preview helper ────────────────────────────────────────────────────────────
+
+class PreviewRequest(BaseModel):
+    rtspUrl: str
+
+@router.post("/start-preview")
+def start_preview(req: PreviewRequest):
+    global _preview_frame
+    _stop_event.clear()
+    placeholder = np.zeros((540, 960, 3), dtype=np.uint8)
+    cv2.putText(placeholder, "Connecting to stream...", (300, 270),
+                cv2.FONT_HERSHEY_SIMPLEX, 1.2, (80, 80, 80), 2, cv2.LINE_AA)
+    _, buf = cv2.imencode('.jpg', placeholder, [cv2.IMWRITE_JPEG_QUALITY, 70])
+    with _preview_lock:
+        _preview_frame = buf.tobytes()
+    return {"status": "ok"}
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _cluster(embeddings, threshold, min_samples):
     eps = float(np.sqrt(2.0 * (1.0 - threshold)))
     clustering = _DBSCAN(eps=eps, min_samples=min_samples,
                           metric="euclidean", algorithm="ball_tree", n_jobs=-1).fit(np.array(embeddings))
-    labels = clustering.labels_
+    labels        = clustering.labels_
     unique_labels = sorted(set(labels) - {-1})
     return labels, unique_labels
 
@@ -438,25 +942,25 @@ def _load_existing_folders(batch_dir, existing_mean_embs):
             det_score = float(getattr(face, 'det_score', 1.0))
             if det_score < 0.5:
                 continue
-            emb = face.embedding
+            emb  = face.embedding
             norm = np.linalg.norm(emb)
             if norm == 0:
                 continue
             x1, y1, x2, y2 = map(int, face.bbox)
             crop = img[max(0,y1):y2, max(0,x1):x2]
             if crop.size > 0:
-                gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-                lap = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+                lap     = float(cv2.Laplacian(gray, cv2.CV_64F).var())
                 quality = det_score * min(lap, 500) / 500
             else:
                 quality = det_score
             folder_embs.append(emb / norm)
             folder_weights.append(max(quality, 0.01))
         if folder_embs:
-            weights = np.array(folder_weights, dtype=np.float32)
+            weights  = np.array(folder_weights, dtype=np.float32)
             weights /= weights.sum()
             mean_emb = np.average(np.array(folder_embs, dtype=np.float32), axis=0, weights=weights)
-            norm = np.linalg.norm(mean_emb)
+            norm     = np.linalg.norm(mean_emb)
             if norm > 0:
                 existing_mean_embs[folder_name] = mean_emb / norm
 
@@ -469,7 +973,7 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
     MATCH_THRESHOLD = max(cluster_threshold, 0.50)
 
     for cluster_id in unique_labels:
-        indices = np.where(labels == cluster_id)[0]
+        indices      = np.where(labels == cluster_id)[0]
         cluster_embs = np.array([all_embeddings[i] for i in indices])
         cluster_mean = cluster_embs.mean(axis=0)
         norm = np.linalg.norm(cluster_mean)
@@ -497,7 +1001,7 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
         if current_count >= target_per_person:
             continue
 
-        still_need = target_per_person - current_count
+        still_need     = target_per_person - current_count
         cluster_sorted = sorted(
             [(all_face_images[i], all_quality[i], all_timestamps[i], i) for i in indices],
             key=lambda x: x[1], reverse=True)[:still_need]
@@ -518,7 +1022,7 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
         _update_info(folder_path, scores, top_n, embed_n)
         new_count = _count_images(folder_path)
         person_counts[folder_name] = new_count
-        updated[folder_name] = new_count
+        updated[folder_name]       = new_count
 
     return next_serial, updated
 
@@ -544,14 +1048,15 @@ def _update_info(folder_path, new_scores, top_n, embed_n):
             img = cv2.imread(os.path.join(folder_path, f))
             if img is not None:
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                lap = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                lap  = float(cv2.Laplacian(gray, cv2.CV_64F).var())
                 h, w = img.shape[:2]
                 info["scores"][f] = round((w*h)**0.5 * min(lap, 500) / 500, 4)
             else:
                 info["scores"][f] = 0.5
 
-    scored = sorted([(f, info["scores"].get(f, 0)) for f in all_imgs if f in info["scores"]],
-                     key=lambda x: x[1], reverse=True)
+    scored = sorted(
+        [(f, info["scores"].get(f, 0)) for f in all_imgs if f in info["scores"]],
+        key=lambda x: x[1], reverse=True)
     if len(scored) > top_n:
         for (fn, _) in scored[top_n:]:
             try:
@@ -565,425 +1070,3 @@ def _update_info(folder_path, new_scores, top_n, embed_n):
     info["backup_files"]    = [f for (f, _) in scored[embed_n:]]
     with open(info_path, "w") as fi:
         json.dump(info, fi, indent=2)
-
-
-class PreviewRequest(BaseModel):
-    rtspUrl: str
-
-@router.post("/start-preview")
-def start_preview(req: PreviewRequest):
-    global _preview_frame
-    _stop_event.clear()
-    placeholder = np.zeros((540, 960, 3), dtype=np.uint8)
-    cv2.putText(placeholder, "Connecting to stream...", (300, 270),
-                cv2.FONT_HERSHEY_SIMPLEX, 1.2, (80, 80, 80), 2, cv2.LINE_AA)
-    _, buf = cv2.imencode('.jpg', placeholder, [cv2.IMWRITE_JPEG_QUALITY, 70])
-    with _preview_lock:
-        _preview_frame = buf.tobytes()
-    return {"status": "ok"}
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# ATTENDANCE ENDPOINT — separate from ground truth
-# ══════════════════════════════════════════════════════════════════════════════
-
-class RTSPAttendanceRequest(BaseModel):
-    rtspUrl:          str
-    rtspUrl2:         str   = ''
-    batch:            str
-    room:             str
-    slot:             str
-    date:             str
-    durationSec:      int   = 60
-    checkIntervalMin: int   = 5
-    frameSkip:        int   = 10
-    clusterThreshold: float = 0.45
-    minSamples:       int   = 2
-    autoThreshold:    float = 0.40
-    reviewThreshold:  float = 0.20
-    subject:          str   = ''
-    faculty:          str   = ''
-    semester:         str   = ''
-    locksemId:        str   = ''
-    enrolledRollNos:  list  = []
-
-
-@router.post("/run-attendance-rtsp")
-def run_attendance_rtsp(req: RTSPAttendanceRequest):
-    if state.face_app is None:
-        raise HTTPException(status_code=503, detail="Face model not loaded")
-
-    def generate():
-        def sse(obj):
-            return f"data: {json.dumps(obj)}\n\n"
-
-        batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
-        logger.info("[run-attendance-rtsp] batch_dir=%s", batch_dir)
-        _stop_event.clear()
-
-        if not os.path.isdir(batch_dir):
-            yield sse({"type": "error", "message": f"Ground truth folder not found: {batch_dir}."})
-            return
-
-        yield sse({"type": "stage", "message": f"Loading ground truth for batch: {req.batch}…"})
-
-        enrolled = {}
-        IMG_EXTS_LOCAL = (".jpg", ".jpeg", ".png", ".webp")
-
-        for folder in sorted(os.listdir(batch_dir)):
-            fp = os.path.join(batch_dir, folder)
-            if not os.path.isdir(fp):
-                continue
-            if re.match(r'^person_\d+$', folder, re.IGNORECASE):
-                continue
-            roll_no = folder
-            info_path = os.path.join(fp, '_info.json')
-            photos = []
-            if os.path.exists(info_path):
-                try:
-                    with open(info_path) as fi:
-                        info = json.load(fi)
-                    photos = [f for f in info.get('embedding_files', [])
-                              if os.path.exists(os.path.join(fp, f))]
-                except Exception:
-                    photos = []
-            if not photos:
-                photos = [f for f in os.listdir(fp)
-                          if f.lower().endswith(IMG_EXTS_LOCAL) and not f.startswith('_')]
-
-            embs, emb_weights = [], []
-            for photo in photos[:5]:
-                img = cv2.imread(os.path.join(fp, photo))
-                if img is None:
-                    continue
-                faces = state.face_app.get(img)
-                if not faces:
-                    continue
-                face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
-                fw, fh = face.bbox[2] - face.bbox[0], face.bbox[3] - face.bbox[1]
-                if min(fw, fh) < 40:
-                    continue
-                det_score = float(getattr(face, 'det_score', 1.0))
-                if det_score < 0.5:
-                    continue
-                emb = face.embedding
-                norm = np.linalg.norm(emb)
-                if norm == 0:
-                    continue
-                x1, y1, x2, y2 = map(int, face.bbox)
-                crop = img[max(0,y1):y2, max(0,x1):x2]
-                quality = det_score * min(float(cv2.Laplacian(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()), 500) / 500 if crop.size > 0 else det_score
-                embs.append(emb / norm)
-                emb_weights.append(max(quality, 0.01))
-
-            if embs:
-                weights = np.array(emb_weights, dtype=np.float32)
-                weights /= weights.sum()
-                mean_emb = np.average(np.array(embs, dtype=np.float32), axis=0, weights=weights)
-                norm = np.linalg.norm(mean_emb)
-                if norm > 0:
-                    enrolled[roll_no] = mean_emb / norm
-
-        if not enrolled:
-            yield sse({"type": "error", "message": f"No enrolled students found in '{batch_dir}'."})
-            return
-
-        # Sir's list filter
-        sir_list = [r.strip().upper() for r in req.enrolledRollNos if r.strip()]
-        has_sir_list = len(sir_list) > 0
-        if has_sir_list:
-            enrolled_in_list = {k: v for k, v in enrolled.items() if k.upper() in sir_list}
-            enrolled_not_in_list = {k: v for k, v in enrolled.items() if k.upper() not in sir_list}
-            missing_from_gt = [r for r in sir_list if r not in {k.upper() for k in enrolled}]
-            if missing_from_gt:
-                yield sse({"type": "stage", "message": f"⚠️ {len(missing_from_gt)} roll nos have no ground truth photos"})
-            yield sse({"type": "stage", "message": f"{len(enrolled_in_list)} in list, {len(enrolled_not_in_list)} others flagged if detected"})
-        else:
-            enrolled_in_list = enrolled
-            enrolled_not_in_list = {}
-            yield sse({"type": "stage", "message": f"{len(enrolled)} students loaded — connecting…"})
-
-        # Open RTSP
-        cap = _open_capture(req.rtspUrl)
-        if not cap.isOpened():
-            yield sse({"type": "error", "message": f"Cannot open RTSP stream: {req.rtspUrl}"})
-            return
-
-        H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        scale = min(1.0, 1080 / H) if H > 1080 else 1.0
-        disp_H, disp_W = int(H * scale), int(W * scale)
-        ui_mask = _build_ui_mask(disp_H, disp_W)
-
-        yield sse({"type": "stage", "message": f"Stream open {W}×{H} — recording {req.durationSec}s…"})
-
-        all_embeddings, all_face_images, all_timestamps, all_quality = [], [], [], []
-        CAMERA_SWITCH_SEC = 30
-        cameras = [req.rtspUrl]
-        if req.rtspUrl2:
-            cameras.append(req.rtspUrl2)
-        frame_snapshots = []
-
-        # ── ATTENDANCE-ONLY: debug crop directories ───────────────────────
-        DEBUG_CROP_DIR = os.path.join(BASE_DIR, "attendance-debug-crops", f"{req.date}_{req.slot}")
-        os.makedirs(DEBUG_CROP_DIR, exist_ok=True)
-        crop_counter = 0
-        logger.info("[attendance] Debug crops → %s", DEBUG_CROP_DIR)
-        yield sse({"type": "stage", "message": f"Debug crops → attendance-debug-crops/{req.date}_{req.slot}/"})
-
-        start_t = time.time()
-        frame_count, cam_idx, last_switch = 0, 0, 0.0
-        SNAPSHOT_INTERVAL_SEC = 5
-        last_snapshot_elapsed = -999.0
-        reader = _RTSPReader(cap, decode_every=req.frameSkip)
-        last_seq = 0
-
-        try:
-            while True:
-                elapsed = time.time() - start_t
-                if elapsed >= req.durationSec:
-                    break
-
-                if len(cameras) > 1 and (elapsed - last_switch) >= CAMERA_SWITCH_SEC:
-                    reader.release()
-                    cam_idx = (cam_idx + 1) % len(cameras)
-                    new_cap = _open_capture(cameras[cam_idx])
-                    reader = _RTSPReader(new_cap, decode_every=req.frameSkip)
-                    last_seq = 0
-                    last_switch = elapsed
-                    last_snapshot_elapsed = -999.0
-                    yield sse({"type": "stage", "message": f"Switched to camera {cam_idx+1} at {round(elapsed)}s"})
-
-                ok, frame, seq, _ = reader.latest()
-                if not ok or frame is None or seq == last_seq:
-                    time.sleep(0.01)
-                    continue
-
-                last_seq = seq
-                frame_count += 1
-
-                if scale < 1.0:
-                    frame = cv2.resize(frame, (disp_W, disp_H), interpolation=cv2.INTER_AREA)
-
-                # MJPEG preview
-                try:
-                    prev = cv2.resize(frame, (960, 540)) if frame.shape[1] > 960 else frame.copy()
-                    _, prev_buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 70])
-                    with _preview_lock:
-                        _preview_frame = prev_buf.tobytes()
-                except Exception:
-                    pass
-
-                # ── DETECTION with debug_dir ──────────────────────────────
-                detections = _detect_faces_tiled(
-                    state.face_app, frame, ui_mask,
-                    debug_dir=DEBUG_CROP_DIR,
-                    debug_frame_id=frame_count,
-                )
-                faces_this_frame = len(detections)
-
-                for d in detections:
-                    all_embeddings.append(d["embedding"])
-                    all_face_images.append(d["crop"])
-                    all_timestamps.append(round(elapsed, 2))
-                    all_quality.append(d["quality"])
-                    crop_counter += 1
-
-                # Annotated full frame
-                if faces_this_frame > 0:
-                    try:
-                        ann = frame.copy()
-                        for d in detections:
-                            bx1, by1, bx2, by2 = d["bbox"]
-                            cv2.rectangle(ann, (bx1, by1), (bx2, by2), (0, 255, 0), 2)
-                            cv2.putText(ann, f"q={d['quality']:.1f}", (bx1, by1 - 5),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-                        ann_dir = os.path.join(DEBUG_CROP_DIR, "annotated_frames")
-                        os.makedirs(ann_dir, exist_ok=True)
-                        cv2.imwrite(os.path.join(ann_dir, f"fr{frame_count:04d}_cam{cam_idx+1}_{faces_this_frame}faces.jpg"),
-                                    ann, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                    except Exception:
-                        pass
-
-                # Frame snapshot every N seconds
-                if faces_this_frame > 0 and (elapsed - last_snapshot_elapsed) >= SNAPSHOT_INTERVAL_SEC:
-                    _, jpeg_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
-                    frame_snapshots.append({"cam_idx": cam_idx, "cam_url": cameras[cam_idx],
-                                            "elapsed_sec": round(elapsed, 1), "faces_count": faces_this_frame,
-                                            "jpeg_bytes": jpeg_buf.tobytes()})
-                    last_snapshot_elapsed = elapsed
-
-                yield sse({"type": "frame", "frame": frame_count, "faces": faces_this_frame,
-                           "total_embs": len(all_embeddings), "elapsed": round(elapsed, 1),
-                           "remaining": round(req.durationSec - elapsed, 1), "camera": cam_idx + 1})
-        finally:
-            reader.release()
-            _stop_event.set()
-
-        # Save frame snapshots
-        SNAPSHOT_DIR = os.path.join(BASE_DIR, "frame-snapshots")
-        os.makedirs(SNAPSHOT_DIR, exist_ok=True)
-        saved_snapshot_paths = []
-        for snap in frame_snapshots:
-            fname = f"{req.date}_{req.slot}_cam{snap['cam_idx']+1}_{int(snap['elapsed_sec'])}s_{snap['faces_count']}faces.jpg"
-            fpath = os.path.join(SNAPSHOT_DIR, fname)
-            with open(fpath, 'wb') as f:
-                f.write(snap["jpeg_bytes"])
-            saved_snapshot_paths.append({"path": fpath, "cam": snap["cam_idx"]+1,
-                                          "elapsed_sec": snap["elapsed_sec"], "faces_count": snap["faces_count"]})
-
-        yield sse({"type": "stage",
-                   "message": f"📁 {crop_counter} accepted crops | {len(saved_snapshot_paths)} snapshots | Check attendance-debug-crops/{req.date}_{req.slot}/"})
-
-        if not all_embeddings:
-            yield sse({"type": "error",
-                       "message": "No faces detected. Check attendance-debug-crops/raw/ and /rejected/ for diagnostics."})
-            return
-
-        yield sse({"type": "stage", "message": f"{len(all_embeddings)} embeddings — clustering…"})
-
-        # DBSCAN
-        labels, unique_labels = _cluster(all_embeddings, req.clusterThreshold, req.minSamples)
-        yield sse({"type": "stage", "message": f"{len(unique_labels)} clusters — matching {len(enrolled)} enrolled…"})
-
-        match_enrolled = enrolled_in_list if has_sir_list else enrolled
-        enrolled_ids = list(match_enrolled.keys())
-        enroll_matrix = np.array([match_enrolled[r] for r in enrolled_ids], dtype=np.float32) if enrolled_ids else np.array([])
-
-        attendance = {
-            roll_no: {"status": "absent", "avg_confidence": 0.0, "confidence_zone": "low",
-                      "first_seen_sec": None, "detections": 0, "in_list": True, "flagged": False}
-            for roll_no in enrolled_ids
-        }
-        if has_sir_list:
-            for roll_no in sir_list:
-                if roll_no not in {k.upper() for k in attendance}:
-                    attendance[roll_no] = {"status": "no_photo", "avg_confidence": 0.0,
-                                            "confidence_zone": "low", "first_seen_sec": None,
-                                            "detections": 0, "in_list": True, "flagged": False}
-
-        for cluster_id in unique_labels:
-            indices = np.where(labels == cluster_id)[0]
-            cluster_embs = np.array([all_embeddings[i] for i in indices], dtype=np.float32)
-            cluster_mean = cluster_embs.mean(axis=0)
-            norm = np.linalg.norm(cluster_mean)
-            if norm == 0:
-                continue
-            cluster_mean /= norm
-            scores = enroll_matrix @ cluster_mean
-            best_idx = int(np.argmax(scores))
-            score = float(scores[best_idx])
-
-            if score >= req.reviewThreshold:
-                roll_no = enrolled_ids[best_idx]
-                rec = attendance[roll_no]
-                status = "present" if score >= req.autoThreshold else "review"
-                zone = "high" if score >= req.autoThreshold else "medium"
-                n = len(indices)
-                prev_n, prev_avg = rec["detections"], rec["avg_confidence"]
-                new_avg = ((prev_avg * prev_n) + (score * n)) / (prev_n + n)
-                if rec["status"] == "absent" or (rec["status"] == "review" and status == "present"):
-                    rec["status"], rec["confidence_zone"] = status, zone
-                rec["avg_confidence"] = round(new_avg, 4)
-                rec["detections"] = prev_n + n
-                if rec["first_seen_sec"] is None:
-                    rec["first_seen_sec"] = round(float(all_timestamps[indices[0]]), 1)
-
-        present = sum(1 for v in attendance.values() if v["status"] == "present")
-        review  = sum(1 for v in attendance.values() if v["status"] == "review")
-        absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
-
-        # Unmatched clusters
-        unmatched_clusters = []
-        for cluster_id in unique_labels:
-            indices = np.where(labels == cluster_id)[0]
-            cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
-            norm = np.linalg.norm(cluster_mean)
-            if norm == 0:
-                continue
-            cluster_mean /= norm
-            score = float(np.max(enroll_matrix @ cluster_mean))
-            if score < req.reviewThreshold:
-                unmatched_clusters.append({"cluster_id": int(cluster_id), "detections": int(len(indices)),
-                                            "best_score": round(score, 4),
-                                            "first_seen": round(float(all_timestamps[indices[0]]), 1)})
-
-        # Flag not-in-list
-        if has_sir_list and enrolled_not_in_list:
-            not_in_list_ids = list(enrolled_not_in_list.keys())
-            not_in_list_matrix = np.array([enrolled_not_in_list[r] for r in not_in_list_ids], dtype=np.float32)
-            for cluster_id in unique_labels:
-                indices = np.where(labels == cluster_id)[0]
-                cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
-                norm = np.linalg.norm(cluster_mean)
-                if norm == 0:
-                    continue
-                cluster_mean /= norm
-                scores = not_in_list_matrix @ cluster_mean
-                best_idx = int(np.argmax(scores))
-                score = float(scores[best_idx])
-                if score >= req.autoThreshold:
-                    flagged_roll = not_in_list_ids[best_idx]
-                    attendance[flagged_roll] = {"status": "present", "avg_confidence": round(score, 4),
-                                                "confidence_zone": "high",
-                                                "first_seen_sec": round(float(all_timestamps[indices[0]]), 1),
-                                                "detections": int(len(indices)), "in_list": False, "flagged": True}
-
-        # ── Save per-cluster matched crops ────────────────────────────────
-        MATCH_CROP_DIR = os.path.join(BASE_DIR, "attendance-matched-crops", f"{req.date}_{req.slot}")
-        os.makedirs(MATCH_CROP_DIR, exist_ok=True)
-
-        for cluster_id in unique_labels:
-            indices = np.where(labels == cluster_id)[0]
-            cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
-            norm = np.linalg.norm(cluster_mean)
-            if norm == 0:
-                continue
-            cluster_mean /= norm
-            if len(enroll_matrix) > 0:
-                scores = enroll_matrix @ cluster_mean
-                best_idx = int(np.argmax(scores))
-                score = float(scores[best_idx])
-                matched_roll = enrolled_ids[best_idx] if score >= req.reviewThreshold else "UNMATCHED"
-            else:
-                matched_roll, score = "UNMATCHED", 0.0
-
-            folder_name = f"{matched_roll}_c{cluster_id:03d}_s{score:.3f}"
-            cluster_crop_dir = os.path.join(MATCH_CROP_DIR, folder_name)
-            os.makedirs(cluster_crop_dir, exist_ok=True)
-            sorted_indices = sorted(indices, key=lambda i: all_quality[i], reverse=True)
-            for rank, idx in enumerate(sorted_indices):
-                crop = all_face_images[idx]
-                if crop is not None and crop.size > 0:
-                    fname = f"rank{rank:02d}_t{all_timestamps[idx]:.1f}s_q{all_quality[idx]:.2f}.jpg"
-                    cv2.imwrite(os.path.join(cluster_crop_dir, fname), crop, [cv2.IMWRITE_JPEG_QUALITY, 95])
-
-        logger.info("[attendance] Matched crops → %s", MATCH_CROP_DIR)
-        yield sse({"type": "stage", "message": f"✅ {len(unique_labels)} cluster folders saved for verification"})
-
-        # Done
-        yield sse({
-            "type": "done",
-            "result": {
-                "attendance": attendance,
-                "metadata": {"batch": req.batch, "subject": req.subject, "faculty": req.faculty,
-                              "sem": req.semester, "locksemId": req.locksemId,
-                              "dept": req.batch.split("_")[1] if "_" in req.batch else ""},
-                "summary": {
-                    "total_faces_extracted": len(all_embeddings), "unique_clusters_found": len(unique_labels),
-                    "total_enrolled": len(enrolled), "present": present, "review": review, "absent": absent,
-                    "unmatched_faces": len(unmatched_clusters),
-                    "flagged_faces": sum(1 for v in attendance.values() if v.get("flagged")),
-                    "processing_time": round(time.time() - start_t, 2), "frames_read": frame_count,
-                    "duration_sec": req.durationSec, "debug_crops_saved": crop_counter,
-                    "debug_crops_dir": DEBUG_CROP_DIR, "matched_crops_dir": MATCH_CROP_DIR,
-                },
-                "unmatched_clusters": unmatched_clusters,
-                "frame_snapshots": saved_snapshot_paths,
-            },
-        })
-
-    return StreamingResponse(
-        generate(), media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no",
-                 "Content-Type": "text/event-stream; charset=utf-8"})

@@ -63,7 +63,7 @@ const attendanceReportSchema = new Schema({
 
     status: {
         type: String,
-        enum: ['draft', 'finalized'],
+        enum: ['draft', 'finalized','live'],
         default: 'draft',
     },
 });

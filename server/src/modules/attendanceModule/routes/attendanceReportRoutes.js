@@ -54,6 +54,47 @@ router.delete('/:id', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── Session management (multi-run attendance) ──────────────────────────────
+const sessionCtrl = require('../controllers/attendanceSessionController');
+
+// Start a multi-run session
+router.post('/start-session', async (req, res) => {
+    try {
+        const result = await sessionCtrl.startSession(req.body);
+        res.json(result);
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// Stop a running session
+router.post('/stop-session/:reportId', async (req, res) => {
+    try {
+        const result = await sessionCtrl.stopSession(req.params.reportId);
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get session status
+router.get('/session-status/:reportId', async (req, res) => {
+    try {
+        res.json(sessionCtrl.getSessionStatus(req.params.reportId));
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// List all active sessions
+router.get('/active-sessions', async (req, res) => {
+    try {
+        res.json(sessionCtrl.listActiveSessions());
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Get full report by ID (keep last to avoid conflicts with named routes above)
 router.get('/:id', async (req, res) => {
     try { await ctrl.getReportById(req, res); }
