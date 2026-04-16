@@ -65,6 +65,11 @@ export default function AttendanceReport() {
     const [savedReport,     setSavedReport]     = useState(null);
     const [derivedCtx,      setDerivedCtx]      = useState(null);
 
+    // ── Session state (multi-run) ─────────────────────────────────
+    const [sessionReportId, setSessionReportId] = useState(null);
+    const [sessionActive,   setSessionActive]   = useState(false);
+    const [sessionChecks,   setSessionChecks]   = useState(0);
+
     // ── History ───────────────────────────────────────────────────
     const [reports,     setReports]     = useState([]);
     const [histLoading, setHistLoading] = useState(false);
@@ -132,6 +137,22 @@ export default function AttendanceReport() {
     }, [filterBatch, filterDate]);
 
     useEffect(() => { if (tab === 'history') fetchReports(); }, [tab, fetchReports]);
+
+    // ── Auto-poll detail report when session is live ──────────────
+    useEffect(() => {
+        if (detailReport?.status !== 'live') return;
+        const interval = setInterval(async () => {
+            try {
+                const res     = await fetch(`${REPORT_API}/${detailReport._id}`);
+                const updated = await res.json();
+                setDetailReport(updated);
+                setSessionChecks(updated.slotResults?.length || 0);
+            } catch { /* ignore */ }
+        }, 10000);  // poll every 10 seconds
+        return () => clearInterval(interval);
+    }, [detailReport?._id, detailReport?.status]);
+
+    
 
     // ── Run attendance — SSE stream ───────────────────────────────
     const runAttendance = async () => {
@@ -234,6 +255,70 @@ export default function AttendanceReport() {
         } catch (e) {
             showToast('Failed: ' + e.message, 'error');
             setProcessing(false);
+        }
+    };
+
+
+    // ── Start multi-run session ───────────────────────────────────
+    const startSession = async () => {
+        if (!rtspUrl.trim()) { showToast('Paste Camera 1 RTSP URL', 'error'); return; }
+        if (!room)           { showToast('Enter room number', 'error'); return; }
+        if (!slot)           { showToast('Select a slot', 'error'); return; }
+
+        const effectiveBatch = derivedCtx?.batch || manualBatch;
+        if (!effectiveBatch) {
+            showToast('Batch not found — fill in Degree/Dept/Year', 'error');
+            return;
+        }
+
+        const parsedRollNos = enrolledRollNos.trim()
+            ? enrolledRollNos.trim().split(/[\n,]+/).map(r => r.trim()).filter(Boolean)
+            : [];
+
+        try {
+            const res = await fetch(`${REPORT_API}/start-session`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    room, slot, date,
+                    rtspUrl:         rtspUrl.trim(),
+                    rtspUrl2:        rtspUrl2.trim(),
+                    durationSec:     duration,
+                    checkIntervalMin,
+                    batch:           effectiveBatch,
+                    department:      derivedCtx?.dept       || department,
+                    subject:         derivedCtx?.subject    || '',
+                    faculty:         derivedCtx?.faculty    || '',
+                    semester:        derivedCtx?.sem         || '',
+                    locksemId:       derivedCtx?.locksemId  || '',
+                    enrolledRollNos: parsedRollNos,
+                }),
+            });
+            const data = await res.json();
+            if (data.error) { showToast(data.error, 'error'); return; }
+            setSessionReportId(data.reportId);
+            setSessionActive(true);
+            setSessionChecks(0);
+            showToast(`Session started — checks every ${checkIntervalMin} min`);
+            openDetail(data.reportId);
+        } catch (e) {
+            showToast('Failed to start session: ' + e.message, 'error');
+        }
+    };
+
+    // ── Stop multi-run session ────────────────────────────────────
+    const stopSession = async (reportId) => {
+        try {
+            await fetch(`${REPORT_API}/stop-session/${reportId}`, { method: 'POST' });
+            setSessionActive(false);
+            setSessionReportId(null);
+            // Refresh detail report to show draft status
+            const res     = await fetch(`${REPORT_API}/${reportId}`);
+            const updated = await res.json();
+            setDetailReport(updated);
+            showToast('Session stopped');
+        } catch (e) {
+            showToast('Failed to stop session: ' + e.message, 'error');
         }
     };
 
@@ -569,27 +654,41 @@ export default function AttendanceReport() {
                                     <option value={300}>300 seconds</option>
                                 </select>
                             </div>
-                            <button
-                                onClick={runAttendance}
-                                disabled={processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
-                                style={{
-                                    ...styles.btnPrimary, minWidth: 170,
-                                    opacity: (processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)) ? 0.5 : 1,
-                                }}
-                            >
-                                {processing ? (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{
-                                            width: 13, height: 13,
-                                            border: '2px solid rgba(0,0,0,0.3)',
-                                            borderTopColor: theme.accentText,
-                                            borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                                            display: 'inline-block',
-                                        }} />
-                                        {liveStats ? `${liveStats.remaining}s left…` : 'Connecting…'}
-                                    </span>
-                                ) : 'Run Attendance'}
-                            </button>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button
+                                    onClick={runAttendance}
+                                    disabled={processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
+                                    style={{
+                                        ...styles.btnPrimary, minWidth: 140,
+                                        opacity: (processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)) ? 0.5 : 1,
+                                    }}
+                                >
+                                    {processing ? (
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{
+                                                width: 13, height: 13,
+                                                border: '2px solid rgba(0,0,0,0.3)',
+                                                borderTopColor: theme.accentText,
+                                                borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+                                                display: 'inline-block',
+                                            }} />
+                                            {liveStats ? `${liveStats.remaining}s left…` : 'Connecting…'}
+                                        </span>
+                                    ) : 'Run Once'}
+                                </button>
+                                <button
+                                    onClick={startSession}
+                                    disabled={processing || sessionActive || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
+                                    style={{
+                                        ...styles.btnPrimary,
+                                        minWidth: 140,
+                                        background: theme.success,
+                                        opacity: (processing || sessionActive || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)) ? 0.5 : 1,
+                                    }}
+                                >
+                                    {sessionActive ? `Session running…` : `Start Session`}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Live stream log while processing */}
@@ -840,6 +939,33 @@ export default function AttendanceReport() {
                     {detailReport && !detailLoading && (
                         <div style={{ animation: 'fadeIn 0.3s' }}>
                             <div style={{ ...styles.card, marginBottom: 16 }}>
+                                {/* Live session banner */}
+                            {detailReport.status === 'live' && (
+                                <div style={{
+                                    padding: '12px 16px', borderRadius: 8, marginBottom: 16,
+                                    background: theme.accentDim, border: `1px solid ${theme.accent}`,
+                                    display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                                }}>
+                                    <span style={{
+                                        width: 10, height: 10, borderRadius: '50%',
+                                        background: theme.accent, display: 'inline-block',
+                                        animation: 'spin 1.5s linear infinite',
+                                    }} />
+                                    <span style={{ color: theme.accent, fontWeight: 700, fontSize: '13px' }}>
+                                        Live Session — {detailReport.slotResults?.length || 0} run(s) completed
+                                    </span>
+                                    <span style={{ fontSize: '12px', color: theme.textMuted }}>
+                                        Auto-updating every 10 seconds
+                                    </span>
+                                    <button
+                                        onClick={() => stopSession(detailReport._id)}
+                                        style={{ ...styles.btnDanger, padding: '6px 14px', fontSize: '12px', marginLeft: 'auto' }}
+                                    >
+                                        Stop Session
+                                    </button>
+                                </div>
+                            )}
+
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                                     <div>
                                         <div style={{ fontFamily: theme.fontMono, fontSize: '18px', fontWeight: 700, marginBottom: 6 }}>
@@ -888,16 +1014,150 @@ export default function AttendanceReport() {
                                 { label: 'Att. %',  val: (detailReport.summary?.attendancePct ?? 0) + '%', color: theme.accent },
                             ]} theme={theme} styles={styles} />
 
-                            <AttendanceTable
-                                rows={detailReport.finalReport || []}
-                                readOnly={detailReport.status === 'finalized'}
-                                onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
-                                theme={theme} styles={styles}
-                            />
+                            {detailReport.slotResults?.length > 0 ? (
+                                <MultiRunTable
+                                    report={detailReport}
+                                    readOnly={detailReport.status === 'finalized'}
+                                    onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
+                                    theme={theme} styles={styles}
+                                />
+                            ) : (
+                                <AttendanceTable
+                                    rows={detailReport.finalReport || []}
+                                    readOnly={detailReport.status === 'finalized'}
+                                    onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
+                                    theme={theme} styles={styles}
+                                />
+                            )}
                         </div>
                     )}
                 </div>
             )}
+        </div>
+    );
+}
+
+function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
+    const runs = report.slotResults || [];
+    const finalLookup = {};
+    for (const s of (report.finalReport || [])) {
+        finalLookup[s.rollNo] = s;
+    }
+
+    // Collect all roll numbers across all runs + finalReport
+    const allRollNos = [...new Set([
+        ...runs.flatMap(r => r.students.map(s => s.rollNo)),
+        ...Object.keys(finalLookup),
+    ])].sort();
+
+    // Build lookup: rollNo → runIndex → student record
+    const runLookup = {};
+    for (const rollNo of allRollNos) {
+        runLookup[rollNo] = {};
+        for (let ri = 0; ri < runs.length; ri++) {
+            runLookup[rollNo][ri] = runs[ri].students.find(s => s.rollNo === rollNo) || null;
+        }
+    }
+
+    const cellStyle = (status) => ({
+        padding: '2px 6px', borderRadius: 4, fontSize: '11px', fontWeight: 600,
+        background: status === 'present' ? theme.successDim
+                  : status === 'review'  ? theme.warningDim
+                  : status === 'absent'  ? theme.dangerDim
+                  : theme.accentDim,
+        color:      status === 'present' ? theme.success
+                  : status === 'review'  ? theme.warning
+                  : status === 'absent'  ? theme.danger
+                  : theme.accent,
+    });
+
+    return (
+        <div style={{ ...styles.card, padding: 0, overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', minWidth: 600 }}>
+                <thead>
+                    <tr style={{ borderBottom: `1px solid ${theme.border}`, background: theme.bg }}>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>#</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>Roll No</th>
+                        {runs.map((r, i) => (
+                            <th key={i} style={{ padding: '10px 12px', textAlign: 'center', fontSize: '10px', color: theme.accent, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', borderLeft: `1px solid ${theme.border}` }}>
+                                Run {i + 1}
+                                <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
+                                    {r.processedAt ? new Date(r.processedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                </div>
+                                <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400 }}>
+                                    P:{r.summary?.present ?? 0} A:{r.summary?.absent ?? 0} R:{r.summary?.review ?? 0}
+                                </div>
+                            </th>
+                        ))}
+                        <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', borderLeft: `2px solid ${theme.border}` }}>Final</th>
+                        {!readOnly && <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>Override</th>}
+                    </tr>
+                </thead>
+                <tbody>
+                    {allRollNos.map((rollNo, idx) => {
+                        const final = finalLookup[rollNo];
+                        return (
+                            <tr key={rollNo} style={{
+                                borderBottom: `1px solid ${theme.border}`,
+                                background: final?.finalStatus === 'R' ? theme.warningDim : 'transparent',
+                            }}>
+                                <td style={{ padding: '9px 12px', color: theme.textMuted }}>{idx + 1}</td>
+                                <td style={{ padding: '9px 12px', fontFamily: theme.fontMono, fontWeight: 600, color: theme.text }}>{rollNo}</td>
+                                {runs.map((_, ri) => {
+                                    const s = runLookup[rollNo][ri];
+                                    return (
+                                        <td key={ri} style={{ padding: '9px 12px', textAlign: 'center', borderLeft: `1px solid ${theme.border}` }}>
+                                            {s ? (
+                                                <span style={cellStyle(s.status)}>
+                                                    {s.status === 'present' ? '✓' : s.status === 'review' ? '?' : s.status === 'absent' ? '✗' : '—'}
+                                                    {s.avgConfidence > 0 && (
+                                                        <span style={{ marginLeft: 4, fontWeight: 400 }}>
+                                                            {(s.avgConfidence * 100).toFixed(0)}%
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            ) : (
+                                                <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
+                                            )}
+                                        </td>
+                                    );
+                                })}
+                                <td style={{ padding: '9px 12px', textAlign: 'center', borderLeft: `2px solid ${theme.border}` }}>
+                                    {final ? (
+                                        <span style={{
+                                            padding: '3px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, fontFamily: theme.fontMono,
+                                            background: final.finalStatus === 'P' ? theme.successDim : final.finalStatus === 'R' ? theme.warningDim : theme.dangerDim,
+                                            color:      final.finalStatus === 'P' ? theme.success    : final.finalStatus === 'R' ? theme.warning    : theme.danger,
+                                        }}>
+                                            {final.finalStatus}
+                                        </span>
+                                    ) : <span style={{ color: theme.textMuted }}>—</span>}
+                                </td>
+                                {!readOnly && (
+                                    <td style={{ padding: '9px 12px' }}>
+                                        <div style={{ display: 'flex', gap: 4 }}>
+                                            {['P', 'A', 'R'].map(st => (
+                                                <button key={st} onClick={() => onOverride(rollNo, st)}
+                                                    disabled={final?.finalStatus === st}
+                                                    style={{
+                                                        padding: '2px 8px', borderRadius: 4, fontSize: '10px',
+                                                        fontWeight: 700, cursor: 'pointer', border: 'none',
+                                                        fontFamily: theme.fontMono,
+                                                        opacity: final?.finalStatus === st ? 0.3 : 1,
+                                                        background: st === 'P' ? theme.successDim : st === 'R' ? theme.warningDim : theme.dangerDim,
+                                                        color:      st === 'P' ? theme.success    : st === 'R' ? theme.warning    : theme.danger,
+                                                    }}>
+                                                    {st}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </td>
+                                )}
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
         </div>
     );
 }
@@ -939,7 +1199,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                     : 'transparent',
                         }}>
                             <td style={{ padding: '10px 14px', color: theme.textMuted }}>{i + 1}</td>
-                            <td style={{ padding: '10px 14px', fontFamily: theme.fontMono, fontWeight: 600 }}>{s.rollNo}</td>
+                            <td style={{ padding: '10px 14px', fontFamily: theme.fontMono, fontWeight: 600, color: theme.text }}>{s.rollNo}</td>
 
                             {/* ── In List column ── */}
                             <td style={{ padding: '10px 14px' }}>
