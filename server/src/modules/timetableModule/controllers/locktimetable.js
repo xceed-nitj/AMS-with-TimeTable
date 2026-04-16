@@ -24,6 +24,12 @@ const getEnvironmentURL = require("../../../getEnvironmentURL");
 const TimetableChangeLog = require("../../../models/timetableChangeLogs");
 const TimeTable = require("../../../models/timetable");
 
+// chatbot
+const fetch = require("node-fetch");
+const PYTHON_API = "http://localhost:8000"; 
+// chatbot
+
+
 function indexBySubjectAndSem(entries) {
   const map = {};
   for (const e of entries) {
@@ -391,6 +397,38 @@ class LockTimeTableController {
         updatedTime: formattedtime,
         results,
       });
+
+// chatbot-related
+
+      (async () => {
+        try {
+          const lockedDocs = await LockSem.find({ code }).lean();
+          for (const doc of lockedDocs) {
+            for (const entry of doc.slotData || []) {
+              if (!entry.faculty || !entry.subject) continue;
+              await fetch(`${PYTHON_API}/slot/update`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                faculty: entry.faculty,
+                subject: entry.subject,
+                room:    entry.room    || "",
+                day:     doc.day,
+                slot:    doc.slot,
+                sem:     doc.sem,
+                code:    doc.code,
+              }),
+            });
+           }
+          }
+          console.log(`✅ ChromaDB synced for code: ${code}`);
+         }catch (err) {
+          console.error("ChromaDB sync failed:", err.message);
+         }
+        })();
+
+
+
 
       // Execute MasterTable logic asynchronously (fire-and-forget)
       MasterClassTableController.createMasterTable(req.body).catch((err) => {
