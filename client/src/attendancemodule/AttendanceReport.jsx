@@ -207,11 +207,11 @@ if (!processing || !activeCam || !hasCam2) {
         setProcessing(true); setMlResult(null); setSavedReport(null);
         setSnapshots([]); setLiveFrame(null); setPreviewActive(true);
         setStreamLog([]); setLiveStats(null);
-        setActiveCam(null);
-activeCamRef.current = null;
-setCamSwitchAt(null);
-setCamCountdown(0);
-rtspUrl2Ref.current = rtspUrl2.trim(); // snapshot current value for SSE closure
+        setActiveCam(rtspUrl2.trim() ? 1 : null);  // show cam 1 immediately if dual-cam
+        activeCamRef.current = rtspUrl2.trim() ? 1 : null;
+        setCamSwitchAt(Date.now());   // start countdown immediately
+        setCamCountdown(CAMERA_SWITCH_SEC);
+        rtspUrl2Ref.current = rtspUrl2.trim();
 
         try {
             const response = await fetch(`${ML_API}/run-attendance-rtsp`, {
@@ -346,6 +346,11 @@ if (ev.camera != null && ev.camera !== activeCamRef.current) {
             if (data.error) { showToast(data.error, 'error'); return; }
             setSessionReportId(data.reportId);
             setSessionActive(true);
+            setActiveCam(rtspUrl2.trim() ? 1 : null);
+            activeCamRef.current = rtspUrl2.trim() ? 1 : null;
+            setCamSwitchAt(Date.now());
+            setCamCountdown(CAMERA_SWITCH_SEC);
+rtspUrl2Ref.current = rtspUrl2.trim();
             setSessionChecks(0);
             showToast(`Session started — checks every ${checkIntervalMin} min`);
             openDetail(data.reportId);
@@ -732,7 +737,11 @@ if (ev.camera != null && ev.camera !== activeCamRef.current) {
                                                 borderRadius: '50%', animation: 'spin 0.8s linear infinite',
                                                 display: 'inline-block',
                                             }} />
-                                            {liveStats ? `${liveStats.remaining}s left…` : 'Connecting…'}
+                                            {liveStats 
+  ? `${liveStats.remaining}s left…` 
+  : activeCam 
+    ? `Cam ${activeCam} — starting…` 
+    : 'Connecting…'}
                                         </span>
                                     ) : 'Run Once'}
                                 </button>

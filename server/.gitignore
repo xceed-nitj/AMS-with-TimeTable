@@ -4,6 +4,7 @@ yarn.lock
 .yarn
 .env
 
+server/ground_truth
 uploads/
 .cache
 
