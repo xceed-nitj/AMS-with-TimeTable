@@ -8,6 +8,7 @@ import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from tracemalloc import start
+from scipy.optimize import linear_sum_assignment
 
 import cv2
 import numpy as np
@@ -632,7 +633,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                    "remaining": round(req.durationSec - elapsed, 1), "camera": cam_idx + 1}
     finally:
         reader.release()
-        _stop_event.set()
+        # _stop_event.set()
  
     # Save frame snapshots to disk (strip jpeg_bytes before returning paths)
     SNAPSHOT_DIR = os.path.join(BASE_DIR, "frame-snapshots")

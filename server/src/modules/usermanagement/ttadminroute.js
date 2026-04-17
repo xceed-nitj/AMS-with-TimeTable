@@ -6,7 +6,7 @@ const jwtSecret = process.env.JWT_SECRET;
 
 // Middleware to protect the route and verify the token
 async function ttadminRoute(req, res, next) {
-  const token = req.cookies.jwt;
+  const token = req.cookies.jwt || req.headers.authorization?.replace('Bearer ', '');
   // console.log(token)
 
   if (!token) {
