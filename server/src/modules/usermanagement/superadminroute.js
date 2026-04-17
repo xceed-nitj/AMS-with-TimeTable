@@ -6,7 +6,7 @@ const jwtSecret = process.env.JWT_SECRET;
 
 // Middleware to protect the route and verify the token
 async function superadminRoute(req, res, next) {
-  const token = req.cookies.jwt || req.headers.authorization?.replace('Bearer ', '');
+  const token = req.cookies.jwt;
   // console.log(token)
 
   if (!token) {
