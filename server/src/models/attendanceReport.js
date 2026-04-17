@@ -71,8 +71,8 @@ const attendanceReportSchema = new Schema({
 attendanceReportSchema.add(commonFields);
 attendanceReportSchema.pre('save', updateTimestamps);
 
-// Index for quick lookup by batch + date
-attendanceReportSchema.index({ batch: 1, date: -1 });
+// Unique index: exactly ONE report per batch + date + timeSlot
+attendanceReportSchema.index({ batch: 1, date: 1, timeSlot: 1 }, { unique: true });
 attendanceReportSchema.index({ faculty: 1, date: -1 });
 
 const AttendanceReport = mongoose.model('AttendanceReport', attendanceReportSchema);

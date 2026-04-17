@@ -344,11 +344,22 @@ export default function AttendanceReport() {
                 }),
             });
             const data = await res.json();
-            if (data.error) showToast(data.error, 'error');
-            else { setSavedReport(data); showToast('Report saved'); }
-        } catch { showToast('Save failed', 'error'); }
-        setSaving(false);
-    };
+            if (data.error) {
+            showToast(data.error, 'error');
+            // If a report already exists for this slot, fetch and open it
+            if (res.status === 409) {
+                const listRes = await fetch(`${REPORT_API}?batch=${encodeURIComponent(ctx.batch || manualBatch)}&date=${date}`);
+                const listData = await listRes.json();
+                const existing = (listData.reports || []).find(r => r.timeSlot === slot);
+                if (existing) openDetail(existing._id);
+            }
+        } else {
+            setSavedReport(data);
+            showToast('Report saved');
+        }
+    } catch { showToast('Save failed', 'error'); }
+    setSaving(false);
+};
 
     const openDetail = async (id) => {
         setTab('detail'); setDetailLoading(true); setDetailReport(null);
@@ -499,9 +510,9 @@ export default function AttendanceReport() {
                         {/* Timetable lookup status banners */}
                         {ttStatus === 'loading' && (
                             <div style={{
-                                padding: '8px 13px', borderRadius: '6px', marginBottom: 14,
+                                padding: '8px 14px', borderRadius: '6px', marginBottom: 14,
                                 background: theme.accentDim, border: `1px solid ${theme.accent}`,
-                                fontSize: '12px', color: theme.accent,
+                                fontSize: '11px', color: theme.accent,
                             }}>
                                 🔍 Looking up timetable for {room} / {SLOT_LABELS[slot]}…
                             </div>
@@ -907,17 +918,18 @@ export default function AttendanceReport() {
                                     {reports.map(r => (
                                         <tr key={r._id} style={{ borderBottom: `1px solid ${theme.border}`, cursor: 'pointer' }}
                                             onClick={() => openDetail(r._id)}>
-                                            <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600 }}>{r.batch}</td>
-                                            <td style={{ padding: '11px 14px' }}>{r.date}</td>
+                                            <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600,  color: '#010811' }}>{r.batch}</td>
+
+                                            <td style={{ padding: '11px 14px', color: '#021022' }}>{r.date}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{SLOT_LABELS[r.timeSlot] || r.timeSlot || '—'}</td>
-                                            <td style={{ padding: '11px 14px' }}>{r.subject || '—'}</td>
+                                            <td style={{ padding: '11px 14px', color: '#010b1c' }}>{r.subject || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{r.faculty || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.success, fontWeight: 700 }}>{r.summary?.present ?? '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.danger,  fontWeight: 700 }}>{r.summary?.absent  ?? '—'}</td>
                                             <td style={{ padding: '11px 14px', fontFamily: theme.fontMono }}>
                                                 {r.summary ? pct(r.summary.present, r.summary.totalStudents) + '%' : '—'}
                                             </td>
-                                            <td style={{ padding: '11px 14px' }}>
+                  s                          <td style={{ padding: '11px 14px' }}>
                                                 <span style={styles.badge(r.status === 'finalized' ? 'success' : 'warning')}>
                                                     {r.status}
                                                 </span>
@@ -1211,7 +1223,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                         🚩 Flagged
                                     </span>
                                 ) : s.inList === true ? (
-                                    <span style={{ fontSize: '13px', color: theme.success }}>✓</span>
+                                    <span style={{ fontSize: '12.5px', color: theme.success }}>✓</span>
                                 ) : s.inList === false ? (
                                     <span style={{ fontSize: '11px', color: theme.textMuted }}>—</span>
                                 ) : (
@@ -1253,7 +1265,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                 {s.firstSeenSec != null ? `${Math.floor(s.firstSeenSec / 60)}m ${Math.round(s.firstSeenSec % 60)}s` : '—'}
                             </td>
                             <td style={{ padding: '10px 14px' }}>
-                                <span style={{ padding: '3px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700,
+                                <span style={{ padding: '3.5px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700,
                                     fontFamily: theme.fontMono,
                                     background: s.finalStatus === 'P' ? theme.successDim : s.finalStatus === 'R' ? theme.warningDim : theme.dangerDim,
                                     color:      s.finalStatus === 'P' ? theme.success    : s.finalStatus === 'R' ? theme.warning    : theme.danger }}>

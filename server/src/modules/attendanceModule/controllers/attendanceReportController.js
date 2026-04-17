@@ -89,80 +89,91 @@ class AttendanceReportController {
     // mlResult shape: { attendance: {rollNo: {status,avg_confidence,...}},
     //                   summary: {present, absent, review, processing_time} }
     async saveReport(req, res) {
-        try {
-            const {
-                batch, department, semester, subject, faculty, room,
-                date, timeSlot, locksemId, videoLink, mlResult
-            } = req.body;
+    try {
+        const {
+            batch, department, semester, subject, faculty, room,
+            date, timeSlot, locksemId, videoLink, mlResult
+        } = req.body;
 
-            if (!batch || !date || !mlResult) {
-                return res.status(400).json({ error: 'batch, date, and mlResult are required' });
-            }
-
-            // ── Build per-student list from ML result ──
-            const students = [];
-            const attendance = mlResult.attendance || {};
-            for (const [rollNo, data] of Object.entries(attendance)) {
-                students.push({
-                    rollNo,
-                    status:         data.status         || 'absent',
-                    avgConfidence:  data.avg_confidence || 0,
-                    confidenceZone: data.confidence_zone || 'low',
-                    firstSeenSec:   data.first_seen_sec  || null,
-                    clusterFolder:  data.cluster_folder  || null,
-                    finalStatus:    data.status === 'present' ? 'P'
-                                  : data.status === 'review'  ? 'R' : 'A',
-                });
-            }
-
-            const slotResult = {
-                slot:        timeSlot  || 'unknown',
-                videoLink:   videoLink || '',
-                processedAt: new Date(),
-                students,
-                summary: {
-                    present:          mlResult.summary?.present          || 0,
-                    absent:           mlResult.summary?.absent           || 0,
-                    review:           mlResult.summary?.review           || 0,
-                    total:            students.length,
-                    processingTimeSec: mlResult.summary?.processing_time || 0,
-                }
-            };
-
-            // ── Find existing report for same batch+date+timeSlot or create new ──
-            let report = await AttendanceReport.findOne({ batch, date, timeSlot: timeSlot || '' });
-
-            if (report) {
-                // Append slot result (multiple videos for same session)
-                report.slotResults.push(slotResult);
-            } else {
-                report = new AttendanceReport({
-                    batch, department, semester, subject, faculty, room,
-                    date, timeSlot: timeSlot || '',
-                    locksemId: locksemId || null,
-                    slotResults: [slotResult],
-                    status: 'draft',
-                });
-            }
-
-            // ── Recompute merged final report ──
-            report.finalReport = mergeStudentStatus(report.slotResults);
-            report.summary     = buildSummary(report.finalReport);
-
-            await report.save();
-
-            res.json({
-                message:     'Report saved successfully',
-                reportId:    report._id,
-                summary:     report.summary,
-                finalReport: report.finalReport,
-            });
-        } catch (err) {
-            console.error('[AttendanceReport] saveReport error:', err);
-            res.status(500).json({ error: err.message });
+        if (!batch || !date || !mlResult) {
+            return res.status(400).json({ error: 'batch, date, and mlResult are required' });
         }
-    }
 
+        const VALID_STATUSES = new Set(['present', 'absent', 'review', 'not_enrolled']);
+
+        // ── Build per-student list from ML result ──
+        const students = [];
+        const attendance = mlResult.attendance || {};
+        for (const [rollNo, data] of Object.entries(attendance)) {
+            const rawStatus = data.status || 'absent';
+            const status    = VALID_STATUSES.has(rawStatus) ? rawStatus : 'absent';
+            students.push({
+                rollNo,
+                status,
+                avgConfidence:  data.avg_confidence  || 0,
+                confidenceZone: data.confidence_zone || 'low',
+                firstSeenSec:   data.first_seen_sec  || null,
+                clusterFolder:  data.cluster_folder  || null,
+                finalStatus:    status === 'present' ? 'P'
+                              : status === 'review'  ? 'R' : 'A',
+            });
+        }
+
+        const slotResult = {
+            slot:        timeSlot  || 'unknown',
+            videoLink:   videoLink || '',
+            processedAt: new Date(),
+            students,
+            summary: {
+                present:           mlResult.summary?.present          || 0,
+                absent:            mlResult.summary?.absent           || 0,
+                review:            mlResult.summary?.review           || 0,
+                total:             students.length,
+                processingTimeSec: mlResult.summary?.processing_time  || 0,
+            }
+        };
+
+        // ── Upsert: ONE report per batch+date+timeSlot ──
+        const slotKey = timeSlot || '';
+        let report = await AttendanceReport.findOne({ batch, date, timeSlot: slotKey });
+
+        if (report) {
+            if (report.status === 'finalized') {
+                return res.status(409).json({ error: 'Cannot add runs to a finalized report' });
+            }
+            // Append this run into the single existing report
+            report.slotResults.push(slotResult);
+        } else {
+            report = new AttendanceReport({
+                batch, department, semester, subject, faculty, room,
+                date, timeSlot: slotKey,
+                locksemId: locksemId || null,
+                slotResults: [slotResult],
+                status: 'draft',
+            });
+        }
+
+        // ── Recompute merged final report from ALL runs ──
+        report.finalReport = mergeStudentStatus(report.slotResults);
+        report.summary     = buildSummary(report.finalReport);
+
+        await report.save();
+
+        res.json({
+            message:     'Report saved successfully',
+            reportId:    report._id,
+            summary:     report.summary,
+            finalReport: report.finalReport,
+        });
+    } catch (err) {
+        console.error('[AttendanceReport] saveReport error:', err);
+        // Gracefully handle duplicate key race conditions
+        if (err.code === 11000) {
+            return res.status(409).json({ error: 'A report for this batch/date/slot already exists. Reload and try again.' });
+        }
+        res.status(500).json({ error: err.message });
+    }
+}
     // ── List reports (with optional filters) ─────────────────────
     // GET /attendancemodule/reports?batch=X&date=X&faculty=X&status=X
     async getReports(req, res) {
