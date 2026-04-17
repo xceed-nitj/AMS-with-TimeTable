@@ -430,16 +430,16 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
     batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
     logger.info("[attendance] batch_dir=%s", batch_dir)
     _stop_event.clear()
-
+ 
     if not os.path.isdir(batch_dir):
         yield {"type": "error", "message": f"Ground truth folder not found: {batch_dir}."}
         return
-
+ 
     yield {"type": "stage", "message": f"Loading ground truth for batch: {req.batch}…"}
-
+ 
     enrolled = {}
     IMG_EXTS_LOCAL = (".jpg", ".jpeg", ".png", ".webp")
-
+ 
     for folder in sorted(os.listdir(batch_dir)):
         fp = os.path.join(batch_dir, folder)
         if not os.path.isdir(fp):
@@ -460,7 +460,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
         if not photos:
             photos = [f for f in os.listdir(fp)
                       if f.lower().endswith(IMG_EXTS_LOCAL) and not f.startswith('_')]
-
+ 
         embs, emb_weights = [], []
         for photo in photos[:5]:
             img = cv2.imread(os.path.join(fp, photo))
@@ -486,7 +486,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                        cv2.CV_64F).var()), 500) / 500) if crop.size > 0 else det_score
             embs.append(emb / norm)
             emb_weights.append(max(quality, 0.01))
-
+ 
         if embs:
             weights = np.array(emb_weights, dtype=np.float32)
             weights /= weights.sum()
@@ -494,11 +494,11 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
             norm = np.linalg.norm(mean_emb)
             if norm > 0:
                 enrolled[roll_no] = mean_emb / norm
-
+ 
     if not enrolled:
         yield {"type": "error", "message": f"No enrolled students found in '{batch_dir}'."}
         return
-
+ 
     # Sir's list filter
     sir_list = [r.strip().upper() for r in req.enrolledRollNos if r.strip()]
     has_sir_list = len(sir_list) > 0
@@ -513,47 +513,47 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
         enrolled_in_list     = enrolled
         enrolled_not_in_list = {}
         yield {"type": "stage", "message": f"{len(enrolled)} students loaded — connecting…"}
-
+ 
     # Open RTSP
     cap = _open_capture(req.rtspUrl)
     if not cap.isOpened():
         yield {"type": "error", "message": f"Cannot open RTSP stream: {req.rtspUrl}"}
         return
-
+ 
     H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     scale = min(1.0, 1080 / H) if H > 1080 else 1.0
     disp_H, disp_W = int(H * scale), int(W * scale)
     ui_mask = _build_ui_mask(disp_H, disp_W)
-
+ 
     yield {"type": "stage", "message": f"Stream open {W}×{H} — recording {req.durationSec}s…"}
-
+ 
     all_embeddings, all_face_images, all_timestamps, all_quality = [], [], [], []
     CAMERA_SWITCH_SEC = 30
     cameras = [req.rtspUrl]
     if req.rtspUrl2:
         cameras.append(req.rtspUrl2)
     frame_snapshots = []
-
+ 
     DEBUG_CROP_DIR = os.path.join(BASE_DIR, "attendance-debug-crops", f"{req.date}_{req.slot}")
     os.makedirs(DEBUG_CROP_DIR, exist_ok=True)
     crop_counter = 0
     logger.info("[attendance] Debug crops → %s", DEBUG_CROP_DIR)
     yield {"type": "stage", "message": f"Debug crops → attendance-debug-crops/{req.date}_{req.slot}/"}
-
+ 
     start_t = time.time()
     frame_count, cam_idx, last_switch = 0, 0, 0.0
     SNAPSHOT_INTERVAL_SEC = 5
     last_snapshot_elapsed = -999.0
     reader  = _RTSPReader(cap, decode_every=req.frameSkip)
     last_seq = 0
-
+ 
     try:
         while True:
             elapsed = time.time() - start_t
             if elapsed >= req.durationSec:
                 break
-
+ 
             if len(cameras) > 1 and (elapsed - last_switch) >= CAMERA_SWITCH_SEC:
                 reader.release()
                 cam_idx = (cam_idx + 1) % len(cameras)
@@ -563,18 +563,18 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                 last_switch = elapsed
                 last_snapshot_elapsed = -999.0
                 yield {"type": "stage", "message": f"Switched to camera {cam_idx+1} at {round(elapsed)}s"}
-
+ 
             ok, frame, seq, _ = reader.latest()
             if not ok or frame is None or seq == last_seq:
                 time.sleep(0.01)
                 continue
-
+ 
             last_seq = seq
             frame_count += 1
-
+ 
             if scale < 1.0:
                 frame = cv2.resize(frame, (disp_W, disp_H), interpolation=cv2.INTER_AREA)
-
+ 
             # MJPEG preview
             try:
                 prev = cv2.resize(frame, (960, 540)) if frame.shape[1] > 960 else frame.copy()
@@ -583,21 +583,21 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                     _preview_frame = prev_buf.tobytes()
             except Exception:
                 pass
-
+ 
             detections = _detect_faces_tiled(
                 state.face_app, frame, ui_mask,
                 debug_dir=DEBUG_CROP_DIR,
                 debug_frame_id=frame_count,
             )
             faces_this_frame = len(detections)
-
+ 
             for d in detections:
                 all_embeddings.append(d["embedding"])
                 all_face_images.append(d["crop"])
                 all_timestamps.append(round(elapsed, 2))
                 all_quality.append(d["quality"])
                 crop_counter += 1
-
+ 
             # Annotated full frame
             if faces_this_frame > 0:
                 try:
@@ -614,7 +614,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                         ann, [cv2.IMWRITE_JPEG_QUALITY, 85])
                 except Exception:
                     pass
-
+ 
             # Frame snapshot every N seconds
             if faces_this_frame > 0 and (elapsed - last_snapshot_elapsed) >= SNAPSHOT_INTERVAL_SEC:
                 _, jpeg_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
@@ -626,14 +626,14 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                     "jpeg_bytes":  jpeg_buf.tobytes(),
                 })
                 last_snapshot_elapsed = elapsed
-
+ 
             yield {"type": "frame", "frame": frame_count, "faces": faces_this_frame,
                    "total_embs": len(all_embeddings), "elapsed": round(elapsed, 1),
                    "remaining": round(req.durationSec - elapsed, 1), "camera": cam_idx + 1}
     finally:
         reader.release()
         _stop_event.set()
-
+ 
     # Save frame snapshots to disk (strip jpeg_bytes before returning paths)
     SNAPSHOT_DIR = os.path.join(BASE_DIR, "frame-snapshots")
     os.makedirs(SNAPSHOT_DIR, exist_ok=True)
@@ -644,33 +644,32 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
         fpath = os.path.join(SNAPSHOT_DIR, fname)
         with open(fpath, 'wb') as f:
             f.write(snap["jpeg_bytes"])
-        # Only plain JSON-serialisable types here
         saved_snapshot_paths.append({
             "path":        str(fpath),
             "cam":         int(snap["cam_idx"] + 1),
             "elapsed_sec": float(snap["elapsed_sec"]),
             "faces_count": int(snap["faces_count"]),
         })
-
+ 
     yield {"type": "stage",
            "message": (f"📁 {crop_counter} accepted crops | {len(saved_snapshot_paths)} snapshots"
                        f" | Check attendance-debug-crops/{req.date}_{req.slot}/")}
-
+ 
     if not all_embeddings:
         yield {"type": "error",
                "message": "No faces detected. Check attendance-debug-crops/raw/ and /rejected/ for diagnostics."}
         return
-
+ 
     yield {"type": "stage", "message": f"{len(all_embeddings)} embeddings — clustering…"}
-
+ 
     labels, unique_labels = _cluster(all_embeddings, req.clusterThreshold, req.minSamples)
     yield {"type": "stage", "message": f"{len(unique_labels)} clusters — matching {len(enrolled)} enrolled…"}
-
+ 
     match_enrolled = enrolled_in_list if has_sir_list else enrolled
     enrolled_ids   = list(match_enrolled.keys())
     enroll_matrix  = (np.array([match_enrolled[r] for r in enrolled_ids], dtype=np.float32)
                       if enrolled_ids else np.array([]))
-
+ 
     attendance = {
         roll_no: {
             "status": "absent", "avg_confidence": 0.0, "confidence_zone": "low",
@@ -681,31 +680,48 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
     if has_sir_list:
         for roll_no in sir_list:
             if roll_no not in {k.upper() for k in attendance}:
-                # 'no_photo' is not a valid Mongoose enum value — use 'absent'
-                # (students with no ground truth cannot be matched, so absent is correct)
                 attendance[roll_no] = {
                     "status": "absent", "avg_confidence": 0.0, "confidence_zone": "low",
                     "first_seen_sec": None, "detections": 0, "in_list": True, "flagged": False,
                 }
-
+ 
+    # ── Build cluster means once ───────────────────────────────────────────
+    cluster_means = []
+    cluster_meta  = []  # list of (cluster_id, indices)
+ 
     for cluster_id in unique_labels:
         indices      = np.where(labels == cluster_id)[0]
         cluster_embs = np.array([all_embeddings[i] for i in indices], dtype=np.float32)
         cluster_mean = cluster_embs.mean(axis=0)
-        norm = np.linalg.norm(cluster_mean)
+        norm         = np.linalg.norm(cluster_mean)
         if norm == 0:
             continue
         cluster_mean /= norm
-        scores   = enroll_matrix @ cluster_mean
-        best_idx = int(np.argmax(scores))
-        score    = float(scores[best_idx])
-
-        if score >= req.reviewThreshold:
-            roll_no = enrolled_ids[best_idx]
-            rec     = attendance[roll_no]
-            status  = "present" if score >= req.autoThreshold else "review"
-            zone    = "high"    if score >= req.autoThreshold else "medium"
-            n       = len(indices)
+        cluster_means.append(cluster_mean)
+        cluster_meta.append((cluster_id, indices))
+ 
+    # ── One-to-one Hungarian assignment ───────────────────────────────────
+    assigned_cluster_rows = set()  # row indices (into cluster_meta) with a valid assignment
+ 
+    if cluster_means and len(enroll_matrix) > 0:
+        score_matrix = np.array(cluster_means, dtype=np.float32) @ enroll_matrix.T
+        # shape: (n_clusters, n_enrolled)
+ 
+        row_ind, col_ind = linear_sum_assignment(-score_matrix)  # negate → maximise similarity
+ 
+        for r, c in zip(row_ind, col_ind):
+            score   = float(score_matrix[r, c])
+            roll_no = enrolled_ids[c]
+            _, indices = cluster_meta[r]
+ 
+            if score < req.reviewThreshold:
+                continue  # below threshold → treat as unmatched
+ 
+            assigned_cluster_rows.add(r)
+            rec    = attendance[roll_no]
+            status = "present" if score >= req.autoThreshold else "review"
+            zone   = "high"    if score >= req.autoThreshold else "medium"
+            n      = len(indices)
             prev_n, prev_avg = rec["detections"], rec["avg_confidence"]
             new_avg = ((prev_avg * prev_n) + (score * n)) / (prev_n + n)
             if rec["status"] == "absent" or (rec["status"] == "review" and status == "present"):
@@ -714,74 +730,73 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
             rec["detections"]     = prev_n + n
             if rec["first_seen_sec"] is None:
                 rec["first_seen_sec"] = round(float(all_timestamps[indices[0]]), 1)
-
-    present = sum(1 for v in attendance.values() if v["status"] == "present")
-    review  = sum(1 for v in attendance.values() if v["status"] == "review")
-    absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
-
-    # Unmatched clusters
+ 
+    # ── Unmatched clusters ─────────────────────────────────────────────────
     unmatched_clusters = []
-    for cluster_id in unique_labels:
-        indices      = np.where(labels == cluster_id)[0]
-        cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
-        norm = np.linalg.norm(cluster_mean)
-        if norm == 0:
-            continue
-        cluster_mean /= norm
-        score = float(np.max(enroll_matrix @ cluster_mean))
-        if score < req.reviewThreshold:
+    for r, (cluster_id, indices) in enumerate(cluster_meta):
+        if r not in assigned_cluster_rows:
+            best_score = 0.0
+            if len(enroll_matrix) > 0:
+                best_score = float(np.max(np.array(cluster_means[r]) @ enroll_matrix.T))
             unmatched_clusters.append({
                 "cluster_id": int(cluster_id),
                 "detections": int(len(indices)),
-                "best_score": round(score, 4),
+                "best_score": round(best_score, 4),
                 "first_seen": round(float(all_timestamps[indices[0]]), 1),
             })
-
-    # Flag not-in-list
+ 
+    present = sum(1 for v in attendance.values() if v["status"] == "present")
+    review  = sum(1 for v in attendance.values() if v["status"] == "review")
+    absent  = sum(1 for v in attendance.values() if v["status"] == "absent")
+ 
+    # ── Flag not-in-list (Hungarian, only against unassigned clusters) ─────
     if has_sir_list and enrolled_not_in_list:
         not_in_list_ids    = list(enrolled_not_in_list.keys())
         not_in_list_matrix = np.array([enrolled_not_in_list[r] for r in not_in_list_ids], dtype=np.float32)
-        for cluster_id in unique_labels:
-            indices      = np.where(labels == cluster_id)[0]
-            cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
-            norm = np.linalg.norm(cluster_mean)
-            if norm == 0:
-                continue
-            cluster_mean /= norm
-            scores   = not_in_list_matrix @ cluster_mean
-            best_idx = int(np.argmax(scores))
-            score    = float(scores[best_idx])
-            if score >= req.autoThreshold:
-                flagged_roll = not_in_list_ids[best_idx]
-                attendance[flagged_roll] = {
-                    "status":          "present",
-                    "avg_confidence":  round(score, 4),
-                    "confidence_zone": "high",
-                    "first_seen_sec":  round(float(all_timestamps[indices[0]]), 1),
-                    "detections":      int(len(indices)),
-                    "in_list":         False,
-                    "flagged":         True,
-                }
-
-    # Save per-cluster matched crops
+ 
+        # Only unassigned clusters can be flagged
+        nil_cluster_means = [cluster_means[r] for r in range(len(cluster_meta))
+                             if r not in assigned_cluster_rows]
+        nil_cluster_meta  = [cluster_meta[r]  for r in range(len(cluster_meta))
+                             if r not in assigned_cluster_rows]
+ 
+        if nil_cluster_means and len(not_in_list_matrix) > 0:
+            nil_score_matrix         = np.array(nil_cluster_means, dtype=np.float32) @ not_in_list_matrix.T
+            nil_row_ind, nil_col_ind = linear_sum_assignment(-nil_score_matrix)
+ 
+            for r, c in zip(nil_row_ind, nil_col_ind):
+                score        = float(nil_score_matrix[r, c])
+                flagged_roll = not_in_list_ids[c]
+                _, indices   = nil_cluster_meta[r]
+ 
+                if score >= req.autoThreshold:
+                    attendance[flagged_roll] = {
+                        "status":          "present",
+                        "avg_confidence":  round(score, 4),
+                        "confidence_zone": "high",
+                        "first_seen_sec":  round(float(all_timestamps[indices[0]]), 1),
+                        "detections":      int(len(indices)),
+                        "in_list":         False,
+                        "flagged":         True,
+                    }
+ 
+    # ── Save per-cluster matched crops ─────────────────────────────────────
     MATCH_CROP_DIR = os.path.join(BASE_DIR, "attendance-matched-crops", f"{req.date}_{req.slot}")
     os.makedirs(MATCH_CROP_DIR, exist_ok=True)
-
-    for cluster_id in unique_labels:
-        indices      = np.where(labels == cluster_id)[0]
-        cluster_mean = np.array([all_embeddings[i] for i in indices], dtype=np.float32).mean(axis=0)
-        norm = np.linalg.norm(cluster_mean)
-        if norm == 0:
-            continue
-        cluster_mean /= norm
-        if len(enroll_matrix) > 0:
-            scores       = enroll_matrix @ cluster_mean
-            best_idx     = int(np.argmax(scores))
-            score        = float(scores[best_idx])
-            matched_roll = enrolled_ids[best_idx] if score >= req.reviewThreshold else "UNMATCHED"
-        else:
-            matched_roll, score = "UNMATCHED", 0.0
-
+ 
+    # Build lookup: cluster_id → (matched_roll, score) from the Hungarian result
+    cluster_match_lookup: dict[int, tuple[str, float]] = {}
+    if cluster_means and len(enroll_matrix) > 0:
+        score_matrix = np.array(cluster_means, dtype=np.float32) @ enroll_matrix.T
+        row_ind, col_ind = linear_sum_assignment(-score_matrix)
+        for r, c in zip(row_ind, col_ind):
+            score        = float(score_matrix[r, c])
+            cluster_id   = cluster_meta[r][0]
+            matched_roll = enrolled_ids[c] if score >= req.reviewThreshold else "UNMATCHED"
+            cluster_match_lookup[cluster_id] = (matched_roll, score)
+ 
+    for r, (cluster_id, indices) in enumerate(cluster_meta):
+        matched_roll, score = cluster_match_lookup.get(cluster_id, ("UNMATCHED", 0.0))
         folder_name      = f"{matched_roll}_c{cluster_id:03d}_s{score:.3f}"
         cluster_crop_dir = os.path.join(MATCH_CROP_DIR, folder_name)
         os.makedirs(cluster_crop_dir, exist_ok=True)
@@ -791,11 +806,11 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
             if crop is not None and crop.size > 0:
                 fname = f"rank{rank:02d}_t{all_timestamps[idx]:.1f}s_q{all_quality[idx]:.2f}.jpg"
                 cv2.imwrite(os.path.join(cluster_crop_dir, fname), crop, [cv2.IMWRITE_JPEG_QUALITY, 95])
-
+ 
     logger.info("[attendance] Matched crops → %s", MATCH_CROP_DIR)
     yield {"type": "stage", "message": f"✅ {len(unique_labels)} cluster folders saved for verification"}
-
-    # Final result event
+ 
+    # ── Final result event ─────────────────────────────────────────────────
     yield {
         "type": "done",
         "result": {
@@ -828,7 +843,6 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
             "frame_snapshots":    saved_snapshot_paths,
         },
     }
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ATTENDANCE ROUTES
