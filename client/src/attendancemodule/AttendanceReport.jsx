@@ -1223,7 +1223,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                         🚩 Flagged
                                     </span>
                                 ) : s.inList === true ? (
-                                    <span style={{ fontSize: '13px', color: theme.success }}>✓</span>
+                                    <span style={{ fontSize: '12.5px', color: theme.success }}>✓</span>
                                 ) : s.inList === false ? (
                                     <span style={{ fontSize: '11px', color: theme.textMuted }}>—</span>
                                 ) : (
@@ -1265,7 +1265,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                 {s.firstSeenSec != null ? `${Math.floor(s.firstSeenSec / 60)}m ${Math.round(s.firstSeenSec % 60)}s` : '—'}
                             </td>
                             <td style={{ padding: '10px 14px' }}>
-                                <span style={{ padding: '3px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700,
+                                <span style={{ padding: '3.5px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700,
                                     fontFamily: theme.fontMono,
                                     background: s.finalStatus === 'P' ? theme.successDim : s.finalStatus === 'R' ? theme.warningDim : theme.dangerDim,
                                     color:      s.finalStatus === 'P' ? theme.success    : s.finalStatus === 'R' ? theme.warning    : theme.danger }}>
