@@ -920,9 +920,9 @@ export default function AttendanceReport() {
                                             onClick={() => openDetail(r._id)}>
                                             <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600,  color: '#010811' }}>{r.batch}</td>
 
-                                            <td style={{ padding: '11px 14px', color: '#040d18' }}>{r.date}</td>
+                                            <td style={{ padding: '11px 14px', color: '#021022' }}>{r.date}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{SLOT_LABELS[r.timeSlot] || r.timeSlot || '—'}</td>
-                                            <td style={{ padding: '11px 14px', color: '#03060b' }}>{r.subject || '—'}</td>
+                                            <td style={{ padding: '11px 14px', color: '#010b1c' }}>{r.subject || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{r.faculty || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.success, fontWeight: 700 }}>{r.summary?.present ?? '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.danger,  fontWeight: 700 }}>{r.summary?.absent  ?? '—'}</td>
