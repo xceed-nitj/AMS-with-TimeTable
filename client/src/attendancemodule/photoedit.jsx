@@ -681,9 +681,9 @@ export default function PhotoEdit() {
 
                             {!studentsLoading && studentsLoaded && students.length === 0 && (
                                 <div style={{ textAlign: 'center', padding: 60, color: theme.textMuted }}>
-                                    <div style={{ fontSize: '32px', marginBottom: 12 }}>🎓</div>
+                                    <div style={{ fontSize: '31px', marginBottom: 12 }}>🎓</div>
                                     No ERP-matched students found.
-                                    <div style={{ fontSize: '12px', marginTop: 6 }}>
+                                    <div style={{ fontSize: '13px', marginTop: 6 }}>
                                         Run ERP matching and assignment first.
                                     </div>
                                 </div>
