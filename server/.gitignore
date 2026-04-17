@@ -8,6 +8,6 @@ uploads/
 .cache
 
 .vscode
-ground_truth
+server/ground_truth
 
 
