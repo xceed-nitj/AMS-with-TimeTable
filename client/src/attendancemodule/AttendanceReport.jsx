@@ -344,11 +344,22 @@ export default function AttendanceReport() {
                 }),
             });
             const data = await res.json();
-            if (data.error) showToast(data.error, 'error');
-            else { setSavedReport(data); showToast('Report saved'); }
-        } catch { showToast('Save failed', 'error'); }
-        setSaving(false);
-    };
+            if (data.error) {
+            showToast(data.error, 'error');
+            // If a report already exists for this slot, fetch and open it
+            if (res.status === 409) {
+                const listRes = await fetch(`${REPORT_API}?batch=${encodeURIComponent(ctx.batch || manualBatch)}&date=${date}`);
+                const listData = await listRes.json();
+                const existing = (listData.reports || []).find(r => r.timeSlot === slot);
+                if (existing) openDetail(existing._id);
+            }
+        } else {
+            setSavedReport(data);
+            showToast('Report saved');
+        }
+    } catch { showToast('Save failed', 'error'); }
+    setSaving(false);
+};
 
     const openDetail = async (id) => {
         setTab('detail'); setDetailLoading(true); setDetailReport(null);
@@ -907,17 +918,18 @@ export default function AttendanceReport() {
                                     {reports.map(r => (
                                         <tr key={r._id} style={{ borderBottom: `1px solid ${theme.border}`, cursor: 'pointer' }}
                                             onClick={() => openDetail(r._id)}>
-                                            <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600 }}>{r.batch}</td>
-                                            <td style={{ padding: '11px 14px' }}>{r.date}</td>
+                                            <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600,  color: '#010811' }}>{r.batch}</td>
+
+                                            <td style={{ padding: '11px 14px', color: '#010811' }}>{r.date}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{SLOT_LABELS[r.timeSlot] || r.timeSlot || '—'}</td>
-                                            <td style={{ padding: '11px 14px' }}>{r.subject || '—'}</td>
+                                            <td style={{ padding: '11px 14px', color: '#010811' }}>{r.subject || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{r.faculty || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.success, fontWeight: 700 }}>{r.summary?.present ?? '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.danger,  fontWeight: 700 }}>{r.summary?.absent  ?? '—'}</td>
                                             <td style={{ padding: '11px 14px', fontFamily: theme.fontMono }}>
                                                 {r.summary ? pct(r.summary.present, r.summary.totalStudents) + '%' : '—'}
                                             </td>
-                                            <td style={{ padding: '11px 14px' }}>
+                  s                          <td style={{ padding: '11px 14px' }}>
                                                 <span style={styles.badge(r.status === 'finalized' ? 'success' : 'warning')}>
                                                     {r.status}
                                                 </span>

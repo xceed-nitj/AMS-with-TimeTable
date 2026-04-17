@@ -162,8 +162,22 @@ async function startSession(config) {
 
     const intervalMin = checkIntervalMin || 5;
 
-    // 1. Create report in DB with status 'live'
-    const report = new AttendanceReport({
+    // 1. Upsert: reuse existing report for this batch+date+slot if it exists
+let report = await AttendanceReport.findOne({ batch, date, timeSlot: slot });
+if (report) {
+    if (report.status === 'finalized') {
+        throw new Error('A finalized report already exists for this slot. Cannot start a new session.');
+    }
+    // Reuse it — flip back to live and update metadata
+    report.status = 'live';
+    if (department) report.department = department;
+    if (subject)    report.subject    = subject;
+    if (faculty)    report.faculty    = faculty;
+    if (semester)   report.semester   = semester;
+    if (locksemId)  report.locksemId  = locksemId;
+    await report.save();
+} else {
+    report = new AttendanceReport({
         batch,
         department: department || '',
         semester:   semester   || '',
@@ -177,7 +191,8 @@ async function startSession(config) {
         status:     'live',
     });
     await report.save();
-    const reportId = report._id.toString();
+}
+const reportId = report._id.toString();
 
     console.log(`[Session] Started — reportId=${reportId} batch=${batch} room=${room} slot=${slot} interval=${intervalMin}min duration=${durationSec}s`);
 
