@@ -1,7 +1,7 @@
 // client/src/attendancemodule/AttendanceReport.jsx
 // Input: room + slot + RTSP URL → auto-lookup from LockSem → attendance report
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 import getEnvironment from '../getenvironment';
@@ -10,7 +10,10 @@ const apiUrl     = getEnvironment();
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
 const ML_API     = `${apiUrl}/ml`;
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
-
+const CAMERA_SWITCH_SEC = 30; // must match CAMERA_SWITCH_SEC in rtsp_routes.py
+// ── LT103 dual-camera preset (same as groundtruthgen_rtsp) ───────────────────
+const LT103L_URL = 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
+const LT103R_URL = 'rtsp://admin:Admin%401234%23@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
 const SLOT_LABELS = {
     period1: 'Period 1 — 08:30',
     period2: 'Period 2 — 09:30',
@@ -56,6 +59,12 @@ export default function AttendanceReport() {
     const [streamLog,       setStreamLog]       = useState([]);
     const [liveStats,       setLiveStats]       = useState(null);
     const [liveFrame,       setLiveFrame]       = useState(null);
+    const [activeCam,       setActiveCam]       = useState(null);   // 1 | 2 | null
+    const [camSwitchAt,     setCamSwitchAt]     = useState(null);   // timestamp when last switched
+    const [camCountdown,    setCamCountdown]    = useState(0);       // seconds shown in banner
+    const camCountdownRef = useRef(null);
+    const activeCamRef = useRef(null);
+    const rtspUrl2Ref     = useRef('');
     const [snapshots,       setSnapshots]       = useState([]);
     const [previewActive,   setPreviewActive]   = useState(false);
     const [enrolledRollNos, setEnrolledRollNos] = useState('');
@@ -152,6 +161,30 @@ export default function AttendanceReport() {
         return () => clearInterval(interval);
     }, [detailReport?._id, detailReport?.status]);
 
+    // ── Camera-switch countdown ticker ────────────────────────────────────────
+// Python switches cameras every CAMERA_SWITCH_SEC (30s), not every `duration`.
+// We count down from CAMERA_SWITCH_SEC using camSwitchAt as the reference point.
+useEffect(() => {
+    // Only run countdown when processing AND a camera is active AND cam2 is configured
+    const hasCam2 = rtspUrl2.trim().length > 0;
+if (!processing || !activeCam || !hasCam2) {
+    // Still clear the interval, but DO NOT clear camCountdown to 0 if activeCam is set
+    // (so the banner stays visible in single-cam mode without countdown)
+    if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; }
+    if (!processing || !activeCam) setCamCountdown(0);
+    return;
+}
+    // (Re)start the ticker whenever camSwitchAt changes (i.e. every real switch)
+    if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; }
+    const switchedAt = camSwitchAt || Date.now();
+    camCountdownRef.current = setInterval(() => {
+        const elapsed   = Math.floor((Date.now() - switchedAt) / 1000);
+        const remaining = Math.max(0, CAMERA_SWITCH_SEC - elapsed);
+        setCamCountdown(remaining);
+    }, 500); // 500ms tick is more responsive than 1000ms
+    return () => { if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; } };
+}, [processing, activeCam, camSwitchAt, rtspUrl2]);
+
     
 
     // ── Run attendance — SSE stream ───────────────────────────────
@@ -174,6 +207,11 @@ export default function AttendanceReport() {
         setProcessing(true); setMlResult(null); setSavedReport(null);
         setSnapshots([]); setLiveFrame(null); setPreviewActive(true);
         setStreamLog([]); setLiveStats(null);
+        setActiveCam(null);
+activeCamRef.current = null;
+setCamSwitchAt(null);
+setCamCountdown(0);
+rtspUrl2Ref.current = rtspUrl2.trim(); // snapshot current value for SSE closure
 
         try {
             const response = await fetch(`${ML_API}/run-attendance-rtsp`, {
@@ -221,19 +259,29 @@ export default function AttendanceReport() {
                         if (ev.type === 'stage') {
                             setStreamLog(prev => [...prev, ev.message]);
                         }
-                        if (ev.type === 'frame') {
-                            setLiveStats({
-                                frames:    ev.frame,
-                                faces:     ev.total_embs,
-                                elapsed:   ev.elapsed,
-                                remaining: ev.remaining,
-                            });
-                            setLiveFrame({
-                                faces:   ev.faces,
-                                camera:  ev.camera,
-                                elapsed: ev.elapsed,
-                            });
-                        }
+                        
+    if (ev.type === 'frame') {
+    setLiveStats({
+        frames:    ev.frame,
+        faces:     ev.total_embs,
+        elapsed:   ev.elapsed,
+        remaining: ev.remaining,
+    });
+    setLiveFrame({
+        faces:   ev.faces,
+        camera:  ev.camera,
+        elapsed: ev.elapsed,
+    });
+    // Camera switch tracking — use ref so the closure always sees
+    // the latest activeCam value, not the stale one from when
+    // runAttendance was first called.
+    // Always update activeCam on first frame (null → 1) and on real switches
+if (ev.camera != null && ev.camera !== activeCamRef.current) {
+    activeCamRef.current = ev.camera;
+    setActiveCam(ev.camera);
+    setCamSwitchAt(Date.now());
+}
+}
                         if (ev.type === 'done') {
                             setMlResult(ev.result);
                             if (ev.result?.metadata) {
@@ -627,11 +675,11 @@ export default function AttendanceReport() {
                             <div>
                                 <label style={styles.label}>Camera 2 — RTSP URL (optional)</label>
                                 <input
-                                    placeholder="rtsp://...camera2..."
-                                    value={rtspUrl2}
-                                    onChange={e => setRtspUrl2(e.target.value)}
-                                    style={{ ...styles.input, fontFamily: theme.fontMono }}
-                                />
+    placeholder="rtsp://...camera2..."
+    value={rtspUrl2}
+    onChange={e => { setRtspUrl2(e.target.value); rtspUrl2Ref.current = e.target.value; }}
+    style={{ ...styles.input, fontFamily: theme.fontMono }}
+/>
                             </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'flex-end' }}>
@@ -657,6 +705,7 @@ export default function AttendanceReport() {
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <button
                                     onClick={runAttendance}
+
                                     disabled={processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
                                     style={{
                                         ...styles.btnPrimary, minWidth: 140,
@@ -676,6 +725,26 @@ export default function AttendanceReport() {
                                         </span>
                                     ) : 'Run Once'}
                                 </button>
+                                <button
+    onClick={() => {
+        setRtspUrl(LT103L_URL);
+        setRtspUrl2(LT103R_URL);
+        rtspUrl2Ref.current = LT103R_URL;
+    }}
+    disabled={processing}
+    style={{
+        ...styles.btnPrimary,
+        minWidth: 140,
+        background: '#1a2a1a',
+        border: `1px solid ${theme.success}`,
+        color: theme.success,
+        opacity: processing ? 0.5 : 1,
+        fontSize: '12px',
+    }}
+    title="Fill Camera 1 = LT103L, Camera 2 = LT103R"
+>
+    📷 Combined L→R
+</button>
                                 <button
                                     onClick={startSession}
                                     disabled={processing || sessionActive || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
@@ -768,8 +837,66 @@ export default function AttendanceReport() {
                                     </>
                                 )}
                             </div>
+
+      
                         </div>
                     )}
+                    {/* ── Camera switch banner (shown during and after processing) ── */}
+{activeCam && (
+    <div style={{
+        marginTop: 12,
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '10px 16px', borderRadius: 8,
+        background: activeCam === 1 ? theme.accentDim : 'rgba(240,192,64,0.1)',
+        border: `1px solid ${activeCam === 1 ? theme.accent : '#f0c040'}`,
+    }}>
+        <span style={{ fontSize: '20px', lineHeight: 1 }}>🎥</span>
+        <div style={{ flex: 1 }}>
+            <div style={{
+                fontSize: '13px', fontWeight: 700,
+                color: activeCam === 1 ? theme.accent : '#f0c040',
+            }}>
+                Camera {activeCam} Active
+            </div>
+            {rtspUrl2.trim() && camCountdown > 0 && (
+                <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
+                    Switching to Camera {activeCam === 1 ? 2 : 1} in{' '}
+                    <span style={{
+                        fontWeight: 700, fontFamily: theme.fontMono,
+                        color: activeCam === 1 ? theme.accent : '#f0c040',
+                    }}>
+                        {String(Math.floor(camCountdown / 60)).padStart(2, '0')}:{String(camCountdown % 60).padStart(2, '0')}
+                    </span>
+                </div>
+            )}
+            {!rtspUrl2.trim() && (
+                <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
+                    Single camera mode
+                </div>
+            )}
+        </div>
+        {rtspUrl2.trim() && (
+            <div style={{ display: 'flex', gap: 6 }}>
+                {[1, 2].map(n => (
+                    <span key={n} style={{
+                        padding: '3px 12px', borderRadius: '999px',
+                        fontSize: '12px', fontWeight: 700, fontFamily: theme.fontMono,
+                        background: activeCam === n
+                            ? (n === 1 ? theme.accent : '#f0c040')
+                            : theme.border,
+                        color: activeCam === n
+                            ? (n === 1 ? (theme.accentText || '#fff') : '#000')
+                            : theme.textMuted,
+                        transition: 'all 0.3s',
+                    }}>
+                        CAM {n}
+                    </span>
+                ))}
+            </div>
+        )}
+    </div>
+)}
+
 
                     {mlResult && !processing && (() => {
                         const arr = Object.values(mlResult.attendance || {});
