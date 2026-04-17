@@ -10,7 +10,7 @@ const jwtSecret = process.env.JWT_SECRET;
 const { checkRole } = require("../../checkRole.middleware");
 
 const verifyToken = (req, res, next) => {
-  const token = req.cookies.jwt || req.headers.authorization?.replace('Bearer ', '');
+  const token = req.cookies.jwt;
   // console.log(token)
 
   if (!token) {

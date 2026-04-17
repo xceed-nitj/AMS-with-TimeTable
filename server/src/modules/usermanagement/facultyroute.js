@@ -6,7 +6,7 @@ const jwtSecret = process.env.JWT_SECRET;
 
 // this route is for checking department timetable coordinators
 async function facultyRoute(req, res, next) {  
-  const token = req.cookies.jwt || req.headers.authorization?.replace('Bearer ', '');
+  const token = req.cookies.jwt;
   //console.log(token)
 
   if (!token) {

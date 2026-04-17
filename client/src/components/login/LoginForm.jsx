@@ -64,10 +64,6 @@ const LoginForm = () => {
         }
       }
 
-      if (responseData.token) {
-        localStorage.setItem('token', responseData.token)
-      }
-
       if (response.ok) {
         setMessage(responseData.message);
         window.location.href = '/userroles';
