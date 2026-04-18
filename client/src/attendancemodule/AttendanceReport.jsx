@@ -408,7 +408,8 @@ rtspUrl2Ref.current = rtspUrl2.trim();
             }
         } else {
             setSavedReport(data);
-            showToast('Report saved');
+            showToast(`✓ Saved & merged — ${data.summary?.present ?? 0}P / ${data.summary?.absent ?? 0}A / ${data.summary?.review ?? 0}R`);
+
         }
     } catch { showToast('Save failed', 'error'); }
     setSaving(false);
@@ -1065,7 +1066,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                             <td style={{ padding: '11px 14px', fontFamily: theme.fontMono }}>
                                                 {r.summary ? pct(r.summary.present, r.summary.totalStudents) + '%' : '—'}
                                             </td>
-                  s                          <td style={{ padding: '11px 14px' }}>
+                                            <td style={{ padding: '11px 14px' }}>
                                                 <span style={styles.badge(r.status === 'finalized' ? 'success' : 'warning')}>
                                                     {r.status}
                                                 </span>

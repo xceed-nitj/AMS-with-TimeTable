@@ -60,13 +60,16 @@ def _process_frames(videoPath, frame_skip, match_threshold):
     processed         = 0
 
     while True:
+        # Use grab() then retrieve() instead of a combined read().
+        # On macOS ARM64, calling read() from a non-main thread triggers
+        # a SIGSEGV inside av_read_frame (FFmpeg internal state race).
         if not cap.grab():
             break
         frame_count += 1
         if frame_count % frame_skip != 0:
             continue
         ret, frame = cap.retrieve()
-        if not ret:
+        if not ret or frame is None:
             continue
 
         for d in _detect_faces_tiled(state.face_app, frame, ui_mask):

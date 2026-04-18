@@ -4,8 +4,9 @@ const AttendanceReport = require('../../../models/attendanceReport');
 const LockSem          = require('../../../models/locksem');
 
 // ── Merge logic (notebook: merging both → final status) ──────
+// REPLACE the entire mergeStudentStatus function with this:
+
 function mergeStudentStatus(slotResults) {
-    // Build roll → list of slot statuses
     const rollMap = {};
 
     for (const slot of slotResults) {
@@ -13,8 +14,8 @@ function mergeStudentStatus(slotResults) {
             if (!rollMap[s.rollNo]) rollMap[s.rollNo] = [];
             rollMap[s.rollNo].push({
                 status:         s.status,
-                avgConfidence:  s.avgConfidence,
-                confidenceZone: s.confidenceZone,
+                avgConfidence:  s.avgConfidence  || 0,
+                confidenceZone: s.confidenceZone || 'low',
                 firstSeenSec:   s.firstSeenSec,
                 clusterFolder:  s.clusterFolder,
                 slot:           slot.slot,
@@ -24,29 +25,33 @@ function mergeStudentStatus(slotResults) {
 
     const finalReport = [];
     for (const [rollNo, entries] of Object.entries(rollMap)) {
-        const latestEntry = entries[entries.length - 1];
-
-        // Find best confidence entry
+        // Best = highest confidence across ALL runs (both cameras)
         const best = entries.reduce((prev, cur) =>
-            cur.avgConfidence > prev.avgConfidence ? cur : prev, entries[0]);
+            (cur.avgConfidence || 0) > (prev.avgConfidence || 0) ? cur : prev, entries[0]);
 
-        // Merge rule
         const presentEntries = entries.filter(e => e.status === 'present');
-        const highConf       = presentEntries.filter(e => e.confidenceZone !== 'low');
-        const anyPresent     = presentEntries.length > 0;
+        const reviewEntries  = entries.filter(e => e.status === 'review');
         const allAbsent      = entries.every(e => e.status === 'absent');
-        const anyReview      = entries.some(e => e.status === 'review');
 
         let finalStatus;
-        if (highConf.length > 0) {
-            finalStatus = 'P';
-        } else if (anyPresent && !allAbsent) {
-            // present but low confidence OR mixed → Review
-            finalStatus = 'R';
-        } else if (anyReview) {
-            finalStatus = 'R';
-        } else if (allAbsent) {
+
+        if (allAbsent) {
+            // Absent in every run across every camera → definitely absent
             finalStatus = 'A';
+        } else if (presentEntries.length > 0) {
+            // Present in at least one run — use best confidence to decide P vs R
+            const bestPresent = presentEntries.reduce((prev, cur) =>
+                (cur.avgConfidence || 0) > (prev.avgConfidence || 0) ? cur : prev, presentEntries[0]);
+
+            if (bestPresent.confidenceZone === 'high' || bestPresent.confidenceZone === 'medium') {
+                finalStatus = 'P';
+            } else {
+                // Low confidence present — mark Review for manual check
+                finalStatus = 'R';
+            }
+        } else if (reviewEntries.length > 0) {
+            // Only review statuses (no clear present) → keep as Review
+            finalStatus = 'R';
         } else {
             finalStatus = 'A';
         }
@@ -134,30 +139,36 @@ class AttendanceReportController {
         };
 
         // ── Upsert: ONE report per batch+date+timeSlot ──
-        const slotKey = timeSlot || '';
-        let report = await AttendanceReport.findOne({ batch, date, timeSlot: slotKey });
+        // REPLACE this block (around line: "let report = await AttendanceReport.findOne...")
+const slotKey = timeSlot || '';
+let report = await AttendanceReport.findOne({ batch, date, timeSlot: slotKey });
 
-        if (report) {
-            if (report.status === 'finalized') {
-                return res.status(409).json({ error: 'Cannot add runs to a finalized report' });
-            }
-            // Append this run into the single existing report
-            report.slotResults.push(slotResult);
-        } else {
-            report = new AttendanceReport({
-                batch, department, semester, subject, faculty, room,
-                date, timeSlot: slotKey,
-                locksemId: locksemId || null,
-                slotResults: [slotResult],
-                status: 'draft',
-            });
-        }
+if (report) {
+    if (report.status === 'finalized') {
+        return res.status(409).json({ error: 'Cannot add runs to a finalized report' });
+    }
+    // ✅ Allow appending even if status is 'live' (session is running)
+    report.slotResults.push(slotResult);
+} else {
+    report = new AttendanceReport({
+        batch, department, semester, subject, faculty, room,
+        date, timeSlot: slotKey,
+        locksemId: locksemId || null,
+        slotResults: [slotResult],
+        status: 'draft',
+    });
+}
 
-        // ── Recompute merged final report from ALL runs ──
-        report.finalReport = mergeStudentStatus(report.slotResults);
-        report.summary     = buildSummary(report.finalReport);
+// ✅ Always recompute merged final from ALL runs
+report.finalReport = mergeStudentStatus(report.slotResults);
+report.summary     = buildSummary(report.finalReport);
 
-        await report.save();
+// ✅ If report was live (session), keep it live
+if (report.status !== 'live') {
+    report.status = 'draft';
+}
+
+await report.save();
 
         res.json({
             message:     'Report saved successfully',
