@@ -69,7 +69,7 @@ app.use(
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     optionsSuccessStatus: 204,
-    allowedHeaders: "Content-Type",
+    allowedHeaders: "Content-Type, Authorization",
     credentials: true, // Set to true if you need to allow credentials (e.g., cookies)
   })
 );
