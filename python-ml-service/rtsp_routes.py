@@ -11,6 +11,7 @@ from tracemalloc import start
 
 import cv2
 import numpy as np
+from scipy.optimize import linear_sum_assignment
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
@@ -51,21 +52,40 @@ class _RTSPReader:
 
     def _run(self):
         while not self._stop.is_set():
+            # Use grab() + retrieve() instead of read() to avoid
+            # the SIGSEGV / av_read_frame crash on macOS ARM64.
+            # grab() only demuxes; retrieve() decodes — we skip
+            # decode on frames we are going to throw away anyway.
             try:
-                ret, frame = self._cap.read()
+                ret = self._cap.grab()
             except Exception as exc:
-                logger.debug("_RTSPReader._run exiting: %s", exc)
+                logger.debug("_RTSPReader._run grab exiting: %s", exc)
                 with self._lock:
                     self._ok = False
                 break
+
+            if not ret:
+                with self._lock:
+                    self._ok = False
+                break
+
+            self._n += 1
+            if self._n % self._decode_every != 0:
+                continue
+
+            try:
+                ret2, frame = self._cap.retrieve()
+            except Exception as exc:
+                logger.debug("_RTSPReader._run retrieve exiting: %s", exc)
+                with self._lock:
+                    self._ok = False
+                break
+
             with self._lock:
-                self._ok = ret
-                if ret and self._n % self._decode_every == 0:
+                self._ok = ret2
+                if ret2 and frame is not None:
                     self._frame = frame
                     self._seq  += 1
-            self._n += 1
-            if not ret:
-                break
 
     def latest(self):
         with self._lock:
@@ -73,11 +93,19 @@ class _RTSPReader:
 
     def release(self):
         self._stop.set()
+        # Wait for the reader thread to finish before releasing the
+        # capture object — avoids a use-after-free SIGSEGV on macOS.
+        self._t.join(timeout=2.0)
         self._cap.release()
 
 
 def _open_capture(rtsp_url: str) -> cv2.VideoCapture:
     url = rtsp_url if "rtsp_transport" in rtsp_url else rtsp_url + "?rtsp_transport=tcp"
+    # Force FFmpeg to use 1 decode thread — the default multi-thread
+    # decode spawns internal pthreads that race on macOS ARM64 and
+    # trigger a SIGSEGV inside av_read_frame.
+    os.environ.setdefault("OPENCV_FFMPEG_CAPTURE_OPTIONS",
+                          "threads;1|rtsp_transport;tcp")
     cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
     return cap
