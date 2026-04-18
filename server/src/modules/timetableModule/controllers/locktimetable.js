@@ -24,6 +24,14 @@ const getEnvironmentURL = require("../../../getEnvironmentURL");
 const TimetableChangeLog = require("../../../models/timetableChangeLogs");
 const TimeTable = require("../../../models/timetable");
 
+// chatbot
+const fetch = require("node-fetch");
+
+const PYTHON_API="https://timetable-backend-nochromadb.onrender.com";
+// chatbot
+
+
+
 function indexBySubjectAndSem(entries) {
   const map = {};
   for (const e of entries) {

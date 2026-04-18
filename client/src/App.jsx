@@ -207,6 +207,18 @@ import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
 import PhotoEdit from './attendancemodule/photoedit';
 
+// timetable-assistant
+import TimetableChatbot from './TimetableChatbot';
+
+// ── Show chatbot only on timetable-related pages ──────────────────
+function ChatbotWrapper() {
+  const location = useLocation();
+  const timetableRoutes = ['/timetable', '/tt'];
+  const show = timetableRoutes.some(route => location.pathname.startsWith(route));
+  return show ? <TimetableChatbot /> : null;
+}
+
+
 function App() {
   return (
     <Router>
@@ -622,7 +634,7 @@ function App() {
       {/* <Footer/> */}
       {/* </div> */}
 
-
+      <ChatbotWrapper />
 
     </Router>
   );
