@@ -39,7 +39,7 @@ class EmbeddingController {
     // POST /attendancemodule/embeddings/generate
     // Body: { batch, subject, rollNos: ['21BCE001', ...] }
     async generate(req, res) {
-        const { batch, subject, rollNos } = req.body;
+    const { batch, subject, subjectCode, sem, degree, rollNos } = req.body;
 
         if (!batch || !Array.isArray(rollNos) || rollNos.length === 0) {
             return res.status(400).json({ error: 'batch and rollNos[] are required' });
@@ -65,16 +65,21 @@ class EmbeddingController {
         const outputPath    = path.join(EMBEDDINGS_DIR, embeddingFile);
 
         let record = await StudentEmbedding.create({
-            batch,
-            subject: subject.trim(),
-            embeddingFile,
-            rollNos,
-            status: 'pending',
-            studentsTotal: rollNos.length,
-        });
+        batch,
+        degree:      (degree      || '').trim(),
+        sem:         (sem         || '').trim(),
+        subject:     subject.trim(),
+        subjectCode: (subjectCode || '').trim(),
+        embeddingFile,
+        rollNos,
+        missedRollNos: [],
+        status: 'pending',
+        studentsTotal: rollNos.length,
+});
 
         let success = 0, failed = 0;
-        const failedList = [];
+        const failedList    = [];    // keep for SSE compat
+        const missedRollNos = [];
 
         sse({ type: 'start', total: rollNos.length, batch, subject, embeddingFile });
 
@@ -85,6 +90,7 @@ class EmbeddingController {
                 sse({ type: 'student', rollNo, status: 'failed', reason: 'No ground truth folder' });
                 failed++;
                 failedList.push({ rollNo, reason: 'No ground truth folder' });
+                missedRollNos.push({ rollNo, reason: 'No ground truth folder' });
                 continue;
             }
 
@@ -111,6 +117,7 @@ class EmbeddingController {
                 sse({ type: 'student', rollNo, status: 'failed', reason: 'No photos found' });
                 failed++;
                 failedList.push({ rollNo, reason: 'No photos found' });
+                missedRollNos.push({ rollNo, reason: 'No photos found' });
                 continue;
             }
 
@@ -140,6 +147,7 @@ class EmbeddingController {
                 sse({ type: 'student', rollNo, status: 'failed', reason });
                 failed++;
                 failedList.push({ rollNo, reason });
+                missedRollNos.push({ rollNo, reason });
             }
         }
 
@@ -169,19 +177,24 @@ class EmbeddingController {
         record.status          = failed === rollNos.length ? 'failed' : 'done';
         record.studentsSuccess = success;
         record.studentsFailed  = failed;
+        record.missedRollNos   = missedRollNos;
         record.generatedAt     = new Date();
         await record.save();
 
         sse({
-            type:         'done',
+            type:          'done',
             batch,
-            subject:      subject.trim(),
+            degree:        (degree      || '').trim(),
+            sem:           (sem         || '').trim(),
+            subject:       subject.trim(),
+            subjectCode:   (subjectCode || '').trim(),
             embeddingFile,
             success,
             failed,
             failedList,
-            recordId:     record._id,
-        });
+            missedRollNos,
+            recordId:      record._id,
+});
 
         res.end();
     }

@@ -42,10 +42,12 @@ function StatusBadge({ status }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function EmbeddingGeneration() {
-    const [degree,  setDegree]  = useState('BTECH');
-    const [dept,    setDept]    = useState('');
-    const [year,    setYear]    = useState('');
-    const [subject, setSubject] = useState('');
+    const [degree,      setDegree]      = useState('BTECH');
+    const [dept,        setDept]        = useState('');
+    const [year,        setYear]        = useState('');
+    const [subject,     setSubject]     = useState('');
+    const [subjectCode, setSubjectCode] = useState('');
+    const [sem,         setSem]         = useState('');
 
     const { departments, deptLoading, deptError } = useDepartments();
 
@@ -117,6 +119,9 @@ export default function EmbeddingGeneration() {
         setRows([]);
         setRollInput('');
         setAutoLoaded(false);
+        setSubject('');
+        setSubjectCode('');
+        setSem('');
         if (batchName) loadHistory();
     }, [batchName]);
 
@@ -137,7 +142,14 @@ export default function EmbeddingGeneration() {
             const res = await fetch(`${EMB_BASE}/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ batch: batchName, subject: subject.trim(), rollNos }),
+                body: JSON.stringify({
+                batch:       batchName,
+                degree:      degree.trim(),
+                sem:         sem.trim(),
+                subject:     subject.trim(),
+                subjectCode: subjectCode.trim(),
+                rollNos,
+}),
             });
 
             if (!res.ok) {
@@ -194,7 +206,8 @@ export default function EmbeddingGeneration() {
     };
 
     const noFilters = !degree || !dept || !year;
-    const canGenerate = !running && rollNos.length > 0 && subject.trim().length > 0;
+    const canGenerate = !running && rollNos.length > 0 && subject.trim().length > 0
+    && sem.trim().length > 0 && subjectCode.trim().length > 0;
 
     return (
         <div style={styles.page}>
@@ -249,7 +262,7 @@ export default function EmbeddingGeneration() {
                             (used in the embedding file name)
                         </span>
                     </label>
-                    <input
+                   <input
                         value={subject}
                         onChange={e => setSubject(e.target.value)}
                         placeholder="e.g. Digital Electronics, Mathematics-III, VLSI Design…"
@@ -257,6 +270,31 @@ export default function EmbeddingGeneration() {
                     />
                 </div>
 
+                {/* Sem + Subject Code — side by side */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 14 }}>
+                    <div>
+                        <label style={styles.label}>
+                            Semester <span style={{ color: theme.danger }}>*</span>
+                        </label>
+                        <input
+                            value={sem}
+                            onChange={e => setSem(e.target.value)}
+                            placeholder="e.g. 6"
+                            style={styles.input}
+                        />
+                    </div>
+                    <div>
+                        <label style={styles.label}>
+                            Subject Code <span style={{ color: theme.danger }}>*</span>
+                        </label>
+                        <input
+                            value={subjectCode}
+                            onChange={e => setSubjectCode(e.target.value)}
+                            placeholder="e.g. DE401"
+                            style={styles.input}
+                        />
+                    </div>
+                </div>
                 {/* Live preview of embedding file name */}
                 {batchName && (
                     <div style={{
