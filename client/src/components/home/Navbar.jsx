@@ -8,6 +8,28 @@ import { Text, Button, Flex } from '@chakra-ui/react';
 import NavBar from '../../reviewmodule/components/NavBar';
 import DMNavbar from '../../diabeticsModule/components/DMNavbar';
 
+const PUBLIC_PATHS = [
+  '/',
+  '/forgot-password',
+  '/nirf',
+  '/login',
+  '/classrooms',
+  '/camera',
+  '/cameras',
+  '/camera/preview',
+  '/cameras/preview',
+  '/attendance/cameras',
+  '/attendance/cameras/preview',
+  '/attendance/groundtruth/rtsp',
+  '/timetable',
+  '/tt/masterdata',
+  '/tt/commonslot',
+  '/prm/register',
+  '/prm/emailverification',
+  '/404',
+  '/ml/t1',
+];
+
 export default function Navbar() {
   const [navbarOpen, setNavbarOpen] = useState(false);
 
@@ -73,24 +95,9 @@ export default function Navbar() {
     }
   };
 
-  const publicPaths = [
-    '/',
-    '/forgot-password',
-    '/nirf',
-    '/login',
-    '/classrooms',
-    '/timetable',
-    '/tt/masterdata',
-    '/tt/commonslot',
-    '/prm/register',
-    '/prm/emailverification',
-    '/404',
-    '/ml/t1',
-  ];
-
   useEffect(() => {
     const isPublicPath =
-      publicPaths.includes(location.pathname) ||
+      PUBLIC_PATHS.includes(location.pathname) ||
       location.pathname.startsWith('/services/') ||
       location.pathname.startsWith('/cm/c/') ||
       location.pathname.startsWith('/timetable/faculty/');

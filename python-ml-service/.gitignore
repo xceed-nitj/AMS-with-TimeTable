@@ -1,4 +1,6 @@
 venv/
+.venv/
+
 __pycache__/
 *.pkl
 test-data/
@@ -7,3 +9,4 @@ test-data/
 result.json
 *.pyc
 .insightface/
+.tmp/

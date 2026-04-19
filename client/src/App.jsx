@@ -206,6 +206,8 @@ import ModelPerformance from './attendancemodule/modelperformance';
 import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
 import PhotoEdit from './attendancemodule/photoedit';
+import Camera from './attendancemodule/camera';
+import CameraPreview from './attendancemodule/cameraPreview';
 
 function App() {
   return (
@@ -232,6 +234,10 @@ function App() {
         <Route path="/superadmin" element={<SuperAdminPage />} />
         <Route path="/usermanagement" element={<UserManagement />} />
         <Route path="/fileupload" element={<FileUpload />} />
+        <Route path="/camera" element={<Camera />} />
+        <Route path="/cameras" element={<Camera />} />
+        <Route path="/camera/preview" element={<CameraPreview />} />
+        <Route path="/cameras/preview" element={<CameraPreview />} />
 
         {/* <Route path="/timetable" element={<Timetable />} /> */}
 
@@ -616,6 +622,8 @@ function App() {
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
           <Route path="reports" element={<AttendanceReport />} />
+          <Route path="cameras" element={<Camera />} />
+          <Route path="cameras/preview" element={<CameraPreview />} />
         </Route>
 
       </Routes>
