@@ -337,10 +337,37 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
         student_id = parts[0]
         name       = parts[1].replace("_", " ") if len(parts) > 1 else folder
         fp         = os.path.join(req.photos_dir, folder)
+        info_path  = os.path.join(fp, "_info.json")
+
+        # ── NEW: load cached mean_embedding if available ─────────────────────
+        loaded_from_cache = False
+        if req.use_cached_embeddings and os.path.exists(info_path):
+            try:
+                with open(info_path) as fi:
+                    _info = json.load(fi)
+                cached_emb = _info.get("mean_embedding")
+                if cached_emb:
+                    mean_emb = np.array(cached_emb, dtype=np.float32)
+                    norm     = np.linalg.norm(mean_emb)
+                    if norm > 0:
+                        mean_emb = mean_emb / norm
+                        db[student_id] = {
+                            "name":       name,
+                            "embedding":  mean_emb,
+                            "num_photos": len(_info.get("embedding_files", [])),
+                        }
+                        logger.info(f"✓ {student_id}: loaded cached embedding")
+                        loaded_from_cache = True
+            except Exception as e:
+                logger.warning(f"⚠ {student_id}: could not load cache ({e}), falling back")
+
+        if loaded_from_cache:
+            continue                          # ← inside the for loop ✓
+        # ── end NEW ──────────────────────────────────────────────────────────
+
         all_photos = [f for f in os.listdir(fp)
                       if f.lower().endswith((".jpg", ".jpeg", ".png"))]
 
-        info_path = os.path.join(fp, "_info.json")
         if os.path.exists(info_path):
             try:
                 with open(info_path) as fi:
@@ -363,19 +390,15 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
             if not faces:
                 continue
             face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
-            aligned = get_aligned_face(state.face_app, img, face)
-            if aligned is None:
-                continue
-            quality = compute_face_quality(aligned)
-            if quality < 80:
-                continue
             det_score = float(getattr(face, 'det_score', 1.0))
+            if det_score < 0.5:
+                continue
             emb  = face.embedding
             norm = np.linalg.norm(emb)
             if norm == 0:
                 continue
             embeddings.append(emb / norm)
-            emb_weights.append(max(quality * det_score, 0.01))
+            emb_weights.append(max(det_score, 0.01))
 
         if embeddings:
             weights  = np.array(emb_weights, dtype=np.float32)
@@ -384,6 +407,19 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
             norm     = np.linalg.norm(mean_emb)
             mean_emb = mean_emb / norm
             db[student_id] = {"name": name, "embedding": mean_emb, "num_photos": len(embeddings)}
+
+            # ── NEW: persist mean_embedding into _info.json for next run ─────
+            try:
+                info = {}
+                if os.path.exists(info_path):
+                    with open(info_path) as fi:
+                        info = json.load(fi)
+                info["mean_embedding"] = mean_emb.tolist()
+                with open(info_path, "w") as fi:
+                    json.dump(info, fi, indent=2)
+            except Exception as e:
+                logger.warning(f"⚠ {student_id}: could not save embedding cache ({e})")
+            # ── end NEW ──────────────────────────────────────────────────────
         else:
             logger.warning(f"✗ {student_id}: no faces detected")
 
@@ -392,7 +428,6 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
 
     state.embeddings_db = db
     return {"status": "done", "students_enrolled": len(db), "output_path": req.output_path}
-
 
 # ─── Build Embeddings (streaming subprocess) ──────────────────────────────────
 
@@ -524,7 +559,7 @@ def update_student_embedding(req: UpdateEmbeddingRequest):
 
     with open(DB_PATH, "wb") as f:
         pickle.dump(state.embeddings_db, f)
-
+    
     info_path = os.path.join(student_dir, "_info.json")
     info      = {}
     if os.path.exists(info_path):
@@ -537,6 +572,7 @@ def update_student_embedding(req: UpdateEmbeddingRequest):
     all_imgs = [f for f in os.listdir(student_dir) if f.lower().endswith(IMG_EXTS)]
     info["embedding_files"] = [f for f in req.embedding_files if f in all_imgs]
     info["backup_files"]    = [f for f in all_imgs if f not in req.embedding_files][:5]
+    info["mean_embedding"]  = mean_emb.tolist()   # NEW: cache for fast re-build
     with open(info_path, "w") as fi:
         json.dump(info, fi, indent=2)
 

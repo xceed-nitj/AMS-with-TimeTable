@@ -7,5 +7,6 @@ router.use('/roll-assign',  require("./rollAssignRoutes"));
 router.use('/flags',        require("./flagRoutes"));
 router.use('/reports',      require("./attendanceReportRoutes"));
 router.use('/cameras',      require("./cameraRoutes"));
+router.use('/embeddings',   require("./embeddingRouter"));
 
 module.exports = router;

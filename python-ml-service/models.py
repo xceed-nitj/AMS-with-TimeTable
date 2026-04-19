@@ -34,6 +34,7 @@ class CompareRequest(BaseModel):
 class BuildEmbeddingsRequest(BaseModel):
     photos_dir: str = CLIENT_GROUND_TRUTH
     output_path: str = DB_PATH
+    use_cached_embeddings: bool = True  # NEW: skip re-processing if embedding already exists
 
 
 class ExtractFacesRequest(BaseModel):
