@@ -3,11 +3,18 @@ const mongoose = require('mongoose');
 const { commonFields, updateTimestamps } = require('../commonFields');
 
 const studentEmbeddingSchema = new mongoose.Schema({
-    batch:           { type: String, required: true },   // e.g. "BTECH_ECE_2023"
-    subject:         { type: String, default: '' },      // e.g. "Digital_Electronics"
-    embeddingFile:   { type: String, default: null },    // e.g. "BTECH_ECE_2023_Digital_Electronics.pkl"
-    rollNos:         { type: [String], default: [] },    // all roll nos included in this generation
-    photoFiles:      { type: [String], default: [] },    // GT photos used across all students
+    batch:           { type: String, required: true },
+    degree:          { type: String, default: '' },
+    sem:             { type: String, default: '' },
+    subject:         { type: String, default: '' },
+    subjectCode:     { type: String, default: '' },
+    embeddingFile:   { type: String, default: null },
+    rollNos:         { type: [String], default: [] },
+    missedRollNos: [{
+        rollNo:  { type: String },
+        reason:  { type: String },
+    }],
+    photoFiles:      { type: [String], default: [] },
     generatedAt:     { type: Date, default: Date.now },
     status:          { type: String, enum: ['pending', 'done', 'failed'], default: 'pending' },
     error:           { type: String, default: null },
