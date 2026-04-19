@@ -247,6 +247,21 @@ class CameraController {
                 ml: result.data,
             });
         } catch (error) {
+            if (error.code === 'ECONNREFUSED') {
+                return res.status(502).json({
+                    error: `ML preview service is not reachable at ${ML_URL}. Start python-ml-service on port 8500, then try again.`,
+                });
+            }
+            if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+                return res.status(504).json({
+                    error: 'ML preview service timed out while starting the RTSP preview. Check whether the camera IP/port is reachable from this machine.',
+                });
+            }
+            if (error.response?.data) {
+                return res.status(error.response.status || 500).json({
+                    error: error.response.data.detail || error.response.data.error || error.response.data.message || error.message,
+                });
+            }
             return sendKnownError(res, error);
         }
     }

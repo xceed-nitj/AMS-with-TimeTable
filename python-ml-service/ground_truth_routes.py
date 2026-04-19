@@ -628,39 +628,57 @@ _preview_lock       = threading.Lock()
 _preview_cap        = None
 _preview_thread     = None
 _preview_stop_event = threading.Event()
+_preview_last_error = None
 
 
-def _preview_reader(rtsp_url: str, stop_event: threading.Event):
+def _preview_reader(rtsp_url: str, stop_event: threading.Event, first_frame_event: threading.Event):
     """Background thread — continuously reads latest frame from RTSP."""
-    global _preview_frame, _preview_cap
+    global _preview_frame, _preview_cap, _preview_last_error
 
     os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
         "rtsp_transport;tcp|buffer_size;1048576|max_delay;500000"
     )
-    cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
-    _preview_cap = cap
+    cap = None
+    try:
+        cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+        _preview_cap = cap
 
-    while not stop_event.is_set():
-        ret, frame = cap.read()
-        if not ret:
-            break
+        if not cap.isOpened():
+            _preview_last_error = "Could not open RTSP stream (camera unreachable or credentials invalid)."
+            first_frame_event.set()
+            return
 
-        # Enforce minimum 960px width for preview quality
-        h, w = frame.shape[:2]
-        if w < 960:
-            scale = 960 / w
-            frame = cv2.resize(frame, (960, int(h * scale)),
-                               interpolation=cv2.INTER_LANCZOS4)
+        while not stop_event.is_set():
+            ret, frame = cap.read()
+            if not ret:
+                if not first_frame_event.is_set():
+                    _preview_last_error = "RTSP stream opened but no frames were received."
+                    first_frame_event.set()
+                break
 
-        with _preview_lock:
-            _preview_frame = frame.copy()
+            # Enforce minimum 960px width for preview quality
+            h, w = frame.shape[:2]
+            if w < 960:
+                scale = 960 / w
+                frame = cv2.resize(frame, (960, int(h * scale)),
+                                   interpolation=cv2.INTER_LANCZOS4)
 
-    cap.release()
+            with _preview_lock:
+                _preview_frame = frame.copy()
+
+            if not first_frame_event.is_set():
+                first_frame_event.set()
+    except Exception as exc:
+        _preview_last_error = f"Preview reader crashed: {exc}"
+        first_frame_event.set()
+    finally:
+        if cap is not None:
+            cap.release()
 
 
 @router.post("/start-preview")
 def start_preview(body: dict = Body(...)):
-    global _preview_thread, _preview_stop_event
+    global _preview_thread, _preview_stop_event, _preview_frame, _preview_last_error
 
     rtsp_url = body.get("rtspUrl")
     if not rtsp_url:
@@ -671,13 +689,32 @@ def start_preview(body: dict = Body(...)):
     if _preview_thread and _preview_thread.is_alive():
         _preview_thread.join(timeout=3)
 
+    with _preview_lock:
+        _preview_frame = None
+    _preview_last_error = None
+
     _preview_stop_event = threading.Event()
+    first_frame_event = threading.Event()
     _preview_thread = threading.Thread(
         target=_preview_reader,
-        args=(rtsp_url, _preview_stop_event),
+        args=(rtsp_url, _preview_stop_event, first_frame_event),
         daemon=True,
     )
     _preview_thread.start()
+
+    # Do not report success until at least one frame is available.
+    if not first_frame_event.wait(timeout=8):
+        _preview_stop_event.set()
+        if _preview_thread and _preview_thread.is_alive():
+            _preview_thread.join(timeout=2)
+        raise HTTPException(status_code=504, detail="Timed out waiting for first frame from RTSP stream.")
+
+    with _preview_lock:
+        has_frame = _preview_frame is not None
+    if not has_frame:
+        detail = _preview_last_error or "RTSP stream did not produce frames."
+        raise HTTPException(status_code=502, detail=detail)
+
     return {"status": "ok"}
 
 
@@ -685,13 +722,24 @@ def start_preview(body: dict = Body(...)):
 def rtsp_preview(quality: int = 92, scale: float = 1.0):
     """MJPEG stream endpoint — one persistent connection per session."""
 
+    import time
+    ready_deadline = time.time() + 5
+    while True:
+        with _preview_lock:
+            ready = _preview_frame is not None
+        if ready:
+            break
+        if time.time() > ready_deadline:
+            raise HTTPException(status_code=503, detail=_preview_last_error or "Preview stream is not ready.")
+        time.sleep(0.05)
+
     def frame_generator():
         while True:
             with _preview_lock:
                 frame = _preview_frame.copy() if _preview_frame is not None else None
 
             if frame is None:
-                import time; time.sleep(0.05)
+                time.sleep(0.05)
                 continue
 
             # Optional downscale for bandwidth (scale param from frontend)
@@ -712,7 +760,7 @@ def rtsp_preview(quality: int = 92, scale: float = 1.0):
                 + b"\r\n"
             )
 
-            import time; time.sleep(1 / 15)  # 15 fps preview
+            time.sleep(1 / 15)  # 15 fps preview
 
     return StreamingResponse(
         frame_generator(),
