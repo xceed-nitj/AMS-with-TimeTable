@@ -16,14 +16,15 @@ function ensureDir(p) {
 ensureDir(EMBEDDINGS_DIR);
 
 // Sanitise subject so it can be used safely as part of a filename.
-// "Digital Electronics (3rd Yr)" → "Digital_Electronics_3rd_Yr"
+// "Digital Electronics (3rd Yr)" -> "Digital_Electronics_3rd_Yr"
 function safeSubject(raw) {
-    return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+    return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/, '');
 }
 
 class EmbeddingController {
 
     // GET /attendancemodule/embeddings/status/:batch
+    // Legacy: look up history by batch name
     async getStatus(req, res) {
         try {
             const { batch } = req.params;
@@ -36,18 +37,35 @@ class EmbeddingController {
         }
     }
 
-    // POST /attendancemodule/embeddings/generate
-    // Body: { batch, subject, rollNos: ['21BCE001', ...] }
-    async generate(req, res) {
-    const { batch, subject, subjectCode, sem, degree, rollNos } = req.body;
-
-        if (!batch || !Array.isArray(rollNos) || rollNos.length === 0) {
-            return res.status(400).json({ error: 'batch and rollNos[] are required' });
+    // GET /attendancemodule/embeddings/status-by-file/:fileBase
+    // New: look up history by embedding file base name (sem_Subject)
+    // e.g.  /status-by-file/6_Digital_Electronics
+    async getStatusByFile(req, res) {
+        try {
+            const fileBase = req.params.fileBase; // e.g. "6_Digital_Electronics"
+            const records = await StudentEmbedding.find({
+                embeddingFile: { $regex: fileBase, $options: 'i' }
+            }).sort({ generatedAt: -1 }).lean();
+            res.json({ fileBase, records });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
         }
+    }
 
-        // ── Subject is now REQUIRED for a meaningful filename ──────────────
+    // POST /attendancemodule/embeddings/generate
+    // Body: { sem, subject, dept, rollNos[] }
+    // File name format: {sem}_{subjectSafe}.pkl  e.g. 6_Digital_Electronics.pkl
+    async generate(req, res) {
+        const { sem, subject, dept, rollNos } = req.body;
+
+        if (!Array.isArray(rollNos) || rollNos.length === 0) {
+            return res.status(400).json({ error: 'rollNos[] is required and must not be empty' });
+        }
         if (!subject || !subject.trim()) {
             return res.status(400).json({ error: 'subject is required' });
+        }
+        if (!sem || !sem.toString().trim()) {
+            return res.status(400).json({ error: 'sem is required' });
         }
 
         // SSE so frontend can show per-student progress live
@@ -56,37 +74,65 @@ class EmbeddingController {
         res.setHeader('Connection', 'keep-alive');
         res.flushHeaders();
 
-        const sse = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+        const sse = (data) => {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+            if (typeof res.flush === 'function') res.flush();
+        };
 
-        // ── Per-subject embedding file name ────────────────────────────────
-        // e.g.  BTECH_ECE_2023_Digital_Electronics.pkl
+        // New file name format: {sem}_{subjectSafe}.pkl
+        const semSafe       = sem.toString().trim();
         const subjectSafe   = safeSubject(subject);
-        const embeddingFile = `${batch}_${subjectSafe}.pkl`;
+        const embeddingFile = `${semSafe}_${subjectSafe}.pkl`;
         const outputPath    = path.join(EMBEDDINGS_DIR, embeddingFile);
 
+        // For GT lookup we still need a batch-like folder path.
+        // GT photos are stored under ground_truth/{batch}/{rollNo}/
+        // Since we no longer get batch from frontend, we try to find the student
+        // by scanning for any batch folder that contains the roll number.
+        // Alternatively, if dept is supplied we can narrow down. For now we scan.
+
         let record = await StudentEmbedding.create({
-        batch,
-        degree:      (degree      || '').trim(),
-        sem:         (sem         || '').trim(),
-        subject:     subject.trim(),
-        subjectCode: (subjectCode || '').trim(),
-        embeddingFile,
-        rollNos,
-        missedRollNos: [],
-        status: 'pending',
-        studentsTotal: rollNos.length,
-});
+            sem:          semSafe,
+            subject:      subject.trim(),
+            dept:         (dept || '').trim().toUpperCase(),
+            embeddingFile,
+            rollNos,
+            missedRollNos: [],
+            status: 'pending',
+            studentsTotal: rollNos.length,
+        });
 
         let success = 0, failed = 0;
-        const failedList    = [];    // keep for SSE compat
+        const failedList    = [];
         const missedRollNos = [];
+        const processedRollNos = []; // roll nos that actually got embeddings updated
 
-        sse({ type: 'start', total: rollNos.length, batch, subject, embeddingFile });
+        sse({ type: 'start', total: rollNos.length, sem: semSafe, subject: subject.trim(), embeddingFile });
+
+        // Helper: find the GT batch folder that contains a given roll number.
+        // Checks every subfolder under ground_truth/ for a matching roll dir.
+        // If dept is supplied, prefers batch folders whose name contains dept.
+        async function findStudentDir(rollNo) {
+            if (!fs.existsSync(GROUND_TRUTH_DIR)) return null;
+            const batchFolders = await fsPromises.readdir(GROUND_TRUTH_DIR);
+            // Prefer dept-matching batches first
+            const sorted = dept
+                ? [
+                    ...batchFolders.filter(b => b.toUpperCase().includes(dept.toUpperCase())),
+                    ...batchFolders.filter(b => !b.toUpperCase().includes(dept.toUpperCase())),
+                  ]
+                : batchFolders;
+            for (const batch of sorted) {
+                const candidate = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+                if (fs.existsSync(candidate)) return { dir: candidate, batch };
+            }
+            return null;
+        }
 
         for (const rollNo of rollNos) {
-            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+            const found = await findStudentDir(rollNo);
 
-            if (!fs.existsSync(studentDir)) {
+            if (!found) {
                 sse({ type: 'student', rollNo, status: 'failed', reason: 'No ground truth folder' });
                 failed++;
                 failedList.push({ rollNo, reason: 'No ground truth folder' });
@@ -94,6 +140,7 @@ class EmbeddingController {
                 continue;
             }
 
+            const { dir: studentDir, batch: batchName } = found;
             const infoPath = path.join(studentDir, '_info.json');
             let embeddingFiles = [];
 
@@ -127,7 +174,7 @@ class EmbeddingController {
                 const mlRes = await axios.post(
                     `${ML_SERVICE_URL}/update-student-embedding`,
                     {
-                        batch_name:      batch,
+                        batch_name:      batchName,
                         roll_no:         rollNo,
                         embedding_files: embeddingFiles,
                     },
@@ -142,6 +189,7 @@ class EmbeddingController {
                     embeddingFile,
                 });
                 success++;
+                processedRollNos.push({ rollNo, batch: batchName });
             } catch (err) {
                 const reason = err.response?.data?.detail || err.message || 'ML error';
                 sse({ type: 'student', rollNo, status: 'failed', reason });
@@ -151,27 +199,36 @@ class EmbeddingController {
             }
         }
 
-        // ── Build a subject-specific .pkl from only these roll numbers ──────
-        sse({ type: 'stage', message: `Building subject embedding file: ${embeddingFile}…` });
+        // Build a subject-specific .pkl from only these roll numbers.
+        // We need a batchDir to pass to the ML service. Use the most common batch
+        // found among processed students, or GROUND_TRUTH_DIR itself.
+        sse({ type: 'stage', message: `Building subject embedding file: ${embeddingFile}...` });
 
         try {
-            const batchDir = path.join(GROUND_TRUTH_DIR, batch);
+            // Collect unique batch names from processed students
+            const batchCounts = {};
+            for (const { batch } of processedRollNos) {
+                batchCounts[batch] = (batchCounts[batch] || 0) + 1;
+            }
+            const primaryBatch = Object.keys(batchCounts).sort((a, b) => batchCounts[b] - batchCounts[a])[0];
+            const batchDir = primaryBatch
+                ? path.join(GROUND_TRUTH_DIR, primaryBatch)
+                : GROUND_TRUTH_DIR;
 
             await axios.post(
                 `${ML_SERVICE_URL}/build-embeddings-sync`,
                 {
                     photos_dir:  batchDir,
                     output_path: outputPath,
-                    roll_nos:    rollNos,   // ML service filters to only these students
+                    roll_nos:    rollNos,
                 },
                 { timeout: 300000 }
             );
 
             await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
-
-            sse({ type: 'stage', message: 'Subject embeddings reloaded into ML service ✓' });
+            sse({ type: 'stage', message: 'Subject embeddings reloaded into ML service.' });
         } catch (err) {
-            sse({ type: 'warning', message: `Embedding build failed: ${err.message}` });
+            sse({ type: 'warning', message: `Embedding build step failed: ${err.message}` });
         }
 
         record.status          = failed === rollNos.length ? 'failed' : 'done';
@@ -183,18 +240,16 @@ class EmbeddingController {
 
         sse({
             type:          'done',
-            batch,
-            degree:        (degree      || '').trim(),
-            sem:           (sem         || '').trim(),
+            sem:           semSafe,
             subject:       subject.trim(),
-            subjectCode:   (subjectCode || '').trim(),
+            dept:          (dept || '').trim(),
             embeddingFile,
             success,
             failed,
             failedList,
             missedRollNos,
             recordId:      record._id,
-});
+        });
 
         res.end();
     }

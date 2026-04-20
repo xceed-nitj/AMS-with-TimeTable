@@ -42,14 +42,38 @@ function StatusBadge({ status }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function EmbeddingGeneration() {
-    const [degree,      setDegree]      = useState('BTECH');
-    const [dept,        setDept]        = useState('');
-    const [year,        setYear]        = useState('');
-    const [subject,     setSubject]     = useState('');
-    const [subjectCode, setSubjectCode] = useState('');
-    const [sem,         setSem]         = useState('');
+    const [dept,     setDept]     = useState('');
+    const [sem,      setSem]      = useState('');
+    const [subject,  setSubject]  = useState('');
+    const [sems,     setSems]     = useState([]);
+    const [subjects, setSubjects] = useState([]);
+    const [semsLoading,     setSemsLoading]     = useState(false);
+    const [subjectsLoading, setSubjectsLoading] = useState(false);
 
     const { departments, deptLoading, deptError } = useDepartments();
+    // Fetch sems when dept changes
+useEffect(() => {
+    setSem(''); setSubject(''); setSems([]); setSubjects([]);
+    if (!dept) return;
+    setSemsLoading(true);
+    fetch(`${apiUrl}/timetablemodule/lock/sems-by-dept?dept=${encodeURIComponent(dept)}`)
+        .then(r => r.json())
+        .then(data => setSems(data.sems || []))
+        .catch(() => {})
+        .finally(() => setSemsLoading(false));
+}, [dept]);
+
+// Fetch subjects when dept+sem changes
+useEffect(() => {
+    setSubject(''); setSubjects([]);
+    if (!dept || !sem) return;
+    setSubjectsLoading(true);
+    fetch(`${apiUrl}/timetablemodule/lock/subjects-by-dept-sem?dept=${encodeURIComponent(dept)}&sem=${encodeURIComponent(sem)}`)
+        .then(r => r.json())
+        .then(data => setSubjects(data.subjects || []))
+        .catch(() => {})
+        .finally(() => setSubjectsLoading(false));
+}, [dept, sem]);
 
     const [rollInput,  setRollInput]  = useState('');
     const [rollNos,    setRollNos]    = useState([]);
@@ -64,15 +88,13 @@ export default function EmbeddingGeneration() {
 
     const [toast, setToast] = useState(null);
 
-    const batchName = degree && dept && year
-        ? `${degree}_${dept}_${year}`.toUpperCase()
-        : null;
+    // batchName is no longer used for file naming — kept only for GT history lookup fallback
+    const batchName = dept ? `BTECH_${dept}_2023` : null;
 
-    // Preview what the embedding file will be named BEFORE generating
-    const subjectSafe      = subject.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const previewFileName  = batchName && subjectSafe
-        ? `${batchName}_${subjectSafe}.pkl`
-        : null;
+    // File naming: {sem}_{subjectSafe}.pkl  e.g. 6_Digital_Electronics.pkl
+    const subjectSafe     = subject.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const previewFileName = sem && subjectSafe ? `${sem}_${subjectSafe}.pkl` : null;
+
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -119,9 +141,8 @@ export default function EmbeddingGeneration() {
         setRows([]);
         setRollInput('');
         setAutoLoaded(false);
-        setSubject('');
-        setSubjectCode('');
-        setSem('');
+        // NOTE: do NOT reset sem/subject here — the dept useEffect above already
+        // does that, and resetting here causes a race that wipes the sems dropdown.
         if (batchName) loadHistory();
     }, [batchName]);
 
@@ -143,13 +164,11 @@ export default function EmbeddingGeneration() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                batch:       batchName,
-                degree:      degree.trim(),
-                sem:         sem.trim(),
-                subject:     subject.trim(),
-                subjectCode: subjectCode.trim(),
-                rollNos,
-}),
+                    sem:     sem.trim(),
+                    subject: subject.trim(),
+                    dept:    dept.trim(),
+                    rollNos,
+                }),
             });
 
             if (!res.ok) {
@@ -205,9 +224,8 @@ export default function EmbeddingGeneration() {
         setRunning(false);
     };
 
-    const noFilters = !degree || !dept || !year;
-    const canGenerate = !running && rollNos.length > 0 && subject.trim().length > 0
-    && sem.trim().length > 0 && subjectCode.trim().length > 0;
+    const noFilters = !dept;
+    const canGenerate = !running && rollNos.length > 0 && subject.trim().length > 0 && sem.trim().length > 0;
 
     return (
         <div style={styles.page}>
@@ -224,99 +242,49 @@ export default function EmbeddingGeneration() {
 
             {/* Filter card */}
             <div style={{ ...styles.card, marginBottom: 24, padding: '18px 24px' }}>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 2fr 1fr',
-                    gap: 16, alignItems: 'end', marginBottom: 16,
-                }}>
-                    <div>
-                        <label style={styles.label}>Degree</label>
-                        <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
-                            {DEGREES.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label style={styles.label}>Department</label>
-                        <select value={dept} onChange={e => setDept(e.target.value)}
-                            style={styles.select} disabled={deptLoading}>
-                            <option value="">
-                                {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select department…'}
-                            </option>
-                            {departments.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label style={styles.label}>Year</label>
-                        <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>
-                            <option value="">Select year…</option>
-                            {YEARS.map(y => <option key={y}>{y}</option>)}
-                        </select>
-                    </div>
-                </div>
+    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 16, alignItems: 'end', marginBottom: 16 }}>
+        {/* Dept */}
+        <div>
+            <label style={styles.label}>Department</label>
+            <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
+                <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select department…'}</option>
+                {departments.map(d => <option key={d}>{d}</option>)}
+            </select>
+        </div>
+        {/* Sem — auto-populated from LockSem */}
+        <div>
+            <label style={styles.label}>Semester <span style={{ color: theme.danger }}>*</span></label>
+            <select value={sem} onChange={e => setSem(e.target.value)} style={styles.select} disabled={!dept || semsLoading}>
+                <option value="">{semsLoading ? 'Loading…' : !dept ? 'Select dept first' : sems.length ? 'Select sem…' : 'No sems found'}</option>
+                {sems.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+        </div>
+        {/* Subject — auto-populated from LockSem */}
+        <div>
+            <label style={styles.label}>Subject <span style={{ color: theme.danger }}>*</span>
+                <span style={{ color: theme.textMuted, fontWeight: 400, marginLeft: 6, textTransform: 'none' }}>
+                    (used in the .pkl file name)
+                </span>
+            </label>
+            <select value={subject} onChange={e => setSubject(e.target.value)} style={styles.select} disabled={!sem || subjectsLoading}>
+                <option value="">{subjectsLoading ? 'Loading…' : !sem ? 'Select sem first' : subjects.length ? 'Select subject…' : 'No subjects found'}</option>
+                {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+        </div>
+    </div>
 
-                {/* Subject — full width, required */}
-                <div>
-                    <label style={styles.label}>
-                        Subject <span style={{ color: theme.danger }}>*</span>
-                        <span style={{ color: theme.textMuted, fontWeight: 400, marginLeft: 6, textTransform: 'none' }}>
-                            (used in the embedding file name)
-                        </span>
-                    </label>
-                   <input
-                        value={subject}
-                        onChange={e => setSubject(e.target.value)}
-                        placeholder="e.g. Digital Electronics, Mathematics-III, VLSI Design…"
-                        style={styles.input}
-                    />
-                </div>
-
-                {/* Sem + Subject Code — side by side */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 14 }}>
-                    <div>
-                        <label style={styles.label}>
-                            Semester <span style={{ color: theme.danger }}>*</span>
-                        </label>
-                        <input
-                            value={sem}
-                            onChange={e => setSem(e.target.value)}
-                            placeholder="e.g. 6"
-                            style={styles.input}
-                        />
-                    </div>
-                    <div>
-                        <label style={styles.label}>
-                            Subject Code <span style={{ color: theme.danger }}>*</span>
-                        </label>
-                        <input
-                            value={subjectCode}
-                            onChange={e => setSubjectCode(e.target.value)}
-                            placeholder="e.g. DE401"
-                            style={styles.input}
-                        />
-                    </div>
-                </div>
-                {/* Live preview of embedding file name */}
-                {batchName && (
-                    <div style={{
-                        marginTop: 14, padding: '10px 14px',
-                        background: theme.bg, border: `1px solid ${theme.border}`,
-                        borderRadius: 6, fontSize: '12px',
-                        display: 'flex', gap: 24, flexWrap: 'wrap',
-                    }}>
-                        <span>
-                            <span style={{ color: theme.textMuted }}>Batch: </span>
-                            <span style={{ fontFamily: theme.fontMono, color: theme.accent }}>{batchName}</span>
-                        </span>
-                        <span>
-                            <span style={{ color: theme.textMuted }}>Embedding file: </span>
-                            {previewFileName
-                                ? <span style={{ fontFamily: theme.fontMono, color: theme.success }}>{previewFileName}</span>
-                                : <span style={{ color: theme.danger }}>enter subject to see filename</span>
-                            }
-                        </span>
-                    </div>
-                )}
-            </div>
+    {/* Preview */}
+    {dept && (
+        <div style={{ marginTop: 8, padding: '10px 14px', background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: '12px', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            <span><span style={{ color: theme.textMuted }}>Dept: </span><span style={{ fontFamily: theme.fontMono, color: theme.accent }}>{dept}</span></span>
+            <span><span style={{ color: theme.textMuted }}>Embedding file: </span>
+                {previewFileName
+                    ? <span style={{ fontFamily: theme.fontMono, color: theme.success }}>{previewFileName}</span>
+                    : <span style={{ color: theme.danger }}>select sem + subject to see filename</span>}
+            </span>
+        </div>
+    )}
+</div>
 
             {noFilters ? (
                 <div style={{ textAlign: 'center', padding: '60px 0', color: theme.textMuted, fontSize: '14px' }}>
