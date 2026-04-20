@@ -74,6 +74,8 @@ class EmbeddingController {
         res.setHeader('Connection', 'keep-alive');
         res.flushHeaders();
 
+        try {   // ← ADD THIS
+
         const sse = (data) => {
             res.write(`data: ${JSON.stringify(data)}\n\n`);
             if (typeof res.flush === 'function') res.flush();
@@ -169,6 +171,12 @@ class EmbeddingController {
             }
 
             sse({ type: 'student', rollNo, status: 'processing', photoCount: embeddingFiles.length });
+            
+             // ── HEARTBEAT START ──────────────────────────────────────────────
+    const heartbeat = setInterval(() => {
+        try { res.write(': heartbeat\n\n'); if (typeof res.flush === 'function') res.flush(); } catch (_) {}
+    }, 15000);
+            
 
             try {
                 const mlRes = await axios.post(
@@ -178,7 +186,7 @@ class EmbeddingController {
                         roll_no:         rollNo,
                         embedding_files: embeddingFiles,
                     },
-                    { timeout: 60000 }
+                    { timeout: 120000 }
                 );
 
                 sse({
@@ -196,15 +204,20 @@ class EmbeddingController {
                 failed++;
                 failedList.push({ rollNo, reason });
                 missedRollNos.push({ rollNo, reason });
-            }
+            } finally {
+    clearInterval(heartbeat);  // ← THIS WAS MISSING
+}
         }
 
         // Build a subject-specific .pkl from only these roll numbers.
         // We need a batchDir to pass to the ML service. Use the most common batch
         // found among processed students, or GROUND_TRUTH_DIR itself.
-        sse({ type: 'stage', message: `Building subject embedding file: ${embeddingFile}...` });
+        if (processedRollNos.length === 0) {
+    sse({ type: 'warning', message: 'No students processed successfully — skipping embedding build.' });
+} else {
+sse({ type: 'stage', message: `Building subject embedding file: ${embeddingFile}...` });
 
-        try {
+try {
             // Collect unique batch names from processed students
             const batchCounts = {};
             for (const { batch } of processedRollNos) {
@@ -222,7 +235,7 @@ class EmbeddingController {
                     output_path: outputPath,
                     roll_nos:    rollNos,
                 },
-                { timeout: 300000 }
+                { timeout: 900000 }
             );
 
             await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
@@ -230,6 +243,7 @@ class EmbeddingController {
         } catch (err) {
             sse({ type: 'warning', message: `Embedding build step failed: ${err.message}` });
         }
+}
 
         record.status          = failed === rollNos.length ? 'failed' : 'done';
         record.studentsSuccess = success;
@@ -252,6 +266,13 @@ class EmbeddingController {
         });
 
         res.end();
+    }catch (fatalErr) {   // ← ADD FROM HERE
+            console.error('FATAL in generate():', fatalErr);
+            try {
+                res.write(`data: ${JSON.stringify({ type: 'error', message: fatalErr.message })}\n\n`);
+                res.end();
+            } catch (_) {}
+        }   // ← TO HERE
     }
 
     // DELETE /attendancemodule/embeddings/:id

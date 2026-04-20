@@ -11,6 +11,9 @@ const rateLimit = require("express-rate-limit");
 const v1router = require("./routes");
 const { startAutoScheduler } = require('./modules/attendanceModule/controllers/autoAttendanceScheduler');
 
+process.on('uncaughtException',  (err) => console.error('UNCAUGHT EXCEPTION:', err));
+process.on('unhandledRejection', (err) => console.error('UNHANDLED REJECTION:', err));
+
 dotenv.config({ path: "../.env" });
 
 console.log("ENV CHECK:", {
@@ -172,6 +175,7 @@ mongoose
     const PORT = process.env.PORT || 8010;
     const server = app.listen(PORT, () => {
       console.log(`Server started on port ${PORT}`);
+      
       // ── Auto Attendance Scheduler ─────────────────────────────
       const { startAutoScheduler } = require('./modules/attendanceModule/controllers/autoAttendanceScheduler');
       const ROOM_CAMERA_MAP = {
@@ -193,6 +197,9 @@ mongoose
       console.log('[AutoScheduler] Scheduler started for rooms:', Object.keys(ROOM_CAMERA_MAP));
 
     });
+    server.setTimeout(600000); // 10 min — prevents Node killing long SSE connections
+    server.keepAliveTimeout = 620000;
+    server.headersTimeout   = 620000;
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         console.error(`\n❌ Port ${PORT} is already in use.`);

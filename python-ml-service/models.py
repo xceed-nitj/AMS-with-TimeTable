@@ -34,6 +34,8 @@ class CompareRequest(BaseModel):
 class BuildEmbeddingsRequest(BaseModel):
     photos_dir: str = CLIENT_GROUND_TRUTH
     output_path: str = DB_PATH
+    roll_nos: List[str] = [] 
+
     use_cached_embeddings: bool = True  # NEW: skip re-processing if embedding already exists
 
 

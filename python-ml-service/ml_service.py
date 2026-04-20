@@ -145,6 +145,6 @@ def reload_embeddings_ep():
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    uvicorn.run("ml_service:app", host="0.0.0.0", port=8500, reload=False, timeout_keep_alive=120,   # keep SSE connection alive 2 minutes
+    uvicorn.run("ml_service:app", host="0.0.0.0", port=8500, reload=False, timeout_keep_alive=300,   # keep SSE connection alive 2 minutes
     ws_ping_interval=30,
     ws_ping_timeout=120)
