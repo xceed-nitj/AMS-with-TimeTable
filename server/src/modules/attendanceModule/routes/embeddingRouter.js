@@ -34,6 +34,14 @@ router.post('/generate', async (req, res) => {
         }
     }
 });
+// GET  /attendancemodule/embeddings/list-files
+router.get('/list-files', async (req, res) => {
+    try { await ctrl.listFiles(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /attendancemodule/embeddings/upload-pkl  (multipart)
+router.post('/upload-pkl', ctrl.uploadPkl());
 
 // DELETE /attendancemodule/embeddings/:id
 router.delete('/:id', async (req, res) => {

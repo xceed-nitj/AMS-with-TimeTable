@@ -207,6 +207,8 @@ import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
 import PhotoEdit from './attendancemodule/photoedit';
 import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
+import Camera from './attendancemodule/camera';
+import CameraPreview from './attendancemodule/cameraPreview';
 function App() {
   return (
     <Router>
