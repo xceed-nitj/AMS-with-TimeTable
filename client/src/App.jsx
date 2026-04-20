@@ -4,6 +4,7 @@ import {
   Route,
   RouterProvider,
 } from 'react-router-dom';
+
 import Lottie from 'lottie-react';
 import Timetable from './timetableadmin/timetable';
 import Timetable2 from './timetableadmin/timetable2.jsx';
@@ -234,6 +235,10 @@ function App() {
         <Route path="/superadmin" element={<SuperAdminPage />} />
         <Route path="/usermanagement" element={<UserManagement />} />
         <Route path="/fileupload" element={<FileUpload />} />
+        <Route path="/camera" element={<Camera />} />
+        <Route path="/cameras" element={<Camera />} />
+        <Route path="/camera/preview" element={<CameraPreview />} />
+        <Route path="/cameras/preview" element={<CameraPreview />} />
 
         {/* <Route path="/timetable" element={<Timetable />} /> */}
 
