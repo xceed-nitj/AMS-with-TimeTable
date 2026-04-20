@@ -136,10 +136,22 @@ def test_detection():
         ]
     }
 
+from pydantic import BaseModel
+from typing import Optional
+
+class ReloadEmbeddingsRequest(BaseModel):
+    pkl_path: Optional[str] = None
+
 @app.post("/reload-embeddings")
-def reload_embeddings_ep():
-    load_embeddings()
-    return {"status": "ok", "students_enrolled": len(state.embeddings_db)}
+def reload_embeddings_ep(req: ReloadEmbeddingsRequest = ReloadEmbeddingsRequest()):
+    if req.pkl_path and os.path.exists(req.pkl_path):
+        import pickle
+        with open(req.pkl_path, "rb") as f:
+            state.embeddings_db = pickle.load(f)
+        logger.info(f"Loaded subject embeddings from {req.pkl_path}: {len(state.embeddings_db)} students.")
+    else:
+        load_embeddings()  # loads default embeddings_db.pkl
+    return {"status": "ok", "students_enrolled": len(state.embeddings_db), "source": req.pkl_path or DB_PATH}
 
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
