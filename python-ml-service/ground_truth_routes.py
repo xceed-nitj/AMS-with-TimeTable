@@ -759,8 +759,8 @@ def rtsp_preview(quality: int = 92, scale: float = 1.0):
                                    (int(w * scale), int(h * scale)),
                                    interpolation=cv2.INTER_AREA)
 
-            # High-quality JPEG encode — quality param from frontend
-            encode_params = [cv2.IMWRITE_JPEG_QUALITY, min(max(quality, 50), 95)]
+            # JPEG encode quality from frontend. Wider range makes quality changes easier to notice.
+            encode_params = [cv2.IMWRITE_JPEG_QUALITY, min(max(quality, 20), 95)]
             _, buf = cv2.imencode('.jpg', frame, encode_params)
 
             yield (
