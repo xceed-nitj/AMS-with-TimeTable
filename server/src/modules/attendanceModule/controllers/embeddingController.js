@@ -5,6 +5,7 @@ const fsPromises = require('fs').promises;
 const axios      = require('axios');
 
 const StudentEmbedding = require('../../../models/attendanceModule/studentEmbedding');
+const Student          = require('../../../models/student');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
@@ -21,7 +22,89 @@ function safeSubject(raw) {
     return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/, '');
 }
 
+// ── Resolve which embedding .pkl to use for a given sem+subject ──────────────
+// Priority:
+//   1. Subject-specific file  →  embeddings/{sem}_{subjectSafe}.pkl
+//   2. Any existing .pkl whose name starts with {sem}_  (broadest fallback)
+//   3. null  (no file found — ML service uses whatever is already loaded)
+function resolveEmbeddingFile(sem, subject) {
+    const semSafe      = (sem || '').toString().trim();
+    const subjectSafe  = safeSubject(subject);
+    const specificFile = `${semSafe}_${subjectSafe}.pkl`;
+    const specificPath = path.join(EMBEDDINGS_DIR, specificFile);
+
+    // 1. Subject-specific
+    if (fs.existsSync(specificPath)) {
+        return { file: specificFile, path: specificPath, type: 'subject' };
+    }
+
+    // 2. Fallback: any sem-prefixed .pkl (e.g. 6_all.pkl, 6_CSE.pkl …)
+    if (fs.existsSync(EMBEDDINGS_DIR)) {
+        const candidates = fs.readdirSync(EMBEDDINGS_DIR)
+            .filter(f => f.startsWith(`${semSafe}_`) && f.endsWith('.pkl'))
+            .sort();
+        if (candidates.length > 0) {
+            return {
+                file: candidates[0],
+                path: path.join(EMBEDDINGS_DIR, candidates[0]),
+                type: 'fallback',
+            };
+        }
+    }
+
+    return null;
+}
+
 class EmbeddingController {
+
+    // GET /attendancemodule/embeddings/enrolled-roll-nos/:sem/:dept
+    // Returns roll nos of students enrolled in a given sem+dept from the Student collection.
+    async getEnrolledRollNos(req, res) {
+        try {
+            const { sem, dept } = req.params;
+            if (!sem) return res.status(400).json({ error: 'sem is required' });
+
+            const filter = { sem: Number(sem) || sem };
+            if (dept && dept.toUpperCase() !== 'ALL') {
+                filter.dept = { $regex: new RegExp(dept, 'i') };
+            }
+
+            const students = await Student.find(filter).select('rollNo -_id').lean();
+            const rollNos  = students.map(s => s.rollNo).filter(Boolean);
+
+            res.json({ sem, dept: dept || 'ALL', rollNos, total: rollNos.length });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // GET /attendancemodule/embeddings/resolve-file/:sem/:subject
+    // Returns which .pkl will be used for attendance recognition for this subject.
+    // Frontend can call this before starting attendance to inform the operator.
+    async resolveFile(req, res) {
+        try {
+            const { sem, subject } = req.params;
+            const resolved = resolveEmbeddingFile(sem, subject);
+            if (!resolved) {
+                return res.json({
+                    found: false,
+                    type: null,
+                    file: null,
+                    message: 'No embedding file found. ML service will use currently loaded embeddings.',
+                });
+            }
+            res.json({
+                found: true,
+                type:    resolved.type,   // 'subject' | 'fallback'
+                file:    resolved.file,
+                message: resolved.type === 'subject'
+                    ? `Subject-specific embeddings found: ${resolved.file}`
+                    : `No subject-specific file found. Using fallback: ${resolved.file}`,
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
 
     // GET /attendancemodule/embeddings/status/:batch
     // Legacy: look up history by batch name
@@ -152,19 +235,35 @@ uploadPkl() {
 }
 
     // POST /attendancemodule/embeddings/generate
-    // Body: { sem, subject, dept, rollNos[] }
+    // Body: { sem, subject, dept, rollNos[]? }
+    // rollNos is now OPTIONAL. If omitted, roll nos are auto-fetched from Student
+    // collection by sem+dept. If dept is also omitted, ALL students in that sem are used.
     // File name format: {sem}_{subjectSafe}.pkl  e.g. 6_Digital_Electronics.pkl
     async generate(req, res) {
-        const { sem, subject, dept, rollNos } = req.body;
+        let { sem, subject, dept, rollNos } = req.body;
 
-        if (!Array.isArray(rollNos) || rollNos.length === 0) {
-            return res.status(400).json({ error: 'rollNos[] is required and must not be empty' });
-        }
         if (!subject || !subject.trim()) {
             return res.status(400).json({ error: 'subject is required' });
         }
         if (!sem || !sem.toString().trim()) {
             return res.status(400).json({ error: 'sem is required' });
+        }
+
+        // ── Auto-fetch roll nos if not supplied ───────────────────────────────
+        if (!Array.isArray(rollNos) || rollNos.length === 0) {
+            const filter = { sem: Number(sem) || sem };
+            if (dept && dept.toUpperCase() !== 'ALL') {
+                filter.dept = { $regex: new RegExp(dept, 'i') };
+            }
+            const students = await Student.find(filter).select('rollNo -_id').lean();
+            rollNos = students.map(s => s.rollNo).filter(Boolean);
+
+            if (rollNos.length === 0) {
+                return res.status(400).json({
+                    error: `No students found for sem=${sem}${dept ? ', dept=' + dept : ''}. ` +
+                           `Either pass rollNos[] explicitly or make sure students are registered.`,
+                });
+            }
         }
 
         // SSE so frontend can show per-student progress live

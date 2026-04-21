@@ -5,6 +5,27 @@ const EmbeddingController = require('../controllers/embeddingController');
 
 const ctrl = new EmbeddingController();
 
+// GET  /attendancemodule/embeddings/enrolled-roll-nos/:sem/:dept
+// Returns roll nos enrolled for a sem+dept (used by frontend before generating embeddings)
+router.get('/enrolled-roll-nos/:sem/:dept', async (req, res) => {
+    try { await ctrl.getEnrolledRollNos(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET  /attendancemodule/embeddings/enrolled-roll-nos/:sem  (no dept filter)
+router.get('/enrolled-roll-nos/:sem', async (req, res) => {
+    req.params.dept = 'ALL';
+    try { await ctrl.getEnrolledRollNos(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET  /attendancemodule/embeddings/resolve-file/:sem/:subject
+// Tells frontend which .pkl will be used for a subject (subject-specific or fallback)
+router.get('/resolve-file/:sem/:subject', async (req, res) => {
+    try { await ctrl.resolveFile(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET  /attendancemodule/embeddings/status/:batch
 // Legacy: history by batch name
 router.get('/status/:batch', async (req, res) => {
