@@ -5,6 +5,7 @@ const fsPromises = require('fs').promises;
 const axios      = require('axios');
 
 const StudentEmbedding = require('../../../models/attendanceModule/studentEmbedding');
+const Student          = require('../../../models/student');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
@@ -16,14 +17,97 @@ function ensureDir(p) {
 ensureDir(EMBEDDINGS_DIR);
 
 // Sanitise subject so it can be used safely as part of a filename.
-// "Digital Electronics (3rd Yr)" → "Digital_Electronics_3rd_Yr"
+// "Digital Electronics (3rd Yr)" -> "Digital_Electronics_3rd_Yr"
 function safeSubject(raw) {
-    return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+    return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/, '');
+}
+
+// ── Resolve which embedding .pkl to use for a given sem+subject ──────────────
+// Priority:
+//   1. Subject-specific file  →  embeddings/{sem}_{subjectSafe}.pkl
+//   2. Any existing .pkl whose name starts with {sem}_  (broadest fallback)
+//   3. null  (no file found — ML service uses whatever is already loaded)
+function resolveEmbeddingFile(sem, subject) {
+    const semSafe      = (sem || '').toString().trim();
+    const subjectSafe  = safeSubject(subject);
+    const specificFile = `${semSafe}_${subjectSafe}.pkl`;
+    const specificPath = path.join(EMBEDDINGS_DIR, specificFile);
+
+    // 1. Subject-specific
+    if (fs.existsSync(specificPath)) {
+        return { file: specificFile, path: specificPath, type: 'subject' };
+    }
+
+    // 2. Fallback: any sem-prefixed .pkl (e.g. 6_all.pkl, 6_CSE.pkl …)
+    if (fs.existsSync(EMBEDDINGS_DIR)) {
+        const candidates = fs.readdirSync(EMBEDDINGS_DIR)
+            .filter(f => f.startsWith(`${semSafe}_`) && f.endsWith('.pkl'))
+            .sort();
+        if (candidates.length > 0) {
+            return {
+                file: candidates[0],
+                path: path.join(EMBEDDINGS_DIR, candidates[0]),
+                type: 'fallback',
+            };
+        }
+    }
+
+    return null;
 }
 
 class EmbeddingController {
 
+    // GET /attendancemodule/embeddings/enrolled-roll-nos/:sem/:dept
+    // Returns roll nos of students enrolled in a given sem+dept from the Student collection.
+    async getEnrolledRollNos(req, res) {
+        try {
+            const { sem, dept } = req.params;
+            if (!sem) return res.status(400).json({ error: 'sem is required' });
+
+            const filter = { sem: Number(sem) || sem };
+            if (dept && dept.toUpperCase() !== 'ALL') {
+                filter.dept = { $regex: new RegExp(dept, 'i') };
+            }
+
+            const students = await Student.find(filter).select('rollNo -_id').lean();
+            const rollNos  = students.map(s => s.rollNo).filter(Boolean);
+
+            res.json({ sem, dept: dept || 'ALL', rollNos, total: rollNos.length });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // GET /attendancemodule/embeddings/resolve-file/:sem/:subject
+    // Returns which .pkl will be used for attendance recognition for this subject.
+    // Frontend can call this before starting attendance to inform the operator.
+    async resolveFile(req, res) {
+        try {
+            const { sem, subject } = req.params;
+            const resolved = resolveEmbeddingFile(sem, subject);
+            if (!resolved) {
+                return res.json({
+                    found: false,
+                    type: null,
+                    file: null,
+                    message: 'No embedding file found. ML service will use currently loaded embeddings.',
+                });
+            }
+            res.json({
+                found: true,
+                type:    resolved.type,   // 'subject' | 'fallback'
+                file:    resolved.file,
+                message: resolved.type === 'subject'
+                    ? `Subject-specific embeddings found: ${resolved.file}`
+                    : `No subject-specific file found. Using fallback: ${resolved.file}`,
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     // GET /attendancemodule/embeddings/status/:batch
+    // Legacy: look up history by batch name
     async getStatus(req, res) {
         try {
             const { batch } = req.params;
@@ -36,18 +120,150 @@ class EmbeddingController {
         }
     }
 
-    // POST /attendancemodule/embeddings/generate
-    // Body: { batch, subject, rollNos: ['21BCE001', ...] }
-    async generate(req, res) {
-    const { batch, subject, subjectCode, sem, degree, rollNos } = req.body;
-
-        if (!batch || !Array.isArray(rollNos) || rollNos.length === 0) {
-            return res.status(400).json({ error: 'batch and rollNos[] are required' });
+    // GET /attendancemodule/embeddings/status-by-file/:fileBase
+    // New: look up history by embedding file base name (sem_Subject)
+    // e.g.  /status-by-file/6_Digital_Electronics
+    async getStatusByFile(req, res) {
+        try {
+            const fileBase = req.params.fileBase; // e.g. "6_Digital_Electronics"
+            const records = await StudentEmbedding.find({
+                embeddingFile: { $regex: fileBase, $options: 'i' }
+            }).sort({ generatedAt: -1 }).lean();
+            res.json({ fileBase, records });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
         }
+    }
 
-        // ── Subject is now REQUIRED for a meaningful filename ──────────────
+    // GET /attendancemodule/embeddings/list-files
+async listFiles(req, res) {
+    try {
+        const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
+        const files = await fsPromises.readdir(EMBEDDINGS_DIR);
+        const pklFiles = files.filter(f => f.endsWith('.pkl'));
+
+        const enriched = await Promise.all(pklFiles.map(async (filename) => {
+            const stat = await fsPromises.stat(path.join(EMBEDDINGS_DIR, filename));
+            const rec  = await StudentEmbedding.findOne({ embeddingFile: filename })
+                               .sort({ generatedAt: -1 }).lean();
+            return {
+                filename,
+                sizeKB:        Math.round(stat.size / 1024),
+                modifiedAt:    stat.mtime,
+                sem:           rec?.sem             || null,
+                subject:       rec?.subject         || null,
+                dept:          rec?.dept            || null,
+                rollNos:       rec?.rollNos         || [],
+                missedCount:   rec?.missedRollNos?.length || 0,
+                missedRollNos: rec?.missedRollNos   || [],
+                recordId:      rec?._id             || null,
+                generatedAt:   rec?.generatedAt     || stat.mtime,
+                uploadedDirect: rec?.uploadedDirect || false,
+            };
+        }));
+
+        res.json({ files: enriched });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+// POST /attendancemodule/embeddings/upload-pkl
+// Multipart form: file (.pkl), sem, subject, dept, rollNos (JSON or comma-sep string)
+uploadPkl() {
+    const multer = require('multer');
+    const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
+    const upload = multer({
+        storage: multer.diskStorage({
+            destination: (_req, _file, cb) => cb(null, EMBEDDINGS_DIR),
+            filename:    (_req, file, cb) => cb(null, file.originalname),
+        }),
+        fileFilter: (_req, file, cb) => {
+            if (file.originalname.endsWith('.pkl')) cb(null, true);
+            else cb(new Error('Only .pkl files are allowed'));
+        },
+        limits: { fileSize: 500 * 1024 * 1024 },
+    }).single('file');
+
+    return async (req, res) => {
+        upload(req, res, async (multerErr) => {
+            if (multerErr) return res.status(400).json({ error: multerErr.message });
+            if (!req.file) return res.status(400).json({ error: 'No .pkl file uploaded' });
+
+            const { sem, subject, dept } = req.body;
+            if (!sem || !subject) {
+                require('fs').unlink(req.file.path, () => {});
+                return res.status(400).json({ error: 'sem and subject are required' });
+            }
+
+            // Parse rollNos
+            let rollNos = [];
+            try {
+                const raw = req.body.rollNos || '[]';
+                rollNos = Array.isArray(raw) ? raw
+                    : raw.startsWith('[') ? JSON.parse(raw)
+                    : raw.split(/[\n,;\s]+/).map(r => r.trim().toUpperCase()).filter(Boolean);
+            } catch (_) {}
+
+            // Rename to canonical {sem}_{safeSubject}.pkl
+            const canonicalFile = `${sem.trim()}_${safeSubject(subject)}.pkl`;
+            let finalFile = req.file.originalname;
+            if (finalFile !== canonicalFile) {
+                const newPath = path.join(EMBEDDINGS_DIR, canonicalFile);
+                try { await fsPromises.rename(req.file.path, newPath); finalFile = canonicalFile; } catch (_) {}
+            }
+
+            try {
+                const record = await StudentEmbedding.create({
+                    sem: sem.trim(), subject: subject.trim(),
+                    dept: (dept || '').trim().toUpperCase(),
+                    embeddingFile: finalFile, rollNos,
+                    missedRollNos: [], uploadedDirect: true,
+                    status: 'done', studentsTotal: rollNos.length,
+                    studentsSuccess: rollNos.length, studentsFailed: 0,
+                    generatedAt: new Date(),
+                });
+
+                try { await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 }); } catch (_) {}
+
+                res.json({ ok: true, embeddingFile: finalFile, rollNosCount: rollNos.length, recordId: record._id });
+            } catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+    };
+}
+
+    // POST /attendancemodule/embeddings/generate
+    // Body: { sem, subject, dept, rollNos[]? }
+    // rollNos is now OPTIONAL. If omitted, roll nos are auto-fetched from Student
+    // collection by sem+dept. If dept is also omitted, ALL students in that sem are used.
+    // File name format: {sem}_{subjectSafe}.pkl  e.g. 6_Digital_Electronics.pkl
+    async generate(req, res) {
+        let { sem, subject, dept, rollNos } = req.body;
+
         if (!subject || !subject.trim()) {
             return res.status(400).json({ error: 'subject is required' });
+        }
+        if (!sem || !sem.toString().trim()) {
+            return res.status(400).json({ error: 'sem is required' });
+        }
+
+        // ── Auto-fetch roll nos if not supplied ───────────────────────────────
+        if (!Array.isArray(rollNos) || rollNos.length === 0) {
+            const filter = { sem: Number(sem) || sem };
+            if (dept && dept.toUpperCase() !== 'ALL') {
+                filter.dept = { $regex: new RegExp(dept, 'i') };
+            }
+            const students = await Student.find(filter).select('rollNo -_id').lean();
+            rollNos = students.map(s => s.rollNo).filter(Boolean);
+
+            if (rollNos.length === 0) {
+                return res.status(400).json({
+                    error: `No students found for sem=${sem}${dept ? ', dept=' + dept : ''}. ` +
+                           `Either pass rollNos[] explicitly or make sure students are registered.`,
+                });
+            }
         }
 
         // SSE so frontend can show per-student progress live
@@ -56,37 +272,67 @@ class EmbeddingController {
         res.setHeader('Connection', 'keep-alive');
         res.flushHeaders();
 
-        const sse = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+        try {   // ← ADD THIS
 
-        // ── Per-subject embedding file name ────────────────────────────────
-        // e.g.  BTECH_ECE_2023_Digital_Electronics.pkl
+        const sse = (data) => {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+            if (typeof res.flush === 'function') res.flush();
+        };
+
+        // New file name format: {sem}_{subjectSafe}.pkl
+        const semSafe       = sem.toString().trim();
         const subjectSafe   = safeSubject(subject);
-        const embeddingFile = `${batch}_${subjectSafe}.pkl`;
+        const embeddingFile = `${semSafe}_${subjectSafe}.pkl`;
         const outputPath    = path.join(EMBEDDINGS_DIR, embeddingFile);
 
+        // For GT lookup we still need a batch-like folder path.
+        // GT photos are stored under ground_truth/{batch}/{rollNo}/
+        // Since we no longer get batch from frontend, we try to find the student
+        // by scanning for any batch folder that contains the roll number.
+        // Alternatively, if dept is supplied we can narrow down. For now we scan.
+
         let record = await StudentEmbedding.create({
-        batch,
-        degree:      (degree      || '').trim(),
-        sem:         (sem         || '').trim(),
-        subject:     subject.trim(),
-        subjectCode: (subjectCode || '').trim(),
-        embeddingFile,
-        rollNos,
-        missedRollNos: [],
-        status: 'pending',
-        studentsTotal: rollNos.length,
-});
+            sem:          semSafe,
+            subject:      subject.trim(),
+            dept:         (dept || '').trim().toUpperCase(),
+            embeddingFile,
+            rollNos,
+            missedRollNos: [],
+            status: 'pending',
+            studentsTotal: rollNos.length,
+        });
 
         let success = 0, failed = 0;
-        const failedList    = [];    // keep for SSE compat
+        const failedList    = [];
         const missedRollNos = [];
+        const processedRollNos = []; // roll nos that actually got embeddings updated
 
-        sse({ type: 'start', total: rollNos.length, batch, subject, embeddingFile });
+        sse({ type: 'start', total: rollNos.length, sem: semSafe, subject: subject.trim(), embeddingFile });
+
+        // Helper: find the GT batch folder that contains a given roll number.
+        // Checks every subfolder under ground_truth/ for a matching roll dir.
+        // If dept is supplied, prefers batch folders whose name contains dept.
+        async function findStudentDir(rollNo) {
+            if (!fs.existsSync(GROUND_TRUTH_DIR)) return null;
+            const batchFolders = await fsPromises.readdir(GROUND_TRUTH_DIR);
+            // Prefer dept-matching batches first
+            const sorted = dept
+                ? [
+                    ...batchFolders.filter(b => b.toUpperCase().includes(dept.toUpperCase())),
+                    ...batchFolders.filter(b => !b.toUpperCase().includes(dept.toUpperCase())),
+                  ]
+                : batchFolders;
+            for (const batch of sorted) {
+                const candidate = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+                if (fs.existsSync(candidate)) return { dir: candidate, batch };
+            }
+            return null;
+        }
 
         for (const rollNo of rollNos) {
-            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+            const found = await findStudentDir(rollNo);
 
-            if (!fs.existsSync(studentDir)) {
+            if (!found) {
                 sse({ type: 'student', rollNo, status: 'failed', reason: 'No ground truth folder' });
                 failed++;
                 failedList.push({ rollNo, reason: 'No ground truth folder' });
@@ -94,6 +340,7 @@ class EmbeddingController {
                 continue;
             }
 
+            const { dir: studentDir, batch: batchName } = found;
             const infoPath = path.join(studentDir, '_info.json');
             let embeddingFiles = [];
 
@@ -122,16 +369,22 @@ class EmbeddingController {
             }
 
             sse({ type: 'student', rollNo, status: 'processing', photoCount: embeddingFiles.length });
+            
+             // ── HEARTBEAT START ──────────────────────────────────────────────
+    const heartbeat = setInterval(() => {
+        try { res.write(': heartbeat\n\n'); if (typeof res.flush === 'function') res.flush(); } catch (_) {}
+    }, 15000);
+            
 
             try {
                 const mlRes = await axios.post(
                     `${ML_SERVICE_URL}/update-student-embedding`,
                     {
-                        batch_name:      batch,
+                        batch_name:      batchName,
                         roll_no:         rollNo,
                         embedding_files: embeddingFiles,
                     },
-                    { timeout: 60000 }
+                    { timeout: 120000 }
                 );
 
                 sse({
@@ -142,37 +395,53 @@ class EmbeddingController {
                     embeddingFile,
                 });
                 success++;
+                processedRollNos.push({ rollNo, batch: batchName });
             } catch (err) {
                 const reason = err.response?.data?.detail || err.message || 'ML error';
                 sse({ type: 'student', rollNo, status: 'failed', reason });
                 failed++;
                 failedList.push({ rollNo, reason });
                 missedRollNos.push({ rollNo, reason });
-            }
+            } finally {
+    clearInterval(heartbeat);  // ← THIS WAS MISSING
+}
         }
 
-        // ── Build a subject-specific .pkl from only these roll numbers ──────
-        sse({ type: 'stage', message: `Building subject embedding file: ${embeddingFile}…` });
+        // Build a subject-specific .pkl from only these roll numbers.
+        // We need a batchDir to pass to the ML service. Use the most common batch
+        // found among processed students, or GROUND_TRUTH_DIR itself.
+        if (processedRollNos.length === 0) {
+    sse({ type: 'warning', message: 'No students processed successfully — skipping embedding build.' });
+} else {
+sse({ type: 'stage', message: `Building subject embedding file: ${embeddingFile}...` });
 
-        try {
-            const batchDir = path.join(GROUND_TRUTH_DIR, batch);
+try {
+            // Collect unique batch names from processed students
+            const batchCounts = {};
+            for (const { batch } of processedRollNos) {
+                batchCounts[batch] = (batchCounts[batch] || 0) + 1;
+            }
+            const primaryBatch = Object.keys(batchCounts).sort((a, b) => batchCounts[b] - batchCounts[a])[0];
+            const batchDir = primaryBatch
+                ? path.join(GROUND_TRUTH_DIR, primaryBatch)
+                : GROUND_TRUTH_DIR;
 
             await axios.post(
                 `${ML_SERVICE_URL}/build-embeddings-sync`,
                 {
                     photos_dir:  batchDir,
                     output_path: outputPath,
-                    roll_nos:    rollNos,   // ML service filters to only these students
+                    roll_nos:    rollNos,
                 },
-                { timeout: 300000 }
+                { timeout: 900000 }
             );
 
             await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
-
-            sse({ type: 'stage', message: 'Subject embeddings reloaded into ML service ✓' });
+            sse({ type: 'stage', message: 'Subject embeddings reloaded into ML service.' });
         } catch (err) {
-            sse({ type: 'warning', message: `Embedding build failed: ${err.message}` });
+            sse({ type: 'warning', message: `Embedding build step failed: ${err.message}` });
         }
+}
 
         record.status          = failed === rollNos.length ? 'failed' : 'done';
         record.studentsSuccess = success;
@@ -183,20 +452,25 @@ class EmbeddingController {
 
         sse({
             type:          'done',
-            batch,
-            degree:        (degree      || '').trim(),
-            sem:           (sem         || '').trim(),
+            sem:           semSafe,
             subject:       subject.trim(),
-            subjectCode:   (subjectCode || '').trim(),
+            dept:          (dept || '').trim(),
             embeddingFile,
             success,
             failed,
             failedList,
             missedRollNos,
             recordId:      record._id,
-});
+        });
 
         res.end();
+    }catch (fatalErr) {   // ← ADD FROM HERE
+            console.error('FATAL in generate():', fatalErr);
+            try {
+                res.write(`data: ${JSON.stringify({ type: 'error', message: fatalErr.message })}\n\n`);
+                res.end();
+            } catch (_) {}
+        }   // ← TO HERE
     }
 
     // DELETE /attendancemodule/embeddings/:id

@@ -666,25 +666,53 @@ class GroundTruthController {
                 });
             }
 
-            // ── STEP 4 : auto-build embeddings if ML service has none loaded ─
-            try {
-                const health = await axios.get(`${ML_SERVICE_URL}/health`, { timeout: 5000 });
-                if ((health.data.students_enrolled || 0) === 0) {
-                    const batchDir = path.join(GROUND_TRUTH_DIR, batch);
-                    if (fs.existsSync(batchDir)) {
-                        console.log(`[runAttendance] Building embeddings for "${batch}"...`);
-                        await axios.post(`${ML_SERVICE_URL}/build-embeddings-sync`, {
-                            photos_dir:  batchDir,
-                            output_path: path.join(EMBEDDINGS_DIR, `${batch}.pkl`),
-                        }, { timeout: 180000 });
-                    } else {
-                        console.warn(`[runAttendance] Folder does not exist: ${batchDir}`);
-                    }
-                    await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
-                }
-            } catch (e) {
-                console.warn('[runAttendance] Embedding auto-build skipped:', e.message);
+            // ── STEP 4 : load subject-specific embeddings if available, else fall back to batch ─
+try {
+    // Build the subject-specific .pkl filename — same formula as embeddingController.js
+    function safeSubjectLocal(raw) {
+        return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/, '');
+    }
+    const semSafe      = (sem || '').toString().trim();
+    const subjectSafe  = safeSubjectLocal(subject);
+    const subjectPkl   = semSafe && subjectSafe ? `${semSafe}_${subjectSafe}.pkl` : null;
+    const subjectPklPath = subjectPkl ? path.join(EMBEDDINGS_DIR, subjectPkl) : null;
+
+    const health = await axios.get(`${ML_SERVICE_URL}/health`, { timeout: 5000 });
+    const enrolledCount = health.data.students_enrolled || 0;
+
+    if (subjectPklPath && fs.existsSync(subjectPklPath)) {
+        // ── Subject-specific .pkl exists (generated via embedding page) ──
+        // Always reload it so the ML service only recognises students
+        // enrolled in THIS subject, not the entire batch.
+        console.log(`[runAttendance] Loading subject-specific embeddings: ${subjectPkl}`);
+        await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
+            pkl_path: subjectPklPath   // pass path so Python loads the right file
+        }, { timeout: 30000 });
+        console.log(`[runAttendance] Subject embeddings loaded from ${subjectPkl}`);
+
+    } else {
+        // ── No subject-specific .pkl — fall back to full batch ──
+        if (subjectPkl) {
+            console.warn(`[runAttendance] Subject pkl not found (${subjectPkl}), falling back to full batch.`);
+        }
+        if (enrolledCount === 0) {
+            const batchDir = path.join(GROUND_TRUTH_DIR, batch);
+            if (fs.existsSync(batchDir)) {
+                console.log(`[runAttendance] Building batch embeddings for "${batch}"...`);
+                await axios.post(`${ML_SERVICE_URL}/build-embeddings-sync`, {
+                    photos_dir:  batchDir,
+                    output_path: path.join(EMBEDDINGS_DIR, `${batch}.pkl`),
+                }, { timeout: 180000 });
+            } else {
+                console.warn(`[runAttendance] Folder does not exist: ${batchDir}`);
             }
+            await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
+        }
+        // If enrolledCount > 0 and no subject pkl, trust whatever is already loaded.
+    }
+} catch (e) {
+    console.warn('[runAttendance] Embedding load skipped:', e.message);
+}
 
             // ── STEP 5 : run ML face recognition ────────────────────────────
             const videoPath = videoLink.trim().replace(/^["']+|["']+$/g, '').trim();

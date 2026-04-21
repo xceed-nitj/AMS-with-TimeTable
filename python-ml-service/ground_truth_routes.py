@@ -322,7 +322,12 @@ def extract_save_ground_truth(req: ExtractSaveGTRequest):
 # ─── Build Embeddings (sync) ──────────────────────────────────────────────────
 
 @router.post("/build-embeddings-sync")
-def build_embeddings_sync(req: BuildEmbeddingsRequest):
+async def build_embeddings_sync(req: BuildEmbeddingsRequest):
+    import asyncio
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _build_embeddings_sync, req)
+
+def _build_embeddings_sync(req: BuildEmbeddingsRequest):
     if not os.path.exists(req.photos_dir):
         raise HTTPException(status_code=404, detail=f"Photos dir not found: {req.photos_dir}")
 
@@ -426,7 +431,7 @@ def build_embeddings_sync(req: BuildEmbeddingsRequest):
     with open(req.output_path, "wb") as f:
         pickle.dump(db, f)
 
-    state.embeddings_db = db
+    state.embeddings_db.update(db)
     return {"status": "done", "students_enrolled": len(db), "output_path": req.output_path}
 
 # ─── Build Embeddings (streaming subprocess) ──────────────────────────────────
@@ -496,12 +501,17 @@ def assign_rollno(req: AssignRollNoRequest):
 # ─── Update Student Embedding ─────────────────────────────────────────────────
 
 @router.post("/update-student-embedding")
-def update_student_embedding(req: UpdateEmbeddingRequest):
+async def update_student_embedding(req: UpdateEmbeddingRequest):
+    import asyncio
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _update_student_embedding_sync, req)
+
+def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
     student_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch_name, req.roll_no)
     if not os.path.isdir(student_dir):
-        raise HTTPException(status_code=404, detail=f"Student dir not found: {student_dir}")
+        raise ValueError(f"Student dir not found: {student_dir}")
     if state.face_app is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
+        raise ValueError("Model not loaded")
 
     new_embeddings = []
     new_weights    = []
@@ -539,7 +549,7 @@ def update_student_embedding(req: UpdateEmbeddingRequest):
         new_weights.append(max(quality, 0.01))
 
     if not new_embeddings:
-        raise HTTPException(status_code=400, detail=f"No faces detected. Missing: {missing}")
+        raise ValueError(f"No faces detected. Missing: {missing}")
 
     weights  = np.array(new_weights, dtype=np.float32)
     weights /= weights.sum()
