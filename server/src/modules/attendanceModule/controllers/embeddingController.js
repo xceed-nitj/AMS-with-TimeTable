@@ -52,6 +52,105 @@ class EmbeddingController {
         }
     }
 
+    // GET /attendancemodule/embeddings/list-files
+async listFiles(req, res) {
+    try {
+        const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
+        const files = await fsPromises.readdir(EMBEDDINGS_DIR);
+        const pklFiles = files.filter(f => f.endsWith('.pkl'));
+
+        const enriched = await Promise.all(pklFiles.map(async (filename) => {
+            const stat = await fsPromises.stat(path.join(EMBEDDINGS_DIR, filename));
+            const rec  = await StudentEmbedding.findOne({ embeddingFile: filename })
+                               .sort({ generatedAt: -1 }).lean();
+            return {
+                filename,
+                sizeKB:        Math.round(stat.size / 1024),
+                modifiedAt:    stat.mtime,
+                sem:           rec?.sem             || null,
+                subject:       rec?.subject         || null,
+                dept:          rec?.dept            || null,
+                rollNos:       rec?.rollNos         || [],
+                missedCount:   rec?.missedRollNos?.length || 0,
+                missedRollNos: rec?.missedRollNos   || [],
+                recordId:      rec?._id             || null,
+                generatedAt:   rec?.generatedAt     || stat.mtime,
+                uploadedDirect: rec?.uploadedDirect || false,
+            };
+        }));
+
+        res.json({ files: enriched });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+// POST /attendancemodule/embeddings/upload-pkl
+// Multipart form: file (.pkl), sem, subject, dept, rollNos (JSON or comma-sep string)
+uploadPkl() {
+    const multer = require('multer');
+    const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
+    const upload = multer({
+        storage: multer.diskStorage({
+            destination: (_req, _file, cb) => cb(null, EMBEDDINGS_DIR),
+            filename:    (_req, file, cb) => cb(null, file.originalname),
+        }),
+        fileFilter: (_req, file, cb) => {
+            if (file.originalname.endsWith('.pkl')) cb(null, true);
+            else cb(new Error('Only .pkl files are allowed'));
+        },
+        limits: { fileSize: 500 * 1024 * 1024 },
+    }).single('file');
+
+    return async (req, res) => {
+        upload(req, res, async (multerErr) => {
+            if (multerErr) return res.status(400).json({ error: multerErr.message });
+            if (!req.file) return res.status(400).json({ error: 'No .pkl file uploaded' });
+
+            const { sem, subject, dept } = req.body;
+            if (!sem || !subject) {
+                require('fs').unlink(req.file.path, () => {});
+                return res.status(400).json({ error: 'sem and subject are required' });
+            }
+
+            // Parse rollNos
+            let rollNos = [];
+            try {
+                const raw = req.body.rollNos || '[]';
+                rollNos = Array.isArray(raw) ? raw
+                    : raw.startsWith('[') ? JSON.parse(raw)
+                    : raw.split(/[\n,;\s]+/).map(r => r.trim().toUpperCase()).filter(Boolean);
+            } catch (_) {}
+
+            // Rename to canonical {sem}_{safeSubject}.pkl
+            const canonicalFile = `${sem.trim()}_${safeSubject(subject)}.pkl`;
+            let finalFile = req.file.originalname;
+            if (finalFile !== canonicalFile) {
+                const newPath = path.join(EMBEDDINGS_DIR, canonicalFile);
+                try { await fsPromises.rename(req.file.path, newPath); finalFile = canonicalFile; } catch (_) {}
+            }
+
+            try {
+                const record = await StudentEmbedding.create({
+                    sem: sem.trim(), subject: subject.trim(),
+                    dept: (dept || '').trim().toUpperCase(),
+                    embeddingFile: finalFile, rollNos,
+                    missedRollNos: [], uploadedDirect: true,
+                    status: 'done', studentsTotal: rollNos.length,
+                    studentsSuccess: rollNos.length, studentsFailed: 0,
+                    generatedAt: new Date(),
+                });
+
+                try { await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 }); } catch (_) {}
+
+                res.json({ ok: true, embeddingFile: finalFile, rollNosCount: rollNos.length, recordId: record._id });
+            } catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+    };
+}
+
     // POST /attendancemodule/embeddings/generate
     // Body: { sem, subject, dept, rollNos[] }
     // File name format: {sem}_{subjectSafe}.pkl  e.g. 6_Digital_Electronics.pkl
