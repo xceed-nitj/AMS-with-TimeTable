@@ -1,4 +1,5 @@
 const axios = require('axios');
+const net = require('net');
 const Camera = require('../../../models/attendanceModule/camera.js');
 const MasterRoom = require('../../../models/masterroom.js');
 
@@ -43,6 +44,36 @@ function normalizeRoom(value = '') {
     return String(value).trim().replace(/[\s\-.]+/g, '').toUpperCase();
 }
 
+function probeTcpReachability(host, port, timeoutMs = 1200) {
+    return new Promise((resolve) => {
+        if (!host || !Number.isFinite(Number(port))) {
+            resolve(false);
+            return;
+        }
+
+        const socket = new net.Socket();
+        let settled = false;
+
+        const finish = (online) => {
+            if (settled) return;
+            settled = true;
+            socket.destroy();
+            resolve(Boolean(online));
+        };
+
+        socket.setTimeout(timeoutMs);
+        socket.once('connect', () => finish(true));
+        socket.once('timeout', () => finish(false));
+        socket.once('error', () => finish(false));
+
+        try {
+            socket.connect(Number(port), String(host));
+        } catch (_) {
+            finish(false);
+        }
+    });
+}
+
 async function resolveBuildingForRoom(roomId) {
     if (!roomId) return null;
 
@@ -82,15 +113,44 @@ class CameraController {
 
     async listCameras(req, res) {
         try {
-            const { roomId, status, isActive } = req.query;
+            const { roomId, status, isActive, liveStatus } = req.query;
             const query = {};
+            const shouldProbeLive = String(liveStatus).toLowerCase() === 'true';
 
             if (roomId) query.roomId = String(roomId).trim().toUpperCase();
-            if (status) query.status = status;
-            if (isActive !== undefined) query.isActive = String(isActive).toLowerCase() === 'true';
 
-            const cameras = await Camera.find(query).sort({ roomId: 1, position: 1, cameraId: 1 });
-            return res.json(cameras);
+            if (!shouldProbeLive) {
+                if (status) query.status = status;
+                if (isActive !== undefined) query.isActive = String(isActive).toLowerCase() === 'true';
+            }
+
+            const cameras = await Camera.find(query).sort({ roomId: 1, position: 1, cameraId: 1 }).lean();
+
+            if (!shouldProbeLive) {
+                return res.json(cameras);
+            }
+
+            const checkedAt = new Date().toISOString();
+            const evaluated = await Promise.all(
+                cameras.map(async (camera) => {
+                    const online = await probeTcpReachability(camera.ipAddress, camera.port);
+                    return {
+                        ...camera,
+                        status: online ? 'online' : 'offline',
+                        isActive: online,
+                        availabilityCheckedAt: checkedAt,
+                    };
+                })
+            );
+
+            let filtered = evaluated;
+            if (status) filtered = filtered.filter((camera) => camera.status === status);
+            if (isActive !== undefined) {
+                const activeWanted = String(isActive).toLowerCase() === 'true';
+                filtered = filtered.filter((camera) => Boolean(camera.isActive) === activeWanted);
+            }
+
+            return res.json(filtered);
         } catch (error) {
             return sendKnownError(res, error);
         }

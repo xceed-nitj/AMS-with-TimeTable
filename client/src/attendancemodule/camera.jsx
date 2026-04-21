@@ -103,33 +103,6 @@ function StatusBadge({ status }) {
     return <span style={styles.badge(statusColor(status))}>{status || 'offline'}</span>;
 }
 
-function PageToggle({ active }) {
-    return (
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
-            <a
-                href="/camera"
-                style={{
-                    ...(active === 'data' ? styles.btnPrimary : styles.btnGhost),
-                    display: 'inline-block',
-                    textDecoration: 'none',
-                }}
-            >
-                Data Entry
-            </a>
-            <a
-                href="/camera/preview"
-                style={{
-                    ...(active === 'preview' ? styles.btnPrimary : styles.btnGhost),
-                    display: 'inline-block',
-                    textDecoration: 'none',
-                }}
-            >
-                Live Preview
-            </a>
-        </div>
-    );
-}
-
 function duplicateMessage(details) {
     if (details?.cameraId) return `Camera ID "${details.cameraId}" already exists. Choose a different Camera ID or click the saved row to update it.`;
     if (details?.roomId && details?.position) return `A camera already exists for ${details.roomId} at ${details.position}. Each room can only have one camera per position.`;
@@ -310,6 +283,7 @@ export default function Camera() {
         setLoading(true);
         try {
             const params = new URLSearchParams();
+            params.set('liveStatus', 'true');
             if (filters.roomId) params.set('roomId', filters.roomId);
             if (filters.status) params.set('status', filters.status);
             if (filters.isActive) params.set('isActive', filters.isActive);
@@ -370,8 +344,6 @@ export default function Camera() {
                 height: Number(form.resolutionHeight),
             },
             fps: Number(form.fps),
-            isActive: Boolean(form.isActive),
-            status: form.status,
         };
 
         if (!payload.pairedWith) delete payload.pairedWith;
@@ -570,9 +542,8 @@ export default function Camera() {
                         Camera Data Entry
                     </div>
                     <div style={{ color: theme.textMuted, maxWidth: 820, fontSize: 14, lineHeight: 1.7 }}>
-                        Register classroom cameras and pair the two front angles. Room, protocol, position, status and active state are controlled dropdowns; network details remain manual because every camera deployment is different.
+                        Register classroom cameras and pair the two front angles. Room, protocol and position are configured here, while status and active state are shown from backend health data.
                     </div>
-                    <PageToggle active="data" />
                 </div>
             </section>
 
@@ -683,21 +654,20 @@ export default function Camera() {
                             />
                         </Field>
 
-                        <Field label="Active State">
-                            <select
-                                value={String(form.isActive)}
-                                onChange={(e) => updateForm('isActive', e.target.value === 'true')}
-                                style={styles.select}
-                            >
-                                <option value="true">Active</option>
-                                <option value="false">Inactive</option>
-                            </select>
+                        <Field label="Active State" hint="Backend managed.">
+                            <input
+                                value={selectedCamera ? (form.isActive ? 'Active' : 'Inactive') : 'Will be set by backend'}
+                                readOnly
+                                style={styles.input}
+                            />
                         </Field>
 
-                        <Field label="Status">
-                            <select value={form.status} onChange={(e) => updateForm('status', e.target.value)} style={styles.select}>
-                                {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                            </select>
+                        <Field label="Status" hint="Backend managed.">
+                            <input
+                                value={selectedCamera ? (form.status || 'offline') : 'Will be set by backend'}
+                                readOnly
+                                style={styles.input}
+                            />
                         </Field>
                     </div>
 
@@ -731,7 +701,7 @@ export default function Camera() {
                     <div>
                         <div style={styles.heading}>Saved Cameras</div>
                         <div style={styles.subheading}>
-                            This table shows camera records already saved in the backend. Click a row to load it into the form for editing, or open its feed from the separate preview page.
+                            This table shows camera records already saved in the backend. Click a row to load it into the form for editing, or open its feed from the preview page.
                         </div>
                     </div>
                     <button type="button" onClick={fetchCameras} style={styles.btnGhost}>{loading ? 'Refreshing...' : 'Refresh'}</button>
