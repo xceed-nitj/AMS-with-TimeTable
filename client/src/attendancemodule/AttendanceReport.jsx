@@ -12,8 +12,8 @@ const ML_API     = `${apiUrl}/ml`;
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 const CAMERA_SWITCH_SEC = 30; // must match CAMERA_SWITCH_SEC in rtsp_routes.py
 // ── LT103 dual-camera preset (same as groundtruthgen_rtsp) ───────────────────
-const LT103L_URL = 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
-const LT103R_URL = 'rtsp://admin:Admin%401234%23@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
+//const LT103L_URL = 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
+//const LT103R_URL = 'rtsp://admin:Admin%401234%23@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
 const SLOT_LABELS = {
     period1: 'Period 1 — 08:30',
     period2: 'Period 2 — 09:30',
@@ -65,6 +65,7 @@ export default function AttendanceReport() {
     const camCountdownRef = useRef(null);
     const activeCamRef = useRef(null);
     const rtspUrl2Ref     = useRef('');
+   
     const [snapshots,       setSnapshots]       = useState([]);
     const [previewActive,   setPreviewActive]   = useState(false);
     const [enrolledRollNos, setEnrolledRollNos] = useState('');
@@ -88,6 +89,12 @@ export default function AttendanceReport() {
     // ── Detail ────────────────────────────────────────────────────
     const [detailReport,  setDetailReport]  = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
+
+    // ── Camera status from DB ─────────────────────────────────────────────────
+    const [cameraStatus,  setCameraStatus]  = useState(null); // null | 'ok' | 'inactive' | 'none'
+    const [cameraWarnAck, setCameraWarnAck] = useState(false);
+    const [showCameraWarn, setShowCameraWarn] = useState(false);
+    const [pendingAction,  setPendingAction]  = useState(null); // 'run' | 'session'
 
     const [toast, setToast] = useState(null);
     const showToast = (msg, type = 'success') => {
@@ -130,6 +137,43 @@ export default function AttendanceReport() {
         })();
         return () => ctrl.abort();
     }, [room, slot]);
+
+    // ── Auto-fetch camera RTSPs for the selected room from Camera model ────────
+    useEffect(() => {
+        if (!room) {
+            setRtspUrl('');
+            setRtspUrl2('');
+            rtspUrl2Ref.current = '';
+            setCameraStatus(null);
+            setCameraWarnAck(false);
+            return;
+        }
+        (async () => {
+            try {
+                const res  = await fetch(`${apiUrl}/attendancemodule/cameras?roomId=${encodeURIComponent(room)}`);
+                if (!res.ok) return;
+                const cams = await res.json();
+                const cam1 = cams.find(c => c.position === 'front-left');
+                const cam2 = cams.find(c => c.position === 'front-right');
+                if (cam1?.streamUrl) setRtspUrl(cam1.streamUrl);
+                if (cam2?.streamUrl) {
+                    setRtspUrl2(cam2.streamUrl);
+                    rtspUrl2Ref.current = cam2.streamUrl;
+                } else {
+                    setRtspUrl2('');
+                    rtspUrl2Ref.current = '';
+                }
+                const anyInactive = cams.some(c => !c.isActive || c.status === 'offline' || c.status === 'maintenance');
+                const noCameras   = cams.length === 0;
+                setCameraWarnAck(false);
+                if (noCameras)        setCameraStatus('none');
+                else if (anyInactive) setCameraStatus('inactive');
+                else                  setCameraStatus('ok');
+            } catch {
+                setCameraStatus(null);
+            }
+        })();
+    }, [room]);
 
     // ── Fetch saved reports ───────────────────────────────────────
     const fetchReports = useCallback(async () => {
@@ -196,6 +240,12 @@ if (!processing || !activeCam || !hasCam2) {
         const effectiveBatch = derivedCtx?.batch || manualBatch;
         if (!effectiveBatch) {
             showToast('Batch not found — expand "Batch override" and fill in Degree/Dept/Year', 'error');
+            return;
+        }
+        // ── Camera inactive/none warning gate ────────────────────
+        if ((cameraStatus === 'inactive' || cameraStatus === 'none') && !cameraWarnAck) {
+            setPendingAction('run');
+            setShowCameraWarn(true);
             return;
         }
 
@@ -316,6 +366,12 @@ if (ev.camera != null && ev.camera !== activeCamRef.current) {
         const effectiveBatch = derivedCtx?.batch || manualBatch;
         if (!effectiveBatch) {
             showToast('Batch not found — fill in Degree/Dept/Year', 'error');
+            return;
+        }
+        // ── Camera inactive/none warning gate ────────────────────
+        if ((cameraStatus === 'inactive' || cameraStatus === 'none') && !cameraWarnAck) {
+            setPendingAction('session');
+            setShowCameraWarn(true);
             return;
         }
 
@@ -461,6 +517,22 @@ rtspUrl2Ref.current = rtspUrl2.trim();
     return (
         <div style={styles.page}>
             <style>{cssReset}</style>
+            {/* ── Camera warning modal ── */}
+            <CameraWarningModal
+                status={showCameraWarn ? cameraStatus : null}
+                room={room}
+                onCancel={() => {
+                    setShowCameraWarn(false);
+                    setPendingAction(null);
+                }}
+                onProceed={() => {
+                    setShowCameraWarn(false);
+                    setCameraWarnAck(true);
+                    if (pendingAction === 'run')     runAttendance();
+                    if (pendingAction === 'session') startSession();
+                    setPendingAction(null);
+                }}
+            />
 
             {toast && (
                 <div style={{
@@ -746,26 +818,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                         </span>
                                     ) : 'Run Once'}
                                 </button>
-                                <button
-    onClick={() => {
-        setRtspUrl(LT103L_URL);
-        setRtspUrl2(LT103R_URL);
-        rtspUrl2Ref.current = LT103R_URL;
-    }}
-    disabled={processing}
-    style={{
-        ...styles.btnPrimary,
-        minWidth: 140,
-        background: '#1a2a1a',
-        border: `1px solid ${theme.success}`,
-        color: theme.success,
-        opacity: processing ? 0.5 : 1,
-        fontSize: '12px',
-    }}
-    title="Fill Camera 1 = LT103L, Camera 2 = LT103R"
->
-    📷 Combined L→R
-</button>
+                               
                                 <button
                                     onClick={startSession}
                                     disabled={processing || sessionActive || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
@@ -1324,6 +1377,67 @@ function StatBar({ stats, theme, styles }) {
     );
 }
 
+function CameraWarningModal({ status, room, onProceed, onCancel }) {
+    if (!status || status === 'ok') return null;
+
+    const isNone   = status === 'none';
+    const title    = isNone ? '⚠️ No Cameras Found' : '⚠️ Camera Offline / Inactive';
+    const bodyText = isNone
+        ? `No cameras are registered for room "${room}". Add cameras in Camera Management before running attendance.`
+        : `One or more cameras for room "${room}" are currently offline or inactive. The RTSP stream may fail or produce incomplete results.`;
+
+    return (
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            animation: 'fadeIn 0.2s',
+        }}>
+            <div style={{
+                background: '#12162a',
+                border: `1px solid ${isNone ? '#f87171' : '#fbbf24'}`,
+                borderRadius: 12, padding: '32px 36px',
+                maxWidth: 480, width: '90%',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+            }}>
+                <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 14,
+                    color: isNone ? '#f87171' : '#fbbf24' }}>
+                    {title}
+                </div>
+                <div style={{ fontSize: 14, color: '#9aa3bc', lineHeight: 1.7, marginBottom: 24 }}>
+                    {bodyText}
+                </div>
+                <div style={{
+                    padding: '10px 14px', borderRadius: 8, marginBottom: 24,
+                    background: isNone ? 'rgba(248,113,113,0.08)' : 'rgba(251,191,36,0.08)',
+                    border: `1px solid ${isNone ? 'rgba(248,113,113,0.3)' : 'rgba(251,191,36,0.3)'}`,
+                    fontSize: 13, fontFamily: "'IBM Plex Mono', monospace",
+                    color: isNone ? '#f87171' : '#fbbf24',
+                }}>
+                    Room: {room} &nbsp;·&nbsp; Status: {isNone ? 'No cameras registered' : 'Offline / Inactive'}
+                </div>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                    <button onClick={onCancel} style={{
+                        padding: '10px 22px', borderRadius: 6,
+                        background: 'transparent', border: '1px solid #242a45',
+                        color: '#636e8a', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                        Cancel
+                    </button>
+                    {!isNone && (
+                        <button onClick={onProceed} style={{
+                            padding: '10px 22px', borderRadius: 6,
+                            background: 'rgba(251,191,36,0.15)', border: '1px solid #fbbf24',
+                            color: '#fbbf24', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                        }}>
+                            Proceed Anyway
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
 function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
     return (
         <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
