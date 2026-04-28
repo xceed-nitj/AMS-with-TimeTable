@@ -210,6 +210,10 @@ import PhotoEdit from './attendancemodule/photoedit';
 import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
 import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
+
+import AMSDashboard        from './attendancemodule/AMSDashboard';
+import AMSLayout           from './attendancemodule/AMSLayout';
+import CameraRegistry      from './attendancemodule/camera';
 function App() {
   return (
     <Router>
@@ -613,19 +617,24 @@ function App() {
         <Route path="/ml" element={<MLDashboard />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
-        <Route path="/attendance">
-          <Route path="groundtruth/generate" element={<GroundTruthGen />} />
-          <Route path="groundtruth/assign" element={<RollAssign />} />
-          <Route path="groundtruth/flagged" element={<FlaggedAssign />} />
-          <Route path="groundtruth/edit" element={<EditGroundTruth />} />
-          <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
-          <Route path="groundtruth/photos" element={<PhotoEdit />} />
-          <Route path="embeddings" element={<EmbeddingGeneration />} />
-          <Route path="report" element={<Attendancedoc />} />
-          <Route path="model" element={<ModelPerformance />} />
-          <Route path="reports" element={<AttendanceReport />} />
-         
-        </Route>
+<Route path="/attendance" element={<AMSLayout />}>
+  <Route index element={<AMSDashboard />} />
+  <Route path="groundtruth/generate" element={<GroundTruthGen />} />
+  <Route path="groundtruth/assign"   element={<RollAssign />} />
+  <Route path="groundtruth/flagged"  element={<FlaggedAssign />} />
+  <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
+  <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
+  <Route path="groundtruth/photos"   element={<PhotoEdit />} />
+  <Route path="embeddings"           element={<EmbeddingGeneration />} />
+  <Route path="report"               element={<Attendancedoc />} />
+  <Route path="model"                element={<ModelPerformance />} />
+  <Route path="reports"              element={<AttendanceReport />} />
+</Route>
+
+{/* Camera Registry — top-level but still inside AMSLayout */}
+<Route path="/cameras" element={<AMSLayout />}>
+  <Route index element={<CameraRegistry />} />
+</Route>
 
       </Routes>
       {/* <Footer/> */}
