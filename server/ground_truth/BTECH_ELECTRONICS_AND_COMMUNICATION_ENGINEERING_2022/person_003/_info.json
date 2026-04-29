@@ -1,0 +1,22 @@
+{
+  "embedding_files": [
+    "gt_35.4s_f57.jpg",
+    "gt_2.0s_f26.jpg",
+    "gt_35.4s_f59.jpg",
+    "gt_2.0s_f23.jpg",
+    "gt_2.0s_f29.jpg"
+  ],
+  "backup_files": [
+    "gt_2.0s_f30.jpg",
+    "gt_2.0s_f28.jpg"
+  ],
+  "scores": {
+    "gt_2.0s_f26.jpg": 38.5249,
+    "gt_2.0s_f23.jpg": 33.9458,
+    "gt_2.0s_f29.jpg": 27.3132,
+    "gt_2.0s_f30.jpg": 14.7761,
+    "gt_2.0s_f28.jpg": 3.2669,
+    "gt_35.4s_f57.jpg": 42.0993,
+    "gt_35.4s_f59.jpg": 37.2343
+  }
+}
