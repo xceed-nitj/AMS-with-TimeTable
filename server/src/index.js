@@ -1,7 +1,10 @@
+const dotenv = require("dotenv");
+dotenv.config({ path: "../.env" });
+
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
-const dotenv = require("dotenv");
+
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const path = require("path");
@@ -14,7 +17,6 @@ const { startAutoScheduler } = require('./modules/attendanceModule/controllers/a
 process.on('uncaughtException',  (err) => console.error('UNCAUGHT EXCEPTION:', err));
 process.on('unhandledRejection', (err) => console.error('UNHANDLED REJECTION:', err));
 
-dotenv.config({ path: "../.env" });
 
 console.log("ENV CHECK:", {
   MONGO_URL: process.env.MONGO_URL,

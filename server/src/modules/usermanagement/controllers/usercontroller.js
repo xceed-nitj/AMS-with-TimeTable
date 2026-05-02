@@ -1,4 +1,4 @@
-require("dotenv").config(); // must be first — loads .env before any process.env reads
+// require("dotenv").config(); // must be first — loads .env before any process.env reads
 
 const User = require("../../../models/usermanagement/user");
 const bcrypt = require("bcryptjs");
