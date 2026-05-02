@@ -46,33 +46,6 @@ function StatusBadge({ status }) {
     return <span style={styles.badge(statusColor(status))}>{status || 'offline'}</span>;
 }
 
-function PageToggle({ active }) {
-    return (
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
-            <a
-                href="/camera"
-                style={{
-                    ...(active === 'data' ? styles.btnPrimary : styles.btnGhost),
-                    display: 'inline-block',
-                    textDecoration: 'none',
-                }}
-            >
-                Data Entry
-            </a>
-            <a
-                href="/camera/preview"
-                style={{
-                    ...(active === 'preview' ? styles.btnPrimary : styles.btnGhost),
-                    display: 'inline-block',
-                    textDecoration: 'none',
-                }}
-            >
-                Live Preview
-            </a>
-        </div>
-    );
-}
-
 export default function CameraPreview() {
     const [cameras, setCameras] = useState([]);
     const [selectedCamera, setSelectedCamera] = useState(null);
@@ -112,7 +85,7 @@ export default function CameraPreview() {
     const fetchCameras = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await fetchJson(CAMERA_API);
+            const data = await fetchJson(`${CAMERA_API}?liveStatus=true`);
             const list = Array.isArray(data) ? data : [];
             setCameras(list);
 
@@ -132,6 +105,11 @@ export default function CameraPreview() {
         fetchCameras();
     }, [fetchCameras]);
 
+    // Force a new MJPEG connection when quality/scale changes during an active preview.
+    useEffect(() => {
+        if (previewRunning) setPreviewKey((key) => key + 1);
+    }, [previewQuality, previewScale]);
+
     const filteredCameras = cameras.filter((camera) => {
         const needle = filter.trim().toLowerCase();
         if (!needle) return true;
@@ -141,6 +119,8 @@ export default function CameraPreview() {
             .toLowerCase()
             .includes(needle);
     });
+
+    const visualScale = Math.max(0.25, Math.min(2, Number(previewScale) || 1));
 
     const startPreview = async (camera = selectedCamera) => {
         if (!camera?._id) {
@@ -237,6 +217,13 @@ export default function CameraPreview() {
                     flex-wrap: wrap;
                     align-items: center;
                 }
+                .preview-actions-primary,
+                .preview-actions-secondary {
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    align-items: center;
+                }
                 .selection-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
@@ -268,12 +255,16 @@ export default function CameraPreview() {
                 <div style={{ color: theme.textMuted, maxWidth: 820, fontSize: 14, lineHeight: 1.7 }}>
                     Select a saved camera, start the backend preview session, and watch the proxied stream here. If a camera is missing, add it first on the data-entry page.
                 </div>
-                <PageToggle active="preview" />
             </section>
 
             <div className="preview-grid">
                 <section style={styles.card}>
-                    <div style={styles.heading}>Saved Cameras</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+                        <div style={styles.heading}>Saved Cameras</div>
+                        <button type="button" onClick={fetchCameras} disabled={loading} style={styles.btnGhost}>
+                            {loading ? 'Refreshing...' : 'Refresh Camera List'}
+                        </button>
+                    </div>
                     <div style={styles.subheading}>
                         These are the camera records stored by the data-entry page. Pick one to preview its saved stream URL.
                     </div>
@@ -390,6 +381,11 @@ export default function CameraPreview() {
                                 key={previewKey}
                                 src={`${CAMERA_API}/preview/stream?quality=${previewQuality}&scale=${previewScale}&t=${previewKey}`}
                                 alt="Camera live preview"
+                                style={{
+                                    transform: `scale(${visualScale})`,
+                                    transformOrigin: 'center center',
+                                    transition: 'transform 0.18s ease',
+                                }}
                                 onError={() => showToast('Preview stream is not available yet. Check the ML service and the camera RTSP URL.', 'warning')}
                             />
                         ) : (
@@ -408,40 +404,52 @@ export default function CameraPreview() {
                         <div>
                             <label style={styles.label}>Preview Quality</label>
                             <select value={previewQuality} onChange={(e) => setPreviewQuality(e.target.value)} style={styles.select}>
-                                <option value="70">70 - lighter</option>
-                                <option value="85">85 - balanced</option>
-                                <option value="90">90 - sharp</option>
-                                <option value="95">95 - max</option>
+                                <option value="30">30 - very low bandwidth</option>
+                                <option value="45">45 - low bandwidth</option>
+                                <option value="60">60 - balanced</option>
+                                <option value="75">75 - sharp</option>
+                                <option value="90">90 - very sharp</option>
+                                <option value="95">95 - maximum</option>
                             </select>
                         </div>
                         <div>
                             <label style={styles.label}>Preview Scale</label>
                             <select value={previewScale} onChange={(e) => setPreviewScale(e.target.value)} style={styles.select}>
+                                <option value="0.25">0.25x</option>
                                 <option value="0.5">0.5x</option>
                                 <option value="0.75">0.75x</option>
                                 <option value="1">1x</option>
+                                <option value="1.25">1.25x</option>
+                                <option value="1.5">1.5x</option>
+                                <option value="2">2x</option>
                             </select>
                         </div>
                     </div>
 
                     <div className="preview-actions" style={{ marginTop: 14 }}>
-                        <button
-                            type="button"
-                            onClick={() => startPreview()}
-                            disabled={actionLoading || !selectedCamera}
-                            style={{ ...styles.btnPrimary, opacity: !selectedCamera || actionLoading ? 0.55 : 1 }}
-                        >
-                            Start Preview
-                        </button>
-                        <button type="button" onClick={stopPreview} disabled={actionLoading} style={styles.btnGhost}>
-                            Stop Preview
-                        </button>
-                        <button type="button" onClick={() => setPreviewKey((key) => key + 1)} style={styles.btnGhost}>
-                            Reload Stream
-                        </button>
-                        <button type="button" onClick={fetchCameras} disabled={loading} style={styles.btnGhost}>
-                            Refresh Cameras
-                        </button>
+                        <div className="preview-actions-primary">
+                            <button
+                                type="button"
+                                onClick={() => startPreview()}
+                                disabled={actionLoading || !selectedCamera}
+                                style={{ ...styles.btnPrimary, opacity: !selectedCamera || actionLoading ? 0.55 : 1 }}
+                            >
+                                Start Live Feed
+                            </button>
+                            <button type="button" onClick={stopPreview} disabled={actionLoading || !previewRunning} style={styles.btnGhost}>
+                                Stop Live Feed
+                            </button>
+                        </div>
+                        <div className="preview-actions-secondary">
+                            <button
+                                type="button"
+                                onClick={() => setPreviewKey((key) => key + 1)}
+                                disabled={!previewRunning}
+                                style={styles.btnGhost}
+                            >
+                                Reconnect Feed
+                            </button>
+                        </div>
                     </div>
                 </section>
             </div>

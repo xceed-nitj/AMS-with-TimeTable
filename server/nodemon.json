@@ -1,0 +1,12 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": [
+    "ground_truth/**",
+    "embeddings/**",
+    "uploads/**",
+    "temp_uploads/**",
+    "erp_photos/**",
+    "node_modules/**"
+  ]
+}
