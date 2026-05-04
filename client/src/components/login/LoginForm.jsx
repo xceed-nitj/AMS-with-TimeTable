@@ -48,7 +48,12 @@ const LoginForm = () => {
       const responseData = await response.json()
       console.log(responseData);
 
-      if (typeof responseData.user.isEmailVerified !== 'undefined') {
+      if (!response.ok) {
+        setMessage(`Login failed: ${responseData.message}`);
+        return;
+      }
+
+      if (responseData.user && typeof responseData.user.isEmailVerified !== 'undefined') {
         if (!responseData.user.isEmailVerified && responseData.user.role.includes('PRM')) {
           localStorage.setItem('formValues', JSON.stringify(formValues));
           await axios.post(`${apiUrl}/auth/otp`, { email });
@@ -57,7 +62,7 @@ const LoginForm = () => {
         }
       }
 
-      if (typeof responseData.user.isFirstLogin !== 'undefined') {
+      if (responseData.user && typeof responseData.user.isFirstLogin !== 'undefined') {
         if (responseData.user.isFirstLogin && responseData.user.role.includes('PRM')) {
           navigate('/prm/userdetails');
           return;
@@ -65,16 +70,11 @@ const LoginForm = () => {
       }
 
       if (responseData.token) {
-  localStorage.setItem('token', responseData.token)
-}
-
-      if (response.ok) {
-        setMessage(responseData.message);
-        window.location.href = '/userroles';
-      } else {
-        const errorData = await response.json();
-        setMessage(`Login failed: ${errorData.message}`);
+        localStorage.setItem('token', responseData.token)
       }
+
+      setMessage(responseData.message);
+      window.location.href = '/userroles';
     } catch (error) {
       console.error('An error occurred', error)
       setMessage('An error occurred. Please try again.')

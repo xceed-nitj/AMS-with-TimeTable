@@ -2,7 +2,7 @@ const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config();
+// require("dotenv").config();
 
 // Cloudinary configuration
 cloudinary.config({

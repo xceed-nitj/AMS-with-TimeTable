@@ -27,7 +27,6 @@ async function forgotPassword(req, res) {
     return res.status(200).json({
       success: true,
       message: "OTP sent successfully",
-      otp: otp, // Send the OTP to the client for verification
     });
   } catch (e) {
     console.log("Error in sending OTP ", e);
