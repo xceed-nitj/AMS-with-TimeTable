@@ -19,13 +19,16 @@ async function resetPassword(req, res) {
       });
     }
 
-    // Update the password
+    // Update the password and delete the used OTP
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.findOneAndUpdate(
-      { email: email },
-      { $set: { password: hashedPassword } },
-      { new: true }
-    );
+    const [user] = await Promise.all([
+      User.findOneAndUpdate(
+        { email: email },
+        { $set: { password: hashedPassword } },
+        { new: true }
+      ),
+      OTP.deleteOne({ email }),
+    ]);
 
     return res.status(200).json({
       success: true,

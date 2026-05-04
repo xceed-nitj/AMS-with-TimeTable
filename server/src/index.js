@@ -1,5 +1,6 @@
+const path = require("path");
 const dotenv = require("dotenv");
-dotenv.config({ path: "../.env" });
+dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const express = require("express");
 const app = express();
@@ -7,7 +8,7 @@ const mongoose = require("mongoose");
 
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const path = require("path");
+
 const axios = require("axios");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
