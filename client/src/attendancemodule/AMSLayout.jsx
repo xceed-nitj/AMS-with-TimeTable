@@ -34,12 +34,12 @@ const CSS = `
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: ${T.bg}; }
   ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 3px; }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes amsFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; } }
   @keyframes pulse  { 0%,100% { opacity:1; } 50% { opacity:.4; } }
   .ams-nav-item { transition: background .15s, color .15s, border-color .15s; }
   .ams-nav-item:hover { background: rgba(255,255,255,0.04) !important; }
   .ams-collapse-btn { transition: transform .2s; }
-  .ams-page-content { animation: fadeIn .3s ease both; }
+  .ams-page-content { animation: amsFadeIn .3s ease both; }
 `;
 
 export default function AMSLayout() {

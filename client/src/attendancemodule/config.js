@@ -160,7 +160,7 @@ const cssReset = `
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: ${theme.bg}; }
     ::-webkit-scrollbar-thumb { background: ${theme.border}; border-radius: 3px; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
     @keyframes spin { to { transform: rotate(360deg); } }
 `;

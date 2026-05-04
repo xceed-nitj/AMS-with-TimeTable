@@ -1,1 +1,200 @@
-[]
+[
+  {
+    "folderName": "person_013",
+    "suggestedRollNo": "23104028",
+    "confidence": 0.4589,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:30.406Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_014",
+    "suggestedRollNo": "23104010",
+    "confidence": 0.4124,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:31.152Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_015",
+    "suggestedRollNo": "23104016",
+    "confidence": 0.1746,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:31.934Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_016",
+    "suggestedRollNo": "23104046",
+    "confidence": 0.3263,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:32.584Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_017",
+    "suggestedRollNo": "23104038",
+    "confidence": 0.1729,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:33.266Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_018",
+    "suggestedRollNo": "23104016",
+    "confidence": 0.2871,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:33.732Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_019",
+    "suggestedRollNo": "23104043",
+    "confidence": 0.2806,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:34.346Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_020",
+    "suggestedRollNo": "23104039",
+    "confidence": 0.3361,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:34.902Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_002",
+    "suggestedRollNo": "23104034",
+    "confidence": 0.6811,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:36.033Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_003",
+    "suggestedRollNo": "23104036",
+    "confidence": 0.2248,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:36.755Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_004",
+    "suggestedRollNo": "23104052",
+    "confidence": 0.2636,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:37.597Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_005",
+    "suggestedRollNo": "23104027",
+    "confidence": 0.5901,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:38.418Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_006",
+    "suggestedRollNo": "23104040",
+    "confidence": 0.2468,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:39.001Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_007",
+    "suggestedRollNo": "23104036",
+    "confidence": 0.2543,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:39.613Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_008",
+    "suggestedRollNo": "23104018",
+    "confidence": 0.6173,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:40.062Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_009",
+    "suggestedRollNo": "23104013",
+    "confidence": 0.3642,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:40.558Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_010",
+    "suggestedRollNo": "23104039",
+    "confidence": 0.4203,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:40.991Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_011",
+    "suggestedRollNo": "23104052",
+    "confidence": 0.5754,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:41.559Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_012",
+    "suggestedRollNo": "23104020",
+    "confidence": 0.4201,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:28:42.089Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_02800",
+    "suggestedRollNo": "23104052",
+    "confidence": 0.2292,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:34:27.182Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_02700",
+    "suggestedRollNo": "23109051",
+    "confidence": 0.2449,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:34:57.169Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  },
+  {
+    "folderName": "person_001",
+    "suggestedRollNo": "23104069",
+    "confidence": 0.171,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-05-04T18:34:59.734Z",
+    "resolved": false,
+    "resolvedRollNo": null
+  }
+]
