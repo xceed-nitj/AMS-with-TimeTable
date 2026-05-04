@@ -11,5 +11,11 @@
     "gt_182.6s_f38.jpg": 5.4001,
     "gt_239.7s_f69.jpg": 5.2235,
     "gt_239.7s_f68.jpg": 1.2373
-  }
+  },
+  "approved_files": [
+    "gt_212.2s_f48.jpg",
+    "gt_182.6s_f38.jpg",
+    "gt_239.7s_f69.jpg",
+    "gt_239.7s_f68.jpg"
+  ]
 }
