@@ -1304,7 +1304,7 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                                 background: final?.finalStatus === 'R' ? theme.warningDim : 'transparent',
                             }}>
                                 <td style={{ padding: '9px 12px', color: theme.textMuted }}>{idx + 1}</td>
-                                <td style={{ padding: '9px 12px', fontFamily: theme.fontMono, fontWeight: 600, color: theme.text }}>{rollNo}</td>
+                                <td style={{ padding: '9px 12px', fontFamily: theme.fontMono, fontWeight: 600, color: '#111' }}>{rollNo}</td>
                                 {runs.map((_, ri) => {
                                     const s = runLookup[rollNo][ri];
                                     return (
@@ -1462,7 +1462,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                     : 'transparent',
                         }}>
                             <td style={{ padding: '10px 14px', color: theme.textMuted }}>{i + 1}</td>
-                            <td style={{ padding: '10px 14px', fontFamily: theme.fontMono, fontWeight: 600, color: theme.text }}>{s.rollNo}</td>
+                            <td style={{ padding: '10px 14px', fontFamily: theme.fontMono, fontWeight: 600, color: '#111' }}>{s.rollNo}</td>
 
                             {/* ── In List column ── */}
                             <td style={{ padding: '10px 14px' }}>

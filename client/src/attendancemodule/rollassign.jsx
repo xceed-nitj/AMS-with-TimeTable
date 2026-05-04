@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import getEnvironment from '../getenvironment';
 import { DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
@@ -48,7 +49,7 @@ export default function RollAssign() {
 
     const [unapprovedMap,    setUnapprovedMap]    = useState({});
     const [approvedStats,    setApprovedStats]    = useState({});
-    const [approvingPhoto,   setApprovingPhoto]   = useState(null);
+    const [approvingPhoto,   setApprovingPhoto]   = useState({});
 
     const [matches,       setMatches]       = useState({});
     const [inlineRolls,   setInlineRolls]   = useState({});
@@ -534,7 +535,7 @@ export default function RollAssign() {
     // ── Approve individual new photos ────────────────────────────────
     const approvePhoto = useCallback(async (rollNo, filename) => {
         const key = `${rollNo}::${filename}`;
-        setApprovingPhoto(key);
+        setApprovingPhoto(prev => ({ ...prev, [key]: true }));
         try {
             const res = await fetch(`${GT_BASE}/approve-photos`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -560,13 +561,14 @@ export default function RollAssign() {
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
-            setApprovingPhoto(null);
+            setApprovingPhoto(prev => { const n = { ...prev }; delete n[key]; return n; });
         }
     }, [batchName]);
 
     const approveAllPhotos = useCallback(async (rollNo, files) => {
         if (!files?.length) return;
-        setApprovingPhoto(`${rollNo}::all`);
+        const allKey = `${rollNo}::all`;
+        setApprovingPhoto(prev => ({ ...prev, [allKey]: true }));
         try {
             const res = await fetch(`${GT_BASE}/approve-photos`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -588,7 +590,7 @@ export default function RollAssign() {
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
-            setApprovingPhoto(null);
+            setApprovingPhoto(prev => { const n = { ...prev }; delete n[allKey]; return n; });
         }
     }, [batchName]);
 
@@ -608,35 +610,39 @@ export default function RollAssign() {
                 }}>{toast.msg}</div>
             )}
 
-            {/* Verify Modal */}
-            {modal && (() => {
-                const queueIdx = reviewQueue.findIndex(r => r.folderName === modal.item.folderName);
-                return (
-                    <VerifyModal
-                        item={modal.item} match={modal.match}
-                        batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
-                        overrideRoll={overrideRoll} setOverrideRoll={setOverrideRoll}
-                        saving={saving === modal.item.folderName}
-                        onApprove={() => handleApprove(modal.item.folderName, overrideRoll)}
-                        onFlag={() => handleFlag(modal.item.folderName, modal.match)}
-                        onClose={() => setModal(null)}
-                        hasPrev={queueIdx > 0}
-                        hasNext={queueIdx < reviewQueue.length - 1}
-                        onPrev={() => openQueueItem(reviewQueue, modal.item.folderName, -1)}
-                        onNext={() => openQueueItem(reviewQueue, modal.item.folderName, +1)}
-                        position={queueIdx + 1}
-                        total={reviewQueue.length}
-                    />
-                );
-            })()}
+            {/* Verify Modal — portal escapes any ancestor transform/overflow */}
+            {modal && createPortal(
+                (() => {
+                    const queueIdx = reviewQueue.findIndex(r => r.folderName === modal.item.folderName);
+                    return (
+                        <VerifyModal
+                            item={modal.item} match={modal.match}
+                            batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
+                            overrideRoll={overrideRoll} setOverrideRoll={setOverrideRoll}
+                            saving={saving === modal.item.folderName}
+                            onApprove={() => handleApprove(modal.item.folderName, overrideRoll)}
+                            onFlag={() => handleFlag(modal.item.folderName, modal.match)}
+                            onClose={() => setModal(null)}
+                            hasPrev={queueIdx > 0}
+                            hasNext={queueIdx < reviewQueue.length - 1}
+                            onPrev={() => openQueueItem(reviewQueue, modal.item.folderName, -1)}
+                            onNext={() => openQueueItem(reviewQueue, modal.item.folderName, +1)}
+                            position={queueIdx + 1}
+                            total={reviewQueue.length}
+                        />
+                    );
+                })(),
+                document.body
+            )}
 
-            {/* GT Modal */}
-            {gtModal && (
+            {/* GT Modal — portal escapes any ancestor transform/overflow */}
+            {gtModal && createPortal(
                 <GTModal
                     rollNo={gtModal.rollNo} loading={gtLoading} data={gtData}
                     selected={gtSelected} setSelected={setGtSelected}
                     saving={gtSaving} onSave={handleUpdateEmbedding} onClose={() => setGtModal(null)}
-                />
+                />,
+                document.body
             )}
 
             <div style={{ marginBottom: 24 }}>
@@ -959,6 +965,8 @@ export default function RollAssign() {
 
 // ── Unapproved photo card ────────────────────────────────────────
 function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApproveAll }) {
+    const allKey    = `${rollNo}::all`;
+    const allBusy   = !!busy[allKey];
     const fmtDate = (iso) => {
         if (!iso) return null;
         return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -975,19 +983,21 @@ function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApprove
                 )}
                 <button
                     onClick={onApproveAll}
-                    disabled={busy === `${rollNo}::all`}
+                    disabled={allBusy}
                     style={{ padding: '4px 10px', borderRadius: 6, border: 'none',
                         background: theme.success, color: '#000', fontSize: '11px',
-                        fontWeight: 700, cursor: 'pointer', opacity: busy === `${rollNo}::all` ? 0.5 : 1 }}>
-                    {busy === `${rollNo}::all` ? '…' : `Approve All (${photos.length})`}
+                        fontWeight: 700, cursor: allBusy ? 'not-allowed' : 'pointer',
+                        opacity: allBusy ? 0.5 : 1 }}>
+                    {allBusy ? '…' : `Approve All (${photos.length})`}
                 </button>
             </div>
             <div style={{ padding: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8 }}>
                 {photos.map(photo => {
-                    const photoKey = `${rollNo}::${photo.filename}`;
+                    const photoKey  = `${rollNo}::${photo.filename}`;
+                    const photoBusy = !!busy[photoKey] || allBusy;
                     return (
                         <div key={photo.filename} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden',
-                            border: `1.5px solid ${theme.warning}55`, opacity: busy === photoKey ? 0.4 : 1, transition: 'opacity 0.15s' }}>
+                            border: `1.5px solid ${theme.warning}55`, opacity: photoBusy ? 0.4 : 1, transition: 'opacity 0.15s' }}>
                             <img src={photo.url} alt={photo.filename}
                                 style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
                                 onError={e => { e.target.style.opacity = '0.15'; }} />
@@ -1000,11 +1010,11 @@ function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApprove
                             )}
                             <button
                                 onClick={() => onApprove(rollNo, photo.filename)}
-                                disabled={!!busy}
+                                disabled={photoBusy}
                                 title="Approve & add to embedding"
                                 style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22,
                                     borderRadius: '50%', background: theme.success, border: 'none',
-                                    color: '#000', cursor: busy ? 'not-allowed' : 'pointer',
+                                    color: '#000', cursor: photoBusy ? 'not-allowed' : 'pointer',
                                     fontSize: '12px', fontWeight: 800,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>✓</button>
                         </div>
@@ -1017,27 +1027,40 @@ function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApprove
 
 // ── Section wrapper ───────────────────────────────────────────────
 function Section({ title, count, accentColor, children, emptyText }) {
+    const [open, setOpen] = useState(true);
     return (
         <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: theme.text, marginBottom: 14 }}>
-                {title}
+            <div
+                onClick={() => setOpen(o => !o)}
+                style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    marginBottom: open ? 14 : 0,
+                    cursor: 'pointer', userSelect: 'none',
+                }}
+            >
                 <span style={{
-                    marginLeft: 8, fontSize: '12px', fontWeight: 600,
+                    fontSize: '10px', color: accentColor,
+                    display: 'inline-block', transition: 'transform .18s',
+                    transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+                }}>▼</span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: theme.text }}>{title}</span>
+                <span style={{
+                    fontSize: '12px', fontWeight: 600,
                     background: accentColor + '22', color: accentColor,
                     padding: '2px 8px', borderRadius: 10,
-                }}>
-                    {count}
-                </span>
+                }}>{count}</span>
             </div>
-            {count === 0 && emptyText ? (
-                <div style={{ padding: '14px 16px', borderRadius: 8, fontSize: '12px',
-                    color: theme.textMuted, background: theme.surface, border: `1px dashed ${theme.border}` }}>
-                    {emptyText}
-                </div>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-                    {children}
-                </div>
+            {open && (
+                count === 0 && emptyText ? (
+                    <div style={{ padding: '14px 16px', borderRadius: 8, fontSize: '12px',
+                        color: theme.textMuted, background: theme.surface, border: `1px dashed ${theme.border}` }}>
+                        {emptyText}
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+                        {children}
+                    </div>
+                )
             )}
         </div>
     );
