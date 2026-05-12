@@ -73,12 +73,11 @@ class TableController {
       const newCode = await generateUniqueLink();
       // console.log(newCode);
       //const userObject = await User.findById(userId)
-      if (sessionstatus.currentSession == true) {
+      if (sessionstatus && sessionstatus.currentSession == true) {
         data.currentSession = true;
+      } else {
+        data.currentSession = false;
       }
-      else
-      { data.currentSession = false;
-        }
         console.log("seesionstatus",data.currentSession);
       const newTimeTable = new TimeTable({
         ...data,
@@ -99,8 +98,8 @@ class TableController {
 
       const roomdata = await AddAllotment.find({ session: data.session });
       console.log(roomdata);
-      const centralisedAllotments = roomdata[0].centralisedAllotments;
-      const openElectiveAllotments = roomdata[0].openElectiveAllotments;
+      const centralisedAllotments = roomdata[0]?.centralisedAllotments || [];
+      const openElectiveAllotments = roomdata[0]?.openElectiveAllotments || [];
 
       // Search in centralised allotments
       const centralisedDept = centralisedAllotments.find(
