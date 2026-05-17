@@ -30,7 +30,7 @@ logger = logging.getLogger("ml_service")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-DB_PATH  = os.path.join(BASE_DIR, "embeddings_db.pkl")
+DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ground_truth")
 
 logger.info(f"ROOT_DIR: {ROOT_DIR}")

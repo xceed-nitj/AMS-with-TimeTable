@@ -38,7 +38,7 @@ router = APIRouter()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-DB_PATH  = os.path.join(BASE_DIR, "embeddings_db.pkl")
+DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ground_truth")
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
@@ -428,6 +428,7 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
         else:
             logger.warning(f"✗ {student_id}: no faces detected")
 
+    os.makedirs(os.path.dirname(req.output_path), exist_ok=True)
     with open(req.output_path, "wb") as f:
         pickle.dump(db, f)
 
@@ -567,6 +568,7 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
             "num_photos": len(new_embeddings),
         }
 
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     with open(DB_PATH, "wb") as f:
         pickle.dump(state.embeddings_db, f)
     
