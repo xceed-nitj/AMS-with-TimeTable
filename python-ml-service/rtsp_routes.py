@@ -561,18 +561,8 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
     cameras = [req.rtspUrl]
     if req.rtspUrl2:
         cameras.append(req.rtspUrl2)
-    frame_snapshots = []
- 
-    DEBUG_CROP_DIR = os.path.join(BASE_DIR, "attendance-debug-crops", f"{req.date}_{req.slot}")
-    os.makedirs(DEBUG_CROP_DIR, exist_ok=True)
-    crop_counter = 0
-    logger.info("[attendance] Debug crops → %s", DEBUG_CROP_DIR)
-    yield {"type": "stage", "message": f"Debug crops → attendance-debug-crops/{req.date}_{req.slot}/"}
- 
     start_t = time.time()
     frame_count, cam_idx, last_switch = 0, 0, 0.0
-    SNAPSHOT_INTERVAL_SEC = 5
-    last_snapshot_elapsed = -999.0
     reader  = _RTSPReader(cap, decode_every=req.frameSkip)
     last_seq = 0
  
@@ -589,7 +579,6 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                 reader  = _RTSPReader(new_cap, decode_every=req.frameSkip)
                 last_seq = 0
                 last_switch = elapsed
-                last_snapshot_elapsed = -999.0
                 yield {"type": "stage", "message": f"Switched to camera {cam_idx+1} at {round(elapsed)}s"}
  
             ok, frame, seq, _ = reader.latest()
@@ -612,49 +601,15 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
             except Exception:
                 pass
  
-            detections = _detect_faces_tiled(
-                state.face_app, frame, ui_mask,
-                debug_dir=DEBUG_CROP_DIR,
-                debug_frame_id=frame_count,
-            )
+            detections = _detect_faces_tiled(state.face_app, frame, ui_mask)
             faces_this_frame = len(detections)
- 
+
             for d in detections:
                 all_embeddings.append(d["embedding"])
                 all_face_images.append(d["crop"])
                 all_timestamps.append(round(elapsed, 2))
                 all_quality.append(d["quality"])
-                crop_counter += 1
- 
-            # Annotated full frame
-            if faces_this_frame > 0:
-                try:
-                    ann = frame.copy()
-                    for d in detections:
-                        bx1, by1, bx2, by2 = d["bbox"]
-                        cv2.rectangle(ann, (bx1, by1), (bx2, by2), (0, 255, 0), 2)
-                        cv2.putText(ann, f"q={d['quality']:.1f}", (bx1, by1 - 5),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-                    ann_dir = os.path.join(DEBUG_CROP_DIR, "annotated_frames")
-                    os.makedirs(ann_dir, exist_ok=True)
-                    cv2.imwrite(
-                        os.path.join(ann_dir, f"fr{frame_count:04d}_cam{cam_idx+1}_{faces_this_frame}faces.jpg"),
-                        ann, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                except Exception:
-                    pass
- 
-            # Frame snapshot every N seconds
-            if faces_this_frame > 0 and (elapsed - last_snapshot_elapsed) >= SNAPSHOT_INTERVAL_SEC:
-                _, jpeg_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
-                frame_snapshots.append({
-                    "cam_idx":     cam_idx,
-                    "cam_url":     cameras[cam_idx],
-                    "elapsed_sec": round(elapsed, 1),
-                    "faces_count": faces_this_frame,
-                    "jpeg_bytes":  jpeg_buf.tobytes(),
-                })
-                last_snapshot_elapsed = elapsed
- 
+
             yield {"type": "frame", "frame": frame_count, "faces": faces_this_frame,
                    "total_embs": len(all_embeddings), "elapsed": round(elapsed, 1),
                    "remaining": round(req.durationSec - elapsed, 1), "camera": cam_idx + 1}
@@ -662,30 +617,8 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
         reader.release()
         _stop_event.set()
  
-    # Save frame snapshots to disk (strip jpeg_bytes before returning paths)
-    SNAPSHOT_DIR = os.path.join(BASE_DIR, "frame-snapshots")
-    os.makedirs(SNAPSHOT_DIR, exist_ok=True)
-    saved_snapshot_paths = []
-    for snap in frame_snapshots:
-        fname = (f"{req.date}_{req.slot}_cam{snap['cam_idx']+1}"
-                 f"_{int(snap['elapsed_sec'])}s_{snap['faces_count']}faces.jpg")
-        fpath = os.path.join(SNAPSHOT_DIR, fname)
-        with open(fpath, 'wb') as f:
-            f.write(snap["jpeg_bytes"])
-        saved_snapshot_paths.append({
-            "path":        str(fpath),
-            "cam":         int(snap["cam_idx"] + 1),
-            "elapsed_sec": float(snap["elapsed_sec"]),
-            "faces_count": int(snap["faces_count"]),
-        })
- 
-    yield {"type": "stage",
-           "message": (f"📁 {crop_counter} accepted crops | {len(saved_snapshot_paths)} snapshots"
-                       f" | Check attendance-debug-crops/{req.date}_{req.slot}/")}
- 
     if not all_embeddings:
-        yield {"type": "error",
-               "message": "No faces detected. Check attendance-debug-crops/raw/ and /rejected/ for diagnostics."}
+        yield {"type": "error", "message": "No faces detected during the recording."}
         return
  
     yield {"type": "stage", "message": f"{len(all_embeddings)} embeddings — clustering…"}
@@ -808,35 +741,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                         "flagged":         True,
                     }
  
-    # ── Save per-cluster matched crops ─────────────────────────────────────
-    MATCH_CROP_DIR = os.path.join(BASE_DIR, "attendance-matched-crops", f"{req.date}_{req.slot}")
-    os.makedirs(MATCH_CROP_DIR, exist_ok=True)
- 
-    # Build lookup: cluster_id → (matched_roll, score) from the Hungarian result
-    cluster_match_lookup: dict[int, tuple[str, float]] = {}
-    if cluster_means and len(enroll_matrix) > 0:
-        score_matrix = np.array(cluster_means, dtype=np.float32) @ enroll_matrix.T
-        row_ind, col_ind = linear_sum_assignment(-score_matrix)
-        for r, c in zip(row_ind, col_ind):
-            score        = float(score_matrix[r, c])
-            cluster_id   = cluster_meta[r][0]
-            matched_roll = enrolled_ids[c] if score >= req.reviewThreshold else "UNMATCHED"
-            cluster_match_lookup[cluster_id] = (matched_roll, score)
- 
-    for r, (cluster_id, indices) in enumerate(cluster_meta):
-        matched_roll, score = cluster_match_lookup.get(cluster_id, ("UNMATCHED", 0.0))
-        folder_name      = f"{matched_roll}_c{cluster_id:03d}_s{score:.3f}"
-        cluster_crop_dir = os.path.join(MATCH_CROP_DIR, folder_name)
-        os.makedirs(cluster_crop_dir, exist_ok=True)
-        sorted_indices = sorted(indices, key=lambda i: all_quality[i], reverse=True)
-        for rank, idx in enumerate(sorted_indices):
-            crop = all_face_images[idx]
-            if crop is not None and crop.size > 0:
-                fname = f"rank{rank:02d}_t{all_timestamps[idx]:.1f}s_q{all_quality[idx]:.2f}.jpg"
-                cv2.imwrite(os.path.join(cluster_crop_dir, fname), crop, [cv2.IMWRITE_JPEG_QUALITY, 95])
- 
-    logger.info("[attendance] Matched crops → %s", MATCH_CROP_DIR)
-    yield {"type": "stage", "message": f"✅ {len(unique_labels)} cluster folders saved for verification"}
+    yield {"type": "stage", "message": f"✅ {len(unique_labels)} clusters matched against {len(enrolled)} enrolled students"}
  
     # ── Final result event ─────────────────────────────────────────────────
     yield {
@@ -863,12 +768,8 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                 "processing_time":       round(time.time() - start_t, 2),
                 "frames_read":           int(frame_count),
                 "duration_sec":          int(req.durationSec),
-                "debug_crops_saved":     int(crop_counter),
-                "debug_crops_dir":       str(DEBUG_CROP_DIR),
-                "matched_crops_dir":     str(MATCH_CROP_DIR),
             },
             "unmatched_clusters": unmatched_clusters,
-            "frame_snapshots":    saved_snapshot_paths,
         },
     }
 

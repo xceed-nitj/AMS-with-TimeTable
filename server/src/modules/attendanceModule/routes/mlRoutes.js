@@ -12,6 +12,7 @@ const { processVideoFile } = require('../controllers/videoWatcher');
 const mlProcess = require('../controllers/mlProcessController');
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
+const { saveAttendanceDailyData, listDailyDataFiles, readDailyDataFile } = require('../controllers/attendanceDailyDataSaver');
 
 const ML_URL = 'http://localhost:8500';
 
@@ -544,17 +545,64 @@ router.post('/run-attendance-rtsp', async (req, res) => {
 
     console.log(`[AttendanceRTSP] Running with batch=${resolvedBatch} rtsp=${rtspUrl} duration=${durationSec}s`);
 
-    // Step 3: Pipe to Python with resolved context injected
-    await pipeStream('run-attendance-rtsp', {
+    const payload = {
         ...req.body,
         batch:     resolvedBatch,
         subject:   resolvedSubject,
         faculty:   resolvedFaculty,
         semester:  resolvedSem,
         locksemId: resolvedLocksem,
-        // Pass context back so the frontend can display it after 'done' event
         _resolvedCtx: ctx || null,
-    }, res);
+    };
+
+    // Step 3: Stream from Python, intercept the 'done' event to save daily data
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    try {
+        const pyRes = await axios.post(
+            `${ML_URL}/run-attendance-rtsp`,
+            payload,
+            { timeout: 600000, responseType: 'stream', headers: { 'Content-Type': 'application/json' } }
+        );
+
+        let sseBuffer = '';
+        pyRes.data.on('data', (chunk) => {
+            const text = chunk.toString();
+            res.write(text);
+
+            sseBuffer += text;
+            const lines = sseBuffer.split('\n');
+            sseBuffer = lines.pop();
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                try {
+                    const event = JSON.parse(line.slice(6));
+                    if (event.type === 'done' && event.result) {
+                        saveAttendanceDailyData(
+                            { batch: resolvedBatch, date: req.body.date, slot: req.body.slot,
+                              room: req.body.room, subject: resolvedSubject, faculty: resolvedFaculty,
+                              semester: resolvedSem, locksemId: resolvedLocksem },
+                            event.result,
+                            1
+                        );
+                    }
+                } catch (_) {}
+            }
+        });
+
+        pyRes.data.on('end', () => { if (!res.writableEnded) res.end(); });
+        pyRes.data.on('error', () => { if (!res.writableEnded) res.end(); });
+    } catch (e) {
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: e.message })}\n\n`);
+            res.end();
+        }
+    }
 });
 // ─── MJPEG Frame Preview Proxy ────────────────────────────────
 // Proxies the MJPEG stream from Python so the browser iframe can show it
@@ -573,6 +621,17 @@ router.get('/rtsp-frame-preview', async (req, res) => {
     } catch (e) {
         if (!res.writableEnded) res.status(502).end();
     }
+});
+
+// ─── Attendance Daily Data ────────────────────────────────────
+router.get('/attendance-daily-data', (req, res) => {
+    res.json(listDailyDataFiles());
+});
+
+router.get('/attendance-daily-data/:filename', (req, res) => {
+    const data = readDailyDataFile(req.params.filename);
+    if (!data) return res.status(404).json({ error: 'File not found' });
+    res.json(data);
 });
 
 module.exports = router;

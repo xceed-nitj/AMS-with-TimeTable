@@ -6,11 +6,10 @@
 
 const axios  = require('axios');
 const cron   = require('node-cron');
-const fs     = require('fs');
-const path   = require('path');
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const AttendanceReport = require('../../../models/attendanceReport');
+const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
@@ -160,7 +159,7 @@ function buildSummary(finalReport) {
              attendancePct: total > 0 ? Math.round((present/total)*100) : 0 };
 }
 
-async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, snapshots, room }) {
+async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) {
     const attendance = mlResult.attendance || {};
     const students   = Object.entries(attendance).map(([rollNo, data]) => ({
         rollNo,
@@ -176,7 +175,7 @@ async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, snapshot
     const slotResult = {
         slot:          `${slot}-check${checkIndex}`,
         videoLink:     '',
-        frameSnapshot: snapshots?.map(s => s.path).join(', ') || '',
+        frameSnapshot: '',
         processedAt:   new Date(),
         students,
         summary: {
@@ -206,13 +205,12 @@ async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, snapshot
     report.summary     = buildSummary(report.finalReport);
     await report.save();
 
-    // ── Print snapshot face counts ────────────────────────────────────────
-    if (snapshots?.length) {
-        for (const snap of snapshots) {
-            console.log(`[AutoScheduler] 📸 Frame saved: ${snap.path}`);
-            console.log(`[AutoScheduler]    Camera ${snap.cam} | ${snap.elapsed_sec}s | Faces detected: ${snap.faces_count}`);
-        }
-    }
+    saveAttendanceDailyData(
+        { batch: ctx.batch, date, slot, room, subject: ctx.subject,
+          faculty: ctx.faculty, semester: ctx.sem, locksemId: ctx.locksemId },
+        mlResult,
+        checkIndex
+    );
 
     // ── Notify unmatched faces ────────────────────────────────────────────
     const unmatched = mlResult.unmatched_clusters || [];
@@ -253,12 +251,7 @@ async function runOneCheck({ room, slot, date, ctx, cameras, config, checkIndex 
             { timeout: 300000 }
         );
 
-        await saveCheckResult({
-            ctx, date, slot, checkIndex,
-            mlResult:  res.data,
-            snapshots: res.data.frame_snapshots || [],
-            room,
-        });
+        await saveCheckResult({ ctx, date, slot, checkIndex, mlResult: res.data, room });
     } catch (err) {
         console.error(`[AutoScheduler] Check ${checkIndex} failed for ${slot} room ${room}: ${err.message}`);
     }
