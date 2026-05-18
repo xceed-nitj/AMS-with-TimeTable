@@ -30,8 +30,8 @@ logger = logging.getLogger("ml_service")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-DB_PATH  = os.path.join(BASE_DIR, "embeddings_db.pkl")
-CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ground_truth")
+DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
+CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
 
 logger.info(f"ROOT_DIR: {ROOT_DIR}")
 logger.info(f"DB_PATH:  {DB_PATH}")
@@ -49,13 +49,35 @@ def load_model(det_size: int = INSIGHTFACE_DET_SIZE):
     logger.info("Model loaded.")
 
 
+def _migrate_folder(old_path, new_path, label):
+    """One-time move of a data folder from its old location to server/ml-data/."""
+    import shutil
+    if not os.path.exists(new_path) and os.path.exists(old_path):
+        os.makedirs(os.path.dirname(new_path), exist_ok=True)
+        shutil.move(old_path, new_path)
+        logger.info(f"Migrated {label}: {old_path} → {new_path}")
+
+
 def load_embeddings():
+    # One-time migrations to server/ml-data/
+    _migrate_folder(
+        os.path.join(BASE_DIR, "embeddings_db.pkl"), DB_PATH, "embeddings_db.pkl"
+    )
+    _migrate_folder(
+        os.path.join(ROOT_DIR, "server", "ground_truth"), CLIENT_GROUND_TRUTH, "ground_truth"
+    )
+    _migrate_folder(
+        os.path.join(ROOT_DIR, "server", "erp_photos"),
+        os.path.join(ROOT_DIR, "server", "ml-data", "erp_photos"),
+        "erp_photos"
+    )
+
     if os.path.exists(DB_PATH):
         with open(DB_PATH, "rb") as f:
             state.embeddings_db = pickle.load(f)
         logger.info(f"Loaded embeddings for {len(state.embeddings_db)} students.")
     else:
-        logger.warning("No embeddings_db.pkl found.")
+        logger.warning("No embeddings_db.pkl found — run /build-embeddings to enroll students.")
 
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────

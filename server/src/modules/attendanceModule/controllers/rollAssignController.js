@@ -8,9 +8,9 @@ const axios      = require('axios');
 const ClusterMatch = require('../../../models/attendanceModule/clusterMatch');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
-const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 const ERP_PHOTOS_DIR   = process.env.ERP_PHOTOS_DIR ||
-                          path.join(__dirname, '..', '..', '..', '..', 'erp_photos');
+                          path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'erp_photos');
 
 function ensureDir(p) {
     if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });

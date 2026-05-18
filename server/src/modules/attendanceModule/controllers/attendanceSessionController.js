@@ -5,6 +5,7 @@
 
 const axios = require('axios');
 const AttendanceReport = require('../../../models/attendanceReport');
+const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
@@ -113,7 +114,7 @@ async function runOneCheck(reportId, checkIndex, config) {
         const slotResult = {
             slot:          `check-${checkIndex}`,
             videoLink:     '',
-            frameSnapshot: (mlResult.frame_snapshots || []).map(s => String(s.path || '')).join(', '),
+            frameSnapshot: '',
             processedAt:   new Date(),
             students,
             summary: {
@@ -137,6 +138,14 @@ async function runOneCheck(reportId, checkIndex, config) {
         report.finalReport = mergeStudentStatus(report.slotResults);
         report.summary     = buildSummary(report.finalReport);
         await report.save();
+
+        saveAttendanceDailyData(
+            { batch: config.batch, date: config.date, slot: config.slot, room: config.room,
+              subject: config.subject, faculty: config.faculty, semester: config.semester,
+              locksemId: config.locksemId },
+            mlResult,
+            checkIndex
+        );
 
         console.log(`${tag} ✅ Saved — P:${slotResult.summary.present} A:${slotResult.summary.absent} R:${slotResult.summary.review} (${students.length} students, ${slotResult.summary.processingTimeSec}s)`);
 
