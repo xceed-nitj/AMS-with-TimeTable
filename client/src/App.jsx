@@ -198,7 +198,6 @@ import FacultyDashboard from './instituterankings/facultydashboard.jsx';
 import Logs from './timetableadmin/logs.jsx';
 
 // ─── Attendance Module Imports ────────────────────────────────────
-import GroundTruthGen from './attendancemodule/groundtruthgen';
 import EditGroundTruth from './attendancemodule/editgroundtruth';
 import RollAssign from './attendancemodule/rollassign';
 import FlaggedAssign from './attendancemodule/flaggedassign';
@@ -619,7 +618,6 @@ function App() {
         {/* ─── Attendance Module Routes ──────────────────────────── */}
 <Route path="/attendance" element={<AMSLayout />}>
   <Route index element={<AMSDashboard />} />
-  <Route path="groundtruth/generate" element={<GroundTruthGen />} />
   <Route path="groundtruth/assign"   element={<RollAssign />} />
   <Route path="groundtruth/flagged"  element={<FlaggedAssign />} />
   <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
