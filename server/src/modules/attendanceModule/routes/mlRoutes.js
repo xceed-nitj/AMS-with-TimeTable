@@ -484,7 +484,7 @@ const EMBEDDINGS_DB_PATH = path.join(ML_DATA_DIR, 'embeddings_db.pkl');
 router.post('/build-embeddings', async (req, res) => {
     const { photosDir, outputPath } = req.body;
     await pipeStream('build-embeddings', {
-        photos_dir:  photosDir  || path.join(__dirname, '..', '..', '..', '..', 'ground_truth'),
+        photos_dir:  photosDir  || path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth'),
         output_path: outputPath || EMBEDDINGS_DB_PATH
     }, res);
 });

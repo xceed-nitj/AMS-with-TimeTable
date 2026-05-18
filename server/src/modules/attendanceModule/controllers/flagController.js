@@ -10,9 +10,9 @@ const fsPromises = require('fs').promises;
 
 const ClusterMatch = require('../../../models/attendanceModule/clusterMatch');
 
-const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 const ERP_PHOTOS_DIR   = process.env.ERP_PHOTOS_DIR ||
-                          path.join(__dirname, '..', '..', '..', '..', 'erp_photos');
+                          path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'erp_photos');
 
 // ── Shared helpers ────────────────────────────────────────────────
 

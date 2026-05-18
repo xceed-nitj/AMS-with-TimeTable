@@ -4,6 +4,7 @@ import os
 import re
 import json
 import time
+import base64
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -25,7 +26,7 @@ router = APIRouter()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ground_truth")
+CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
@@ -216,7 +217,9 @@ def extract_rtsp_stream(req: RTSPRequest):
         _stop_event.clear()
 
         batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
-        os.makedirs(batch_dir, exist_ok=True)
+
+        # Ask Node.js server to create the batch directory
+        yield sse({"type": "mkdir_batch", "batch": req.batch})
 
         start = time.time()
 
@@ -230,6 +233,24 @@ def extract_rtsp_stream(req: RTSPRequest):
                     req.targetImgsPerPerson, req.minSamples, req.clusterThreshold)
 
         yield sse({"type": "stage", "message": f"Connecting to {req.rtspUrl}…"})
+
+        # Load existing state from disk (populated by server from a prior session)
+        folder_state: dict = _load_folder_state(batch_dir)
+        existing_mean_embs: dict[str, np.ndarray] = {}
+        if os.path.isdir(batch_dir):
+            _load_existing_folders(batch_dir, existing_mean_embs)
+
+        person_counts: dict[str, int] = {
+            k: len(v.get("scores", {}))
+            for k, v in folder_state.items()
+            if re.match(r"^person_\d+$", k, re.IGNORECASE)
+        }
+        existing_person_nums = [
+            int(k.split("_")[1])
+            for k in folder_state.keys()
+            if re.match(r"^person_\d+$", k, re.IGNORECASE)
+        ]
+        next_serial = (max(existing_person_nums) + 1) if existing_person_nums else 1
 
         cap = _open_capture(req.rtspUrl)
         if not cap.isOpened():
@@ -252,18 +273,6 @@ def extract_rtsp_stream(req: RTSPRequest):
         all_quality     = []
 
         CLUSTER_EVERY = max(req.minSamples * 5, 20)
-
-        person_counts:      dict[str, int]        = {}
-        existing_mean_embs: dict[str, np.ndarray] = {}
-        _load_existing_folders(batch_dir, existing_mean_embs)
-
-        existing_person_nums = [
-            int(d.split("_")[1])
-            for d in os.listdir(batch_dir)
-            if re.match(r"^person_\d+$", d, re.IGNORECASE)
-            and os.path.isdir(os.path.join(batch_dir, d))
-        ]
-        next_serial = (max(existing_person_nums) + 1) if existing_person_nums else 1
 
         frame_count      = 0
         detections_since = 0
@@ -353,14 +362,18 @@ def extract_rtsp_stream(req: RTSPRequest):
 
                 if cluster_future is not None and cluster_future.done():
                     try:
-                        new_serial, updated, new_mean_embs, new_pcounts = cluster_future.result()
+                        new_serial, updated, new_mean_embs, new_pcounts, crops_to_emit, returned_fstate = cluster_future.result()
                         next_serial = new_serial
                         existing_mean_embs.update(new_mean_embs)
                         person_counts.update(new_pcounts)
+                        for k, v in returned_fstate.items():
+                            folder_state[k] = v
                         _cluster_passes += 1
                         if len(person_counts) > _last_person_count:
                             _last_new_person_t = time.time()
                         _last_person_count = len(person_counts)
+                        for crop_event in crops_to_emit:
+                            yield sse(crop_event)
                         for person_id, new_count in updated.items():
                             done = new_count >= req.targetImgsPerPerson
                             yield sse({"type": "person_update", "person_id": person_id,
@@ -373,27 +386,29 @@ def extract_rtsp_stream(req: RTSPRequest):
                         and detections_since >= CLUSTER_EVERY
                         and len(all_embeddings) >= req.minSamples):
                     detections_since = 0
-                    pass_num   = _cluster_passes + 1
-                    embs_snap  = list(all_embeddings)
-                    imgs_snap  = list(all_face_images)
-                    ts_snap    = list(all_timestamps)
-                    q_snap     = list(all_quality)
-                    mean_snap  = {k: v.copy() for k, v in existing_mean_embs.items()}
-                    pc_snap    = dict(person_counts)
-                    serial_now = next_serial
+                    pass_num    = _cluster_passes + 1
+                    embs_snap   = list(all_embeddings)
+                    imgs_snap   = list(all_face_images)
+                    ts_snap     = list(all_timestamps)
+                    q_snap      = list(all_quality)
+                    mean_snap   = {k: v.copy() for k, v in existing_mean_embs.items()}
+                    pc_snap     = dict(person_counts)
+                    serial_now  = next_serial
+                    fstate_snap = {k: {"scores": dict(v.get("scores", {}))} for k, v in folder_state.items()}
 
-                    def _cluster_job(embs, imgs, tss, qs, mean_embs, pcounts, serial, p):
+                    def _cluster_job(embs, imgs, tss, qs, mean_embs, pcounts, serial, p, fstate):
                         t0 = time.time()
                         lbl, ulbl = _cluster(embs, req.clusterThreshold, req.minSamples)
                         logger.info("  pass #%d: DBSCAN %.0fms — %d clusters", p, (time.time()-t0)*1000, len(ulbl))
-                        new_s, upd = _save_clusters(lbl, ulbl, embs, imgs, tss, qs,
-                                                     batch_dir, mean_embs, serial,
-                                                     req.targetImgsPerPerson, pcounts, req.clusterThreshold)
-                        return new_s, upd, mean_embs, pcounts
+                        new_s, upd, crops = _save_clusters(lbl, ulbl, embs, imgs, tss, qs,
+                                                            batch_dir, mean_embs, serial,
+                                                            req.targetImgsPerPerson, pcounts,
+                                                            req.clusterThreshold, fstate)
+                        return new_s, upd, mean_embs, pcounts, crops, fstate
 
                     cluster_future = cluster_pool.submit(
                         _cluster_job, embs_snap, imgs_snap, ts_snap, q_snap,
-                        mean_snap, pc_snap, serial_now, pass_num)
+                        mean_snap, pc_snap, serial_now, pass_num, fstate_snap)
 
                 now = time.time()
                 if now - last_progress_t >= PROGRESS_EVERY:
@@ -420,10 +435,14 @@ def extract_rtsp_stream(req: RTSPRequest):
             yield sse({"type": "stage", "message": f"Saving {len(all_embeddings)} buffered detections…"})
             try:
                 labels, unique_labels = _cluster(all_embeddings, req.clusterThreshold, req.minSamples)
-                next_serial, updated = _save_clusters(
+                fstate_final = {k: {"scores": dict(v.get("scores", {}))} for k, v in folder_state.items()}
+                next_serial, updated, crops_to_emit = _save_clusters(
                     labels, unique_labels, all_embeddings, all_face_images,
                     all_timestamps, all_quality, batch_dir, existing_mean_embs,
-                    next_serial, req.targetImgsPerPerson, person_counts, req.clusterThreshold)
+                    next_serial, req.targetImgsPerPerson, person_counts, req.clusterThreshold,
+                    fstate_final)
+                for crop_event in crops_to_emit:
+                    yield sse(crop_event)
                 for person_id, new_count in updated.items():
                     yield sse({"type": "person_update", "person_id": person_id,
                                "count": new_count, "target": req.targetImgsPerPerson,
@@ -911,8 +930,14 @@ def _load_existing_folders(batch_dir, existing_mean_embs):
 def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
                     all_timestamps, all_quality, batch_dir, existing_mean_embs,
                     next_serial, target_per_person, person_counts,
-                    cluster_threshold, top_n=10, embed_n=5):
-    updated = {}
+                    cluster_threshold, folder_state, top_n=10, embed_n=5):
+    """
+    Returns (next_serial, updated, crops_to_emit).
+    crops_to_emit is a list of SSE event dicts (mkdir, crop_save, info_save, file_delete).
+    Node.js intercepts these and saves the files — Python writes nothing to disk here.
+    """
+    updated       = {}
+    crops_to_emit = []
     MATCH_THRESHOLD = max(cluster_threshold, 0.50)
 
     for cluster_id in unique_labels:
@@ -932,84 +957,93 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
 
         if best_folder and best_score >= MATCH_THRESHOLD:
             folder_name = best_folder
-            folder_path = os.path.join(batch_dir, folder_name)
         else:
             folder_name = f"person_{next_serial:03d}"
             next_serial += 1
-            folder_path = os.path.join(batch_dir, folder_name)
-            os.makedirs(folder_path, exist_ok=True)
+            crops_to_emit.append({"type": "mkdir", "folder": folder_name})
 
         existing_mean_embs[folder_name] = cluster_mean
-        current_count = person_counts.get(folder_name, 0)
+        current_count = len(folder_state.get(folder_name, {}).get("scores", {}))
         if current_count >= target_per_person:
             continue
 
-        still_need     = target_per_person - current_count
-        cluster_sorted = sorted(
+        still_need      = target_per_person - current_count
+        cluster_sorted  = sorted(
             [(all_face_images[i], all_quality[i], all_timestamps[i], i) for i in indices],
             key=lambda x: x[1], reverse=True)[:still_need]
 
-        saved, scores = 0, {}
+        new_scores      = {}
+        existing_scores = folder_state.get(folder_name, {}).get("scores", {})
         for (crop, quality, ts, idx) in cluster_sorted:
             if crop.size == 0:
                 continue
             fname = f"gt_{ts:.1f}s_f{idx}.jpg"
-            fpath = os.path.join(folder_path, fname)
-            if not os.path.exists(fpath):
-                cv2.imwrite(fpath, crop, [cv2.IMWRITE_JPEG_QUALITY, 100])
-                saved += 1
-            scores[fname] = round(quality, 4)
+            if fname not in existing_scores:
+                _, buf = cv2.imencode('.jpg', crop, [cv2.IMWRITE_JPEG_QUALITY, 100])
+                crops_to_emit.append({
+                    "type":     "crop_save",
+                    "folder":   folder_name,
+                    "filename": fname,
+                    "data":     base64.b64encode(buf.tobytes()).decode('ascii'),
+                })
+                new_scores[fname] = round(quality, 4)
 
-        if saved == 0:
+        if not new_scores:
             continue
-        _update_info(folder_path, scores, top_n, embed_n)
-        new_count = _count_images(folder_path)
+
+        _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit, top_n, embed_n)
+        new_count = len(folder_state.get(folder_name, {}).get("scores", {}))
         person_counts[folder_name] = new_count
         updated[folder_name]       = new_count
 
-    return next_serial, updated
+    return next_serial, updated, crops_to_emit
 
 
-def _count_images(folder_path):
-    return sum(1 for f in os.listdir(folder_path) if f.lower().endswith(IMG_EXTS))
-
-
-def _update_info(folder_path, new_scores, top_n, embed_n):
-    info_path = os.path.join(folder_path, "_info.json")
-    info = {"embedding_files": [], "backup_files": [], "scores": {}}
-    if os.path.exists(info_path):
-        try:
-            with open(info_path) as fi:
-                info = json.load(fi)
-        except Exception:
-            pass
-
-    info["scores"].update(new_scores)
-    all_imgs = [f for f in os.listdir(folder_path) if f.lower().endswith(IMG_EXTS)]
-    for f in all_imgs:
-        if f not in info["scores"]:
-            img = cv2.imread(os.path.join(folder_path, f))
-            if img is not None:
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                lap  = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-                h, w = img.shape[:2]
-                info["scores"][f] = round((w*h)**0.5 * min(lap, 500) / 500, 4)
-            else:
-                info["scores"][f] = 0.5
-
-    scored = sorted(
-        [(f, info["scores"].get(f, 0)) for f in all_imgs if f in info["scores"]],
-        key=lambda x: x[1], reverse=True)
-    if len(scored) > top_n:
-        for (fn, _) in scored[top_n:]:
+def _load_folder_state(batch_dir):
+    """Load per-folder image state from existing _info.json files (or folder scan)."""
+    state = {}
+    if not os.path.isdir(batch_dir):
+        return state
+    for folder_name in os.listdir(batch_dir):
+        fp = os.path.join(batch_dir, folder_name)
+        if not os.path.isdir(fp) or folder_name.startswith("_"):
+            continue
+        scores = {}
+        info_path = os.path.join(fp, "_info.json")
+        if os.path.exists(info_path):
             try:
-                os.remove(os.path.join(folder_path, fn))
-                info["scores"].pop(fn, None)
+                with open(info_path) as fi:
+                    info = json.load(fi)
+                scores = {k: v for k, v in info.get("scores", {}).items()}
             except Exception:
                 pass
-        scored = scored[:top_n]
+        if not scores:
+            for img_f in os.listdir(fp):
+                if img_f.lower().endswith(IMG_EXTS):
+                    scores[img_f] = 0.5
+        state[folder_name] = {"scores": scores}
+    return state
 
-    info["embedding_files"] = [f for (f, _) in scored[:embed_n]]
-    info["backup_files"]    = [f for (f, _) in scored[embed_n:]]
-    with open(info_path, "w") as fi:
-        json.dump(info, fi, indent=2)
+
+def _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit, top_n=10, embed_n=5):
+    """Update folder_state in memory and append info_save / file_delete events."""
+    fs = folder_state.setdefault(folder_name, {"scores": {}})
+    fs["scores"].update(new_scores)
+
+    all_scored = sorted(fs["scores"].items(), key=lambda x: x[1], reverse=True)
+
+    if len(all_scored) > top_n:
+        for fname, _ in all_scored[top_n:]:
+            crops_to_emit.append({"type": "file_delete", "folder": folder_name, "filename": fname})
+            fs["scores"].pop(fname, None)
+        all_scored = all_scored[:top_n]
+
+    crops_to_emit.append({
+        "type":   "info_save",
+        "folder": folder_name,
+        "info": {
+            "embedding_files": [f for f, _ in all_scored[:embed_n]],
+            "backup_files":    [f for f, _ in all_scored[embed_n:]],
+            "scores":          dict(fs["scores"]),
+        },
+    })

@@ -1,3 +1,9 @@
+import os
+import json
+import pickle
+import argparse
+import numpy as np
+
 DET_SIZE = 640
 
 
@@ -110,6 +116,7 @@ def build_embeddings(photos_dir: str, output_path: str):
         else:
             print(f"✗  {student_id:12s}  {name:30s}  NO FACES DETECTED")
 
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     with open(output_path, "wb") as f:
         pickle.dump(embeddings_db, f)
 

@@ -39,7 +39,7 @@ router = APIRouter()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
-CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ground_truth")
+CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 

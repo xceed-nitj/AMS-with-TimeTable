@@ -107,8 +107,8 @@ async function main() {
 
     // 2. Run ERP auto-match via Python ML service SSE
     console.log('2. Running ERP auto-match (this may take 1-2 minutes)...');
-    const batchDir    = `C:\\Users\\samik\\AMS-with-TimeTable\\server\\ground_truth\\${BATCH}`;
-    const erpPhotosDir = `C:\\Users\\samik\\AMS-with-TimeTable\\server\\erp_photos`;
+    const batchDir    = require('path').join(__dirname, 'ml-data', 'ground_truth', BATCH);
+    const erpPhotosDir = require('path').join(__dirname, 'ml-data', 'erp_photos');
     process.stdout.write('   Matching');
 
     let matchEvents;

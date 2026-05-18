@@ -148,9 +148,44 @@ router.post('/run-attendance', async (req, res) => {
 // ─── Live RTSP Ground Truth (SSE streaming) ───────────────────────
 
 const http = require('http');
+const fs   = require('fs');
+
+const GT_BASE_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
+
+// Internal SSE event types that Node.js handles server-side (not forwarded to client)
+const GT_INTERNAL = new Set(['mkdir_batch', 'mkdir', 'crop_save', 'info_save', 'file_delete']);
+
+function handleGroundTruthEvent(event, batch) {
+    const batchDir = path.join(GT_BASE_DIR, batch);
+    try {
+        if (event.type === 'mkdir_batch') {
+            fs.mkdirSync(batchDir, { recursive: true });
+
+        } else if (event.type === 'mkdir') {
+            fs.mkdirSync(path.join(batchDir, event.folder), { recursive: true });
+
+        } else if (event.type === 'crop_save') {
+            const folderPath = path.join(batchDir, event.folder);
+            fs.mkdirSync(folderPath, { recursive: true });
+            fs.writeFileSync(path.join(folderPath, event.filename), Buffer.from(event.data, 'base64'));
+
+        } else if (event.type === 'info_save') {
+            const folderPath = path.join(batchDir, event.folder);
+            fs.mkdirSync(folderPath, { recursive: true });
+            fs.writeFileSync(path.join(folderPath, '_info.json'), JSON.stringify(event.info, null, 2));
+
+        } else if (event.type === 'file_delete') {
+            const filePath = path.join(batchDir, event.folder, event.filename);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+    } catch (err) {
+        console.error(`[GT] Error handling ${event.type} for ${batch}/${event.folder || ''}:`, err.message);
+    }
+}
 
 router.post('/extract-rtsp-stream', (req, res) => {
-    const body = JSON.stringify(req.body);
+    const body  = JSON.stringify(req.body);
+    const batch = req.body.batch || '';
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -170,11 +205,36 @@ router.post('/extract-rtsp-stream', (req, res) => {
     };
 
     const proxy = http.request(options, (mlRes) => {
+        let buffer = '';
+
         mlRes.on('data', (chunk) => {
-            if (!res.writableEnded) res.write(chunk);
+            buffer += chunk.toString();
+
+            // Process complete SSE events (each terminated by \n\n)
+            let boundary;
+            while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+                const eventText = buffer.substring(0, boundary + 2);
+                buffer = buffer.substring(boundary + 2);
+
+                const dataLine = eventText.trimEnd();
+                if (!dataLine.startsWith('data: ')) {
+                    if (!res.writableEnded) res.write(eventText);
+                    continue;
+                }
+
+                let event = null;
+                try { event = JSON.parse(dataLine.slice(6)); } catch {}
+
+                if (event && GT_INTERNAL.has(event.type)) {
+                    handleGroundTruthEvent(event, batch);
+                } else {
+                    if (!res.writableEnded) res.write(eventText);
+                }
+            }
         });
 
         mlRes.on('end', () => {
+            if (buffer && !res.writableEnded) res.write(buffer);
             if (!res.writableEnded) res.end();
         });
 
