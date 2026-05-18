@@ -47,19 +47,6 @@ class ExtractFacesRequest(BaseModel):
     min_face_size: int = 15
 
 
-class ExtractSaveGTRequest(BaseModel):
-    videoPath: str
-    batchName: str
-    frame_skip: int = 3
-    cluster_threshold: float = 0.45
-    min_samples: int = 3
-    min_images: int = 10
-    det_size: int = 640
-    match_threshold: float = 0.55
-    min_face_size: int = 15
-    laplacian_threshold: float = 30.0
-    top_n: int = 10
-
 
 class SetDetSizeRequest(BaseModel):
     det_size: int = 640

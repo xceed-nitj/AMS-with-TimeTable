@@ -2,22 +2,12 @@
 
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
 const GroundTruthController = require('../controllers/groundTruthController');
 const TimeTable = require('../../../models/timetable');
 
 const controller = new GroundTruthController();
 
-// Multer for direct photo uploads
-const upload = multer({
-    dest: path.join(__dirname, '..', '..', '..', '..', 'temp_uploads'),
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
-        cb(null, allowed.includes(path.extname(file.originalname).toLowerCase()));
-    }
-});
 
 // ─── Ground Truth Management ──────────────────────────────────────
 
@@ -65,41 +55,7 @@ router.get('/photo/:batch/:rollNo/:filename', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ─── Face Extraction from Video (Page 1) ──────────────────────────
-
-// NEW: Extract + auto-save to person_001/… folders (no roll-no needed)
-router.post('/extract-and-save', async (req, res) => {
-    try { await controller.extractAndSaveToFolders(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Extract faces from video link (legacy — returns base64 to browser)
-router.post('/extract-faces', async (req, res) => {
-    try { await controller.extractFaces(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Save tagged faces (face → roll number mapping)
-router.post('/save-tagged-faces', async (req, res) => {
-    try { await controller.saveTaggedFaces(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ─── Photo Selection & Upload (Page 2) ────────────────────────────
-
-// Save selected best photos
-router.post('/save-selected-photos', async (req, res) => {
-    try { await controller.saveSelectedPhotos(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Direct photo upload with face cropping
-router.post('/upload-photos', upload.array('photos', 10), async (req, res) => {
-    try { await controller.uploadPhotos(req, res); }
-    catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ─── Edit & Delete (Page 3) ───────────────────────────────────────
+// ─── Edit & Delete ────────────────────────────────────────────────
 
 router.delete('/student/:batch/:rollNo', async (req, res) => {
     try { await controller.deleteStudent(req, res); }
