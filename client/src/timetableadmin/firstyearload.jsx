@@ -178,6 +178,8 @@ function FirstYearLoad() {
 
       const data = await response.json();
 
+      if (!Array.isArray(data) || data.length === 0) return;
+
       setAvailableSubjects(data);
 
       const uniqueSubjects = [...new Set(data.map((item) => item.subName))];

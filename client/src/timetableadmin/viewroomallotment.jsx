@@ -57,11 +57,13 @@ const ViewAllotmentPage = () => {
 
         const [allotmentData] = data;
 
+        if (!allotmentData) return;
+
         setFormData({
           session: allotmentData.session,
-          centralisedAllotments: allotmentData.centralisedAllotments,
-          openElectiveAllotments: allotmentData.openElectiveAllotments,
-          message: allotmentData.message
+          centralisedAllotments: allotmentData.centralisedAllotments || [],
+          openElectiveAllotments: allotmentData.openElectiveAllotments || [],
+          message: allotmentData.message || ''
         });
       } else {
         console.error('Failed to fetch existing data');
