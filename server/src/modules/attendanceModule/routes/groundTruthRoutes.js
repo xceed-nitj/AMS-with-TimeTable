@@ -3,8 +3,10 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
+const mongoose = require('mongoose');
 const GroundTruthController = require('../controllers/groundTruthController');
 const TimeTable = require('../../../models/timetable');
+const ClusterMatch = require('../../../models/attendanceModule/clusterMatch');
 
 const controller = new GroundTruthController();
 
@@ -111,24 +113,70 @@ const GT_BASE_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'gro
 // Internal SSE event types that Node.js handles server-side (not forwarded to client)
 const GT_INTERNAL = new Set(['mkdir_batch', 'mkdir', 'crop_save', 'info_save', 'file_delete']);
 
-function handleGroundTruthEvent(event, batch) {
+// pythonFolderMap: maps Python-assigned "person_XXX" label → MongoDB ObjectId string
+// scoped per SSE request so parallel streams never collide
+function handleGroundTruthEvent(event, batch, pythonFolderMap) {
     const batchDir = path.join(GT_BASE_DIR, batch);
     try {
         if (event.type === 'mkdir_batch') {
             fs.mkdirSync(batchDir, { recursive: true });
 
         } else if (event.type === 'mkdir') {
+            // Create the folder on disk (name stays person_XXX)
             fs.mkdirSync(path.join(batchDir, event.folder), { recursive: true });
+
+            // Generate a stable ObjectId for this cluster immediately
+            const oid    = new mongoose.Types.ObjectId();
+            const oidStr = oid.toString();
+            pythonFolderMap[event.folder] = oidStr;
+
+            // Persist ClusterMatch record so the _id exists before ERP matching
+            ClusterMatch.create({
+                _id:           oid,
+                batch,
+                folderName:    event.folder,   // e.g. "person_001" — immutable label
+                currentFolder: event.folder,   // tracks actual disk folder; updated on approval
+                status:        'unmatched',
+                imageFiles:    [],
+                imageCount:    0,
+            }).catch(err => {
+                // Duplicate key = folder already registered (re-run / restart), safe to ignore
+                if (err.code !== 11000)
+                    console.error('[GT] ClusterMatch create error:', err.message);
+            });
 
         } else if (event.type === 'crop_save') {
             const folderPath = path.join(batchDir, event.folder);
             fs.mkdirSync(folderPath, { recursive: true });
             fs.writeFileSync(path.join(folderPath, event.filename), Buffer.from(event.data, 'base64'));
 
+            // Update imageFiles list on the ClusterMatch record
+            const oidStr = pythonFolderMap[event.folder];
+            if (oidStr) {
+                ClusterMatch.findByIdAndUpdate(oidStr, {
+                    $addToSet: { imageFiles:    event.filename },
+                    $inc:      { imageCount:    1 },
+                }).catch(() => {});
+            }
+
         } else if (event.type === 'info_save') {
             const folderPath = path.join(batchDir, event.folder);
             fs.mkdirSync(folderPath, { recursive: true });
             fs.writeFileSync(path.join(folderPath, '_info.json'), JSON.stringify(event.info, null, 2));
+
+            // Sync embeddingFiles / previewFiles to DB from the info payload
+            const oidStr = pythonFolderMap[event.folder];
+            if (oidStr && event.info) {
+                const embeds  = event.info.embedding_files || [];
+                const backups = event.info.backup_files    || [];
+                const all     = [...embeds, ...backups];
+                ClusterMatch.findByIdAndUpdate(oidStr, {
+                    $set: {
+                        embeddingFiles: embeds,
+                        previewFiles:   all.slice(0, 6),
+                    },
+                }).catch(() => {});
+            }
 
         } else if (event.type === 'file_delete') {
             const filePath = path.join(batchDir, event.folder, event.filename);
@@ -140,8 +188,9 @@ function handleGroundTruthEvent(event, batch) {
 }
 
 router.post('/extract-rtsp-stream', (req, res) => {
-    const body  = JSON.stringify(req.body);
-    const batch = req.body.batch || '';
+    const body           = JSON.stringify(req.body);
+    const batch          = req.body.batch || '';
+    const pythonFolderMap = {};   // person_XXX → ObjectId string, scoped to this stream
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -182,7 +231,7 @@ router.post('/extract-rtsp-stream', (req, res) => {
                 try { event = JSON.parse(dataLine.slice(6)); } catch {}
 
                 if (event && GT_INTERNAL.has(event.type)) {
-                    handleGroundTruthEvent(event, batch);
+                    handleGroundTruthEvent(event, batch, pythonFolderMap);
                 } else {
                     if (!res.writableEnded) res.write(eventText);
                 }
