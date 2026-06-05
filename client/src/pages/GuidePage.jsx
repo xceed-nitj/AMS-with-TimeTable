@@ -57,10 +57,13 @@ const CONTENT_CSS = `
 /* ── code blocks ── */
 .gc pre {
   background: #1e1b4b;
+  color: #c4b5fd;
   border-left: 4px solid #7c3aed;
   border-radius: 10px;
   padding: 16px 20px; margin: 1.1rem 0; overflow-x: auto;
   box-shadow: 0 4px 16px rgba(124,58,237,.15);
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: .83rem; line-height: 1.7;
 }
 .gc pre code {
   background: transparent; padding: 0;
