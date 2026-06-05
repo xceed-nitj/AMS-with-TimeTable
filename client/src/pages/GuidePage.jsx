@@ -1,18 +1,6 @@
 import { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 import getEnvironment from '../getenvironment';
-
-const QUILL_MODULES = {
-  toolbar: [
-    [{ header: [1, 2, 3, 4, false] }],
-    ['bold', 'italic', 'underline', 'code'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['code-block', 'link'],
-    ['clean'],
-  ],
-};
 
 /* Tab accent colours — one per tab, cycles if more tabs added */
 const TAB_COLORS = [
@@ -104,22 +92,17 @@ const CONTENT_CSS = `
 .gc table td ul { margin: 0; padding-left: 1rem; }
 `;
 
-const QUILL_CSS = `
-.ql-toolbar { background: #f8fafc !important; border-color: #e2e8f0 !important; }
-.ql-toolbar .ql-stroke { stroke: #475569; }
-.ql-toolbar .ql-fill   { fill: #475569; }
-.ql-toolbar .ql-picker-label { color: #475569; }
-.ql-toolbar button:hover .ql-stroke { stroke: #7c3aed; }
-.ql-toolbar button:hover .ql-fill   { fill: #7c3aed; }
-.ql-container { background: #fff !important; border-color: #e2e8f0 !important; min-height: 500px; }
-.ql-editor { color: #1e293b; font-size: 14px; min-height: 500px; line-height: 1.75; }
-.ql-editor h2 { color: #1e1b4b; font-weight: 800; }
-.ql-editor h3 { color: #1e1b4b; font-weight: 700; }
-.ql-editor pre  { background: #1e1b4b; color: #c4b5fd; border-radius: 8px; padding: 12px 16px; }
-.ql-editor code { background: #ede9fe; color: #5b21b6; padding: 2px 6px; border-radius: 4px; }
-.ql-editor table { border-collapse: collapse; width: 100%; }
-.ql-editor table th, .ql-editor table td { border: 1px solid #e0e7ff; padding: 8px 12px; }
-.ql-editor.ql-blank::before { color: #94a3b8; }
+const EDITOR_CSS = `
+.html-editor {
+  width: 100%; min-height: 560px; resize: vertical;
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 13px; line-height: 1.65; color: #1e293b;
+  background: #fafafa; border: 2px solid #e0e7ff;
+  border-radius: 10px; padding: 16px 18px;
+  outline: none; box-sizing: border-box;
+  tab-size: 2;
+}
+.html-editor:focus { border-color: #7c3aed; background: #fff; }
 `;
 
 export default function GuidePage() {
@@ -203,7 +186,7 @@ export default function GuidePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f7ff', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
-      <style>{CONTENT_CSS}{QUILL_CSS}</style>
+      <style>{CONTENT_CSS}{EDITOR_CSS}</style>
 
       {/* ── Hero header ──────────────────────────────────────────────────────── */}
       <div style={{
@@ -326,9 +309,12 @@ export default function GuidePage() {
               </span>
             </div>
 
-            <div style={{ borderRadius: 12, overflow: 'hidden', border: '2px solid #e0e7ff', boxShadow: '0 4px 24px rgba(124,58,237,.08)' }}>
-              <ReactQuill value={editContent} onChange={setEditContent} modules={QUILL_MODULES} theme="snow" />
-            </div>
+            <textarea
+              className="html-editor"
+              value={editContent}
+              onChange={e => setEditContent(e.target.value)}
+              spellCheck={false}
+            />
 
             {saveError && (
               <p style={{ color: '#dc2626', fontSize: 13, marginTop: 10 }}>{saveError}</p>
