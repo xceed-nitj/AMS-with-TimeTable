@@ -460,15 +460,218 @@ ffmpeg -re -stream_loop -1 -i "C:\\Users\\harim\\Videos\\cam2.mp4" -c copy -rtsp
   </tbody>
 </table>`;
 
+const TAB_TIMETABLE = `<h2>Timetable Module — API Reference</h2>
+<p>All routes are registered under the Express router at <code>/api/v1/timetablemodule</code> (and also at <code>/timetablemodule</code> for backward-compatibility). Base URL in development: <code>http://localhost:8010</code>.</p>
+<p>Routes marked <strong>Protected</strong> require a valid JWT cookie (<code>jwt</code>) set by the login endpoint.</p>
+
+<h3>Quick Reference — Most Used Routes</h3>
+<p>These are the endpoints most commonly called by other modules (attendance, certificate, conference).</p>
+<table>
+  <thead><tr><th>What you want</th><th>Method</th><th>Endpoint</th></tr></thead>
+  <tbody>
+    <tr><td>List all departments</td><td>GET</td><td><code>/timetablemodule/mastersem/dept</code></td></tr>
+    <tr><td>Semesters for a department</td><td>GET</td><td><code>/timetablemodule/mastersem/dept/:dept</code></td></tr>
+    <tr><td>All rooms (locked timetable)</td><td>GET</td><td><code>/timetablemodule/lock/rooms</code></td></tr>
+    <tr><td>Semesters in a locked session by dept</td><td>GET</td><td><code>/timetablemodule/lock/sems-by-dept?dept=CSE</code></td></tr>
+    <tr><td>Subjects for dept + sem</td><td>GET</td><td><code>/timetablemodule/lock/subjects-by-dept-sem?dept=CSE&amp;sem=6</code></td></tr>
+    <tr><td>Attendance context (room + slot lookup)</td><td>GET</td><td><code>/timetablemodule/lock/attendance-lookup?room=LT103&amp;slot=8:30-9:30</code></td></tr>
+    <tr><td>Locked class timetable</td><td>GET</td><td><code>/timetablemodule/lock/lockclasstt/:code/:sem</code></td></tr>
+    <tr><td>Faculty list for a department</td><td>GET</td><td><code>/timetablemodule/faculty/dept/:dept</code></td></tr>
+    <tr><td>Subjects for a session + semester</td><td>GET</td><td><code>/timetablemodule/subject/filteredsubject/:code/:sem</code></td></tr>
+    <tr><td>All sessions and departments</td><td>GET</td><td><code>/timetablemodule/timetable/sess/allsessanddept</code></td></tr>
+  </tbody>
+</table>
+
+<h3>1 — Departments &amp; Semesters</h3>
+<p>Base path: <code>/timetablemodule/mastersem</code></p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/dept</td><td>—</td><td>Returns array of all unique department names. Used everywhere a dept dropdown is needed.</td></tr>
+    <tr><td>GET</td><td>/dept/:dept</td><td>—</td><td>Returns all semesters belonging to the given department (e.g. <code>CSE</code>).</td></tr>
+    <tr><td>GET</td><td>/</td><td>—</td><td>Returns all master semester records.</td></tr>
+    <tr><td>GET</td><td>/id/:id</td><td>—</td><td>Returns one semester by MongoDB ID.</td></tr>
+    <tr><td>POST</td><td>/</td><td>Protected</td><td>Create a new master semester entry.</td></tr>
+    <tr><td>PUT</td><td>/:id</td><td>Protected</td><td>Update a master semester.</td></tr>
+    <tr><td>DELETE</td><td>/:id</td><td>Protected</td><td>Delete a master semester.</td></tr>
+  </tbody>
+</table>
+
+<h4>Added Semesters (per session)</h4>
+<p>Base path: <code>/timetablemodule/addsem</code></p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/</td><td>—</td><td>List all semesters added to the current session.</td></tr>
+    <tr><td>GET</td><td>/sem/:code</td><td>—</td><td>Get semesters by session code.</td></tr>
+    <tr><td>POST</td><td>/</td><td>Protected</td><td>Add a semester to the session.</td></tr>
+    <tr><td>DELETE</td><td>/deletebycode/:code</td><td>Protected</td><td>Remove all semesters for a session code.</td></tr>
+  </tbody>
+</table>
+
+<h3>2 — Locked Timetable (LockSem)</h3>
+<p>Base path: <code>/timetablemodule/lock</code> — these are the <strong>published/live</strong> timetable records. Other modules (attendance, conference) read from here.</p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/rooms</td><td>—</td><td>Returns array of all unique room names that appear in any locked timetable. Used to populate room dropdowns in attendance.</td></tr>
+    <tr><td>GET</td><td>/sems-by-dept</td><td>—</td><td>Query: <code>?dept=CSE</code>. Returns all semester numbers for that department in the locked timetable.</td></tr>
+    <tr><td>GET</td><td>/subjects-by-dept-sem</td><td>—</td><td>Query: <code>?dept=CSE&amp;sem=6</code>. Returns list of subjects for that dept + semester from the locked timetable.</td></tr>
+    <tr><td>GET</td><td>/attendance-lookup</td><td>—</td><td>Query: <code>?room=LT103&amp;slot=8:30-9:30</code>. Returns the class scheduled in that room at that slot — batch, subject, faculty, semester. Core of the attendance auto-lookup.</td></tr>
+    <tr><td>GET</td><td>/lockclasstt/:code/:sem</td><td>—</td><td>Get the full locked class timetable for a session code + semester. Returns a 2D slot grid with faculty and room assignments.</td></tr>
+    <tr><td>GET</td><td>/lockfacultytt/:code/:faculty</td><td>—</td><td>Get locked timetable filtered to one faculty member.</td></tr>
+    <tr><td>GET</td><td>/lockroomtt/:code/:room</td><td>—</td><td>Get locked timetable filtered to one room.</td></tr>
+    <tr><td>GET</td><td>/viewsem/:degree/:dept/:sem</td><td>—</td><td>Public view of a semester timetable (used on student-facing pages).</td></tr>
+    <tr><td>GET</td><td>/viewfaculty/:session/:faculty</td><td>—</td><td>Public view of faculty timetable.</td></tr>
+    <tr><td>GET</td><td>/viewroom/:session/:room</td><td>—</td><td>Public view of room timetable.</td></tr>
+    <tr><td>POST</td><td>/locktt</td><td>Protected</td><td>Publish (lock) a timetable — copies current draft into locked collection.</td></tr>
+    <tr><td>DELETE</td><td>/deletebycode/:code</td><td>Protected</td><td>Remove locked timetable for a session code.</td></tr>
+  </tbody>
+</table>
+
+<h3>3 — Faculty</h3>
+<p>Base path: <code>/timetablemodule/faculty</code></p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/dept</td><td>—</td><td>Returns list of all departments that have faculty entries.</td></tr>
+    <tr><td>GET</td><td>/dept/:dept</td><td>—</td><td>Returns all faculty members in a department.</td></tr>
+    <tr><td>GET</td><td>/</td><td>—</td><td>Returns all faculty records.</td></tr>
+    <tr><td>GET</td><td>/id/:id</td><td>—</td><td>Get faculty by MongoDB ID.</td></tr>
+    <tr><td>GET</td><td>/search</td><td>—</td><td>Search faculty by name. Query: <code>?q=sharma</code>.</td></tr>
+    <tr><td>POST</td><td>/</td><td>Protected</td><td>Create a faculty record.</td></tr>
+    <tr><td>PUT</td><td>/:id</td><td>Protected</td><td>Update faculty record.</td></tr>
+    <tr><td>DELETE</td><td>/:id</td><td>Protected</td><td>Delete faculty record.</td></tr>
+  </tbody>
+</table>
+
+<h4>Added Faculty (per session)</h4>
+<p>Base path: <code>/timetablemodule/addfaculty</code></p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/filteredfaculty/:code/:sem</td><td>—</td><td>Get faculty assigned to a specific session code and semester.</td></tr>
+    <tr><td>GET</td><td>/firstyearfaculty/:dept/:code</td><td>—</td><td>Get first-year faculty by department and session code.</td></tr>
+    <tr><td>GET</td><td>/all</td><td>—</td><td>Get all added-faculty records across all sessions.</td></tr>
+    <tr><td>POST</td><td>/</td><td>Protected</td><td>Add faculty to a session.</td></tr>
+    <tr><td>DELETE</td><td>/deletebycode/:code</td><td>Protected</td><td>Remove all faculty for a session code.</td></tr>
+  </tbody>
+</table>
+
+<h3>4 — Rooms</h3>
+<p>Base path: <code>/timetablemodule/masterroom</code></p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/</td><td>—</td><td>Returns all master room records.</td></tr>
+    <tr><td>GET</td><td>/dept/:dept</td><td>—</td><td>Returns rooms for a specific department.</td></tr>
+    <tr><td>GET</td><td>/getroom/:type</td><td>—</td><td>Returns rooms filtered by type (e.g. <code>lecture</code>, <code>lab</code>).</td></tr>
+    <tr><td>GET</td><td>/search</td><td>—</td><td>Search rooms by name. Query: <code>?q=LT</code>.</td></tr>
+    <tr><td>POST</td><td>/</td><td>Protected</td><td>Create a master room entry.</td></tr>
+    <tr><td>PUT</td><td>/:id</td><td>Protected</td><td>Update a room.</td></tr>
+    <tr><td>DELETE</td><td>/:id</td><td>Protected</td><td>Delete a room.</td></tr>
+  </tbody>
+</table>
+
+<h3>5 — Subjects</h3>
+<p>Base path: <code>/timetablemodule/subject</code></p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/filteredsubject/:code/:sem</td><td>—</td><td>Get subjects for a session code + semester. Returns list with subject name, code, faculty, hours.</td></tr>
+    <tr><td>GET</td><td>/subjectdetails/:code</td><td>—</td><td>Get full subject details for a session code.</td></tr>
+    <tr><td>GET</td><td>/firstyearsubject/:code/:dept</td><td>—</td><td>Get first-year subjects for a session + department.</td></tr>
+    <tr><td>GET</td><td>/code/:code</td><td>—</td><td>Get all subjects by session code.</td></tr>
+    <tr><td>GET</td><td>/sem</td><td>—</td><td>Get all available semesters from the subjects collection.</td></tr>
+    <tr><td>POST</td><td>/</td><td>Protected</td><td>Create a subject entry.</td></tr>
+    <tr><td>PUT</td><td>/:id</td><td>—</td><td>Update a subject.</td></tr>
+    <tr><td>DELETE</td><td>/deletebycode/:code</td><td>—</td><td>Delete all subjects for a session code.</td></tr>
+  </tbody>
+</table>
+
+<h3>6 — Sessions (Timetable Config)</h3>
+<p>Base path: <code>/timetablemodule/timetable</code> — top-level container for a timetable session (e.g. "Even Sem 2025-26").</p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/sess/allsessanddept</td><td>—</td><td>Returns all sessions with their departments. Used to populate session dropdowns across the app.</td></tr>
+    <tr><td>GET</td><td>/getcode/:session/:dept</td><td>—</td><td>Get the timetable code for a given session + department.</td></tr>
+    <tr><td>GET</td><td>/getallcodes/:session</td><td>—</td><td>Get all timetable codes for a session (one per department).</td></tr>
+    <tr><td>GET</td><td>/alldetails/:code</td><td>—</td><td>Get full timetable details for a code.</td></tr>
+    <tr><td>POST</td><td>/</td><td>Protected</td><td>Create a new timetable session.</td></tr>
+    <tr><td>PUT</td><td>/publish/:id</td><td>Protected</td><td>Publish a timetable (make it visible to students).</td></tr>
+  </tbody>
+</table>
+
+<h3>7 — Class Timetable (Draft)</h3>
+<p>Base path: <code>/timetablemodule/tt</code> — the working draft before locking.</p>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/viewclasstt/:code/:sem</td><td>Protected</td><td>View draft class timetable for a code + semester.</td></tr>
+    <tr><td>GET</td><td>/viewfacultytt/:code/:facultyname</td><td>Protected</td><td>View draft faculty timetable.</td></tr>
+    <tr><td>GET</td><td>/viewroomtt/:code/:room</td><td>Protected</td><td>View draft room timetable.</td></tr>
+    <tr><td>POST</td><td>/savett</td><td>Protected</td><td>Save the full class timetable.</td></tr>
+    <tr><td>POST</td><td>/saveslot/:day/:slot</td><td>Protected</td><td>Save a single slot for a given day.</td></tr>
+  </tbody>
+</table>
+
+<h3>8 — Other Routes</h3>
+<table>
+  <thead><tr><th>Module</th><th>Base Path</th><th>Key Endpoints</th></tr></thead>
+  <tbody>
+    <tr><td>Faculty Load</td><td>/timetablemodule/commonLoad</td><td>GET <code>/code/:code</code> — load entries for a session; GET <code>/:code/:faculty</code> — one faculty's load</td></tr>
+    <tr><td>Institute Load</td><td>/timetablemodule/instituteLoad</td><td>GET <code>/:session</code> — full institute workload calc; GET <code>/:session/:dept</code> — by department</td></tr>
+    <tr><td>Allotment</td><td>/timetablemodule/allotment</td><td>GET <code>/</code> — all room allotments; GET <code>/current-status</code> — active allotment session</td></tr>
+    <tr><td>Clash Detection</td><td>/timetablemodule/adminclash</td><td>GET <code>/:session</code> — all clashes; GET <code>/:session/summary</code> — clash summary stats</td></tr>
+    <tr><td>Notes</td><td>/timetablemodule/note</td><td>GET <code>/code/:code</code> — notes for a session code</td></tr>
+    <tr><td>Logs</td><td>/timetablemodule/logs</td><td>GET <code>/session/:session</code> — activity logs for session</td></tr>
+    <tr><td>Locked Faculty</td><td>/timetablemodule/lockfaculty</td><td>GET <code>/</code> — all locked faculty availability records</td></tr>
+  </tbody>
+</table>
+
+<h3>Common Patterns</h3>
+<h4>Session Code</h4>
+<p>A <strong>session code</strong> is a unique string that identifies one department's timetable within a session. It looks like <code>ODD2425_CSE</code> (session name + underscore + department). Most routes use <code>:code</code> to refer to this.</p>
+
+<h4>Fetching Departments → Semesters → Subjects (cascade)</h4>
+<pre><code># 1. Get all departments
+GET /api/v1/timetablemodule/mastersem/dept
+→ ["CSE", "ECE", "ME", "CE", ...]
+
+# 2. Get semesters for a department
+GET /api/v1/timetablemodule/mastersem/dept/CSE
+→ [{ sem: "1", dept: "CSE", ... }, { sem: "3", ... }, ...]
+
+# 3. Get subjects for a dept + sem (from locked data)
+GET /api/v1/timetablemodule/lock/subjects-by-dept-sem?dept=CSE&amp;sem=6
+→ ["Digital Electronics", "Microprocessors", ...]
+
+# 4. Get full locked timetable for a code + sem
+GET /api/v1/timetablemodule/lock/lockclasstt/ODD2425_CSE/6
+→ { slotGrid: [[...], ...], faculty: [...], rooms: [...] }</code></pre>
+
+<h4>Attendance Auto-Lookup Flow</h4>
+<pre><code># Given a room and time slot, resolve which class is running:
+GET /api/v1/timetablemodule/lock/attendance-lookup?room=LT103&amp;slot=8:30-9:30
+→ {
+    batch: "BTECH_CSE_2023",
+    subject: "Digital Electronics",
+    faculty: "Dr. Sharma",
+    semester: "6",
+    department: "CSE"
+  }</code></pre>`;
+
 const DEFAULT_TABS = [
   { id: "setup",      title: "Setup & Run",                    content: TAB_SETUP,      order: 0 },
   { id: "attendance", title: "Facial Recognition Attendance",  content: TAB_ATTENDANCE, order: 1 },
   { id: "rtsp",       title: "Local RTSP Stream",              content: TAB_RTSP,       order: 2 },
+  { id: "timetable",  title: "Timetable API",                  content: TAB_TIMETABLE,  order: 3 },
 ];
 
 // ─── Controller functions ───────────────────────────────────────────────────
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 const getGuide = async (req, res) => {
   try {

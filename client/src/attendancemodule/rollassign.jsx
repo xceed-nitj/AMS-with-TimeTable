@@ -308,7 +308,8 @@ export default function RollAssign() {
     };
 
     // ── Assign single (manual inline) ────────────────────────────────
-    const assignManual = async (folderName) => {
+    const assignManual = async (item) => {
+        const { folderName, _id } = item;
         const rollNo = (inlineRolls[folderName] || '').trim().toUpperCase();
         if (!rollNo) { showToast('Enter a roll number', 'error'); return; }
         setSaving(folderName);
@@ -316,7 +317,7 @@ export default function RollAssign() {
             const res  = await fetch(`${RA_BASE}/approve`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ batch: batchName, folderName, rollNo }),
+                body:    JSON.stringify({ id: _id, rollNo }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed');
@@ -337,9 +338,11 @@ export default function RollAssign() {
     };
 
     // ── Approve from modal ───────────────────────────────────────────
-    const handleApprove = async (folderName, rollNo) => {
+    const handleApprove = async (item, rollNo) => {
+        const { folderName, _id } = item;
         const trimmed = (rollNo || '').trim().toUpperCase();
         if (!trimmed) { showToast('Enter a roll number', 'error'); return; }
+        if (!_id) { showToast('Cluster ID missing — reload the page', 'error'); return; }
         setSaving(folderName);
 
         const queueSnapshot = [...pendingReview, ...mergedItems, ...flaggedItems];
@@ -347,7 +350,7 @@ export default function RollAssign() {
         try {
             const res  = await fetch(`${RA_BASE}/approve`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ batch: batchName, folderName, rollNo: trimmed }),
+                body: JSON.stringify({ id: _id, rollNo: trimmed }),
             });
             let data;
             try { data = await res.json(); } catch { data = {}; }
@@ -369,7 +372,9 @@ export default function RollAssign() {
     };
 
     // ── Flag ─────────────────────────────────────────────────────────
-    const handleFlag = async (folderName, match) => {
+    const handleFlag = async (item, match) => {
+        const { folderName, _id } = item;
+        if (!_id) { showToast('Cluster ID missing — reload the page', 'error'); return; }
         setSaving(folderName);
 
         // Capture queue snapshot before async state updates
@@ -379,7 +384,7 @@ export default function RollAssign() {
             const res = await fetch(`${RA_BASE}/flag`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    batch: batchName, folderName,
+                    id: _id,
                     suggestedRollNo: match?.rollNo     || match?.best?.rollNo     || null,
                     confidence:      match?.confidence || match?.best?.confidence || null,
                     reason: 'operator_rejected',
@@ -451,7 +456,7 @@ export default function RollAssign() {
 
         const candidates = pendingReview
             .filter(r => matches[r.folderName]?.best?.confidence >= HIGH)
-            .map(r => ({ folderName: r.folderName, match: matches[r.folderName] }));
+            .map(r => ({ _id: r._id, folderName: r.folderName, match: matches[r.folderName] }));
 
         const seen = new Map();
         for (const c of candidates) {
@@ -473,7 +478,7 @@ export default function RollAssign() {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     batch: batchName,
-                    assignments: toApprove.map(c => ({ folderName: c.folderName, rollNo: c.match.best.rollNo })),
+                    assignments: toApprove.map(c => ({ id: c._id, folderName: c.folderName, rollNo: c.match.best.rollNo })),
                 }),
             });
             const data = await res.json();
@@ -620,8 +625,8 @@ export default function RollAssign() {
                             batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
                             overrideRoll={overrideRoll} setOverrideRoll={setOverrideRoll}
                             saving={saving === modal.item.folderName}
-                            onApprove={() => handleApprove(modal.item.folderName, overrideRoll)}
-                            onFlag={() => handleFlag(modal.item.folderName, modal.match)}
+                            onApprove={() => handleApprove(modal.item, overrideRoll)}
+                            onFlag={() => handleFlag(modal.item, modal.match)}
                             onClose={() => setModal(null)}
                             hasPrev={queueIdx > 0}
                             hasNext={queueIdx < reviewQueue.length - 1}
@@ -825,7 +830,7 @@ export default function RollAssign() {
                                 mode={mode}
                                 rollValue={inlineRolls[item.folderName] || ''}
                                 onRollChange={v => setInlineRolls(prev => ({ ...prev, [item.folderName]: v }))}
-                                onAssign={() => assignManual(item.folderName)}
+                                onAssign={() => assignManual(item)}
                                 saving={saving === item.folderName}
                                 onClick={() => openModal(item)}
                                 disabled={matching}
@@ -883,7 +888,7 @@ export default function RollAssign() {
                                     isMerged
                                     rollValue={inlineRolls[item.folderName] || ''}
                                     onRollChange={v => setInlineRolls(prev => ({ ...prev, [item.folderName]: v }))}
-                                    onAssign={() => assignManual(item.folderName)}
+                                    onAssign={() => assignManual(item)}
                                     saving={saving === item.folderName}
                                     onClick={() => openModal(item)}
                                 />
@@ -902,7 +907,7 @@ export default function RollAssign() {
                                 mode={mode}
                                 rollValue={inlineRolls[item.folderName] || ''}
                                 onRollChange={v => setInlineRolls(prev => ({ ...prev, [item.folderName]: v }))}
-                                onAssign={() => assignManual(item.folderName)}
+                                onAssign={() => assignManual(item)}
                                 saving={saving === item.folderName}
                                 onClick={() => openModal(item)}
                                 isFlagged
@@ -1291,9 +1296,10 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                        overrideRoll, setOverrideRoll,
                        saving, onApprove, onFlag, onClose,
                        hasPrev, hasNext, onPrev, onNext, position, total }) {
-    const conf           = match?.confidence;
-    const candidates     = match?.candidates || [];
-    const folderForPhoto = item.currentFolder || item.folderName;
+    const conf             = match?.confidence;
+    const candidates       = match?.candidates || [];
+    const folderForPhoto   = item.currentFolder || item.folderName;
+    const [candOpen, setCandOpen] = useState(false);
 
     useEffect(() => {
         const handler = (e) => {
@@ -1318,7 +1324,7 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
             onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
             <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12,
-                width: '100%', maxWidth: 760, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                width: '100%', maxWidth: 760, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 16px', borderBottom: `1px solid ${theme.border}`, gap: 10 }}>
                     <button onClick={onPrev} disabled={!hasPrev || saving} style={navBtnStyle(hasPrev && !saving)}>&#8592;</button>
@@ -1338,7 +1344,10 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                     <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer', marginLeft: 4 }}>×</button>
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20 }}>
+                <div style={{ flex: 1, padding: '20px 20px 28px', display: 'grid',
+                    gridTemplateColumns: '1fr 272px', gap: 20, overflow: 'hidden' }}>
+
+                    {/* Left: face images grid — fixed, no scroll */}
                     <div>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted,
                                       marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -1353,67 +1362,89 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                             ))}
                         </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+                    {/* Right: compact ERP + collapsible candidates + input + buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                        {/* ERP Match — large photo, rollNo + % below */}
                         <div>
-                            <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted,
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted,
                                           marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 ERP Match
                             </div>
                             {match?.erpPhoto ? (
-                                <div style={{ textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    gap: 12, padding: '10px 12px', borderRadius: 8, background: theme.bg,
+                                    border: `1.5px solid ${confidenceColor(conf)}44` }}>
                                     <img src={erpPhotoUrl(match.erpPhoto)} alt="ERP"
-                                        style={{ width: 120, height: 120, objectFit: 'cover',
-                                                 borderRadius: 8, border: `3px solid ${confidenceColor(conf)}` }}
+                                        style={{ width: 96, height: 96, objectFit: 'cover', flexShrink: 0,
+                                                 borderRadius: 7, border: `3px solid ${confidenceColor(conf)}` }}
                                         onError={e => { e.target.style.display = 'none'; }} />
-                                    <div style={{ marginTop: 8, fontSize: '15px', fontWeight: 800, color: theme.text }}>
-                                        {match.rollNo}
-                                    </div>
-                                    <div style={{ fontSize: '12px', color: confidenceColor(conf), fontWeight: 600 }}>
-                                        {confidenceLabel(conf)} · {(conf * 100).toFixed(1)}%
+                                    <div>
+                                        <div style={{ fontSize: '15px', fontWeight: 800,
+                                            color: theme.text, fontFamily: theme.fontMono }}>
+                                            {match.rollNo}
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: confidenceColor(conf), fontWeight: 600, marginTop: 4 }}>
+                                            {confidenceLabel(conf)} · {(conf * 100).toFixed(1)}%
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: '13px', padding: '20px 0' }}>
-                                    No ERP match. Enter manually.
+                                <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: '13px',
+                                    padding: '10px 0', borderRadius: 8, background: theme.bg,
+                                    border: `1px dashed ${theme.border}` }}>
+                                    No ERP match — enter manually
                                 </div>
                             )}
                         </div>
 
+                        {/* Other Candidates — collapsible accordion, no scrollbar */}
                         {candidates.length > 1 && (
-                            <div>
-                                <div style={{ fontSize: '11px', color: theme.textMuted, fontWeight: 600,
-                                              marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    Other Candidates
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {candidates.slice(1).map((c, i) => (
-                                        <div key={i} onClick={() => setOverrideRoll(c.rollNo)}
-                                             style={{ display: 'flex', alignItems: 'center', gap: 10,
-                                                 padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
-                                                 background: overrideRoll === c.rollNo ? theme.accentDim : theme.bg,
-                                                 border: `1.5px solid ${overrideRoll === c.rollNo ? theme.accent : theme.border}`,
-                                                 transition: 'all 0.12s' }}>
-                                            {c.erpPhoto && (
-                                                <img src={erpPhotoUrl(c.erpPhoto)} alt=""
-                                                     style={{ width: 64, height: 64, borderRadius: 6, objectFit: 'cover',
-                                                              flexShrink: 0, border: `2px solid ${confidenceColor(c.confidence)}` }}
-                                                     onError={e => { e.target.style.display = 'none'; }} />
-                                            )}
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '13px', fontWeight: 700, color: theme.text, fontFamily: theme.fontMono }}>{c.rollNo}</div>
-                                                <div style={{ fontSize: '11px', color: confidenceColor(c.confidence), fontWeight: 600, marginTop: 2 }}>
-                                                    {confidenceLabel(c.confidence)} · {(c.confidence * 100).toFixed(1)}%
+                            <div style={{ borderRadius: 8, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
+                                <button
+                                    onClick={() => setCandOpen(o => !o)}
+                                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '8px 12px', background: theme.bg, border: 'none',
+                                        cursor: 'pointer', fontSize: '11px', fontWeight: 600,
+                                        color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    <span>Other Candidates ({candidates.length - 1})</span>
+                                    <span style={{ fontSize: '10px', transition: 'transform 0.2s',
+                                        display: 'inline-block', transform: candOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
+                                </button>
+                                {candOpen && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px' }}>
+                                        {candidates.slice(1).map((c, i) => (
+                                            <div key={i} onClick={() => setOverrideRoll(c.rollNo)}
+                                                 style={{ display: 'flex', alignItems: 'center', gap: 8,
+                                                     padding: '6px 8px', borderRadius: 6, cursor: 'pointer',
+                                                     background: overrideRoll === c.rollNo ? theme.accentDim : theme.surface,
+                                                     border: `1.5px solid ${overrideRoll === c.rollNo ? theme.accent : theme.border}`,
+                                                     transition: 'all 0.12s' }}>
+                                                {c.erpPhoto && (
+                                                    <img src={erpPhotoUrl(c.erpPhoto)} alt=""
+                                                         style={{ width: 40, height: 40, borderRadius: 5, objectFit: 'cover',
+                                                                  flexShrink: 0, border: `2px solid ${confidenceColor(c.confidence)}` }}
+                                                         onError={e => { e.target.style.display = 'none'; }} />
+                                                )}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '12px', fontWeight: 700, color: theme.text,
+                                                        fontFamily: theme.fontMono }}>{c.rollNo}</div>
+                                                    <div style={{ fontSize: '10px', color: confidenceColor(c.confidence), fontWeight: 600, marginTop: 1 }}>
+                                                        {confidenceLabel(c.confidence)} · {(c.confidence * 100).toFixed(1)}%
+                                                    </div>
                                                 </div>
+                                                {overrideRoll === c.rollNo && (
+                                                    <span style={{ fontSize: '13px', color: theme.accent }}>✓</span>
+                                                )}
                                             </div>
-                                            {overrideRoll === c.rollNo && (
-                                                <span style={{ fontSize: '14px', color: theme.accent }}>✓</span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
 
+                        {/* Roll number input */}
                         <div>
                             <div style={{ fontSize: '11px', color: theme.textMuted, fontWeight: 600, marginBottom: 5 }}>Roll Number</div>
                             <input
@@ -1424,6 +1455,7 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                             />
                         </div>
 
+                        {/* Action buttons — always visible */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
                             <button onClick={onApprove} disabled={saving || !overrideRoll.trim()}
                                 style={{ padding: '10px 0', borderRadius: 7, border: 'none',
