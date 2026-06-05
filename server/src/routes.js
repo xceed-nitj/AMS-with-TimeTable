@@ -50,4 +50,7 @@ v1router.use("/diabeticsModule", diabeticsModule);
 const mlRoutes = require("./modules/attendanceModule/routes/mlRoutes");
 v1router.use("/ml", mlRoutes);
 
+const guideModule = require("./modules/guideModule/routes/index");
+v1router.use("/guide", guideModule);
+
 module.exports = v1router;

@@ -60,6 +60,7 @@ import FacultyLoadCOE from './timetableadmin/facultyloadcoe.jsx';
 import AdminClash from './timetableadmin/AdminClashes.jsx';
 
 import Home from './pages/Home';
+import GuidePage from './pages/GuidePage';
 import ErrorPage from './pages/ErrorPage.jsx';
 import animation404 from '../src/assets/404.json';
 import { LogoAnimation } from './components/login/LogoAnimation.jsx';
@@ -224,6 +225,7 @@ function App() {
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<Home />} />
+        <Route path="/guide" element={<GuidePage />} />
         <Route path="/nirf" element={<NirfRanking />} />
 
         <Route path="/services/:serviceId" element={<ServicePage />} />
