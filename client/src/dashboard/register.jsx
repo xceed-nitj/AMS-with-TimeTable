@@ -188,6 +188,22 @@ const RegistrationForm = () => {
           >
             Diabetics Module Admin
           </Checkbox>
+          <Checkbox
+            name="iams-admin"
+            value="iams-admin"
+            isChecked={formData.roles.includes('iams-admin')}
+            onChange={handleInputChange}
+          >
+            IAMS Admin
+          </Checkbox>
+          <Checkbox
+            name="iams-dept-admin"
+            value="iams-dept-admin"
+            isChecked={formData.roles.includes('iams-dept-admin')}
+            onChange={handleInputChange}
+          >
+            IAMS Department Admin
+          </Checkbox>
         </VStack>
         <Button colorScheme="teal" onClick={handleSubmit}>
           Register

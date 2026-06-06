@@ -2,6 +2,7 @@
 
 import os
 import re
+import uuid
 import json
 import time
 import base64
@@ -30,12 +31,25 @@ CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth"
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
-# ── Global stop flag ──────────────────────────────────────────────────────────
-_stop_event = threading.Event()
+# ── Per-job registry (enables parallel attendance AND ground-truth runs) ──────
+# Each entry: { "stop": Event, "frame": bytes|None, "lock": Lock }
+_jobs: dict = {}
+_jobs_lock  = threading.Lock()
 
-# ── Preview frame store ───────────────────────────────────────────────────────
-_preview_frame = None
-_preview_lock  = threading.Lock()
+def _new_job() -> tuple:
+    job_id = str(uuid.uuid4())
+    job    = {"stop": threading.Event(), "frame": None, "lock": threading.Lock()}
+    with _jobs_lock:
+        _jobs[job_id] = job
+    return job_id, job
+
+def _finish_job(job_id: str, job: dict):
+    job["stop"].set()
+    def _cleanup():
+        time.sleep(10)          # keep entry briefly so preview drain can finish
+        with _jobs_lock:
+            _jobs.pop(job_id, None)
+    threading.Thread(target=_cleanup, daemon=True).start()
 
 
 class _RTSPReader:
@@ -112,29 +126,31 @@ def _open_capture(rtsp_url: str) -> cv2.VideoCapture:
     return cap
 
 
-def _update_preview(frame, zoom_boxes, current_pass=0):
-    global _preview_frame
-    vis    = frame.copy()
+def _make_preview_cb(job: dict):
+    """Return a frame-annotation callback that writes into the given job's frame buffer."""
     colors = [
         (0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0),
         (0, 255, 255), (255, 0, 255), (0, 128, 255),
     ]
-    for idx, box in enumerate(zoom_boxes):
-        x1, y1, x2, y2 = box
-        color     = colors[idx % len(colors)]
-        thickness = 4 if idx == current_pass else 2
-        cv2.rectangle(vis, (x1, y1), (x2, y2), color, thickness)
-        if idx == current_pass:
-            label = f"SCANNING Z{idx + 1}"
-            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
-            cv2.rectangle(vis, (x1, y1), (x1 + tw + 10, y1 + th + 10), color, -1)
-            cv2.putText(vis, label, (x1 + 5, y1 + th + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
-        else:
-            cv2.putText(vis, f"Z{idx + 1}", (x1 + 5, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
-    prev = cv2.resize(vis, (960, 540))
-    _, buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 95])
-    with _preview_lock:
-        _preview_frame = buf.tobytes()
+    def cb(frame, zoom_boxes, current_pass=0):
+        vis = frame.copy()
+        for idx, box in enumerate(zoom_boxes):
+            x1, y1, x2, y2 = box
+            color     = colors[idx % len(colors)]
+            thickness = 4 if idx == current_pass else 2
+            cv2.rectangle(vis, (x1, y1), (x2, y2), color, thickness)
+            if idx == current_pass:
+                label = f"SCANNING Z{idx + 1}"
+                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
+                cv2.rectangle(vis, (x1, y1), (x1 + tw + 10, y1 + th + 10), color, -1)
+                cv2.putText(vis, label, (x1 + 5, y1 + th + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+            else:
+                cv2.putText(vis, f"Z{idx + 1}", (x1 + 5, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+        prev = cv2.resize(vis, (960, 540))
+        _, buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        with job["lock"]:
+            job["frame"] = buf.tobytes()
+    return cb
 
 
 # ── Request models ────────────────────────────────────────────────────────────
@@ -147,6 +163,7 @@ class RTSPRequest(BaseModel):
     targetImgsPerPerson: int   = 10
     minSamples:          int   = 3
     clusterThreshold:    float = 0.45
+    jobId:               str   = ""
 
 
 class RTSPAttendanceRequest(BaseModel):
@@ -173,12 +190,16 @@ class RTSPAttendanceRequest(BaseModel):
 # ── Preview endpoint ──────────────────────────────────────────────────────────
 
 @router.get("/rtsp-preview")
-def rtsp_preview():
+def rtsp_preview(jobId: str = ""):
+    with _jobs_lock:
+        job = _jobs.get(jobId) if jobId else None
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found or already finished")
     def generate():
         try:
-            while not _stop_event.is_set():
-                with _preview_lock:
-                    frame = _preview_frame
+            while not job["stop"].is_set():
+                with job["lock"]:
+                    frame = job["frame"]
                 if frame:
                     yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
                     time.sleep(0.033)
@@ -186,7 +207,6 @@ def rtsp_preview():
                     time.sleep(0.05)
         except GeneratorExit:
             pass
-    _stop_event.clear()
     return StreamingResponse(
         generate(),
         media_type="multipart/x-mixed-replace; boundary=frame",
@@ -194,9 +214,20 @@ def rtsp_preview():
     )
 
 
+class StopRequest(BaseModel):
+    jobId: str = ""
+
 @router.post("/stop-rtsp-stream")
-def stop_rtsp_stream():
-    _stop_event.set()
+def stop_rtsp_stream(req: StopRequest = StopRequest()):
+    if req.jobId:
+        with _jobs_lock:
+            job = _jobs.get(req.jobId)
+        if job:
+            job["stop"].set()
+    else:
+        with _jobs_lock:
+            for j in _jobs.values():
+                j["stop"].set()
     return {"status": "stop_requested"}
 
 
@@ -211,10 +242,21 @@ def extract_rtsp_stream(req: RTSPRequest):
         state.load_model_fn(det_size=req.detSize)
 
     def generate():
+        if req.jobId:
+            with _jobs_lock:
+                _existing = _jobs.get(req.jobId)
+            if _existing:
+                job_id, job = req.jobId, _existing
+                job["stop"].clear()
+            else:
+                job_id, job = _new_job()
+        else:
+            job_id, job = _new_job()
+        preview_cb = _make_preview_cb(job)
         def sse(obj):
             return f"data: {json.dumps(obj)}\n\n"
+        yield sse({"type": "job_id", "jobId": job_id})
         print("🟢 GENERATOR STARTED", flush=True)
-        _stop_event.clear()
 
         batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
 
@@ -294,7 +336,7 @@ def extract_rtsp_stream(req: RTSPRequest):
 
         try:
             while True:
-                if _stop_event.is_set():
+                if job["stop"].is_set():
                     logger.info("Stop signal received")
                     yield sse({"type": "stage", "message": "Stop signal received — finishing up…"})
                     break
@@ -331,8 +373,8 @@ def extract_rtsp_stream(req: RTSPRequest):
                 try:
                     prev_raw = cv2.resize(frame, (960, 540))
                     _, raw_buf = cv2.imencode('.jpg', prev_raw, [cv2.IMWRITE_JPEG_QUALITY, 95])
-                    with _preview_lock:
-                        _preview_frame = raw_buf.tobytes()
+                    with job["lock"]:
+                        job["frame"] = raw_buf.tobytes()
                 except Exception:
                     pass
 
@@ -340,7 +382,7 @@ def extract_rtsp_stream(req: RTSPRequest):
                 try:
                     detections = _detect_faces_tiled(
                         state.face_app, frame, ui_mask,
-                        preview_cb=_update_preview,
+                        preview_cb=preview_cb,
                     )
                 except Exception as e:
                     print(f"🔴 DETECTION CRASHED frame={frame_count}: {type(e).__name__}: {e}", flush=True)
@@ -429,6 +471,7 @@ def extract_rtsp_stream(req: RTSPRequest):
         finally:
             reader.release()
             cluster_pool.shutdown(wait=False, cancel_futures=True)
+            _finish_job(job_id, job)
             print("GENERATOR FINALLY BLOCK REACHED", flush=True)
 
         if len(all_embeddings) >= req.minSamples:
@@ -468,16 +511,17 @@ def extract_rtsp_stream(req: RTSPRequest):
 # Both the SSE route and the sync route consume this.
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _attendance_pipeline(req: RTSPAttendanceRequest):
+def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     """
     Core attendance logic as a regular (synchronous) generator.
     Yields plain dicts: {"type": "stage"|"frame"|"done"|"error", ...}
     No SSE wrapping here — callers decide how to use the events.
+    job: per-request dict with keys "stop" (Event), "frame" (bytes|None), "lock" (Lock).
     """
     batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
     logger.info("[attendance] batch_dir=%s", batch_dir)
-    _stop_event.clear()
- 
+    job["stop"].clear()
+
     if not os.path.isdir(batch_dir):
         yield {"type": "error", "message": f"Ground truth folder not found: {batch_dir}."}
         return
@@ -615,8 +659,8 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
             try:
                 prev = cv2.resize(frame, (960, 540)) if frame.shape[1] > 960 else frame.copy()
                 _, prev_buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 70])
-                with _preview_lock:
-                    _preview_frame = prev_buf.tobytes()
+                with job["lock"]:
+                    job["frame"] = prev_buf.tobytes()
             except Exception:
                 pass
  
@@ -634,8 +678,8 @@ def _attendance_pipeline(req: RTSPAttendanceRequest):
                    "remaining": round(req.durationSec - elapsed, 1), "camera": cam_idx + 1}
     finally:
         reader.release()
-        _stop_event.set()
- 
+        job["stop"].set()
+
     if not all_embeddings:
         yield {"type": "error", "message": "No faces detected during the recording."}
         return
@@ -802,11 +846,17 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
     if state.face_app is None:
         raise HTTPException(status_code=503, detail="Face model not loaded")
 
+    job_id, job = _new_job()
+
     def generate():
         def sse(obj):
             return f"data: {json.dumps(obj)}\n\n"
-        for event in _attendance_pipeline(req):
-            yield sse(event)
+        yield sse({"type": "job_id", "jobId": job_id})
+        try:
+            for event in _attendance_pipeline(req, job):
+                yield sse(event)
+        finally:
+            _finish_job(job_id, job)
 
     return StreamingResponse(
         generate(), media_type="text/event-stream",
@@ -823,19 +873,23 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
     if state.face_app is None:
         raise HTTPException(status_code=503, detail="Face model not loaded")
 
+    job_id, job = _new_job()
     result_payload = None
     error_message  = None
     stages         = []
 
-    for event in _attendance_pipeline(req):
-        t = event.get("type")
-        if t == "done":
-            result_payload = event.get("result")
-        elif t == "error":
-            error_message = event.get("message")
-        elif t == "stage":
-            stages.append(event.get("message", ""))
-        # "frame" events are dropped — too verbose for a sync response
+    try:
+        for event in _attendance_pipeline(req, job):
+            t = event.get("type")
+            if t == "done":
+                result_payload = event.get("result")
+            elif t == "error":
+                error_message = event.get("message")
+            elif t == "stage":
+                stages.append(event.get("message", ""))
+            # "frame" events are dropped — too verbose for a sync response
+    finally:
+        _finish_job(job_id, job)
 
     if error_message:
         raise HTTPException(status_code=422, detail=error_message)
@@ -845,22 +899,50 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
     return JSONResponse(content={**result_payload, "stages": stages})
 
 
-# ── Preview helper ────────────────────────────────────────────────────────────
+# ── Per-job attendance preview (MJPEG, one stream per parallel run) ───────────
+
+@router.get("/attendance-frame-preview")
+def attendance_frame_preview(jobId: str = ""):
+    """MJPEG stream for a specific parallel attendance job."""
+    job = _jobs.get(jobId)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found or already finished")
+
+    def generate():
+        try:
+            while not job["stop"].is_set():
+                with job["lock"]:
+                    frame = job["frame"]
+                if frame:
+                    yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
+                    time.sleep(0.033)
+                else:
+                    time.sleep(0.05)
+        except GeneratorExit:
+            pass
+
+    return StreamingResponse(
+        generate(),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── Preview helper (ground-truth acquisition) ─────────────────────────────────
 
 class PreviewRequest(BaseModel):
     rtspUrl: str
 
 @router.post("/start-preview")
 def start_preview(req: PreviewRequest):
-    global _preview_frame
-    _stop_event.clear()
+    job_id, job = _new_job()
     placeholder = np.zeros((540, 960, 3), dtype=np.uint8)
     cv2.putText(placeholder, "Connecting to stream...", (300, 270),
                 cv2.FONT_HERSHEY_SIMPLEX, 1.2, (80, 80, 80), 2, cv2.LINE_AA)
     _, buf = cv2.imencode('.jpg', placeholder, [cv2.IMWRITE_JPEG_QUALITY, 70])
-    with _preview_lock:
-        _preview_frame = buf.tobytes()
-    return {"status": "ok"}
+    with job["lock"]:
+        job["frame"] = buf.tobytes()
+    return {"status": "ok", "jobId": job_id}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

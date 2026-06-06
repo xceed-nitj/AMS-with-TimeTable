@@ -74,7 +74,7 @@ const PersonCard = ({ id, count, target }) => {
 };
 
 // ─── Live Preview Component ───────────────────────────────────────────────────
-const LivePreview = ({ apiBase, isRunning }) => {
+const LivePreview = ({ apiBase, isRunning, jobId }) => {
     const [showPreview, setShowPreview] = useState(true);
     const [loaded, setLoaded]           = useState(false);
     const [sessionKey, setSessionKey]   = useState(0);
@@ -150,10 +150,10 @@ const LivePreview = ({ apiBase, isRunning }) => {
                         </div>
                     )}
 
-                    {isRunning && (
+                    {isRunning && jobId && (
                         <img
                             key={sessionKey}
-                            src={`${apiBase}/rtsp-preview?quality=95&scale=1.0`}
+                            src={`${apiBase}/rtsp-preview?jobId=${encodeURIComponent(jobId)}`}
                             alt="Live RTSP Preview"
                             style={{ width: '100%', display: 'block' }}
                             onLoad={handleImgLoad}
@@ -200,6 +200,8 @@ export default function GroundTruthRTSP() {
     const [targetImgs, setTargetImgs] = useState(10);
     const [minSamples, setMinSamples] = useState(3);
     const [clusterThr, setClusterThr] = useState(0.45);
+
+    const [gtJobId,       setGtJobId]       = useState(null);
 
     const [status,        setStatus]        = useState('idle');  // idle | running | stopping | retrying | done | error
     const [log,           setLog]           = useState([]);
@@ -258,9 +260,13 @@ export default function GroundTruthRTSP() {
     // ── stop acquisition (shared by single & combined) ────────────────────────
     const stopStream = useCallback(async () => {
         try {
-            await fetch(`${API_BASE}/stop-rtsp-stream`, { method: 'POST' });
+            await fetch(`${API_BASE}/stop-rtsp-stream`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(gtJobId ? { jobId: gtJobId } : {}),
+            });
         } catch { /* backend may not respond if already stopped */ }
-    }, []);
+    }, [gtJobId]);
 
     // ── single-camera start acquisition ───────────────────────────────────────
     const handleStart = useCallback(async (overrideCamera) => {
@@ -283,6 +289,7 @@ export default function GroundTruthRTSP() {
         abortRef.current = controller;
 
         addLog(`▶ Connecting to ${cam.label}…`, theme.accent);
+        let currentJobId = null;
         try {
             const previewRes = await Promise.race([
                 fetch(`${API_BASE}/start-preview`, {
@@ -292,7 +299,15 @@ export default function GroundTruthRTSP() {
                 }),
                 new Promise((_, rej) => setTimeout(() => rej(new Error('preview timeout')), 4000)),
             ]);
-            if (!previewRes.ok) addLog('⚠ Preview stream unavailable', theme.textMuted);
+            if (!previewRes.ok) {
+                addLog('⚠ Preview stream unavailable', theme.textMuted);
+            } else {
+                const previewData = await previewRes.json().catch(() => ({}));
+                if (previewData.jobId) {
+                    currentJobId = previewData.jobId;
+                    setGtJobId(previewData.jobId);
+                }
+            }
         } catch (e) {
             addLog(`⚠ Preview: ${e.message}`, theme.textMuted);
         }
@@ -311,6 +326,7 @@ export default function GroundTruthRTSP() {
                     targetImgsPerPerson: targetImgs,
                     minSamples,
                     clusterThreshold:    clusterThr,
+                    jobId:               currentJobId || '',
                 }),
             });
 
@@ -374,6 +390,11 @@ export default function GroundTruthRTSP() {
                             if (!combinedMode) {
                                 showToast(`${ev.people_detected} people — ${ev.images_saved} images saved`);
                             }
+                            break;
+
+                        case 'job_id':
+                            // Fallback: set jobId from SSE if start-preview failed to return one
+                            if (ev.jobId && !currentJobId) setGtJobId(ev.jobId);
                             break;
 
                         case 'error':
@@ -711,7 +732,7 @@ export default function GroundTruthRTSP() {
             </div>
 
             {/* Live Preview */}
-            <LivePreview apiBase={API_BASE} isRunning={isRunning} />
+            <LivePreview apiBase={API_BASE} isRunning={isRunning} jobId={gtJobId} />
 
             {/* ── Action buttons ── */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>

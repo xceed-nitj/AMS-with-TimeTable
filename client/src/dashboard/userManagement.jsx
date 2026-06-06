@@ -317,6 +317,12 @@ const UserManagementPage = () => {
                             <option value="dm-admin">
                               Diabetics Module Admin
                             </option>
+                            <option value="iams-admin">
+                              IAMS Admin
+                            </option>
+                            <option value="iams-dept-admin">
+                              IAMS Department Admin
+                            </option>
                           </Select>
                           <Button
                             isDisabled={!selectedRoles[user._id]}

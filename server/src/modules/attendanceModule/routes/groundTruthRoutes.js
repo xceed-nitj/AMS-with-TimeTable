@@ -268,12 +268,13 @@ router.post('/extract-rtsp-stream', (req, res) => {
 });
 
 router.post('/stop-rtsp-stream', (req, res) => {
+    const body = JSON.stringify(req.body || {});
     const options = {
         hostname: '127.0.0.1',
         port: 8500,
         path: '/stop-rtsp-stream',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
     };
 
     const proxy = http.request(options, (mlRes) => {
@@ -290,14 +291,16 @@ router.post('/stop-rtsp-stream', (req, res) => {
         res.status(502).json({ error: 'ML service unavailable' });
     });
 
+    proxy.write(body);
     proxy.end();
 });
 
 router.get('/rtsp-preview', (req, res) => {
+    const jobId = req.query.jobId;
     const options = {
         hostname: '127.0.0.1',
         port: 8500,
-        path: '/rtsp-preview',
+        path: jobId ? `/rtsp-preview?jobId=${encodeURIComponent(jobId)}` : '/rtsp-preview',
         method: 'GET',
     };
     const proxy = http.request(options, (mlRes) => {
