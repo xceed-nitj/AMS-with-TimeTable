@@ -168,10 +168,10 @@ function RoomPicker({ rooms, value, onChange, disabled }) {
                     marginTop: 6,
                     maxHeight: 260,
                     overflowY: 'auto',
-                    background: '#11172a',
+                    background: '#ffffff',
                     border: `1px solid ${theme.border}`,
                     borderRadius: 8,
-                    boxShadow: '0 16px 42px rgba(0,0,0,0.45)',
+                    boxShadow: '0 8px 32px rgba(26,31,60,0.12)',
                 }}>
                     {filteredRooms.map((room) => (
                         <div
@@ -435,9 +435,9 @@ export default function Camera() {
                     border-radius: 18px;
                     border: 1px solid ${theme.border};
                     background:
-                        radial-gradient(circle at 12% 20%, rgba(56, 189, 248, 0.22), transparent 28%),
-                        radial-gradient(circle at 80% 10%, rgba(52, 211, 153, 0.15), transparent 25%),
-                        linear-gradient(135deg, #101528 0%, #090c16 100%);
+                        radial-gradient(circle at 12% 20%, rgba(99,102,241,0.12), transparent 30%),
+                        radial-gradient(circle at 85% 15%, rgba(16,185,129,0.10), transparent 28%),
+                        linear-gradient(135deg, #eef0fc 0%, #f5f6fb 100%);
                     padding: 28px;
                     margin-bottom: 22px;
                     animation: fadeIn 0.35s ease-out;
@@ -447,7 +447,7 @@ export default function Camera() {
                     position: absolute;
                     inset: auto -12% -45% 35%;
                     height: 190px;
-                    background: repeating-linear-gradient(90deg, rgba(56,189,248,0.08), rgba(56,189,248,0.08) 1px, transparent 1px, transparent 18px);
+                    background: repeating-linear-gradient(90deg, rgba(99,102,241,0.06), rgba(99,102,241,0.06) 1px, transparent 1px, transparent 18px);
                     transform: rotate(-8deg);
                     pointer-events: none;
                 }
@@ -494,10 +494,10 @@ export default function Camera() {
                     transition: background 0.16s ease, transform 0.16s ease;
                 }
                 .camera-row:hover {
-                    background: rgba(56, 189, 248, 0.07);
+                    background: rgba(99, 102, 241, 0.06);
                 }
                 .camera-selected {
-                    background: rgba(56, 189, 248, 0.12);
+                    background: rgba(99, 102, 241, 0.10);
                 }
                 .camera-actions {
                     display: flex;
@@ -518,6 +518,7 @@ export default function Camera() {
                 .camera-mini-btn:hover {
                     border-color: ${theme.accent};
                     color: ${theme.accent};
+                    background: ${theme.accentDim};
                 }
                 @media (max-width: 980px) {
                     .camera-grid,
