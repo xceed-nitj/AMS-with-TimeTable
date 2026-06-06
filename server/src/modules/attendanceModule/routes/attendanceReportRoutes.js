@@ -95,6 +95,52 @@ router.get('/active-sessions', async (req, res) => {
     }
 });
 
+// Dashboard stats aggregate
+router.get('/stats', async (req, res) => {
+    try {
+        const AttendanceReport = require('../../../models/attendanceReport');
+        const now      = new Date();
+        const todayStr = now.toISOString().slice(0, 10);
+        const weekAgo  = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+
+        const [agg, recent] = await Promise.all([
+            AttendanceReport.aggregate([
+                { $facet: {
+                    total:     [{ $count: 'n' }],
+                    today:     [{ $match: { date: todayStr } },           { $count: 'n' }],
+                    thisWeek:  [{ $match: { date: { $gte: weekAgoStr } } }, { $count: 'n' }],
+                    sums:      [{ $group: { _id: null,
+                        present: { $sum: '$summary.present' },
+                        absent:  { $sum: '$summary.absent' },
+                        review:  { $sum: '$summary.review' },
+                        avgPct:  { $avg: '$summary.attendancePct' },
+                    }}],
+                }},
+            ]),
+            AttendanceReport
+                .find()
+                .select('batch room date timeSlot subject faculty summary status createdAt')
+                .sort({ date: -1, createdAt: -1 })
+                .limit(8),
+        ]);
+
+        const f = agg[0];
+        res.json({
+            totalSessions:    f.total[0]?.n    ?? 0,
+            todaySessions:    f.today[0]?.n    ?? 0,
+            thisWeekSessions: f.thisWeek[0]?.n ?? 0,
+            totalPresent:     f.sums[0]?.present ?? 0,
+            totalAbsent:      f.sums[0]?.absent  ?? 0,
+            totalReview:      f.sums[0]?.review  ?? 0,
+            avgAttendancePct: f.sums[0]?.avgPct != null ? Math.round(f.sums[0].avgPct) : null,
+            recentReports:    recent,
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Get full report by ID (keep last to avoid conflicts with named routes above)
 router.get('/:id', async (req, res) => {
     try { await ctrl.getReportById(req, res); }

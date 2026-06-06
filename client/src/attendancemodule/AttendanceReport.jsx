@@ -591,10 +591,10 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                 {showRoomDrop && (
                                     <div style={{
                                         position: 'absolute', top: '100%', left: 0, right: 0,
-                                        background: '#1a2035', border: `1px solid ${theme.border}`,
-                                        borderRadius: '6px', zIndex: 100,
+                                        background: '#ffffff', border: `1px solid ${theme.border}`,
+                                        borderRadius: '8px', zIndex: 100,
                                         maxHeight: 220, overflowY: 'auto',
-                                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                        boxShadow: '0 8px 24px rgba(26,31,60,0.12)',
                                     }}>
                                         {rooms
                                             .filter(r => r.toLowerCase().includes(roomSearch.toLowerCase()))
@@ -864,7 +864,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                     alt="Live frame"
                                     style={{
                                         width: '100%', borderRadius: 8,
-                                        background: '#0a0e1a', minHeight: 200,
+                                        background: '#0d0f14', minHeight: 200,
                                         display: 'block', objectFit: 'contain',
                                     }}
                                     onError={e => { e.target.style.display = 'none'; }}
@@ -1112,11 +1112,11 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                     {reports.map(r => (
                                         <tr key={r._id} style={{ borderBottom: `1px solid ${theme.border}`, cursor: 'pointer' }}
                                             onClick={() => openDetail(r._id)}>
-                                            <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600,  color: '#010811' }}>{r.batch}</td>
+                                            <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600, color: theme.text }}>{r.batch}</td>
 
-                                            <td style={{ padding: '11px 14px', color: '#021022' }}>{r.date}</td>
+                                            <td style={{ padding: '11px 14px', color: theme.text }}>{r.date}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{SLOT_LABELS[r.timeSlot] || r.timeSlot || '—'}</td>
-                                            <td style={{ padding: '11px 14px', color: '#010b1c' }}>{r.subject || '—'}</td>
+                                            <td style={{ padding: '11px 14px', color: theme.text }}>{r.subject || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{r.faculty || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.success, fontWeight: 700 }}>{r.summary?.present ?? '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.danger,  fontWeight: 700 }}>{r.summary?.absent  ?? '—'}</td>
@@ -1398,17 +1398,17 @@ function CameraWarningModal({ status, room, onProceed, onCancel }) {
             animation: 'fadeIn 0.2s',
         }}>
             <div style={{
-                background: '#12162a',
-                border: `1px solid ${isNone ? '#f87171' : '#fbbf24'}`,
+                background: '#ffffff',
+                border: `1px solid ${isNone ? '#ef4444' : '#f59e0b'}`,
                 borderRadius: 12, padding: '32px 36px',
                 maxWidth: 480, width: '90%',
-                boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+                boxShadow: '0 24px 64px rgba(26,31,60,0.18)',
             }}>
                 <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 14,
-                    color: isNone ? '#f87171' : '#fbbf24' }}>
+                    color: isNone ? '#ef4444' : '#f59e0b' }}>
                     {title}
                 </div>
-                <div style={{ fontSize: 14, color: '#9aa3bc', lineHeight: 1.7, marginBottom: 24 }}>
+                <div style={{ fontSize: 14, color: '#7b84ab', lineHeight: 1.7, marginBottom: 24 }}>
                     {bodyText}
                 </div>
                 <div style={{

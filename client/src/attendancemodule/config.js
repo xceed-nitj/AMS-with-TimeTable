@@ -9,36 +9,34 @@ const TIMETABLE_API = `${apiUrl}/timetablemodule`;
 // Dropdown options
 const DEGREES = ['BTECH', 'MTECH', 'BSC', 'MSC', 'PHD'];
 // DEPARTMENTS is intentionally removed — always fetched live from /departments
-// to guarantee batch folder names match timetable DB values.
-// Use the useDepartments() hook from useDepartments.js instead.
-const DEPARTMENTS = []; // kept as empty fallback — do not populate here
+const DEPARTMENTS = [];
 
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 7 }, (_, i) => String(currentYear - i));
 
-// Shared color tokens
+// ── Light colorful theme ────────────────────────────────────────────────────
 const theme = {
-    bg: '#0b0e17',
-    surface: '#12162a',
-    surfaceAlt: '#181d35',
-    border: '#242a45',
-    borderFocus: '#38bdf8',
-    text: '#e0e7ff',
-    textMuted: '#636e8a',
-    accent: '#38bdf8',
-    accentDim: 'rgba(56, 189, 248, 0.1)',
-    accentText: '#082f3a',
-    success: '#34d399',
-    successDim: 'rgba(52, 211, 153, 0.1)',
-    warning: '#fbbf24',
-    warningDim: 'rgba(251, 191, 36, 0.1)',
-    danger: '#f87171',
-    dangerDim: 'rgba(248, 113, 113, 0.1)',
-    fontMono: "'IBM Plex Mono', 'Fira Code', monospace",
-    fontBody: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+    bg:           '#f5f6fb',
+    surface:      '#ffffff',
+    surfaceAlt:   '#f0f2f9',
+    border:       '#e4e8f5',
+    borderFocus:  '#6366f1',
+    text:         '#1a1f3c',
+    textMuted:    '#7b84ab',
+    accent:       '#6366f1',
+    accentDim:    'rgba(99,102,241,0.09)',
+    accentText:   '#ffffff',
+    success:      '#10b981',
+    successDim:   'rgba(16,185,129,0.10)',
+    warning:      '#f59e0b',
+    warningDim:   'rgba(245,158,11,0.10)',
+    danger:       '#ef4444',
+    dangerDim:    'rgba(239,68,68,0.10)',
+    fontMono:     "'IBM Plex Mono', 'Fira Code', monospace",
+    fontBody:     "'IBM Plex Sans', 'Segoe UI', sans-serif",
 };
 
-// Reusable inline style generators
+// ── Reusable style objects ──────────────────────────────────────────────────
 const styles = {
     page: {
         minHeight: '100vh',
@@ -50,14 +48,15 @@ const styles = {
     card: {
         background: theme.surface,
         border: `1px solid ${theme.border}`,
-        borderRadius: '10px',
+        borderRadius: '12px',
         padding: '24px',
+        boxShadow: '0 1px 6px rgba(26,31,60,0.06)',
     },
     input: {
         padding: '10px 14px',
-        background: theme.bg,
+        background: '#f8f9fd',
         border: `1px solid ${theme.border}`,
-        borderRadius: '6px',
+        borderRadius: '8px',
         color: theme.text,
         fontSize: '14px',
         fontFamily: theme.fontBody,
@@ -67,9 +66,9 @@ const styles = {
     },
     select: {
         padding: '10px 14px',
-        background: theme.bg,
+        background: '#f8f9fd',
         border: `1px solid ${theme.border}`,
-        borderRadius: '6px',
+        borderRadius: '8px',
         color: theme.text,
         fontSize: '14px',
         fontFamily: theme.fontBody,
@@ -81,20 +80,21 @@ const styles = {
     btnPrimary: {
         padding: '10px 24px',
         background: theme.accent,
-        color: theme.accentText,
+        color: '#ffffff',
         border: 'none',
-        borderRadius: '6px',
+        borderRadius: '8px',
         fontSize: '14px',
         fontWeight: 600,
         cursor: 'pointer',
         fontFamily: theme.fontBody,
+        boxShadow: '0 2px 8px rgba(99,102,241,0.25)',
     },
     btnGhost: {
         padding: '10px 24px',
-        background: 'transparent',
+        background: '#ffffff',
         color: theme.textMuted,
         border: `1px solid ${theme.border}`,
-        borderRadius: '6px',
+        borderRadius: '8px',
         fontSize: '14px',
         fontWeight: 500,
         cursor: 'pointer',
@@ -104,8 +104,8 @@ const styles = {
         padding: '8px 16px',
         background: theme.dangerDim,
         color: theme.danger,
-        border: 'none',
-        borderRadius: '6px',
+        border: `1px solid rgba(239,68,68,0.25)`,
+        borderRadius: '8px',
         fontSize: '13px',
         fontWeight: 600,
         cursor: 'pointer',
@@ -118,26 +118,31 @@ const styles = {
         marginBottom: '6px',
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
-        fontWeight: 600,
+        fontWeight: 700,
     },
     badge: (color) => ({
         padding: '3px 10px',
         borderRadius: '999px',
         fontSize: '11px',
-        fontWeight: 600,
+        fontWeight: 700,
         background: color === 'success' ? theme.successDim :
-                    color === 'danger' ? theme.dangerDim :
+                    color === 'danger'  ? theme.dangerDim  :
                     color === 'warning' ? theme.warningDim : theme.accentDim,
         color: color === 'success' ? theme.success :
-               color === 'danger' ? theme.danger :
-               color === 'warning' ? theme.warning : theme.accent,
+               color === 'danger'  ? theme.danger  :
+               color === 'warning' ? theme.warning  : theme.accent,
+        border: `1px solid ${
+            color === 'success' ? 'rgba(16,185,129,0.30)' :
+            color === 'danger'  ? 'rgba(239,68,68,0.30)'  :
+            color === 'warning' ? 'rgba(245,158,11,0.30)' : 'rgba(99,102,241,0.30)'
+        }`,
     }),
     sectionTitle: {
         fontSize: '11px',
         color: theme.textMuted,
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
-        fontWeight: 600,
+        fontWeight: 700,
         marginBottom: '12px',
     },
     heading: {
@@ -145,6 +150,7 @@ const styles = {
         fontWeight: 700,
         letterSpacing: '-0.02em',
         marginBottom: '4px',
+        color: theme.text,
     },
     subheading: {
         fontSize: '13px',
@@ -156,13 +162,18 @@ const styles = {
 const cssReset = `
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
     * { box-sizing: border-box; }
-    input:focus, select:focus { border-color: ${theme.borderFocus} !important; box-shadow: 0 0 0 2px ${theme.accentDim}; }
-    ::-webkit-scrollbar { width: 5px; }
+    body { background: ${theme.bg}; }
+    input:focus, select:focus, textarea:focus {
+        border-color: ${theme.borderFocus} !important;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: ${theme.bg}; }
-    ::-webkit-scrollbar-thumb { background: ${theme.border}; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: ${theme.border}; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #c5cadf; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse  { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    @keyframes spin   { to { transform: rotate(360deg); } }
 `;
 
 export { API_BASE, TIMETABLE_API, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset };

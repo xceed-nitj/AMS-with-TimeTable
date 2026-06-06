@@ -170,9 +170,9 @@ export default function CameraPreview() {
                     border-radius: 18px;
                     border: 1px solid ${theme.border};
                     background:
-                        radial-gradient(circle at 20% 18%, rgba(52, 211, 153, 0.20), transparent 30%),
-                        radial-gradient(circle at 82% 6%, rgba(56, 189, 248, 0.18), transparent 28%),
-                        linear-gradient(135deg, #0f172a 0%, #070a12 100%);
+                        radial-gradient(circle at 20% 18%, rgba(16,185,129,0.12), transparent 30%),
+                        radial-gradient(circle at 82% 6%, rgba(99,102,241,0.10), transparent 28%),
+                        linear-gradient(135deg, #eef0fc 0%, #f5f6fb 100%);
                     padding: 28px;
                     margin-bottom: 22px;
                 }
