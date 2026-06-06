@@ -612,7 +612,11 @@ router.post('/run-attendance-rtsp', async (req, res) => {
 // Proxies the MJPEG stream from Python so the browser iframe can show it
 router.get('/rtsp-frame-preview', async (req, res) => {
     try {
-        const result = await axios.get(`${ML_URL}/rtsp-preview`, {
+        const { jobId } = req.query;
+        const pythonUrl = jobId
+            ? `${ML_URL}/attendance-frame-preview?jobId=${encodeURIComponent(jobId)}`
+            : `${ML_URL}/rtsp-preview`;
+        const result = await axios.get(pythonUrl, {
             responseType: 'stream',
             timeout: 0,   // no timeout — stream is long-lived
         });

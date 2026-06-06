@@ -66,6 +66,7 @@ export default function AttendanceReport() {
     const activeCamRef = useRef(null);
     const rtspUrl2Ref     = useRef('');
    
+    const [jobId,           setJobId]           = useState(null);
     const [snapshots,       setSnapshots]       = useState([]);
     const [previewActive,   setPreviewActive]   = useState(false);
     const [enrolledRollNos, setEnrolledRollNos] = useState('');
@@ -256,7 +257,7 @@ if (!processing || !activeCam || !hasCam2) {
 
         setProcessing(true); setMlResult(null); setSavedReport(null);
         setSnapshots([]); setLiveFrame(null); setPreviewActive(true);
-        setStreamLog([]); setLiveStats(null);
+        setStreamLog([]); setLiveStats(null); setJobId(null);
         setActiveCam(rtspUrl2.trim() ? 1 : null);  // show cam 1 immediately if dual-cam
         activeCamRef.current = rtspUrl2.trim() ? 1 : null;
         setCamSwitchAt(Date.now());   // start countdown immediately
@@ -306,6 +307,9 @@ if (!processing || !activeCam || !hasCam2) {
                     if (!dataLine) continue;
                     try {
                         const ev = JSON.parse(dataLine.slice(6).trim());
+                        if (ev.type === 'job_id') {
+                            setJobId(ev.jobId);
+                        }
                         if (ev.type === 'stage') {
                             setStreamLog(prev => [...prev, ev.message]);
                         }
@@ -856,7 +860,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                         <div style={{ ...styles.card, marginBottom: 16 }}>
                             <div style={{ position: 'relative', marginBottom: 12 }}>
                                 <img
-                                    src={previewActive ? `${ML_API.replace('/ml', '')}/ml/rtsp-frame-preview` : undefined}
+                                    src={previewActive && jobId ? `${ML_API.replace('/ml', '')}/ml/rtsp-frame-preview?jobId=${jobId}` : undefined}
                                     alt="Live frame"
                                     style={{
                                         width: '100%', borderRadius: 8,

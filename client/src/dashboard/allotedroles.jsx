@@ -101,6 +101,12 @@ const AllocatedRolesPage = () => {
       case 'dm-admin':
         navigate('/dm/admin/dashboard');
         break;
+      case 'iams-admin':
+        navigate('/attendance');
+        break;
+      case 'iams-dept-admin':
+        navigate('/attendance');
+        break;
       default:
         return 'some unknown role! If it is a new role, add it in the cases';
     }
@@ -193,6 +199,18 @@ const AllocatedRolesPage = () => {
                       roleLink = '/dm/admin/dashboard';
                       roleDescription = 'Manage diabetics module';
                       roleColor = 'blue';
+                      break;
+                    case 'iams-admin':
+                      roleName = 'IAMS Admin';
+                      roleLink = '/attendance';
+                      roleDescription = 'Manage face recognition attendance system';
+                      roleColor = 'cyan';
+                      break;
+                    case 'iams-dept-admin':
+                      roleName = 'IAMS Department Admin';
+                      roleLink = '/attendance';
+                      roleDescription = 'Department-level attendance management';
+                      roleColor = 'cyan';
                       break;
                     default:
                       roleName = role;
