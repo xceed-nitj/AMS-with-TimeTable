@@ -171,24 +171,6 @@
     "resolvedRollNo": null
   },
   {
-    "folderName": "person_02800",
-    "suggestedRollNo": "23104052",
-    "confidence": 0.2292,
-    "reason": "operator_rejected",
-    "flaggedAt": "2026-05-04T18:34:27.182Z",
-    "resolved": false,
-    "resolvedRollNo": null
-  },
-  {
-    "folderName": "person_02700",
-    "suggestedRollNo": "23109051",
-    "confidence": 0.2449,
-    "reason": "operator_rejected",
-    "flaggedAt": "2026-05-04T18:34:57.169Z",
-    "resolved": false,
-    "resolvedRollNo": null
-  },
-  {
     "folderName": "person_001",
     "suggestedRollNo": "23104069",
     "confidence": 0.171,
