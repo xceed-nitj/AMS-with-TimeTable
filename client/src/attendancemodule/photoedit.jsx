@@ -2,8 +2,7 @@
 // Ground truth photo editor — pre-ERP (person_XXX) and post-ERP (roll number) views.
 
 import { useState, useEffect, useCallback } from 'react';
-import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
-import { useDepartments } from './useDepartments';
+import { API_BASE, theme, styles, cssReset } from './config';
 import getEnvironment from '../getenvironment';
 
 const apiUrl  = getEnvironment();
@@ -316,13 +315,21 @@ function StudentSection({ student, batch, busy, onDeletePhoto, onDeleteAll, onMo
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PhotoEdit() {
-    const [degree, setDegree] = useState('BTECH');
-    const [dept,   setDept]   = useState('');
-    const [year,   setYear]   = useState('');
-    const { departments, deptLoading, deptError } = useDepartments();
+    const [batches,      setBatches]      = useState([]);
+    const [batchesLoad,  setBatchesLoad]  = useState(true);
+    const [selectedBatch, setSelectedBatch] = useState('');
 
     const [activeTab, setActiveTab] = useState('clusters');
     const [toast,     setToast]     = useState(null);
+
+    // Fetch available batches from disk on mount
+    useEffect(() => {
+        fetch(`${GT_BASE}/batches`)
+            .then(r => r.ok ? r.json() : { batches: [] })
+            .then(d => setBatches(Array.isArray(d.batches) ? d.batches : []))
+            .catch(() => setBatches([]))
+            .finally(() => setBatchesLoad(false));
+    }, []);
 
     // ── Clusters state ──
     const [clusters,        setClusters]        = useState([]);
@@ -336,9 +343,7 @@ export default function PhotoEdit() {
     const [studentsLoading, setStudentsLoading] = useState(false);
     const [busyStudent,     setBusyStudent]     = useState(null); // "rollNo::filename"
 
-    const batchName = degree && dept && year
-        ? `${degree}_${dept}_${year}`.toUpperCase()
-        : null;
+    const batchName = selectedBatch || null;
 
     // Reset on batch change
     useEffect(() => {
@@ -358,10 +363,11 @@ export default function PhotoEdit() {
         try {
             const res  = await fetch(`${RA_BASE}/all-clusters/${encodeURIComponent(batchName)}`);
             const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
             setClusters(data.clusters || []);
             setClustersLoaded(true);
-        } catch {
-            showToast('Failed to load clusters', 'error');
+        } catch (err) {
+            showToast(err.message || 'Failed to load clusters', 'error');
         }
         setClustersLoading(false);
     }, [batchName]);
@@ -391,11 +397,13 @@ export default function PhotoEdit() {
     // ─── Cluster actions ──────────────────────────────────────────────────────
 
     const deleteClusterPhoto = async (folder, filename) => {
+        const cluster = clusters.find(c => c.folderName === folder);
+        if (!cluster?._id) { showToast('Cluster ID not found', 'error'); return; }
         const key = `${folder}::${filename}`;
         setBusyCluster(key);
         try {
             await fetch(
-                `${RA_BASE}/cluster-photo/${encodeURIComponent(batchName)}/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`,
+                `${RA_BASE}/cluster-photo/${encodeURIComponent(cluster._id)}/${encodeURIComponent(filename)}`,
                 { method: 'DELETE' }
             );
             setClusters(prev => prev.map(c =>
@@ -412,9 +420,11 @@ export default function PhotoEdit() {
 
     const deleteCluster = async (folder) => {
         if (!window.confirm(`Delete all photos in "${folder}"?`)) return;
+        const cluster = clusters.find(c => c.folderName === folder);
+        if (!cluster?._id) { showToast('Cluster ID not found', 'error'); return; }
         try {
             await fetch(
-                `${RA_BASE}/cluster/${encodeURIComponent(batchName)}/${encodeURIComponent(folder)}`,
+                `${RA_BASE}/cluster/${encodeURIComponent(cluster._id)}`,
                 { method: 'DELETE' }
             );
             setClusters(prev => prev.filter(c => c.folderName !== folder));
@@ -512,8 +522,6 @@ export default function PhotoEdit() {
 
     // ─── Render ────────────────────────────────────────────────────────────────
 
-    const noFilters = !degree || !dept || !year;
-
     return (
         <div style={styles.page}>
             <style>{cssReset}</style>
@@ -527,53 +535,54 @@ export default function PhotoEdit() {
                 </div>
             </div>
 
-            {/* Filter bar */}
+            {/* Batch selector */}
             <div style={{ ...styles.card, marginBottom: 28, padding: '18px 24px' }}>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 2fr 1fr',
-                    gap: 16,
-                    alignItems: 'end',
-                }}>
-                    <div>
-                        <label style={styles.label}>Degree</label>
-                        <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
-                            {DEGREES.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label style={styles.label}>Department</label>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={styles.label}>
+                            Batch Folder
+                            <span style={{ marginLeft: 6, fontSize: '10px', fontWeight: 400, textTransform: 'none', color: theme.textMuted }}>
+                                — folders acquired on disk
+                            </span>
+                        </label>
                         <select
-                            value={dept}
-                            onChange={e => setDept(e.target.value)}
+                            value={selectedBatch}
+                            onChange={e => setSelectedBatch(e.target.value)}
                             style={styles.select}
-                            disabled={deptLoading}>
+                            disabled={batchesLoad}
+                        >
                             <option value="">
-                                {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select department…'}
+                                {batchesLoad ? 'Loading batches…' : batches.length === 0 ? 'No batches found — run an acquisition first' : 'Select a batch…'}
                             </option>
-                            {departments.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                        {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>}
-                    </div>
-                    <div>
-                        <label style={styles.label}>Year</label>
-                        <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>
-                            <option value="">Select year…</option>
-                            {YEARS.map(y => <option key={y}>{y}</option>)}
+                            {batches.map(b => (
+                                <option key={b.batch} value={b.batch}>
+                                    {b.batch}  ({b.studentCount} folder{b.studentCount !== 1 ? 's' : ''})
+                                </option>
+                            ))}
                         </select>
                     </div>
+                    <button
+                        onClick={() => {
+                            setBatchesLoad(true);
+                            fetch(`${GT_BASE}/batches`)
+                                .then(r => r.ok ? r.json() : { batches: [] })
+                                .then(d => setBatches(Array.isArray(d.batches) ? d.batches : []))
+                                .catch(() => {})
+                                .finally(() => setBatchesLoad(false));
+                        }}
+                        disabled={batchesLoad}
+                        style={{ ...styles.btnGhost, padding: '10px 16px', fontSize: '12px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                    >
+                        ↺ Refresh
+                    </button>
                 </div>
-                {batchName && (
-                    <div style={{ marginTop: 12, fontSize: '12px', color: theme.textMuted }}>
-                        Batch:&nbsp;
-                        <span style={{ fontFamily: theme.fontMono, color: theme.accent }}>{batchName}</span>
-                    </div>
-                )}
             </div>
 
-            {noFilters ? (
+            {!batchName ? (
                 <div style={{ textAlign: 'center', padding: '60px 0', color: theme.textMuted, fontSize: '14px' }}>
-                    Select degree, department and year to load photos.
+                    {batches.length === 0 && !batchesLoad
+                        ? 'No acquisition data found. Run Ground Truth Acquisition first.'
+                        : 'Select a batch above to load photos.'}
                 </div>
             ) : (
                 <>

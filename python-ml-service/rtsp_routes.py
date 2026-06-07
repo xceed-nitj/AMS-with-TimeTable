@@ -28,6 +28,10 @@ router = APIRouter()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
+ML_DATA_DIR          = os.path.join(ROOT_DIR, "server", "ml-data", "frame_snapshots")
+ANNOTATED_FRAMES_DIR = os.path.join(ROOT_DIR, "server", "ml-data", "annotated_frames")
+
+SNAP_EVERY_SEC = 15   # save raw + annotated frame snapshot every N seconds during attendance
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
@@ -628,6 +632,16 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     frame_count, cam_idx, last_switch = 0, 0, 0.0
     reader  = _RTSPReader(cap, decode_every=req.frameSkip)
     last_seq = 0
+
+    # ── Frame snapshot tracking ────────────────────────────────────────────────
+    room_clean = re.sub(r'[^\w]', '_', (req.room or 'ROOM').upper().strip())
+    slot_clean = re.sub(r'[^\w]', '_', (req.slot or 'SLOT').upper().strip())
+    date_clean = (req.date or '').replace('-', '') or time.strftime('%Y%m%d')
+    snap_folder_name = f"{room_clean}_{slot_clean}_{date_clean}"
+    snap_dir  = os.path.join(ML_DATA_DIR,          snap_folder_name)
+    annot_dir = os.path.join(ANNOTATED_FRAMES_DIR, snap_folder_name)
+    frame_snapshots: list = []
+    last_snap_t = -SNAP_EVERY_SEC  # trigger a snap on the first eligible frame
  
     try:
         while True:
@@ -672,6 +686,42 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 all_face_images.append(d["crop"])
                 all_timestamps.append(round(elapsed, 2))
                 all_quality.append(d["quality"])
+
+            # ── Save raw + annotated frame every SNAP_EVERY_SEC seconds ──────
+            if elapsed - last_snap_t >= SNAP_EVERY_SEC:
+                last_snap_t = elapsed
+                fname = f"frame_{int(elapsed):04d}s_cam{cam_idx + 1}.jpg"
+                try:
+                    os.makedirs(snap_dir, exist_ok=True)
+                    snap_path = os.path.join(snap_dir, fname)
+                    cv2.imwrite(snap_path, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    frame_snapshots.append({
+                        "cam":         cam_idx + 1,
+                        "elapsed_sec": round(elapsed, 1),
+                        "faces_count": faces_this_frame,
+                        "path":        snap_path,
+                        "folder":      snap_folder_name,
+                    })
+                except Exception:
+                    pass
+                try:
+                    os.makedirs(annot_dir, exist_ok=True)
+                    annot = frame.copy()
+                    for d in detections:
+                        x1, y1, x2, y2 = d["bbox"]
+                        cv2.rectangle(annot, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.putText(annot, f"{d['det_score']:.2f}",
+                                    (x1, max(y1 - 6, 12)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 1,
+                                    cv2.LINE_AA)
+                    cv2.putText(annot,
+                                f"t={int(elapsed)}s  faces={faces_this_frame}  cam={cam_idx + 1}",
+                                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+                                (0, 200, 255), 2, cv2.LINE_AA)
+                    cv2.imwrite(os.path.join(annot_dir, fname), annot,
+                                [cv2.IMWRITE_JPEG_QUALITY, 85])
+                except Exception:
+                    pass
 
             yield {"type": "frame", "frame": frame_count, "faces": faces_this_frame,
                    "total_embs": len(all_embeddings), "elapsed": round(elapsed, 1),
@@ -833,6 +883,8 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 "duration_sec":          int(req.durationSec),
             },
             "unmatched_clusters": unmatched_clusters,
+            "frame_snapshots":    frame_snapshots,
+            "snapshot_folder":    snap_folder_name if frame_snapshots else "",
         },
     }
 
