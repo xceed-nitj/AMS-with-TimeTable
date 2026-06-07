@@ -12,6 +12,7 @@ const NAV = [
   { id: 'assign',     route: '/attendance/groundtruth/assign', label: 'Roll Assignment'  },
   { id: 'photos',     route: '/attendance/groundtruth/photos', label: 'Photo Editor'     },
   { id: 'reports',    route: '/attendance/reports',            label: 'Reports'          },
+  { id: 'verify',     route: '/attendance/frame-verification', label: 'Frame Verification' },
   { id: 'cameras',    route: '/cameras',                       label: 'Camera Registry'  },
   { id: 'embeddings', route: '/attendance/embeddings',         label: 'Embeddings'       },
 ];
@@ -22,6 +23,7 @@ const COLORS = {
   assign:     '#10b981',
   photos:     '#a855f7',
   reports:    '#14b8a6',
+  verify:     '#ec4899',
   cameras:    '#f97316',
   embeddings: '#f59e0b',
 };

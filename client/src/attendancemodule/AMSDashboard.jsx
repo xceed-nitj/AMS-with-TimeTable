@@ -242,6 +242,43 @@ function SectionLabel({ children, top = 0 }) {
   );
 }
 
+function ActionCard({ title, subtitle, color, onClick, buttonLabel }) {
+  return (
+    <div style={{
+      background: T.surface,
+      border: `1px solid ${color}28`,
+      borderTop: `3px solid ${color}`,
+      borderRadius: 12,
+      padding: '16px 18px',
+      boxShadow: `0 2px 10px ${color}12`,
+      animation: 'fadeUp .4s ease both',
+    }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 6 }}>
+        {title}
+      </div>
+      <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
+        {subtitle}
+      </div>
+      <button
+        onClick={onClick}
+        style={{
+          padding: '9px 12px',
+          borderRadius: 8,
+          border: `1px solid ${color}30`,
+          background: `${color}12`,
+          color,
+          cursor: 'pointer',
+          fontWeight: 700,
+          fontSize: 12,
+          fontFamily: T.fontBody,
+        }}
+      >
+        {buttonLabel}
+      </button>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════════════ */
 export default function AMSDashboard() {
   const navigate = useNavigate();
@@ -398,6 +435,17 @@ export default function AMSDashboard() {
           <StatCard label="Embeddings"      value={gtStats?.withEmbedding} color={T.purple}  loading={gtLoad} delay={80}  />
           <StatCard label="Approved"        value={gtStats?.approved}      color={T.emerald} loading={gtLoad} delay={120} />
           <StatCard label="Matched"         value={gtStats?.matched}       color={T.teal}    loading={gtLoad} delay={160} />
+        </div>
+
+        <SectionLabel>Verification</SectionLabel>
+        <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
+          <ActionCard
+            title="Saved Frame Verification"
+            subtitle="Open the dedicated gallery to review saved raw and annotated screenshots by room, date, and period."
+            color={T.pink || '#ec4899'}
+            buttonLabel="Open Gallery"
+            onClick={() => navigate('/attendance/frame-verification')}
+          />
         </div>
 
         {/* ── Charts ── */}
