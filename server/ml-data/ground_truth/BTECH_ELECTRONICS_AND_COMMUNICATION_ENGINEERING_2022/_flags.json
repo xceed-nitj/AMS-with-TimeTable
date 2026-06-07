@@ -1,0 +1,35 @@
+[
+  {
+    "id": "6a241494f344c602f7a689c8",
+    "folderName": "person_011",
+    "suggestedRollNo": "22104027",
+    "confidence": 0.5119,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-06-06T15:48:49.862Z",
+    "resolved": true,
+    "resolvedRollNo": "22104027",
+    "resolvedAt": "2026-06-06T15:49:51.249Z"
+  },
+  {
+    "id": "6a2414a0f344c602f7a689cd",
+    "folderName": "person_013",
+    "suggestedRollNo": "23104050",
+    "confidence": 0.5421,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-06-06T15:50:01.844Z",
+    "resolved": true,
+    "resolvedRollNo": "23104050",
+    "resolvedAt": "2026-06-06T15:50:20.286Z"
+  },
+  {
+    "id": "6a2414cff344c602f7a689e0",
+    "folderName": "person_021",
+    "suggestedRollNo": "23104080",
+    "confidence": 0.6223,
+    "reason": "operator_rejected",
+    "flaggedAt": "2026-06-06T16:04:15.851Z",
+    "resolved": true,
+    "resolvedRollNo": "23104080",
+    "resolvedAt": "2026-06-06T16:04:39.361Z"
+  }
+]

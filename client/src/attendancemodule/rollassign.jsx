@@ -4,9 +4,10 @@ import getEnvironment from '../getenvironment';
 import { DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 
-const apiUrl  = getEnvironment();
-const RA_BASE = `${apiUrl}/attendancemodule/roll-assign`;
-const GT_BASE = `${apiUrl}/attendancemodule/ground-truth`;
+const apiUrl    = getEnvironment();
+const RA_BASE   = `${apiUrl}/attendancemodule/roll-assign`;
+const GT_BASE   = `${apiUrl}/attendancemodule/ground-truth`;
+const FLAG_BASE = `${apiUrl}/attendancemodule/flags`;
 
 const HIGH   = 0.62;
 const MEDIUM = 0.45;
@@ -22,10 +23,13 @@ function confidenceLabel(score) {
     return 'Low';
 }
 
+function broadcastRefresh(batchName) {
+    try { new BroadcastChannel('attendance_refresh').postMessage({ type: 'refresh', batch: batchName }); } catch (_) {}
+}
+
 export default function RollAssign() {
     const { departments, loading: deptLoading, error: deptError } = useDepartments();
 
-    // ── All useState hooks ───────────────────────────────────────────
     const [degree,        setDegree]        = useState('BTECH');
     const [department,    setDepartment]    = useState('');
     const [year,          setYear]          = useState('');
@@ -40,34 +44,36 @@ export default function RollAssign() {
     const [matchError,    setMatchError]    = useState(null);
     const [approvingAll,  setApprovingAll]  = useState(false);
 
-    const [unprocessed,      setUnprocessed]      = useState([]);
-    const [pendingReview,    setPendingReview]    = useState([]);
-    const [approvedItems,    setApprovedItems]    = useState([]);
-    const [unmatchedItems,   setUnmatchedItems]   = useState([]);
-    const [flaggedItems,     setFlaggedItems]     = useState([]);
-    const [mergedItems,      setMergedItems]      = useState([]);
+    const [unprocessed,    setUnprocessed]    = useState([]);
+    const [pendingReview,  setPendingReview]  = useState([]);
+    const [approvedItems,  setApprovedItems]  = useState([]);
+    const [unmatchedItems, setUnmatchedItems] = useState([]);
+    const [flaggedItems,   setFlaggedItems]   = useState([]);
+    const [mergedItems,    setMergedItems]    = useState([]);
 
-    const [unapprovedMap,    setUnapprovedMap]    = useState({});
-    const [approvedStats,    setApprovedStats]    = useState({});
-    const [approvingPhoto,   setApprovingPhoto]   = useState({});
+    const [unapprovedMap,  setUnapprovedMap]  = useState({});
+    const [approvedStats,  setApprovedStats]  = useState({});
+    const [approvingPhoto, setApprovingPhoto] = useState({});
 
-    const [matches,       setMatches]       = useState({});
-    const [inlineRolls,   setInlineRolls]   = useState({});
+    const [matches,      setMatches]      = useState({});
+    const [inlineRolls,  setInlineRolls]  = useState({});
 
-    const [modal,         setModal]         = useState(null);
-    const [overrideRoll,  setOverrideRoll]  = useState('');
+    const [modal,        setModal]        = useState(null);
+    const [overrideRoll, setOverrideRoll] = useState('');
 
-    const [gtModal,       setGtModal]       = useState(null);
-    const [gtData,        setGtData]        = useState(null);
-    const [gtLoading,     setGtLoading]     = useState(false);
-    const [gtSelected,    setGtSelected]    = useState(new Set());
-    const [gtSaving,      setGtSaving]      = useState(false);
+    const [flagModal,     setFlagModal]     = useState(null);
+    const [flagRollInput, setFlagRollInput] = useState('');
 
-    const [bulkText,      setBulkText]      = useState('');
-    const [bulkOpen,      setBulkOpen]      = useState(false);
-    const [bulkSaving,    setBulkSaving]    = useState(false);
+    const [gtModal,    setGtModal]    = useState(null);
+    const [gtData,     setGtData]     = useState(null);
+    const [gtLoading,  setGtLoading]  = useState(false);
+    const [gtSelected, setGtSelected] = useState(new Set());
+    const [gtSaving,   setGtSaving]   = useState(false);
 
-    // ── Derived values ───────────────────────────────────────────────
+    const [bulkText,   setBulkText]   = useState('');
+    const [bulkOpen,   setBulkOpen]   = useState(false);
+    const [bulkSaving, setBulkSaving] = useState(false);
+
     const batchName = degree && department && year
         ? `${degree}_${department}_${year}`.toUpperCase()
         : null;
@@ -76,7 +82,6 @@ export default function RollAssign() {
         ? Object.entries(matches).filter(([, m]) => m?.best?.confidence >= HIGH).length
         : 0;
 
-    // ── Helpers ──────────────────────────────────────────────────────
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 4000);
@@ -87,7 +92,11 @@ export default function RollAssign() {
     const erpPhotoUrl = (filename) =>
         `${RA_BASE}/erp-photo/${encodeURIComponent(batchName)}/${encodeURIComponent(filename)}`;
 
-    // ── Load clusters from DB + unprocessed from filesystem ─────────
+    const flagPhotoUrl    = (batch, folder, filename) =>
+        `${FLAG_BASE}/photo/${encodeURIComponent(batch)}/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`;
+    const flagErpPhotoUrl = (filename) =>
+        `${FLAG_BASE}/erp-photo/${encodeURIComponent(batchName)}/${encodeURIComponent(filename)}`;
+
     const loadClusters = useCallback(async () => {
         if (!batchName) return;
         setLoading(true);
@@ -98,22 +107,11 @@ export default function RollAssign() {
                 fetch(`${RA_BASE}/matches/${batchName}`),
                 fetch(`${GT_BASE}/batches/${encodeURIComponent(batchName)}/students`),
             ]);
-
             const clusterData = clusterRes.ok ? await clusterRes.json() : { unprocessed: [] };
             setUnprocessed(clusterData.unprocessed || []);
 
-            console.log('Fetching with batchName:', batchName);
-            console.log('clusterRes status:', clusterRes.status);
-            console.log('matchRes status:', matchRes.status);
-
             if (matchRes.ok) {
-                const matchData = await matchRes.json();
-                console.log('matchData keys:', Object.keys(matchData));
-                console.log('raw matchData:', matchData);
-
-                const { matchMap = {} } = matchData;
-                console.log('matchMap length:', Object.values(matchMap).length);
-
+                const { matchMap = {} } = await matchRes.json();
                 const records = Object.values(matchMap);
                 setPendingReview(records.filter(r => r.status === 'matched' && !r.approved));
                 setApprovedItems(records.filter(r => r.approved));
@@ -124,25 +122,24 @@ export default function RollAssign() {
 
             if (studentsRes.ok) {
                 const { students = [] } = await studentsRes.json();
-                const newUnapprovedMap = {};
-                const newStatsMap = {};
+                const uMap = {}, sMap = {};
                 for (const s of students) {
                     if (/^person_\d+$/i.test(s.rollNo)) continue;
                     if ((s.unapprovedFiles || []).length > 0) {
-                        newUnapprovedMap[s.rollNo] = (s.unapprovedFiles || []).map(f => ({
+                        uMap[s.rollNo] = (s.unapprovedFiles || []).map(f => ({
                             ...f,
                             url: `${GT_BASE}/photo/${encodeURIComponent(batchName)}/${encodeURIComponent(s.rollNo)}/${encodeURIComponent(f.filename)}`,
                         }));
                     }
-                    newStatsMap[s.rollNo] = {
-                        approvedCount:  s.approvedCount  || 0,
-                        embeddingCount: s.embeddingCount || 0,
-                        backupCount:    s.backupCount    || 0,
-                        unapprovedCount:s.unapprovedCount|| 0,
+                    sMap[s.rollNo] = {
+                        approvedCount:   s.approvedCount   || 0,
+                        embeddingCount:  s.embeddingCount  || 0,
+                        backupCount:     s.backupCount     || 0,
+                        unapprovedCount: s.unapprovedCount || 0,
                     };
                 }
-                setUnapprovedMap(newUnapprovedMap);
-                setApprovedStats(newStatsMap);
+                setUnapprovedMap(uMap);
+                setApprovedStats(sMap);
             }
         } catch (err) {
             showToast(err.message, 'error');
@@ -153,51 +150,34 @@ export default function RollAssign() {
 
     useEffect(() => { loadClusters(); }, [loadClusters]);
 
-    // ── Listen for refresh broadcasts ────────────────────────────────
     useEffect(() => {
         if (!batchName) return;
-        let channel;
+        let ch;
         try {
-            channel = new BroadcastChannel('attendance_refresh');
-            channel.onmessage = (e) => {
-                if (e.data?.type === 'refresh' && e.data?.batch === batchName) {
-                    loadClusters();
-                }
+            ch = new BroadcastChannel('attendance_refresh');
+            ch.onmessage = (e) => {
+                if (e.data?.type === 'refresh' && e.data?.batch === batchName) loadClusters();
             };
         } catch (_) {}
-        return () => {
-            try { channel?.close(); } catch (_) {}
-        };
+        return () => { try { ch?.close(); } catch (_) {} };
     }, [batchName, loadClusters]);
 
-    // ── Auto-match against ERP photos (SSE) ─────────────────────────
     const runAutoMatch = useCallback(async () => {
         if (!batchName) return;
-        setMatching(true);
-        setMatchDone(false);
-        setMatchError(null);
+        setMatching(true); setMatchDone(false); setMatchError(null);
         setMatchProgress({ msg: 'Starting…', done: 0, total: 0, step: 'init' });
-
         const localMatches = {};
-        let sseSucceeded   = false;
-        let matchCount     = 0;
-
+        let sseSucceeded = false, matchCount = 0;
         try {
             const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Match failed');
-            }
-
-            const reader  = res.body.getReader();
+            if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Match failed'); }
+            const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let buf = '';
-
             const processLine = async (line) => {
                 if (!line.startsWith('data:')) return;
                 let evt;
                 try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
-
                 if (evt.type === 'erp_progress') {
                     setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
                 } else if (evt.type === 'cluster_progress') {
@@ -205,109 +185,123 @@ export default function RollAssign() {
                 } else if (evt.type === 'status') {
                     setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
                 } else if (evt.type === 'match_result') {
-                    localMatches[evt.folder] = evt.match;
-                    matchCount++;
+                    localMatches[evt.folder] = evt.match; matchCount++;
                     try {
-                        const saveRes = await fetch(`${RA_BASE}/save-match-result`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                batch: batchName,
-                                folderName: evt.folder,
-                                matchData: evt.match,
-                            }),
+                        const sr = await fetch(`${RA_BASE}/save-match-result`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ batch: batchName, folderName: evt.folder, matchData: evt.match }),
                         });
-                        if (saveRes.ok) {
+                        if (sr.ok) {
                             setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
-                            setMatchProgress(p => ({
-                                ...p,
-                                msg: `Saved ${matchCount} matches...`,
-                                done: matchCount,
-                            }));
-                        } else {
-                            console.error(`Failed to save ${evt.folder}:`, await saveRes.text());
+                            setMatchProgress(p => ({ ...p, msg: `Saved ${matchCount} matches...`, done: matchCount }));
                         }
-                    } catch (saveErr) {
-                        console.error(`Error saving ${evt.folder}:`, saveErr);
-                    }
+                    } catch (_) {}
                 } else if (evt.type === 'done') {
-                    sseSucceeded = true;
-                    setMatchDone(true);
+                    sseSucceeded = true; setMatchDone(true);
                     showToast(`✓ Matched ${matchCount} clusters — saved to database`);
-                } else if (evt.type === 'error') {
-                    throw new Error(evt.msg);
-                }
+                } else if (evt.type === 'error') { throw new Error(evt.msg); }
             };
-
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) {
-                    buf += decoder.decode();
-                    const lines = buf.split('\n');
-                    for (const l of lines) { await processLine(l); }
-                    break;
-                }
+                if (done) { buf += decoder.decode(); for (const l of buf.split('\n')) await processLine(l); break; }
                 buf += decoder.decode(value, { stream: true });
-                const lines = buf.split('\n');
-                buf = lines.pop();
-                for (const l of lines) { await processLine(l); }
+                const lines = buf.split('\n'); buf = lines.pop();
+                for (const l of lines) await processLine(l);
             }
-
             if (sseSucceeded && matchCount > 0) {
-                setMatchProgress({ msg: 'Renaming folders on filesystem…', done: matchCount, total: matchCount, step: 'saving' });
-
-                const assignRes  = await fetch(`${RA_BASE}/auto-assign-all`, {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ batch: batchName, matches: localMatches }),
+                setMatchProgress({ msg: 'Renaming folders…', done: matchCount, total: matchCount, step: 'saving' });
+                const ar = await fetch(`${RA_BASE}/auto-assign-all`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ batch: batchName, matches: localMatches }),
                 });
-                const assignData = await assignRes.json();
-
-                if (!assignRes.ok) {
-                    showToast(`⚠ Matching saved, but folder rename failed: ${assignData.error}`, 'warning');
-                } else {
-                    showToast(
-                        `✓ ${assignData.renamed} clusters auto-assigned` +
-                        (assignData.unmatched ? `, ${assignData.unmatched} unmatched` : '') +
-                        (assignData.conflicts ? `, ${assignData.conflicts} conflicts` : '')
-                    );
-                }
-
+                const ad = await ar.json();
+                if (!ar.ok) showToast(`⚠ Matching saved, but rename failed: ${ad.error}`, 'warning');
+                else showToast(`✓ ${ad.renamed} clusters auto-assigned` + (ad.unmatched ? `, ${ad.unmatched} unmatched` : '') + (ad.conflicts ? `, ${ad.conflicts} conflicts` : ''));
                 await loadClusters();
             }
         } catch (err) {
-            setMatchError(err.message);
-            showToast(err.message, 'error');
+            setMatchError(err.message); showToast(err.message, 'error');
             setTimeout(() => loadClusters(), 500);
-        } finally {
-            setMatching(false);
-            setMatchProgress(null);
-        }
+        } finally { setMatching(false); setMatchProgress(null); }
     }, [batchName, loadClusters]);
 
-    // ── Review queue ─────────────────────────────────────────────────
     const reviewQueue = [...pendingReview, ...mergedItems, ...flaggedItems];
 
-    // ── Open modal ───────────────────────────────────────────────────
     const openModal = (item) => {
         if (matching) return;
-        setModal({ item, match: item });
-        setOverrideRoll(item.rollNo || '');
+        setModal({ item, match: item }); setOverrideRoll(item.rollNo || '');
     };
-
-    // ── Navigate queue ───────────────────────────────────────────────
     const openQueueItem = (queue, currentFolderName, direction) => {
         const idx = queue.findIndex(r => r.folderName === currentFolderName);
         const next = queue[idx + direction];
-        if (next) {
-            setModal({ item: next, match: next });
-            setOverrideRoll(next.rollNo || '');
-        } else {
-            setModal(null);
-        }
+        if (next) { setModal({ item: next, match: next }); setOverrideRoll(next.rollNo || ''); }
+        else setModal(null);
     };
 
-    // ── Assign single (manual inline) ────────────────────────────────
+    const openFlagModal = (item) => {
+        if (matching) return;
+        setFlagModal(item); setFlagRollInput(item.suggestedRollNo || '');
+    };
+    const openFlaggedItem = (direction) => {
+        if (!flagModal) return;
+        const idx  = flaggedItems.findIndex(f => f.folderName === flagModal.folderName);
+        const next = flaggedItems[idx + direction];
+        if (next) { setFlagModal(next); setFlagRollInput(next.suggestedRollNo || ''); }
+    };
+
+    const handleFlagResolve = async (folderName, rollNo) => {
+        const trimmed = rollNo.trim().toUpperCase();
+        if (!trimmed) { showToast('Enter a roll number', 'error'); return; }
+        setSaving(folderName);
+        try {
+            const res  = await fetch(`${FLAG_BASE}/resolve-flag`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batch: batchName, folderName, rollNo: trimmed }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            broadcastRefresh(batchName);
+            const currentIndex = flaggedItems.findIndex(f => f.folderName === folderName);
+            const remaining    = flaggedItems.filter(f => f.folderName !== folderName);
+            setFlaggedItems(remaining);
+            if (remaining.length > 0) {
+                const nextItem = remaining[Math.min(currentIndex, remaining.length - 1)];
+                setFlagModal(nextItem); setFlagRollInput('');
+            } else { setFlagModal(null); }
+            showToast(`✓ Resolved: ${folderName} → ${data.rollNo}`);
+            await loadClusters();
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setSaving(null); }
+    };
+
+    const handleFlagFolderDeleted = () => {
+        broadcastRefresh(batchName);
+        const remaining = flaggedItems.filter(f => f.folderName !== flagModal?.folderName);
+        setFlaggedItems(remaining);
+        if (remaining.length > 0) { setFlagModal(remaining[0]); setFlagRollInput(remaining[0].suggestedRollNo || ''); }
+        else setFlagModal(null);
+    };
+
+    const deleteUnmatchedFolder = async (item) => {
+        if (!window.confirm(
+            `Delete folder "${item.folderName}" permanently?\n\nRemoves all photos, DB record and flag entry. Cannot be undone.`
+        )) return;
+        setSaving(item.folderName);
+        try {
+            const folder = item.currentFolder || item.folderName;
+            const res = await fetch(
+                `${FLAG_BASE}/cluster/${encodeURIComponent(batchName)}/${encodeURIComponent(item.folderName)}`,
+                { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currentFolder: folder }) }
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Delete failed');
+            showToast(`Deleted "${item.folderName}" permanently`);
+            setUnmatchedItems(prev => prev.filter(r => r.folderName !== item.folderName));
+            broadcastRefresh(batchName);
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setSaving(null); }
+    };
+
     const assignManual = async (item) => {
         const { folderName, _id } = item;
         const rollNo = (inlineRolls[folderName] || '').trim().toUpperCase();
@@ -315,13 +309,11 @@ export default function RollAssign() {
         setSaving(folderName);
         try {
             const res  = await fetch(`${RA_BASE}/approve`, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ id: _id, rollNo }),
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: _id, rollNo }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed');
-
             setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
             setFlaggedItems(prev => prev.filter(r => r.folderName !== folderName));
             setApprovedItems(prev => {
@@ -330,56 +322,40 @@ export default function RollAssign() {
             });
             setInlineRolls(prev => { const n = { ...prev }; delete n[folderName]; return n; });
             showToast(`✓ Assigned ${folderName} → ${data.rollNo}`);
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setSaving(null);
-        }
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setSaving(null); }
     };
 
-    // ── Approve from modal ───────────────────────────────────────────
     const handleApprove = async (item, rollNo) => {
         const { folderName, _id } = item;
         const trimmed = (rollNo || '').trim().toUpperCase();
         if (!trimmed) { showToast('Enter a roll number', 'error'); return; }
-        if (!_id) { showToast('Cluster ID missing — reload the page', 'error'); return; }
+        if (!_id)     { showToast('Cluster ID missing — reload', 'error'); return; }
         setSaving(folderName);
-
         const queueSnapshot = [...pendingReview, ...mergedItems, ...flaggedItems];
-
         try {
             const res  = await fetch(`${RA_BASE}/approve`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: _id, rollNo: trimmed }),
             });
-            let data;
-            try { data = await res.json(); } catch { data = {}; }
+            let data; try { data = await res.json(); } catch { data = {}; }
             if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-
             const found = queueSnapshot.find(r => r.folderName === folderName);
             setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
             setMergedItems(prev  => prev.filter(r => r.folderName !== folderName));
             setFlaggedItems(prev => prev.filter(r => r.folderName !== folderName));
             if (found) setApprovedItems(prev => [...prev, { ...found, rollNo: data.rollNo || trimmed, approved: true, status: 'approved' }]);
-
             showToast(`Assigned ${folderName} → ${data.rollNo || trimmed}`);
             openQueueItem(queueSnapshot, folderName, +1);
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setSaving(null);
-        }
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setSaving(null); }
     };
 
-    // ── Flag ─────────────────────────────────────────────────────────
     const handleFlag = async (item, match) => {
         const { folderName, _id } = item;
-        if (!_id) { showToast('Cluster ID missing — reload the page', 'error'); return; }
+        if (!_id) { showToast('Cluster ID missing — reload', 'error'); return; }
         setSaving(folderName);
-
-        // Capture queue snapshot before async state updates
         const queueSnapshot = [...pendingReview, ...mergedItems, ...flaggedItems];
-
         try {
             const res = await fetch(`${RA_BASE}/flag`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -390,49 +366,28 @@ export default function RollAssign() {
                     reason: 'operator_rejected',
                 }),
             });
-            let data;
-            try { data = await res.json(); } catch { data = {}; }
+            let data; try { data = await res.json(); } catch { data = {}; }
             if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-
-            // ── FIX: check if already flagged before adding ──────────
             const alreadyFlagged = flaggedItems.some(r => r.folderName === folderName);
-
             const found = queueSnapshot.find(r => r.folderName === folderName);
             setPendingReview(prev => prev.filter(r => r.folderName !== folderName));
             setMergedItems(prev  => prev.filter(r => r.folderName !== folderName));
-
-            // Only add to flaggedItems if it wasn't already there
-            if (found && !alreadyFlagged) {
-                setFlaggedItems(prev => [...prev, { ...found, status: 'flagged' }]);
-            }
-
+            if (found && !alreadyFlagged) setFlaggedItems(prev => [...prev, { ...found, status: 'flagged' }]);
             showToast(`⚑ Flagged ${folderName}`);
-
-            // Auto-advance to next item
             openQueueItem(queueSnapshot, folderName, +1);
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setSaving(null);
-        }
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setSaving(null); }
     };
 
-    // ── Bulk assign ──────────────────────────────────────────────────
     const handleBulkAssign = async () => {
         if (!batchName || !bulkText.trim()) return;
         setBulkSaving(true);
-        const lines = bulkText.trim().split('\n');
-        const assignments = [];
-        for (const line of lines) {
+        const assignments = bulkText.trim().split('\n').reduce((acc, line) => {
             const parts = line.trim().split(/[\s,>]+/).filter(Boolean);
-            if (parts.length >= 2) {
-                assignments.push({ folderName: parts[0].trim(), rollNo: parts[1].trim().toUpperCase() });
-            }
-        }
-        if (assignments.length === 0) {
-            showToast('No valid lines. Format: person_001 26TT1234', 'error');
-            setBulkSaving(false); return;
-        }
+            if (parts.length >= 2) acc.push({ folderName: parts[0].trim(), rollNo: parts[1].trim().toUpperCase() });
+            return acc;
+        }, []);
+        if (!assignments.length) { showToast('No valid lines. Format: person_001 26TT1234', 'error'); setBulkSaving(false); return; }
         try {
             const res  = await fetch(`${RA_BASE}/bulk-assign`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -443,56 +398,37 @@ export default function RollAssign() {
             showToast(`Assigned ${data.assigned} of ${data.total} folders`);
             setBulkText(''); setBulkOpen(false);
             await loadClusters();
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setBulkSaving(false);
-        }
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setBulkSaving(false); }
     };
 
-    // ── Approve ALL high-confidence ──────────────────────────────────
     const approveAllHigh = async () => {
         if (!matchDone) { showToast('Run ERP match first', 'error'); return; }
-
-        const candidates = pendingReview
-            .filter(r => matches[r.folderName]?.best?.confidence >= HIGH)
-            .map(r => ({ _id: r._id, folderName: r.folderName, match: matches[r.folderName] }));
-
         const seen = new Map();
-        for (const c of candidates) {
+        for (const r of pendingReview.filter(r => matches[r.folderName]?.best?.confidence >= HIGH)) {
+            const c = { _id: r._id, folderName: r.folderName, match: matches[r.folderName] };
             const roll = c.match.best.rollNo;
             const prev = seen.get(roll);
             if (!prev || c.match.best.confidence > prev.match.best.confidence) seen.set(roll, c);
         }
         const toApprove = [...seen.values()];
-        if (toApprove.length === 0) { showToast('No high-confidence matches found', 'error'); return; }
-
-        const lines = toApprove
-            .map(c => `${c.folderName} -> ${c.match.best.rollNo} (${(c.match.best.confidence * 100).toFixed(0)}%)`)
-            .join('\n');
+        if (!toApprove.length) { showToast('No high-confidence matches found', 'error'); return; }
+        const lines = toApprove.map(c => `${c.folderName} -> ${c.match.best.rollNo} (${(c.match.best.confidence*100).toFixed(0)}%)`).join('\n');
         if (!window.confirm(`Approve all ${toApprove.length} high-confidence matches?\n\n${lines}`)) return;
-
         setApprovingAll(true);
         try {
             const res = await fetch(`${RA_BASE}/bulk-assign`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    batch: batchName,
-                    assignments: toApprove.map(c => ({ id: c._id, folderName: c.folderName, rollNo: c.match.best.rollNo })),
-                }),
+                body: JSON.stringify({ batch: batchName, assignments: toApprove.map(c => ({ id: c._id, folderName: c.folderName, rollNo: c.match.best.rollNo })) }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed');
             showToast(`Auto-assigned ${data.assigned} high-confidence clusters`);
             await loadClusters();
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setApprovingAll(false);
-        }
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setApprovingAll(false); }
     };
 
-    // ── GT modal ─────────────────────────────────────────────────────
     const openGtModal = useCallback(async (rollNo) => {
         setGtModal({ rollNo }); setGtData(null); setGtSelected(new Set()); setGtLoading(true);
         try {
@@ -500,26 +436,16 @@ export default function RollAssign() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed');
             const fixUrls = (list) => (list || []).map(f => ({
-                ...f,
-                url: `${RA_BASE}/photo/${encodeURIComponent(batchName)}/${encodeURIComponent(rollNo)}/${encodeURIComponent(f.filename)}`,
+                ...f, url: `${RA_BASE}/photo/${encodeURIComponent(batchName)}/${encodeURIComponent(rollNo)}/${encodeURIComponent(f.filename)}`,
             }));
-            setGtData({
-                ...data,
-                embeddingFiles: fixUrls(data.embeddingFiles),
-                backupFiles:    fixUrls(data.backupFiles),
-                untrackedFiles: fixUrls(data.untrackedFiles),
-            });
+            setGtData({ ...data, embeddingFiles: fixUrls(data.embeddingFiles), backupFiles: fixUrls(data.backupFiles), untrackedFiles: fixUrls(data.untrackedFiles) });
             setGtSelected(new Set((data.embeddingFiles || []).map(f => f.filename)));
-        } catch (err) {
-            showToast(err.message, 'error');
-            setGtModal(null);
-        } finally {
-            setGtLoading(false);
-        }
+        } catch (err) { showToast(err.message, 'error'); setGtModal(null); }
+        finally { setGtLoading(false); }
     }, [batchName]);
 
     const handleUpdateEmbedding = useCallback(async () => {
-        if (!gtModal || gtSelected.size === 0) return;
+        if (!gtModal || !gtSelected.size) return;
         setGtSaving(true);
         try {
             const res = await fetch(`${GT_BASE}/update-embedding`, {
@@ -530,19 +456,15 @@ export default function RollAssign() {
             if (!res.ok) throw new Error(data.error || 'Failed');
             showToast(`Embedding updated for ${gtModal.rollNo}`);
             setGtModal(null);
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setGtSaving(false);
-        }
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setGtSaving(false); }
     }, [gtModal, gtSelected, batchName]);
 
-    // ── Approve individual new photos ────────────────────────────────
     const approvePhoto = useCallback(async (rollNo, filename) => {
         const key = `${rollNo}::${filename}`;
         setApprovingPhoto(prev => ({ ...prev, [key]: true }));
         try {
-            const res = await fetch(`${GT_BASE}/approve-photos`, {
+            const res  = await fetch(`${GT_BASE}/approve-photos`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ batch: batchName, rollNo, filenames: [filename] }),
             });
@@ -550,24 +472,13 @@ export default function RollAssign() {
             if (!res.ok) throw new Error(data.error || 'Failed');
             showToast(`Approved & added to embedding`);
             setUnapprovedMap(prev => {
-                const updated = { ...(prev[rollNo] ? { [rollNo]: prev[rollNo].filter(f => f.filename !== filename) } : {}) };
-                if (updated[rollNo]?.length === 0) delete updated[rollNo];
-                return { ...prev, ...updated };
+                const u = { ...(prev[rollNo] ? { [rollNo]: prev[rollNo].filter(f => f.filename !== filename) } : {}) };
+                if (u[rollNo]?.length === 0) delete u[rollNo];
+                return { ...prev, ...u };
             });
-            setApprovedStats(prev => ({
-                ...prev,
-                [rollNo]: {
-                    ...prev[rollNo],
-                    approvedCount:  (prev[rollNo]?.approvedCount  || 0) + 1,
-                    embeddingCount: (prev[rollNo]?.embeddingCount || 0) + 1,
-                    unapprovedCount:Math.max(0, (prev[rollNo]?.unapprovedCount || 1) - 1),
-                },
-            }));
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setApprovingPhoto(prev => { const n = { ...prev }; delete n[key]; return n; });
-        }
+            setApprovedStats(prev => ({ ...prev, [rollNo]: { ...prev[rollNo], approvedCount: (prev[rollNo]?.approvedCount || 0) + 1, embeddingCount: (prev[rollNo]?.embeddingCount || 0) + 1, unapprovedCount: Math.max(0, (prev[rollNo]?.unapprovedCount || 1) - 1) } }));
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setApprovingPhoto(prev => { const n = { ...prev }; delete n[key]; return n; }); }
     }, [batchName]);
 
     const approveAllPhotos = useCallback(async (rollNo, files) => {
@@ -575,7 +486,7 @@ export default function RollAssign() {
         const allKey = `${rollNo}::all`;
         setApprovingPhoto(prev => ({ ...prev, [allKey]: true }));
         try {
-            const res = await fetch(`${GT_BASE}/approve-photos`, {
+            const res  = await fetch(`${GT_BASE}/approve-photos`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ batch: batchName, rollNo, filenames: files.map(f => f.filename) }),
             });
@@ -583,70 +494,67 @@ export default function RollAssign() {
             if (!res.ok) throw new Error(data.error || 'Failed');
             showToast(`Approved ${files.length} photo(s) for ${rollNo}`);
             setUnapprovedMap(prev => { const n = { ...prev }; delete n[rollNo]; return n; });
-            setApprovedStats(prev => ({
-                ...prev,
-                [rollNo]: {
-                    approvedCount:  data.approvedCount  || 0,
-                    embeddingCount: data.embeddingCount || 0,
-                    backupCount:    data.backupCount    || 0,
-                    unapprovedCount:0,
-                },
-            }));
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setApprovingPhoto(prev => { const n = { ...prev }; delete n[allKey]; return n; });
-        }
+            setApprovedStats(prev => ({ ...prev, [rollNo]: { approvedCount: data.approvedCount || 0, embeddingCount: data.embeddingCount || 0, backupCount: data.backupCount || 0, unapprovedCount: 0 } }));
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setApprovingPhoto(prev => { const n = { ...prev }; delete n[allKey]; return n; }); }
     }, [batchName]);
 
-    // ── Render ───────────────────────────────────────────────────────
     return (
         <div style={styles.page}>
             <style>{cssReset}</style>
 
-            {/* Toast */}
             {toast && (
-                <div style={{
-                    position: 'fixed', top: 20, right: 20, zIndex: 9999,
-                    padding: '12px 24px', borderRadius: 8, fontSize: '13px', fontWeight: 600,
-                    background: toast.type === 'error' ? '#3f1212' : theme.successDim,
-                    color:      toast.type === 'error' ? '#f87171' : theme.success,
-                    border: `1px solid ${toast.type === 'error' ? '#f87171' : theme.success}`,
-                }}>{toast.msg}</div>
+                <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, padding: '12px 24px', borderRadius: 8, fontSize: '13px', fontWeight: 600, background: toast.type === 'error' ? '#3f1212' : theme.successDim, color: toast.type === 'error' ? '#f87171' : theme.success, border: `1px solid ${toast.type === 'error' ? '#f87171' : theme.success}` }}>
+                    {toast.msg}
+                </div>
             )}
 
-            {/* Verify Modal — portal escapes any ancestor transform/overflow */}
-            {modal && createPortal(
-                (() => {
-                    const queueIdx = reviewQueue.findIndex(r => r.folderName === modal.item.folderName);
-                    return (
-                        <VerifyModal
-                            item={modal.item} match={modal.match}
-                            batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
-                            overrideRoll={overrideRoll} setOverrideRoll={setOverrideRoll}
-                            saving={saving === modal.item.folderName}
-                            onApprove={() => handleApprove(modal.item, overrideRoll)}
-                            onFlag={() => handleFlag(modal.item, modal.match)}
-                            onClose={() => setModal(null)}
-                            hasPrev={queueIdx > 0}
-                            hasNext={queueIdx < reviewQueue.length - 1}
-                            onPrev={() => openQueueItem(reviewQueue, modal.item.folderName, -1)}
-                            onNext={() => openQueueItem(reviewQueue, modal.item.folderName, +1)}
-                            position={queueIdx + 1}
-                            total={reviewQueue.length}
-                        />
-                    );
-                })(),
-                document.body
-            )}
+            {modal && createPortal((() => {
+                const queueIdx = reviewQueue.findIndex(r => r.folderName === modal.item.folderName);
+                return (
+                    <VerifyModal
+                        item={modal.item} match={modal.match} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
+                        overrideRoll={overrideRoll} setOverrideRoll={setOverrideRoll}
+                        saving={saving === modal.item.folderName}
+                        onApprove={() => handleApprove(modal.item, overrideRoll)}
+                        onFlag={() => handleFlag(modal.item, modal.match)}
+                        onClose={() => setModal(null)}
+                        hasPrev={queueIdx > 0} hasNext={queueIdx < reviewQueue.length - 1}
+                        onPrev={() => openQueueItem(reviewQueue, modal.item.folderName, -1)}
+                        onNext={() => openQueueItem(reviewQueue, modal.item.folderName, +1)}
+                        position={queueIdx + 1} total={reviewQueue.length}
+                    />
+                );
+            })(), document.body)}
 
-            {/* GT Modal — portal escapes any ancestor transform/overflow */}
+            {flagModal && createPortal((() => {
+                const idx = flaggedItems.findIndex(f => f.folderName === flagModal.folderName);
+                return (
+                    <FlagResolveModal
+                        item={flagModal} batchName={batchName}
+                        flagPhotoUrl={flagPhotoUrl} flagErpPhotoUrl={flagErpPhotoUrl}
+                        rollInput={flagRollInput} setRollInput={setFlagRollInput}
+                        saving={saving === flagModal.folderName}
+                        onResolve={() => handleFlagResolve(flagModal.folderName, flagRollInput)}
+                        onClose={() => setFlagModal(null)}
+                        hasPrev={idx > 0} hasNext={idx < flaggedItems.length - 1}
+                        onPrev={() => openFlaggedItem(-1)} onNext={() => openFlaggedItem(+1)}
+                        position={idx + 1} total={flaggedItems.length}
+                        showToast={showToast}
+                        onFolderDeleted={handleFlagFolderDeleted}
+                        onPhotoDeleted={(filename) => {
+                            setFlagModal(prev => ({
+                                ...prev,
+                                previewFiles: (prev.previewFiles || []).filter(f => f !== filename),
+                                imageFiles:   (prev.imageFiles   || []).filter(f => f !== filename),
+                            }));
+                        }}
+                    />
+                );
+            })(), document.body)}
+
             {gtModal && createPortal(
-                <GTModal
-                    rollNo={gtModal.rollNo} loading={gtLoading} data={gtData}
-                    selected={gtSelected} setSelected={setGtSelected}
-                    saving={gtSaving} onSave={handleUpdateEmbedding} onClose={() => setGtModal(null)}
-                />,
+                <GTModal rollNo={gtModal.rollNo} loading={gtLoading} data={gtData} selected={gtSelected} setSelected={setGtSelected} saving={gtSaving} onSave={handleUpdateEmbedding} onClose={() => setGtModal(null)} />,
                 document.body
             )}
 
@@ -655,7 +563,6 @@ export default function RollAssign() {
                 <div style={styles.subheading}>Assign real roll numbers to extracted face clusters, then generate embeddings</div>
             </div>
 
-            {/* Controls card */}
             <div style={{ ...styles.card, marginBottom: 20 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 16, alignItems: 'end', marginBottom: 16 }}>
                     <div>
@@ -666,20 +573,11 @@ export default function RollAssign() {
                     </div>
                     <div>
                         <label style={styles.label}>Department</label>
-                        <select
-                            value={department}
-                            onChange={e => setDepartment(e.target.value)}
-                            style={styles.select}
-                            disabled={deptLoading}
-                        >
-                            <option value="">
-                                {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
-                            </option>
+                        <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
+                            <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}</option>
                             {departments.map(d => <option key={d}>{d}</option>)}
                         </select>
-                        {deptError && (
-                            <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
-                        )}
+                        {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>}
                     </div>
                     <div>
                         <label style={styles.label}>Year</label>
@@ -688,267 +586,128 @@ export default function RollAssign() {
                             {YEARS.map(y => <option key={y}>{y}</option>)}
                         </select>
                     </div>
-                    <button
-                        onClick={runAutoMatch}
-                        disabled={matching || !batchName || unprocessed.length === 0}
-                        style={{
-                            ...styles.btnPrimary,
-                            padding: '9px 20px', fontSize: '13px',
-                            opacity: (matching || !batchName || unprocessed.length === 0) ? 0.5 : 1,
-                        }}
-                    >
+                    <button onClick={runAutoMatch} disabled={matching || !batchName || unprocessed.length === 0}
+                        style={{ ...styles.btnPrimary, padding: '9px 20px', fontSize: '13px', opacity: (matching || !batchName || unprocessed.length === 0) ? 0.5 : 1 }}>
                         {matching ? '🔄 Matching…' : `🔍 Match with ERP Photos${unprocessed.length > 0 ? ` (${unprocessed.length})` : ''}`}
                     </button>
                 </div>
 
-                {/* Mode + action buttons row */}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     {[['manual', 'Manual Entry'], ['erp', 'ERP Auto-Match']].map(([id, label]) => (
-                        <button key={id} onClick={() => setMode(id)} style={{
-                            padding: '6px 16px', borderRadius: '999px', fontSize: '12px',
-                            fontWeight: 600, cursor: 'pointer',
-                            border: `1px solid ${mode === id ? theme.accent : theme.border}`,
-                            background: mode === id ? theme.accentDim : 'transparent',
-                            color: mode === id ? theme.accent : theme.textMuted,
-                        }}>{label}</button>
+                        <button key={id} onClick={() => setMode(id)} style={{ padding: '6px 16px', borderRadius: '999px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: `1px solid ${mode === id ? theme.accent : theme.border}`, background: mode === id ? theme.accentDim : 'transparent', color: mode === id ? theme.accent : theme.textMuted }}>{label}</button>
                     ))}
-
-                    <button onClick={() => setBulkOpen(v => !v)} style={{
-                        padding: '6px 16px', borderRadius: '999px', fontSize: '12px',
-                        fontWeight: 600, cursor: 'pointer',
-                        border: `1px solid ${theme.border}`, background: 'transparent',
-                        color: theme.textMuted, marginLeft: 'auto',
-                    }}>
-                        Bulk Assign
-                    </button>
-
+                    <button onClick={() => setBulkOpen(v => !v)} style={{ padding: '6px 16px', borderRadius: '999px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, marginLeft: 'auto' }}>Bulk Assign</button>
                     {matchDone && highConfCount > 0 && (
-                        <button
-                            onClick={approveAllHigh}
-                            disabled={approvingAll}
-                            style={{
-                                padding: '6px 16px', borderRadius: '999px', fontSize: '12px',
-                                fontWeight: 700, cursor: 'pointer', border: 'none',
-                                background: theme.success, color: '#000',
-                                opacity: approvingAll ? 0.5 : 1,
-                            }}
-                        >
+                        <button onClick={approveAllHigh} disabled={approvingAll} style={{ padding: '6px 16px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', border: 'none', background: theme.success, color: '#000', opacity: approvingAll ? 0.5 : 1 }}>
                             {approvingAll ? 'Assigning...' : `Approve All High (${highConfCount})`}
                         </button>
                     )}
                 </div>
 
-                {/* Bulk assign panel */}
                 {bulkOpen && (
                     <div style={{ marginTop: 14, padding: 14, borderRadius: 8, background: theme.bg, border: `1px solid ${theme.border}` }}>
-                        <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: 6 }}>
-                            One per line: <code>person_001 26TT1234</code>
-                        </div>
-                        <textarea
-                            value={bulkText}
-                            onChange={e => setBulkText(e.target.value)}
-                            rows={6}
-                            placeholder={'person_001 26TT1234\nperson_002 26TT5678'}
-                            style={{ ...styles.input, width: '100%', fontFamily: theme.fontMono, fontSize: '12px', resize: 'vertical' }}
-                        />
-                        <button
-                            onClick={handleBulkAssign}
-                            disabled={bulkSaving || !bulkText.trim()}
-                            style={{ ...styles.btnPrimary, marginTop: 8, opacity: (bulkSaving || !bulkText.trim()) ? 0.5 : 1 }}
-                        >
+                        <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: 6 }}>One per line: <code>person_001 26TT1234</code></div>
+                        <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} rows={6} placeholder={'person_001 26TT1234\nperson_002 26TT5678'} style={{ ...styles.input, width: '100%', fontFamily: theme.fontMono, fontSize: '12px', resize: 'vertical' }} />
+                        <button onClick={handleBulkAssign} disabled={bulkSaving || !bulkText.trim()} style={{ ...styles.btnPrimary, marginTop: 8, opacity: (bulkSaving || !bulkText.trim()) ? 0.5 : 1 }}>
                             {bulkSaving ? 'Assigning...' : 'Bulk Assign'}
                         </button>
                     </div>
                 )}
 
-                {/* Progress bar */}
                 {matching && matchProgress && (
                     <div style={{ marginTop: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: theme.textMuted, marginBottom: 4 }}>
                             <span>{matchProgress.msg}</span>
-                            {matchProgress.total > 0 && (
-                                <span style={{ fontFamily: theme.fontMono }}>{matchProgress.done}/{matchProgress.total}</span>
-                            )}
+                            {matchProgress.total > 0 && <span style={{ fontFamily: theme.fontMono }}>{matchProgress.done}/{matchProgress.total}</span>}
                         </div>
                         <div style={{ height: 5, borderRadius: 3, background: theme.border, overflow: 'hidden' }}>
-                            <div style={{
-                                height: '100%', borderRadius: 3,
-                                background: matchProgress.step === 'erp' ? theme.warning : theme.accent,
-                                width: matchProgress.total > 0 ? `${(matchProgress.done / matchProgress.total) * 100}%` : '5%',
-                                transition: 'width 0.3s',
-                            }} />
+                            <div style={{ height: '100%', borderRadius: 3, background: matchProgress.step === 'erp' ? theme.warning : theme.accent, width: matchProgress.total > 0 ? `${(matchProgress.done / matchProgress.total) * 100}%` : '5%', transition: 'width 0.3s' }} />
                         </div>
                     </div>
                 )}
 
-                {matchError && (
-                    <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 6, background: '#3f1212', color: '#f87171', fontSize: '12px' }}>
-                        {matchError}
-                    </div>
-                )}
+                {matchError && <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 6, background: '#3f1212', color: '#f87171', fontSize: '12px' }}>{matchError}</div>}
 
                 {!matching && pendingReview.length > 0 && (
-                    <div style={{
-                        marginTop: 12, padding: '8px 14px', borderRadius: 6,
-                        background: theme.successDim, border: `1px solid ${theme.success}44`,
-                        display: 'flex', alignItems: 'center', gap: 10,
-                    }}>
+                    <div style={{ marginTop: 12, padding: '8px 14px', borderRadius: 6, background: theme.successDim, border: `1px solid ${theme.success}44`, display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ color: theme.success, fontWeight: 700, fontSize: '13px' }}>✓ Auto-assignment done</span>
-                        <span style={{ color: theme.textMuted, fontSize: '12px' }}>
-                            {pendingReview.length} pending review · click any card to verify and approve
-                        </span>
+                        <span style={{ color: theme.textMuted, fontSize: '12px' }}>{pendingReview.length} pending review · click any card to verify and approve</span>
                     </div>
                 )}
-
                 {!matching && unprocessed.length > 0 && (
-                    <div style={{
-                        marginTop: 14, padding: '10px 14px', borderRadius: 7,
-                        background: theme.accentDim, border: `1px solid ${theme.accent}44`,
-                        fontSize: '12px', color: theme.textMuted,
-                    }}>
+                    <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 7, background: theme.accentDim, border: `1px solid ${theme.accent}44`, fontSize: '12px', color: theme.textMuted }}>
                         <strong style={{ color: theme.accent }}>{unprocessed.length} unprocessed clusters</strong> — click <strong>Match with ERP Photos</strong> to auto-assign them
                     </div>
                 )}
             </div>
 
-            {loading && (
-                <div style={{ ...styles.card, textAlign: 'center', padding: '40px 20px', color: theme.textMuted }}>
-                    Loading folders...
-                </div>
-            )}
+            {loading && <div style={{ ...styles.card, textAlign: 'center', padding: '40px 20px', color: theme.textMuted }}>Loading folders...</div>}
 
             {!loading && batchName && (
                 <>
                     <Section title="Pending Review" count={pendingReview.length} accentColor={theme.accent} emptyText="No clusters pending review">
                         {pendingReview.map(item => (
-                            <ClusterCard
-                                key={item.folderName}
-                                item={item}
-                                batchName={batchName}
-                                photoUrl={photoUrl}
-                                erpPhotoUrl={erpPhotoUrl}
-                                mode={mode}
-                                rollValue={inlineRolls[item.folderName] || ''}
+                            <ClusterCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
+                                mode={mode} rollValue={inlineRolls[item.folderName] || ''}
                                 onRollChange={v => setInlineRolls(prev => ({ ...prev, [item.folderName]: v }))}
-                                onAssign={() => assignManual(item)}
-                                saving={saving === item.folderName}
-                                onClick={() => openModal(item)}
-                                disabled={matching}
-                            />
+                                onAssign={() => assignManual(item)} saving={saving === item.folderName}
+                                onClick={() => openModal(item)} disabled={matching} />
                         ))}
                     </Section>
 
                     {Object.keys(unapprovedMap).length > 0 && (
-                        <Section
-                            title="New Photos — Pending Approval"
-                            count={Object.values(unapprovedMap).reduce((s, a) => s + a.length, 0)}
-                            accentColor={theme.warning}
-                        >
+                        <Section title="New Photos — Pending Approval" count={Object.values(unapprovedMap).reduce((s, a) => s + a.length, 0)} accentColor={theme.warning}>
                             {Object.entries(unapprovedMap).map(([rollNo, photos]) => (
-                                <UnapprovedPhotoCard
-                                    key={rollNo}
-                                    rollNo={rollNo}
-                                    photos={photos}
-                                    stats={approvedStats[rollNo]}
-                                    busy={approvingPhoto}
-                                    onApprove={approvePhoto}
-                                    onApproveAll={() => approveAllPhotos(rollNo, photos)}
-                                />
+                                <UnapprovedPhotoCard key={rollNo} rollNo={rollNo} photos={photos} stats={approvedStats[rollNo]}
+                                    busy={approvingPhoto} onApprove={approvePhoto} onApproveAll={() => approveAllPhotos(rollNo, photos)} />
                             ))}
                         </Section>
                     )}
 
                     <Section title="Approved" count={approvedItems.length} accentColor={theme.success} emptyText="No approved clusters yet">
                         {approvedItems.map(item => (
-                            <ClusterCard
-                                key={item.folderName}
-                                item={item}
-                                batchName={batchName}
-                                photoUrl={photoUrl}
-                                erpPhotoUrl={erpPhotoUrl}
-                                mode={mode}
-                                isAssigned
-                                stats={approvedStats[item.rollNo]}
-                                unapprovedCount={unapprovedMap[item.rollNo]?.length || 0}
-                                onClick={() => openGtModal(item.rollNo)}
-                            />
+                            <ClusterCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
+                                mode={mode} isAssigned stats={approvedStats[item.rollNo]} unapprovedCount={unapprovedMap[item.rollNo]?.length || 0}
+                                onClick={() => openGtModal(item.rollNo)} />
                         ))}
                     </Section>
 
                     {mergedItems.length > 0 && (
                         <Section title="Merged — Pending Review" count={mergedItems.length} accentColor={theme.warning} emptyText="">
                             {mergedItems.map(item => (
-                                <ClusterCard
-                                    key={item.folderName}
-                                    item={item}
-                                    batchName={batchName}
-                                    photoUrl={photoUrl}
-                                    erpPhotoUrl={erpPhotoUrl}
-                                    mode={mode}
-                                    isMerged
-                                    rollValue={inlineRolls[item.folderName] || ''}
+                                <ClusterCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
+                                    mode={mode} isMerged rollValue={inlineRolls[item.folderName] || ''}
                                     onRollChange={v => setInlineRolls(prev => ({ ...prev, [item.folderName]: v }))}
-                                    onAssign={() => assignManual(item)}
-                                    saving={saving === item.folderName}
-                                    onClick={() => openModal(item)}
-                                />
+                                    onAssign={() => assignManual(item)} saving={saving === item.folderName} onClick={() => openModal(item)} />
                             ))}
                         </Section>
                     )}
 
                     <Section title="Flagged" count={flaggedItems.length} accentColor={theme.warning} emptyText="No flagged clusters">
                         {flaggedItems.map(item => (
-                            <ClusterCard
-                                key={item.folderName}
-                                item={item}
-                                batchName={batchName}
-                                photoUrl={photoUrl}
-                                erpPhotoUrl={erpPhotoUrl}
-                                mode={mode}
-                                rollValue={inlineRolls[item.folderName] || ''}
-                                onRollChange={v => setInlineRolls(prev => ({ ...prev, [item.folderName]: v }))}
-                                onAssign={() => assignManual(item)}
-                                saving={saving === item.folderName}
-                                onClick={() => openModal(item)}
-                                isFlagged
-                            />
+                            <FlaggedClusterCard key={item.folderName} item={item} batchName={batchName}
+                                flagPhotoUrl={flagPhotoUrl} onClick={() => openFlagModal(item)} />
                         ))}
                     </Section>
 
                     <Section title="No Face Detected" count={unmatchedItems.length} accentColor={theme.textMuted} emptyText="No undetected clusters">
                         {unmatchedItems.map(item => (
-                            <ClusterCard
-                                key={item.folderName}
-                                item={item}
-                                batchName={batchName}
-                                photoUrl={photoUrl}
-                                erpPhotoUrl={erpPhotoUrl}
-                                mode={mode}
-                                isUnmatched
-                                disabled
-                            />
+                            <ClusterCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
+                                mode={mode} isUnmatched
+                                onDeleteFolder={() => deleteUnmatchedFolder(item)}
+                                deletingFolder={saving === item.folderName} />
                         ))}
                     </Section>
 
                     {unprocessed.length > 0 && (
                         <Section title="Unprocessed" count={unprocessed.length} accentColor={theme.textMuted}>
                             {unprocessed.map(item => (
-                                <ClusterCard
-                                    key={item.folderName}
-                                    item={item}
-                                    batchName={batchName}
-                                    photoUrl={photoUrl}
-                                    erpPhotoUrl={erpPhotoUrl}
-                                    mode={mode}
-                                    disabled
-                                />
+                                <ClusterCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl} mode={mode} disabled />
                             ))}
                         </Section>
                     )}
 
-                    {unprocessed.length === 0 && pendingReview.length === 0 &&
-                     approvedItems.length === 0 && unmatchedItems.length === 0 &&
-                     flaggedItems.length === 0 && (
+                    {!unprocessed.length && !pendingReview.length && !approvedItems.length && !unmatchedItems.length && !flaggedItems.length && (
                         <div style={{ ...styles.card, textAlign: 'center', padding: '60px 20px', borderStyle: 'dashed' }}>
                             <div style={{ fontSize: '36px', opacity: 0.3, marginBottom: 12 }}>📁</div>
                             <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>No folders found</div>
@@ -968,31 +727,253 @@ export default function RollAssign() {
     );
 }
 
-// ── Unapproved photo card ────────────────────────────────────────
-function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApproveAll }) {
-    const allKey    = `${rollNo}::all`;
-    const allBusy   = !!busy[allKey];
-    const fmtDate = (iso) => {
-        if (!iso) return null;
-        return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+function FlaggedClusterCard({ item, batchName, flagPhotoUrl, onClick }) {
+    const folder    = item.currentFolder || item.folderName;
+    const flaggedAt = item.flaggedAt ? new Date(item.flaggedAt).toLocaleDateString() : '';
+    return (
+        <div onClick={onClick} style={{ background: theme.surface, border: `1px solid ${theme.warning}55`, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = theme.warning; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = theme.warning + '55'; }}>
+            <div style={{ display: 'flex', height: 80, background: '#000', gap: 1, overflow: 'hidden' }}>
+                {(item.previewFiles || []).slice(0, 4).map((f, i) => (
+                    <img key={i} src={flagPhotoUrl(batchName, folder, f)} alt="" style={{ flex: 1, height: '100%', objectFit: 'cover', minWidth: 0 }} onError={e => { e.target.style.display = 'none'; }} />
+                ))}
+                {!(item.previewFiles || []).length && (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.textMuted, fontSize: '11px' }}>No images</div>
+                )}
+            </div>
+            <div style={{ padding: '10px 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 700, color: theme.text }}>{item.folderName}</span>
+                    <span style={{ fontSize: '11px', color: theme.textMuted }}>{item.imageCount} img</span>
+                </div>
+                {flaggedAt && <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: 6 }}>Flagged {flaggedAt}</div>}
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: 99, background: theme.warning + '22', color: theme.warning, fontWeight: 600 }}>⚑ Flagged</span>
+                    <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: 99, background: theme.border, color: theme.textMuted }}>Click to resolve / edit / delete</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function FlagResolveModal({ item, batchName, flagPhotoUrl, flagErpPhotoUrl, rollInput, setRollInput, saving, onResolve, onClose, hasPrev, hasNext, onPrev, onNext, position, total, showToast, onFolderDeleted, onPhotoDeleted }) {
+    const folder     = item.currentFolder || item.folderName;
+    const conf       = item.confidence;
+    const candidates = item.candidates || [];
+
+    const [editMode,       setEditMode]       = useState(false);
+    const [allPhotos,      setAllPhotos]      = useState([]);
+    const [loadingPhotos,  setLoadingPhotos]  = useState(false);
+    const [deleting,       setDeleting]       = useState(null);
+    const [deletingFolder, setDeletingFolder] = useState(false);
+
+    useEffect(() => {
+        if (!editMode) return;
+        const load = async () => {
+            setLoadingPhotos(true);
+            try {
+                const res  = await fetch(`${FLAG_BASE}/all-clusters/${batchName}`);
+                const data = await res.json();
+                if (res.ok) {
+                    const found = (data.clusters || []).find(c => c.folderName === item.folderName || c.folderName === folder);
+                    if (found) { setAllPhotos((found.imageFiles || []).map(f => typeof f === 'string' ? f : f.filename)); return; }
+                }
+            } catch (_) {}
+            setAllPhotos(item.imageFiles?.length ? item.imageFiles : item.previewFiles || []);
+        };
+        load().finally(() => setLoadingPhotos(false));
+    }, [editMode, batchName, item.folderName, folder, item.imageFiles, item.previewFiles]);
+
+    const deletePhoto = async (filename) => {
+        if (!window.confirm(`Delete "${filename}"?`)) return;
+        setDeleting(filename);
+        try {
+            const res  = await fetch(`${FLAG_BASE}/cluster-photo/${encodeURIComponent(batchName)}/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Delete failed');
+            setAllPhotos(prev => prev.filter(f => f !== filename));
+            onPhotoDeleted(filename);
+            showToast(`Deleted ${filename}`);
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setDeleting(null); }
     };
+
+    const deleteFolder = async () => {
+        if (!window.confirm(`Delete entire folder "${item.folderName}" and remove from database?\n\nThis cannot be undone.`)) return;
+        setDeletingFolder(true);
+        try {
+            const res  = await fetch(`${FLAG_BASE}/cluster/${encodeURIComponent(batchName)}/${encodeURIComponent(item.folderName)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currentFolder: folder }) });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Delete failed');
+            showToast(`Deleted "${item.folderName}" and removed from DB`);
+            onFolderDeleted();
+        } catch (err) { showToast(err.message, 'error'); setDeletingFolder(false); }
+    };
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (editMode) return;
+            if (e.key === 'ArrowLeft'  && hasPrev && !saving) onPrev();
+            if (e.key === 'ArrowRight' && hasNext && !saving) onNext();
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [hasPrev, hasNext, saving, onPrev, onNext, onClose, editMode]);
+
+    const navBtn = (enabled) => ({ padding: '4px 10px', borderRadius: 6, border: `1px solid ${theme.border}`, background: enabled ? theme.surface : 'transparent', color: enabled ? theme.text : theme.textMuted, cursor: enabled ? 'pointer' : 'default', fontSize: '14px', fontWeight: 700, opacity: enabled ? 1 : 0.3, lineHeight: 1 });
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12, width: '100%', maxWidth: editMode ? 900 : 780, maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'max-width 0.2s' }}>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: `1px solid ${theme.border}`, gap: 10 }}>
+                    {!editMode && <button onClick={onPrev} disabled={!hasPrev || saving} style={navBtn(hasPrev && !saving)}>&#8592;</button>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: theme.text, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontFamily: theme.fontMono }}>{item.folderName}</span>
+                            <span style={{ fontSize: '11px', fontWeight: 600, background: theme.warning + '22', color: theme.warning, padding: '2px 7px', borderRadius: 8 }}>Flagged</span>
+                            {!editMode && total > 1 && <span style={{ marginLeft: 'auto', fontSize: '11px', color: theme.textMuted, background: theme.bg, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>{position} / {total}</span>}
+                            {editMode && <span style={{ marginLeft: 4, fontSize: '11px', fontWeight: 600, background: '#3f1212', color: '#f87171', padding: '2px 8px', borderRadius: 8 }}>Edit Mode</span>}
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <button onClick={deleteFolder} disabled={deletingFolder} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #f87171', background: '#3f1212', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+                            {deletingFolder ? 'Deleting…' : '🗑 Delete Folder'}
+                        </button>
+                        {editMode
+                            ? <button onClick={() => setEditMode(false)} style={{ padding: '5px 12px', borderRadius: 6, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>← Back</button>
+                            : <button onClick={() => setEditMode(true)}  style={{ padding: '5px 12px', borderRadius: 6, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>✏ Edit Photos</button>
+                        }
+                    </div>
+                    {!editMode && <button onClick={onNext} disabled={!hasNext || saving} style={navBtn(hasNext && !saving)}>&#8594;</button>}
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer', marginLeft: 4 }}>×</button>
+                </div>
+
+                {editMode ? (
+                    <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+                        {item.suggestedRollNo && (
+                            <div style={{ marginBottom: 14, padding: '8px 14px', borderRadius: 8, background: '#3f1212', border: '1px solid #f87171', fontSize: '12px' }}>
+                                <span style={{ color: '#f87171' }}>Rejected suggestion: </span>
+                                <span style={{ color: theme.text, fontWeight: 700 }}>{item.suggestedRollNo}</span>
+                                {item.confidence != null && <span style={{ color: '#f87171', marginLeft: 6 }}>({(item.confidence * 100).toFixed(0)}%)</span>}
+                            </div>
+                        )}
+                        <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: 12 }}>
+                            {loadingPhotos ? 'Loading photos…' : `${allPhotos.length} photo(s) — click ✕ to delete from disk and DB`}
+                        </div>
+                        {loadingPhotos ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: theme.textMuted }}>Loading…</div>
+                        ) : allPhotos.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: theme.textMuted }}>No photos in this folder</div>
+                        ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
+                                {allPhotos.map(filename => (
+                                    <div key={filename} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: `1px solid ${theme.border}`, opacity: deleting === filename ? 0.25 : 1, transition: 'opacity 0.15s' }}>
+                                        <img src={flagPhotoUrl(batchName, folder, filename)} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.opacity = '0.15'; }} />
+                                        <button onClick={() => deletePhoto(filename)} disabled={!!deleting} title="Delete this photo" style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: '#3f1212', border: '1.5px solid #f87171', color: '#f87171', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>✕</button>
+                                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.65)', padding: '3px 5px', fontSize: '8px', color: '#ccc', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{filename}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20, alignItems: 'start' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Extracted Face Images</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                                {(item.previewFiles || []).map((f, i) => (
+                                    <div key={f + i} style={{ position: 'relative' }}>
+                                        <img src={flagPhotoUrl(batchName, folder, f)} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, border: `1px solid ${theme.border}`, display: 'block', opacity: deleting === f ? 0.2 : 1, transition: 'opacity 0.15s' }} onError={e => { e.target.style.opacity = '0.1'; }} />
+                                        <button
+                                            onClick={() => {
+                                                if (!window.confirm(`Delete this photo?\nRemoves from disk + database.`)) return;
+                                                setDeleting(f);
+                                                fetch(`${FLAG_BASE}/cluster-photo/${encodeURIComponent(batchName)}/${encodeURIComponent(folder)}/${encodeURIComponent(f)}`, { method: 'DELETE' })
+                                                    .then(r => r.json()).then(d => { if (d.ok) { onPhotoDeleted(f); showToast(`Deleted ${f}`); } else showToast(d.error || 'Delete failed', 'error'); })
+                                                    .catch(err => showToast(err.message, 'error')).finally(() => setDeleting(null));
+                                            }}
+                                            disabled={!!deleting} title="Delete this photo"
+                                            style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: '#3f1212', border: '1.5px solid #f87171', color: '#f87171', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1, boxShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>✕</button>
+                                    </div>
+                                ))}
+                                {!(item.previewFiles || []).length && <div style={{ gridColumn: '1 / -1', padding: '30px 0', textAlign: 'center', color: theme.textMuted, fontSize: '12px' }}>No preview images</div>}
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                                <button onClick={() => setEditMode(true)} style={{ flex: 1, padding: '8px 0', borderRadius: 6, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>✏ Edit All Photos</button>
+                                <button onClick={deleteFolder} disabled={deletingFolder} style={{ flex: 1, padding: '8px 0', borderRadius: 6, border: '1px solid #f87171', background: '#3f1212', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                                    {deletingFolder ? 'Deleting…' : '🗑 Delete Folder'}
+                                </button>
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#f8717177', textAlign: 'center' }}>Delete Folder removes all photos, DB record &amp; flag entry permanently</div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            <div>
+                                <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ERP Match (Rejected)</div>
+                                {item.suggestedRollNo ? (
+                                    <div style={{ textAlign: 'center' }}>
+                                        {item.erpPhoto
+                                            ? <img src={flagErpPhotoUrl(item.erpPhoto)} alt="ERP" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, border: `3px solid ${confidenceColor(conf)}` }} onError={e => { e.target.style.display = 'none'; }} />
+                                            : <div style={{ width: 120, height: 120, borderRadius: 8, margin: '0 auto', background: '#3f1212', border: '3px solid #f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#f87171', textAlign: 'center', padding: 8 }}>No ERP photo</div>
+                                        }
+                                        <div style={{ marginTop: 8, fontSize: '15px', fontWeight: 800, color: theme.text, textDecoration: 'line-through', opacity: 0.6 }}>{item.suggestedRollNo}</div>
+                                        {conf != null && <div style={{ fontSize: '12px', color: confidenceColor(conf), fontWeight: 600 }}>{confidenceLabel(conf)} · {(conf * 100).toFixed(1)}%</div>}
+                                        <div style={{ marginTop: 4, fontSize: '11px', color: '#f87171', fontWeight: 600 }}>✕ Operator rejected</div>
+                                    </div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: '12px', padding: '20px 0' }}>No previous ERP suggestion.<br />Enter roll number manually.</div>
+                                )}
+                            </div>
+
+                            {candidates.length > 0 && (
+                                <div>
+                                    <div style={{ fontSize: '11px', color: theme.textMuted, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Other Candidates</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        {candidates.map((c, i) => (
+                                            <div key={i} onClick={() => setRollInput(c.rollNo)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, cursor: 'pointer', background: rollInput === c.rollNo ? theme.accentDim : theme.bg, border: `1.5px solid ${rollInput === c.rollNo ? theme.accent : theme.border}`, transition: 'all 0.12s' }}>
+                                                {c.erpPhoto && <img src={flagErpPhotoUrl(c.erpPhoto)} alt="" style={{ width: 56, height: 56, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: `2px solid ${confidenceColor(c.confidence)}` }} onError={e => { e.target.style.display = 'none'; }} />}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 700, color: theme.text, fontFamily: theme.fontMono }}>{c.rollNo}</div>
+                                                    <div style={{ fontSize: '11px', color: confidenceColor(c.confidence), fontWeight: 600, marginTop: 2 }}>{confidenceLabel(c.confidence)} · {(c.confidence * 100).toFixed(1)}%</div>
+                                                </div>
+                                                {rollInput === c.rollNo && <span style={{ fontSize: '14px', color: theme.accent }}>✓</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <div style={{ fontSize: '11px', color: theme.textMuted, fontWeight: 600, marginBottom: 5 }}>Correct Roll Number</div>
+                                <input type="text" placeholder="e.g. 26TT1234" value={rollInput} onChange={e => setRollInput(e.target.value.toUpperCase())} onKeyDown={e => { if (e.key === 'Enter') onResolve(); }} autoFocus style={{ ...styles.input, margin: 0, fontSize: '14px', fontWeight: 700, textTransform: 'uppercase' }} />
+                            </div>
+
+                            <div style={{ marginTop: 'auto' }}>
+                                <button onClick={onResolve} disabled={saving || !rollInput.trim()} style={{ width: '100%', padding: '11px 0', borderRadius: 7, border: 'none', background: theme.success, color: '#000', fontSize: '14px', fontWeight: 700, cursor: 'pointer', opacity: (saving || !rollInput.trim()) ? 0.5 : 1 }}>
+                                    {saving ? 'Saving…' : '✓ Assign & Resolve'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApproveAll }) {
+    const allKey  = `${rollNo}::all`;
+    const allBusy = !!busy[allKey];
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
     return (
         <div style={{ background: theme.surface, border: `1px solid ${theme.warning}55`, borderRadius: 10, overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${theme.border}`,
-                display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: theme.fontMono, fontSize: '13px', fontWeight: 700, flex: 1 }}>{rollNo}</span>
-                {stats && (
-                    <span style={{ fontSize: '10px', color: theme.textMuted }}>
-                        {stats.embeddingCount}E · {stats.backupCount}B · {stats.approvedCount}✓
-                    </span>
-                )}
-                <button
-                    onClick={onApproveAll}
-                    disabled={allBusy}
-                    style={{ padding: '4px 10px', borderRadius: 6, border: 'none',
-                        background: theme.success, color: '#000', fontSize: '11px',
-                        fontWeight: 700, cursor: allBusy ? 'not-allowed' : 'pointer',
-                        opacity: allBusy ? 0.5 : 1 }}>
+                {stats && <span style={{ fontSize: '10px', color: theme.textMuted }}>{stats.embeddingCount}E · {stats.backupCount}B · {stats.approvedCount}✓</span>}
+                <button onClick={onApproveAll} disabled={allBusy} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: theme.success, color: '#000', fontSize: '11px', fontWeight: 700, cursor: allBusy ? 'not-allowed' : 'pointer', opacity: allBusy ? 0.5 : 1 }}>
                     {allBusy ? '…' : `Approve All (${photos.length})`}
                 </button>
             </div>
@@ -1001,27 +982,10 @@ function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApprove
                     const photoKey  = `${rollNo}::${photo.filename}`;
                     const photoBusy = !!busy[photoKey] || allBusy;
                     return (
-                        <div key={photo.filename} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden',
-                            border: `1.5px solid ${theme.warning}55`, opacity: photoBusy ? 0.4 : 1, transition: 'opacity 0.15s' }}>
-                            <img src={photo.url} alt={photo.filename}
-                                style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
-                                onError={e => { e.target.style.opacity = '0.15'; }} />
-                            {photo.addedAt && (
-                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0,
-                                    background: 'rgba(0,0,0,0.65)', padding: '2px 4px',
-                                    fontSize: '8px', color: '#ccc', textAlign: 'center' }}>
-                                    {fmtDate(photo.addedAt)}
-                                </div>
-                            )}
-                            <button
-                                onClick={() => onApprove(rollNo, photo.filename)}
-                                disabled={photoBusy}
-                                title="Approve & add to embedding"
-                                style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22,
-                                    borderRadius: '50%', background: theme.success, border: 'none',
-                                    color: '#000', cursor: photoBusy ? 'not-allowed' : 'pointer',
-                                    fontSize: '12px', fontWeight: 800,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>✓</button>
+                        <div key={photo.filename} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: `1.5px solid ${theme.warning}55`, opacity: photoBusy ? 0.4 : 1, transition: 'opacity 0.15s' }}>
+                            <img src={photo.url} alt={photo.filename} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.opacity = '0.15'; }} />
+                            {photo.addedAt && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.65)', padding: '2px 4px', fontSize: '8px', color: '#ccc', textAlign: 'center' }}>{fmtDate(photo.addedAt)}</div>}
+                            <button onClick={() => onApprove(rollNo, photo.filename)} disabled={photoBusy} title="Approve & add to embedding" style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: theme.success, border: 'none', color: '#000', cursor: photoBusy ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>✓</button>
                         </div>
                     );
                 })}
@@ -1030,172 +994,88 @@ function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApprove
     );
 }
 
-// ── Section wrapper ───────────────────────────────────────────────
 function Section({ title, count, accentColor, children, emptyText }) {
     const [open, setOpen] = useState(true);
     return (
         <div style={{ marginBottom: 32 }}>
-            <div
-                onClick={() => setOpen(o => !o)}
-                style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    marginBottom: open ? 14 : 0,
-                    cursor: 'pointer', userSelect: 'none',
-                }}
-            >
-                <span style={{
-                    fontSize: '10px', color: accentColor,
-                    display: 'inline-block', transition: 'transform .18s',
-                    transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
-                }}>▼</span>
+            <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: open ? 14 : 0, cursor: 'pointer', userSelect: 'none' }}>
+                <span style={{ fontSize: '10px', color: accentColor, display: 'inline-block', transition: 'transform .18s', transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
                 <span style={{ fontSize: '14px', fontWeight: 700, color: theme.text }}>{title}</span>
-                <span style={{
-                    fontSize: '12px', fontWeight: 600,
-                    background: accentColor + '22', color: accentColor,
-                    padding: '2px 8px', borderRadius: 10,
-                }}>{count}</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, background: accentColor + '22', color: accentColor, padding: '2px 8px', borderRadius: 10 }}>{count}</span>
             </div>
-            {open && (
-                count === 0 && emptyText ? (
-                    <div style={{ padding: '14px 16px', borderRadius: 8, fontSize: '12px',
-                        color: theme.textMuted, background: theme.surface, border: `1px dashed ${theme.border}` }}>
-                        {emptyText}
-                    </div>
-                ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-                        {children}
-                    </div>
-                )
+            {open && (count === 0 && emptyText
+                ? <div style={{ padding: '14px 16px', borderRadius: 8, fontSize: '12px', color: theme.textMuted, background: theme.surface, border: `1px dashed ${theme.border}` }}>{emptyText}</div>
+                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>{children}</div>
             )}
         </div>
     );
 }
 
-// ── Cluster card ──────────────────────────────────────────────────
-function ClusterCard({
-    item, batchName, photoUrl, erpPhotoUrl, mode,
-    onClick, isAssigned, isFlagged, isUnmatched, isMerged, disabled,
-    rollValue, onRollChange, onAssign, saving,
-    stats, unapprovedCount,
-}) {
+function ClusterCard({ item, batchName, photoUrl, erpPhotoUrl, mode, onClick, isAssigned, isUnmatched, isMerged, disabled, rollValue, onRollChange, onAssign, saving, stats, unapprovedCount, onDeleteFolder, deletingFolder }) {
     const conf           = item.confidence;
     const folderForPhoto = item.currentFolder || item.folderName;
     const previews       = item.previewFiles || [];
-
-    const borderColor = isAssigned   ? theme.success + '44' :
-                        isMerged     ? theme.warning + '88' :
-                        isFlagged    ? theme.warning + '66' :
-                        isUnmatched  ? theme.border  + '88' : theme.border;
+    const borderColor    = isAssigned ? theme.success + '44' : isMerged ? theme.warning + '88' : isUnmatched ? theme.border + '88' : theme.border;
 
     return (
         <div
-            onClick={disabled ? undefined : onClick}
-            style={{
-                background: theme.surface, border: `1px solid ${borderColor}`,
-                borderRadius: 10, opacity: disabled ? 0.6 : 1, overflow: 'hidden',
-                cursor: disabled ? 'default' : 'pointer', transition: 'border-color 0.15s',
-            }}
-            onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = isAssigned ? theme.success : theme.accent; }}
+            onClick={isUnmatched || disabled ? undefined : onClick}
+            style={{ background: theme.surface, border: `1px solid ${borderColor}`, borderRadius: 10, opacity: disabled && !isUnmatched ? 0.6 : 1, overflow: 'hidden', cursor: isUnmatched || (disabled && !isUnmatched) ? 'default' : 'pointer', transition: 'border-color 0.15s' }}
+            onMouseEnter={e => { if (!disabled || isUnmatched) e.currentTarget.style.borderColor = isAssigned ? theme.success : isUnmatched ? '#f8717155' : theme.accent; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = borderColor; }}
         >
             <div style={{ display: 'flex', height: 80, overflow: 'hidden', background: '#000', gap: 1 }}>
                 {previews.slice(0, 4).map((f, i) => (
-                    <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt=""
-                         style={{ flex: 1, height: '100%', objectFit: 'cover', minWidth: 0 }}
-                         onError={e => { e.target.style.display = 'none'; }} />
+                    <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt="" style={{ flex: 1, height: '100%', objectFit: 'cover', minWidth: 0 }} onError={e => { e.target.style.display = 'none'; }} />
                 ))}
-                {previews.length === 0 && (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: theme.textMuted, fontSize: '11px' }}>No images</div>
-                )}
+                {previews.length === 0 && <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.textMuted, fontSize: '11px' }}>No images</div>}
             </div>
 
             <div style={{ padding: '10px 12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{ fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 700, color: theme.text }}>
-                        {item.folderName}
-                    </span>
+                    <span style={{ fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 700, color: theme.text }}>{item.folderName}</span>
                     <span style={{ fontSize: '11px', color: theme.textMuted }}>{item.imageCount} img</span>
                 </div>
 
                 {isAssigned ? (
                     <div>
-                        <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.successDim,
-                            color: theme.success, fontSize: '12px', fontWeight: 600, textAlign: 'center',
-                            marginBottom: stats ? 6 : 0 }}>
-                            {item.rollNo}
-                        </div>
+                        <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.successDim, color: theme.success, fontSize: '12px', fontWeight: 600, textAlign: 'center', marginBottom: stats ? 6 : 0 }}>{item.rollNo}</div>
                         {stats && (
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-                                <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99,
-                                    background: theme.accentDim, color: theme.accent }}>{stats.embeddingCount} embed</span>
-                                <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99,
-                                    background: theme.warningDim, color: theme.warning }}>{stats.backupCount} backup</span>
-                                {unapprovedCount > 0 && (
-                                    <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99,
-                                        background: theme.dangerDim, color: theme.danger }}>{unapprovedCount} new</span>
-                                )}
+                                <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99, background: theme.accentDim, color: theme.accent }}>{stats.embeddingCount} embed</span>
+                                <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99, background: theme.warningDim, color: theme.warning }}>{stats.backupCount} backup</span>
+                                {unapprovedCount > 0 && <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99, background: theme.dangerDim, color: theme.danger }}>{unapprovedCount} new</span>}
                             </div>
                         )}
                     </div>
-                ) : isFlagged && mode !== 'manual' ? (
-                    <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.warning + '22',
-                        color: theme.warning, fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>
-                        Flagged
-                    </div>
                 ) : isUnmatched ? (
-                    <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.border + '44',
-                                  color: theme.textMuted, fontSize: '11px', textAlign: 'center' }}>
-                        ⚠ No face detected
+                    <div>
+                        <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.border + '44', color: theme.textMuted, fontSize: '11px', textAlign: 'center', marginBottom: 8 }}>⚠ No face detected</div>
+                        <button
+                            onClick={e => { e.stopPropagation(); onDeleteFolder && onDeleteFolder(); }}
+                            disabled={deletingFolder}
+                            style={{ width: '100%', padding: '7px 0', borderRadius: 6, border: '1px solid #f87171', background: '#3f1212', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                        >
+                            {deletingFolder ? <><Spinner /> Deleting…</> : '🗑 Delete Folder Permanently'}
+                        </button>
                     </div>
                 ) : isMerged ? (
                     <div>
-                        <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.warningDim,
-                            color: theme.warning, fontSize: '12px', fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
-                            Merged → {item.rollNo}
-                        </div>
-                        <div style={{ fontSize: '10px', color: theme.textMuted, textAlign: 'center' }}>
-                            {item.imageCount} new photo{item.imageCount !== 1 ? 's' : ''} — pending your approval
-                        </div>
+                        <div style={{ padding: '5px 8px', borderRadius: 5, background: theme.warningDim, color: theme.warning, fontSize: '12px', fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>Merged → {item.rollNo}</div>
+                        <div style={{ fontSize: '10px', color: theme.textMuted, textAlign: 'center' }}>{item.imageCount} new photo{item.imageCount !== 1 ? 's' : ''} — pending your approval</div>
                     </div>
                 ) : item.rollNo && mode !== 'manual' ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {item.erpPhoto && (
-                            <img src={erpPhotoUrl(item.erpPhoto)} alt="ERP"
-                                 style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover',
-                                          border: `2px solid ${confidenceColor(conf)}`, flexShrink: 0 }}
-                                 onError={e => { e.target.style.display = 'none'; }} />
-                        )}
+                        {item.erpPhoto && <img src={erpPhotoUrl(item.erpPhoto)} alt="ERP" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${confidenceColor(conf)}`, flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />}
                         <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontSize: '12px', fontWeight: 700, color: theme.text,
-                                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {item.rollNo}
-                            </div>
-                            {conf != null && (
-                                <div style={{ fontSize: '11px', color: confidenceColor(conf) }}>
-                                    {confidenceLabel(conf)} · {(conf * 100).toFixed(0)}%
-                                </div>
-                            )}
+                            <div style={{ fontSize: '12px', fontWeight: 700, color: theme.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.rollNo}</div>
+                            {conf != null && <div style={{ fontSize: '11px', color: confidenceColor(conf) }}>{confidenceLabel(conf)} · {(conf * 100).toFixed(0)}%</div>}
                         </div>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                        <input
-                            type="text" placeholder="Roll No e.g. 26TT1234"
-                            value={rollValue || ''}
-                            onChange={e => onRollChange && onRollChange(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter' && onAssign) onAssign(); }}
-                            style={{ ...styles.input, flex: 1, padding: '6px 10px', fontSize: '12px',
-                                fontFamily: theme.fontMono, fontWeight: 700,
-                                textTransform: 'uppercase', margin: 0 }}
-                        />
-                        <button
-                            onClick={onAssign}
-                            disabled={saving || !(rollValue || '').trim()}
-                            style={{ padding: '6px 12px', borderRadius: 6, border: 'none',
-                                background: theme.success, color: '#000', fontSize: '12px',
-                                fontWeight: 700, cursor: 'pointer',
-                                opacity: (saving || !(rollValue || '').trim()) ? 0.4 : 1, flexShrink: 0 }}>
+                        <input type="text" placeholder="Roll No e.g. 26TT1234" value={rollValue || ''} onChange={e => onRollChange && onRollChange(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && onAssign) onAssign(); }} style={{ ...styles.input, flex: 1, padding: '6px 10px', fontSize: '12px', fontFamily: theme.fontMono, fontWeight: 700, textTransform: 'uppercase', margin: 0 }} />
+                        <button onClick={onAssign} disabled={saving || !(rollValue || '').trim()} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: theme.success, color: '#000', fontSize: '12px', fontWeight: 700, cursor: 'pointer', opacity: (saving || !(rollValue || '').trim()) ? 0.4 : 1, flexShrink: 0 }}>
                             {saving ? '...' : 'OK'}
                         </button>
                     </div>
@@ -1205,12 +1085,10 @@ function ClusterCard({
     );
 }
 
-// ── GT Modal ──────────────────────────────────────────────────────
 function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave, onClose }) {
     const toggle   = (fn) => setSelected(prev => { const n = new Set(prev); n.has(fn) ? n.delete(fn) : n.add(fn); return n; });
     const selAll   = (files) => setSelected(prev => { const n = new Set(prev); files.forEach(f => n.add(f.filename)); return n; });
     const deselAll = (files) => setSelected(prev => { const n = new Set(prev); files.forEach(f => n.delete(f.filename)); return n; });
-
     const renderSection = (title, files, accent, hint) => {
         if (!files?.length) return null;
         return (
@@ -1227,23 +1105,10 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
                     {files.map(f => {
                         const isSel = selected.has(f.filename);
                         return (
-                            <div key={f.filename} onClick={() => toggle(f.filename)} style={{
-                                position: 'relative', cursor: 'pointer', borderRadius: 6, overflow: 'hidden',
-                                border: `2px solid ${isSel ? accent : theme.border}`,
-                            }}>
-                                <img src={f.url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
-                                     onError={e => { e.target.style.display = 'none'; }} />
-                                {isSel && (
-                                    <div style={{ position: 'absolute', top: 4, right: 4, width: 18, height: 18,
-                                        borderRadius: '50%', background: accent, color: '#000',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '11px', fontWeight: 800 }}>✓</div>
-                                )}
-                                {f.score != null && (
-                                    <div style={{ position: 'absolute', bottom: 3, left: 3, fontSize: '9px',
-                                        fontWeight: 700, background: 'rgba(0,0,0,0.65)', color: '#fff',
-                                        padding: '1px 4px', borderRadius: 3 }}>{f.score.toFixed(0)}</div>
-                                )}
+                            <div key={f.filename} onClick={() => toggle(f.filename)} style={{ position: 'relative', cursor: 'pointer', borderRadius: 6, overflow: 'hidden', border: `2px solid ${isSel ? accent : theme.border}` }}>
+                                <img src={f.url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.display = 'none'; }} />
+                                {isSel && <div style={{ position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: '50%', background: accent, color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>✓</div>}
+                                {f.score != null && <div style={{ position: 'absolute', bottom: 3, left: 3, fontSize: '9px', fontWeight: 700, background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '1px 4px', borderRadius: 3 }}>{f.score.toFixed(0)}</div>}
                             </div>
                         );
                     })}
@@ -1251,15 +1116,10 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
             </div>
         );
     };
-
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.80)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-            onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-            <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12,
-                width: '100%', maxWidth: 860, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '16px 20px', borderBottom: `1px solid ${theme.border}` }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.80)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12, width: '100%', maxWidth: 860, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${theme.border}` }}>
                     <span style={{ fontWeight: 700, fontSize: '15px', color: theme.text }}>Ground Truth — {rollNo}</span>
                     <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer' }}>×</button>
                 </div>
@@ -1271,17 +1131,11 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
                         {renderSection('Untracked',       data.untrackedFiles, theme.textMuted, 'manually added')}
                     </>}
                 </div>
-                <div style={{ padding: '14px 20px', borderTop: `1px solid ${theme.border}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ padding: '14px 20px', borderTop: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '12px', color: theme.textMuted }}>{selected.size} selected</span>
                     <div style={{ display: 'flex', gap: 10 }}>
-                        <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7,
-                            border: `1px solid ${theme.border}`, background: 'transparent',
-                            color: theme.textMuted, fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
-                        <button onClick={onSave} disabled={saving || selected.size === 0}
-                            style={{ padding: '8px 20px', borderRadius: 7, border: 'none',
-                                background: theme.success, color: '#000', fontSize: '13px',
-                                fontWeight: 700, cursor: 'pointer', opacity: (saving || selected.size === 0) ? 0.5 : 1 }}>
+                        <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={onSave} disabled={saving || selected.size === 0} style={{ padding: '8px 20px', borderRadius: 7, border: 'none', background: theme.success, color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: (saving || selected.size === 0) ? 0.5 : 1 }}>
                             {saving ? 'Updating...' : 'Update Embedding'}
                         </button>
                     </div>
@@ -1291,16 +1145,11 @@ function GTModal({ rollNo, loading, data, selected, setSelected, saving, onSave,
     );
 }
 
-// ── Verify Modal ──────────────────────────────────────────────────
-function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
-                       overrideRoll, setOverrideRoll,
-                       saving, onApprove, onFlag, onClose,
-                       hasPrev, hasNext, onPrev, onNext, position, total }) {
-    const conf             = match?.confidence;
-    const candidates       = match?.candidates || [];
-    const folderForPhoto   = item.currentFolder || item.folderName;
+function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl, overrideRoll, setOverrideRoll, saving, onApprove, onFlag, onClose, hasPrev, hasNext, onPrev, onNext, position, total }) {
+    const conf           = match?.confidence;
+    const candidates     = match?.candidates || [];
+    const folderForPhoto = item.currentFolder || item.folderName;
     const [candOpen, setCandOpen] = useState(false);
-
     useEffect(() => {
         const handler = (e) => {
             if (e.key === 'ArrowLeft'  && hasPrev && !saving) onPrev();
@@ -1310,165 +1159,77 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
     }, [hasPrev, hasNext, saving, onPrev, onNext, onClose]);
-
-    const navBtnStyle = (enabled) => ({
-        padding: '4px 10px', borderRadius: 6, border: `1px solid ${theme.border}`,
-        background: enabled ? theme.surface : 'transparent',
-        color: enabled ? theme.text : theme.textMuted,
-        cursor: enabled ? 'pointer' : 'default',
-        fontSize: '14px', fontWeight: 700, opacity: enabled ? 1 : 0.3, lineHeight: 1,
-    });
-
+    const navBtn = (enabled) => ({ padding: '4px 10px', borderRadius: 6, border: `1px solid ${theme.border}`, background: enabled ? theme.surface : 'transparent', color: enabled ? theme.text : theme.textMuted, cursor: enabled ? 'pointer' : 'default', fontSize: '14px', fontWeight: 700, opacity: enabled ? 1 : 0.3, lineHeight: 1 });
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.75)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-            onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-            <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12,
-                width: '100%', maxWidth: 760, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 16px', borderBottom: `1px solid ${theme.border}`, gap: 10 }}>
-                    <button onClick={onPrev} disabled={!hasPrev || saving} style={navBtnStyle(hasPrev && !saving)}>&#8592;</button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12, width: '100%', maxWidth: 760, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: `1px solid ${theme.border}`, gap: 10 }}>
+                    <button onClick={onPrev} disabled={!hasPrev || saving} style={navBtn(hasPrev && !saving)}>&#8592;</button>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: '14px', color: theme.text, display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontFamily: theme.fontMono }}>{item.folderName}</span>
                             <span style={{ fontSize: '12px', color: theme.textMuted, fontWeight: 400 }}>{item.imageCount} imgs</span>
-                            {total > 1 && (
-                                <span style={{ marginLeft: 'auto', fontSize: '11px', color: theme.textMuted,
-                                    background: theme.bg, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>
-                                    {position} / {total}
-                                </span>
-                            )}
+                            {total > 1 && <span style={{ marginLeft: 'auto', fontSize: '11px', color: theme.textMuted, background: theme.bg, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>{position} / {total}</span>}
                         </div>
                     </div>
-                    <button onClick={onNext} disabled={!hasNext || saving} style={navBtnStyle(hasNext && !saving)}>&#8594;</button>
+                    <button onClick={onNext} disabled={!hasNext || saving} style={navBtn(hasNext && !saving)}>&#8594;</button>
                     <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme.textMuted, fontSize: '20px', cursor: 'pointer', marginLeft: 4 }}>×</button>
                 </div>
-
-                <div style={{ flex: 1, padding: '20px 20px 28px', display: 'grid',
-                    gridTemplateColumns: '1fr 272px', gap: 20, overflow: 'hidden' }}>
-
-                    {/* Left: face images grid — fixed, no scroll */}
+                <div style={{ flex: 1, padding: '20px 20px 28px', display: 'grid', gridTemplateColumns: '1fr 272px', gap: 20, overflow: 'hidden' }}>
                     <div>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted,
-                                      marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Extracted Face Images
-                        </div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Extracted Face Images</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                             {(item.previewFiles || []).map((f, i) => (
-                                <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt=""
-                                     style={{ width: '100%', aspectRatio: '1', objectFit: 'cover',
-                                              borderRadius: 6, border: `1px solid ${theme.border}` }}
-                                     onError={e => { e.target.style.display = 'none'; }} />
+                                <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, border: `1px solid ${theme.border}` }} onError={e => { e.target.style.display = 'none'; }} />
                             ))}
                         </div>
                     </div>
-
-                    {/* Right: compact ERP + collapsible candidates + input + buttons */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-                        {/* ERP Match — large photo, rollNo + % below */}
                         <div>
-                            <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted,
-                                          marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                ERP Match
-                            </div>
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ERP Match</div>
                             {match?.erpPhoto ? (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    gap: 12, padding: '10px 12px', borderRadius: 8, background: theme.bg,
-                                    border: `1.5px solid ${confidenceColor(conf)}44` }}>
-                                    <img src={erpPhotoUrl(match.erpPhoto)} alt="ERP"
-                                        style={{ width: 96, height: 96, objectFit: 'cover', flexShrink: 0,
-                                                 borderRadius: 7, border: `3px solid ${confidenceColor(conf)}` }}
-                                        onError={e => { e.target.style.display = 'none'; }} />
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, background: theme.bg, border: `1.5px solid ${confidenceColor(conf)}44` }}>
+                                    <img src={erpPhotoUrl(match.erpPhoto)} alt="ERP" style={{ width: 96, height: 96, objectFit: 'cover', flexShrink: 0, borderRadius: 7, border: `3px solid ${confidenceColor(conf)}` }} onError={e => { e.target.style.display = 'none'; }} />
                                     <div>
-                                        <div style={{ fontSize: '15px', fontWeight: 800,
-                                            color: theme.text, fontFamily: theme.fontMono }}>
-                                            {match.rollNo}
-                                        </div>
-                                        <div style={{ fontSize: '12px', color: confidenceColor(conf), fontWeight: 600, marginTop: 4 }}>
-                                            {confidenceLabel(conf)} · {(conf * 100).toFixed(1)}%
-                                        </div>
+                                        <div style={{ fontSize: '15px', fontWeight: 800, color: theme.text, fontFamily: theme.fontMono }}>{match.rollNo}</div>
+                                        <div style={{ fontSize: '12px', color: confidenceColor(conf), fontWeight: 600, marginTop: 4 }}>{confidenceLabel(conf)} · {(conf * 100).toFixed(1)}%</div>
                                     </div>
                                 </div>
                             ) : (
-                                <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: '13px',
-                                    padding: '10px 0', borderRadius: 8, background: theme.bg,
-                                    border: `1px dashed ${theme.border}` }}>
-                                    No ERP match — enter manually
-                                </div>
+                                <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: '13px', padding: '10px 0', borderRadius: 8, background: theme.bg, border: `1px dashed ${theme.border}` }}>No ERP match — enter manually</div>
                             )}
                         </div>
-
-                        {/* Other Candidates — collapsible accordion, no scrollbar */}
                         {candidates.length > 1 && (
                             <div style={{ borderRadius: 8, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
-                                <button
-                                    onClick={() => setCandOpen(o => !o)}
-                                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: '8px 12px', background: theme.bg, border: 'none',
-                                        cursor: 'pointer', fontSize: '11px', fontWeight: 600,
-                                        color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                <button onClick={() => setCandOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: theme.bg, border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                     <span>Other Candidates ({candidates.length - 1})</span>
-                                    <span style={{ fontSize: '10px', transition: 'transform 0.2s',
-                                        display: 'inline-block', transform: candOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
+                                    <span style={{ fontSize: '10px', transition: 'transform 0.2s', display: 'inline-block', transform: candOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
                                 </button>
                                 {candOpen && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 8px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px' }}>
                                         {candidates.slice(1).map((c, i) => (
-                                            <div key={i} onClick={() => setOverrideRoll(c.rollNo)}
-                                                 style={{ display: 'flex', alignItems: 'center', gap: 8,
-                                                     padding: '6px 8px', borderRadius: 6, cursor: 'pointer',
-                                                     background: overrideRoll === c.rollNo ? theme.accentDim : theme.surface,
-                                                     border: `1.5px solid ${overrideRoll === c.rollNo ? theme.accent : theme.border}`,
-                                                     transition: 'all 0.12s' }}>
-                                                {c.erpPhoto && (
-                                                    <img src={erpPhotoUrl(c.erpPhoto)} alt=""
-                                                         style={{ width: 40, height: 40, borderRadius: 5, objectFit: 'cover',
-                                                                  flexShrink: 0, border: `2px solid ${confidenceColor(c.confidence)}` }}
-                                                         onError={e => { e.target.style.display = 'none'; }} />
-                                                )}
+                                            <div key={i} onClick={() => setOverrideRoll(c.rollNo)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', background: overrideRoll === c.rollNo ? theme.accentDim : theme.surface, border: `1.5px solid ${overrideRoll === c.rollNo ? theme.accent : theme.border}`, transition: 'all 0.12s' }}>
+                                                {c.erpPhoto && <img src={erpPhotoUrl(c.erpPhoto)} alt="" style={{ width: 40, height: 40, borderRadius: 5, objectFit: 'cover', flexShrink: 0, border: `2px solid ${confidenceColor(c.confidence)}` }} onError={e => { e.target.style.display = 'none'; }} />}
                                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: '12px', fontWeight: 700, color: theme.text,
-                                                        fontFamily: theme.fontMono }}>{c.rollNo}</div>
-                                                    <div style={{ fontSize: '10px', color: confidenceColor(c.confidence), fontWeight: 600, marginTop: 1 }}>
-                                                        {confidenceLabel(c.confidence)} · {(c.confidence * 100).toFixed(1)}%
-                                                    </div>
+                                                    <div style={{ fontSize: '12px', fontWeight: 700, color: theme.text, fontFamily: theme.fontMono }}>{c.rollNo}</div>
+                                                    <div style={{ fontSize: '10px', color: confidenceColor(c.confidence), fontWeight: 600, marginTop: 1 }}>{confidenceLabel(c.confidence)} · {(c.confidence * 100).toFixed(1)}%</div>
                                                 </div>
-                                                {overrideRoll === c.rollNo && (
-                                                    <span style={{ fontSize: '13px', color: theme.accent }}>✓</span>
-                                                )}
+                                                {overrideRoll === c.rollNo && <span style={{ fontSize: '13px', color: theme.accent }}>✓</span>}
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
                         )}
-
-                        {/* Roll number input */}
                         <div>
                             <div style={{ fontSize: '11px', color: theme.textMuted, fontWeight: 600, marginBottom: 5 }}>Roll Number</div>
-                            <input
-                                type="text" placeholder="e.g. 26TT1234" value={overrideRoll}
-                                onChange={e => setOverrideRoll(e.target.value.toUpperCase())}
-                                onKeyDown={e => { if (e.key === 'Enter') onApprove(); }}
-                                style={{ ...styles.input, margin: 0, fontSize: '14px', fontWeight: 700, textTransform: 'uppercase' }}
-                            />
+                            <input type="text" placeholder="e.g. 26TT1234" value={overrideRoll} onChange={e => setOverrideRoll(e.target.value.toUpperCase())} onKeyDown={e => { if (e.key === 'Enter') onApprove(); }} style={{ ...styles.input, margin: 0, fontSize: '14px', fontWeight: 700, textTransform: 'uppercase' }} />
                         </div>
-
-                        {/* Action buttons — always visible */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
-                            <button onClick={onApprove} disabled={saving || !overrideRoll.trim()}
-                                style={{ padding: '10px 0', borderRadius: 7, border: 'none',
-                                    background: theme.success, color: '#000', fontSize: '13px',
-                                    fontWeight: 700, cursor: 'pointer',
-                                    opacity: (saving || !overrideRoll.trim()) ? 0.5 : 1 }}>
+                            <button onClick={onApprove} disabled={saving || !overrideRoll.trim()} style={{ padding: '10px 0', borderRadius: 7, border: 'none', background: theme.success, color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: (saving || !overrideRoll.trim()) ? 0.5 : 1 }}>
                                 {saving ? 'Assigning...' : 'Approve & Assign'}
                             </button>
-                            <button onClick={onFlag} disabled={saving}
-                                style={{ padding: '10px 0', borderRadius: 7,
-                                    border: `1px solid ${theme.warning}`,
-                                    background: 'transparent', color: theme.warning, fontSize: '13px',
-                                    fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>
+                            <button onClick={onFlag} disabled={saving} style={{ padding: '10px 0', borderRadius: 7, border: `1px solid ${theme.warning}`, background: 'transparent', color: theme.warning, fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>
                                 Flag as Incorrect
                             </button>
                         </div>
@@ -1476,5 +1237,13 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl,
                 </div>
             </div>
         </div>
+    );
+}
+
+function Spinner() {
+    return (
+        <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #f8717144', borderTopColor: '#f87171', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </span>
     );
 }

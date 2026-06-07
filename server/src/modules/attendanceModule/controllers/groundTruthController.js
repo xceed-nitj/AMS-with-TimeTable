@@ -10,8 +10,8 @@ const TimeTable = require('../../../models/timetable');
 const AddSem    = require('../../../models/addsem');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
-const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
-const EMBEDDINGS_DIR   = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
+const EMBEDDINGS_DIR   = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
 
 function ensureDir(dirPath) {
     if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
@@ -288,64 +288,61 @@ class GroundTruthController {
     // ─── Approve photos for a student ────────────────────────────────────────
     // Marks photos as approved and adds them to embedding (or backup if already have enough).
     // After approving, calls ML service to rebuild the embedding.
-    async approvePhotos(req, res) {
-        try {
-            const { batch, rollNo, filenames } = req.body;
-            if (!batch || !rollNo || !Array.isArray(filenames) || filenames.length === 0)
-                return res.status(400).json({ error: 'batch, rollNo, and filenames[] required' });
+  async approvePhotos(req, res) {
+    try {
+        const { batch, rollNo, filenames } = req.body;
+        if (!batch || !rollNo || !Array.isArray(filenames) || filenames.length === 0)
+            return res.status(400).json({ error: 'batch, rollNo, and filenames[] required' });
 
-            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
-            if (!fs.existsSync(studentDir))
-                return res.status(404).json({ error: 'Student folder not found' });
+        const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+        if (!fs.existsSync(studentDir))
+            return res.status(404).json({ error: 'Student folder not found' });
 
-            const allFiles = (await fsPromises.readdir(studentDir))
-                .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+        const allFiles = (await fsPromises.readdir(studentDir))
+            .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
 
-            const infoPath = path.join(studentDir, '_info.json');
-            let info = { embedding_files: [], backup_files: [], approved_files: [], scores: {} };
-            if (fs.existsSync(infoPath)) {
-                try { info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8')); } catch (_) {}
-            }
+        const infoPath = path.join(studentDir, '_info.json');
+        let info = { embedding_files: [], backup_files: [], approved_files: [], scores: {} };
+        if (fs.existsSync(infoPath)) {
+            try { info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8')); } catch (_) {}
+        }
 
-            const validFiles = filenames.filter(f => allFiles.includes(f));
-            const approvedSet  = new Set([...(info.approved_files  || []), ...validFiles]);
-            const embeddingSet = new Set(info.embedding_files || []);
-            const backupSet    = new Set(info.backup_files    || []);
+        const validFiles = filenames.filter(f => allFiles.includes(f));
+        const approvedSet  = new Set([...(info.approved_files  || []), ...validFiles]);
+        const embeddingSet = new Set(info.embedding_files || []);
+        const backupSet    = new Set(info.backup_files    || []);
 
-            // Add newly approved photos to embedding (they become active for recognition)
-            for (const f of validFiles) {
-                embeddingSet.add(f);
-                backupSet.delete(f);
-            }
+        for (const f of validFiles) {
+            embeddingSet.add(f);
+            backupSet.delete(f);
+        }
 
-            info.approved_files  = [...approvedSet].filter(f => allFiles.includes(f));
-            info.embedding_files = [...embeddingSet].filter(f => allFiles.includes(f));
-            info.backup_files    = [...backupSet].filter(f => allFiles.includes(f));
+        info.approved_files  = [...approvedSet].filter(f => allFiles.includes(f));
+        info.embedding_files = [...embeddingSet].filter(f => allFiles.includes(f));
+        info.backup_files    = [...backupSet].filter(f => allFiles.includes(f));
 
-            await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
+        await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
 
-            // Rebuild embedding in ML service
-            let mlResult = {};
-            try {
-                const response = await axios.post(
-                    `${ML_SERVICE_URL}/update-student-embedding`,
-                    { batch_name: batch, roll_no: rollNo, embedding_files: info.embedding_files },
-                    { timeout: 60000 }
-                );
-                mlResult = response.data;
-            } catch (mlErr) {
-                mlResult = { warning: mlError(mlErr) };
-            }
+        // ✅ Respond immediately — don't wait for ML
+        res.json({
+            ok: true,
+            approvedCount:  info.approved_files.length,
+            embeddingCount: info.embedding_files.length,
+            backupCount:    info.backup_files.length,
+            embeddingStatus: 'queued',
+        });
 
-            res.json({
-                ok: true,
-                approvedCount:  info.approved_files.length,
-                embeddingCount: info.embedding_files.length,
-                backupCount:    info.backup_files.length,
-                ...mlResult,
-            });
-        } catch (err) { res.status(500).json({ error: err.message }); }
-    }
+        // 🔥 Rebuild embedding in background — fire and forget
+        axios.post(
+            `${ML_SERVICE_URL}/update-student-embedding`,
+            { batch_name: batch, roll_no: rollNo, embedding_files: info.embedding_files },
+            { timeout: 60000 }
+        ).catch(err => {
+            console.warn(`[approvePhotos] Background embedding failed for ${rollNo}:`, err.message);
+        });
+
+    } catch (err) { res.status(500).json({ error: err.message }); }
+}
 
     // ─── Update embedding for a student ─────────────────────────────────────
     async updateStudentEmbedding(req, res) {
