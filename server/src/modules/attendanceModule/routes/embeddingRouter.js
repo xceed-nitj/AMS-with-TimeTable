@@ -63,7 +63,8 @@ router.get('/list-files', async (req, res) => {
 
 // POST /attendancemodule/embeddings/upload-pkl  (multipart)
 router.post('/upload-pkl', ctrl.uploadPkl());
-
+// POST /attendancemodule/embeddings/upload-roll-nos-xlsx
+router.post('/upload-roll-nos-xlsx', ctrl.uploadRollNosXlsx());
 // DELETE /attendancemodule/embeddings/:id
 router.delete('/:id', async (req, res) => {
     try { await ctrl.deleteRecord(req, res); }

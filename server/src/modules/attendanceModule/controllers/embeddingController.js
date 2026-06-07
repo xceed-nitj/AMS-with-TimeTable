@@ -482,6 +482,80 @@ try {
             res.status(500).json({ error: err.message });
         }
     }
+    // POST /attendancemodule/embeddings/upload-roll-nos-xlsx
+// Multipart: file (.xlsx), subjectId, dept (optional, for GT check)
+uploadRollNosXlsx() {
+    const multer  = require('multer');
+    const XLSX    = require('xlsx');
+    const Subject = require('../../../models/subject');   // ← path to your subject.js
+
+    const upload = multer({
+        storage: multer.memoryStorage(),
+        limits:  { fileSize: 10 * 1024 * 1024 },
+        fileFilter: (_req, file, cb) => {
+            if (file.originalname.match(/\.(xlsx|xls|csv)$/i)) cb(null, true);
+            else cb(new Error('Only .xlsx / .xls / .csv files are allowed'));
+        },
+    }).single('file');
+
+    return async (req, res) => {
+        upload(req, res, async (multerErr) => {
+            if (multerErr) return res.status(400).json({ error: multerErr.message });
+            if (!req.file)  return res.status(400).json({ error: 'No file uploaded' });
+
+            const { subjectId, dept, embeddingFile } = req.body;
+            if (!subjectId) return res.status(400).json({ error: 'subjectId is required' });
+
+            // ── Parse roll numbers from the spreadsheet ──────────────────────
+            const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+            const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+            const rows     = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            const rollNos = rows
+                .flat()
+                .map(v => String(v ?? '').trim().toUpperCase())
+                .filter(v => v.length > 3 && !/^(roll|rollno|roll_no|sno|sr\.?\s*no)/i.test(v)); // skip header cells
+
+            if (rollNos.length === 0) {
+                return res.status(400).json({ error: 'No valid roll numbers found in the file' });
+            }
+
+            // ── Check which roll nos are missing from ground truth ────────────
+            const missedGroundTruth = [];
+            for (const rollNo of rollNos) {
+                if (!fs.existsSync(GROUND_TRUTH_DIR)) { missedGroundTruth.push(rollNo); continue; }
+                const batchFolders = fs.readdirSync(GROUND_TRUTH_DIR);
+                const hasSome = batchFolders.some(batch => {
+                    const candidate = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+                    return fs.existsSync(candidate);
+                });
+                if (!hasSome) missedGroundTruth.push(rollNo);
+            }
+
+            // ── Update the Subject document ──────────────────────────────────
+            const update = {
+                enrolledRollNos:    rollNos,
+                missedGroundTruth,
+                embeddingUpdatedAt: new Date(),
+            };
+            if (embeddingFile && embeddingFile.trim()) {
+                update.embeddingFile = embeddingFile.trim();
+            }
+
+            const updated = await Subject.findByIdAndUpdate(subjectId, update, { new: true });
+            if (!updated) return res.status(404).json({ error: 'Subject not found' });
+
+            res.json({
+                ok:               true,
+                subjectId,
+                total:            rollNos.length,
+                missedCount:      missedGroundTruth.length,
+                missedGroundTruth,
+                embeddingFile:    updated.embeddingFile,
+            });
+        });
+    };
+}
 }
 
 module.exports = EmbeddingController;
