@@ -114,7 +114,7 @@ async function runOneCheck(reportId, checkIndex, config) {
         const slotResult = {
             slot:          `check-${checkIndex}`,
             videoLink:     '',
-            frameSnapshot: '',
+            frameSnapshot: mlResult.snapshot_folder || '',
             processedAt:   new Date(),
             students,
             summary: {
