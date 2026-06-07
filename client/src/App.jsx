@@ -215,6 +215,7 @@ import FrameVerification from './attendancemodule/FrameVerification';
 import AMSDashboard        from './attendancemodule/AMSDashboard';
 import AMSLayout           from './attendancemodule/AMSLayout';
 import CameraRegistry      from './attendancemodule/camera';
+import AcquisitionControl from './attendancemodule/AcquisitionControl';
 function App() {
   return (
     <Router>

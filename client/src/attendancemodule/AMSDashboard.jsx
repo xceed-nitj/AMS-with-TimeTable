@@ -42,24 +42,104 @@ const CSS = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: ${T.bg}; }
-  ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
-  @keyframes fadeUp   { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes dropDown { from { opacity:0; transform:translateY(-6px) scaleY(.96); transform-origin:top right; }
-                        to   { opacity:1; transform:translateY(0)     scaleY(1);  transform-origin:top right; } }
-  @keyframes pulse    { 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
-
-  .dash-stat-grid  { display:grid; gap:14px; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); }
-  .dash-chart-grid { display:grid; gap:20px; grid-template-columns: 1fr 1fr; }
-
-  @media (max-width: 900px) {
-    .dash-chart-grid { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 600px) {
-    .dash-stat-grid  { grid-template-columns: repeat(2, 1fr); }
-    .dash-chart-grid { grid-template-columns: 1fr; }
-    .dash-header     { flex-direction: column; align-items: flex-start; gap: 12px; }
-  }
+  ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 3px; }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(12px);} to { opacity:1; transform:translateY(0);} }
+  @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+  @keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+  @keyframes spin     { to { transform: rotate(360deg); } }
+  @keyframes shimmer  { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  @keyframes glow     { 0%,100% { box-shadow: 0 0 8px ${T.accentGlow}; } 50% { box-shadow: 0 0 24px ${T.accentGlow}; } }
+  @keyframes countUp  { from { opacity:0; transform:scale(.8); } to { opacity:1; transform:scale(1); } }
+  .ams-card-hover { transition: transform .2s, box-shadow .2s, border-color .2s; }
+  .ams-card-hover:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.6); }
+  .ams-btn { transition: transform .15s, opacity .15s; cursor: pointer; }
+  .ams-btn:hover { opacity: .85; transform: translateY(-1px); }
+  .ams-btn:active { transform: translateY(0); }
+  .ams-link-card:hover .ams-link-arrow { transform: translateX(4px); }
+  .ams-link-arrow { transition: transform .2s; display: inline-block; }
+  .stat-animate { animation: countUp .5s ease both; }
 `;
+
+// ─── Module definitions ────────────────────────────────────────────────────
+const MODULES = [
+  {
+    id: 'rtsp',
+    route: '/attendance/groundtruth/rtsp',
+    label: 'RTSP Capture',
+    shortLabel: 'RTSP',
+    icon: '📡',
+    color: T.accent,
+    colorDim: T.accentDim,
+    desc: 'Live stream ground-truth acquisition from RTSP cameras. Start/stop per camera with real-time face detection preview.',
+    tags: ['live', 'capture', 'cameras'],
+  },
+  {
+    id: 'assign',
+    route: '/attendance/groundtruth/assign',
+    label: 'Roll Assignment',
+    shortLabel: 'Assign',
+    icon: '🎯',
+    color: T.success,
+    colorDim: T.successDim,
+    desc: 'Match detected face clusters to student roll numbers. Approve high-confidence matches and flag low-confidence ones for review.',
+    tags: ['matching', 'erp', 'approval'],
+  },
+  {
+    id: 'photos',
+    route: '/attendance/groundtruth/photos',
+    label: 'Photo Editor',
+    shortLabel: 'Photos',
+    icon: '🖼️',
+    color: T.purple,
+    colorDim: T.purpleDim,
+    desc: 'Manage ground-truth photos. Review pre-ERP person clusters and post-ERP matched student images. Delete bad frames.',
+    tags: ['photos', 'clusters', 'ground-truth'],
+  },
+  {
+    id: 'reports',
+    route: '/attendance/reports',
+    label: 'Attendance Reports',
+    shortLabel: 'Reports',
+    icon: '📊',
+    color: T.teal,
+    colorDim: T.tealDim,
+    desc: 'Generate live attendance reports via RTSP stream. Auto-lookup from timetable. Dual-camera support for large halls.',
+    tags: ['report', 'live', 'timetable'],
+  },
+  {
+    id: 'cameras',
+    route: '/cameras',
+    label: 'Camera Registry',
+    shortLabel: 'Cameras',
+    icon: '📷',
+    color: T.orange,
+    colorDim: T.orangeDim,
+    desc: 'Register, edit and monitor all cameras. Assign rooms, set stream URLs, track online/offline/maintenance status.',
+    tags: ['cameras', 'registry', 'rtsp'],
+  },
+  {
+    id: 'embeddings',
+    route: '/attendance/embeddings',
+    label: 'Embedding Generation',
+    shortLabel: 'Embeddings',
+    icon: '🧠',
+    color: T.warning,
+    colorDim: T.warningDim,
+    desc: 'Build face embedding vectors for enrolled students. Track per-student and batch progress. Regenerate on demand.',
+    tags: ['ml', 'embeddings', 'model'],
+  },
+  {
+  id: 'acqcontrol',
+  route: '/attendance/acquisition-control',
+  label: 'Acquisition Control',
+  shortLabel: 'Control',
+  icon: '⚙️',
+  color: T.purple,
+  colorDim: T.purpleDim,
+  desc: 'Configure period timings, number of runs, present logic, room assignments, extra/lunch classes, and stop days.',
+  tags: ['config', 'timing', 'control'],
+},
+];
 
 /* ── helpers ── */
 function Dot({ color, blink }) {
@@ -415,27 +495,71 @@ export default function AMSDashboard() {
           <div style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.09em' }}>
             Ground Truth
           </div>
-          <button
-            onClick={fetchGtStats}
-            disabled={gtLoad}
-            style={{
-              fontSize: 10, padding: '3px 9px', borderRadius: 6,
-              background: T.orangeDim, color: T.orange,
-              border: `1px solid ${T.orange}30`, cursor: gtLoad ? 'default' : 'pointer',
-              fontFamily: T.fontBody, fontWeight: 700, opacity: gtLoad ? 0.5 : 1,
-              transition: 'opacity .15s',
-            }}
-          >
-            {gtLoad ? '…' : '↻ Refresh'}
-          </button>
-        </div>
-        <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
-          <StatCard label="Clusters"        value={gtStats?.totalClusters} color={T.orange}  loading={gtLoad} delay={0}   />
-          <StatCard label="Images"          value={gtStats?.totalImages}   color={T.sky}     loading={gtLoad} delay={40}  />
-          <StatCard label="Embeddings"      value={gtStats?.withEmbedding} color={T.purple}  loading={gtLoad} delay={80}  />
-          <StatCard label="Approved"        value={gtStats?.approved}      color={T.emerald} loading={gtLoad} delay={120} />
-          <StatCard label="Matched"         value={gtStats?.matched}       color={T.teal}    loading={gtLoad} delay={160} />
-        </div>
+
+          {/* ── Right sidebar ───────────────────────────────────────────── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* Quick actions */}
+            <div style={{
+              background: T.surface, border: `1px solid ${T.border}`,
+              borderRadius: 12, padding: '20px',
+              animation: 'fadeUp .5s ease .1s both',
+            }}>
+              <SectionHead title="Quick Actions" color={T.accent} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <QuickBtn icon="📡" label="Start RTSP Capture"     color={T.accent}  colorDim={T.accentDim}  onClick={() => navigate('/attendance/groundtruth/rtsp')}  delay={0} />
+                <QuickBtn icon="🎯" label="Assign Roll Numbers"     color={T.success} colorDim={T.successDim} onClick={() => navigate('/attendance/groundtruth/assign')} delay={50} />
+                <QuickBtn icon="🧠" label="Generate Embeddings"     color={T.warning} colorDim={T.warningDim} onClick={() => navigate('/attendance/embeddings')}         delay={100} />
+                <QuickBtn icon="📊" label="Run Attendance Report"   color={T.teal}    colorDim={T.tealDim}    onClick={() => navigate('/attendance/reports')}            delay={150} />
+                <QuickBtn icon="📷" label="Manage Cameras"          color={T.orange}  colorDim={T.orangeDim}  onClick={() => navigate('/cameras')}                       delay={200} />
+                <QuickBtn icon="🖼️" label="Review Photos"           color={T.purple}  colorDim={T.purpleDim}  onClick={() => navigate('/attendance/groundtruth/photos')} delay={250} />
+                <QuickBtn icon="⚙️" label="Acquisition Control"     color={T.purple}  colorDim={T.purpleDim}  onClick={() => navigate('/attendance/acquisition-control')} delay={300} />
+              </div>
+            </div>
+
+            {/* Camera status */}
+            <div style={{
+              background: T.surface, border: `1px solid ${T.border}`,
+              borderRadius: 12, padding: '20px',
+              animation: 'fadeUp .5s ease .2s both',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <SectionHead title="Camera Status" color={T.orange} />
+                <button
+                  className="ams-btn"
+                  onClick={() => navigate('/cameras')}
+                  style={{
+                    fontSize: 10, padding: '4px 10px', borderRadius: 6,
+                    background: T.orangeDim, color: T.orange,
+                    border: `1px solid ${T.orange}30`,
+                    fontFamily: T.fontBody, fontWeight: 600,
+                    marginBottom: 20,
+                  }}
+                >
+                  Manage →
+                </button>
+              </div>
+              <CameraStrip cameras={cameras.slice(0, 6)} loading={camLoading} />
+              {cameras.length > 6 && (
+                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 8, textAlign: 'center' }}>
+                  +{cameras.length - 6} more cameras
+                </div>
+              )}
+              {!camLoading && cameras.length === 0 && (
+                <button
+                  className="ams-btn"
+                  onClick={() => navigate('/cameras')}
+                  style={{
+                    width: '100%', padding: '12px', marginTop: 8,
+                    background: T.orangeDim, border: `1px dashed ${T.orange}40`,
+                    borderRadius: 8, color: T.orange, fontSize: 12, fontWeight: 600,
+                    fontFamily: T.fontBody,
+                  }}
+                >
+                  + Register First Camera
+                </button>
+              )}
+            </div>
 
         <SectionLabel>Verification</SectionLabel>
         <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
