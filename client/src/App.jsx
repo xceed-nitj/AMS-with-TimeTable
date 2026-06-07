@@ -210,6 +210,7 @@ import PhotoEdit from './attendancemodule/photoedit';
 import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
 import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
+import FrameVerification from './attendancemodule/FrameVerification';
 
 import AMSDashboard        from './attendancemodule/AMSDashboard';
 import AMSLayout           from './attendancemodule/AMSLayout';
@@ -629,6 +630,7 @@ function App() {
   <Route path="report"               element={<Attendancedoc />} />
   <Route path="model"                element={<ModelPerformance />} />
   <Route path="reports"              element={<AttendanceReport />} />
+  <Route path="frame-verification"   element={<FrameVerification />} />
 </Route>
 
 {/* Camera Registry — top-level but still inside AMSLayout */}

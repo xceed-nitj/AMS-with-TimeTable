@@ -8,5 +8,6 @@ router.use('/flags',        require("./flagRoutes"));
 router.use('/reports',      require("./attendanceReportRoutes"));
 router.use('/cameras',      require("./cameraRoutes"));
 router.use('/embeddings',   require("./embeddingRouter"));
+router.use('/frame-verification', require("./frameVerificationRoutes"));
 
 module.exports = router;

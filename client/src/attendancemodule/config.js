@@ -121,8 +121,9 @@ const styles = {
         fontWeight: 700,
     },
     badge: (color) => ({
-        padding: '3px 10px',
-        borderRadius: '999px',
+        display: 'block',
+        padding: '8px 10px',
+        borderRadius: '6px',
         fontSize: '11px',
         fontWeight: 700,
         background: color === 'success' ? theme.successDim :
@@ -136,6 +137,8 @@ const styles = {
             color === 'danger'  ? 'rgba(239,68,68,0.30)'  :
             color === 'warning' ? 'rgba(245,158,11,0.30)' : 'rgba(99,102,241,0.30)'
         }`,
+        wordBreak: 'break-word',
+        lineHeight: '1.3',
     }),
     sectionTitle: {
         fontSize: '11px',
