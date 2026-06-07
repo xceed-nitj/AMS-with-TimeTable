@@ -201,7 +201,7 @@ import Logs from './timetableadmin/logs.jsx';
 // ─── Attendance Module Imports ────────────────────────────────────
 import EditGroundTruth from './attendancemodule/editgroundtruth';
 import RollAssign from './attendancemodule/rollassign';
-import FlaggedAssign from './attendancemodule/flaggedassign';
+// import FlaggedAssign from './attendancemodule/flaggedassign';
 import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
 import AttendanceReport from './attendancemodule/AttendanceReport';
@@ -621,7 +621,7 @@ function App() {
 <Route path="/attendance" element={<AMSLayout />}>
   <Route index element={<AMSDashboard />} />
   <Route path="groundtruth/assign"   element={<RollAssign />} />
-  <Route path="groundtruth/flagged"  element={<FlaggedAssign />} />
+  {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
   <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
   <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
   <Route path="groundtruth/photos"   element={<PhotoEdit />} />

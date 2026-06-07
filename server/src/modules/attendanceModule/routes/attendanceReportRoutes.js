@@ -141,6 +141,58 @@ router.get('/stats', async (req, res) => {
     }
 });
 
+// Chart data: dept-wise and day-wise attendance aggregates
+router.get('/charts', async (req, res) => {
+    try {
+        const AttendanceReport = require('../../../models/attendanceReport');
+        const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        const [deptAgg, dayAgg] = await Promise.all([
+            AttendanceReport.aggregate([
+                { $match: { department: { $exists: true, $ne: null, $ne: '' } } },
+                { $group: {
+                    _id:     '$department',
+                    present: { $sum: '$summary.present' },
+                    absent:  { $sum: '$summary.absent' },
+                    avgPct:  { $avg: '$summary.attendancePct' },
+                    count:   { $sum: 1 },
+                }},
+                { $sort: { present: -1 } },
+                { $limit: 10 },
+            ]),
+            AttendanceReport.aggregate([
+                { $match: { date: { $exists: true } } },
+                { $addFields: { dateObj: { $dateFromString: { dateString: '$date' } } } },
+                { $group: {
+                    _id:     { $dayOfWeek: '$dateObj' },
+                    present: { $sum: '$summary.present' },
+                    absent:  { $sum: '$summary.absent' },
+                    avgPct:  { $avg: '$summary.attendancePct' },
+                    count:   { $sum: 1 },
+                }},
+                { $sort: { _id: 1 } },
+            ]),
+        ]);
+
+        res.json({
+            byDept: deptAgg.map(d => ({
+                dept:    d._id,
+                present: d.present,
+                absent:  d.absent,
+                avgPct:  Math.round(d.avgPct || 0),
+                count:   d.count,
+            })),
+            byDay: dayAgg.map(d => ({
+                day:     DAY_NAMES[(d._id - 1) % 7],
+                present: d.present,
+                absent:  d.absent,
+                avgPct:  Math.round(d.avgPct || 0),
+                count:   d.count,
+            })),
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Get full report by ID (keep last to avoid conflicts with named routes above)
 router.get('/:id', async (req, res) => {
     try { await ctrl.getReportById(req, res); }
