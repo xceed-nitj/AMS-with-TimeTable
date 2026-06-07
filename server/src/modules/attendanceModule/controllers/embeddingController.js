@@ -9,7 +9,7 @@ const Student          = require('../../../models/student');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
-const EMBEDDINGS_DIR   = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
+const EMBEDDINGS_DIR   = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
 
 function ensureDir(p) {
     if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
