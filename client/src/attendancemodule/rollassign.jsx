@@ -459,14 +459,16 @@ export default function RollAssign() {
 
     // CHANGE 2: delete all images for an assigned roll no
     const handleDeleteAllImages = async (item) => {
-        if (!window.confirm(`Delete ALL images for "${item.rollNo}"?\n\nThis removes all photos from disk and DB. Cannot be undone.`)) return;
+        if (!window.confirm(`Delete cluster "${item.rollNo}" permanently?\n\nThis removes all photos from disk and the assignment record from DB. Cannot be undone.`)) return;
+        if (!item._id) { showToast('Cluster ID missing — reload the page', 'error'); return; }
         setDeletingAllImgs(item.folderName);
         try {
-            const res  = await fetch(`${GT_BASE}/student/${encodeURIComponent(batchName)}/${encodeURIComponent(item.rollNo)}`, { method: 'DELETE' });
+            const res  = await fetch(`${RA_BASE}/cluster/${encodeURIComponent(item._id)}`, { method: 'DELETE' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Delete failed');
-            showToast(`Deleted all images for ${item.rollNo}`);
+            showToast(`Deleted cluster for ${item.rollNo}`);
             setApprovedItems(prev => prev.filter(r => r.folderName !== item.folderName));
+            setFlaggedItems(prev => prev.filter(r => r.folderName !== item.folderName));
             setApprovedStats(prev => { const n = { ...prev }; delete n[item.rollNo]; return n; });
             broadcastRefresh(batchName);
         } catch (err) { showToast(err.message, 'error'); }
@@ -589,7 +591,17 @@ export default function RollAssign() {
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
                     onClick={e => { if (e.target === e.currentTarget) setEditRollModal(null); }}>
                     <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 28, width: 340 }}>
-                        <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: 16 }}>Edit Roll Number</div>
+                        <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: 12 }}>Edit Roll Number</div>
+                        <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 8, background: '#fefce8', border: '1px solid #fbbf24', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+                                <path d="M8 1.5L14.5 13H1.5L8 1.5z" stroke="#d97706" strokeWidth="1.3" strokeLinejoin="round"/>
+                                <line x1="8" y1="6" x2="8" y2="9.5" stroke="#d97706" strokeWidth="1.3" strokeLinecap="round"/>
+                                <circle cx="8" cy="11.5" r="0.7" fill="#d97706"/>
+                            </svg>
+                            <span style={{ fontSize: '11.5px', color: '#92400e', lineHeight: 1.5 }}>
+                                Changing the roll number will rename the cluster folder and re-link all associated images. Existing embeddings tied to the old roll number will be affected. Proceed only if you are sure.
+                            </span>
+                        </div>
                         <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: 8 }}>Current: <span style={{ fontFamily: theme.fontMono, color: theme.text, fontWeight: 700 }}>{editRollModal.rollNo}</span></div>
                         <input
                             autoFocus
@@ -725,7 +737,10 @@ export default function RollAssign() {
                     <Section title="Flagged" count={flaggedItems.length} accentColor={theme.warning} emptyText="No flagged clusters">
                         {flaggedItems.map(item => (
                             <FlaggedClusterCard key={item.folderName} item={item} batchName={batchName}
-                                flagPhotoUrl={flagPhotoUrl} onClick={() => openFlagModal(item)} />
+                                flagPhotoUrl={flagPhotoUrl} onClick={() => openFlagModal(item)}
+                                onEditRoll={() => { setEditRollModal(item); setEditRollInput(item.rollNo || ''); }}
+                                onDeleteAllImages={() => handleDeleteAllImages(item)}
+                                deletingAllImages={deletingAllImgs === item.folderName} />
                         ))}
                     </Section>
 
@@ -770,7 +785,7 @@ export default function RollAssign() {
     );
 }
 
-function FlaggedClusterCard({ item, batchName, flagPhotoUrl, onClick }) {
+function FlaggedClusterCard({ item, batchName, flagPhotoUrl, onClick, onEditRoll, onDeleteAllImages, deletingAllImages }) {
     const folder    = item.currentFolder || item.folderName;
     const flaggedAt = item.flaggedAt ? new Date(item.flaggedAt).toLocaleDateString() : '';
     return (
@@ -791,9 +806,19 @@ function FlaggedClusterCard({ item, batchName, flagPhotoUrl, onClick }) {
                     <span style={{ fontSize: '11px', color: theme.textMuted }}>{item.imageCount} img</span>
                 </div>
                 {flaggedAt && <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: 6 }}>Flagged {flaggedAt}</div>}
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: 99, background: theme.warning + '22', color: theme.warning, fontWeight: 600 }}>⚑ Flagged</span>
-                    <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: 99, background: theme.border, color: theme.textMuted }}>Click to resolve / edit / delete</span>
+                    <button title="Delete cluster" onClick={e => { e.stopPropagation(); onDeleteAllImages && onDeleteAllImages(); }}
+                        disabled={deletingAllImages}
+                        style={{ width: 26, height: 26, borderRadius: 5, border: '1px solid #f87171', background: '#ffffff', color: '#f87171', cursor: deletingAllImages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, opacity: deletingAllImages ? 0.5 : 1 }}>
+                        {deletingAllImages ? '…' : (
+                            <svg width="12" height="13" viewBox="0 0 12 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <line x1="5" y1="6" x2="5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                                <line x1="7" y1="6" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                            </svg>
+                        )}
+                    </button>
                 </div>
             </div>
         </div>
@@ -897,7 +922,7 @@ function FlagResolveModal({ item, batchName, flagPhotoUrl, flagErpPhotoUrl, roll
                             </div>
                         )}
                         <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: 12 }}>
-                            {loadingPhotos ? 'Loading photos…' : `${allPhotos.length} photo(s) — click ✕ to delete from disk and DB`}
+                            {loadingPhotos ? 'Loading photos…' : `${allPhotos.length} photo(s) — click the trash icon to delete from disk and DB`}
                         </div>
                         {loadingPhotos ? (
                             <div style={{ textAlign: 'center', padding: '40px', color: theme.textMuted }}>Loading…</div>
@@ -908,7 +933,9 @@ function FlagResolveModal({ item, batchName, flagPhotoUrl, flagErpPhotoUrl, roll
                                 {allPhotos.map(filename => (
                                     <div key={filename} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: `1px solid ${theme.border}`, opacity: deleting === filename ? 0.25 : 1, transition: 'opacity 0.15s' }}>
                                         <img src={flagPhotoUrl(batchName, folder, filename)} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.opacity = '0.15'; }} />
-                                        <button onClick={() => deletePhoto(filename)} disabled={!!deleting} title="Delete this photo" style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: '#3f1212', border: '1.5px solid #f87171', color: '#f87171', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>✕</button>
+                                        <button onClick={() => deletePhoto(filename)} disabled={!!deleting} title="Delete this photo" style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 5, background: '#ffffff', border: '1.5px solid #f87171', color: '#f87171', cursor: deleting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                                            <svg width="11" height="12" viewBox="0 0 12 13" fill="none"><path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><line x1="5" y1="6" x2="5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="7" y1="6" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>
+                                        </button>
                                         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.65)', padding: '3px 5px', fontSize: '8px', color: '#ccc', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{filename}</div>
                                     </div>
                                 ))}
@@ -932,15 +959,20 @@ function FlagResolveModal({ item, batchName, flagPhotoUrl, flagErpPhotoUrl, roll
                                                     .catch(err => showToast(err.message, 'error')).finally(() => setDeleting(null));
                                             }}
                                             disabled={!!deleting} title="Delete this photo"
-                                            style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: '#3f1212', border: '1.5px solid #f87171', color: '#f87171', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1, boxShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>✕</button>
+                                            style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 5, background: '#ffffff', border: '1.5px solid #f87171', color: '#f87171', cursor: deleting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                                            <svg width="11" height="12" viewBox="0 0 12 13" fill="none"><path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><line x1="5" y1="6" x2="5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="7" y1="6" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>
+                                            </button>
                                     </div>
                                 ))}
                                 {!(item.previewFiles || []).length && <div style={{ gridColumn: '1 / -1', padding: '30px 0', textAlign: 'center', color: theme.textMuted, fontSize: '12px' }}>No preview images</div>}
                             </div>
                             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                                 <button onClick={() => setEditMode(true)} style={{ flex: 1, padding: '8px 0', borderRadius: 6, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>✏ Edit All Photos</button>
-                                <button onClick={deleteFolder} disabled={deletingFolder} style={{ flex: 1, padding: '8px 0', borderRadius: 6, border: '1px solid #f87171', background: '#3f1212', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                                    {deletingFolder ? 'Deleting…' : '🗑 Delete Folder'}
+                                <button onClick={deleteFolder} disabled={deletingFolder} style={{ flex: 1, padding: '8px 0', borderRadius: 6, border: '1px solid #f87171', background: '#ffffff', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                    {deletingFolder ? 'Deleting…' : (<>
+                                        <svg width="12" height="13" viewBox="0 0 12 13" fill="none"><path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><line x1="5" y1="6" x2="5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="7" y1="6" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>
+                                        Delete Folder
+                                    </>)}
                                 </button>
                             </div>
                             <div style={{ fontSize: '10px', color: '#f8717177', textAlign: 'center' }}>Delete Folder removes all photos, DB record &amp; flag entry permanently</div>
@@ -1110,18 +1142,29 @@ function ClusterCard({ item, batchName, photoUrl, erpPhotoUrl, onClick, isAssign
                                 {unapprovedCount > 0 && <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 99, background: theme.dangerDim, color: theme.danger }}>{unapprovedCount} new</span>}
                             </div>
                         )}
-                        {/* CHANGE 2: Delete All Images + Edit Roll No buttons */}
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        {/* icon-only edit + delete */}
+                        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', marginTop: 4 }}>
                             <button
+                                title="Edit roll number"
                                 onClick={e => { e.stopPropagation(); onEditRoll && onEditRoll(); }}
-                                style={{ flex: 1, padding: '5px 0', borderRadius: 5, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}>
-                                ✏ Edit Roll
+                                style={{ width: 26, height: 26, borderRadius: 5, border: '1px solid #3b82f6', background: '#ffffff', color: '#3b82f6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8.5 1.5a1.2 1.2 0 011.7 1.7L3.5 10H1.5V8L8.5 1.5z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <line x1="7" y1="3" x2="9" y2="5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                                </svg>
                             </button>
                             <button
+                                title="Delete all images"
                                 onClick={e => { e.stopPropagation(); onDeleteAllImages && onDeleteAllImages(); }}
                                 disabled={deletingAllImages}
-                                style={{ flex: 1, padding: '5px 0', borderRadius: 5, border: '1px solid #f87171', background: '#3f1212', color: '#f87171', fontSize: '10px', fontWeight: 700, cursor: deletingAllImages ? 'not-allowed' : 'pointer', opacity: deletingAllImages ? 0.5 : 1 }}>
-                                {deletingAllImages ? '…' : '🗑 Del All'}
+                                style={{ width: 26, height: 26, borderRadius: 5, border: '1px solid #f87171', background: '#ffffff', color: '#f87171', cursor: deletingAllImages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, opacity: deletingAllImages ? 0.5 : 1 }}>
+                                {deletingAllImages ? '…' : (
+                                    <svg width="12" height="13" viewBox="0 0 12 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        <line x1="5" y1="6" x2="5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                                        <line x1="7" y1="6" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                                    </svg>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -1131,9 +1174,9 @@ function ClusterCard({ item, batchName, photoUrl, erpPhotoUrl, onClick, isAssign
                         <button
                             onClick={e => { e.stopPropagation(); onDeleteFolder && onDeleteFolder(); }}
                             disabled={deletingFolder}
-                            style={{ width: '100%', padding: '7px 0', borderRadius: 6, border: '1px solid #f87171', background: '#3f1212', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                            style={{ width: '100%', padding: '7px 0', borderRadius: 6, border: '1px solid #f87171', background: '#ffffff', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                         >
-                            {deletingFolder ? <><Spinner /> Deleting…</> : '🗑 Delete Folder Permanently'}
+                            {deletingFolder ? <><Spinner /> Deleting…</> : (<><svg width="12" height="13" viewBox="0 0 12 13" fill="none"><path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><line x1="5" y1="6" x2="5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="7" y1="6" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>Delete Folder Permanently</>)}
                         </button>
                     </div>
                 ) : isUnprocessed ? (
@@ -1143,9 +1186,9 @@ function ClusterCard({ item, batchName, photoUrl, erpPhotoUrl, onClick, isAssign
                         <button
                             onClick={e => { e.stopPropagation(); onDeleteFolder && onDeleteFolder(); }}
                             disabled={deletingFolder}
-                            style={{ width: '100%', padding: '7px 0', borderRadius: 6, border: '1px solid #f87171', background: '#3f1212', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                            style={{ width: '100%', padding: '7px 0', borderRadius: 6, border: '1px solid #f87171', background: '#ffffff', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: deletingFolder ? 'not-allowed' : 'pointer', opacity: deletingFolder ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                         >
-                            {deletingFolder ? <><Spinner /> Deleting…</> : '🗑 Delete Folder'}
+                            {deletingFolder ? <><Spinner /> Deleting…</> : (<><svg width="12" height="13" viewBox="0 0 12 13" fill="none"><path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><line x1="5" y1="6" x2="5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="7" y1="6" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>Delete Folder</>)}
                         </button>
                     </div>
                 ) : isMerged ? (
@@ -1242,19 +1285,59 @@ function GTModal({ rollNo, batchName, onClose, showToast, onMoved }) {
         finally { setDoneSaving(false); }
     };
 
-    const allPhotos = student ? [
-        ...(student.embeddingFiles || []).map(p => ({ ...p, type: 'embedding' })),
-        ...(student.backupFiles    || []).map(p => ({ ...p, type: 'backup'    })),
-        ...(student.untrackedFiles || []).map(p => ({ ...p, type: 'other'     })),
-    ] : [];
+    const embCount   = (student?.embeddingFiles || []).length;
+    const backCount  = (student?.backupFiles    || []).length;
+    const othCount   = (student?.untrackedFiles || []).length;
+    const totalCount = embCount + backCount + othCount;
 
-    const embCount    = (student?.embeddingFiles || []).length;
-    const backCount   = (student?.backupFiles    || []).length;
-    const totalCount  = allPhotos.length;
+    const photoUrl = (filename) =>
+        `${GT_BASE}/photo/${encodeURIComponent(batchName)}/${encodeURIComponent(rollNo)}/${encodeURIComponent(filename)}`;
 
-    const TYPE_COLOR = { embedding: theme.success, backup: theme.warning, other: theme.textMuted };
-    const TYPE_LABEL = { embedding: 'Embedding',   backup: 'Backup',      other: 'Other'        };
-    const TYPE_BG    = { embedding: theme.successDim, backup: theme.warningDim, other: theme.border };
+    const PhotoCard = ({ photo, type }) => {
+        const busyKey = `${rollNo}::${photo.filename}`;
+        const isBusy  = busy === busyKey;
+        const isEmbed = type === 'embedding';
+        const isOther = type === 'other';
+        const borderC = isEmbed ? theme.success : isOther ? theme.border : theme.warning;
+        return (
+            <div style={{ background: theme.bg, border: `1.5px solid ${borderC}33`, borderRadius: 8, overflow: 'hidden', display: 'flex', flexDirection: 'column', opacity: isBusy ? 0.45 : 1, transition: 'opacity 0.15s' }}>
+                <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden' }}>
+                    <img src={photoUrl(photo.filename)} alt={photo.filename} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.opacity = '0.15'; }} />
+                    <button onClick={() => deletePhoto(photo.filename)} disabled={isBusy} title="Delete photo"
+                        style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 5, background: '#ffffff', border: `1.5px solid ${theme.danger}`, color: theme.danger, cursor: isBusy ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                        <svg width="11" height="12" viewBox="0 0 11 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 3h9M4 3V2h3v1M2 3l.6 7.5a.5.5 0 00.5.5h4.8a.5.5 0 00.5-.5L9 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <line x1="4.5" y1="5.5" x2="4.5" y2="9.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                            <line x1="6.5" y1="5.5" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div style={{ padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <div style={{ fontSize: '9px', fontFamily: theme.fontMono, color: theme.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{photo.filename}</div>
+                    {photo.score != null && <span style={{ fontSize: '9px', color: theme.accent, background: theme.accentDim, padding: '1px 4px', borderRadius: 3, alignSelf: 'flex-start' }}>{photo.score.toFixed(2)}</span>}
+                    <button onClick={() => movePhoto(photo.filename, type)} disabled={isBusy}
+                        style={{ padding: '3px 0', fontSize: '9px', fontWeight: 700, background: isEmbed ? theme.warningDim : theme.successDim, color: isEmbed ? theme.warning : theme.success, border: `1px solid ${isEmbed ? theme.warning + '44' : theme.success + '44'}`, borderRadius: 4, cursor: isBusy ? 'not-allowed' : 'pointer', width: '100%' }}>
+                        {isEmbed ? '→ Backup' : '↑ Embedding'}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const SectionRow = ({ label, color, bg, photos, type, empty }) => (
+        <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${color}33` }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+                <span style={{ fontSize: '11px', padding: '1px 8px', borderRadius: 99, background: bg, color, fontWeight: 700 }}>{photos.length}</span>
+            </div>
+            {photos.length === 0
+                ? <div style={{ fontSize: '12px', color: theme.textMuted, padding: '10px 0' }}>{empty}</div>
+                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
+                    {photos.map(p => <PhotoCard key={p.filename} photo={p} type={type} />)}
+                  </div>
+            }
+        </div>
+    );
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.80)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, paddingTop: 72 }}
@@ -1280,48 +1363,24 @@ function GTModal({ rollNo, batchName, onClose, showToast, onMoved }) {
                 <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
                     {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: theme.textMuted }}>Loading…</div>}
 
-                    {!loading && allPhotos.length === 0 && (
+                    {!loading && totalCount === 0 && (
                         <div style={{ textAlign: 'center', padding: '40px 0', color: theme.textMuted }}>No photos found</div>
                     )}
 
-                    {!loading && allPhotos.length > 0 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-                            {allPhotos.map(photo => {
-                                const busyKey  = `${rollNo}::${photo.filename}`;
-                                const isBusy   = busy === busyKey;
-                                const isEmbed  = photo.type === 'embedding';
-                                const color    = TYPE_COLOR[photo.type] || theme.textMuted;
-                                const label    = TYPE_LABEL[photo.type] || 'Other';
-                                const typeBg   = TYPE_BG[photo.type]   || theme.border;
-                                const photoUrl = `${GT_BASE}/photo/${encodeURIComponent(batchName)}/${encodeURIComponent(rollNo)}/${encodeURIComponent(photo.filename)}`;
-
-                                return (
-                                    <div key={photo.filename} style={{ background: theme.surface, border: `1.5px solid ${color}44`, borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column', opacity: isBusy ? 0.45 : 1, transition: 'opacity 0.15s' }}>
-                                        {/* Image area */}
-                                        <div style={{ position: 'relative', aspectRatio: '1', background: theme.bg, overflow: 'hidden' }}>
-                                            <img src={photoUrl} alt={photo.filename} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.opacity = '0.15'; }} />
-                                            {/* Type badge */}
-                                            <div style={{ position: 'absolute', top: 6, left: 6, fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '2px 6px', borderRadius: 4, background: typeBg, color, border: `1px solid ${color}55` }}>{label}</div>
-                                            {/* Delete button */}
-                                            <button onClick={() => deletePhoto(photo.filename)} disabled={isBusy} title="Delete photo"
-                                                style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.8)', border: `1.5px solid ${theme.danger}`, color: theme.danger, cursor: isBusy ? 'not-allowed' : 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>×</button>
-                                        </div>
-                                        {/* Footer */}
-                                        <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                            <div style={{ fontSize: '10px', fontFamily: theme.fontMono, color: theme.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{photo.filename}</div>
-                                            {photo.score != null && (
-                                                <span style={{ fontSize: '9px', fontWeight: 600, color: theme.accent, background: theme.accentDim, padding: '1px 5px', borderRadius: 4, alignSelf: 'flex-start' }}>{photo.score.toFixed(2)}</span>
-                                            )}
-                                            {/* Move button */}
-                                            <button onClick={() => movePhoto(photo.filename, photo.type)} disabled={isBusy}
-                                                style={{ marginTop: 2, padding: '4px 0', fontSize: '10px', fontWeight: 600, background: isEmbed ? theme.warningDim : theme.successDim, color: isEmbed ? theme.warning : theme.success, border: `1px solid ${isEmbed ? theme.warning + '55' : theme.success + '55'}`, borderRadius: 5, cursor: isBusy ? 'not-allowed' : 'pointer', width: '100%' }}>
-                                                {isEmbed ? '→ Backup' : '↑ Embedding'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                    {!loading && student && (
+                        <>
+                            <SectionRow label="Embedding" color={theme.success} bg={theme.successDim}
+                                photos={student.embeddingFiles || []} type="embedding"
+                                empty="No embedding images — move some from Backup" />
+                            <SectionRow label="Backup" color={theme.warning} bg={theme.warningDim}
+                                photos={student.backupFiles || []} type="backup"
+                                empty="No backup images" />
+                            {othCount > 0 && (
+                                <SectionRow label="Other" color={theme.textMuted} bg={theme.border}
+                                    photos={student.untrackedFiles || []} type="other"
+                                    empty="" />
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -1380,10 +1439,9 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl, overrideRo
     allCandidates.forEach(c => { candMap[c.rollNo] = c; });
     const primaryMatch   = allCandidates[0] || (match?.rollNo ? match : null);
     const otherCands     = allCandidates.slice(1);
-    const selectedCand   = overrideRoll ? (candMap[overrideRoll] || (match?.rollNo === overrideRoll ? match : null)) : null;
-    const displayPhoto   = selectedCand?.erpPhoto || match?.erpPhoto || null;
-    const displayConf    = selectedCand?.confidence ?? conf;
-    const displayRoll    = selectedCand?.rollNo || overrideRoll;
+    const displayPhoto   = match?.erpPhoto || primaryMatch?.erpPhoto || null;
+    const displayConf    = conf;
+    const displayRoll    = match?.rollNo || primaryMatch?.rollNo || null;
     const folderForPhoto = item.currentFolder || item.folderName;
     const [candOpen, setCandOpen] = useState(false);
     useEffect(() => {
@@ -1425,46 +1483,26 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl, overrideRo
                         <div>
                             <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ERP Match</div>
                             {displayPhoto ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: overrideRoll ? theme.successDim : theme.bg, border: `2px solid ${overrideRoll ? theme.success : confidenceColor(displayConf) + '55'}`, transition: 'all 0.2s' }}>
-                                    <img src={erpPhotoUrl(displayPhoto)} alt="ERP" style={{ width: 72, height: 72, objectFit: 'cover', flexShrink: 0, borderRadius: 6, border: `2.5px solid ${confidenceColor(displayConf)}`, transition: 'all 0.2s' }} onError={e => { e.target.style.opacity = '0.3'; }} />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: theme.bg, border: `2px solid ${confidenceColor(displayConf) + '55'}` }}>
+                                    <img src={erpPhotoUrl(displayPhoto)} alt="ERP" style={{ width: 72, height: 72, objectFit: 'cover', flexShrink: 0, borderRadius: 6, border: `2.5px solid ${confidenceColor(displayConf)}` }} onError={e => { e.target.style.opacity = '0.3'; }} />
                                     <div>
-                                        <div style={{ fontSize: '14px', fontWeight: 800, color: overrideRoll ? theme.success : theme.text, fontFamily: theme.fontMono }}>{displayRoll || '—'}</div>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: theme.text, fontFamily: theme.fontMono }}>{displayRoll || '—'}</div>
                                         {displayConf != null && <div style={{ fontSize: '11px', color: confidenceColor(displayConf), fontWeight: 600, marginTop: 3 }}>{confidenceLabel(displayConf)} · {(displayConf * 100).toFixed(1)}%</div>}
-                                        {overrideRoll && <div style={{ fontSize: '10px', color: theme.success, marginTop: 2 }}>✓ Selected</div>}
                                     </div>
                                 </div>
                             ) : (
                                 <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: '12px', padding: '10px 0', borderRadius: 8, background: theme.bg, border: `1px dashed ${theme.border}` }}>No ERP match</div>
                             )}
                         </div>
-                        {primaryMatch && (
-                            <div>
-                                <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Match — click to select</div>
-                                {(() => {
-                                    const isSel = overrideRoll === primaryMatch.rollNo;
-                                    return (
-                                        <div onClick={() => setOverrideRoll(isSel ? '' : primaryMatch.rollNo)}
-                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 7, cursor: 'pointer', background: isSel ? theme.successDim : theme.surface, border: `2px solid ${isSel ? theme.success : theme.border}`, transition: 'all 0.15s' }}>
-                                            {primaryMatch.erpPhoto && <img src={erpPhotoUrl(primaryMatch.erpPhoto)} alt="" style={{ width: 36, height: 36, borderRadius: 5, objectFit: 'cover', border: `2px solid ${confidenceColor(primaryMatch.confidence)}` }} onError={e => { e.target.style.display = 'none'; }} />}
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '12px', fontWeight: 700, color: isSel ? theme.success : theme.text, fontFamily: theme.fontMono }}>{primaryMatch.rollNo}</div>
-                                                <div style={{ fontSize: '10px', color: confidenceColor(primaryMatch.confidence), fontWeight: 600 }}>{confidenceLabel(primaryMatch.confidence)} · {(primaryMatch.confidence * 100).toFixed(1)}%</div>
-                                            </div>
-                                            {isSel && <span style={{ color: theme.success, fontWeight: 900 }}>✓</span>}
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                        )}
-                        {otherCands.length > 0 && (
+                        {allCandidates.length > 0 && (
                             <div style={{ borderRadius: 8, border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
                                 <button onClick={() => setCandOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: theme.bg, border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    <span>Other Candidates ({otherCands.length})</span>
+                                    <span>Candidates ({allCandidates.length})</span>
                                     <span style={{ fontSize: '9px', transition: 'transform 0.2s', display: 'inline-block', transform: candOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
                                 </button>
                                 {candOpen && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '6px' }}>
-                                        {otherCands.map((c, i) => {
+                                        {allCandidates.map((c, i) => {
                                             const isSel = overrideRoll === c.rollNo;
                                             return (
                                                 <div key={i} onClick={() => setOverrideRoll(isSel ? '' : c.rollNo)}
@@ -1482,15 +1520,15 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl, overrideRo
                                 )}
                             </div>
                         )}
-                        {overrideRoll ? (
-                            <div style={{ padding: '8px 12px', borderRadius: 7, background: theme.successDim, border: `1.5px solid ${theme.success}66`, fontSize: '15px', fontWeight: 800, color: theme.success, fontFamily: theme.fontMono, textAlign: 'center' }}>
-                                {overrideRoll}
-                            </div>
-                        ) : (
-                            <div style={{ padding: '8px 12px', borderRadius: 7, background: theme.border + '33', border: `1.5px dashed ${theme.border}`, fontSize: '11px', color: theme.textMuted, textAlign: 'center' }}>
-                                Select a candidate to assign
-                            </div>
-                        )}
+                        <div>
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Roll Number</div>
+                            <input
+                                value={overrideRoll}
+                                onChange={e => setOverrideRoll(e.target.value.toUpperCase())}
+                                placeholder="Select candidate or type roll no."
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: 7, border: `1.5px solid ${overrideRoll.trim() ? theme.success : theme.border}`, background: overrideRoll.trim() ? theme.successDim : theme.bg, color: overrideRoll.trim() ? theme.success : theme.text, fontSize: '14px', fontWeight: 800, fontFamily: theme.fontMono, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
+                            />
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
                             <button onClick={onApprove} disabled={saving || !overrideRoll.trim()} style={{ padding: '9px 0', borderRadius: 7, border: 'none', background: theme.success, color: '#000', fontSize: '13px', fontWeight: 700, cursor: overrideRoll.trim() ? 'pointer' : 'not-allowed', opacity: (saving || !overrideRoll.trim()) ? 0.45 : 1 }}>
                                 {saving ? 'Assigning...' : 'Approve & Assign'}
