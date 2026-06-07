@@ -175,7 +175,7 @@ async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) 
     const slotResult = {
         slot:          `${slot}-check${checkIndex}`,
         videoLink:     '',
-        frameSnapshot: '',
+        frameSnapshot: mlResult.snapshot_folder || '',
         processedAt:   new Date(),
         students,
         summary: {

@@ -3,8 +3,13 @@
 // auto-stops when every detected person has reached the target image count.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import getEnvironment from '../getenvironment';
 import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
+
+const _apiUrl    = getEnvironment();
+const CAMERA_API = `${_apiUrl}/attendancemodule/cameras`;
+const ROOM_API   = `${_apiUrl}/timetablemodule/masterroom`;
 
 // ─── Add your cameras here ────────────────────────────────────────────────────
 const CAMERAS = [
@@ -218,6 +223,18 @@ export default function GroundTruthRTSP() {
     const combinedTimerRef   = useRef(null);   // the 1-second tick interval
     const combinedAbortRef   = useRef(false);  // flag to cancel the cycle
 
+    // ── Room-mode state ───────────────────────────────────────────────────────
+    const [rooms,         setRooms]         = useState([]);
+    const [roomsLoading,  setRoomsLoading]  = useState(false);
+    const [selectedRoom,  setSelectedRoom]  = useState('');   // room _id
+    const [roomCameras,   setRoomCameras]   = useState([]);   // normalized {id,label,url}[]
+    const [roomCamsLoad,  setRoomCamsLoad]  = useState(false);
+    const [roomMode,      setRoomMode]      = useState(false);
+    const [roomCamIdx,    setRoomCamIdx]    = useState(0);
+    const [roomSwCount,   setRoomSwCount]   = useState(0);
+    const roomModeAbort   = useRef(false);
+    const roomModeTimer   = useRef(null);
+
     const logRef          = useRef(null);
     const abortRef        = useRef(null);
     const retryTimerRef   = useRef(null);
@@ -235,7 +252,43 @@ export default function GroundTruthRTSP() {
     useEffect(() => () => {
         clearRetry();
         clearInterval(combinedTimerRef.current);
+        clearInterval(roomModeTimer.current);
     }, [clearRetry]);
+
+    // ── Fetch rooms on mount ──────────────────────────────────────────────────
+    useEffect(() => {
+        setRoomsLoading(true);
+        fetch(ROOM_API)
+            .then(r => r.json())
+            .then(data => {
+                const list = Array.isArray(data) ? data : (data.rooms || []);
+                setRooms(list);
+            })
+            .catch(() => {})
+            .finally(() => setRoomsLoading(false));
+    }, []);
+
+    // ── Fetch cameras for selected room ───────────────────────────────────────
+    useEffect(() => {
+        if (!selectedRoom) { setRoomCameras([]); return; }
+        const roomObj = rooms.find(r => r._id === selectedRoom);
+        if (!roomObj) { setRoomCameras([]); return; }
+        const roomName = String(roomObj.room).trim().toUpperCase();
+        setRoomCamsLoad(true);
+        fetch(`${CAMERA_API}?roomId=${encodeURIComponent(roomName)}`)
+            .then(r => r.json())
+            .then(data => {
+                const list = Array.isArray(data) ? data : [];
+                // Normalize to {id, label, url} for handleStart compatibility
+                setRoomCameras(list.map(c => ({
+                    id:    c._id || c.cameraId,
+                    label: `${c.roomId || roomObj.room} — ${c.position || c.cameraId}`,
+                    url:   c.streamUrl,
+                })).filter(c => c.url));
+            })
+            .catch(() => setRoomCameras([]))
+            .finally(() => setRoomCamsLoad(false));
+    }, [selectedRoom, rooms]);
 
     const batchName = degree && department && year
         ? `${degree}_${department}_${year}`.toUpperCase()
@@ -277,8 +330,8 @@ export default function GroundTruthRTSP() {
         clearRetry();
         setStatus('running');
         if (!overrideCamera) {
-            // Fresh start — clear previous state (but in combined mode keep persons across switches)
-            if (!combinedMode) {
+            // Fresh start — clear previous state (but in cycling modes keep persons across switches)
+            if (!combinedMode && !roomMode) {
                 setLog([]);
                 setPersons({});
                 setSummary(null);
@@ -374,9 +427,9 @@ export default function GroundTruthRTSP() {
 
                         case 'done':
                             setRetryCount(0);
-                            // In combined mode, don't set status to 'done' here —
+                            // In cycling modes (combined / room), don't set status to 'done' here —
                             // the cycle manager will handle the switch or final stop.
-                            if (!combinedMode) {
+                            if (!combinedMode && !roomMode) {
                                 setStatus('done');
                             }
                             setSummary({
@@ -387,7 +440,7 @@ export default function GroundTruthRTSP() {
                                 framesRead:     ev.frames_read,
                             });
                             addLog(`✅ ${ev.message}`, theme.success);
-                            if (!combinedMode) {
+                            if (!combinedMode && !roomMode) {
                                 showToast(`${ev.people_detected} people — ${ev.images_saved} images saved`);
                             }
                             break;
@@ -409,7 +462,7 @@ export default function GroundTruthRTSP() {
             }
 
             if (abortRef.current && !controller.signal.aborted) {
-                if (!combinedMode) {
+                if (!combinedMode && !roomMode) {
                     setStatus(s => s === 'running' ? 'done' : s);
                 }
             }
@@ -417,7 +470,7 @@ export default function GroundTruthRTSP() {
         } catch (err) {
             if (err.name === 'AbortError') {
                 addLog(`⏹ Stream stopped (${cam.label})`, theme.textMuted);
-                if (!combinedMode) {
+                if (!combinedMode && !roomMode) {
                     setRetryCount(0);
                     setStatus('done');
                 }
@@ -436,13 +489,79 @@ export default function GroundTruthRTSP() {
                 }, 1000);
 
                 retryTimerRef.current = setTimeout(() => {
-                    handleStartRef.current?.();
+                    // Pass the same camera so room-mode retries don't fall back
+                    // to selectedCamera (which is undefined for DB-id cameras).
+                    handleStartRef.current?.(cam);
                 }, RETRY_DELAY * 1000);
             }
         }
-    }, [batchName, selectedCamera, detSize, frameSkip, targetImgs, minSamples, clusterThr, addLog, retryCount, clearRetry, combinedMode]);
+    }, [batchName, selectedCamera, detSize, frameSkip, targetImgs, minSamples, clusterThr, addLog, retryCount, clearRetry, combinedMode, roomMode]);
 
     handleStartRef.current = handleStart;
+
+    // ── room-mode: cycle through room cameras ─────────────────────────────────
+    const handleStartRoomMode = useCallback(async () => {
+        if (!batchName) { showToast('Fill in Degree, Department and Year', 'error'); return; }
+        if (roomCameras.length === 0) { showToast('No cameras found for this room', 'error'); return; }
+
+        setRoomMode(true);
+        roomModeAbort.current = false;
+        setRoomCamIdx(0);
+        setLog([]);
+        setPersons({});
+        setSummary(null);
+        setRetryCount(0);
+        clearRetry();
+
+        const runRoomCycle = async (startIdx) => {
+            let idx = startIdx;
+            while (!roomModeAbort.current) {
+                const cam = roomCameras[idx % roomCameras.length];
+                if (!cam) break;
+
+                setRoomCamIdx(idx % roomCameras.length);
+                setCameraId(cam.id);
+                addLog(`🔄 Room mode — switching to ${cam.label}`, '#0ea5e9');
+
+                setRoomSwCount(COMBINED_SWITCH_INTERVAL);
+                clearInterval(roomModeTimer.current);
+
+                const countdownDone = new Promise((resolve) => {
+                    roomModeTimer.current = setInterval(() => {
+                        setRoomSwCount(n => {
+                            if (n <= 1) {
+                                clearInterval(roomModeTimer.current);
+                                roomModeTimer.current = null;
+                                resolve();
+                                return 0;
+                            }
+                            return n - 1;
+                        });
+                    }, 1000);
+                });
+
+                handleStartRef.current(cam);
+                await countdownDone;
+
+                if (roomModeAbort.current) break;
+
+                addLog(`⏸ Stopping ${cam.label} for camera switch…`, '#0ea5e9');
+                if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
+                await stopStream();
+                await new Promise(r => setTimeout(r, 1500));
+
+                if (roomModeAbort.current) break;
+                idx++;
+            }
+
+            if (!roomModeAbort.current) {
+                setRoomMode(false);
+                setStatus('done');
+            }
+        };
+
+        runRoomCycle(0);
+    }, [batchName, roomCameras, addLog, clearRetry, stopStream]);
 
     // ── stop (user-initiated) ─────────────────────────────────────────────────
     const handleStop = useCallback(async () => {
@@ -458,6 +577,15 @@ export default function GroundTruthRTSP() {
             setSwitchCountdown(0);
         }
 
+        // If room mode is active, cancel the cycle
+        if (roomMode) {
+            roomModeAbort.current = true;
+            clearInterval(roomModeTimer.current);
+            roomModeTimer.current = null;
+            setRoomMode(false);
+            setRoomSwCount(0);
+        }
+
         setStatus('stopping');
         addLog('⏹ Sending stop signal — waiting for final save…', theme.textMuted);
 
@@ -469,7 +597,7 @@ export default function GroundTruthRTSP() {
 
         await stopStream();
         setStatus('done');
-    }, [addLog, clearRetry, combinedMode, stopStream]);
+    }, [addLog, clearRetry, combinedMode, roomMode, stopStream]);
 
     // ── combined-mode: start cycling ──────────────────────────────────────────
     const handleStartCombined = useCallback(async () => {
@@ -557,9 +685,10 @@ export default function GroundTruthRTSP() {
     const isError     = status === 'error';
     const isIdle      = status === 'idle';
 
-    const totalPersons = Object.keys(persons).length;
-    const donePersons  = Object.values(persons).filter(p => p.done).length;
-    const allDone      = totalPersons > 0 && donePersons === totalPersons;
+    const totalPersons       = Object.keys(persons).length;
+    const donePersons        = Object.values(persons).filter(p => p.done).length;
+    const allDone            = totalPersons > 0 && donePersons === totalPersons;
+    const totalImagesSession = Object.values(persons).reduce((s, p) => s + (p.count || 0), 0);
 
     // Format mm:ss for switch countdown
     const switchMM = String(Math.floor(switchCountdown / 60)).padStart(2, '0');
@@ -569,6 +698,15 @@ export default function GroundTruthRTSP() {
     const combinedActiveCam = combinedMode
         ? CAMERAS.find(c => c.id === COMBINED_CAMERAS[combinedIdx])
         : null;
+
+    // Active camera in room mode
+    const roomActiveCam = roomMode ? roomCameras[roomCamIdx] : null;
+    const roomSwMM = String(Math.floor(roomSwCount / 60)).padStart(2, '0');
+    const roomSwSS = String(roomSwCount % 60).padStart(2, '0');
+    const roomObj  = rooms.find(r => r._id === selectedRoom);
+
+    // Whether any cycling mode is active
+    const anyMode  = combinedMode || roomMode;
 
     // ── render ────────────────────────────────────────────────────────────────
     return (
@@ -594,7 +732,7 @@ export default function GroundTruthRTSP() {
 
             {/* Header */}
             <div style={{ marginBottom: 28 }}>
-                <div style={styles.heading}>Live RTSP Ground Truth</div>
+                <div style={styles.heading}>Ground Truth Acquisition</div>
                 <div style={styles.subheading}>
                     Acquire face images from a live RTSP camera stream →
                     auto-stops when every detected person reaches the target image count
@@ -632,7 +770,53 @@ export default function GroundTruthRTSP() {
                     </div>
                 </div>
 
-                {/* Camera selector */}
+                {/* ── Room selector (optional) ── */}
+                <div style={{ marginBottom: 20 }}>
+                    <label style={styles.label}>
+                        Room
+                        <span style={{ marginLeft: 6, fontSize: '10px', color: theme.textMuted, fontWeight: 400, textTransform: 'none' }}>
+                            — optional: auto-switches between room cameras
+                        </span>
+                    </label>
+                    <select
+                        value={selectedRoom}
+                        onChange={e => { setSelectedRoom(e.target.value); setRoomMode(false); }}
+                        style={styles.select}
+                        disabled={roomsLoading || isRunning || isStopping || anyMode}
+                    >
+                        <option value="">— No room (manual selection below) —</option>
+                        {rooms.map(r => (
+                            <option key={r._id} value={r._id}>
+                                {r.room}{r.building ? ` · ${r.building}` : ''}{r.type ? ` (${r.type})` : ''}
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* Room cameras info */}
+                    {selectedRoom && (
+                        <div style={{
+                            marginTop: 8, padding: '8px 12px', borderRadius: 6,
+                            background: roomCamsLoad ? theme.bg : roomCameras.length > 0 ? 'rgba(14,165,233,0.06)' : theme.dangerDim,
+                            border: `1px solid ${roomCameras.length > 0 ? 'rgba(14,165,233,0.25)' : theme.danger}`,
+                            fontSize: '12px',
+                        }}>
+                            {roomCamsLoad ? (
+                                <span style={{ color: theme.textMuted }}>Loading cameras…</span>
+                            ) : roomCameras.length > 0 ? (
+                                <span style={{ color: '#0ea5e9' }}>
+                                    <strong>{roomCameras.length}</strong> camera{roomCameras.length > 1 ? 's' : ''} found —{' '}
+                                    {roomCameras.map(c => c.label).join(', ')}
+                                    {roomCameras.length > 1 && <span style={{ color: theme.textMuted }}> · auto-switches every 5 min</span>}
+                                </span>
+                            ) : (
+                                <span style={{ color: theme.danger }}>No cameras registered for this room</span>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Camera selector — shown only when no room selected */}
+                {!selectedRoom && (
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>Camera</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
@@ -653,6 +837,7 @@ export default function GroundTruthRTSP() {
                         {selectedCamera?.url}
                     </div>
                 </div>
+                )}
 
                 {/* Target images per person */}
                 <div style={{ marginBottom: 20 }}>
@@ -736,16 +921,25 @@ export default function GroundTruthRTSP() {
 
             {/* ── Action buttons ── */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+
+                {/* Start button — adapts based on room selection */}
                 <button
-                    onClick={() => handleStart()}
-                    disabled={isRunning || isStopping || isRetrying || !batchName || combinedMode}
+                    onClick={() => {
+                        if (selectedRoom && roomCameras.length > 0) {
+                            handleStartRoomMode();
+                        } else {
+                            handleStart();
+                        }
+                    }}
+                    disabled={isRunning || isStopping || isRetrying || !batchName || anyMode
+                        || (selectedRoom && roomCameras.length === 0 && !roomCamsLoad)}
                     style={{
                         ...styles.btnPrimary,
-                        opacity: (isRunning || isStopping || isRetrying || !batchName || combinedMode) ? 0.5 : 1,
+                        opacity: (isRunning || isStopping || isRetrying || !batchName || anyMode) ? 0.5 : 1,
                         minWidth: 200,
                     }}
                 >
-                    {(isRunning && !combinedMode) ? (
+                    {(isRunning && !anyMode) ? (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                             <span style={{
                                 width: 14, height: 14,
@@ -757,23 +951,28 @@ export default function GroundTruthRTSP() {
                             }} />
                             Acquiring…
                         </span>
-                    ) : '📡 Start Acquisition'}
+                    ) : selectedRoom && roomCameras.length > 0
+                        ? `📡 Start Room Acquisition`
+                        : '📡 Start Acquisition'}
                 </button>
 
-                {/* ── Combined L+R button ── */}
+                {/* Combined L+R button — only when no room is selected */}
+                {!selectedRoom && (
                 <button
                     onClick={handleStartCombined}
-                    disabled={isRunning || isStopping || isRetrying || !batchName || combinedMode}
+                    disabled={isRunning || isStopping || isRetrying || !batchName || anyMode}
                     style={{
                         padding: '10px 24px', borderRadius: 8,
-                        cursor: (isRunning || isStopping || isRetrying || !batchName || combinedMode) ? 'default' : 'pointer',
+                        cursor: (isRunning || isStopping || isRetrying || !batchName || anyMode) ? 'default' : 'pointer',
                         fontSize: '14px', fontWeight: 700,
-                        border: `1px solid ${combinedMode ? '#f0c040' : '#f0c040'}`,
-                        background: combinedMode ? 'rgba(240,192,64,0.15)' : 'transparent',
-                        color: (isRunning || isStopping || isRetrying || !batchName) && !combinedMode
-                            ? theme.border : '#f0c040',
+                        border: 'none',
+                        background: combinedMode
+                            ? '#0284c7'
+                            : (isRunning || isStopping || isRetrying || !batchName) ? '#94a3b8' : '#0ea5e9',
+                        color: '#ffffff',
+                        boxShadow: combinedMode ? '0 2px 8px rgba(2,132,199,0.4)' : '0 2px 8px rgba(14,165,233,0.3)',
                         transition: 'all 0.15s',
-                        opacity: (isRunning || isStopping || isRetrying || !batchName) && !combinedMode ? 0.4 : 1,
+                        opacity: (isRunning || isStopping || isRetrying || !batchName) && !combinedMode ? 0.5 : 1,
                         minWidth: 200,
                         display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
                     }}
@@ -782,8 +981,8 @@ export default function GroundTruthRTSP() {
                         <>
                             <span style={{
                                 width: 14, height: 14,
-                                border: '2px solid rgba(240,192,64,0.3)',
-                                borderTopColor: '#f0c040',
+                                border: '2px solid rgba(255,255,255,0.4)',
+                                borderTopColor: '#ffffff',
                                 borderRadius: '50%',
                                 animation: 'spin 0.8s linear infinite',
                                 display: 'inline-block',
@@ -792,18 +991,21 @@ export default function GroundTruthRTSP() {
                         </>
                     ) : '🔄 Combined L ↔ R'}
                 </button>
+                )}
 
                 <button
                     onClick={handleStop}
-                    disabled={!isRunning && !isRetrying && !combinedMode}
+                    disabled={!isRunning && !isRetrying && !anyMode}
                     style={{
                         padding: '10px 24px', borderRadius: 8,
-                        cursor: (isRunning || isRetrying || combinedMode) ? 'pointer' : 'default',
-                        fontSize: '14px', fontWeight: 700, border: `1px solid ${theme.danger}`,
-                        background: (isRunning || isRetrying || combinedMode) ? theme.dangerDim : 'transparent',
-                        color: (isRunning || isRetrying || combinedMode) ? theme.danger : theme.border,
+                        cursor: (isRunning || isRetrying || anyMode) ? 'pointer' : 'default',
+                        fontSize: '14px', fontWeight: 700, border: 'none',
+                        background: (isRunning || isRetrying || anyMode) ? '#ef4444' : '#fca5a5',
+                        color: '#ffffff',
+                        boxShadow: (isRunning || isRetrying || anyMode) ? '0 2px 8px rgba(239,68,68,0.4)' : 'none',
                         transition: 'all 0.15s',
-                        opacity: (isRunning || isRetrying || combinedMode) ? 1 : 0.4,
+                        opacity: (isRunning || isRetrying || anyMode) ? 1 : 0.45,
+                        minWidth: 120,
                     }}
                 >
                     {isStopping ? '⏳ Stopping…' : '⏹ Stop'}
@@ -829,6 +1031,35 @@ export default function GroundTruthRTSP() {
                                 {switchMM}:{switchSS}
                             </span>
                             {' '}· persons are preserved across switches
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Room-mode banner ── */}
+            {roomMode && isRunning && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
+                    padding: '12px 16px', borderRadius: 8,
+                    background: 'rgba(14,165,233,0.06)',
+                    border: '1px solid rgba(14,165,233,0.35)',
+                }}>
+                    <span style={{ fontSize: '20px', lineHeight: 1 }}>🏫</span>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#0ea5e9' }}>
+                            Room Mode — {roomObj?.room || 'Room'} · {roomActiveCam?.label}
+                        </div>
+                        <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
+                            {roomCameras.length > 1 ? (
+                                <>
+                                    Next camera in{' '}
+                                    <span style={{ fontWeight: 700, color: '#0ea5e9', fontFamily: theme.fontMono }}>
+                                        {roomSwMM}:{roomSwSS}
+                                    </span>
+                                    {' '}· {roomCameras[(roomCamIdx + 1) % roomCameras.length]?.label}
+                                    {' '}· persons preserved across switches
+                                </>
+                            ) : 'Single camera — no switching needed'}
                         </div>
                     </div>
                 </div>
@@ -871,7 +1102,7 @@ export default function GroundTruthRTSP() {
                     borderColor: isRunning ? theme.accent : isDone ? theme.success : isRetrying ? theme.danger : theme.danger,
                 }}>
                     {/* Status bar */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
                         <Dot
                             color={isRunning ? theme.accent : isDone ? theme.success : theme.danger}
                             pulse={isRunning || isStopping}
@@ -880,23 +1111,48 @@ export default function GroundTruthRTSP() {
                             fontWeight: 700, fontSize: '14px',
                             color: isRunning ? theme.accent : isDone ? theme.success : theme.danger,
                         }}>
-                            {isRunning   && `Acquiring from ${selectedCamera?.label}…`}
+                            {isRunning   && `Acquiring from ${roomMode ? roomActiveCam?.label : selectedCamera?.label}…`}
                             {isStopping  && 'Stopping stream…'}
                             {isRetrying  && `Reconnecting… (attempt #${retryCount})`}
                             {isDone      && 'Acquisition complete'}
                             {isError     && 'Acquisition failed'}
                         </span>
 
+                        {/* Live counters */}
                         {totalPersons > 0 && (
-                            <span style={{
-                                marginLeft: 'auto', fontSize: '12px', fontWeight: 700,
-                                padding: '3px 10px', borderRadius: 20,
-                                background: allDone ? theme.successDim : theme.bg,
-                                color:      allDone ? theme.success    : theme.textMuted,
-                                border: `1px solid ${allDone ? theme.success : theme.border}`,
-                            }}>
-                                {donePersons}/{totalPersons} persons done
-                            </span>
+                            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {/* Total images acquired this session */}
+                                <span style={{
+                                    fontSize: '12px', fontWeight: 700,
+                                    padding: '3px 10px', borderRadius: 20,
+                                    background: theme.accentDim,
+                                    color: theme.accent,
+                                    border: `1px solid ${theme.accent}40`,
+                                    fontFamily: theme.fontMono,
+                                }}>
+                                    {totalImagesSession} imgs
+                                </span>
+                                {/* Clusters / persons detected */}
+                                <span style={{
+                                    fontSize: '12px', fontWeight: 700,
+                                    padding: '3px 10px', borderRadius: 20,
+                                    background: 'rgba(168,85,247,0.09)',
+                                    color: '#a855f7',
+                                    border: '1px solid rgba(168,85,247,0.25)',
+                                }}>
+                                    {totalPersons} clusters
+                                </span>
+                                {/* Done badge */}
+                                <span style={{
+                                    fontSize: '12px', fontWeight: 700,
+                                    padding: '3px 10px', borderRadius: 20,
+                                    background: allDone ? theme.successDim : theme.bg,
+                                    color:      allDone ? theme.success    : theme.textMuted,
+                                    border: `1px solid ${allDone ? theme.success : theme.border}`,
+                                }}>
+                                    {donePersons}/{totalPersons} done
+                                </span>
+                            </div>
                         )}
                     </div>
 
@@ -987,11 +1243,13 @@ export default function GroundTruthRTSP() {
                     <div style={{ fontSize: '40px', marginBottom: 12, opacity: 0.4 }}>📡</div>
                     <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>Ready to acquire</div>
                     <div style={{ fontSize: '13px', color: theme.textMuted }}>
-                        Select batch + camera → set target images → click "Start Acquisition"
+                        Select batch → optionally pick a room → set target images → click "Start Acquisition"
                         <br />
                         Stream stops automatically once every person reaches the target
                         <br />
-                        <span style={{ color: '#f0c040' }}>🔄 Combined L ↔ R</span> alternates LT103L and LT103R every 5 min
+                        <span style={{ color: '#0ea5e9' }}>🏫 Room mode</span> auto-switches between all cameras in the room every 5 min
+                        <br />
+                        <span style={{ color: '#f0c040' }}>🔄 Combined L ↔ R</span> alternates LT103L and LT103R every 5 min (manual mode)
                     </div>
                 </div>
             )}
