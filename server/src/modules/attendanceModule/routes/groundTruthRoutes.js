@@ -33,6 +33,27 @@ router.get('/departments', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Ground truth dashboard stats (aggregated from ClusterMatch)
+router.get('/stats', async (req, res) => {
+    try {
+        const agg = await ClusterMatch.aggregate([{ $facet: {
+            total:     [{ $count: 'n' }],
+            approved:  [{ $match: { status: 'approved' } }, { $count: 'n' }],
+            matched:   [{ $match: { status: { $in: ['matched', 'approved'] } } }, { $count: 'n' }],
+            withEmb:   [{ $match: { 'embeddingFiles.0': { $exists: true } } }, { $count: 'n' }],
+            imgSum:    [{ $group: { _id: null, total: { $sum: '$imageCount' } } }],
+        }}]);
+        const f = agg[0];
+        res.json({
+            totalClusters: f.total[0]?.n    ?? 0,
+            approved:      f.approved[0]?.n  ?? 0,
+            matched:       f.matched[0]?.n   ?? 0,
+            withEmbedding: f.withEmb[0]?.n   ?? 0,
+            totalImages:   f.imgSum[0]?.total ?? 0,
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // List all batches
 router.get('/batches', async (req, res) => {
     try { await controller.listBatches(req, res); }
