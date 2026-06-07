@@ -45,7 +45,26 @@ const subjectSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  // ── Attendance / Embedding fields ──────────────────────────────────────────
+  enrolledRollNos: {
+    type: [String],
+    default: [],
+  },
+  missedGroundTruth: {        // roll nos in the xlsx that have no GT folder
+    type: [String],
+    default: [],
+  },
+  embeddingFile: {            // e.g. "6_Digital_Electronics.pkl"
+    type: String,
+    default: null,
+  },
+  embeddingUpdatedAt: {
+    type: Date,
+    default: null,
+  },
+  
 });
+
 
 
 // subjectSchema.add(commonFields);
