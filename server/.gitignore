@@ -4,7 +4,7 @@ yarn.lock
 .yarn
 .env
 
-server/ground_truth
+server/ml-data/ground_truth
 uploads/
 .cache
 
