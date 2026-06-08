@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 import getEnvironment from '../getenvironment';
+import * as XLSX from 'xlsx';
 
 const apiUrl   = getEnvironment();
 const EMB_BASE = `${apiUrl}/attendancemodule/embeddings`;
@@ -58,14 +59,16 @@ function Tab({ label, active, onClick, icon }) {
 }
 
 // ─── Dept / Sem / Subject filter block (shared between tabs) ─────────────────
-function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, departments, deptLoading, deptError }) {
+function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, subjectCode, setSubjectCode, setSubjectId, departments, deptLoading, deptError }) {
     const [sems, setSems] = useState([]);
-    const [subjects, setSubjects] = useState([]);
+    const [subjects, setSubjects] = useState([]); // full objects: { _id, subName, subCode, subjectFullName }
     const [semsLoading, setSemsLoading] = useState(false);
     const [subjectsLoading, setSubjectsLoading] = useState(false);
 
     useEffect(() => {
         setSem(''); setSubject(''); setSems([]); setSubjects([]);
+        if (setSubjectCode) setSubjectCode('');
+        if (setSubjectId)   setSubjectId('');
         if (!dept) return;
         setSemsLoading(true);
         fetch(`${apiUrl}/timetablemodule/lock/sems-by-dept?dept=${encodeURIComponent(dept)}`)
@@ -75,15 +78,37 @@ function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, departme
 
     useEffect(() => {
         setSubject(''); setSubjects([]);
+        if (setSubjectCode) setSubjectCode('');
+        if (setSubjectId)   setSubjectId('');
         if (!dept || !sem) return;
         setSubjectsLoading(true);
-        fetch(`${apiUrl}/timetablemodule/lock/subjects-by-dept-sem?dept=${encodeURIComponent(dept)}&sem=${encodeURIComponent(sem)}`)
-            .then(r => r.json()).then(d => setSubjects(d.subjects || []))
+        // Use /timetablemodule/subject to get full objects with _id and subCode
+        fetch(`${apiUrl}/timetablemodule/subject`)
+            .then(r => r.json())
+            .then(data => {
+                const list = Array.isArray(data) ? data : [];
+                const filtered = list.filter(s => {
+                    const semMatch  = String(s.sem).trim() === String(sem).trim();
+                    const deptNorm  = dept.replace(/_/g, ' ').trim().toLowerCase();
+                    const sDeptNorm = (s.dept || '').trim().toLowerCase();
+                    const deptMatch = sDeptNorm.includes(deptNorm) || deptNorm.includes(sDeptNorm);
+                    return semMatch && deptMatch;
+                });
+                setSubjects(filtered);
+            })
             .catch(() => {}).finally(() => setSubjectsLoading(false));
     }, [dept, sem]);
 
-    const subjectSafe     = subject.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const previewFileName = sem && subjectSafe ? `${sem}_${subjectSafe}.pkl` : null;
+    const subjectSafe  = subject.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const subCodeSafe  = (subjectCode || '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const deptSafe     = dept.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const now          = new Date();
+    const yr           = now.getFullYear();
+    const mo           = now.getMonth() + 1;
+    const sessionStr   = `${mo >= 8 ? yr : yr - 1}-${String(mo >= 8 ? yr + 1 : yr).slice(2)}`;
+    const previewFileName = sem && subjectSafe
+        ? `${sessionStr}/${deptSafe}/${subCodeSafe || sem}_${subjectSafe}_${sessionStr}.pkl`
+        : null;
 
     return (
         <div style={{ ...styles.card, marginBottom: 24, padding: '18px 24px' }}>
@@ -107,9 +132,22 @@ function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, departme
                         Subject <span style={{ color: theme.danger }}>*</span>
                         <span style={{ color: theme.textMuted, fontWeight: 400, marginLeft: 6, textTransform: 'none' }}>(used in the .pkl file name)</span>
                     </label>
-                    <select value={subject} onChange={e => setSubject(e.target.value)} style={styles.select} disabled={!sem || subjectsLoading}>
+                    <select
+                        value={subject}
+                        onChange={e => {
+                            const sel = subjects.find(s => (s.subName || s.subjectFullName) === e.target.value);
+                            setSubject(e.target.value);
+                            if (setSubjectCode) setSubjectCode(sel?.subCode || '');
+                            if (setSubjectId)   setSubjectId(sel ? String(sel._id) : '');
+                        }}
+                        style={styles.select}
+                        disabled={!sem || subjectsLoading}
+                    >
                         <option value="">{subjectsLoading ? 'Loading…' : !sem ? 'Select sem first' : subjects.length ? 'Select subject…' : 'No subjects found'}</option>
-                        {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                        {subjects.map(s => {
+                            const name = s.subName || s.subjectFullName;
+                            return <option key={String(s._id)} value={name}>{name}</option>;
+                        })}
                     </select>
                 </div>
             </div>
@@ -130,250 +168,17 @@ function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, departme
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB 2 — Direct .pkl Upload
 // ═══════════════════════════════════════════════════════════════════════════════
-function UploadPklTab({ departments, deptLoading, deptError }) {
-    const [dept,    setDept]    = useState('');
-    const [sem,     setSem]     = useState('');
-    const [subject, setSubject] = useState('');
-    const [rollInput, setRollInput] = useState('');
-    const [file,    setFile]    = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const [result,  setResult]  = useState(null);
-    const [toast,   setToast]   = useState(null);
 
-    // Existing .pkl files on disk
-    const [existingFiles, setExistingFiles] = useState([]);
-    const [filesLoading,  setFilesLoading]  = useState(false);
-    const [expandedMissed, setExpandedMissed] = useState(null);
-
-    const fileRef = useRef();
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 4000);
-    };
-
-    const rollNos = rollInput.split(/[\n,;\s]+/).map(r => r.trim().toUpperCase()).filter(Boolean);
-
-    const loadExisting = useCallback(async () => {
-        setFilesLoading(true);
-        try {
-            const res  = await fetch(`${EMB_BASE}/list-files`);
-            const data = await res.json();
-            setExistingFiles(data.files || []);
-        } catch (e) {
-            showToast('Failed to load existing files: ' + e.message, 'error');
-        }
-        setFilesLoading(false);
-    }, []);
-
-    useEffect(() => { loadExisting(); }, [loadExisting]);
-
-    const canUpload = !uploading && file && sem && subject.trim() && dept;
-
-    const handleUpload = async () => {
-        if (!canUpload) return;
-        setUploading(true);
-        setResult(null);
-
-        try {
-            const fd = new FormData();
-            fd.append('file',    file);
-            fd.append('sem',     sem.trim());
-            fd.append('subject', subject.trim());
-            fd.append('dept',    dept.trim());
-            fd.append('rollNos', JSON.stringify(rollNos));
-
-            const res  = await fetch(`${EMB_BASE}/upload-pkl`, { method: 'POST', body: fd });
-            const data = await res.json();
-
-            if (!res.ok) { showToast(data.error || 'Upload failed', 'error'); setUploading(false); return; }
-
-            setResult(data);
-            showToast(`✓ Uploaded & saved as ${data.embeddingFile}`);
-            setFile(null);
-            if (fileRef.current) fileRef.current.value = '';
-            loadExisting();
-        } catch (e) {
-            showToast('Upload error: ' + e.message, 'error');
-        }
-        setUploading(false);
-    };
-
-    return (
-        <div>
-            <Toast toast={toast} />
-
-            {/* Filter block */}
-            <FilterBlock
-                dept={dept} setDept={setDept}
-                sem={sem} setSem={setSem}
-                subject={subject} setSubject={setSubject}
-                departments={departments} deptLoading={deptLoading} deptError={deptError}
-            />
-
-            {/* Roll numbers */}
-            <div style={{ ...styles.card, marginBottom: 24 }}>
-                <div style={{ ...styles.sectionTitle, marginBottom: 10 }}>Roll Numbers covered by this .pkl file</div>
-                <textarea
-                    value={rollInput}
-                    onChange={e => setRollInput(e.target.value)}
-                    placeholder="Enter roll numbers (comma / newline separated)&#10;e.g. 23104001, 23104002, …"
-                    style={{ ...styles.input, height: 110, resize: 'vertical', fontFamily: theme.fontMono, fontSize: '13px' }}
-                />
-                <div style={{ marginTop: 6, fontSize: '12px', color: theme.textMuted }}>
-                    {rollNos.length} roll number{rollNos.length !== 1 ? 's' : ''} detected
-                </div>
-            </div>
-
-            {/* File picker + Upload */}
-            <div style={{ ...styles.card, marginBottom: 28 }}>
-                <div style={{ ...styles.sectionTitle, marginBottom: 14 }}>Upload .pkl File</div>
-                <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <label style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 8,
-                        padding: '9px 18px', borderRadius: 6, cursor: 'pointer',
-                        background: theme.accentDim, color: theme.accent,
-                        border: `1px solid ${theme.accent}44`, fontSize: '13px', fontWeight: 600,
-                    }}>
-                        📁 Choose .pkl file
-                        <input ref={fileRef} type="file" accept=".pkl" style={{ display: 'none' }}
-                            onChange={e => setFile(e.target.files?.[0] || null)} />
-                    </label>
-
-                    {file && (
-                        <span style={{ fontSize: '13px', fontFamily: theme.fontMono, color: theme.success }}>
-                            {file.name} <span style={{ color: theme.textMuted }}>({(file.size / 1024).toFixed(0)} KB)</span>
-                        </span>
-                    )}
-
-                    <button
-                        onClick={handleUpload}
-                        disabled={!canUpload}
-                        style={{
-                            ...styles.btnPrimary, marginLeft: 'auto',
-                            opacity: canUpload ? 1 : 0.4,
-                            cursor: canUpload ? 'pointer' : 'not-allowed',
-                        }}>
-                        {uploading ? '⏳ Uploading…' : '⬆️ Upload & Register'}
-                    </button>
-                </div>
-
-                {!dept && (
-                    <div style={{ marginTop: 10, fontSize: '12px', color: theme.danger }}>
-                        ↑ Select dept, sem and subject first
-                    </div>
-                )}
-
-                {/* Result banner */}
-                {result && (
-                    <div style={{
-                        marginTop: 16, padding: '14px 18px', borderRadius: 8,
-                        background: theme.successDim, border: `1px solid ${theme.success}44`,
-                        fontSize: '13px',
-                    }}>
-                        <span style={{ color: theme.success, fontWeight: 700 }}>✓ Registered successfully</span>
-                        <span style={{ color: theme.textMuted, marginLeft: 16 }}>File: </span>
-                        <span style={{ fontFamily: theme.fontMono, color: theme.accent }}>{result.embeddingFile}</span>
-                        <span style={{ color: theme.textMuted, marginLeft: 16 }}>{result.rollNosCount} roll nos saved</span>
-                        <span style={{ color: theme.textMuted, marginLeft: 16 }}>ML service reloaded ✓</span>
-                    </div>
-                )}
-            </div>
-
-            {/* Existing .pkl files table */}
-            <div style={styles.card}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                    <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>Embedding Files on Server</div>
-                    <button onClick={loadExisting} disabled={filesLoading}
-                        style={{ ...styles.btnGhost, padding: '5px 12px', fontSize: '11px' }}>
-                        {filesLoading ? 'Loading…' : '↺ Refresh'}
-                    </button>
-                </div>
-
-                {existingFiles.length === 0 ? (
-                    <div style={{ color: theme.textMuted, fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
-                        {filesLoading ? 'Loading…' : 'No .pkl files found on server.'}
-                    </div>
-                ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                            <thead>
-                                <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
-                                    {['File', 'Sem', 'Subject', 'Dept', 'Size', 'Roll Nos', 'Missed', 'Date'].map(h => (
-                                        <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {existingFiles.map(f => (
-                                    <>
-                                        <tr key={f.filename} style={{ borderBottom: `1px solid ${theme.border}22` }}>
-                                            <td style={{ padding: '8px 10px', fontFamily: theme.fontMono, fontSize: '11px', color: theme.accent }}>{f.filename}</td>
-                                            <td style={{ padding: '8px 10px', fontSize: '12px', color: theme.text }}>{f.sem || '—'}</td>
-                                            <td style={{ padding: '8px 10px', fontSize: '12px', color: theme.text }}>{f.subject || '—'}</td>
-                                            <td style={{ padding: '8px 10px', fontSize: '12px', color: theme.textMuted }}>{f.dept || '—'}</td>
-                                            <td style={{ padding: '8px 10px', fontSize: '11px', color: theme.textMuted }}>{f.sizeKB} KB</td>
-                                            <td style={{ padding: '8px 10px', fontSize: '12px', color: theme.accent }}>{f.rollNos?.length ?? 0}</td>
-                                            <td style={{ padding: '8px 10px' }}>
-                                                {f.missedCount > 0 ? (
-                                                    <button
-                                                        onClick={() => setExpandedMissed(expandedMissed === f.filename ? null : f.filename)}
-                                                        style={{ ...styles.btnDanger, padding: '3px 10px', fontSize: '11px' }}>
-                                                        {f.missedCount} missed {expandedMissed === f.filename ? '▲' : '▼'}
-                                                    </button>
-                                                ) : (
-                                                    <span style={{ color: theme.success, fontSize: '11px' }}>✓ none</span>
-                                                )}
-                                            </td>
-                                            <td style={{ padding: '8px 10px', fontSize: '11px', color: theme.textMuted }}>
-                                                {f.generatedAt ? new Date(f.generatedAt).toLocaleDateString('en-IN') : '—'}
-                                            </td>
-                                        </tr>
-
-                                        {/* Expanded missed roll nos */}
-                                        {expandedMissed === f.filename && f.missedRollNos?.length > 0 && (
-                                            <tr key={`${f.filename}-missed`} style={{ background: theme.dangerDim }}>
-                                                <td colSpan={8} style={{ padding: '12px 16px' }}>
-                                                    <div style={{ fontSize: '11px', color: theme.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>
-                                                        Missed Roll Numbers — no ground truth folder at time of generation
-                                                    </div>
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                                        {f.missedRollNos.map(m => (
-                                                            <span key={m.rollNo} title={m.reason} style={{
-                                                                padding: '2px 8px', borderRadius: 4,
-                                                                background: theme.dangerDim, color: theme.danger,
-                                                                fontFamily: theme.fontMono, fontSize: '11px',
-                                                                border: `1px solid ${theme.danger}33`,
-                                                                cursor: 'help',
-                                                            }}>
-                                                                {m.rollNo}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                    <div style={{ marginTop: 8, fontSize: '11px', color: theme.textMuted }}>
-                                                        💡 Upload ground truth for these students, then re-generate embeddings — or upload an updated .pkl directly.
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB 1 — Generate from Ground Truth (original flow)
 // ═══════════════════════════════════════════════════════════════════════════════
 function GenerateTab({ departments, deptLoading, deptError }) {
-    const [dept,     setDept]     = useState('');
-    const [sem,      setSem]      = useState('');
-    const [subject,  setSubject]  = useState('');
+    const [dept,        setDept]        = useState('');
+    const [sem,         setSem]         = useState('');
+    const [subject,     setSubject]     = useState('');
+    const [subjectCode, setSubjectCode] = useState('');
+    const [subjectId,   setSubjectId]   = useState('');
 
     const [rollInput,  setRollInput]  = useState('');
     const [rollNos,    setRollNos]    = useState([]);
@@ -387,9 +192,10 @@ function GenerateTab({ departments, deptLoading, deptError }) {
     const [historyLoading, setHistoryLoading] = useState(false);
 
     const [toast, setToast] = useState(null);
+    const xlsxRef = useRef();
 
-    const batchName   = dept ? `BTECH_${dept}_2023` : null;
-    const subjectSafe = subject.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const batchName       = dept ? `BTECH_${dept}_2023` : null;
+    const subjectSafe     = subject.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
     const previewFileName = sem && subjectSafe ? `${sem}_${subjectSafe}.pkl` : null;
 
     const showToast = (msg, type = 'success') => {
@@ -401,6 +207,32 @@ function GenerateTab({ departments, deptLoading, deptError }) {
         raw.split(/[\n,;\s]+/).map(r => r.trim().toUpperCase()).filter(Boolean);
 
     useEffect(() => { setRollNos(parseRolls(rollInput)); }, [rollInput]);
+
+    // ── Parse XLSX client-side and populate the textarea ──────────────────────
+    const handleXlsxUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const wb    = XLSX.read(ev.target.result, { type: 'binary' });
+                const sheet = wb.Sheets[wb.SheetNames[0]];
+                const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                const rolls = rows
+                    .flat()
+                    .map(v => String(v ?? '').trim().toUpperCase())
+                    .filter(v => v.length > 3 && !/^(roll|rollno|roll_no|sno|sr\.?\s*no)/i.test(v));
+                setRollInput(rolls.join('\n'));
+                setAutoLoaded(true);
+                showToast(`Loaded ${rolls.length} roll numbers from ${file.name}`);
+            } catch (err) {
+                showToast('Failed to parse xlsx: ' + err.message, 'error');
+            }
+        };
+        reader.readAsBinaryString(file);
+        // reset so the same file can be re-uploaded
+        e.target.value = '';
+    };
 
     const loadAllRolls = useCallback(async () => {
         if (!batchName) return;
@@ -420,20 +252,20 @@ function GenerateTab({ departments, deptLoading, deptError }) {
     }, [batchName]);
 
     const loadHistory = useCallback(async () => {
-        if (!batchName) return;
-        setHistoryLoading(true);
-        try {
-            const res  = await fetch(`${EMB_BASE}/status/${encodeURIComponent(batchName)}`);
-            const data = await res.json();
-            setHistory(data.records || []);
-        } catch (_) {}
-        setHistoryLoading(false);
-    }, [batchName]);
+    if (!dept || !sem || !subject) return;
+    setHistoryLoading(true);
+    try {
+        const res  = await fetch(`${EMB_BASE}/status?dept=${encodeURIComponent(dept)}&sem=${encodeURIComponent(sem)}&subject=${encodeURIComponent(subject)}`);
+        const data = await res.json();
+        setHistory(data.records || []);
+    } catch (_) {}
+    setHistoryLoading(false);
+}, [dept, sem, subject]);
 
     useEffect(() => {
-        setSummary(null); setRows([]); setRollInput(''); setAutoLoaded(false);
-        if (batchName) loadHistory();
-    }, [batchName]);
+    setSummary(null); setRows([]); setRollInput(''); setAutoLoaded(false);
+    if (dept && sem && subject) loadHistory();
+}, [dept, sem, subject]);
 
     const startGeneration = async () => {
         if (!batchName || rollNos.length === 0 || !subject.trim()) return;
@@ -451,7 +283,7 @@ function GenerateTab({ departments, deptLoading, deptError }) {
             const res = await fetch(`${EMB_BASE}/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sem: sem.trim(), subject: subject.trim(), dept: dept.trim(), rollNos }),
+                body: JSON.stringify({ sem: sem.trim(), subject: subject.trim(), dept: dept.trim(), subjectCode: subjectCode.trim(), rollNos }),
             });
 
             if (!res.ok) {
@@ -481,7 +313,20 @@ function GenerateTab({ departments, deptLoading, deptError }) {
                             updateRow(msg.rollNo, { status: msg.status, reason: msg.reason || null, photosUsed: msg.photosUsed || null });
                         }
                         if (msg.type === 'done') {
-                            setSummary({ success: msg.success, failed: msg.failed, embeddingFile: msg.embeddingFile, failedList: msg.failedList || [], recordId: msg.recordId });
+                            setSummary({
+                                success:        msg.success,
+                                failed:         msg.failed,
+                                embeddingFile:  msg.embeddingFile,
+                                failedList:     msg.failedList     || [],
+                                missedRollNos:  msg.missedRollNos  || [],
+                                recordId:       msg.recordId,
+                                // snapshot of filter values at time of generation
+                                dept:           dept.trim(),
+                                sem:            sem.trim(),
+                                subject:        subject.trim(),
+                                subjectCode:    subjectCode,
+                                rollNosInSubject: rollNos,
+                            });
                             showToast(`Done — ${msg.success} succeeded, ${msg.failed} failed`);
                             loadHistory();
                         }
@@ -495,18 +340,20 @@ function GenerateTab({ departments, deptLoading, deptError }) {
         setRunning(false);
     };
 
-    const noFilters  = !dept;
+    const noFilters   = !dept;
     const canGenerate = !running && rollNos.length > 0 && subject.trim().length > 0 && sem.trim().length > 0;
 
     return (
         <div>
             <Toast toast={toast} />
 
-            {/* Filter block */}
             <FilterBlock
                 dept={dept} setDept={setDept}
                 sem={sem} setSem={setSem}
                 subject={subject} setSubject={setSubject}
+                subjectCode={subjectCode}
+                setSubjectCode={setSubjectCode}
+                setSubjectId={setSubjectId}
                 departments={departments} deptLoading={deptLoading} deptError={deptError}
             />
 
@@ -518,23 +365,36 @@ function GenerateTab({ departments, deptLoading, deptError }) {
                 <>
                     {/* Roll number input */}
                     <div style={{ ...styles.card, marginBottom: 24 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
                             <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>Roll Numbers for this Subject</div>
+
+                            {/* XLSX upload button */}
+                            <label style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                padding: '6px 14px', borderRadius: 6, cursor: 'pointer',
+                                background: theme.accentDim, color: theme.accent,
+                                border: `1px solid ${theme.accent}44`, fontSize: '12px', fontWeight: 600,
+                            }}>
+                                📋 Upload .xlsx
+                                <input ref={xlsxRef} type="file" accept=".xlsx,.xls,.csv"
+                                    style={{ display: 'none' }} onChange={handleXlsxUpload} disabled={running} />
+                            </label>
+
                             <button onClick={loadAllRolls} disabled={running}
                                 style={{ ...styles.btnGhost, padding: '6px 14px', fontSize: '12px' }}>
-                                ↺ Load all from Ground Truth
+                                ↺ Load from Ground Truth
                             </button>
                         </div>
                         <textarea
                             value={rollInput}
                             onChange={e => setRollInput(e.target.value)}
                             disabled={running}
-                            placeholder="Enter roll numbers separated by newlines or commas"
+                            placeholder="Enter roll numbers separated by newlines or commas — or upload an .xlsx above"
                             style={{ ...styles.input, height: 140, resize: 'vertical', fontFamily: theme.fontMono, fontSize: '13px' }}
                         />
                         <div style={{ marginTop: 8, fontSize: '12px', color: theme.textMuted }}>
                             {rollNos.length} roll number{rollNos.length !== 1 ? 's' : ''} detected
-                            {autoLoaded && <span style={{ marginLeft: 12, color: theme.success }}>✓ auto-loaded from ground truth</span>}
+                            {autoLoaded && <span style={{ marginLeft: 12, color: theme.success }}>✓ loaded from file</span>}
                         </div>
                     </div>
 
@@ -546,36 +406,51 @@ function GenerateTab({ departments, deptLoading, deptError }) {
                             style={{ ...styles.btnPrimary, opacity: canGenerate ? 1 : 0.45, cursor: canGenerate ? 'pointer' : 'not-allowed' }}>
                             {running ? '⏳ Generating…' : '⚡ Generate Embeddings'}
                         </button>
-                        {!subject.trim() && !running && <span style={{ fontSize: '12px', color: theme.danger }}>↑ enter a subject name first</span>}
+                        {!subject.trim() && !running && <span style={{ fontSize: '12px', color: theme.danger }}>↑ select a subject first</span>}
                         {running && <span style={{ fontSize: '12px', color: theme.textMuted }}>Processing {rollNos.length} students for <strong>{subject}</strong>…</span>}
                     </div>
 
-                    {/* Summary banner */}
+                    {/* ── Summary table (shown after generation completes) ────────── */}
                     {summary && (
-                        <div style={{
-                            ...styles.card, marginBottom: 24,
-                            border: `1px solid ${summary.failed === 0 ? theme.success + '44' : theme.warning + '44'}`,
-                            background: summary.failed === 0 ? theme.successDim : theme.warningDim,
-                            display: 'flex', gap: 32, alignItems: 'center', flexWrap: 'wrap',
-                        }}>
-                            <div>
-                                <div style={{ fontSize: '11px', color: theme.textMuted, marginBottom: 4 }}>Result</div>
-                                <div style={{ fontWeight: 700, fontSize: '16px' }}>
-                                    <span style={{ color: theme.success }}>{summary.success} succeeded</span>
-                                    &nbsp;·&nbsp;
-                                    <span style={{ color: summary.failed > 0 ? theme.danger : theme.textMuted }}>{summary.failed} failed</span>
-                                </div>
+                        <div style={{ ...styles.card, marginBottom: 24 }}>
+                            <div style={{ ...styles.sectionTitle, marginBottom: 14 }}>Generation Summary</div>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                                        {['Department', 'Subject Name', 'Subject Code', 'Roll Nos in Subject', 'Roll Nos in Embedding', 'Missing Roll Nos', 'Embedding File', 'Last Updated'].map(h => (                                                <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ padding: '10px 12px', fontSize: '12px', color: theme.text }}>{summary.dept}</td>
+                                            <td style={{ padding: '10px 12px', fontSize: '12px', color: theme.text, fontWeight: 500 }}>{summary.subject}</td>
+                                            <td style={{ padding: '10px 12px', fontFamily: theme.fontMono, fontSize: '12px', color: summary.subjectCode ? theme.accent : theme.textMuted }}>
+                                                {summary.subjectCode || '—'}
+                                            </td>
+                                            <td style={{ padding: '10px 12px', fontSize: '12px', color: theme.accent }}>{summary.rollNosInSubject.length}</td>
+                                            <td style={{ padding: '10px 12px', fontSize: '12px', color: theme.success }}>{summary.success}</td>
+                                            <td style={{ padding: '10px 12px', fontSize: '12px' }}>
+                                                {summary.missedRollNos.length > 0 ? (
+                                                    <span style={{ color: theme.danger }}>
+                                                        {summary.missedRollNos.length} —&nbsp;
+                                                        <span style={{ fontFamily: theme.fontMono, fontSize: '11px' }}>
+                                                            {summary.missedRollNos.map(m => m.rollNo || m).join(', ')}
+                                                        </span>
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: theme.success }}>✓ none</span>
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '10px 12px', fontFamily: theme.fontMono, fontSize: '11px', color: theme.success }}>{summary.embeddingFile}</td>
+                                            <td style={{ padding: '10px 12px', fontSize: '11px', color: theme.textMuted }}>
+                                                {new Date().toLocaleString('en-IN')}
+                                            </td>
+                                            </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div>
-                                <div style={{ fontSize: '11px', color: theme.textMuted, marginBottom: 4 }}>Embedding File Saved</div>
-                                <div style={{ fontFamily: theme.fontMono, fontSize: '13px', color: theme.success }}>{summary.embeddingFile}</div>
-                            </div>
-                            {summary.failedList?.length > 0 && (
-                                <div>
-                                    <div style={{ fontSize: '11px', color: theme.textMuted, marginBottom: 4 }}>Failed Students</div>
-                                    <div style={{ fontSize: '12px', color: theme.danger }}>{summary.failedList.map(f => f.rollNo).join(', ')}</div>
-                                </div>
-                            )}
                         </div>
                     )}
 
@@ -616,7 +491,7 @@ function GenerateTab({ departments, deptLoading, deptError }) {
                     {/* History */}
                     <div style={styles.card}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                            <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>Past Generations — {batchName}</div>
+                            <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>Past Generations — {dept}</div>
                             <button onClick={loadHistory} disabled={historyLoading}
                                 style={{ ...styles.btnGhost, padding: '5px 12px', fontSize: '11px' }}>
                                 {historyLoading ? 'Loading…' : '↺ Refresh'}
@@ -628,8 +503,7 @@ function GenerateTab({ departments, deptLoading, deptError }) {
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                 <thead>
                                     <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
-                                        {['Date', 'Subject', 'Status', 'Students', 'Embedding File'].map(h => (
-                                            <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
+                                    {['Date', 'Last Updated', 'Subject', 'Status', 'Students', 'Embedding File'].map(h => (                                            <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
@@ -637,6 +511,9 @@ function GenerateTab({ departments, deptLoading, deptError }) {
                                     {history.map(rec => (
                                         <tr key={rec._id} style={{ borderBottom: `1px solid ${theme.border}22` }}>
                                             <td style={{ padding: '8px 12px', fontSize: '11px', color: theme.textMuted }}>{new Date(rec.generatedAt).toLocaleString('en-IN')}</td>
+                                            <td style={{ padding: '8px 12px', fontSize: '11px', color: rec.lastUpdatedAt ? theme.accent : theme.textMuted }}>
+                                                {rec.lastUpdatedAt ? new Date(rec.lastUpdatedAt).toLocaleString('en-IN') : '—'}
+                                            </td>
                                             <td style={{ padding: '8px 12px', fontSize: '12px', color: theme.text, fontWeight: 500 }}>{rec.subject || <span style={{ color: theme.textMuted }}>—</span>}</td>
                                             <td style={{ padding: '8px 12px' }}><StatusBadge status={rec.status} /></td>
                                             <td style={{ padding: '8px 12px', fontSize: '12px' }}>
@@ -655,268 +532,27 @@ function GenerateTab({ departments, deptLoading, deptError }) {
         </div>
     );
 }
-function UploadRollListTab({ departments, deptLoading, deptError }) {
-    const [dept,      setDept]      = useState('');
-    const [sem,       setSem]       = useState('');
-    const [subject,   setSubject]   = useState('');
-    const [subjectId, setSubjectId] = useState(''); // the MongoDB _id of the subject
-    const [embFile,   setEmbFile]   = useState('');
-    const [file,      setFile]      = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const [result,    setResult]    = useState(null);
-    const [toast,     setToast]     = useState(null);
-    const fileRef = useRef();
 
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 4000);
-    };
-
-    // You need to fetch subjects by dept+sem to get the _id.
-    // Reuse the same subjects dropdown but also capture the _id.
-    const [sems,     setSems]     = useState([]);
-    const [subjects, setSubjects] = useState([]); // array of { name, _id }
-    const [semsLoading,     setSemsLoading]     = useState(false);
-    const [subjectsLoading, setSubjectsLoading] = useState(false);
-
-    useEffect(() => {
-        setSem(''); setSubject(''); setSubjectId(''); setSems([]); setSubjects([]);
-        if (!dept) return;
-        setSemsLoading(true);
-        fetch(`${apiUrl}/timetablemodule/lock/sems-by-dept?dept=${encodeURIComponent(dept)}`)
-            .then(r => r.json()).then(d => setSems(d.sems || []))
-            .catch(() => {}).finally(() => setSemsLoading(false));
-    }, [dept]);
-
-    useEffect(() => {
-        setSubject(''); setSubjectId(''); setSubjects([]);
-        if (!dept || !sem) return;
-        setSubjectsLoading(true);
-        // GET /timetablemodule/subject returns full Subject documents with _id, subName, dept, sem
-        fetch(`${apiUrl}/timetablemodule/subject`)
-            .then(r => r.json())
-            .then(data => {
-                const list = Array.isArray(data) ? data : [];
-                // Filter to matching sem and dept
-                const filtered = list.filter(s => {
-                    const semMatch  = String(s.sem).trim() === String(sem).trim();
-                    const deptNorm  = dept.replace(/_/g, ' ').trim().toLowerCase();
-                    const sDeptNorm = (s.dept || '').trim().toLowerCase();
-                    const deptMatch = sDeptNorm.includes(deptNorm) || deptNorm.includes(sDeptNorm);
-                    return semMatch && deptMatch;
-                });
-                setSubjects(filtered);
-            })
-            .catch(() => {}).finally(() => setSubjectsLoading(false));
-    }, [dept, sem]);
-
-   // Auto-generate the embedding filename from sem + subject (same format as Generate tab)
-    const autoEmbFile = sem && subject
-        ? `${sem}_${subject.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')}.pkl`
-        : '';
-
-    const canUpload = !uploading && file && subjectId;
-
-    const handleUpload = async () => {
-        if (!canUpload) return;
-        setUploading(true); setResult(null);
-        try {
-            const fd = new FormData();
-            fd.append('file',      file);
-            fd.append('subjectId', subjectId);
-            fd.append('dept',      dept);
-            // Use manually typed name if provided, otherwise use auto-generated name
-            const finalEmbFile = embFile.trim() || autoEmbFile;
-            if (finalEmbFile) fd.append('embeddingFile', finalEmbFile);
-
-            const res  = await fetch(`${apiUrl}/attendancemodule/embeddings/upload-roll-nos-xlsx`, { method: 'POST', body: fd });
-            const data = await res.json();
-            if (!res.ok) { showToast(data.error || 'Upload failed', 'error'); setUploading(false); return; }
-            setResult(data);
-            showToast(`✓ Saved ${data.total} roll nos, ${data.missedCount} missing GT`);
-            setFile(null);
-            if (fileRef.current) fileRef.current.value = '';
-        } catch (e) {
-            showToast('Error: ' + e.message, 'error');
-        }
-        setUploading(false);
-    };
-
-    return (
-        <div>
-            <Toast toast={toast} />
-
-            {/* Dept / Sem / Subject selectors */}
-            <div style={{ ...styles.card, marginBottom: 24, padding: '18px 24px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 16, alignItems: 'end' }}>
-                    <div>
-                        <label style={styles.label}>Department</label>
-                        <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
-                            <option value="">{deptLoading ? 'Loading…' : 'Select department…'}</option>
-                            {departments.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label style={styles.label}>Semester</label>
-                        <select value={sem} onChange={e => setSem(e.target.value)} style={styles.select} disabled={!dept || semsLoading}>
-                            <option value="">{semsLoading ? 'Loading…' : !dept ? 'Select dept first' : 'Select sem…'}</option>
-                            {sems.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label style={styles.label}>Subject</label>
-                        {/* 
-                          ⚠️  YOUR SUBJECTS API MUST RETURN { _id, subName } objects.
-                          If it currently returns plain strings, either:
-                            (a) update the timetable API endpoint, OR
-                            (b) add a lookup call: fetch(`/timetablemodule/subjects?dept=X&sem=Y`)
-                                and use the _id from that.
-                          For now this dropdown shows subject names; you must map name → _id.
-                        */}
-                        <select
-                            value={subjectId}
-                            onChange={e => {
-                                const selected = subjects.find(s => String(s._id) === e.target.value);
-                                setSubjectId(e.target.value);
-                                setSubject(selected?.subName || selected?.subjectFullName || '');
-                            }}
-                            style={styles.select}
-                            disabled={!sem || subjectsLoading}
-                        >
-                            <option value="">{subjectsLoading ? 'Loading…' : !sem ? 'Select sem first' : subjects.length ? 'Select subject…' : 'No subjects found'}</option>
-                            {subjects.map(s => (
-                                <option key={String(s._id)} value={String(s._id)}>
-                                    {s.subName || s.subjectFullName}
-                                </option>
-                            ))}
-                        </select>
-                        {subjectId && (
-                            <div style={{ marginTop: 4, fontSize: '11px', color: theme.success }}>
-                                ✓ {subject}
-                            </div>
-                    
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Optional: link an embedding file */}
-            <div style={{ ...styles.card, marginBottom: 24 }}>
-                <label style={styles.label}>Embedding File to associate (optional)</label>
-                <input
-                    value={embFile}
-                    onChange={e => setEmbFile(e.target.value)}
-                    placeholder={autoEmbFile || 'e.g. 6_Digital_Electronics.pkl'}
-                    style={{ ...styles.input, marginTop: 6 }}
-                />
-                <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 4 }}>
-                    {autoEmbFile
-                        ? <>Auto-set to <span style={{ fontFamily: 'monospace', color: theme.accent }}>{autoEmbFile}</span> — override above if needed</>
-                        : 'Select sem + subject above to auto-fill'}
-                </div>
-            </div>
-
-            {/* File picker + upload */}
-            <div style={{ ...styles.card, marginBottom: 28 }}>
-                <div style={{ ...styles.sectionTitle, marginBottom: 14 }}>Upload Roll Number List (.xlsx)</div>
-                <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <label style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 8,
-                        padding: '9px 18px', borderRadius: 6, cursor: 'pointer',
-                        background: theme.accentDim, color: theme.accent,
-                        border: `1px solid ${theme.accent}44`, fontSize: '13px', fontWeight: 600,
-                    }}>
-                        📋 Choose .xlsx file
-                        <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }}
-                            onChange={e => setFile(e.target.files?.[0] || null)} />
-                    </label>
-                    {file && (
-                        <span style={{ fontSize: '13px', fontFamily: theme.fontMono, color: theme.success }}>
-                            {file.name} ({(file.size / 1024).toFixed(0)} KB)
-                        </span>
-                    )}
-                    <button
-                        onClick={handleUpload}
-                        disabled={!canUpload}
-                        style={{ ...styles.btnPrimary, marginLeft: 'auto', opacity: canUpload ? 1 : 0.4, cursor: canUpload ? 'pointer' : 'not-allowed' }}>
-                        {uploading ? '⏳ Saving…' : '💾 Save Roll List'}
-                    </button>
-                </div>
-                {!subjectId && subject && (
-                    <div style={{ marginTop: 10, fontSize: '12px', color: theme.danger }}>Subject _id is missing — cannot save</div>
-                )}
-                {!subject && (
-                    <div style={{ marginTop: 10, fontSize: '12px', color: theme.textMuted }}>Select dept, sem and subject first</div>
-                )}
-            </div>
-
-            {/* Result */}
-            {result && (
-                <div style={{ ...styles.card }}>
-                    <div style={{ color: theme.success, fontWeight: 700, marginBottom: 10 }}>✓ Roll list saved to subject</div>
-                    <div style={{ fontSize: '13px', display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 14 }}>
-                        <span><span style={{ color: theme.textMuted }}>Total roll nos: </span><span style={{ color: theme.accent }}>{result.total}</span></span>
-                        <span><span style={{ color: theme.textMuted }}>Missing ground truth: </span>
-                            <span style={{ color: result.missedCount > 0 ? theme.danger : theme.success }}>{result.missedCount}</span>
-                        </span>
-                        {result.embeddingFile && <span><span style={{ color: theme.textMuted }}>Embedding file: </span><span style={{ fontFamily: theme.fontMono, color: theme.accent }}>{result.embeddingFile}</span></span>}
-                    </div>
-                    {result.missedGroundTruth?.length > 0 && (
-                        <div>
-                            <div style={{ fontSize: '11px', color: theme.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>
-                                Roll nos with no ground truth folder:
-                            </div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                {result.missedGroundTruth.map(r => (
-                                    <span key={r} style={{
-                                        padding: '2px 8px', borderRadius: 4, fontSize: '11px',
-                                        fontFamily: theme.fontMono,
-                                        background: theme.dangerDim, color: theme.danger,
-                                        border: `1px solid ${theme.danger}33`,
-                                    }}>{r}</span>
-                                ))}
-                            </div>
-                            <div style={{ marginTop: 8, fontSize: '11px', color: theme.textMuted }}>
-                                💡 Upload ground truth photos for these students, then generate embeddings.
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Main export
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function EmbeddingGeneration() {
-    const [activeTab, setActiveTab] = useState('generate');
     const { departments, deptLoading, deptError } = useDepartments();
 
     return (
         <div style={styles.page}>
             <style>{cssReset}</style>
 
-            {/* Header */}
             <div style={{ marginBottom: 20 }}>
                 <div style={styles.heading}>Embedding Generation</div>
                 <div style={{ ...styles.subheading, marginBottom: 0 }}>
-                    Generate face embeddings from ground truth photos — or upload a pre-built <code style={{ color: theme.accent }}>.pkl</code> file directly
+                    Generate face embeddings from ground truth photos — upload an <code style={{ color: theme.accent }}>.xlsx</code> to load roll numbers or paste them directly
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 0, marginBottom: 0, borderBottom: `1px solid ${theme.border}` }}>
-                <Tab label="Generate from Photos" icon="⚡" active={activeTab === 'generate'} onClick={() => setActiveTab('generate')} />
-                <Tab label="Upload .pkl Directly" icon="⬆️" active={activeTab === 'upload'}   onClick={() => setActiveTab('upload')} />
-                <Tab label="Upload Roll List" icon="📋" active={activeTab === 'rolllist'} onClick={() => setActiveTab('rolllist')} />
-            </div>
-
             <div style={{ paddingTop: 24 }}>
-                {activeTab === 'generate' && <GenerateTab departments={departments} deptLoading={deptLoading} deptError={deptError} />}
-                {activeTab === 'upload'   && <UploadPklTab departments={departments} deptLoading={deptLoading} deptError={deptError} />}
-                {activeTab === 'rolllist' && <UploadRollListTab departments={departments} deptLoading={deptLoading} deptError={deptError} />}
+                <GenerateTab departments={departments} deptLoading={deptLoading} deptError={deptError} />
             </div>
         </div>
     );

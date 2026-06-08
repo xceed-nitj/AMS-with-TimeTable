@@ -8,7 +8,7 @@ const StudentEmbedding = require('../../../models/attendanceModule/studentEmbedd
 const Student          = require('../../../models/student');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
-const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ground_truth');
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 const EMBEDDINGS_DIR   = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
 
 function ensureDir(p) {
@@ -20,6 +20,25 @@ ensureDir(EMBEDDINGS_DIR);
 // "Digital Electronics (3rd Yr)" -> "Digital_Electronics_3rd_Yr"
 function safeSubject(raw) {
     return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/, '');
+}
+// Returns academic session string, e.g. "2025-26"
+function currentSession() {
+    const now   = new Date();
+    const year  = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const start = month >= 8 ? year : year - 1;
+    return `${start}-${String(start + 1).slice(2)}`;
+}
+
+// Builds folder path + filename: EMBEDDINGS_DIR/{session}/{deptSafe}/{subCode}_{subjectSafe}_{session}.pkl
+function buildEmbeddingPath(sem, subject, dept, subjectCode) {
+    const session      = currentSession();
+    const subjectSafeStr = safeSubject(subject);
+    const deptSafe     = safeSubject(dept || 'UNKNOWN');
+    const subCodeSafe  = safeSubject(subjectCode || sem.toString());
+    const filename     = `${subCodeSafe}_${subjectSafeStr}_${session}.pkl`;
+    const folder       = path.join(EMBEDDINGS_DIR, session, deptSafe);
+    return { filename, folder, fullPath: path.join(folder, filename), session };
 }
 
 // ── Resolve which embedding .pkl to use for a given sem+subject ──────────────
@@ -134,11 +153,24 @@ class EmbeddingController {
             res.status(500).json({ error: err.message });
         }
     }
+    async getHistoryByDept(req, res) {
+    try {
+        const { dept } = req.query;
+        const filter = dept ? { dept: { $regex: dept, $options: 'i' } } : {};
+        const records = await StudentEmbedding.find(filter)
+            .sort({ generatedAt: -1 })
+            .lean();
+        res.json({ dept: dept || 'ALL', records });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
 
     // GET /attendancemodule/embeddings/list-files
 async listFiles(req, res) {
     try {
-        const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'embeddings');
+        const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
+
         const files = await fsPromises.readdir(EMBEDDINGS_DIR);
         const pklFiles = files.filter(f => f.endsWith('.pkl'));
 
@@ -280,10 +312,10 @@ uploadPkl() {
         };
 
         // New file name format: {sem}_{subjectSafe}.pkl
-        const semSafe       = sem.toString().trim();
-        const subjectSafe   = safeSubject(subject);
-        const embeddingFile = `${semSafe}_${subjectSafe}.pkl`;
-        const outputPath    = path.join(EMBEDDINGS_DIR, embeddingFile);
+        const semSafe = sem.toString().trim();
+        const subjectCode = (req.body.subjectCode || '').trim();
+        const { filename: embeddingFile, folder: embFolder, fullPath: outputPath, session: sessionStr } = buildEmbeddingPath(semSafe, subject, dept, subjectCode);
+        ensureDir(embFolder);
 
         // For GT lookup we still need a batch-like folder path.
         // GT photos are stored under ground_truth/{batch}/{rollNo}/
@@ -291,16 +323,25 @@ uploadPkl() {
         // by scanning for any batch folder that contains the roll number.
         // Alternatively, if dept is supplied we can narrow down. For now we scan.
 
-        let record = await StudentEmbedding.create({
-            sem:          semSafe,
-            subject:      subject.trim(),
-            dept:         (dept || '').trim().toUpperCase(),
-            embeddingFile,
-            rollNos,
-            missedRollNos: [],
-            status: 'pending',
-            studentsTotal: rollNos.length,
-        });
+        let record = await StudentEmbedding.findOneAndUpdate(
+            { sem: semSafe, subject: subject.trim(), dept: (dept || '').trim().toUpperCase() },
+            {
+                $set: {
+                    embeddingFile,
+                    session:         sessionStr,
+                    subjectCode:     subjectCode,
+                    rollNos,
+                    missedRollNos:   [],
+                    status:          'pending',
+                    studentsTotal:   rollNos.length,
+                    studentsSuccess: 0,
+                    studentsFailed:  0,
+                    generatedAt:     new Date(),
+                    lastUpdatedAt:   new Date(),
+                },
+            },
+            { upsert: true, new: true }
+        );
 
         let success = 0, failed = 0;
         const failedList    = [];
@@ -443,13 +484,13 @@ try {
         }
 }
 
-        record.status          = failed === rollNos.length ? 'failed' : 'done';
+       record.status          = failed === rollNos.length ? 'failed' : 'done';
         record.studentsSuccess = success;
         record.studentsFailed  = failed;
         record.missedRollNos   = missedRollNos;
         record.generatedAt     = new Date();
+        record.lastUpdatedAt   = new Date();
         await record.save();
-
         sse({
             type:          'done',
             sem:           semSafe,
