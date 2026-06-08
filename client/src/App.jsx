@@ -632,6 +632,7 @@ function App() {
   <Route path="model"                element={<ModelPerformance />} />
   <Route path="reports"              element={<AttendanceReport />} />
   <Route path="frame-verification"   element={<FrameVerification />} />
+  <Route path="acquisition-control" element={<AcquisitionControl />} />
 </Route>
 
 {/* Camera Registry — top-level but still inside AMSLayout */}

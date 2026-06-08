@@ -31,6 +31,10 @@ const T = {
   purple:  '#a855f7', purpleDim:  'rgba(168,85,247,0.09)',
   teal:    '#14b8a6', tealDim:    'rgba(20,184,166,0.09)',
   orange:  '#f97316', orangeDim:  'rgba(249,115,22,0.09)',
+  accent:     '#6366f1', accentDim:  'rgba(99,102,241,0.09)', accentGlow: 'rgba(99,102,241,0.4)',
+  success:    '#10b981', successDim: 'rgba(16,185,129,0.09)',
+  warning:    '#f59e0b', warningDim: 'rgba(245,158,11,0.09)',
+  pink:       '#ec4899',
 };
 
 const DEPT_COLORS = [
@@ -358,6 +362,73 @@ function ActionCard({ title, subtitle, color, onClick, buttonLabel }) {
     </div>
   );
 }
+function SectionHead({ title, color }) {
+  return (
+    <div style={{
+      fontSize: 11, fontWeight: 700, color,
+      textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 12,
+    }}>
+      {title}
+    </div>
+  );
+}
+
+function QuickBtn({ icon, label, color, colorDim, onClick, delay = 0 }) {
+  return (
+    <button
+      className="ams-btn"
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 12px', borderRadius: 8,
+        background: colorDim, border: `1px solid ${color}25`,
+        cursor: 'pointer', fontFamily: T.fontBody,
+        animation: `fadeUp .4s ease ${delay}ms both`,
+        width: '100%', textAlign: 'left',
+      }}
+    >
+      <span style={{ fontSize: 15 }}>{icon}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color }}>{label}</span>
+    </button>
+  );
+}
+
+function CameraStrip({ cameras, loading }) {
+  if (loading) return <div style={{ fontSize: 12, color: T.textMuted }}>Loading…</div>;
+  if (!cameras.length) return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {cameras.map((cam, i) => {
+        const on = cam.status === 'online';
+        const mt = cam.status === 'maintenance';
+        const dot = on ? T.emerald : mt ? T.amber : T.red;
+        return (
+          <div key={cam._id || i} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 10px', borderRadius: 7,
+            background: T.surfaceAlt, border: `1px solid ${T.border}`,
+          }}>
+            <Dot color={dot} blink={on} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{cam.cameraId || 'Unknown'}</div>
+              <div style={{ fontSize: 10, color: T.textMuted, fontFamily: T.fontMono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {cam.roomId}
+              </div>
+            </div>
+            <span style={{
+              fontSize: 9, padding: '2px 6px', borderRadius: 99, fontWeight: 700,
+              background: on ? T.emeraldDim : mt ? T.amberDim : T.redDim,
+              color: dot, border: `1px solid ${dot}30`,
+              textTransform: 'uppercase', letterSpacing: '.05em',
+            }}>
+              {cam.status || 'offline'}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 /* ════════════════════════════════════════════════ */
 export default function AMSDashboard() {
@@ -539,13 +610,13 @@ export default function AMSDashboard() {
                   Manage →
                 </button>
               </div>
-              <CameraStrip cameras={cameras.slice(0, 6)} loading={camLoading} />
+              <CameraStrip cameras={cameras.slice(0, 6)} loading={camLoad} />
               {cameras.length > 6 && (
                 <div style={{ fontSize: 11, color: T.textMuted, marginTop: 8, textAlign: 'center' }}>
                   +{cameras.length - 6} more cameras
                 </div>
               )}
-              {!camLoading && cameras.length === 0 && (
+              {!camLoad && cameras.length === 0 && (
                 <button
                   className="ams-btn"
                   onClick={() => navigate('/cameras')}
@@ -559,7 +630,10 @@ export default function AMSDashboard() {
                   + Register First Camera
                 </button>
               )}
-            </div>
+            </div>  {/* end Camera Status inner div */}
+
+          </div>  {/* end Right sidebar flex column */}
+        </div>  {/* end Ground Truth flex row */}
 
         <SectionLabel>Verification</SectionLabel>
         <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
@@ -641,9 +715,10 @@ export default function AMSDashboard() {
               </ResponsiveContainer>
             )}
           </ChartCard>
+          </div>  {/* end dash-chart-grid */}
 
-        </div>
-      </div>
+      </div>  {/* end outer page div */}
     </>
   );
 }
+        
