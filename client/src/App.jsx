@@ -219,16 +219,13 @@ import FrameVerification from './attendancemodule/FrameVerification';
 import AMSDashboard        from './attendancemodule/AMSDashboard';
 import AMSLayout           from './attendancemodule/AMSLayout';
 import CameraRegistry      from './attendancemodule/camera';
-<<<<<<< Updated upstream
 import EditSessionDates    from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
-=======
 
 // ─── Department Admin Module Imports ────────────────────────────
 import DeptAdminLayout from './deptadmin/DeptAdminLayout';
 import DeptDashboard from './deptadmin/DeptDashboard';
 import DeptReports from './deptadmin/DeptReports';
 import { DeptAssignRolls, DeptLiveRTSP } from './deptadmin/DeptAdminTools';
->>>>>>> Stashed changes
 
 function App() {
   return (
@@ -634,10 +631,10 @@ function App() {
         <Route path="/ml" element={<MLDashboard />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
-<<<<<<< Updated upstream
+        <Route path="/iams-admin/*" element={<Navigate to="/attendance" replace />} />
         <Route path="/attendance" element={<AMSLayout />}>
           <Route index element={<AMSDashboard />} />
-          
+
           {/* 2. Session setup sub-route handler registered context array */}
           <Route path="edit-session-dates" element={<EditSessionDates />} />
 
@@ -654,40 +651,19 @@ function App() {
           <Route path="frame-verification"   element={<FrameVerification />} />
         </Route>
 
+        {/* ─── Department Admin Routes ────────────────────────────── */}
+        <Route path="/dept-admin" element={<DeptAdminLayout />}>
+          <Route index element={<DeptDashboard />} />
+          <Route path="dashboard" element={<DeptDashboard />} />
+          <Route path="live-rtsp" element={<DeptLiveRTSP />} />
+          <Route path="assign-rolls" element={<DeptAssignRolls />} />
+          <Route path="reports" element={<DeptReports />} />
+        </Route>
+
         {/* Camera Registry — top-level but still inside AMSLayout */}
         <Route path="/cameras" element={<AMSLayout />}>
           <Route index element={<CameraRegistry />} />
         </Route>
-=======
-<Route path="/iams-admin/*" element={<Navigate to="/attendance" replace />} />
-<Route path="/attendance" element={<AMSLayout />}>
-  <Route index element={<AMSDashboard />} />
-  <Route path="groundtruth/assign"   element={<RollAssign />} />
-  {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
-  <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
-  <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
-  <Route path="groundtruth/photos"   element={<PhotoEdit />} />
-  <Route path="embeddings"           element={<EmbeddingGeneration />} />
-  <Route path="report"               element={<Attendancedoc />} />
-  <Route path="model"                element={<ModelPerformance />} />
-  <Route path="reports"              element={<AttendanceReport />} />
-  <Route path="frame-verification"   element={<FrameVerification />} />
-</Route>
-
-{/* ─── Department Admin Routes ────────────────────────────────── */}
-<Route path="/dept-admin" element={<DeptAdminLayout />}>
-  <Route index element={<DeptDashboard />} />
-  <Route path="dashboard" element={<DeptDashboard />} />
-  <Route path="live-rtsp" element={<DeptLiveRTSP />} />
-  <Route path="assign-rolls" element={<DeptAssignRolls />} />
-  <Route path="reports" element={<DeptReports />} />
-</Route>
-
-{/* Camera Registry — top-level but still inside AMSLayout */}
-<Route path="/cameras" element={<AMSLayout />}>
-  <Route index element={<CameraRegistry />} />
-</Route>
->>>>>>> Stashed changes
 
       </Routes>
       {/* <Footer/> */}
