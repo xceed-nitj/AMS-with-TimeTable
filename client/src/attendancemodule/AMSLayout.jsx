@@ -7,25 +7,27 @@ import { theme } from './config';
 const T = theme;
 
 const NAV = [
-  { id: 'dashboard', route: '/attendance',                    label: 'Dashboard',         icon: '🏠', exact: true },
-  { id: 'rtsp',      route: '/attendance/groundtruth/rtsp',   label: 'RTSP Capture',      icon: '📡' },
-  { id: 'assign',    route: '/attendance/groundtruth/assign',  label: 'Roll Assignment',   icon: '🎯' },
-  { id: 'photos',    route: '/attendance/groundtruth/photos',  label: 'Photo Editor',      icon: '🖼️' },
-  { id: 'upload',    route: '/attendance/groundtruth/upload',  label: 'Manual Upload',     icon: '📤' },
-  { id: 'reports',   route: '/attendance/reports',             label: 'Attendance Reports',icon: '📊' },
-  { id: 'cameras',   route: '/cameras',                        label: 'Camera Registry',   icon: '📷' },
-  { id: 'embeddings',route: '/attendance/embeddings',          label: 'Embeddings',        icon: '🧠' },
+  { id: 'dashboard', route: '/attendance',                    label: 'Dashboard'},
+  { id: 'rtsp',      route: '/attendance/groundtruth/rtsp',   label: 'RTSP Capture' },
+  { id: 'assign',    route: '/attendance/groundtruth/assign',  label: 'Roll Assignment' },
+  { id: 'photos',    route: '/attendance/groundtruth/photos',  label: 'Photo Editor' },
+  { id: 'upload',    route: '/attendance/groundtruth/upload',  label: 'Manual Upload' },
+  { id: 'reports',   route: '/attendance/reports',             label: 'Attendance Reports' },
+  { id: 'verify',    route: '/attendance/frame-verification',  label: 'Frame Verification' },
+  { id: 'cameras',   route: '/cameras',                        label: 'Camera Registry' },
+  { id: 'embeddings',route: '/attendance/embeddings',          label: 'Embeddings' },
 ];
 
 const COLORS = {
-  dashboard: T.accent,
-  rtsp:      T.accent,
-  assign:    T.success,
-  photos:    '#a78bfa',
-  upload:    '#f472b6',
-  reports:   '#2dd4bf',
-  cameras:   '#fb923c',
-  embeddings:T.warning,
+  dashboard:  '#6366f1',
+  rtsp:       '#0ea5e9',
+  assign:     '#10b981',
+  photos:     '#a855f7',
+  upload:     '#f472b6',
+  reports:    '#14b8a6',
+  verify:     '#ec4899',
+  cameras:    '#f97316',
+  embeddings: '#f59e0b',
 };
 
 const CSS = `
