@@ -10,6 +10,10 @@ import { useDepartments } from './useDepartments';
 const _apiUrl    = getEnvironment();
 const CAMERA_API = `${_apiUrl}/attendancemodule/cameras`;
 const ROOM_API   = `${_apiUrl}/timetablemodule/masterroom`;
+const fetch = (input, init = {}) => window.fetch(input, {
+    credentials: 'include',
+    ...init,
+});
 
 // ─── Add your cameras here ────────────────────────────────────────────────────
 const CAMERAS = [
@@ -193,9 +197,9 @@ function extractSSEEvents(buffer) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function GroundTruthRTSP() {
+export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartment = '' }) {
     const [degree,     setDegree]     = useState('BTECH');
-    const [department, setDepartment] = useState('');
+    const [department, setDepartment] = useState(fixedDepartment);
     const { departments, deptLoading, deptError } = useDepartments();
     const [year,       setYear]       = useState('');
     const [cameraId,   setCameraId]   = useState(CAMERAS[0].id);
@@ -243,6 +247,10 @@ export default function GroundTruthRTSP() {
 
     const RETRY_DELAY = 5;
 
+    useEffect(() => {
+        if (fixedDepartment) setDepartment(fixedDepartment);
+    }, [fixedDepartment]);
+
     const clearRetry = useCallback(() => {
         if (retryTimerRef.current)  { clearTimeout(retryTimerRef.current);   retryTimerRef.current  = null; }
         if (retryTickRef.current)   { clearInterval(retryTickRef.current);   retryTickRef.current   = null; }
@@ -258,7 +266,11 @@ export default function GroundTruthRTSP() {
     // ── Fetch rooms on mount ──────────────────────────────────────────────────
     useEffect(() => {
         setRoomsLoading(true);
-        fetch(ROOM_API)
+        const roomDepartment = fixedRoomDepartment || fixedDepartment;
+        const roomUrl = roomDepartment
+            ? `${ROOM_API}/dept/${encodeURIComponent(roomDepartment)}`
+            : ROOM_API;
+        fetch(roomUrl)
             .then(r => r.json())
             .then(data => {
                 const list = Array.isArray(data) ? data : (data.rooms || []);
@@ -266,7 +278,7 @@ export default function GroundTruthRTSP() {
             })
             .catch(() => {})
             .finally(() => setRoomsLoading(false));
-    }, []);
+    }, [fixedDepartment, fixedRoomDepartment]);
 
     // ── Fetch cameras for selected room ───────────────────────────────────────
     useEffect(() => {
@@ -746,21 +758,28 @@ export default function GroundTruthRTSP() {
                 pointerEvents: (isRunning || isStopping) ? 'none' : 'auto',
             }}>
                 {/* Row 1: batch fields */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: fixedDepartment ? '1fr 1fr' : '1fr 1fr 1fr',
+                    gap: 16,
+                    marginBottom: 20,
+                }}>
                     <div>
                         <label style={styles.label}>Degree</label>
                         <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
                             {DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                     </div>
-                    <div>
-                        <label style={styles.label}>Department</label>
-                        <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
-                            <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select…'}</option>
-                            {departments.map(d => <option key={d} value={d}>{d}</option>)}
-                        </select>
-                        {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 4 }}>{deptError}</div>}
-                    </div>
+                    {!fixedDepartment && (
+                        <div>
+                            <label style={styles.label}>Department</label>
+                            <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
+                                <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select…'}</option>
+                                {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                            {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 4 }}>{deptError}</div>}
+                        </div>
+                    )}
                     <div>
                         <label style={styles.label}>Year (Batch)</label>
                         <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>

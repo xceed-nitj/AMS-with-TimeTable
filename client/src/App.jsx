@@ -4,6 +4,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
   RouterProvider,
 } from 'react-router-dom';
 
@@ -219,6 +220,12 @@ import AMSDashboard        from './attendancemodule/AMSDashboard';
 import AMSLayout           from './attendancemodule/AMSLayout';
 import CameraRegistry      from './attendancemodule/camera';
 import EditSessionDates    from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
+
+// ─── Department Admin Module Imports ────────────────────────────
+import DeptAdminLayout from './deptadmin/DeptAdminLayout';
+import DeptDashboard from './deptadmin/DeptDashboard';
+import DeptReports from './deptadmin/DeptReports';
+import { DeptAssignRolls, DeptLiveRTSP } from './deptadmin/DeptAdminTools';
 
 function App() {
   return (
@@ -624,9 +631,10 @@ function App() {
         <Route path="/ml" element={<MLDashboard />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
+        <Route path="/iams-admin/*" element={<Navigate to="/attendance" replace />} />
         <Route path="/attendance" element={<AMSLayout />}>
           <Route index element={<AMSDashboard />} />
-          
+
           {/* 2. Session setup sub-route handler registered context array */}
           <Route path="edit-session-dates" element={<EditSessionDates />} />
 
@@ -641,6 +649,15 @@ function App() {
           <Route path="model"                element={<ModelPerformance />} />
           <Route path="reports"              element={<AttendanceReport />} />
           <Route path="frame-verification"   element={<FrameVerification />} />
+        </Route>
+
+        {/* ─── Department Admin Routes ────────────────────────────── */}
+        <Route path="/dept-admin" element={<DeptAdminLayout />}>
+          <Route index element={<DeptDashboard />} />
+          <Route path="dashboard" element={<DeptDashboard />} />
+          <Route path="live-rtsp" element={<DeptLiveRTSP />} />
+          <Route path="assign-rolls" element={<DeptAssignRolls />} />
+          <Route path="reports" element={<DeptReports />} />
         </Route>
 
         {/* Camera Registry — top-level but still inside AMSLayout */}

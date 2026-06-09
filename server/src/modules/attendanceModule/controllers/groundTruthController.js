@@ -89,6 +89,17 @@ class GroundTruthController {
             const batches = [];
             for (const entry of entries) {
                 if (!entry.isDirectory()) continue;
+                if (
+                    !req.attendanceFullAccess
+                    && !req.attendanceDepartment
+                ) continue;
+                if (
+                    !req.attendanceFullAccess
+                    && !new RegExp(
+                        `^[^_]+_${req.attendanceDepartment.trim().replace(/[\s-]+/g, '_').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_`,
+                        'i',
+                    ).test(entry.name)
+                ) continue;
                 const batchPath = path.join(GROUND_TRUTH_DIR, entry.name);
                 const students  = await fsPromises.readdir(batchPath, { withFileTypes: true });
                 batches.push({ batch: entry.name, studentCount: students.filter(s => s.isDirectory()).length });

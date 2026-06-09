@@ -1,5 +1,9 @@
 const HttpException = require("../../../models/http-exception");
 const User = require("../../../models/usermanagement/user");
+const {
+  getFacultyDepartmentByEmail,
+  findDepartmentCoordinator,
+} = require("./facultyDepartment");
 const getApiURL = require("../../certificateModule/helper/getApiURL")
 
 
@@ -94,6 +98,26 @@ class UserController {
       if (!user) {
         throw { status: 404, message: "User not found" };
       }
+
+      if (role === "iams-dept-admin") {
+        const department = await getFacultyDepartmentByEmail(user.email);
+        if (!department) {
+          return res.status(400).json({
+            error: "This user has no matching Faculty profile with a department",
+          });
+        }
+
+        const existingCoordinator = await findDepartmentCoordinator(
+          department,
+          user._id,
+        );
+        if (existingCoordinator) {
+          return res.status(409).json({
+            error: `${department} already has an IAMS Department Admin`,
+          });
+        }
+      }
+
       if (!user.role.includes(role)) {
         user.role.push(role);
         await user.save();

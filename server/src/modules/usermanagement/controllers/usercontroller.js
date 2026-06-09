@@ -12,6 +12,10 @@ const ejs = require("ejs");
 const path = require("path");
 const ejsTemplatePath = path.join(__dirname, "otpbody.ejs");
 const mailSender = require("../../mailsender");
+const {
+  getFacultyDepartmentByEmail,
+  findDepartmentCoordinator,
+} = require("./facultyDepartment");
 
 exports.register = async (req, res, next) => {
   const { email, password, roles } = req.body;
@@ -28,6 +32,22 @@ exports.register = async (req, res, next) => {
     return res.status(400).json({ message: "Password less than 6 characters" });
   }
   try {
+    if (roles?.includes("iams-dept-admin")) {
+      const department = await getFacultyDepartmentByEmail(email);
+      if (!department) {
+        return res.status(400).json({
+          message: "A matching Faculty profile is required for an IAMS Department Admin",
+        });
+      }
+
+      const existingCoordinator = await findDepartmentCoordinator(department);
+      if (existingCoordinator) {
+        return res.status(409).json({
+          message: `${department} already has an IAMS Department Admin`,
+        });
+      }
+    }
+
     // Hash the password using bcrypt
     bcrypt.hash(password, 10, async (hashErr, hash) => {
       if (hashErr) {
