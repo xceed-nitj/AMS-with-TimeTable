@@ -26,6 +26,13 @@ router.get('/resolve-file/:sem/:subject', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET  /attendancemodule/embeddings/history-by-dept?dept=Electronics_and_Communication_Engineering
+// New: history records for a department, sorted newest first
+router.get('/history-by-dept', async (req, res) => {
+    try { await ctrl.getHistoryByDept(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET  /attendancemodule/embeddings/status/:batch
 // Legacy: history by batch name
 router.get('/status/:batch', async (req, res) => {
@@ -61,8 +68,6 @@ router.get('/list-files', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /attendancemodule/embeddings/upload-pkl  (multipart)
-router.post('/upload-pkl', ctrl.uploadPkl());
 
 // DELETE /attendancemodule/embeddings/:id
 router.delete('/:id', async (req, res) => {

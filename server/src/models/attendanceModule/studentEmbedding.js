@@ -24,7 +24,9 @@ const studentEmbeddingSchema = new mongoose.Schema({
     studentsTotal:   { type: Number, default: 0 },
     studentsSuccess: { type: Number, default: 0 },
     studentsFailed:  { type: Number, default: 0 },
-    uploadedDirect: { type: Boolean, default: false },
+    uploadedDirect:  { type: Boolean, default: false },
+    session:         { type: String, default: '' },
+    lastUpdatedAt:   { type: Date, default: null },
 });
 
 studentEmbeddingSchema.add(commonFields);
