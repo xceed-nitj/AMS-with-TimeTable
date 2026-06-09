@@ -66,6 +66,10 @@ export default function GroundTruthUpload() {
     const [newRollNo, setNewRollNo] = useState('');
     const [renaming, setRenaming] = useState(false);
 
+    // ── Delete Student State ─────────────────────────────────────────
+    const [deleteRollNo, setDeleteRollNo] = useState('');
+    const [deleting, setDeleting] = useState(false);
+
     // ── Toast ────────────────────────────────────────────────────────
     const [toast, setToast] = useState(null);
     const showToast = (msg, type = 'success') => {
@@ -183,6 +187,37 @@ export default function GroundTruthUpload() {
             showToast(err.message, 'error');
         } finally {
             setRenaming(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!batchName) {
+            showToast('Please select a Batch', 'error');
+            return;
+        }
+        if (!deleteRollNo.trim()) {
+            showToast('Please enter the roll number to delete', 'error');
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to delete photos and embeddings for ${deleteRollNo}? This cannot be undone.`)) {
+            return;
+        }
+
+        setDeleting(true);
+        try {
+            const res = await fetch(`${UPLOAD_BASE}/photo/${encodeURIComponent(batchName)}/${encodeURIComponent(deleteRollNo.trim())}`, {
+                method: 'DELETE',
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Delete failed');
+            
+            showToast(`Successfully deleted ${deleteRollNo}`);
+            setDeleteRollNo('');
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -362,6 +397,37 @@ export default function GroundTruthUpload() {
                             }}
                         >
                             {renaming ? 'Renaming...' : 'Rename Student'}
+                        </button>
+                    </div>
+
+                    {/* Delete Student */}
+                    <div style={{...styles.card, borderColor: '#fca5a5'}}>
+                        <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: 600, color: theme.danger }}>Delete Student / Photo</h3>
+                        
+                        <div style={{ marginBottom: 12 }}>
+                            <label style={styles.label}>Roll Number to Delete</label>
+                            <input 
+                                type="text" 
+                                value={deleteRollNo}
+                                onChange={e => setDeleteRollNo(e.target.value.toUpperCase())}
+                                placeholder="e.g. 21BCE001"
+                                style={{...styles.input, borderColor: '#fca5a5'}}
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleDelete}
+                            disabled={deleting || !batchName || !deleteRollNo}
+                            style={{
+                                ...styles.btnPrimary,
+                                width: '100%',
+                                opacity: (deleting || !batchName || !deleteRollNo) ? 0.5 : 1,
+                                background: theme.danger,
+                                border: 'none',
+                                color: '#fff'
+                            }}
+                        >
+                            {deleting ? 'Deleting...' : 'Delete Student'}
                         </button>
                     </div>
                 </div>

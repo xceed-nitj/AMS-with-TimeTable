@@ -166,8 +166,228 @@ function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, subjectC
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TAB 2 — Direct .pkl Upload
+// TAB 2 — ERP Ground Truth Embeddings
 // ═══════════════════════════════════════════════════════════════════════════════
+function ERPSyncTab({ departments, deptLoading, deptError }) {
+    const [dept, setDept] = useState('');
+    const [batch, setBatch] = useState('');
+    const [batches, setBatches] = useState([]);
+    const [batchesLoading, setBatchesLoading] = useState(false);
+    
+    const [status, setStatus] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [isPolling, setIsPolling] = useState(false);
+    const [pollingData, setPollingData] = useState({ unchangedCount: 0, lastTotal: -1 });
+    const [toast, setToast] = useState(null);
+
+    const showToast = (msg, type = 'success') => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 4000);
+    };
+
+    useEffect(() => {
+        if (!dept) {
+            setBatches([]);
+            setBatch('');
+            return;
+        }
+        let cancelled = false;
+        setBatchesLoading(true);
+        const rawDepartment = dept.replace(/_/g, ' ');
+        fetch(`${apiUrl}/timetablemodule/mastersem/dept/${encodeURIComponent(rawDepartment)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (cancelled) return;
+                if (Array.isArray(data)) {
+                    const sems = [...new Set(data.map(item => item.sem))].filter(Boolean).sort();
+                    setBatches(sems);
+                } else {
+                    setBatches([]);
+                }
+            })
+            .catch(() => showToast('Failed to load batches', 'error'))
+            .finally(() => { if (!cancelled) setBatchesLoading(false); });
+        return () => { cancelled = true; };
+    }, [dept]);
+
+    const loadStatus = useCallback(async (background = false) => {
+        if (!batch) return;
+        if (!background) setLoading(true);
+        try {
+            const res = await fetch(`${apiUrl}/attendancemodule/ground-truth-upload/status/${encodeURIComponent(batch)}`);
+            const data = await res.json();
+            setStatus(data);
+            return data;
+        } catch (err) {
+            if (!background) showToast('Failed to fetch status', 'error');
+            return null;
+        } finally {
+            if (!background) setLoading(false);
+        }
+    }, [batch]);
+
+    useEffect(() => {
+        setStatus(null);
+        setIsPolling(false);
+        if (batch) loadStatus();
+    }, [batch, loadStatus]);
+
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        if (!isPolling) {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            return;
+        }
+
+        const poll = async () => {
+            const data = await loadStatus(true);
+            if (data) {
+                if (data.missing_count === 0) {
+                    setIsPolling(false);
+                    showToast('Generation Successful! All embeddings are generated.');
+                    return;
+                } else {
+                    setPollingData(prev => {
+                        if (prev.lastTotal === data.total_embeddings) {
+                            if (prev.unchangedCount >= 3) {
+                                setIsPolling(false);
+                                if (data.missing_count > 0) {
+                                    showToast(`Sync completed but ${data.missing_count} faces could not be detected.`, 'error');
+                                }
+                                return prev;
+                            }
+                            return { ...prev, unchangedCount: prev.unchangedCount + 1 };
+                        } else {
+                            return { unchangedCount: 0, lastTotal: data.total_embeddings };
+                        }
+                    });
+                }
+            }
+            // only schedule next if still polling
+            setPollingData((currentData) => {
+                // If it was cancelled inside the setState above, isPolling will be false on next render, 
+                // but we can just let it schedule and get cleared, or we can check. 
+                // Using the effect cleanup is safer.
+                return currentData;
+            });
+            timerRef.current = setTimeout(poll, 2500);
+        };
+
+        timerRef.current = setTimeout(poll, 2500);
+
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    }, [isPolling, loadStatus]);
+
+    const handleSyncAll = async () => {
+        if (!batch) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`${apiUrl}/attendancemodule/ground-truth-upload/sync-all/${encodeURIComponent(batch)}`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                showToast('Sync triggered successfully! Monitoring progress...');
+                setIsPolling(true);
+                setPollingData({ unchangedCount: 0, lastTotal: -1 });
+            } else {
+                throw new Error('Sync failed');
+            }
+        } catch (err) {
+            showToast('Failed to trigger sync', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div>
+            <Toast toast={toast} />
+            <div style={{ ...styles.card, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'end' }}>
+                    <div>
+                        <label style={styles.label}>Department</label>
+                        <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
+                            <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select department…'}</option>
+                            {departments.map(d => <option key={d}>{d}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label style={styles.label}>Batch</label>
+                        <select value={batch} onChange={e => setBatch(e.target.value)} style={styles.select} disabled={!dept || batchesLoading}>
+                            <option value="">{batchesLoading ? 'Loading…' : !dept ? 'Select dept first' : batches.length ? 'Select batch…' : 'No batches found'}</option>
+                            {batches.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {batch && status && (
+                <div style={styles.card}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                        <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>Synchronization Status</div>
+                        <button onClick={loadStatus} disabled={loading} style={{ ...styles.btnGhost, padding: '6px 14px', fontSize: '12px' }}>
+                            {loading ? 'Refreshing…' : '↺ Refresh'}
+                        </button>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+                        <div style={{ padding: 16, borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.bg }}>
+                            <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: 4 }}>Total ERP Photos</div>
+                            <div style={{ fontSize: '24px', fontWeight: 700, color: theme.text }}>{status.total_photos}</div>
+                        </div>
+                        <div style={{ padding: 16, borderRadius: 8, border: `1px solid ${isPolling ? theme.accent : theme.border}`, background: theme.bg }}>
+                            <div style={{ fontSize: '12px', color: isPolling ? theme.accent : theme.textMuted, marginBottom: 4 }}>
+                                Total Embeddings Generated {isPolling && '(Syncing...)'}
+                            </div>
+                            <div style={{ fontSize: '24px', fontWeight: 700, color: theme.text }}>
+                                {status.total_embeddings}
+                            </div>
+                        </div>
+                        <div style={{ padding: 16, borderRadius: 8, border: `1px solid ${status.missing_count > 0 ? theme.danger : theme.success}`, background: status.missing_count > 0 ? theme.dangerDim : theme.successDim }}>
+                            <div style={{ fontSize: '12px', color: status.missing_count > 0 ? theme.danger : theme.success, marginBottom: 4 }}>Health</div>
+                            <div style={{ fontSize: '16px', fontWeight: 600, color: status.missing_count > 0 ? theme.danger : theme.success }}>
+                                {status.missing_count === 0 ? 'Fully Synchronized ✓' : `${status.missing_count} Missing`}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <button onClick={handleSyncAll} disabled={loading || isPolling} style={{ ...styles.btnPrimary, background: theme.accent, border: 'none', color: '#fff', opacity: (loading || isPolling) ? 0.6 : 1 }}>
+                            {loading ? 'Processing…' : isPolling ? 'Sync in progress...' : 'Force Sync All'}
+                        </button>
+                        <span style={{ fontSize: '12px', color: theme.textMuted }}>
+                            {status.last_sync_timestamp ? `Last updated: ${new Date(status.last_sync_timestamp).toLocaleString('en-IN')}` : 'Never synced'}
+                        </span>
+                    </div>
+
+                    {(status.missing_count > 0 || status.orphaned_count > 0) && (
+                        <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${theme.border}` }}>
+                            {status.missing_count > 0 && (
+                                <div style={{ marginBottom: 16 }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 600, color: theme.danger, marginBottom: 8 }}>Missing Embeddings (Photos exist, but no embedding)</div>
+                                    <div style={{ fontSize: '12px', fontFamily: theme.fontMono, color: theme.textMuted, background: theme.bg, padding: 12, borderRadius: 6, border: `1px solid ${theme.border}` }}>
+                                        {status.missing.join(', ')} {status.missing_count > 50 ? '...' : ''}
+                                    </div>
+                                </div>
+                            )}
+                            {status.orphaned_count > 0 && (
+                                <div>
+                                    <div style={{ fontSize: '13px', fontWeight: 600, color: theme.accent, marginBottom: 8 }}>Orphaned Embeddings (Embedding exists, but photo deleted)</div>
+                                    <div style={{ fontSize: '12px', fontFamily: theme.fontMono, color: theme.textMuted, background: theme.bg, padding: 12, borderRadius: 6, border: `1px solid ${theme.border}` }}>
+                                        {status.orphaned.join(', ')} {status.orphaned_count > 50 ? '...' : ''}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -539,6 +759,7 @@ function GenerateTab({ departments, deptLoading, deptError }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function EmbeddingGeneration() {
     const { departments, deptLoading, deptError } = useDepartments();
+    const [activeTab, setActiveTab] = useState(1);
 
     return (
         <div style={styles.page}>
@@ -547,13 +768,17 @@ export default function EmbeddingGeneration() {
             <div style={{ marginBottom: 20 }}>
                 <div style={styles.heading}>Embedding Generation</div>
                 <div style={{ ...styles.subheading, marginBottom: 0 }}>
-                    Generate face embeddings from ground truth photos — upload an <code style={{ color: theme.accent }}>.xlsx</code> to load roll numbers or paste them directly
+                    Manage face embeddings for ground truth photos
                 </div>
             </div>
 
-            <div style={{ paddingTop: 24 }}>
-                <GenerateTab departments={departments} deptLoading={deptLoading} deptError={deptError} />
+            <div style={{ display: 'flex', borderBottom: `1px solid ${theme.border}`, marginBottom: 24 }}>
+                <Tab label="Subject Embeddings" icon="📚" active={activeTab === 1} onClick={() => setActiveTab(1)} />
+                <Tab label="ERP Ground Truth" icon="👥" active={activeTab === 2} onClick={() => setActiveTab(2)} />
             </div>
+
+            {activeTab === 1 && <GenerateTab departments={departments} deptLoading={deptLoading} deptError={deptError} />}
+            {activeTab === 2 && <ERPSyncTab departments={departments} deptLoading={deptLoading} deptError={deptError} />}
         </div>
     );
 }
