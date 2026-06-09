@@ -475,9 +475,14 @@ function GenerateTab({ departments, deptLoading, deptError }) {
     if (!dept || !sem || !subject) return;
     setHistoryLoading(true);
     try {
-        const res  = await fetch(`${EMB_BASE}/status?dept=${encodeURIComponent(dept)}&sem=${encodeURIComponent(sem)}&subject=${encodeURIComponent(subject)}`);
+        const res  = await fetch(`${EMB_BASE}/history-by-dept?dept=${encodeURIComponent(dept)}`);
         const data = await res.json();
-        setHistory(data.records || []);
+// Filter client-side by sem+subject so the table stays specific
+        const all = data.records || [];
+        setHistory(all.filter(r =>
+           String(r.sem).trim() === String(sem).trim() &&
+           (r.subject || '').trim().toLowerCase() === subject.trim().toLowerCase()
+    ));
     } catch (_) {}
     setHistoryLoading(false);
 }, [dept, sem, subject]);
