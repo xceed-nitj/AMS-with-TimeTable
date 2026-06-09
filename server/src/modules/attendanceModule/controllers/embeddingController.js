@@ -323,25 +323,22 @@ uploadPkl() {
         // by scanning for any batch folder that contains the roll number.
         // Alternatively, if dept is supplied we can narrow down. For now we scan.
 
-        let record = await StudentEmbedding.findOneAndUpdate(
-            { sem: semSafe, subject: subject.trim(), dept: (dept || '').trim().toUpperCase() },
-            {
-                $set: {
-                    embeddingFile,
-                    session:         sessionStr,
-                    subjectCode:     subjectCode,
-                    rollNos,
-                    missedRollNos:   [],
-                    status:          'pending',
-                    studentsTotal:   rollNos.length,
-                    studentsSuccess: 0,
-                    studentsFailed:  0,
-                    generatedAt:     new Date(),
-                    lastUpdatedAt:   new Date(),
-                },
-            },
-            { upsert: true, new: true }
-        );
+        let record = await StudentEmbedding.create({
+    sem:             semSafe,
+    subject:         subject.trim(),
+    dept:            (dept || '').trim().toUpperCase(),
+    embeddingFile,
+    session:         sessionStr,
+    subjectCode,
+    rollNos,
+    missedRollNos:   [],
+    status:          'pending',
+    studentsTotal:   rollNos.length,
+    studentsSuccess: 0,
+    studentsFailed:  0,
+    generatedAt:     new Date(),
+    lastUpdatedAt:   new Date(),
+});
 
         let success = 0, failed = 0;
         const failedList    = [];
