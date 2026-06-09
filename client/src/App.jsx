@@ -1,3 +1,5 @@
+// client/src/App.jsx
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -216,6 +218,8 @@ import FrameVerification from './attendancemodule/FrameVerification';
 import AMSDashboard        from './attendancemodule/AMSDashboard';
 import AMSLayout           from './attendancemodule/AMSLayout';
 import CameraRegistry      from './attendancemodule/camera';
+import EditSessionDates    from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
+
 function App() {
   return (
     <Router>
@@ -265,45 +269,45 @@ function App() {
         </Route>
 
         {/* Original Routes */}
-<Route path="/tt/:generatedLink">
-  <Route index element={<Timetable />}></Route>
-  <Route path="addfaculty" element={<AddFaculty />} />
-  <Route path="importttdata" element={<ImportTT />} />
-  <Route path="addroom" element={<AddRoom />} />
-  <Route path="addcommonload" element={<CommonLoad />} />
-  <Route path="addlunchload" element={<LunchLoad />} />
-  <Route path="addsubjects" element={<Subjects />} />
-  <Route path="addsem" element={<AddSem />} />
-  <Route path="addnote" element={<Note />} />
-  <Route path="firstyearload" element={<FirstYearLoad />} />
-  <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
-  <Route path="lockedsummary" element={<LockedSummary />} />
-  <Route path="generatepdf" element={<PrintSummary />} />
-  <Route path="loaddistribution" element={<LoadDistribution />} />
-  <Route path="roomallotment" element={<ViewAllotmentPage />} />
-  <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
-  <Route path="facultyload" element={<FacultyDeptHourLoad />} />
-</Route>
+        <Route path="/tt/:generatedLink">
+          <Route index element={<Timetable />}></Route>
+          <Route path="addfaculty" element={<AddFaculty />} />
+          <Route path="importttdata" element={<ImportTT />} />
+          <Route path="addroom" element={<AddRoom />} />
+          <Route path="addcommonload" element={<CommonLoad />} />
+          <Route path="addlunchload" element={<LunchLoad />} />
+          <Route path="addsubjects" element={<Subjects />} />
+          <Route path="addsem" element={<AddSem />} />
+          <Route path="addnote" element={<Note />} />
+          <Route path="firstyearload" element={<FirstYearLoad />} />
+          <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
+          <Route path="lockedsummary" element={<LockedSummary />} />
+          <Route path="generatepdf" element={<PrintSummary />} />
+          <Route path="loaddistribution" element={<LoadDistribution />} />
+          <Route path="roomallotment" element={<ViewAllotmentPage />} />
+          <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
+          <Route path="facultyload" element={<FacultyDeptHourLoad />} />
+        </Route>
 
-{/* Backup Routes - v1 */}
-<Route path="/tt/v1/:generatedLink">
-  <Route index element={<Timetable2 />}></Route>
-  <Route path="addfaculty" element={<AddFaculty />} />
-  <Route path="importttdata" element={<ImportTT />} />
-  <Route path="addroom" element={<AddRoom />} />
-  <Route path="addcommonload" element={<CommonLoad />} />
-  <Route path="addlunchload" element={<LunchLoad />} />
-  <Route path="addsubjects" element={<Subjects />} />
-  <Route path="addsem" element={<AddSem />} />
-  <Route path="addnote" element={<Note />} />
-  <Route path="firstyearload" element={<FirstYearLoad />} />
-  <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
-  <Route path="lockedsummary" element={<LockedSummary />} />
-  <Route path="generatepdf" element={<PrintSummary />} />
-  <Route path="loaddistribution" element={<LoadDistribution />} />
-  <Route path="roomallotment" element={<ViewAllotmentPage />} />
-  <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
-</Route>
+        {/* Backup Routes - v1 */}
+        <Route path="/tt/v1/:generatedLink">
+          <Route index element={<Timetable2 />}></Route>
+          <Route path="addfaculty" element={<AddFaculty />} />
+          <Route path="importttdata" element={<ImportTT />} />
+          <Route path="addroom" element={<AddRoom />} />
+          <Route path="addcommonload" element={<CommonLoad />} />
+          <Route path="addlunchload" element={<LunchLoad />} />
+          <Route path="addsubjects" element={<Subjects />} />
+          <Route path="addsem" element={<AddSem />} />
+          <Route path="addnote" element={<Note />} />
+          <Route path="firstyearload" element={<FirstYearLoad />} />
+          <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
+          <Route path="lockedsummary" element={<LockedSummary />} />
+          <Route path="generatepdf" element={<PrintSummary />} />
+          <Route path="loaddistribution" element={<LoadDistribution />} />
+          <Route path="roomallotment" element={<ViewAllotmentPage />} />
+          <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
+        </Route>
         {/* Same link */}
         <Route path="classrooms" element={<ViewMRooms />} />
         {/* Same link */}
@@ -315,7 +319,7 @@ function App() {
         <Route path="/tt/admin" element={<AdminPage />} />
         <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
         <Route path="/tt/admin/facultyload" element={<FacultyLoadCalculation />} />
-<Route path="tt/coe/facultyload" element={<FacultyLoadCOE/>}/>
+        <Route path="tt/coe/facultyload" element={<FacultyLoadCOE/>}/>
 
         {/* Same link */}
         <Route path="/timetable">
@@ -554,7 +558,7 @@ function App() {
             <ErrorPage
               message="Custom error message..."
               destinationName={false}
-              animation={<LogoAnimation style={{ opacity: '20%' }} />} // any type of component can be sent here
+              animation={<LogoAnimation style={{ opacity: '20%' }} />} // any type of component can be sent here 
             />
           }
         ></Route>
@@ -620,25 +624,29 @@ function App() {
         <Route path="/ml" element={<MLDashboard />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
-<Route path="/attendance" element={<AMSLayout />}>
-  <Route index element={<AMSDashboard />} />
-  <Route path="groundtruth/assign"   element={<RollAssign />} />
-  {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
-  <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
-  <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
-  <Route path="groundtruth/photos"   element={<PhotoEdit />} />
-  <Route path="groundtruth/upload"   element={<GroundTruthUpload />} />
-  <Route path="embeddings"           element={<EmbeddingGeneration />} />
-  <Route path="report"               element={<Attendancedoc />} />
-  <Route path="model"                element={<ModelPerformance />} />
-  <Route path="reports"              element={<AttendanceReport />} />
-  <Route path="frame-verification"   element={<FrameVerification />} />
-</Route>
+        <Route path="/attendance" element={<AMSLayout />}>
+          <Route index element={<AMSDashboard />} />
+          
+          {/* 2. Session setup sub-route handler registered context array */}
+          <Route path="edit-session-dates" element={<EditSessionDates />} />
 
-{/* Camera Registry — top-level but still inside AMSLayout */}
-<Route path="/cameras" element={<AMSLayout />}>
-  <Route index element={<CameraRegistry />} />
-</Route>
+          <Route path="groundtruth/assign"   element={<RollAssign />} />
+          {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
+          <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
+          <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
+          <Route path="groundtruth/photos"   element={<PhotoEdit />} />
+          <Route path="groundtruth/upload"   element={<GroundTruthUpload />} />
+          <Route path="embeddings"           element={<EmbeddingGeneration />} />
+          <Route path="report"               element={<Attendancedoc />} />
+          <Route path="model"                element={<ModelPerformance />} />
+          <Route path="reports"              element={<AttendanceReport />} />
+          <Route path="frame-verification"   element={<FrameVerification />} />
+        </Route>
+
+        {/* Camera Registry — top-level but still inside AMSLayout */}
+        <Route path="/cameras" element={<AMSLayout />}>
+          <Route index element={<CameraRegistry />} />
+        </Route>
 
       </Routes>
       {/* <Footer/> */}
