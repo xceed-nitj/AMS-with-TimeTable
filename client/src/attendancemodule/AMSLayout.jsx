@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { theme } from './config';
+import getEnvironment from '../getenvironment';
 
 const T = theme;
+const apiUrl = getEnvironment();
 
 const NAV = [
   { id: 'dashboard',  route: '/attendance',                           label: 'Dashboard'},
@@ -49,6 +51,30 @@ export default function AMSLayout() {
   const location  = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile]   = useState(false);
+  const [accessChecked, setAccessChecked] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${apiUrl}/attendancemodule/dept-admin/context`, {
+      credentials: 'include',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Attendance access denied');
+        if (!data.fullAccess) {
+          navigate('/dept-admin/dashboard', { replace: true });
+          return;
+        }
+        setAccessChecked(true);
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') {
+          navigate('/userroles', { replace: true });
+        }
+      });
+    return () => controller.abort();
+  }, [navigate]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -65,6 +91,8 @@ export default function AMSLayout() {
   }
 
   const SIDEBAR_W = collapsed ? 52 : 208;
+
+  if (!accessChecked) return null;
 
   return (
     <>

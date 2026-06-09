@@ -8,6 +8,10 @@ const apiUrl    = getEnvironment();
 const RA_BASE   = `${apiUrl}/attendancemodule/roll-assign`;
 const GT_BASE   = `${apiUrl}/attendancemodule/ground-truth`;
 const FLAG_BASE = `${apiUrl}/attendancemodule/flags`;
+const fetch = (input, init = {}) => window.fetch(input, {
+    credentials: 'include',
+    ...init,
+});
 
 const HIGH   = 0.62;
 const MEDIUM = 0.45;
@@ -27,12 +31,16 @@ function broadcastRefresh(batchName) {
     try { new BroadcastChannel('attendance_refresh').postMessage({ type: 'refresh', batch: batchName }); } catch (_) {}
 }
 
-export default function RollAssign() {
-    const { departments, loading: deptLoading, error: deptError } = useDepartments();
+export default function RollAssign({ fixedDepartment = '' }) {
+    const { departments, deptLoading, deptError } = useDepartments();
 
     const [degree,        setDegree]        = useState('BTECH');
-    const [department,    setDepartment]    = useState('');
+    const [department,    setDepartment]    = useState(fixedDepartment);
     const [year,          setYear]          = useState('');
+
+    useEffect(() => {
+        if (fixedDepartment) setDepartment(fixedDepartment);
+    }, [fixedDepartment]);
 
     const [loading,       setLoading]       = useState(false);
     const [matching,      setMatching]      = useState(false);
@@ -628,21 +636,28 @@ export default function RollAssign() {
             </div>
 
             <div style={{ ...styles.card, marginBottom: 20 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 16, alignItems: 'end' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: fixedDepartment ? '1fr 1fr auto' : '1fr 1fr 1fr auto',
+                    gap: 16,
+                    alignItems: 'end',
+                }}>
                     <div>
                         <label style={styles.label}>Degree</label>
                         <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
                             {DEGREES.map(d => <option key={d}>{d}</option>)}
                         </select>
                     </div>
-                    <div>
-                        <label style={styles.label}>Department</label>
-                        <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
-                            <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}</option>
-                            {departments.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                        {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>}
-                    </div>
+                    {!fixedDepartment && (
+                        <div>
+                            <label style={styles.label}>Department</label>
+                            <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
+                                <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}</option>
+                                {departments.map(d => <option key={d}>{d}</option>)}
+                            </select>
+                            {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>}
+                        </div>
+                    )}
                     <div>
                         <label style={styles.label}>Year</label>
                         <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>

@@ -13,7 +13,7 @@ export function useDepartments() {
     useEffect(() => {
         let cancelled = false;
         setDeptLoading(true);
-        fetch(`${API_BASE}/departments`)
+        fetch(`${API_BASE}/departments`, { credentials: 'include' })
             .then(r => r.json())
             .then(data => {
                 if (cancelled) return;

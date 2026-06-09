@@ -102,10 +102,10 @@ const AllocatedRolesPage = () => {
         navigate('/dm/admin/dashboard');
         break;
       case 'iams-admin':
-        navigate('/attendance');
+        navigate('/iams-admin');
         break;
       case 'iams-dept-admin':
-        navigate('/attendance');
+        navigate('/dept-admin/dashboard');
         break;
       default:
         return 'some unknown role! If it is a new role, add it in the cases';
@@ -202,13 +202,13 @@ const AllocatedRolesPage = () => {
                       break;
                     case 'iams-admin':
                       roleName = 'IAMS Admin';
-                      roleLink = '/attendance';
+                      roleLink = '/iams-admin';
                       roleDescription = 'Manage face recognition attendance system';
                       roleColor = 'cyan';
                       break;
                     case 'iams-dept-admin':
                       roleName = 'IAMS Department Admin';
-                      roleLink = '/attendance';
+                      roleLink = '/dept-admin/dashboard';
                       roleDescription = 'Department-level attendance management';
                       roleColor = 'cyan';
                       break;

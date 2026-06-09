@@ -1,10 +1,45 @@
 const express = require("express");
 const router  = express.Router();
+const {
+    attendanceRoleAccess,
+    enforceAttendanceDepartment,
+} = require("../middleware/attendanceAccess");
+const deptAdminController = require("../controllers/deptAdminController");
 
 router.use('/student',      require("./student"));
-router.use('/ground-truth', require("./groundTruthRoutes"));
-router.use('/roll-assign',  require("./rollAssignRoutes"));
-router.use('/flags',        require("./flagRoutes"));
+router.get(
+    '/dept-admin/context',
+    ...attendanceRoleAccess,
+    deptAdminController.getContext,
+);
+router.get(
+    '/dept-admin/stats/today',
+    ...attendanceRoleAccess,
+    deptAdminController.getTodayAttendanceStats,
+);
+router.get(
+    '/dept-admin/reports',
+    ...attendanceRoleAccess,
+    deptAdminController.getReports,
+);
+router.use(
+    '/ground-truth',
+    ...attendanceRoleAccess,
+    enforceAttendanceDepartment,
+    require("./groundTruthRoutes"),
+);
+router.use(
+    '/roll-assign',
+    ...attendanceRoleAccess,
+    enforceAttendanceDepartment,
+    require("./rollAssignRoutes"),
+);
+router.use(
+    '/flags',
+    ...attendanceRoleAccess,
+    enforceAttendanceDepartment,
+    require("./flagRoutes"),
+);
 router.use('/reports',      require("./attendanceReportRoutes"));
 router.use('/cameras',      require("./cameraRoutes"));
 router.use('/embeddings',   require("./embeddingRouter"));

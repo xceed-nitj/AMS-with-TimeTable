@@ -18,7 +18,10 @@ const controller = new GroundTruthController();
 // Used by ground truth generation page so batch folder names always match
 router.get('/departments', async (req, res) => {
     try {
-        const timetables = await TimeTable.find({}, 'dept session code currentSession').lean();
+        const timetableFilter = req.attendanceFullAccess
+            ? {}
+            : { dept: { $regex: new RegExp(`^${req.attendanceDepartment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } };
+        const timetables = await TimeTable.find(timetableFilter, 'dept session code currentSession').lean();
         // Deduplicate by dept (case-insensitive)
         const seen = new Set();
         const depts = [];
@@ -36,7 +39,10 @@ router.get('/departments', async (req, res) => {
 // Ground truth dashboard stats (aggregated from ClusterMatch)
 router.get('/stats', async (req, res) => {
     try {
-        const agg = await ClusterMatch.aggregate([{ $facet: {
+        const match = req.attendanceFullAccess
+            ? {}
+            : { batch: { $regex: new RegExp(`^[^_]+_${req.attendanceDepartment.trim().replace(/[\s-]+/g, '_').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_`, 'i') } };
+        const agg = await ClusterMatch.aggregate([{ $match: match }, { $facet: {
             total:     [{ $count: 'n' }],
             approved:  [{ $match: { status: 'approved' } }, { $count: 'n' }],
             matched:   [{ $match: { status: { $in: ['matched', 'approved'] } } }, { $count: 'n' }],
