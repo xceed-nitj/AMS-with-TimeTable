@@ -95,7 +95,6 @@ import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
 
-
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
@@ -187,9 +186,8 @@ import DoctorDetailView from './diabeticsModule/pages/DoctorDetailView';
 import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 
 // import fileUpload
-import FileUpload from './fileUpload/fileUploads.jsx'
-import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
-
+import FileUpload from './fileUpload/fileUploads.jsx';
+import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx';
 
 //import machine learning modules
 import LinearRegression from './mlcoursemodule/linearregression.jsx';
@@ -216,10 +214,10 @@ import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
 
-import AMSDashboard        from './attendancemodule/AMSDashboard';
-import AMSLayout           from './attendancemodule/AMSLayout';
-import CameraRegistry      from './attendancemodule/camera';
-import EditSessionDates    from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
+import AMSDashboard from './attendancemodule/AMSDashboard';
+import AMSLayout from './attendancemodule/AMSLayout';
+import CameraRegistry from './attendancemodule/camera';
+import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
 
 // ─── Department Admin Module Imports ────────────────────────────
 import DeptAdminLayout from './deptadmin/DeptAdminLayout';
@@ -256,7 +254,6 @@ function App() {
         <Route path="/camera" element={<Camera />} />
         <Route path="/cameras" element={<Camera />} />
         <Route path="/camera/preview" element={<CameraPreview />} />
-        <Route path="/cameras/preview" element={<CameraPreview />} />
 
         {/* <Route path="/timetable" element={<Timetable />} /> */}
 
@@ -325,13 +322,19 @@ function App() {
 
         <Route path="/tt/admin" element={<AdminPage />} />
         <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
-        <Route path="/tt/admin/facultyload" element={<FacultyLoadCalculation />} />
-        <Route path="tt/coe/facultyload" element={<FacultyLoadCOE/>}/>
+        <Route
+          path="/tt/admin/facultyload"
+          element={<FacultyLoadCalculation />}
+        />
+        <Route path="tt/coe/facultyload" element={<FacultyLoadCOE />} />
 
         {/* Same link */}
         <Route path="/timetable">
           <Route index element={<MasterView />} />
-          <Route path="faculty/:facultyname" element={<MasterView autofill />} />
+          <Route
+            path="faculty/:facultyname"
+            element={<MasterView autofill />}
+          />
         </Route>
         {/* Same link */}
 
@@ -354,7 +357,6 @@ function App() {
           element={<FacultyHourLoad />}
         />
 
-
         <Route path="/cm/addevent" element={<EventRegistration />} />
         <Route path="/cm/dashboard" element={<CMDashboard />} />
         <Route path="/cm/:eventid" element={<CertificateForm />} />
@@ -371,8 +373,7 @@ function App() {
           path="/cm/userimages/signatures/:userId"
           element={<UserSignatures />}
         />
-        <Route path="/payment-portal" element={<PaymentPortal/>} />
-
+        <Route path="/payment-portal" element={<PaymentPortal />} />
 
         {/* Review management routes*/}
         <Route path="/prm/login" element={<ReviewLogin />} />
@@ -565,7 +566,7 @@ function App() {
             <ErrorPage
               message="Custom error message..."
               destinationName={false}
-              animation={<LogoAnimation style={{ opacity: '20%' }} />} // any type of component can be sent here 
+              animation={<LogoAnimation style={{ opacity: '20%' }} />} // any type of component can be sent here
             />
           }
         ></Route>
@@ -626,29 +627,31 @@ function App() {
         <Route path="/dm/addDailyDosage" element={<DailyDosageForm />} />
         <Route path="/dm/addSickDay" element={<SickDayForm />} />
 
-
         <Route path="/ml/t1" element={<LinearRegression />} />
         <Route path="/ml" element={<MLDashboard />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
-        <Route path="/iams-admin/*" element={<Navigate to="/attendance" replace />} />
+        <Route
+          path="/iams-admin/*"
+          element={<Navigate to="/attendance" replace />}
+        />
         <Route path="/attendance" element={<AMSLayout />}>
           <Route index element={<AMSDashboard />} />
 
           {/* 2. Session setup sub-route handler registered context array */}
           <Route path="edit-session-dates" element={<EditSessionDates />} />
 
-          <Route path="groundtruth/assign"   element={<RollAssign />} />
+          <Route path="groundtruth/assign" element={<RollAssign />} />
           {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
-          <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
-          <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
-          <Route path="groundtruth/photos"   element={<PhotoEdit />} />
-          <Route path="groundtruth/upload"   element={<GroundTruthUpload />} />
-          <Route path="embeddings"           element={<EmbeddingGeneration />} />
-          <Route path="report"               element={<Attendancedoc />} />
-          <Route path="model"                element={<ModelPerformance />} />
-          <Route path="reports"              element={<AttendanceReport />} />
-          <Route path="frame-verification"   element={<FrameVerification />} />
+          <Route path="groundtruth/edit" element={<EditGroundTruth />} />
+          <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
+          <Route path="groundtruth/photos" element={<PhotoEdit />} />
+          <Route path="groundtruth/upload" element={<GroundTruthUpload />} />
+          <Route path="embeddings" element={<EmbeddingGeneration />} />
+          <Route path="report" element={<Attendancedoc />} />
+          <Route path="model" element={<ModelPerformance />} />
+          <Route path="reports" element={<AttendanceReport />} />
+          <Route path="frame-verification" element={<FrameVerification />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}
@@ -663,14 +666,11 @@ function App() {
         {/* Camera Registry — top-level but still inside AMSLayout */}
         <Route path="/cameras" element={<AMSLayout />}>
           <Route index element={<CameraRegistry />} />
+          <Route path="preview" element={<CameraPreview />} />
         </Route>
-
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
-
-
-
     </Router>
   );
 }
