@@ -14,11 +14,12 @@ const NAV = [
   { id: 'rtsp',       route: '/attendance/groundtruth/rtsp',           label: 'RTSP Capture' },
   { id: 'assign',     route: '/attendance/groundtruth/assign',          label: 'Roll Assignment' },
   { id: 'photos',     route: '/attendance/groundtruth/photos',          label: 'Photo Editor' },
-  { id: 'upload',     route: '/attendance/groundtruth/upload',          label: 'Manual Upload' },
+  { id: 'upload',     route: '/attendance/groundtruth/upload',          label: 'ERP Image Upload' },
   { id: 'reports',    route: '/attendance/reports',                    label: 'Attendance Reports' },
   { id: 'verify',     route: '/attendance/frame-verification',         label: 'Frame Verification' },
   { id: 'cameras',    route: '/cameras',                               label: 'Camera Registry' },
   { id: 'embeddings', route: '/attendance/embeddings',                  label: 'Embeddings' },
+  { id: 'settings',   route: '/attendance/settings',                    label: 'Settings' },
 ];
 
 const COLORS = {
@@ -32,6 +33,7 @@ const COLORS = {
   verify:     '#ec4899',
   cameras:    '#f97316',
   embeddings: '#f59e0b',
+  settings:   '#64748b',
 };
 
 const CSS = `

@@ -140,6 +140,9 @@ import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import EditTemplate from './reviewmodule/pages/EditTemplate';
+
+import SettingsIndex from './attendancemodule/settings/SettingsIndex';
+import BatchManagement from './attendancemodule/settings/BatchManagement';
 import EditDefaultTemplate from './reviewmodule/pages/EditDefaultTemplate.jsx';
 import NirfRanking from './nirf/rankings';
 import AddPaper from './reviewmodule/pages/addpaper';
@@ -649,6 +652,8 @@ function App() {
           <Route path="model"                element={<ModelPerformance />} />
           <Route path="reports"              element={<AttendanceReport />} />
           <Route path="frame-verification"   element={<FrameVerification />} />
+          <Route path="settings"             element={<SettingsIndex />} />
+          <Route path="settings/batches"     element={<BatchManagement />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}

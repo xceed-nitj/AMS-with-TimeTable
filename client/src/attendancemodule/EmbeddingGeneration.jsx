@@ -179,6 +179,21 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
     const [isPolling, setIsPolling] = useState(false);
     const [pollingData, setPollingData] = useState({ unchangedCount: 0, lastTotal: -1 });
     const [toast, setToast] = useState(null);
+    const [completionModal, setCompletionModal] = useState(null);
+
+    const triggerNotification = (title, body) => {
+        if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+                new Notification(title, { body });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification(title, { body });
+                    }
+                });
+            }
+        }
+    };
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -193,14 +208,16 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
         }
         let cancelled = false;
         setBatchesLoading(true);
-        const rawDepartment = dept.replace(/_/g, ' ');
-        fetch(`${apiUrl}/timetablemodule/mastersem/dept/${encodeURIComponent(rawDepartment)}`)
+        // Query the new Batch model using the exact department string
+        fetch(`${apiUrl}/attendancemodule/settings/batches/department/${encodeURIComponent(dept)}`, {
+            credentials: 'include'
+        })
             .then(res => res.json())
             .then(data => {
                 if (cancelled) return;
-                if (Array.isArray(data)) {
-                    const sems = [...new Set(data.map(item => item.sem))].filter(Boolean).sort();
-                    setBatches(sems);
+                if (data.batches && Array.isArray(data.batches)) {
+                    const batchStrings = [...new Set(data.batches.map(item => item.batchString))].filter(Boolean).sort();
+                    setBatches(batchStrings);
                 } else {
                     setBatches([]);
                 }
@@ -232,6 +249,17 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
         if (batch) loadStatus();
     }, [batch, loadStatus]);
 
+    // Auto-refresh data periodically so the user doesn't have to click "Refresh"
+    useEffect(() => {
+        if (!batch || isPolling) return;
+        
+        const intervalId = setInterval(() => {
+            loadStatus(true);
+        }, 15000); // refresh every 15 seconds
+        
+        return () => clearInterval(intervalId);
+    }, [batch, isPolling, loadStatus]);
+
     const timerRef = useRef(null);
 
     useEffect(() => {
@@ -246,14 +274,21 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
                 if (data.missing_count === 0) {
                     setIsPolling(false);
                     showToast('Generation Successful! All embeddings are generated.');
+                    setCompletionModal({ success: true, message: 'All embeddings have been generated successfully.' });
+                    triggerNotification('Embedding Generation Completed', 'All embeddings have been generated successfully.');
                     return;
                 } else {
                     setPollingData(prev => {
                         if (prev.lastTotal === data.total_embeddings) {
-                            if (prev.unchangedCount >= 3) {
+                            if (prev.unchangedCount >= 6) { // 6 checks of 10s = 60s timeout
                                 setIsPolling(false);
                                 if (data.missing_count > 0) {
                                     showToast(`Sync completed but ${data.missing_count} faces could not be detected.`, 'error');
+                                    setCompletionModal({ success: false, message: `Sync completed but ${data.missing_count} faces could not be detected.` });
+                                    triggerNotification('Embedding Generation Finished', `${data.missing_count} faces could not be detected.`);
+                                } else {
+                                    setCompletionModal({ success: true, message: 'All embeddings have been generated successfully.' });
+                                    triggerNotification('Embedding Generation Completed', 'All embeddings have been generated successfully.');
                                 }
                                 return prev;
                             }
@@ -266,15 +301,12 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
             }
             // only schedule next if still polling
             setPollingData((currentData) => {
-                // If it was cancelled inside the setState above, isPolling will be false on next render, 
-                // but we can just let it schedule and get cleared, or we can check. 
-                // Using the effect cleanup is safer.
                 return currentData;
             });
-            timerRef.current = setTimeout(poll, 2500);
+            timerRef.current = setTimeout(poll, 10000);
         };
 
-        timerRef.current = setTimeout(poll, 2500);
+        timerRef.current = setTimeout(poll, 10000);
 
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
@@ -305,6 +337,41 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
     return (
         <div>
             <Toast toast={toast} />
+
+            {completionModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <div style={{
+                        background: theme.bg, padding: 32, borderRadius: 12,
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxWidth: 400, width: '100%',
+                        textAlign: 'center', border: `1px solid ${completionModal.success ? theme.success : theme.danger}`
+                    }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>
+                            {completionModal.success ? '✅' : '⚠️'}
+                        </div>
+                        <h2 style={{ margin: '0 0 12px 0', color: theme.text, fontSize: '20px' }}>
+                            {completionModal.success ? 'Sync Complete' : 'Review Required'}
+                        </h2>
+                        <p style={{ margin: '0 0 24px 0', color: theme.textMuted, fontSize: '14px', lineHeight: 1.5 }}>
+                            {completionModal.message}
+                        </p>
+                        <button
+                            onClick={() => setCompletionModal(null)}
+                            style={{
+                                ...styles.btnPrimary,
+                                background: completionModal.success ? theme.success : theme.accent,
+                                width: '100%', padding: '10px'
+                            }}
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div style={{ ...styles.card, marginBottom: 24 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'end' }}>
                     <div>
