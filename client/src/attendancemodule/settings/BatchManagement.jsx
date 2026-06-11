@@ -71,7 +71,6 @@ export default function BatchManagement() {
                 const rawDegrees = data.map(item => item.degree).filter(Boolean);
                 const normalizedDegrees = rawDegrees.map(deg => {
                     let cleaned = deg.toUpperCase().trim();
-                    cleaned = cleaned.split('-')[0].trim(); // Strip suffixes like "-CSE" or "-DE"
                     cleaned = cleaned.replace(/\s+/g, ''); // Remove spaces like "M. Tech" -> "M.Tech"
                     cleaned = cleaned.replace(/\.$/, '');  // Remove trailing dot like "M.Tech." -> "M.Tech"
                     return cleaned;
