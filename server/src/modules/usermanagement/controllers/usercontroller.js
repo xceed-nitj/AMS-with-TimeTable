@@ -14,12 +14,13 @@ const ejsTemplatePath = path.join(__dirname, "otpbody.ejs");
 const mailSender = require("../../mailsender");
 const {
   getFacultyDepartmentByEmail,
+  getTimetableDepartment,
   findDepartmentCoordinator,
 } = require("./facultyDepartment");
 
 exports.register = async (req, res, next) => {
-  const { email, password, roles } = req.body;
-  console.log(req);
+  const { email, password, roles, dept } = req.body;
+  let resolvedDepartment = typeof dept === "string" ? dept.trim() : "";
 
   const existingUser = await User.findOne({ email: email })
   if (existingUser !== null) {
@@ -32,18 +33,30 @@ exports.register = async (req, res, next) => {
     return res.status(400).json({ message: "Password less than 6 characters" });
   }
   try {
-    if (roles?.includes("iams-dept-admin")) {
-      const department = await getFacultyDepartmentByEmail(email);
-      if (!department) {
+    if (resolvedDepartment) {
+      const timetableDepartment = await getTimetableDepartment(resolvedDepartment);
+      if (!timetableDepartment) {
         return res.status(400).json({
-          message: "A matching Faculty profile is required for an IAMS Department Admin",
+          message: "Select a valid department from the timetable",
+        });
+      }
+      resolvedDepartment = timetableDepartment;
+    }
+
+    if (roles?.includes("iams-dept-admin")) {
+      if (!resolvedDepartment) {
+        resolvedDepartment = await getFacultyDepartmentByEmail(email);
+      }
+      if (!resolvedDepartment) {
+        return res.status(400).json({
+          message: "Department is required for an IAMS Department Admin",
         });
       }
 
-      const existingCoordinator = await findDepartmentCoordinator(department);
+      const existingCoordinator = await findDepartmentCoordinator(resolvedDepartment);
       if (existingCoordinator) {
         return res.status(409).json({
-          message: `${department} already has an IAMS Department Admin`,
+          message: `${resolvedDepartment} already has an IAMS Department Admin`,
         });
       }
     }
@@ -63,6 +76,7 @@ exports.register = async (req, res, next) => {
           email: email,
           password: hash,
           role: roles,
+          dept: resolvedDepartment,
           isEmailVerified: false,
           isFirstLogin: false,
         });
@@ -86,9 +100,11 @@ exports.register = async (req, res, next) => {
         });
 
         const otp = await sendOTP(email);
+        const userResponse = user.toObject();
+        delete userResponse.password;
         res.status(201).json({
           message: "User successfully created",
-          user,
+          user: userResponse,
         });
       } catch (createErr) {
         res.status(400).json({
