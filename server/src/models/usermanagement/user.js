@@ -13,6 +13,11 @@ const UserSchema = new Mongoose.Schema({
     required: true,
   }, 
   profession: {type: String},
+  dept: {
+    type: String,
+    trim: true,
+    default: "",
+  },
   email: [{
     type: String,
     required: true,

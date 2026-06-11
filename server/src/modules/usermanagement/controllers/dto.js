@@ -15,7 +15,8 @@ async function getUserDetails(userId) {
       return null; // User not found
     }
 
-    const department = await getFacultyDepartmentByEmail(user.email);
+    const department = user.dept?.trim()
+      || await getFacultyDepartmentByEmail(user.email);
     const userDetails = {
       email: user.email,
       role: user.role,
