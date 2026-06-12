@@ -316,7 +316,7 @@ export default function EditGroundTruth() {
                                 <option value="">
                                     {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
                                 </option>
-                                {departments.map(d => <option key={d}>{d}</option>)}
+                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
                             </select>
                             {deptError && (
                                 <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>

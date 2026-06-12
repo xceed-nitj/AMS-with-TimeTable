@@ -206,6 +206,21 @@ const cssReset = `
     .ams-page-header p {
         font-size: 13px; color: ${theme.textMuted}; margin: 0;
     }
+
+    /* ── Unified tab bar (segmented control) ── */
+    .ams-tabs { display: inline-flex; gap: 2px; background: #eef0f8; border-radius: 10px; padding: 4px; margin-bottom: 24px; }
+    .ams-tab  { padding: 7px 20px; border: none; background: transparent; border-radius: 7px; font-size: 13px; font-weight: 600; color: #7b84ab; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; white-space: nowrap; font-family: inherit; line-height: 1.5; }
+    .ams-tab:hover  { color: #1a1f3c; background: rgba(255,255,255,0.65); }
+    .ams-tab.active { background: #ffffff; color: #6366f1; box-shadow: 0 1px 4px rgba(26,31,60,0.12); }
+
+    /* ── Unified table ── */
+    .ams-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .ams-table th { background: #f5f6fb; padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #7b84ab; border-bottom: 1px solid #e4e8f5; white-space: nowrap; }
+    .ams-table td { padding: 11px 16px; border-bottom: 1px solid #e4e8f5; color: #1a1f3c; vertical-align: middle; }
+    .ams-table tbody tr:last-child td { border-bottom: none; }
+    .ams-table tbody tr { transition: background .1s; }
+    .ams-table tbody tr:hover td { background: #f8f9ff; }
+    .ams-table tfoot td { padding: 10px 16px; background: #f5f6fb; font-weight: 700; font-size: 12px; border-top: 2px solid #e4e8f5; border-bottom: none; }
 `;
 
 export { API_BASE, TIMETABLE_API, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset };

@@ -4,8 +4,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import getEnvironment from '../getenvironment';
-import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
+import { API_BASE, DEGREES, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
+import { useBatchYears } from './useBatchYears';
 
 const _apiUrl    = getEnvironment();
 const CAMERA_API = `${_apiUrl}/attendancemodule/cameras`;
@@ -201,6 +202,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
     const [degree,     setDegree]     = useState('BTECH');
     const [department, setDepartment] = useState(fixedDepartment);
     const { departments, deptLoading, deptError } = useDepartments();
+    const { batchYears, batchYearsLoading } = useBatchYears();
     const [year,       setYear]       = useState('');
     const [cameraId,   setCameraId]   = useState(CAMERAS[0].id);
 
@@ -775,7 +777,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                             <label style={styles.label}>Department</label>
                             <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
                                 <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select…'}</option>
-                                {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
                             </select>
                             {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 4 }}>{deptError}</div>}
                         </div>
@@ -784,7 +786,9 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                         <label style={styles.label}>Year (Batch)</label>
                         <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>
                             <option value="">Select…</option>
-                            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                            {batchYearsLoading
+                                ? <option>Loading…</option>
+                                : batchYears.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
                 </div>

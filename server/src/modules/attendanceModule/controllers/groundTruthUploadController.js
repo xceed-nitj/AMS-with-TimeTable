@@ -497,6 +497,59 @@ class GroundTruthUploadController {
         }
     }
 
+    // ─── List Photos in a Batch ───────────────────────────────────────
+    async listPhotos(req, res) {
+        try {
+            const batch = sanitizeBatch(req.params.batch);
+            const batchPath = path.join(ERP_PHOTOS_DIR, batch);
+            assertInsideRoot(batchPath);
+
+            if (!fs.existsSync(batchPath)) {
+                return res.json({ rollNos: [], count: 0, batch });
+            }
+
+            const files = await fsPromises.readdir(batchPath);
+            const rollNos = files
+                .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
+                .map(f => ({ rollNo: path.basename(f, path.extname(f)).toUpperCase(), ext: path.extname(f).toLowerCase() }))
+                .sort((a, b) => a.rollNo.localeCompare(b.rollNo));
+
+            res.json({ rollNos, count: rollNos.length, batch });
+        } catch (err) {
+            if (err.message === 'Invalid batch name' || err.message === 'Batch name is required') {
+                return res.status(400).json({ error: err.message });
+            }
+            console.error('[GT Upload] listPhotos error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ─── Summary of All ERP Photo Batches ────────────────────────────
+    async listAllBatches(req, res) {
+        try {
+            if (!fs.existsSync(ERP_PHOTOS_DIR)) {
+                return res.json({ batches: [] });
+            }
+
+            const entries = await fsPromises.readdir(ERP_PHOTOS_DIR, { withFileTypes: true });
+            const batches = [];
+
+            for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+                const batchPath = path.join(ERP_PHOTOS_DIR, entry.name);
+                const files = await fsPromises.readdir(batchPath);
+                const count = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length;
+                batches.push({ batch: entry.name, count });
+            }
+
+            batches.sort((a, b) => a.batch.localeCompare(b.batch));
+            res.json({ batches });
+        } catch (err) {
+            console.error('[GT Upload] listAllBatches error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
     // ─── Get Sync Status ───────────────────────────────────────────────
     async getStatus(req, res) {
         try {

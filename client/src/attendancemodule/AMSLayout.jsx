@@ -18,7 +18,6 @@ const NAV = [
   { id: 'cameras',    route: '/cameras',                               label: 'Camera Registry'   },
   { id: 'embeddings', route: '/attendance/embeddings',                  label: 'Embeddings'        },
   { id: 'preview',    route: '/cameras/preview',                        label: 'Camera Preview'    },
-  { id: 'settings',   route: '/attendance/settings',                    label: 'Settings'          },
 ];
 
 const COLORS = {
@@ -30,7 +29,6 @@ const COLORS = {
   verify:     '#ec4899',
   cameras:    '#f97316',
   embeddings: '#f59e0b',
-  settings:   '#64748b',
   preview:    '#8b5cf6',
 };
 

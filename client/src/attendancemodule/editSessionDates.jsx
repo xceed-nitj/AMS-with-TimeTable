@@ -8,6 +8,7 @@ import { theme as T, cssReset } from './config';
 const apiUrl        = getEnvironment();
 const ALLOTMENT_API = `${apiUrl}/timetablemodule/allotment`;
 const USER_API      = `${apiUrl}/user/getuser`;
+const BATCH_API     = `${apiUrl}/attendancemodule/settings/batches`;
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -136,18 +137,20 @@ const CSS = `
     border: 1px solid ${T.border} !important;
     border-radius: 12px !important;
     padding: 24px !important;
-    max-width: 440px !important; 
+    max-width: 440px !important;
     width: 100% !important;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15) !important;
     animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both !important;
     box-sizing: border-box !important;
   }
 
+
   @media (max-width: 768px) {
     .session-grid { grid-template-columns: 1fr; }
     .term-date-row { flex-direction: column; align-items: flex-start; gap: 12px; }
     .monthly-cards-grid { grid-template-columns: 1fr; }
     .floating-toast-container { left: 16px; right: 16px; top: 16px; }
+    .ams-tabs { overflow-x: auto; }
   }
 `;
 
@@ -158,7 +161,13 @@ export default function EditSessionDates() {
 
   const isFetching = useRef(false);
 
+  // ── Tab ───────────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState('session');
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
   const [isAuthorized,      setIsAuthorized]      = useState(null);
+
+  // ── Session Setup state ───────────────────────────────────────────────────
   const [sessions,          setSessions]          = useState([]);
   const [isLoading,         setIsLoading]         = useState(false);
   const [isSaving,          setIsSaving]          = useState(false);
@@ -167,7 +176,7 @@ export default function EditSessionDates() {
   const [allotmentId,       setAllotmentId]       = useState(null);
   const [startingDate,      setStartingDate]      = useState('');
   const [endingDate,        setEndingDate]        = useState('');
-  
+
   const [tempStartDate,     setTempStartDate]     = useState('');
   const [tempEndDate,       setTempEndDate]       = useState('');
 
@@ -186,6 +195,15 @@ export default function EditSessionDates() {
 
   const [pendingDeleteDate, setPendingDeleteDate] = useState(null);
 
+  // ── Batch Management state ────────────────────────────────────────────────
+  const [batches,            setBatches]           = useState([]);
+  const [batchLoading,       setBatchLoading]      = useState(false);
+  const [batchYear,          setBatchYear]         = useState('');
+  const [editingBatchId,     setEditingBatchId]    = useState(null);
+  const [editBatchYear,      setEditBatchYear]     = useState('');
+  const [pendingDeleteBatch, setPendingDeleteBatch] = useState(null);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const fmt = (d) => {
     try {
       if (!d) return '';
@@ -239,7 +257,7 @@ export default function EditSessionDates() {
     while (cursor <= end) {
       const dow    = cursor.getDay();
       const isoStr = cursor.toISOString().split('T')[0];
-      
+
       if ((dow === 0 || dow === 6) && !existingDates.has(isoStr)) {
         toAdd.push({ date: isoStr, remark: dow === 0 ? 'Sunday' : 'Saturday' });
       }
@@ -311,10 +329,10 @@ export default function EditSessionDates() {
         setAllotmentId(record._id);
         const fetchedStart = fmt(record.startingDate);
         const fetchedEnd   = fmt(record.endingDate);
-        
+
         setStartingDate(fetchedStart);
         setEndingDate(fetchedEnd);
-        setTempStartDate(fetchedStart); 
+        setTempStartDate(fetchedStart);
         setTempEndDate(fetchedEnd);
 
         const parsed = (record.nonWorkingDays || []).map(item => {
@@ -342,6 +360,27 @@ export default function EditSessionDates() {
     fetchSessionData();
   }, [isAuthorized, sessionName]);
 
+  // ── 4. Fetch batches ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isAuthorized !== true) return;
+    fetchBatches();
+  }, [isAuthorized]);
+
+  const fetchBatches = async () => {
+    setBatchLoading(true);
+    try {
+      const res = await fetch(BATCH_API, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch batches');
+      const data = await res.json();
+      setBatches(data.batches || []);
+    } catch (err) {
+      triggerToast('error', err.message);
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  // ── Session save ──────────────────────────────────────────────────────────
   const saveToBackendDatabaseDirectly = async (targetStartingDate, targetEndingDate, targetNonWorkingDaysList) => {
     if (!allotmentId) return false;
     setIsSaving(true);
@@ -452,7 +491,7 @@ export default function EditSessionDates() {
 
   const handleConfirmedDeletion = async () => {
     if (!pendingDeleteDate) return;
-    
+
     const updatedDays = nonWorkingDays.filter(item => item.date !== pendingDeleteDate);
     setNonWorkingDays(updatedDays);
     setPendingDeleteDate(null);
@@ -470,8 +509,8 @@ export default function EditSessionDates() {
       triggerToast('error', 'Start date cannot exceed session termination bounds.');
       return;
     }
-    
-    setStartingDate(tempStartDate); 
+
+    setStartingDate(tempStartDate);
     setIsEditingStart(false);
 
     const updatedDaysWithWeekends = generateWeekendsForRange(tempStartDate, endingDate, nonWorkingDays);
@@ -488,8 +527,8 @@ export default function EditSessionDates() {
       triggerToast('error', 'Termination target date must succeed commencement date.');
       return;
     }
-    
-    setEndingDate(tempEndDate); 
+
+    setEndingDate(tempEndDate);
     setIsEditingEnd(false);
 
     const updatedDaysWithWeekends = generateWeekendsForRange(startingDate, tempEndDate, nonWorkingDays);
@@ -497,6 +536,65 @@ export default function EditSessionDates() {
     await saveToBackendDatabaseDirectly(startingDate, tempEndDate, updatedDaysWithWeekends);
   };
 
+  // ── Batch handlers ────────────────────────────────────────────────────────
+  const handleBatchCreate = async () => {
+    if (!batchYear) { triggerToast('error', 'Please enter a batch year.'); return; }
+    if (!/^\d{4}$/.test(batchYear)) { triggerToast('error', 'Batch year must be a 4-digit number.'); return; }
+    try {
+      const res = await fetch(BATCH_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ batchYear }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create batch');
+      triggerToast('success', 'Batch created successfully.');
+      setBatchYear('');
+      fetchBatches();
+    } catch (err) {
+      triggerToast('error', err.message);
+    }
+  };
+
+  const handleBatchSaveEdit = async (id) => {
+    if (!/^\d{4}$/.test(editBatchYear)) { triggerToast('error', 'Batch year must be a 4-digit number.'); return; }
+    try {
+      const res = await fetch(`${BATCH_API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ batchYear: editBatchYear }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update batch');
+      triggerToast('success', 'Batch updated successfully.');
+      setEditingBatchId(null);
+      fetchBatches();
+    } catch (err) {
+      triggerToast('error', err.message);
+    }
+  };
+
+  const handleBatchConfirmedDelete = async () => {
+    if (!pendingDeleteBatch) return;
+    try {
+      const res = await fetch(`${BATCH_API}/${pendingDeleteBatch._id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete batch');
+      triggerToast('success', 'Batch deleted successfully.');
+      setPendingDeleteBatch(null);
+      fetchBatches();
+    } catch (err) {
+      triggerToast('error', err.message);
+      setPendingDeleteBatch(null);
+    }
+  };
+
+  // ── Month helpers ─────────────────────────────────────────────────────────
   const getHolidaysByMonthAndYear = (monthIdx, year) =>
     nonWorkingDays.filter(day => {
       const d = new Date(day.date);
@@ -530,6 +628,7 @@ export default function EditSessionDates() {
     return list;
   };
 
+  // ── Auth guards ───────────────────────────────────────────────────────────
   if (isAuthorized === null) {
     return (
       <div style={{ padding: 40, fontFamily: T.fontBody, color: T.textMuted, textAlign: 'center' }}>
@@ -574,353 +673,506 @@ export default function EditSessionDates() {
           </div>
         )}
 
-        {/* Header Setup */}
+        {/* Page Header */}
         <div className="session-header">
           <div>
             <div style={{ fontWeight: 700, fontSize: 'clamp(17px,2.5vw,22px)', letterSpacing: '-0.03em', marginBottom: 3, color: T.text }}>
               Session Setup
             </div>
             <div style={{ fontSize: 12, color: T.textMuted }}>
-              {sessionName ? `Editing: ${sessionName}` : 'Select a session to configure'}
+              Configure session dates, non-working days, and batch identifiers
             </div>
-          </div>
-
-          <div style={{ width: '100%', maxWidth: 280 }}>
-            <select
-              className="native-select"
-              value={sessionName || ''}
-              onChange={handleDropdownChange}
-              style={{ fontWeight: 600 }}
-            >
-              <option value="">Select a session…</option>
-              {sessions.map(s => {
-                const name   = typeof s === 'object' ? (s.name || s.session) : s;
-                const isCurr = typeof s === 'object' ? (s.current || s.isCurrent) : false;
-                return (
-                  <option key={name} value={name}>
-                    {name}{isCurr ? ' ★ Current' : ''}
-                  </option>
-                );
-              })}
-            </select>
           </div>
         </div>
 
-        {/* Master States */}
-        {!sessionName ? (
-          <div className="session-card" style={{ padding: '40px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
-            Select a session above to load its configuration.
-          </div>
-        ) : isLoading ? (
-          <div style={{ textAlign: 'center', padding: 40, color: T.textMuted, fontSize: 13 }}>
-            Loading configuration data…
-          </div>
-        ) : !allotmentId ? (
-          <div className="session-card" style={{ padding: '40px 20px', textAlign: 'center', color: T.danger, fontSize: 13 }}>
-            No allotment record found for this session.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Tabs */}
+        <div className="ams-tabs">
+          <button
+            className={`ams-tab${activeTab === 'session' ? ' active' : ''}`}
+            onClick={() => setActiveTab('session')}
+          >
+            Session Dates
+          </button>
+          <button
+            className={`ams-tab${activeTab === 'batch' ? ' active' : ''}`}
+            onClick={() => setActiveTab('batch')}
+          >
+            Batch Management
+          </button>
+        </div>
 
-            {/* Term duration segment */}
-            <div className="session-card">
-              <div className="session-card-header">
-                <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
-                  Term Duration Context
-                </span>
-              </div>
-              
-              {/* Start Date Row */}
-              <div className="term-date-row">
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
-                    Start Date
-                  </label>
-                  {isEditingStart ? (
-                    <input
-                      type="date"
-                      className="native-input"
-                      value={tempStartDate} 
-                      onChange={e => setTempStartDate(e.target.value)}
-                      max={endingDate} 
-                      style={{ maxWidth: '300px' }}
-                    />
-                  ) : (
-                    /* ── 🌟 RESTORED 100% ORIGINAL YEAR FORMAT DISPLAYS ── */
-                    <div style={{ padding: '10px 14px', background: T.bg, borderRadius: 8, fontSize: 14, fontWeight: 600 }}>
-                      {startingDate
-                        ? new Date(startingDate).toLocaleDateString('en-IN', { dateStyle: 'long' })
-                        : <span style={{ color: T.textMuted, fontWeight: 400 }}>Not set</span>}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  {isEditingStart ? (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        className="native-btn"
-                        onClick={handleSaveStartDateOnly}
-                        style={{ background: T.success, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
-                      >
-                        Save Date
-                      </button>
-                      <button
-                        className="native-btn"
-                        onClick={() => setIsEditingStart(false)}
-                        style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '8px 14px', fontSize: '12px' }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="native-btn"
-                      onClick={() => { setTempStartDate(startingDate); setIsEditingStart(true); }}
-                      style={{ background: T.accent, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
-                    >
-                      Edit Date
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* End Date Row */}
-              <div className="term-date-row">
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
-                    End Date
-                  </label>
-                  {isEditingEnd ? (
-                    <input
-                      type="date"
-                      className="native-input"
-                      value={tempEndDate} 
-                      onChange={e => setTempEndDate(e.target.value)}
-                      min={startingDate} 
-                      style={{ maxWidth: '300px' }}
-                    />
-                  ) : (
-                    /* ── 🌟 RESTORED 100% ORIGINAL YEAR FORMAT DISPLAYS ── */
-                    <div style={{ padding: '10px 14px', background: T.bg, borderRadius: 8, fontSize: 14, fontWeight: 600 }}>
-                      {endingDate
-                        ? new Date(endingDate).toLocaleDateString('en-IN', { dateStyle: 'long' })
-                        : <span style={{ color: T.textMuted, fontWeight: 400 }}>Not set</span>}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  {isEditingEnd ? (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        className="native-btn"
-                        onClick={handleSaveEndDateOnly}
-                        style={{ background: T.success, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
-                      >
-                        Save Date
-                      </button>
-                      <button
-                        className="native-btn"
-                        onClick={() => setIsEditingEnd(false)}
-                        style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '8px 14px', fontSize: '12px' }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="native-btn"
-                      onClick={() => { setTempEndDate(endingDate); setIsEditingEnd(true); }}
-                      style={{ background: T.accent, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
-                    >
-                      Edit Date
-                    </button>
-                  )}
-                </div>
+        {/* ══ SESSION DATES TAB ══════════════════════════════════════════════ */}
+        {activeTab === 'session' && (
+          <>
+            {/* Session selector row */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+              <div style={{ width: '100%', maxWidth: 280 }}>
+                <select
+                  className="native-select"
+                  value={sessionName || ''}
+                  onChange={handleDropdownChange}
+                  style={{ fontWeight: 600 }}
+                >
+                  <option value="">Select a session…</option>
+                  {sessions.map(s => {
+                    const name   = typeof s === 'object' ? (s.name || s.session) : s;
+                    const isCurr = typeof s === 'object' ? (s.current || s.isCurrent) : false;
+                    return (
+                      <option key={name} value={name}>
+                        {name}{isCurr ? ' ★ Current' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             </div>
 
-            {/* Non-working days configuration */}
+            {!sessionName ? (
+              <div className="session-card" style={{ padding: '40px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
+                Select a session above to load its configuration.
+              </div>
+            ) : isLoading ? (
+              <div style={{ textAlign: 'center', padding: 40, color: T.textMuted, fontSize: 13 }}>
+                Loading configuration data…
+              </div>
+            ) : !allotmentId ? (
+              <div className="session-card" style={{ padding: '40px 20px', textAlign: 'center', color: T.danger, fontSize: 13 }}>
+                No allotment record found for this session.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                {/* Term duration segment */}
+                <div className="session-card">
+                  <div className="session-card-header">
+                    <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
+                      Term Duration Context
+                    </span>
+                  </div>
+
+                  {/* Start Date Row */}
+                  <div className="term-date-row">
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                        Start Date
+                      </label>
+                      {isEditingStart ? (
+                        <input
+                          type="date"
+                          className="native-input"
+                          value={tempStartDate}
+                          onChange={e => setTempStartDate(e.target.value)}
+                          max={endingDate}
+                          style={{ maxWidth: '300px' }}
+                        />
+                      ) : (
+                        <div style={{ padding: '10px 14px', background: T.bg, borderRadius: 8, fontSize: 14, fontWeight: 600 }}>
+                          {startingDate
+                            ? new Date(startingDate).toLocaleDateString('en-IN', { dateStyle: 'long' })
+                            : <span style={{ color: T.textMuted, fontWeight: 400 }}>Not set</span>}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      {isEditingStart ? (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            className="native-btn"
+                            onClick={handleSaveStartDateOnly}
+                            style={{ background: T.success, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
+                          >
+                            Save Date
+                          </button>
+                          <button
+                            className="native-btn"
+                            onClick={() => setIsEditingStart(false)}
+                            style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '8px 14px', fontSize: '12px' }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="native-btn"
+                          onClick={() => { setTempStartDate(startingDate); setIsEditingStart(true); }}
+                          style={{ background: T.accent, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
+                        >
+                          Edit Date
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* End Date Row */}
+                  <div className="term-date-row">
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                        End Date
+                      </label>
+                      {isEditingEnd ? (
+                        <input
+                          type="date"
+                          className="native-input"
+                          value={tempEndDate}
+                          onChange={e => setTempEndDate(e.target.value)}
+                          min={startingDate}
+                          style={{ maxWidth: '300px' }}
+                        />
+                      ) : (
+                        <div style={{ padding: '10px 14px', background: T.bg, borderRadius: 8, fontSize: 14, fontWeight: 600 }}>
+                          {endingDate
+                            ? new Date(endingDate).toLocaleDateString('en-IN', { dateStyle: 'long' })
+                            : <span style={{ color: T.textMuted, fontWeight: 400 }}>Not set</span>}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      {isEditingEnd ? (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            className="native-btn"
+                            onClick={handleSaveEndDateOnly}
+                            style={{ background: T.success, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
+                          >
+                            Save Date
+                          </button>
+                          <button
+                            className="native-btn"
+                            onClick={() => setIsEditingEnd(false)}
+                            style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '8px 14px', fontSize: '12px' }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="native-btn"
+                          onClick={() => { setTempEndDate(endingDate); setIsEditingEnd(true); }}
+                          style={{ background: T.accent, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
+                        >
+                          Edit Date
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Non-working days configuration */}
+                <div className="session-card">
+                  <div className="session-card-header">
+                    <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
+                      Non-Working Days Configuration
+                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: T.accent }}>
+                        {visibleHolidaysCount} mapped
+                      </span>
+                    </span>
+                  </div>
+
+                  {/* Add Entry row */}
+                  <div
+                    className="session-grid"
+                    style={{
+                      background: T.surfaceAlt,
+                      borderBottom: `1px solid ${T.border}`,
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                      alignItems: 'flex-end',
+                      gap: 12,
+                    }}
+                  >
+                    <div className="form-control">
+                      <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        className="native-input"
+                        value={holidayStartDate}
+                        onChange={e => setHolidayStartDate(e.target.value)}
+                        min={startingDate}
+                        max={endingDate}
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        End Date (Optional)
+                      </label>
+                      <input
+                        type="date"
+                        className="native-input"
+                        value={holidayEndDate}
+                        onChange={e => setHolidayEndDate(e.target.value)}
+                        disabled={!holidayStartDate}
+                        min={holidayStartDate ? getNextDay(holidayStartDate) : startingDate}
+                        max={endingDate}
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Remark / Label
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Winter Vacation"
+                        className="native-input"
+                        value={newRemark}
+                        onChange={e => setNewRemark(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      className="native-btn"
+                      onClick={handleAddNonWorkingDay}
+                      disabled={!holidayStartDate}
+                      style={{ background: T.accent, color: '#fff' }}
+                    >
+                      + Add Non-Working Day
+                    </button>
+                  </div>
+
+                  {/* Monthly grid */}
+                  <div className="monthly-cards-grid">
+                    {activeMonthsTimeline.map(({ name, monthIdx, year, key }) => {
+                      const monthlyHolidays = getHolidaysByMonthAndYear(monthIdx, year);
+                      return (
+                        <div className="month-container" key={key}>
+                          <div className="month-title">{name} {year}</div>
+
+                          {monthlyHolidays.length === 0 ? (
+                            <div style={{ fontSize: 11, color: T.textMuted, fontStyle: 'italic', padding: '8px 0', textAlign: 'center' }}>
+                              No non-working days
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+                              {monthlyHolidays.map((item, index) => (
+                                <div className="holiday-item-row" key={index}>
+                                  {editingRowDate === item.date ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                      <input
+                                        type="date"
+                                        className="native-input"
+                                        style={{ padding: '4px 8px', fontSize: 12 }}
+                                        value={editDateValue}
+                                        onChange={e => setEditDateValue(e.target.value)}
+                                        min={startingDate}
+                                        max={endingDate}
+                                      />
+                                      <input
+                                        type="text"
+                                        className="native-input"
+                                        style={{ padding: '4px 8px', fontSize: 12 }}
+                                        value={editRemarkValue}
+                                        onChange={e => setEditRemarkValue(e.target.value)}
+                                      />
+                                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 2 }}>
+                                        <button
+                                          onClick={() => handleSaveInlineEdit(item.date)}
+                                          style={{ background: 'none', border: 'none', color: T.success, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: T.fontBody }}
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingRowDate(null)}
+                                          style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', fontFamily: T.fontBody }}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="holiday-display-layout">
+                                      <div>
+                                        <div style={{ fontWeight: 600, fontSize: '13px', color: T.text, fontFamily: T.fontBody }}>
+                                          {displayDate(item.date)}
+                                        </div>
+                                        <span
+                                          className="badge-tag"
+                                          style={{
+                                            marginTop: 4,
+                                            background: item.remark === 'Sunday'   ? T.dangerDim  :
+                                                        item.remark === 'Saturday' ? T.accentDim  : T.successDim,
+                                            color:      item.remark === 'Sunday'   ? T.danger     :
+                                                        item.remark === 'Saturday' ? T.accent     : T.success,
+                                          }}
+                                        >
+                                          {item.remark}
+                                        </span>
+                                      </div>
+
+                                      <div style={{ display: 'flex', gap: 4 }}>
+                                        <button
+                                          className="icon-btn icon-btn-edit"
+                                          title="Edit"
+                                          onClick={() => {
+                                            setEditingRowDate(item.date);
+                                            setEditDateValue(item.date);
+                                            setEditRemarkValue(item.remark);
+                                          }}
+                                        >
+                                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                            <path d="M8.5 1.5a1.2 1.2 0 011.7 1.7L3.5 10H1.5V8L8.5 1.5z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                                          </svg>
+                                        </button>
+                                        <button
+                                          className="icon-btn icon-btn-delete"
+                                          title="Remove"
+                                          onClick={() => setPendingDeleteDate(item.date)}
+                                        >
+                                          <svg width="10" height="10" viewBox="0 0 12 13" fill="none">
+                                            <path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                          </svg>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ══ BATCH MANAGEMENT TAB ═══════════════════════════════════════════ */}
+        {activeTab === 'batch' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* Add batch card */}
             <div className="session-card">
               <div className="session-card-header">
                 <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
-                  Non-Working Days Configuration
-                  <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: T.accent }}>
-                    {visibleHolidaysCount} mapped
-                  </span>
+                  Create New Batch
                 </span>
               </div>
-
-              {/* Add Entry row element */}
-              <div
-                className="session-grid"
-                style={{
-                  background: T.surfaceAlt,
-                  borderBottom: `1px solid ${T.border}`,
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                  alignItems: 'flex-end',
-                  gap: 12,
-                }}
-              >
+              <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'flex-end' }}>
                 <div className="form-control">
                   <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    className="native-input"
-                    value={holidayStartDate}
-                    onChange={e => setHolidayStartDate(e.target.value)}
-                    min={startingDate}
-                    max={endingDate}
-                  />
-                </div>
-                <div className="form-control">
-                  <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    End Date (Optional)
-                  </label>
-                  <input
-                    type="date"
-                    className="native-input"
-                    value={holidayEndDate}
-                    onChange={e => setHolidayEndDate(e.target.value)}
-                    disabled={!holidayStartDate} 
-                    min={holidayStartDate ? getNextDay(holidayStartDate) : startingDate} 
-                    max={endingDate} 
-                  />
-                </div>
-                <div className="form-control">
-                  <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Remark / Label
+                    Batch Year
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Winter Vacation"
                     className="native-input"
-                    value={newRemark}
-                    onChange={e => setNewRemark(e.target.value)}
+                    value={batchYear}
+                    onChange={e => setBatchYear(e.target.value)}
+                    placeholder="e.g. 2024"
+                    onKeyDown={e => e.key === 'Enter' && handleBatchCreate()}
                   />
                 </div>
                 <button
                   className="native-btn"
-                  onClick={handleAddNonWorkingDay}
-                  disabled={!holidayStartDate}
+                  onClick={handleBatchCreate}
+                  disabled={!batchYear}
                   style={{ background: T.accent, color: '#fff' }}
                 >
-                  + Add Non-Working Day
+                  Add Batch
                 </button>
               </div>
-
-              {/* Monthly grid tracker card displays */}
-              <div className="monthly-cards-grid">
-                {activeMonthsTimeline.map(({ name, monthIdx, year, key }) => {
-                  const monthlyHolidays = getHolidaysByMonthAndYear(monthIdx, year);
-                  return (
-                    <div className="month-container" key={key}>
-                      <div className="month-title">{name} {year}</div>
-
-                      {monthlyHolidays.length === 0 ? (
-                        <div style={{ fontSize: 11, color: T.textMuted, fontStyle: 'italic', padding: '8px 0', textAlign: 'center' }}>
-                          No non-working days
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
-                          {monthlyHolidays.map((item, index) => (
-                            <div className="holiday-item-row" key={index}>
-                              {editingRowDate === item.date ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                  <input
-                                    type="date"
-                                    className="native-input"
-                                    style={{ padding: '4px 8px', fontSize: 12 }}
-                                    value={editDateValue}
-                                    onChange={e => setEditDateValue(e.target.value)}
-                                    min={startingDate}
-                                    max={endingDate}
-                                  />
-                                  <input
-                                    type="text"
-                                    className="native-input"
-                                    style={{ padding: '4px 8px', fontSize: 12 }}
-                                    value={editRemarkValue}
-                                    onChange={e => setEditRemarkValue(e.target.value)}
-                                  />
-                                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 2 }}>
-                                    <button
-                                      onClick={() => handleSaveInlineEdit(item.date)}
-                                      style={{ background: 'none', border: 'none', color: T.success, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: T.fontBody }}
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingRowDate(null)}
-                                      style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', fontFamily: T.fontBody }}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="holiday-display-layout">
-                                  <div>
-                                    <div style={{ fontWeight: 600, fontSize: '13px', color: T.text, fontFamily: T.fontBody }}>
-                                      {displayDate(item.date)}
-                                    </div>
-                                    <span
-                                      className="badge-tag"
-                                      style={{
-                                        marginTop: 4,
-                                        background: item.remark === 'Sunday'   ? T.dangerDim  :
-                                                    item.remark === 'Saturday' ? T.accentDim  : T.successDim,
-                                        color:      item.remark === 'Sunday'   ? T.danger     :
-                                                    item.remark === 'Saturday' ? T.accent     : T.success,
-                                      }}
-                                    >
-                                      {item.remark}
-                                    </span>
-                                  </div>
-
-                                  <div style={{ display: 'flex', gap: 4 }}>
-                                    <button
-                                      className="icon-btn icon-btn-edit"
-                                      title="Edit"
-                                      onClick={() => {
-                                        setEditingRowDate(item.date);
-                                        setEditDateValue(item.date);
-                                        setEditRemarkValue(item.remark);
-                                      }}
-                                    >
-                                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                                        <path d="M8.5 1.5a1.2 1.2 0 011.7 1.7L3.5 10H1.5V8L8.5 1.5z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
-                                      </svg>
-                                    </button>
-                                    <button
-                                      className="icon-btn icon-btn-delete"
-                                      title="Remove"
-                                      onClick={() => setPendingDeleteDate(item.date)}
-                                    >
-                                      <svg width="10" height="10" viewBox="0 0 12 13" fill="none">
-                                        <path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
             </div>
 
+            {/* Batches table card */}
+            <div className="session-card">
+              <div className="session-card-header">
+                <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
+                  Configured Batches
+                  <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: T.accent }}>
+                    {batches.length} total
+                  </span>
+                </span>
+              </div>
+
+              {batchLoading ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
+                  Loading batches…
+                </div>
+              ) : batches.length === 0 ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
+                  No batches configured yet. Add one above.
+                </div>
+              ) : (
+                <div className="r-table-wrap">
+                  <table className="ams-table">
+                    <thead>
+                      <tr>
+                        <th>Batch Year</th>
+                        <th>Generated String</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {batches.map(b => (
+                        <tr key={b._id}>
+                          <td>
+                            {editingBatchId === b._id ? (
+                              <input
+                                type="text"
+                                className="native-input"
+                                value={editBatchYear}
+                                onChange={e => setEditBatchYear(e.target.value)}
+                                style={{ padding: '6px 10px', width: 90, fontSize: 13 }}
+                              />
+                            ) : (
+                              <span style={{ fontWeight: 600 }}>{b.batchYear}</span>
+                            )}
+                          </td>
+                          <td style={{ color: T.textMuted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>
+                            {b.batchString}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            {editingBatchId === b._id ? (
+                              <div style={{ display: 'inline-flex', gap: 8 }}>
+                                <button
+                                  className="native-btn"
+                                  onClick={() => handleBatchSaveEdit(b._id)}
+                                  style={{ background: T.success, color: '#fff', padding: '6px 12px', fontSize: 12 }}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  className="native-btn"
+                                  onClick={() => setEditingBatchId(null)}
+                                  style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '6px 12px', fontSize: 12 }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'inline-flex', gap: 16 }}>
+                                <button
+                                  onClick={() => { setEditingBatchId(b._id); setEditBatchYear(b.batchYear); }}
+                                  style={{ background: 'none', border: 'none', color: T.accent, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: T.fontBody }}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => setPendingDeleteBatch(b)}
+                                  style={{ background: 'none', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: T.fontBody }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div style={{ fontSize: 12, color: T.textMuted, padding: '0 4px' }}>
+              Batch identifiers are used to structure ERP Image Upload folder paths. Deleting a batch will not remove uploaded photos.
+            </div>
           </div>
         )}
+
       </div>
 
-      {/* ── Custom Global Viewport Portal Delete Confirmation Modal ── */}
+      {/* ── Holiday delete confirmation modal ── */}
       {pendingDeleteDate && (
         <div className="custom-global-modal-overlay">
           <div className="custom-global-modal-box">
@@ -948,6 +1200,40 @@ export default function EditSessionDates() {
                 }}
               >
                 Yes, Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Batch delete confirmation modal ── */}
+      {pendingDeleteBatch && (
+        <div className="custom-global-modal-overlay">
+          <div className="custom-global-modal-box">
+            <div style={{ fontSize: '16px', fontWeight: 700, color: T.text, marginBottom: '10px', fontFamily: T.fontBody }}>
+              Delete Batch
+            </div>
+            <div style={{ fontSize: '13.5px', color: T.textMuted, lineHeight: '1.5', marginBottom: '24px', fontFamily: T.fontBody }}>
+              Are you sure you want to delete batch <strong style={{ color: T.text }}>{pendingDeleteBatch.batchYear}</strong>? This will remove it from all dropdowns but will not delete uploaded photos.
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setPendingDeleteBatch(null)}
+                style={{
+                  background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569',
+                  padding: '10px 16px', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: T.fontBody
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBatchConfirmedDelete}
+                style={{
+                  background: '#ef4444', border: 'none', color: '#ffffff',
+                  padding: '10px 16px', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: T.fontBody
+                }}
+              >
+                Yes, Delete Batch
               </button>
             </div>
           </div>

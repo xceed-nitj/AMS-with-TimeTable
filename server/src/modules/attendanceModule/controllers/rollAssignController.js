@@ -876,6 +876,22 @@ class RollAssignController {
             res.status(500).json({ error: err.message });
         }
     }
+
+    async getSummary(req, res) {
+        const agg = await ClusterMatch.aggregate([
+            { $group: {
+                _id:       '$batch',
+                total:     { $sum: 1 },
+                approved:  { $sum: { $cond: [{ $eq: ['$approved', true] }, 1, 0] } },
+                pending:   { $sum: { $cond: [{ $and: [{ $eq: ['$status', 'matched'] }, { $eq: ['$approved', false] }] }, 1, 0] } },
+                flagged:   { $sum: { $cond: [{ $eq: ['$status', 'flagged'] }, 1, 0] } },
+                unmatched: { $sum: { $cond: [{ $eq: ['$status', 'unmatched'] }, 1, 0] } },
+            }},
+            { $project: { _id: 0, batch: '$_id', total: 1, approved: 1, pending: 1, flagged: 1, unmatched: 1 } },
+            { $sort: { batch: 1 } },
+        ]);
+        res.json({ batches: agg });
+    }
 }
 
 module.exports = RollAssignController;
