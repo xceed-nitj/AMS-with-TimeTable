@@ -165,10 +165,13 @@ function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, subjectC
 // TAB 2 — ERP Ground Truth Embeddings
 // ═══════════════════════════════════════════════════════════════════════════════
 function ERPSyncTab({ departments, deptLoading, deptError }) {
+    const [degree, setDegree] = useState('');
     const [dept, setDept] = useState('');
-    const [batch, setBatch] = useState('');
+    const [batchYear, setBatchYear] = useState('');
     const [batches, setBatches] = useState([]);
     const [batchesLoading, setBatchesLoading] = useState(false);
+
+    const batch = (degree && dept && batchYear) ? `${degree}_${dept}_${batchYear}` : '';
     
     const [status, setStatus] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -197,23 +200,18 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
     };
 
     useEffect(() => {
-        if (!dept) {
-            setBatches([]);
-            setBatch('');
-            return;
-        }
         let cancelled = false;
         setBatchesLoading(true);
-        // Query the new Batch model using the exact department string
-        fetch(`${apiUrl}/attendancemodule/settings/batches/department/${encodeURIComponent(dept)}`, {
+        // Query the new Batch model
+        fetch(`${apiUrl}/attendancemodule/settings/batches`, {
             credentials: 'include'
         })
             .then(res => res.json())
             .then(data => {
                 if (cancelled) return;
                 if (data.batches && Array.isArray(data.batches)) {
-                    const batchStrings = [...new Set(data.batches.map(item => item.batchString))].filter(Boolean).sort();
-                    setBatches(batchStrings);
+                    const batchYears = [...new Set(data.batches.map(item => item.batchYear))].filter(Boolean).sort().reverse();
+                    setBatches(batchYears);
                 } else {
                     setBatches([]);
                 }
@@ -221,7 +219,7 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
             .catch(() => showToast('Failed to load batches', 'error'))
             .finally(() => { if (!cancelled) setBatchesLoading(false); });
         return () => { cancelled = true; };
-    }, [dept]);
+    }, []);
 
     const loadStatus = useCallback(async (background = false) => {
         if (!batch) return;
@@ -369,22 +367,51 @@ function ERPSyncTab({ departments, deptLoading, deptError }) {
             )}
 
             <div style={{ ...styles.card, marginBottom: 24 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'end' }}>
-                    <div>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'end' }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={styles.label}>Degree</label>
+                        <select
+                            value={degree}
+                            onChange={e => setDegree(e.target.value)}
+                            style={styles.select}
+                        >
+                            <option value="">Select...</option>
+                            {DEGREES.map(d => <option key={d}>{d}</option>)}
+                        </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
                         <label style={styles.label}>Department</label>
-                        <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
+                        <select 
+                            value={dept} 
+                            onChange={e => {
+                                setDept(e.target.value);
+                                setBatchYear('');
+                            }} 
+                            style={styles.select} 
+                            disabled={deptLoading}
+                        >
                             <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select department…'}</option>
                             {departments.map(d => <option key={d}>{d}</option>)}
                         </select>
                     </div>
-                    <div>
-                        <label style={styles.label}>Batch</label>
-                        <select value={batch} onChange={e => setBatch(e.target.value)} style={styles.select} disabled={!dept || batchesLoading}>
-                            <option value="">{batchesLoading ? 'Loading…' : !dept ? 'Select dept first' : batches.length ? 'Select batch…' : 'No batches found'}</option>
+                    <div style={{ flex: 1 }}>
+                        <label style={styles.label}>Batch Year</label>
+                        <select 
+                            value={batchYear} 
+                            onChange={e => setBatchYear(e.target.value)} 
+                            style={styles.select} 
+                            disabled={batchesLoading}
+                        >
+                            <option value="">{batchesLoading ? 'Loading…' : batches.length ? 'Select batch…' : 'No batches found'}</option>
                             {batches.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                     </div>
                 </div>
+                {batch && (
+                    <div style={{ marginTop: 12, padding: '10px', background: theme.bg, borderRadius: '6px', fontSize: '13px', color: theme.textMuted, border: `1px solid ${theme.border}` }}>
+                        Target Folder: <strong style={{ color: theme.accent, fontFamily: theme.fontMono }}>{batch}</strong>
+                    </div>
+                )}
             </div>
 
             {batch && status && (
