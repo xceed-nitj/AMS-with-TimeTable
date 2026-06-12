@@ -1,5 +1,5 @@
 // client/src/attendancemodule/EmbeddingGeneration.jsx
-import React , { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 import getEnvironment from '../getenvironment';
@@ -154,7 +154,11 @@ function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, subjectC
             {dept && (
                 <div style={{ marginTop: 8, padding: '10px 14px', background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: '12px', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                     <span><span style={{ color: theme.textMuted }}>Dept: </span><span style={{ fontFamily: theme.fontMono, color: theme.accent }}>{dept}</span></span>
-                    <span style={{ color: theme.textMuted }}>↓ All embedding files for this dept are shown in the table below</span>
+                    <span><span style={{ color: theme.textMuted }}>Embedding file: </span>
+                        {previewFileName
+                            ? <span style={{ fontFamily: theme.fontMono, color: theme.success }}>{previewFileName}</span>
+                            : <span style={{ color: theme.danger }}>select sem + subject to see filename</span>}
+                    </span>
                 </div>
             )}
         </div>
@@ -162,322 +166,8 @@ function FilterBlock({ dept, setDept, sem, setSem, subject, setSubject, subjectC
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TAB 2 — ERP Ground Truth Embeddings
+// TAB 2 — Direct .pkl Upload
 // ═══════════════════════════════════════════════════════════════════════════════
-function ERPSyncTab({ departments, deptLoading, deptError }) {
-    const [degree, setDegree] = useState('');
-    const [dept, setDept] = useState('');
-    const [batchYear, setBatchYear] = useState('');
-    const [batches, setBatches] = useState([]);
-    const [batchesLoading, setBatchesLoading] = useState(false);
-
-    const batch = (degree && dept && batchYear) ? `${degree}_${dept}_${batchYear}` : '';
-    
-    const [status, setStatus] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [isPolling, setIsPolling] = useState(false);
-    const [pollingData, setPollingData] = useState({ unchangedCount: 0, lastTotal: -1 });
-    const [toast, setToast] = useState(null);
-    const [completionModal, setCompletionModal] = useState(null);
-
-    const triggerNotification = (title, body) => {
-        if ("Notification" in window) {
-            if (Notification.permission === "granted") {
-                new Notification(title, { body });
-            } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        new Notification(title, { body });
-                    }
-                });
-            }
-        }
-    };
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 4000);
-    };
-
-    useEffect(() => {
-        let cancelled = false;
-        setBatchesLoading(true);
-        // Query the new Batch model
-        fetch(`${apiUrl}/attendancemodule/settings/batches`, {
-            credentials: 'include'
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (cancelled) return;
-                if (data.batches && Array.isArray(data.batches)) {
-                    const batchYears = [...new Set(data.batches.map(item => item.batchYear))].filter(Boolean).sort().reverse();
-                    setBatches(batchYears);
-                } else {
-                    setBatches([]);
-                }
-            })
-            .catch(() => showToast('Failed to load batches', 'error'))
-            .finally(() => { if (!cancelled) setBatchesLoading(false); });
-        return () => { cancelled = true; };
-    }, []);
-
-    const loadStatus = useCallback(async (background = false) => {
-        if (!batch) return;
-        if (!background) setLoading(true);
-        try {
-            const res = await fetch(`${apiUrl}/attendancemodule/ground-truth-upload/status/${encodeURIComponent(batch)}`);
-            const data = await res.json();
-            setStatus(data);
-            return data;
-        } catch (err) {
-            if (!background) showToast('Failed to fetch status', 'error');
-            return null;
-        } finally {
-            if (!background) setLoading(false);
-        }
-    }, [batch]);
-
-    useEffect(() => {
-        setStatus(null);
-        setIsPolling(false);
-        if (batch) loadStatus();
-    }, [batch, loadStatus]);
-
-    // Auto-refresh data periodically so the user doesn't have to click "Refresh"
-    useEffect(() => {
-        if (!batch || isPolling) return;
-        
-        const intervalId = setInterval(() => {
-            loadStatus(true);
-        }, 15000); // refresh every 15 seconds
-        
-        return () => clearInterval(intervalId);
-    }, [batch, isPolling, loadStatus]);
-
-    const timerRef = useRef(null);
-
-    useEffect(() => {
-        if (!isPolling) {
-            if (timerRef.current) clearTimeout(timerRef.current);
-            return;
-        }
-
-        const poll = async () => {
-            const data = await loadStatus(true);
-            if (data) {
-                if (data.missing_count === 0) {
-                    setIsPolling(false);
-                    showToast('Generation Successful! All embeddings are generated.');
-                    setCompletionModal({ success: true, message: 'All embeddings have been generated successfully.' });
-                    triggerNotification('Embedding Generation Completed', 'All embeddings have been generated successfully.');
-                    return;
-                } else {
-                    setPollingData(prev => {
-                        if (prev.lastTotal === data.total_embeddings) {
-                            if (prev.unchangedCount >= 6) { // 6 checks of 10s = 60s timeout
-                                setIsPolling(false);
-                                if (data.missing_count > 0) {
-                                    showToast(`Sync completed but ${data.missing_count} faces could not be detected.`, 'error');
-                                    setCompletionModal({ success: false, message: `Sync completed but ${data.missing_count} faces could not be detected.` });
-                                    triggerNotification('Embedding Generation Finished', `${data.missing_count} faces could not be detected.`);
-                                } else {
-                                    setCompletionModal({ success: true, message: 'All embeddings have been generated successfully.' });
-                                    triggerNotification('Embedding Generation Completed', 'All embeddings have been generated successfully.');
-                                }
-                                return prev;
-                            }
-                            return { ...prev, unchangedCount: prev.unchangedCount + 1 };
-                        } else {
-                            return { unchangedCount: 0, lastTotal: data.total_embeddings };
-                        }
-                    });
-                }
-            }
-            // only schedule next if still polling
-            setPollingData((currentData) => {
-                return currentData;
-            });
-            timerRef.current = setTimeout(poll, 10000);
-        };
-
-        timerRef.current = setTimeout(poll, 10000);
-
-        return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
-        };
-    }, [isPolling, loadStatus]);
-
-    const handleSyncAll = async () => {
-        if (!batch) return;
-        setLoading(true);
-        try {
-            const res = await fetch(`${apiUrl}/attendancemodule/ground-truth-upload/sync-all/${encodeURIComponent(batch)}`, {
-                method: 'POST'
-            });
-            if (res.ok) {
-                showToast('Sync triggered successfully! Monitoring progress...');
-                setIsPolling(true);
-                setPollingData({ unchangedCount: 0, lastTotal: -1 });
-            } else {
-                throw new Error('Sync failed');
-            }
-        } catch (err) {
-            showToast('Failed to trigger sync', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div>
-            <Toast toast={toast} />
-
-            {completionModal && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10000,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                    <div style={{
-                        background: theme.bg, padding: 32, borderRadius: 12,
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxWidth: 400, width: '100%',
-                        textAlign: 'center', border: `1px solid ${completionModal.success ? theme.success : theme.danger}`
-                    }}>
-                        <div style={{ fontSize: 48, marginBottom: 16 }}>
-                            {completionModal.success ? '✅' : '⚠️'}
-                        </div>
-                        <h2 style={{ margin: '0 0 12px 0', color: theme.text, fontSize: '20px' }}>
-                            {completionModal.success ? 'Sync Complete' : 'Review Required'}
-                        </h2>
-                        <p style={{ margin: '0 0 24px 0', color: theme.textMuted, fontSize: '14px', lineHeight: 1.5 }}>
-                            {completionModal.message}
-                        </p>
-                        <button
-                            onClick={() => setCompletionModal(null)}
-                            style={{
-                                ...styles.btnPrimary,
-                                background: completionModal.success ? theme.success : theme.accent,
-                                width: '100%', padding: '10px'
-                            }}
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            <div style={{ ...styles.card, marginBottom: 24 }}>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'end' }}>
-                    <div style={{ flex: 1 }}>
-                        <label style={styles.label}>Degree</label>
-                        <select
-                            value={degree}
-                            onChange={e => setDegree(e.target.value)}
-                            style={styles.select}
-                        >
-                            <option value="">Select...</option>
-                            {DEGREES.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        <label style={styles.label}>Department</label>
-                        <select 
-                            value={dept} 
-                            onChange={e => {
-                                setDept(e.target.value);
-                                setBatchYear('');
-                            }} 
-                            style={styles.select} 
-                            disabled={deptLoading}
-                        >
-                            <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select department…'}</option>
-                            {departments.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        <label style={styles.label}>Batch Year</label>
-                        <select 
-                            value={batchYear} 
-                            onChange={e => setBatchYear(e.target.value)} 
-                            style={styles.select} 
-                            disabled={batchesLoading}
-                        >
-                            <option value="">{batchesLoading ? 'Loading…' : batches.length ? 'Select batch…' : 'No batches found'}</option>
-                            {batches.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
-                    </div>
-                </div>
-                {batch && (
-                    <div style={{ marginTop: 12, padding: '10px', background: theme.bg, borderRadius: '6px', fontSize: '13px', color: theme.textMuted, border: `1px solid ${theme.border}` }}>
-                        Target Folder: <strong style={{ color: theme.accent, fontFamily: theme.fontMono }}>{batch}</strong>
-                    </div>
-                )}
-            </div>
-
-            {batch && status && (
-                <div style={styles.card}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                        <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>Synchronization Status</div>
-                        <button onClick={loadStatus} disabled={loading} style={{ ...styles.btnGhost, padding: '6px 14px', fontSize: '12px' }}>
-                            {loading ? 'Refreshing…' : '↺ Refresh'}
-                        </button>
-                    </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
-                        <div style={{ padding: 16, borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.bg }}>
-                            <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: 4 }}>Total ERP Photos</div>
-                            <div style={{ fontSize: '24px', fontWeight: 700, color: theme.text }}>{status.total_photos}</div>
-                        </div>
-                        <div style={{ padding: 16, borderRadius: 8, border: `1px solid ${isPolling ? theme.accent : theme.border}`, background: theme.bg }}>
-                            <div style={{ fontSize: '12px', color: isPolling ? theme.accent : theme.textMuted, marginBottom: 4 }}>
-                                Total Embeddings Generated {isPolling && '(Syncing...)'}
-                            </div>
-                            <div style={{ fontSize: '24px', fontWeight: 700, color: theme.text }}>
-                                {status.total_embeddings}
-                            </div>
-                        </div>
-                        <div style={{ padding: 16, borderRadius: 8, border: `1px solid ${status.missing_count > 0 ? theme.danger : theme.success}`, background: status.missing_count > 0 ? theme.dangerDim : theme.successDim }}>
-                            <div style={{ fontSize: '12px', color: status.missing_count > 0 ? theme.danger : theme.success, marginBottom: 4 }}>Health</div>
-                            <div style={{ fontSize: '16px', fontWeight: 600, color: status.missing_count > 0 ? theme.danger : theme.success }}>
-                                {status.missing_count === 0 ? 'Fully Synchronized ✓' : `${status.missing_count} Missing`}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                        <button onClick={handleSyncAll} disabled={loading || isPolling} style={{ ...styles.btnPrimary, background: theme.accent, border: 'none', color: '#fff', opacity: (loading || isPolling) ? 0.6 : 1 }}>
-                            {loading ? 'Processing…' : isPolling ? 'Sync in progress...' : 'Force Sync All'}
-                        </button>
-                        <span style={{ fontSize: '12px', color: theme.textMuted }}>
-                            {status.last_sync_timestamp ? `Last updated: ${new Date(status.last_sync_timestamp).toLocaleString('en-IN')}` : 'Never synced'}
-                        </span>
-                    </div>
-
-                    {(status.missing_count > 0 || status.orphaned_count > 0) && (
-                        <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${theme.border}` }}>
-                            {status.missing_count > 0 && (
-                                <div style={{ marginBottom: 16 }}>
-                                    <div style={{ fontSize: '13px', fontWeight: 600, color: theme.danger, marginBottom: 8 }}>Missing Embeddings (Photos exist, but no embedding)</div>
-                                    <div style={{ fontSize: '12px', fontFamily: theme.fontMono, color: theme.textMuted, background: theme.bg, padding: 12, borderRadius: 6, border: `1px solid ${theme.border}` }}>
-                                        {status.missing.join(', ')} {status.missing_count > 50 ? '...' : ''}
-                                    </div>
-                                </div>
-                            )}
-                            {status.orphaned_count > 0 && (
-                                <div>
-                                    <div style={{ fontSize: '13px', fontWeight: 600, color: theme.accent, marginBottom: 8 }}>Orphaned Embeddings (Embedding exists, but photo deleted)</div>
-                                    <div style={{ fontSize: '12px', fontFamily: theme.fontMono, color: theme.textMuted, background: theme.bg, padding: 12, borderRadius: 6, border: `1px solid ${theme.border}` }}>
-                                        {status.orphaned.join(', ')} {status.orphaned_count > 50 ? '...' : ''}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -502,23 +192,11 @@ function GenerateTab({ departments, deptLoading, deptError }) {
     const [historyLoading, setHistoryLoading] = useState(false);
 
     const [toast, setToast] = useState(null);
-    const [pklFiles,       setPklFiles]       = useState([]);
-    const [pklLoading,     setPklLoading]     = useState(false);
-    const [expandedPkl,    setExpandedPkl]    = useState(null); // filename of expanded row
     const xlsxRef = useRef();
 
     const batchName       = dept ? `BTECH_${dept}_2023` : null;
     const subjectSafe     = subject.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
     const previewFileName = sem && subjectSafe ? `${sem}_${subjectSafe}.pkl` : null;
-
-    const now2 = new Date();
-    const yr2 = now2.getFullYear();
-    const mo2 = now2.getMonth() + 1;
-    const sessionStr = `${mo2 >= 8 ? yr2 : yr2 - 1}-${String(mo2 >= 8 ? yr2 + 1 : yr2).slice(2)}`;
-    const subCodeSafe = (subjectCode || '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const expectedFilename = sem && subjectSafe
-    ? `${subCodeSafe || sem}_${subjectSafe}_${sessionStr}.pkl`
-    : null;
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -574,45 +252,20 @@ function GenerateTab({ departments, deptLoading, deptError }) {
     }, [batchName]);
 
     const loadHistory = useCallback(async () => {
-    if (!dept) return;
+    if (!dept || !sem || !subject) return;
     setHistoryLoading(true);
     try {
-        let url = `${EMB_BASE}/history-by-dept?dept=${encodeURIComponent(dept)}`;
-        if (sem)     url += `&sem=${encodeURIComponent(sem)}`;
-        if (subject) url += `&subject=${encodeURIComponent(subject)}`;
-        const res  = await fetch(url);
+        const res  = await fetch(`${EMB_BASE}/status?dept=${encodeURIComponent(dept)}&sem=${encodeURIComponent(sem)}&subject=${encodeURIComponent(subject)}`);
         const data = await res.json();
         setHistory(data.records || []);
     } catch (_) {}
     setHistoryLoading(false);
-}, [dept]); 
-
-
-const loadPklFiles = useCallback(async () => {
-    if (!dept) return;
-    setPklLoading(true);
-    try {
-        const res  = await fetch(`${EMB_BASE}/list-files-by-dept?dept=${encodeURIComponent(dept)}`);
-        const data = await res.json();
-        setPklFiles(data.files || []);
-    } catch (_) {
-        setPklFiles([]);
-    }
-    setPklLoading(false);
-}, [dept]);
+}, [dept, sem, subject]);
 
     useEffect(() => {
     setSummary(null); setRows([]); setRollInput(''); setAutoLoaded(false);
-    setPklFiles([]); setExpandedPkl(null);
-    if (dept) {
-        loadHistory();
-        loadPklFiles();
-    }
-}, [dept]);
-
-useEffect(() => {
-    if (dept) loadPklFiles();
-}, [subject]);
+    if (dept && sem && subject) loadHistory();
+}, [dept, sem, subject]);
 
     const startGeneration = async () => {
         if (!batchName || rollNos.length === 0 || !subject.trim()) return;
@@ -675,11 +328,8 @@ useEffect(() => {
                                 rollNosInSubject: rollNos,
                             });
                             showToast(`Done — ${msg.success} succeeded, ${msg.failed} failed`);
-                            loadPklFiles();                              // ← also add this (was missing)
-    setTimeout(() => {
-        loadHistory();
-    }, 800);
-}
+                            loadHistory();
+                        }
                     } catch (_) {}
                 }
             }
@@ -690,16 +340,7 @@ useEffect(() => {
         setRunning(false);
     };
 
-     const enrichedPklFiles = pklFiles.map(f => {
-    if (f.rollNos?.length > 0) return f;
-    const match = history.find(h => h.embeddingFile === f.filename);
-    if (match) return { ...f, rollNos: match.rollNos || [], missedRollNos: match.missedRollNos || [] };
-    return f;
-});
-
     const noFilters   = !dept;
-
-
     const canGenerate = !running && rollNos.length > 0 && subject.trim().length > 0 && sem.trim().length > 0;
 
     return (
@@ -714,136 +355,7 @@ useEffect(() => {
                 setSubjectCode={setSubjectCode}
                 setSubjectId={setSubjectId}
                 departments={departments} deptLoading={deptLoading} deptError={deptError}
-                history={history}
             />
-
-            {/* ── PKL Files for this dept — shown as soon as dept is selected ── */}
-{dept && (
-    <div style={{ ...styles.card, marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-            <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>
-                📦 Embedding Files on Disk — {dept}
-            </div>
-            <button onClick={loadPklFiles} disabled={pklLoading}
-                style={{ ...styles.btnGhost, padding: '5px 12px', fontSize: '11px' }}>
-                {pklLoading ? 'Loading…' : '↺ Refresh'}
-            </button>
-        </div>
-
-        {pklLoading ? (
-            <div style={{ color: theme.textMuted, fontSize: '13px', padding: '16px 0', textAlign: 'center' }}>Loading pkl files…</div>
-        ) : (expectedFilename ? enrichedPklFiles.filter(f => f.filename === expectedFilename) : enrichedPklFiles).length === 0 ? (
-    <div style={{ color: theme.textMuted, fontSize: '13px', padding: '16px 0', textAlign: 'center' }}>
-        {expectedFilename
-            ? `No embedding file found for this subject yet. Expected: ${expectedFilename}`
-            : 'No .pkl files found for this department yet.'}
-    </div>
-        ) : (
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                    <thead>
-                        <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
-                            {['File', 'Subject', 'Sem', 'Size', 'Generated', 'Present Roll Nos', 'Missing Roll Nos', 'Status'].map(h => (
-                                <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-    {(expectedFilename
-        ? enrichedPklFiles.filter(f => f.filename === expectedFilename)
-        : enrichedPklFiles
-    ).map(file => {
-        const missedSet    = new Set((file.missedRollNos || []).map(m => m.rollNo || m));
-        const presentRolls = (file.rollNos || []).filter(r => !missedSet.has(r));
-        const missedRolls  = file.missedRollNos || [];
-        return (
-            <React.Fragment key={file.filename}>
-                {/* Main info row */}
-                <tr style={{ borderBottom: `1px solid ${theme.border}22` }}>
-                    <td style={{ padding: '8px 12px', fontFamily: theme.fontMono, fontSize: '11px', color: theme.accent }}>{file.filename}</td>
-                    <td style={{ padding: '8px 12px', fontSize: '12px', color: theme.text }}>{file.subject || <span style={{ color: theme.textMuted }}>—</span>}</td>
-                    <td style={{ padding: '8px 12px', fontSize: '12px', color: theme.text }}>{file.sem || '—'}</td>
-                    <td style={{ padding: '8px 12px', fontSize: '11px', color: theme.textMuted }}>{file.sizeKB} KB</td>
-                    <td style={{ padding: '8px 12px', fontSize: '11px', color: theme.textMuted }}>
-                        {file.generatedAt ? new Date(file.generatedAt).toLocaleString('en-IN') : '—'}
-                    </td>
-                    <td style={{ padding: '8px 12px', fontSize: '12px', color: theme.success }}>
-                        {presentRolls.length > 0 ? `${presentRolls.length} ✓` : <span style={{ color: theme.textMuted }}>—</span>}
-                    </td>
-                    <td style={{ padding: '8px 12px', fontSize: '12px', color: missedRolls.length > 0 ? theme.danger : theme.success }}>
-                        {missedRolls.length > 0 ? `${missedRolls.length} ✗` : '✓ none'}
-                    </td>
-                    <td style={{ padding: '8px 12px' }}>
-                        <span style={{
-                            fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: 99,
-                            background: file.status === 'done' ? theme.successDim : file.status === 'failed' ? theme.dangerDim : theme.border,
-                            color:      file.status === 'done' ? theme.success    : file.status === 'failed' ? theme.danger    : theme.textMuted,
-                        }}>{file.status || 'unknown'}</span>
-                    </td>
-                </tr>
-
-                {/* Roll numbers row — always visible, no click needed */}
-                <tr>
-                    <td colSpan={8} style={{ padding: '0 12px 16px 12px', background: theme.bg, borderBottom: `1px solid ${theme.border}` }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, paddingTop: 10 }}>
-
-                            {/* Present roll nos */}
-                            <div>
-                                <div style={{ fontSize: '11px', fontWeight: 700, color: theme.success, marginBottom: 6 }}>
-                                    ✓ Present in Embedding ({presentRolls.length})
-                                </div>
-                                {presentRolls.length === 0 ? (
-                                    <div style={{ fontSize: '12px', color: theme.textMuted }}>No roll numbers recorded.</div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                        {presentRolls.map(r => (
-                                            <span key={r} style={{
-                                                fontFamily: theme.fontMono, fontSize: '11px',
-                                                padding: '2px 8px', borderRadius: 4,
-                                                background: theme.successDim, color: theme.success,
-                                                border: `1px solid ${theme.success}44`,
-                                            }}>{r}</span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Missing roll nos */}
-                            <div>
-                                <div style={{ fontSize: '11px', fontWeight: 700, color: theme.danger, marginBottom: 6 }}>
-                                    ✗ Missing Ground Truth ({missedRolls.length})
-                                </div>
-                                {missedRolls.length === 0 ? (
-                                    <div style={{ fontSize: '12px', color: theme.success }}>✓ All roll numbers have ground truth.</div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                        {missedRolls.map((m, i) => (
-                                            <span key={i} style={{
-                                                fontFamily: theme.fontMono, fontSize: '11px',
-                                                padding: '2px 8px', borderRadius: 4,
-                                                background: theme.dangerDim, color: theme.danger,
-                                                border: `1px solid ${theme.danger}44`,
-                                            }}>{m.rollNo || m}</span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                        </div>
-                    </td>
-                </tr>
-            </React.Fragment>
-        );
-    })}
-</tbody>
-                </table>
-                 
-            </div>
-        )}
-    </div>
-)}
-
-            
 
             {noFilters ? (
                 <div style={{ textAlign: 'center', padding: '60px 0', color: theme.textMuted, fontSize: '14px' }}>
@@ -976,83 +488,46 @@ useEffect(() => {
                         </div>
                     )}
 
-                    </>
-            )}
-
-            {/* History — shown as soon as dept is selected */}
-            {dept && (
-                <div style={{ ...styles.card, marginTop: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                        <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>Past Generations — {dept}</div>
-                        <button onClick={loadHistory} disabled={historyLoading}
-                            style={{ ...styles.btnGhost, padding: '5px 12px', fontSize: '11px' }}>
-                            {historyLoading ? 'Loading…' : '↺ Refresh'}
-                        </button>
-                    </div>
-                    {history.length === 0 ? (
-                        <div style={{ color: theme.textMuted, fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
-                            {historyLoading ? 'Loading…' : 'No embedding generations yet.'}
+                    {/* History */}
+                    <div style={styles.card}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                            <div style={{ ...styles.sectionTitle, marginBottom: 0, flex: 1 }}>Past Generations — {dept}</div>
+                            <button onClick={loadHistory} disabled={historyLoading}
+                                style={{ ...styles.btnGhost, padding: '5px 12px', fontSize: '11px' }}>
+                                {historyLoading ? 'Loading…' : '↺ Refresh'}
+                            </button>
                         </div>
-                    ) : (
-                        <div style={{ overflowX: 'auto' }}>
+                        {history.length === 0 ? (
+                            <div style={{ color: theme.textMuted, fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>No embedding generations yet.</div>
+                        ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                 <thead>
                                     <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
-                                        {['Date', 'Last Updated', 'Subject', 'Status', 'Roll Nos Present', 'Missing Roll Nos', 'Embedding File'].map(h => (
-                                            <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
+                                    {['Date', 'Last Updated', 'Subject', 'Status', 'Students', 'Embedding File'].map(h => (                                            <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {history.map(rec => {
-                                        const missed = rec.missedRollNos || [];
-                                        return (
-                                            <tr key={rec._id} style={{ borderBottom: `1px solid ${theme.border}22` }}>
-                                                <td style={{ padding: '8px 12px', fontSize: '11px', color: theme.textMuted }}>{new Date(rec.generatedAt).toLocaleString('en-IN')}</td>
-                                                <td style={{ padding: '8px 12px', fontSize: '11px', color: rec.lastUpdatedAt ? theme.accent : theme.textMuted }}>
-                                                    {rec.lastUpdatedAt ? new Date(rec.lastUpdatedAt).toLocaleString('en-IN') : '—'}
-                                                </td>
-                                                <td style={{ padding: '8px 12px', fontSize: '12px', color: theme.text, fontWeight: 500 }}>{rec.subject || <span style={{ color: theme.textMuted }}>—</span>}</td>
-                                                <td style={{ padding: '8px 12px' }}><StatusBadge status={rec.status} /></td>
-                                                <td style={{ padding: '8px 12px', fontSize: '12px', maxWidth: 280 }}>
-                                                   {(() => {
-                                                        const allRolls = rec.rollNos || [];
-                                                        const missedSet = new Set((rec.missedRollNos || []).map(m => m.rollNo || m));
-                                                        const presentRolls = allRolls.filter(r => !missedSet.has(r));
-                                                        if (allRolls.length === 0) {
-                                                            return <span style={{ color: theme.success }}>{rec.studentsSuccess}✓</span>;
-                                                        }
-                                                        return (
-                                                            <span>
-                                                                <span style={{ color: theme.success }}>{presentRolls.length}✓ </span>
-                                                                <span style={{ fontFamily: theme.fontMono, fontSize: '10px', color: theme.textMuted }}>
-                                                                    {presentRolls.join(', ')}
-                                                                </span>
-                                                            </span>
-                                                        );
-                                                    })()}
-                                                </td>       
-                                                <td style={{ padding: '8px 12px', fontSize: '11px', maxWidth: 260 }}>
-                                                    {missed.length === 0 ? (
-                                                        <span style={{ color: theme.success }}>✓ none</span>
-                                                    ) : (
-                                                        <span style={{ color: theme.danger }}>
-                                                            {missed.length} missing —&nbsp;
-                                                            <span style={{ fontFamily: theme.fontMono, fontSize: '10px', color: theme.textMuted }}>
-                                                                {missed.map(m => m.rollNo || m).join(', ')}
-                                                            </span>
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td style={{ padding: '8px 12px', fontFamily: theme.fontMono, fontSize: '11px', color: theme.accent }}>{rec.embeddingFile || '—'}</td>
-                                            </tr>
-                                        );
-                                    })}
+                                    {history.map(rec => (
+                                        <tr key={rec._id} style={{ borderBottom: `1px solid ${theme.border}22` }}>
+                                            <td style={{ padding: '8px 12px', fontSize: '11px', color: theme.textMuted }}>{new Date(rec.generatedAt).toLocaleString('en-IN')}</td>
+                                            <td style={{ padding: '8px 12px', fontSize: '11px', color: rec.lastUpdatedAt ? theme.accent : theme.textMuted }}>
+                                                {rec.lastUpdatedAt ? new Date(rec.lastUpdatedAt).toLocaleString('en-IN') : '—'}
+                                            </td>
+                                            <td style={{ padding: '8px 12px', fontSize: '12px', color: theme.text, fontWeight: 500 }}>{rec.subject || <span style={{ color: theme.textMuted }}>—</span>}</td>
+                                            <td style={{ padding: '8px 12px' }}><StatusBadge status={rec.status} /></td>
+                                            <td style={{ padding: '8px 12px', fontSize: '12px' }}>
+                                                <span style={{ color: theme.success }}>{rec.studentsSuccess}✓</span>
+                                                {rec.studentsFailed > 0 && <span style={{ color: theme.danger, marginLeft: 6 }}>{rec.studentsFailed}✗</span>}
+                                            </td>
+                                            <td style={{ padding: '8px 12px', fontFamily: theme.fontMono, fontSize: '11px', color: theme.accent }}>{rec.embeddingFile || '—'}</td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                </>
             )}
         </div>
     );
@@ -1064,7 +539,6 @@ useEffect(() => {
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function EmbeddingGeneration() {
     const { departments, deptLoading, deptError } = useDepartments();
-    const [activeTab, setActiveTab] = useState(1);
 
     return (
         <div style={styles.page}>
@@ -1073,17 +547,13 @@ export default function EmbeddingGeneration() {
             <div style={{ marginBottom: 20 }}>
                 <div style={styles.heading}>Embedding Generation</div>
                 <div style={{ ...styles.subheading, marginBottom: 0 }}>
-                    Manage face embeddings for ground truth photos
+                    Generate face embeddings from ground truth photos — upload an <code style={{ color: theme.accent }}>.xlsx</code> to load roll numbers or paste them directly
                 </div>
             </div>
 
-            <div style={{ display: 'flex', borderBottom: `1px solid ${theme.border}`, marginBottom: 24 }}>
-                <Tab label="Subject Embeddings" icon="📚" active={activeTab === 1} onClick={() => setActiveTab(1)} />
-                <Tab label="ERP Ground Truth" icon="👥" active={activeTab === 2} onClick={() => setActiveTab(2)} />
+            <div style={{ paddingTop: 24 }}>
+                <GenerateTab departments={departments} deptLoading={deptLoading} deptError={deptError} />
             </div>
-
-            {activeTab === 1 && <GenerateTab departments={departments} deptLoading={deptLoading} deptError={deptError} />}
-            {activeTab === 2 && <ERPSyncTab departments={departments} deptLoading={deptLoading} deptError={deptError} />}
         </div>
     );
 }
