@@ -391,17 +391,13 @@ export default function CameraPreview() {
     <div style={styles.page}>
       <style>{`
                 ${cssReset}
-                .preview-hero {
-                    position: relative;
-                    overflow: hidden;
-                    border-radius: 18px;
-                    border: 1px solid ${theme.border};
-                    background:
-                        radial-gradient(circle at 20% 18%, rgba(99,102,241,0.08), transparent 30%),
-                        radial-gradient(circle at 82% 6%, rgba(16,185,129,0.07), transparent 28%),
-                        linear-gradient(135deg, #eef0fc 0%, #f5f6fb 100%);
-                    padding: 28px;
-                    margin-bottom: 22px;
+                .preview-header {
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    margin-bottom: 18px;
                 }
                 .controls-bar {
                     display: flex;
@@ -452,47 +448,24 @@ export default function CameraPreview() {
                     box-shadow: 0 1px 4px rgba(26,31,60,0.04);
                 }
                 @media (max-width: 860px) {
-                    .dual-feed-grid { grid-template-columns: 1fr; }
-                    .controls-bar { flex-direction: column; align-items: stretch; }
+                    .dual-feed-grid { grid-template-columns: 1fr !important; }
+                    .controls-bar   { flex-direction: column; align-items: stretch; }
+                    .control-group  { min-width: unset !important; width: 100%; }
+                }
+                @media (max-width: 600px) {
+                    .room-info-bar  { flex-wrap: wrap; gap: 8px; }
                 }
             `}</style>
 
       <Toast toast={toast} />
 
-      {/* Hero */}
-      <section className="preview-hero">
-        <div
-          style={{
-            ...styles.badge('success'),
-            display: 'inline-flex',
-            marginBottom: 12,
-          }}
-        >
-          Live feed preview
+      {/* Compact header */}
+      <div className="preview-header">
+        <div>
+          <div style={styles.heading}>Camera Live Preview</div>
+          <div style={{ ...styles.subheading, marginBottom: 0 }}>Select a room to view both camera feeds side by side</div>
         </div>
-        <div
-          style={{
-            fontSize: 30,
-            fontWeight: 800,
-            letterSpacing: '-0.04em',
-            marginBottom: 8,
-            color: theme.text,
-          }}
-        >
-          Camera Live Preview
-        </div>
-        <div
-          style={{
-            color: theme.textMuted,
-            maxWidth: 820,
-            fontSize: 14,
-            lineHeight: 1.7,
-          }}
-        >
-          Select a room to instantly view both camera feeds side by side. Feeds
-          start automatically — no manual steps needed.
-        </div>
-      </section>
+      </div>
 
       {/* Controls */}
       <div className="controls-bar">
