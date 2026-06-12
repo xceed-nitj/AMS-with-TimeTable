@@ -12,6 +12,7 @@ const apiUrl     = getEnvironment();
 const CAM_API    = `${apiUrl}/attendancemodule/cameras`;
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
 const GT_API     = `${apiUrl}/attendancemodule/ground-truth`;
+const EMB_API    = `${apiUrl}/attendancemodule/embeddings`;
 const USER_API   = `${apiUrl}/user/getuser`;
 
 const T = {
@@ -290,6 +291,8 @@ export default function AMSDashboard() {
   const [userRoles,   setUserRoles] = useState([]);
   const [gtStats,     setGtStats]   = useState(null);
   const [gtLoad,      setGtLoad]    = useState(true);
+  const [embFiles,    setEmbFiles]  = useState(null);
+  const [embLoad,     setEmbLoad]   = useState(true);
   const [chartData,   setChartData] = useState(null);
   const [camOpen,     setCamOpen]   = useState(false);
 
@@ -331,6 +334,20 @@ export default function AMSDashboard() {
       .then(r => r.ok ? r.json() : null)
       .then(d => setChartData(d))
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch(`${EMB_API}/list-files`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const files = d?.files || [];
+        const complete   = files.filter(f => !(f.missedRollNos?.length > 0)).length;
+        const incomplete = files.filter(f =>   f.missedRollNos?.length > 0 ).length;
+        const totalStudents = files.reduce((sum, f) => sum + (f.rollNos?.length || 0), 0);
+        setEmbFiles({ total: files.length, complete, incomplete, totalStudents });
+      })
+      .catch(() => setEmbFiles(null))
+      .finally(() => setEmbLoad(false));
   }, []);
 
   const onlineCams = cameras.filter(c => c.status === 'online').length;
@@ -437,12 +454,44 @@ export default function AMSDashboard() {
           <StatCard label="Matched"         value={gtStats?.matched}       color={T.teal}    loading={gtLoad} delay={160} />
         </div>
 
-        <SectionLabel>Verification</SectionLabel>
+        {/* ── Embedding stats ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.09em' }}>
+            Subject Embeddings
+          </div>
+          <button
+            onClick={() => navigate('/attendance/embeddings')}
+            style={{
+              fontSize: 10, padding: '3px 9px', borderRadius: 6,
+              background: T.amberDim, color: T.amber,
+              border: `1px solid ${T.amber}30`, cursor: 'pointer',
+              fontFamily: T.fontBody, fontWeight: 700,
+            }}
+          >
+            Manage →
+          </button>
+        </div>
         <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
+          <StatCard label="Total Files"      value={embFiles?.total}         color={T.amber}   loading={embLoad} delay={0}   />
+          <StatCard label="Complete"         value={embFiles?.complete}      color={T.emerald} loading={embLoad} delay={40}  />
+          <StatCard label="Incomplete"       value={embFiles?.incomplete}    color={T.red}     loading={embLoad} delay={80}  />
+          <StatCard label="Students Covered" value={embFiles?.totalStudents} color={T.purple}  loading={embLoad} delay={120} />
+        </div>
+
+        {/* ── Quick Actions ── */}
+        <SectionLabel>Quick Actions</SectionLabel>
+        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fill, minmax(200px,1fr))', marginBottom: 28 }}>
           <ActionCard
-            title="Saved Frame Verification"
-            subtitle="Open the dedicated gallery to review saved raw and annotated screenshots by room, date, and period."
-            color={T.pink || '#ec4899'}
+            title="Session Setup"
+            subtitle="Configure semester dates, time slots, and attendance session parameters before capturing."
+            color={T.purple}
+            buttonLabel="Open Session Setup"
+            onClick={() => navigate('/attendance/edit-session-dates')}
+          />
+          <ActionCard
+            title="Frame Verification"
+            subtitle="Review saved raw and annotated screenshots by room, date, and period."
+            color={T.teal}
             buttonLabel="Open Gallery"
             onClick={() => navigate('/attendance/frame-verification')}
           />
