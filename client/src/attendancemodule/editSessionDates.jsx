@@ -7,7 +7,7 @@ import { theme as T, cssReset } from './config';
 
 const apiUrl        = getEnvironment();
 const ALLOTMENT_API = `${apiUrl}/timetablemodule/allotment`;
-const USER_API      = `${apiUrl}/user/getuser`; // 🌟 Restored for production role verification
+const USER_API      = `${apiUrl}/user/getuser`;
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -17,12 +17,16 @@ const MONTHS = [
 const CSS = `
   ${cssReset}
   @keyframes toastIn { from { opacity:0; transform:translateY(-20px) scale(0.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+  @keyframes modalIn { from { opacity:0; transform:translateY(-8px) scale(0.99); } to { opacity:1; transform:translateY(0) scale(1); } }
 
   .session-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; animation: fadeIn .4s ease both; }
-  .session-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(26,31,60,0.05); animation: fadeIn .4s ease both; }
-  .session-card-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid ${T.border}; background: ${T.surfaceAlt}; }
+  .session-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(26,31,60,0.05); margin-bottom: 20px; animation: fadeIn .4s ease both; }
+  .session-card-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid ${T.border}; background: ${T.surfaceAlt}; }
   .session-grid { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; padding: 20px; }
   .form-control { display: flex; flex-direction: column; gap: 6px; }
+
+  .term-date-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid ${T.border}; gap: 20px; }
+  .term-date-row:last-child { border-bottom: none; }
 
   .native-input, .native-select {
     width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid ${T.border};
@@ -32,12 +36,11 @@ const CSS = `
 
   .native-btn {
     padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; font-size: 14px;
-    cursor: pointer; font-family: ${T.fontBody}; transition: opacity 0.2s;
+    cursor: pointer; font-family: ${T.fontBody}; transition: opacity 0.2s; display: inline-flex; align-items: center; justify-content: center;
   }
   .native-btn:hover { opacity: 0.88; }
   .native-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* 🌟 Unchanged: Keeping the exact card grid approved by Sir */
   .monthly-cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -102,9 +105,9 @@ const CSS = `
   .floating-toast-container {
     position: fixed;
     top: 24px; right: 24px;
-    z-index: 99999;
+    z-index: 999999;
     padding: 14px 22px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
     border-radius: 8px;
     display: flex; align-items: center; gap: 12px;
     font-size: 13.5px; font-weight: 600;
@@ -112,8 +115,37 @@ const CSS = `
     animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
+  .custom-global-modal-overlay {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(15, 23, 42, 0.45) !important;
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 99999999 !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+  }
+  .custom-global-modal-box {
+    background: ${T.surface} !important;
+    border: 1px solid ${T.border} !important;
+    border-radius: 12px !important;
+    padding: 24px !important;
+    max-width: 440px !important; 
+    width: 100% !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15) !important;
+    animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+    box-sizing: border-box !important;
+  }
+
   @media (max-width: 768px) {
     .session-grid { grid-template-columns: 1fr; }
+    .term-date-row { flex-direction: column; align-items: flex-start; gap: 12px; }
     .monthly-cards-grid { grid-template-columns: 1fr; }
     .floating-toast-container { left: 16px; right: 16px; top: 16px; }
   }
@@ -135,9 +167,14 @@ export default function EditSessionDates() {
   const [allotmentId,       setAllotmentId]       = useState(null);
   const [startingDate,      setStartingDate]      = useState('');
   const [endingDate,        setEndingDate]        = useState('');
+  
+  const [tempStartDate,     setTempStartDate]     = useState('');
+  const [tempEndDate,       setTempEndDate]       = useState('');
+
   const [nonWorkingDays,    setNonWorkingDays]    = useState([]);
 
-  const [isEditingDuration, setIsEditingDuration] = useState(false);
+  const [isEditingStart,    setIsEditingStart]    = useState(false);
+  const [isEditingEnd,      setIsEditingEnd]      = useState(false);
 
   const [holidayStartDate,  setHolidayStartDate]  = useState('');
   const [holidayEndDate,    setHolidayEndDate]    = useState('');
@@ -146,6 +183,8 @@ export default function EditSessionDates() {
   const [editingRowDate,    setEditingRowDate]    = useState(null);
   const [editDateValue,     setEditDateValue]     = useState('');
   const [editRemarkValue,   setEditRemarkValue]   = useState('');
+
+  const [pendingDeleteDate, setPendingDeleteDate] = useState(null);
 
   const fmt = (d) => {
     try {
@@ -156,6 +195,32 @@ export default function EditSessionDates() {
     } catch { return ''; }
   };
 
+  const getNextDay = (dateStr) => {
+    try {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '';
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    } catch { return ''; }
+  };
+
+  const formatToIndianStandardString = (dateStr) => {
+    try {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day   = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year  = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch { return dateStr; }
+  };
+
   const displayDate = (dateStr) => {
     try {
       const d = new Date(dateStr);
@@ -164,9 +229,31 @@ export default function EditSessionDates() {
     } catch { return dateStr; }
   };
 
+  const generateWeekendsForRange = (startStr, endStr, currentDaysList) => {
+    if (!startStr || !endStr || startStr > endStr) return currentDaysList;
+    const existingDates = new Set(currentDaysList.map(item => item.date));
+    let cursor          = new Date(startStr);
+    const end           = new Date(endStr);
+    const toAdd         = [];
+
+    while (cursor <= end) {
+      const dow    = cursor.getDay();
+      const isoStr = cursor.toISOString().split('T')[0];
+      
+      if ((dow === 0 || dow === 6) && !existingDates.has(isoStr)) {
+        toAdd.push({ date: isoStr, remark: dow === 0 ? 'Sunday' : 'Saturday' });
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (toAdd.length > 0) {
+      return [...currentDaysList, ...toAdd].sort((a, b) => a.date.localeCompare(b.date));
+    }
+    return currentDaysList;
+  };
+
   // ── 1. Role check ──────────────────────────────────────────────────────────
   useEffect(() => {
-    // 🌟 Restored production authorization flow to securely fetch roles from the API
     fetch(USER_API, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => {
@@ -176,7 +263,7 @@ export default function EditSessionDates() {
       .catch(() => setIsAuthorized(false));
   }, []);
 
-  // ── 2. Load sessions list and auto-select current term ────────────────────
+  // ── 2. Load sessions list ──────────────────────────────────────────────────
   useEffect(() => {
     if (isAuthorized !== true) return;
     fetch(`${ALLOTMENT_API}/session`, { credentials: 'include' })
@@ -208,9 +295,10 @@ export default function EditSessionDates() {
         isFetching.current = true;
         setIsLoading(true);
         setSaveMsg(null);
-        setIsEditingDuration(false);
+        setIsEditingStart(false);
+        setIsEditingEnd(false);
 
-        const res    = await fetch(
+        const res = await fetch(
           `${ALLOTMENT_API}?session=${encodeURIComponent(sessionName)}`,
           { credentials: 'include' },
         );
@@ -221,8 +309,13 @@ export default function EditSessionDates() {
         if (!record) { setAllotmentId(null); return; }
 
         setAllotmentId(record._id);
-        setStartingDate(fmt(record.startingDate));
-        setEndingDate(fmt(record.endingDate));
+        const fetchedStart = fmt(record.startingDate);
+        const fetchedEnd   = fmt(record.endingDate);
+        
+        setStartingDate(fetchedStart);
+        setEndingDate(fetchedEnd);
+        setTempStartDate(fetchedStart); 
+        setTempEndDate(fetchedEnd);
 
         const parsed = (record.nonWorkingDays || []).map(item => {
           if (item && typeof item === 'object' && item.date) {
@@ -231,7 +324,12 @@ export default function EditSessionDates() {
           return { date: fmt(item), remark: 'Holiday' };
         }).filter(item => item.date !== '');
 
-        setNonWorkingDays(parsed);
+        let initialConfiguredDays = parsed;
+        if (parsed.length === 0 && fetchedStart && fetchedEnd) {
+          initialConfiguredDays = generateWeekendsForRange(fetchedStart, fetchedEnd, parsed);
+        }
+
+        setNonWorkingDays(initialConfiguredDays);
         isFetching.current = false;
       } catch {
         isFetching.current = false;
@@ -244,33 +342,34 @@ export default function EditSessionDates() {
     fetchSessionData();
   }, [isAuthorized, sessionName]);
 
-  // ── 4. Auto-add weekends when date range changes ──────────────────────────
-  useEffect(() => {
-    if (!startingDate || !endingDate || startingDate > endingDate) return;
-    if (isFetching.current) return;
-
-    const existingDates = new Set(nonWorkingDays.map(item => item.date));
-    let cursor          = new Date(startingDate);
-    const end           = new Date(endingDate);
-    const toAdd         = [];
-
-    while (cursor <= end) {
-      const dow    = cursor.getDay();
-      const isoStr = cursor.toISOString().split('T')[0];
-      if ((dow === 0 || dow === 6) && !existingDates.has(isoStr)) {
-        toAdd.push({ date: isoStr, remark: dow === 0 ? 'Sunday' : 'Saturday' });
+  const saveToBackendDatabaseDirectly = async (targetStartingDate, targetEndingDate, targetNonWorkingDaysList) => {
+    if (!allotmentId) return false;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${ALLOTMENT_API}/${allotmentId}`, {
+        method:      'PUT',
+        headers:     { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body:        JSON.stringify({
+          startingDate:   targetStartingDate || null,
+          endingDate:     targetEndingDate   || null,
+          nonWorkingDays: targetNonWorkingDaysList,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Save operation failed');
       }
-      cursor.setDate(cursor.getDate() + 1);
+      triggerToast('success', 'Changes saved successfully.');
+      return true;
+    } catch (e) {
+      triggerToast('error', e.message);
+      return false;
+    } finally {
+      setIsSaving(false);
     }
+  };
 
-    if (toAdd.length > 0) {
-      setNonWorkingDays(prev =>
-        [...prev, ...toAdd].sort((a, b) => a.date.localeCompare(b.date)),
-      );
-    }
-  }, [startingDate, endingDate]);
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const triggerToast = (type, text) => {
     setSaveMsg({ type, text });
     setTimeout(() => setSaveMsg(null), 4500);
@@ -281,6 +380,8 @@ export default function EditSessionDates() {
     setAllotmentId(null);
     setStartingDate('');
     setEndingDate('');
+    setTempStartDate('');
+    setTempEndDate('');
     setNonWorkingDays([]);
     setSaveMsg(null);
     navigate(val
@@ -289,22 +390,18 @@ export default function EditSessionDates() {
     );
   };
 
-  const handleAddNonWorkingDay = () => {
+  const handleAddNonWorkingDay = async () => {
     if (!holidayStartDate) return;
 
     if (startingDate && endingDate) {
       if (holidayStartDate < startingDate || holidayStartDate > endingDate) {
-        triggerToast('error', `Holiday must fall within the term (${startingDate} to ${endingDate}).`);
+        triggerToast('error', `Date must fall within the term context range (${formatToIndianStandardString(startingDate)} to ${formatToIndianStandardString(endingDate)}).`);
         return;
       }
       if (holidayEndDate && (holidayEndDate < startingDate || holidayEndDate > endingDate)) {
-        triggerToast('error', 'End date falls outside the term range.');
+        triggerToast('error', 'End date parameter falls outside the semester bounds.');
         return;
       }
-    }
-
-    if (holidayStartDate === holidayEndDate) {
-      triggerToast('error', 'Start date and end date cannot be the same.');
     }
 
     const start         = new Date(holidayStartDate);
@@ -317,7 +414,7 @@ export default function EditSessionDates() {
     while (cursor <= end) {
       const isoStr = cursor.toISOString().split('T')[0];
       if (existingDates.has(isoStr)) {
-        triggerToast('error', `${isoStr} is already added.`);
+        triggerToast('error', `${formatToIndianStandardString(isoStr)} registry entry already exists.`);
         return;
       }
       toAdd.push({ date: isoStr, remark: remarkText });
@@ -325,76 +422,79 @@ export default function EditSessionDates() {
     }
 
     if (toAdd.length > 0) {
-      setNonWorkingDays(prev => [...prev, ...toAdd].sort((a, b) => a.date.localeCompare(b.date)));
-      triggerToast('success', `Added ${toAdd.length} day${toAdd.length !== 1 ? 's' : ''}. Save changes when ready.`);
+      const updatedDays = [...nonWorkingDays, ...toAdd].sort((a, b) => a.date.localeCompare(b.date));
+      setNonWorkingDays(updatedDays);
+      await saveToBackendDatabaseDirectly(startingDate, endingDate, updatedDays);
     }
     setHolidayStartDate('');
     setHolidayEndDate('');
     setNewRemark('');
   };
 
-  const handleSaveInlineEdit = (originalDate) => {
+  const handleSaveInlineEdit = async (originalDate) => {
     if (!editDateValue) return;
 
     if (startingDate && endingDate && (editDateValue < startingDate || editDateValue > endingDate)) {
-      triggerToast('error', `Date must stay within the term (${startingDate} to ${endingDate}).`);
+      triggerToast('error', `Date must stay within the term boundaries (${formatToIndianStandardString(startingDate)} to ${formatToIndianStandardString(endingDate)}).`);
       return;
     }
 
-    setNonWorkingDays(prev =>
-      prev.map(item =>
-        item.date === originalDate
-          ? { date: editDateValue, remark: editRemarkValue.trim() || 'Holiday' }
-          : item,
-      ).sort((a, b) => a.date.localeCompare(b.date)),
-    );
+    const updatedDays = nonWorkingDays.map(item =>
+      item.date === originalDate
+        ? { date: editDateValue, remark: editRemarkValue.trim() || 'Holiday' }
+        : item,
+    ).sort((a, b) => a.date.localeCompare(b.date));
+
+    setNonWorkingDays(updatedDays);
     setEditingRowDate(null);
-    triggerToast('success', 'Entry updated.');
+    await saveToBackendDatabaseDirectly(startingDate, endingDate, updatedDays);
   };
 
-  const handleRemoveNonWorkingDay = (targetDate) => {
-    setNonWorkingDays(prev => prev.filter(item => item.date !== targetDate));
-    triggerToast('success', 'Day removed.');
+  const handleConfirmedDeletion = async () => {
+    if (!pendingDeleteDate) return;
+    
+    const updatedDays = nonWorkingDays.filter(item => item.date !== pendingDeleteDate);
+    setNonWorkingDays(updatedDays);
+    setPendingDeleteDate(null);
+
+    await saveToBackendDatabaseDirectly(startingDate, endingDate, updatedDays);
+    triggerToast('success', 'Holiday entry removed successfully.');
   };
 
-  const handleSaveDurationChange = () => {
-    if (startingDate === endingDate) {
-      triggerToast('error', 'Start and end dates cannot be the same.');
+  const handleSaveStartDateOnly = async () => {
+    if (tempStartDate === endingDate) {
+      triggerToast('error', 'Start and end dates cannot evaluate to the same value.');
       return;
     }
-    if (startingDate > endingDate) {
-      triggerToast('error', 'End date must be after start date.');
+    if (tempStartDate > endingDate) {
+      triggerToast('error', 'Start date cannot exceed session termination bounds.');
       return;
     }
-    setIsEditingDuration(false);
-    handleSave();
+    
+    setStartingDate(tempStartDate); 
+    setIsEditingStart(false);
+
+    const updatedDaysWithWeekends = generateWeekendsForRange(tempStartDate, endingDate, nonWorkingDays);
+    setNonWorkingDays(updatedDaysWithWeekends);
+    await saveToBackendDatabaseDirectly(tempStartDate, endingDate, updatedDaysWithWeekends);
   };
 
-  const handleSave = async () => {
-    if (!allotmentId) return;
-    setIsSaving(true);
-    setSaveMsg(null);
-    try {
-      const res = await fetch(`${ALLOTMENT_API}/${allotmentId}`, {
-        method:      'PUT',
-        headers:     { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body:        JSON.stringify({
-          startingDate:   startingDate || null,
-          endingDate:     endingDate   || null,
-          nonWorkingDays,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Save failed');
-      }
-      triggerToast('success', 'Changes saved successfully.');
-    } catch (e) {
-      triggerToast('error', e.message);
-    } finally {
-      setIsSaving(false);
+  const handleSaveEndDateOnly = async () => {
+    if (startingDate === tempEndDate) {
+      triggerToast('error', 'Start and end dates cannot evaluate to the same value.');
+      return;
     }
+    if (startingDate > tempEndDate) {
+      triggerToast('error', 'Termination target date must succeed commencement date.');
+      return;
+    }
+    
+    setEndingDate(tempEndDate); 
+    setIsEditingEnd(false);
+
+    const updatedDaysWithWeekends = generateWeekendsForRange(startingDate, tempEndDate, nonWorkingDays);
+    setNonWorkingDays(updatedDaysWithWeekends);
+    await saveToBackendDatabaseDirectly(startingDate, tempEndDate, updatedDaysWithWeekends);
   };
 
   const getHolidaysByMonthAndYear = (monthIdx, year) =>
@@ -433,12 +533,11 @@ export default function EditSessionDates() {
   if (isAuthorized === null) {
     return (
       <div style={{ padding: 40, fontFamily: T.fontBody, color: T.textMuted, textAlign: 'center' }}>
-        Checking access…
+        Verifying security clearance level…
       </div>
     );
   }
 
-  // 🌟 Restored Production Security Shield: Renders restriction screen if unauthorized
   if (isAuthorized === false) {
     return (
       <div style={{ padding: 40, fontFamily: T.fontBody, color: T.danger, textAlign: 'center' }}>
@@ -450,7 +549,6 @@ export default function EditSessionDates() {
   }
 
   const activeMonthsTimeline = getActiveMonthsTimelineList();
-
   const visibleHolidaysCount = nonWorkingDays.filter(day => {
     if (!startingDate || !endingDate) return true;
     return day.date >= startingDate && day.date <= endingDate;
@@ -461,7 +559,7 @@ export default function EditSessionDates() {
       <style>{CSS}</style>
       <div style={{ minHeight: '100vh', background: T.bg, color: T.text, fontFamily: T.fontBody, padding: 'clamp(16px,3vw,32px)' }}>
 
-        {/* Toast */}
+        {/* Toast Notification */}
         {saveMsg && (
           <div
             className="floating-toast-container"
@@ -476,7 +574,7 @@ export default function EditSessionDates() {
           </div>
         )}
 
-        {/* Header */}
+        {/* Header Setup */}
         <div className="session-header">
           <div>
             <div style={{ fontWeight: 700, fontSize: 'clamp(17px,2.5vw,22px)', letterSpacing: '-0.03em', marginBottom: 3, color: T.text }}>
@@ -508,14 +606,14 @@ export default function EditSessionDates() {
           </div>
         </div>
 
-        {/* States */}
+        {/* Master States */}
         {!sessionName ? (
           <div className="session-card" style={{ padding: '40px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
             Select a session above to load its configuration.
           </div>
         ) : isLoading ? (
           <div style={{ textAlign: 'center', padding: 40, color: T.textMuted, fontSize: 13 }}>
-            Loading…
+            Loading configuration data…
           </div>
         ) : !allotmentId ? (
           <div className="session-card" style={{ padding: '40px 20px', textAlign: 'center', color: T.danger, fontSize: 13 }}>
@@ -524,52 +622,31 @@ export default function EditSessionDates() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* Term dates */}
+            {/* Term duration segment */}
             <div className="session-card">
               <div className="session-card-header">
                 <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
-                  Term dates
+                  Term Duration Context
                 </span>
-                {!isEditingDuration ? (
-                  <button
-                    className="native-btn"
-                    onClick={() => setIsEditingDuration(true)}
-                    style={{ background: T.accent, color: '#fff', padding: '6px 12px', fontSize: '11px' }}
-                  >
-                    Edit dates
-                  </button>
-                ) : (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      className="native-btn"
-                      onClick={handleSaveDurationChange}
-                      style={{ background: T.success, color: '#fff', padding: '6px 12px', fontSize: '11px' }}
-                    >
-                      Save range
-                    </button>
-                    <button
-                      className="native-btn"
-                      onClick={() => setIsEditingDuration(false)}
-                      style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '6px 12px', fontSize: '11px' }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
               </div>
-              <div className="session-grid">
-                <div className="form-control">
-                  <label style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Start date
+              
+              {/* Start Date Row */}
+              <div className="term-date-row">
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    Start Date
                   </label>
-                  {isEditingDuration ? (
+                  {isEditingStart ? (
                     <input
                       type="date"
                       className="native-input"
-                      value={startingDate}
-                      onChange={e => setStartingDate(e.target.value)}
+                      value={tempStartDate} 
+                      onChange={e => setTempStartDate(e.target.value)}
+                      max={endingDate} 
+                      style={{ maxWidth: '300px' }}
                     />
                   ) : (
+                    /* ── 🌟 RESTORED 100% ORIGINAL YEAR FORMAT DISPLAYS ── */
                     <div style={{ padding: '10px 14px', background: T.bg, borderRadius: 8, fontSize: 14, fontWeight: 600 }}>
                       {startingDate
                         ? new Date(startingDate).toLocaleDateString('en-IN', { dateStyle: 'long' })
@@ -577,19 +654,53 @@ export default function EditSessionDates() {
                     </div>
                   )}
                 </div>
-                <div className="form-control">
-                  <label style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    End date
+                <div>
+                  {isEditingStart ? (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        className="native-btn"
+                        onClick={handleSaveStartDateOnly}
+                        style={{ background: T.success, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
+                      >
+                        Save Date
+                      </button>
+                      <button
+                        className="native-btn"
+                        onClick={() => setIsEditingStart(false)}
+                        style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '8px 14px', fontSize: '12px' }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="native-btn"
+                      onClick={() => { setTempStartDate(startingDate); setIsEditingStart(true); }}
+                      style={{ background: T.accent, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
+                    >
+                      Edit Date
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* End Date Row */}
+              <div className="term-date-row">
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    End Date
                   </label>
-                  {isEditingDuration ? (
+                  {isEditingEnd ? (
                     <input
                       type="date"
                       className="native-input"
-                      value={endingDate}
-                      onChange={e => setEndingDate(e.target.value)}
-                      min={startingDate}
+                      value={tempEndDate} 
+                      onChange={e => setTempEndDate(e.target.value)}
+                      min={startingDate} 
+                      style={{ maxWidth: '300px' }}
                     />
                   ) : (
+                    /* ── 🌟 RESTORED 100% ORIGINAL YEAR FORMAT DISPLAYS ── */
                     <div style={{ padding: '10px 14px', background: T.bg, borderRadius: 8, fontSize: 14, fontWeight: 600 }}>
                       {endingDate
                         ? new Date(endingDate).toLocaleDateString('en-IN', { dateStyle: 'long' })
@@ -597,21 +708,49 @@ export default function EditSessionDates() {
                     </div>
                   )}
                 </div>
+                <div>
+                  {isEditingEnd ? (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        className="native-btn"
+                        onClick={handleSaveEndDateOnly}
+                        style={{ background: T.success, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
+                      >
+                        Save Date
+                      </button>
+                      <button
+                        className="native-btn"
+                        onClick={() => setIsEditingEnd(false)}
+                        style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '8px 14px', fontSize: '12px' }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="native-btn"
+                      onClick={() => { setTempEndDate(endingDate); setIsEditingEnd(true); }}
+                      style={{ background: T.accent, color: '#fff', padding: '8px 14px', fontSize: '12px' }}
+                    >
+                      Edit Date
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Non-working days */}
+            {/* Non-working days configuration */}
             <div className="session-card">
               <div className="session-card-header">
                 <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
-                  Non-working days
+                  Non-Working Days Configuration
                   <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: T.accent }}>
                     {visibleHolidaysCount} mapped
                   </span>
                 </span>
               </div>
 
-              {/* Add row */}
+              {/* Add Entry row element */}
               <div
                 className="session-grid"
                 style={{
@@ -624,30 +763,34 @@ export default function EditSessionDates() {
               >
                 <div className="form-control">
                   <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Start date
+                    Start Date
                   </label>
                   <input
                     type="date"
                     className="native-input"
                     value={holidayStartDate}
                     onChange={e => setHolidayStartDate(e.target.value)}
+                    min={startingDate}
+                    max={endingDate}
                   />
                 </div>
                 <div className="form-control">
                   <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    End date (optional)
+                    End Date (Optional)
                   </label>
                   <input
                     type="date"
                     className="native-input"
                     value={holidayEndDate}
                     onChange={e => setHolidayEndDate(e.target.value)}
-                    min={holidayStartDate}
+                    disabled={!holidayStartDate} 
+                    min={holidayStartDate ? getNextDay(holidayStartDate) : startingDate} 
+                    max={endingDate} 
                   />
                 </div>
                 <div className="form-control">
                   <label style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Remark
+                    Remark / Label
                   </label>
                   <input
                     type="text"
@@ -663,11 +806,11 @@ export default function EditSessionDates() {
                   disabled={!holidayStartDate}
                   style={{ background: T.accent, color: '#fff' }}
                 >
-                  + Add range
+                  + Add Non-Working Day
                 </button>
               </div>
 
-              {/* Monthly cards grid */}
+              {/* Monthly grid tracker card displays */}
               <div className="monthly-cards-grid">
                 {activeMonthsTimeline.map(({ name, monthIdx, year, key }) => {
                   const monthlyHolidays = getHolidaysByMonthAndYear(monthIdx, year);
@@ -691,6 +834,8 @@ export default function EditSessionDates() {
                                     style={{ padding: '4px 8px', fontSize: 12 }}
                                     value={editDateValue}
                                     onChange={e => setEditDateValue(e.target.value)}
+                                    min={startingDate}
+                                    max={endingDate}
                                   />
                                   <input
                                     type="text"
@@ -751,7 +896,7 @@ export default function EditSessionDates() {
                                     <button
                                       className="icon-btn icon-btn-delete"
                                       title="Remove"
-                                      onClick={() => handleRemoveNonWorkingDay(item.date)}
+                                      onClick={() => setPendingDeleteDate(item.date)}
                                     >
                                       <svg width="10" height="10" viewBox="0 0 12 13" fill="none">
                                         <path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -769,22 +914,45 @@ export default function EditSessionDates() {
                 })}
               </div>
 
-              {/* Save footer */}
-              <div style={{ padding: 16, borderTop: `1px solid ${T.border}`, background: T.surfaceAlt }}>
-                <button
-                  className="native-btn"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  style={{ background: T.success, color: '#fff', width: '100%', padding: '12px', fontSize: 14 }}
-                >
-                  {isSaving ? 'Saving…' : 'Save changes'}
-                </button>
-              </div>
             </div>
 
           </div>
         )}
       </div>
+
+      {/* ── Custom Global Viewport Portal Delete Confirmation Modal ── */}
+      {pendingDeleteDate && (
+        <div className="custom-global-modal-overlay">
+          <div className="custom-global-modal-box">
+            <div style={{ fontSize: '16px', fontWeight: 700, color: T.text, marginBottom: '10px', fontFamily: T.fontBody }}>
+              Delete Non-Working Day
+            </div>
+            <div style={{ fontSize: '13.5px', color: T.textMuted, lineHeight: '1.5', marginBottom: '24px', fontFamily: T.fontBody }}>
+              Are you sure you want to permanently remove the non-working day registry for <strong style={{ color: T.text }}>{displayDate(pendingDeleteDate)}</strong>?
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setPendingDeleteDate(null)}
+                style={{
+                  background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569',
+                  padding: '10px 16px', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: T.fontBody
+                }}
+              >
+                Cancel, Keep Entry
+              </button>
+              <button
+                onClick={handleConfirmedDeletion}
+                style={{
+                  background: '#ef4444', border: 'none', color: '#ffffff',
+                  padding: '10px 16px', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: T.fontBody
+                }}
+              >
+                Yes, Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
