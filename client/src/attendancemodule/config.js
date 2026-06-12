@@ -43,7 +43,7 @@ const styles = {
         background: theme.bg,
         color: theme.text,
         fontFamily: theme.fontBody,
-        padding: '24px 32px',
+        padding: 'clamp(14px, 3vw, 28px) clamp(12px, 4vw, 32px)',
     },
     card: {
         background: theme.surface,
@@ -177,6 +177,35 @@ const cssReset = `
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
     @keyframes pulse  { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
     @keyframes spin   { to { transform: rotate(360deg); } }
+
+    /* ── Responsive grid helpers (used across all module pages) ── */
+    .r-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .r-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .r-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .r-flex   { display: flex; flex-wrap: wrap; gap: 12px; }
+    @media (max-width: 900px) {
+        .r-grid-3, .r-grid-4 { grid-template-columns: 1fr 1fr !important; }
+    }
+    @media (max-width: 600px) {
+        .r-grid-2, .r-grid-3, .r-grid-4 { grid-template-columns: 1fr !important; }
+        .r-flex { flex-direction: column; }
+    }
+
+    /* ── Table overflow wrapper ── */
+    .r-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ── Page header responsive ── */
+    .ams-page-header {
+        display: flex; align-items: flex-start; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+    }
+    .ams-page-header h1 {
+        font-size: clamp(16px, 2.5vw, 22px); font-weight: 700;
+        letter-spacing: -0.02em; margin: 0 0 3px; color: ${theme.text};
+    }
+    .ams-page-header p {
+        font-size: 13px; color: ${theme.textMuted}; margin: 0;
+    }
 `;
 
 export { API_BASE, TIMETABLE_API, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset };

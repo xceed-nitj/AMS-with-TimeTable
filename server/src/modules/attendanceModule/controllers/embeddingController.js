@@ -568,6 +568,22 @@ try {
         }   // ← TO HERE
     }
 
+    // DELETE /attendancemodule/embeddings/file  — deletes physical .pkl + all DB records
+    async deleteFile(req, res) {
+        const { filename, relPath } = req.body;
+        if (!filename) return res.status(400).json({ error: 'filename required' });
+
+        const filePath = path.join(EMBEDDINGS_DIR, relPath || filename);
+        try {
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch (err) {
+            console.error('deleteFile: could not remove physical file:', err.message);
+        }
+
+        const result = await StudentEmbedding.deleteMany({ embeddingFile: filename });
+        res.json({ ok: true, deleted: filename, dbDeleted: result.deletedCount });
+    }
+
     // DELETE /attendancemodule/embeddings/:id
     async deleteRecord(req, res) {
         try {

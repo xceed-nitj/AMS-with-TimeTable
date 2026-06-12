@@ -210,7 +210,6 @@ import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
 import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
-import PhotoEdit from './attendancemodule/photoedit';
 import GroundTruthUpload from './attendancemodule/groundtruthupload';
 import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
 import Camera from './attendancemodule/camera';
@@ -648,7 +647,6 @@ function App() {
           {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
           <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
           <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
-          <Route path="groundtruth/photos"   element={<PhotoEdit />} />
           <Route path="groundtruth/upload"   element={<GroundTruthUpload />} />
           <Route path="embeddings"           element={<EmbeddingGeneration />} />
           <Route path="report"               element={<Attendancedoc />} />
