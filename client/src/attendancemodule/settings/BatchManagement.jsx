@@ -12,13 +12,7 @@ export default function BatchManagement() {
     const [loading, setLoading] = useState(false);
     
     // Form state
-    const [department, setDepartment] = useState('');
-    const [program, setProgram] = useState('');
     const [batchYear, setBatchYear] = useState('');
-    
-    // Programs for selected department
-    const [availablePrograms, setAvailablePrograms] = useState([]);
-    const [programsLoading, setProgramsLoading] = useState(false);
 
     // Edit state
     const [editingId, setEditingId] = useState(null);
@@ -49,55 +43,8 @@ export default function BatchManagement() {
         fetchBatches();
     }, []);
 
-    useEffect(() => {
-        if (!department) {
-            setAvailablePrograms([]);
-            setProgram('');
-            return;
-        }
-
-        let cancelled = false;
-        setProgramsLoading(true);
-        
-        const rawDepartment = department.replace(/_/g, ' ');
-        fetch(`${apiUrl}/timetablemodule/mastersem/dept/${encodeURIComponent(rawDepartment)}`, {
-            credentials: 'include'
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (cancelled) return;
-            if (Array.isArray(data)) {
-                // Extract unique degrees by normalizing dirty database values
-                const rawDegrees = data.map(item => item.degree).filter(Boolean);
-                const normalizedDegrees = rawDegrees.map(deg => {
-                    let cleaned = deg.toUpperCase().trim();
-                    cleaned = cleaned.replace(/\s+/g, ''); // Remove spaces like "M. Tech" -> "M.Tech"
-                    cleaned = cleaned.replace(/\.$/, '');  // Remove trailing dot like "M.Tech." -> "M.Tech"
-                    return cleaned;
-                });
-                const degrees = [...new Set(normalizedDegrees)].sort();
-                setAvailablePrograms(degrees);
-                if (degrees.length === 1) {
-                    setProgram(degrees[0]);
-                } else {
-                    setProgram('');
-                }
-            } else {
-                setAvailablePrograms([]);
-            }
-        })
-        .catch(err => {
-            if (!cancelled) showToast('Failed to load programs', 'error');
-        })
-        .finally(() => {
-            if (!cancelled) setProgramsLoading(false);
-        });
-
-        return () => { cancelled = true; };
-    }, [department]);
-
     const handleCreate = async () => {
-        if (!department || !program || !batchYear) {
+        if (!batchYear) {
             showToast('Please fill all fields', 'error');
             return;
         }
@@ -110,7 +57,7 @@ export default function BatchManagement() {
             const res = await fetch(`${apiUrl}/attendancemodule/settings/batches`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ department, program, batchYear })
+                body: JSON.stringify({ batchYear })
             });
             const data = await res.json();
             
@@ -199,35 +146,7 @@ export default function BatchManagement() {
 
             <div style={{ ...styles.card, marginBottom: 24 }}>
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: 600, color: theme.text }}>Create New Batch</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 16, alignItems: 'end' }}>
-                    <div>
-                        <label style={styles.label}>Department</label>
-                        <select
-                            value={department}
-                            onChange={e => setDepartment(e.target.value)}
-                            style={styles.select}
-                            disabled={deptLoading}
-                        >
-                            <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}</option>
-                            {departments.map(d => <option key={d} value={d}>{d}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label style={styles.label}>Program</label>
-                        <select
-                            value={program}
-                            onChange={e => setProgram(e.target.value)}
-                            style={styles.select}
-                            disabled={!department || programsLoading}
-                        >
-                            <option value="">
-                                {!department 
-                                    ? 'Select Department First' 
-                                    : (programsLoading ? 'Loading programs...' : (availablePrograms.length === 0 ? 'No programs found' : 'Select...'))}
-                            </option>
-                            {availablePrograms.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                    </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'end' }}>
                     <div>
                         <label style={styles.label}>Batch Year</label>
                         <input
@@ -253,8 +172,6 @@ export default function BatchManagement() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
                         <thead>
                             <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
-                                <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600 }}>Department</th>
-                                <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600 }}>Program</th>
                                 <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600 }}>Batch Year</th>
                                 <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600 }}>Generated String</th>
                                 <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, textAlign: 'right' }}>Actions</th>
@@ -263,8 +180,6 @@ export default function BatchManagement() {
                         <tbody>
                             {batches.map(b => (
                                 <tr key={b._id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                                    <td style={{ padding: '12px 16px', color: theme.text }}>{b.department}</td>
-                                    <td style={{ padding: '12px 16px', color: theme.text }}>{b.program}</td>
                                     <td style={{ padding: '12px 16px', color: theme.text }}>
                                         {editingId === b._id ? (
                                             <input 

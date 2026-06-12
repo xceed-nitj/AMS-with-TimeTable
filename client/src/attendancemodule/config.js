@@ -7,7 +7,7 @@ const API_BASE = `${apiUrl}/attendancemodule/ground-truth`;
 const TIMETABLE_API = `${apiUrl}/timetablemodule`;
 
 // Dropdown options
-const DEGREES = ['BTECH', 'MTECH', 'BSC', 'MSC', 'PHD'];
+const DEGREES = ['BTECH', 'MTECH', 'BSC', 'MSC', 'MBA', 'PHD', 'INTEGRATED BSC-BED'];
 // DEPARTMENTS is intentionally removed — always fetched live from /departments
 const DEPARTMENTS = [];
 

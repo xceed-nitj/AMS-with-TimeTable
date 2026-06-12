@@ -85,10 +85,10 @@ function isValidImage(buffer, ext) {
 async function triggerEmbeddingSync(action, payload) {
     const reqId = crypto.randomUUID();
     try {
-        const batchDoc = await Batch.findOne({ batchString: payload.batch });
         let department = 'UNKNOWN_DEPT';
-        if (batchDoc) {
-            department = batchDoc.department || department;
+        const parts = payload.batch.split('_');
+        if (parts.length >= 3) {
+            department = parts.slice(1, -1).join('_');
         }
 
         const url = `${ML_SERVICE_URL}/erp-embedding/${action}`;
@@ -501,10 +501,10 @@ class GroundTruthUploadController {
     async getStatus(req, res) {
         try {
             const batchString = sanitizeBatch(req.params.batch);
-            const batchDoc = await Batch.findOne({ batchString: batchString });
             let department = 'UNKNOWN_DEPT';
-            if (batchDoc) {
-                department = batchDoc.department || department;
+            const parts = batchString.split('_');
+            if (parts.length >= 3) {
+                department = parts.slice(1, -1).join('_');
             }
 
             const url = `${ML_SERVICE_URL}/erp-embedding/status/${encodeURIComponent(batchString)}?department=${encodeURIComponent(department)}`;

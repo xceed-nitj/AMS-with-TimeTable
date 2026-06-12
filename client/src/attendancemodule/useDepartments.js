@@ -23,7 +23,7 @@ export function useDepartments() {
                     const seen = new Set();
                     const sanitized = [];
                     for (const d of data.departments) {
-                        const safe = (d.dept || '').trim().replace(/\s+/g, '_');
+                        const safe = (d.dept || '').trim();
                         if (safe && !seen.has(safe.toUpperCase())) {
                             seen.add(safe.toUpperCase());
                             sanitized.push(safe);

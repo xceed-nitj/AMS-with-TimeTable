@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import getEnvironment from '../getenvironment';
-import { theme, styles, cssReset } from './config';
+import { theme, styles, cssReset, DEGREES } from './config';
 import { useDepartments } from './useDepartments';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,32 +12,28 @@ export default function GroundTruthUpload() {
     const { departments, loading: deptLoading, error: deptError } = useDepartments();
 
     // ── Filters ──────────────────────────────────────────────────────
+    const [degree,        setDegree]        = useState('');
     const [department,    setDepartment]    = useState('');
-    const [batchName,     setBatchName]     = useState('');
+    const [batchYear,     setBatchYear]     = useState('');
     const [batches,       setBatches]       = useState([]);
     const [batchesLoading, setBatchesLoading] = useState(false);
 
-    useEffect(() => {
-        if (!department) {
-            setBatches([]);
-            setBatchName('');
-            return;
-        }
+    const batchName = (degree && department && batchYear) ? `${degree}_${department}_${batchYear}` : '';
 
+    useEffect(() => {
         let cancelled = false;
         setBatchesLoading(true);
         
-        // Query the new Batch model using the exact department string (which contains underscores)
-        fetch(`${apiUrl}/attendancemodule/settings/batches/department/${encodeURIComponent(department)}`, {
+        fetch(`${apiUrl}/attendancemodule/settings/batches`, {
             credentials: 'include'
         })
             .then(res => res.json())
             .then(data => {
                 if (cancelled) return;
                 if (data.batches && Array.isArray(data.batches)) {
-                    // Extract unique batchStrings
-                    const batchStrings = [...new Set(data.batches.map(item => item.batchString))].filter(Boolean).sort();
-                    setBatches(batchStrings);
+                    // Extract unique batchYears
+                    const batchYears = [...new Set(data.batches.map(item => item.batchYear))].filter(Boolean).sort().reverse();
+                    setBatches(batchYears);
                 } else {
                     setBatches([]);
                 }
@@ -50,7 +46,7 @@ export default function GroundTruthUpload() {
             });
 
         return () => { cancelled = true; };
-    }, [department]);
+    }, []);
 
     // ── Batch ZIP Upload State ───────────────────────────────────────
     const [zipFile, setZipFile] = useState(null);
@@ -240,12 +236,23 @@ export default function GroundTruthUpload() {
             <div style={{ ...styles.card, marginBottom: 20 }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'end' }}>
                     <div style={{ flex: 1 }}>
+                        <label style={styles.label}>Degree</label>
+                        <select
+                            value={degree}
+                            onChange={e => setDegree(e.target.value)}
+                            style={styles.select}
+                        >
+                            <option value="">Select...</option>
+                            {DEGREES.map(d => <option key={d}>{d}</option>)}
+                        </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
                         <label style={styles.label}>Department</label>
                         <select
                             value={department}
                             onChange={e => {
                                 setDepartment(e.target.value);
-                                setBatchName(''); // Reset batch when department changes
+                                setBatchYear(''); // Reset batch year when department changes
                             }}
                             style={styles.select}
                             disabled={deptLoading}
@@ -257,22 +264,25 @@ export default function GroundTruthUpload() {
                         </select>
                     </div>
                     <div style={{ flex: 1 }}>
-                        <label style={styles.label}>Batch</label>
+                        <label style={styles.label}>Batch Year</label>
                         <select 
-                            value={batchName} 
-                            onChange={e => setBatchName(e.target.value)} 
+                            value={batchYear} 
+                            onChange={e => setBatchYear(e.target.value)} 
                             style={styles.select}
-                            disabled={!department || batchesLoading}
+                            disabled={batchesLoading}
                         >
                             <option value="">
-                                {!department 
-                                    ? 'Select Department First' 
-                                    : (batchesLoading ? 'Loading batches...' : (batches.length === 0 ? 'No batches found' : 'Select...'))}
+                                {batchesLoading ? 'Loading batches...' : (batches.length === 0 ? 'No batches found' : 'Select...')}
                             </option>
                             {batches.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                     </div>
                 </div>
+                {batchName && (
+                    <div style={{ marginTop: 12, padding: '10px', background: theme.bg, borderRadius: '6px', fontSize: '13px', color: theme.textMuted, border: `1px solid ${theme.border}` }}>
+                        Target Folder: <strong style={{ color: theme.accent, fontFamily: theme.fontMono }}>{batchName}</strong>
+                    </div>
+                )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>

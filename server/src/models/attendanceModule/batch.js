@@ -1,17 +1,6 @@
 const mongoose = require('mongoose');
-const { generateBatchName } = require('../../modules/attendanceModule/utils/batchUtils');
 
 const batchSchema = new mongoose.Schema({
-    department: {
-        type: String,
-        required: true,
-        trim: true,
-    },
-    program: {
-        type: String,
-        required: true,
-        trim: true,
-    },
     batchYear: {
         type: String,
         required: true,
@@ -24,15 +13,15 @@ const batchSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Compound index for uniqueness
-batchSchema.index({ department: 1, program: 1, batchYear: 1 }, { unique: true });
+batchSchema.index({ batchYear: 1 }, { unique: true });
 
 batchSchema.pre('save', function(next) {
-    if (this.isModified('department') || this.isModified('program') || this.isModified('batchYear')) {
-        try {
-            this.batchString = generateBatchName(this.program, this.department, this.batchYear);
-        } catch (err) {
-            return next(err);
+    if (this.isModified('batchYear')) {
+        const safeYear = String(this.batchYear || '').trim().toUpperCase();
+        if (!safeYear) {
+            return next(new Error('Batch Year is required to generate a batch name.'));
         }
+        this.batchString = safeYear;
     }
     next();
 });
