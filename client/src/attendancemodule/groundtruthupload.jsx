@@ -26,17 +26,18 @@ export default function GroundTruthUpload() {
 
         let cancelled = false;
         setBatchesLoading(true);
-        const rawDepartment = department.replace(/_/g, ' ');
-        fetch(`${apiUrl}/timetablemodule/mastersem/dept/${encodeURIComponent(rawDepartment)}`, {
+        
+        // Query the new Batch model using the exact department string (which contains underscores)
+        fetch(`${apiUrl}/attendancemodule/settings/batches/department/${encodeURIComponent(department)}`, {
             credentials: 'include'
         })
             .then(res => res.json())
             .then(data => {
                 if (cancelled) return;
-                if (Array.isArray(data)) {
-                    // Extract unique sems
-                    const sems = [...new Set(data.map(item => item.sem))].filter(Boolean).sort();
-                    setBatches(sems);
+                if (data.batches && Array.isArray(data.batches)) {
+                    // Extract unique batchStrings
+                    const batchStrings = [...new Set(data.batches.map(item => item.batchString))].filter(Boolean).sort();
+                    setBatches(batchStrings);
                 } else {
                     setBatches([]);
                 }
@@ -105,14 +106,6 @@ export default function GroundTruthUpload() {
             setZipResult(data);
             showToast(`Extracted ${data.extractedImages} photos for ${data.extractedFolders} students!`);
             setZipFile(null);
-            
-            // Allow user to navigate to editor
-            setTimeout(() => {
-                if (window.confirm('ZIP extraction complete. Navigate to Photo Editor to verify?')) {
-                    navigate('/attendance/groundtruth/photos');
-                }
-            }, 500);
-
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
@@ -239,7 +232,7 @@ export default function GroundTruthUpload() {
             )}
 
             <div style={{ marginBottom: 24 }}>
-                <div style={styles.heading}>ERP Photo Upload</div>
+                <div style={styles.heading}>ERP Image Upload</div>
                 <div style={styles.subheading}>Images are stored directly inside the selected batch folder. No student subfolders are created.</div>
             </div>
 

@@ -9,43 +9,19 @@ const T = theme;
 const apiUrl = getEnvironment();
 
 const NAV = [
-  { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
-  {
-    id: 'session',
-    route: '/attendance/edit-session-dates',
-    label: 'Session Setup',
-    exact: true,
-  }, // Added Session Setup below Dashboard entry
-  {
-    id: 'rtsp',
-    route: '/attendance/groundtruth/rtsp',
-    label: 'RTSP Capture',
-    exact: true,
-  },
-  {
-    id: 'assign',
-    route: '/attendance/groundtruth/assign',
-    label: 'Roll Assignment',
-  },
-  {
-    id: 'photos',
-    route: '/attendance/groundtruth/photos',
-    label: 'Photo Editor',
-  },
-  {
-    id: 'upload',
-    route: '/attendance/groundtruth/upload',
-    label: 'Manual Upload',
-  },
-  { id: 'reports', route: '/attendance/reports', label: 'Attendance Reports' },
-  {
-    id: 'verify',
-    route: '/attendance/frame-verification',
-    label: 'Frame Verification',
-  },
-  { id: 'cameras', route: '/cameras', label: 'Camera Registry', exact: true },
-  { id: 'embeddings', route: '/attendance/embeddings', label: 'Embeddings' },
-  { id: 'preview', route: '/cameras/preview', label: 'Camera Preview' },
+  { id: 'dashboard',  route: '/attendance',                           label: 'Dashboard'},
+  { id: 'session',    route: '/attendance/edit-session-dates',         label: 'Session Setup' }, // Added Session Setup below Dashboard entry
+  { id: 'rtsp',       route: '/attendance/groundtruth/rtsp',           label: 'RTSP Capture' },
+  { id: 'assign',     route: '/attendance/groundtruth/assign',          label: 'Roll Assignment' },
+  { id: 'photos',     route: '/attendance/groundtruth/photos',          label: 'Photo Editor' },
+  { id: 'upload',     route: '/attendance/groundtruth/upload',          label: 'ERP Image Upload' },
+  { id: 'reports',    route: '/attendance/reports',                    label: 'Attendance Reports' },
+  { id: 'verify',     route: '/attendance/frame-verification',         label: 'Frame Verification' },
+  { id: 'cameras',    route: '/cameras',                               label: 'Camera Registry' },
+  { id: 'embeddings', route: '/attendance/embeddings',                  label: 'Embeddings' },
+  { id: 'preview',    route: '/cameras/preview',                        label: 'Camera Preview' },  
+  { id: 'settings',   route: '/attendance/settings',                    label: 'Settings' },
+  
 ];
 
 const COLORS = {
@@ -59,6 +35,7 @@ const COLORS = {
   verify: '#ec4899',
   cameras: '#f97316',
   embeddings: '#f59e0b',
+  settings:   '#64748b',
   preview: '#8b5cf6',
 };
 

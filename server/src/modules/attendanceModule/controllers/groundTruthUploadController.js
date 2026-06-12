@@ -5,7 +5,7 @@ const fs         = require('fs');
 const fsPromises = require('fs').promises;
 const JSZip      = require('jszip');
 const crypto     = require('crypto');
-const MasterSem  = require('../../../models/mastersem');
+const Batch      = require('../../../models/attendanceModule/batch');
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8500';
 
@@ -85,10 +85,10 @@ function isValidImage(buffer, ext) {
 async function triggerEmbeddingSync(action, payload) {
     const reqId = crypto.randomUUID();
     try {
-        const semDoc = await MasterSem.findOne({ sem: payload.batch });
+        const batchDoc = await Batch.findOne({ batchString: payload.batch });
         let department = 'UNKNOWN_DEPT';
-        if (semDoc) {
-            department = semDoc.dept || department;
+        if (batchDoc) {
+            department = batchDoc.department || department;
         }
 
         const url = `${ML_SERVICE_URL}/erp-embedding/${action}`;
@@ -500,14 +500,14 @@ class GroundTruthUploadController {
     // ─── Get Sync Status ───────────────────────────────────────────────
     async getStatus(req, res) {
         try {
-            const batch = sanitizeBatch(req.params.batch);
-            const semDoc = await MasterSem.findOne({ sem: batch });
+            const batchString = sanitizeBatch(req.params.batch);
+            const batchDoc = await Batch.findOne({ batchString: batchString });
             let department = 'UNKNOWN_DEPT';
-            if (semDoc) {
-                department = semDoc.dept || department;
+            if (batchDoc) {
+                department = batchDoc.department || department;
             }
 
-            const url = `${ML_SERVICE_URL}/erp-embedding/status/${encodeURIComponent(batch)}?department=${encodeURIComponent(department)}`;
+            const url = `${ML_SERVICE_URL}/erp-embedding/status/${encodeURIComponent(batchString)}?department=${encodeURIComponent(department)}`;
             
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 10000);
