@@ -47,6 +47,7 @@ import {
   FiBarChart2,
   FiFileText,
   FiList,
+  FiHelpCircle,
 } from 'react-icons/fi';
 import getEnvironment from '../getenvironment';
 import Header from '../components/header';
@@ -366,6 +367,14 @@ const AdminPage = () => {
       icon: FiList,
       gradient: 'linear(to-br, purple.600, pink.700)',
     },
+    {
+      path: '/tt-manual',
+      label: 'User Manual',
+      icon: FiHelpCircle,
+      gradient: 'linear(to-br, indigo.500, purple.700)',
+      target: '_blank',
+      isNew: true,
+    },
   ];
 
   return (
@@ -591,11 +600,13 @@ const AdminPage = () => {
             <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
               {navigationItems
                 .slice(9)
-                .map(({ path, label, icon, gradient }) => (
+                .map(({ path, label, icon, gradient, target, isNew }) => (
                   <Box
                     key={path}
                     as="a"
                     href={path}
+                    target={target || '_self'}
+                    rel={target === '_blank' ? 'noopener noreferrer' : undefined}
                     bgGradient={gradient}
                     p={6}
                     borderRadius="xl"
@@ -604,8 +615,25 @@ const AdminPage = () => {
                     border="2px solid"
                     borderColor="whiteAlpha.300"
                     shadow="lg"
+                    position="relative"
                     _hover={{ transform: 'translateY(-8px)', shadow: '2xl' }}
                   >
+                    {isNew && (
+                      <Badge
+                        position="absolute"
+                        top={2}
+                        right={2}
+                        colorScheme="yellow"
+                        fontSize="xs"
+                        px={2}
+                        py={0.5}
+                        borderRadius="full"
+                        fontWeight="bold"
+                        boxShadow="md"
+                      >
+                        NEW
+                      </Badge>
+                    )}
                     <VStack spacing={3}>
                       <Box
                         bg="whiteAlpha.400"

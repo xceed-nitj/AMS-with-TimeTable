@@ -26,6 +26,7 @@ import {
   CardHeader,
   CardBody,
   Divider,
+  Icon,
 } from '@chakra-ui/react';
 import { Center, Square, Circle } from '@chakra-ui/react';
 import { Button, useToast } from '@chakra-ui/react';
@@ -55,7 +56,7 @@ import {
   RepeatIcon
 } from '@chakra-ui/icons';
 import { PersonStanding, PersonStandingIcon } from 'lucide-react';
-import { FaTasks, FaUser, FaUserAlt, FaUserAltSlash, FaUserTimes } from 'react-icons/fa';
+import { FaTasks, FaUser, FaUserAlt, FaUserAltSlash, FaUserTimes, FaBook } from 'react-icons/fa';
 
 const Timetable = () => {
   // All state declarations
@@ -782,9 +783,9 @@ const handleLockTT = async () => {
     <Container maxW="full" p={0} bg="gray.50" overflowX="hidden">
       {/* Enhanced Hero Section with Gradient */}
       <Box 
-        bgGradient="linear(135deg, #1a413f 0%, #375b59 50%, #1e566a 100%)" 
-        py={{ base: 7, md: 10 }} 
-        position="relative" 
+        bgGradient="linear(135deg, #1a413f 0%, #375b59 50%, #1e566a 100%)"
+        py={{ base: 7, md: 10 }}
+        position="relative"
         overflow="hidden"
       >
         <Box position="absolute" top="0" left="0" right="0" bottom="0" opacity="0.1">
@@ -793,10 +794,20 @@ const handleLockTT = async () => {
           <Box position="absolute" bottom="10%" left="40%" w={{ base: "50px", md: "100px" }} h={{ base: "50px", md: "100px" }} borderRadius="full" bg="white" />
         </Box>
         <Container maxW="8xl" position="relative" zIndex="1" px={{ base: 4, md: 6 }}>
-          <VStack spacing={0} align="center" justify="center" minH={{ base: "90px", md: "110px" }}>
+          <VStack spacing={2} align="center" justify="center" minH={{ base: "90px", md: "110px" }}>
             <Badge fontSize={{ base: "sm", md: "xl" }} px={{ base: 2, md: 3 }} py={{ base: 1, md: 2 }} borderRadius="full" bg="whiteAlpha.400" color="white" fontWeight="bold" textTransform="uppercase">
               Dashboard - Timetable Management System
             </Badge>
+            {TTData?.dept && (
+              <Text color="whiteAlpha.900" fontSize={{ base: "sm", md: "lg" }} fontWeight="semibold">
+                {TTData.dept}
+                {TTData?.name && (
+                  <Text as="span" color="whiteAlpha.700" fontWeight="normal" fontSize={{ base: "xs", md: "md" }}>
+                    {' '}· Coordinator: {TTData.name}
+                  </Text>
+                )}
+              </Text>
+            )}
           </VStack>
         </Container>
       </Box>
@@ -805,57 +816,92 @@ const handleLockTT = async () => {
         
         {/* Enhanced Quick Actions Card */}
         <Card bg="white" borderRadius="2xl" boxShadow="2xl" mb={6} border="1px" borderColor="gray.100">
-          <CardBody p={{ base: 3, md: 5 }}>
-            <Flex justify="space-between" align="center" mb={5} direction={{ base: "column", md: "row" }} gap={{ base: 2, md: 0 }}>
+          <CardBody p={{ base: 2, md: 3 }}>
+            <Flex justify="space-between" align="center" mb={2} direction={{ base: "column", md: "row" }} gap={{ base: 1, md: 0 }}>
               <Box textAlign={{ base: "center", md: "left" }}>
-                <Heading size={{ base: "sm", md: "md" }} mb={1} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
+                <Heading size="sm" mb={0} bgGradient="linear(to-r, purple.600, blue.500)" bgClip="text">
                   Quick Actions
                 </Heading>
               </Box>
             </Flex>
 
-            <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={{ base: 2, md: 4 }} mb={3}>
+            <SimpleGrid columns={{ base: 3, md: 6 }} spacing={{ base: 2, md: 3 }} mb={2}>
               {[
-                { icon: TimeIcon, label: 'First Year', c: 'red', fn: handleFirstYear },
-                { icon: CalendarIcon, label: 'Master View', c: 'blue', fn: handleMasterView },
-                { icon: ViewIcon, label: 'View Rooms', c: 'pink', fn: handleViewRoom },
-                { icon: EditIcon, label: 'Edit Faculty', c: 'cyan', fn: handleEditFaculty },
-                { icon: DownloadIcon, label: 'Import Data', c: 'yellow', fn: handleImportData },
+                { icon: TimeIcon,    label: 'First Year',   c: 'red',    fn: handleFirstYear },
+                { icon: CalendarIcon,label: 'Master View',  c: 'blue',   fn: handleMasterView },
+                { icon: ViewIcon,    label: 'View Rooms',   c: 'pink',   fn: handleViewRoom },
+                { icon: EditIcon,    label: 'Edit Faculty', c: 'cyan',   fn: handleEditFaculty },
+                { icon: DownloadIcon,label: 'Import Data',  c: 'yellow', fn: handleImportData },
+                { icon: FaBook,      label: 'Help & Manual',c: 'green',  darkGreen: true, fn: () => window.open('/tt-manual', '_blank', 'noopener,noreferrer'), isNew: true },
               ].map((a, i) => (
-                <Button 
-                  key={i} 
-                  onClick={a.fn} 
-                  colorScheme={a.c} 
-                  size={{ base: "md", md: "lg" }}
-                  h={{ base: "80px", md: "90px" }}
-                  flexDirection="column" 
-                  gap={{ base: 1, md: 2 }}
-                  borderRadius="xl"
-                  boxShadow="md"
-                  _hover={{ transform: 'translateY(-4px)', boxShadow: 'xl' }}
-                  transition="all 0.3s"
-                  px={{ base: 2, md: 4 }}
-                  whiteSpace="normal"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <a.icon boxSize={{ base: 4, md: 7 }} />
-                  <Text 
-                    fontSize={{ base: "2xs", md: "sm" }} 
-                    fontWeight="bold" 
-                    textAlign="center"
-                    lineHeight="1.2"
-                    noOfLines={2}
+                <Box key={i} position="relative" display="inline-block">
+                  {a.isNew && (
+                    <Box
+                      position="absolute"
+                      top="-9px"
+                      right="-9px"
+                      zIndex={2}
+                      sx={{
+                        animation: 'ttNewPulse 2s ease-in-out infinite',
+                        '@keyframes ttNewPulse': {
+                          '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(234,179,8,0.7)' },
+                          '50%': { transform: 'scale(1.12)', boxShadow: '0 0 0 6px rgba(234,179,8,0)' },
+                        },
+                      }}
+                    >
+                      <Box
+                        bg="linear-gradient(135deg, #facc15 0%, #f97316 100%)"
+                        color="white"
+                        fontSize="10px"
+                        fontWeight="900"
+                        letterSpacing="0.08em"
+                        px="7px"
+                        py="2px"
+                        borderRadius="full"
+                        border="2px solid white"
+                        boxShadow="0 2px 8px rgba(249,115,22,0.6)"
+                        lineHeight="1.4"
+                        userSelect="none"
+                      >
+                        ✦ NEW
+                      </Box>
+                    </Box>
+                  )}
+                  <Button
+                    onClick={a.fn}
+                    colorScheme={a.c}
+                    size="sm"
+                    h={{ base: "36px", md: "40px" }}
+                    w="100%"
+                    gap={2}
+                    borderRadius="xl"
+                    boxShadow="md"
+                    {...(a.darkGreen
+                      ? { bg: 'green.700', color: 'white', _hover: { bg: 'green.800', boxShadow: 'lg' } }
+                      : { _hover: { boxShadow: 'xl' } }
+                    )}
+                    transition="all 0.3s"
+                    px={{ base: 2, md: 3 }}
+                    whiteSpace="nowrap"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
                   >
-                    {a.label}
-                  </Text>
-                </Button>
+                    <Icon as={a.icon} boxSize={{ base: 3, md: 4 }} flexShrink={0} />
+                    <Text
+                      fontSize={{ base: "xs", md: "sm" }}
+                      fontWeight="bold"
+                      lineHeight="1"
+                    >
+                      {a.label}
+                    </Text>
+                  </Button>
+                </Box>
               ))}
             </SimpleGrid>
-          
+
             <Box>
-              <SimpleGrid columns={{ base: 2, md: 4, lg: 7 }} spacing={{ base: 3, md: 4 }}>
+              <SimpleGrid columns={{ base: 2, md: 4, lg: 7 }} spacing={{ base: 2, md: 3 }}>
                 {[
                   { l: 'Semester', fn: handleAddSem, icon: AddIcon },
                   { l: 'Subject', fn: handleAddSubject, icon: AddIcon },
@@ -865,20 +911,20 @@ const handleLockTT = async () => {
                   { l: 'Common Load', fn: handleAddCommonLoad, icon: AddIcon },
                   { l: 'Lunch Slot', fn: handleAddLunchSlot, icon: AddIcon },
                 ].map((c, i) => (
-                  <Button 
-                    key={i} 
-                    onClick={c.fn} 
-                    leftIcon={<c.icon />} 
-                    colorScheme="teal" 
-                    size={{ base: "sm", md: "md" }}
-                    fontSize={{ base: "2xs", md: "sm" }}
+                  <Button
+                    key={i}
+                    onClick={c.fn}
+                    leftIcon={<c.icon />}
+                    colorScheme="teal"
+                    size="sm"
+                    fontSize={{ base: "xs", md: "sm" }}
                     borderRadius="lg"
                     _hover={{ transform: 'scale(1.05)' }}
                     transition="all 0.2s"
                     whiteSpace="normal"
-                    h={{ base: "auto", md: "40px" }}
-                    py={{ base: 2, md: 2 }}
-                    px={{ base: 2, md: 4 }}
+                    h="32px"
+                    py={1}
+                    px={{ base: 2, md: 3 }}
                   >
                     {c.l}
                   </Button>
@@ -894,154 +940,86 @@ const handleLockTT = async () => {
             bgGradient="linear(to-r, purple.700, purple.700)" 
             py={{ base: 3, md: 4 }}
           >
-            <Flex align="center" gap={{ base: 2, md: 4 }} direction={{ base: "column", md: "row" }}>
-              <Box bg="whiteAlpha.300" p={{ base: 2, md: 3 }} borderRadius="xl" display={{ base: "none", md: "block" }}>
-                <EditIcon color="white" boxSize={{ base: 5, md: 7 }} />
-              </Box>
-              <Box textAlign={{ base: "center", md: "left" }}>
-                <Heading size={{ base: "sm", md: "md" }} color="white" mb={1}>Details</Heading>
-              </Box>
-
-              <SimpleGrid columns={{ base: 1, md: 4 }} spacing={5} mb={2}>
+            <Flex align="center" gap={{ base: 2, md: 4 }} direction={{ base: "column", md: "row" }} w="100%">
+              <SimpleGrid columns={{ base: 1, md: 4 }} spacing={5} mb={2} w="100%">
           {/* Clash Detection */}
          
 
           {/* Saved Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="blue.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={2}>
-              <Flex align="center" gap={2}>
-                <Box bg="blue.100" p={4} borderRadius="xl" boxShadow="md">
+          <Card bg="white" borderRadius="xl" borderLeftWidth="4px" borderLeftColor="blue.500" boxShadow="sm" _hover={{ boxShadow: 'md', transform: 'translateY(-1px)' }} transition="all 0.2s">
+            <CardBody p={3}>
+              <Flex align="center" gap={3}>
+                <Box bg="blue.100" p={2} borderRadius="lg" flexShrink={0}>
                   <TimeIcon boxSize={4} color="blue.600" />
                 </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Last Saved Time
-                  </Text>
-                  <Text fontSize="lg" fontWeight="bold" color="blue.700">
-                    {savedTime || 'Not saved yet'}
-                  </Text>
+                <Box>
+                  <Text fontSize="xs" color="gray.500" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.05em">Last Saved</Text>
+                  <Text fontSize="md" fontWeight="bold" color="blue.700">{savedTime || 'Not saved yet'}</Text>
                 </Box>
               </Flex>
             </CardBody>
           </Card>
 
           {/* Locked Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="orange.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={2}>
-              <Flex align="center" gap={4}>
-                <Box bg="orange.100" p={4} borderRadius="xl" boxShadow="md">
-                  <LockIcon boxSize={8} color="orange.600" />
+          <Card bg="white" borderRadius="xl" borderLeftWidth="4px" borderLeftColor="orange.500" boxShadow="sm" _hover={{ boxShadow: 'md', transform: 'translateY(-1px)' }} transition="all 0.2s">
+            <CardBody p={3}>
+              <Flex align="center" gap={3}>
+                <Box bg="orange.100" p={2} borderRadius="lg" flexShrink={0}>
+                  <LockIcon boxSize={4} color="orange.600" />
                 </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Last Locked Time
-                  </Text>
-                  <Text fontSize="lg" fontWeight="bold" color="orange.700">
-                    {lockedTime || 'Not locked yet'}
-                  </Text>
+                <Box>
+                  <Text fontSize="xs" color="gray.500" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.05em">Last Locked</Text>
+                  <Text fontSize="md" fontWeight="bold" color="orange.700">{lockedTime || 'Not locked yet'}</Text>
                 </Box>
               </Flex>
             </CardBody>
           </Card>
 
           {/* Published Status */}
-          <Card 
-            borderRadius="2xl" 
-            borderLeftWidth="6px" 
-            borderLeftColor="purple.500"
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={2}>
-              <Flex align="center" gap={4}>
-                <Box bg="purple.100" p={4} borderRadius="xl" boxShadow="md">
-                  <CheckCircleIcon boxSize={8} color="purple.600" />
+          <Card bg="white" borderRadius="xl" borderLeftWidth="4px" borderLeftColor="purple.500" boxShadow="sm" _hover={{ boxShadow: 'md', transform: 'translateY(-1px)' }} transition="all 0.2s">
+            <CardBody p={3}>
+              <Flex align="center" gap={3}>
+                <Box bg="purple.100" p={2} borderRadius="lg" flexShrink={0}>
+                  <CheckCircleIcon boxSize={4} color="purple.600" />
                 </Box>
-                <Box flex="1">
-                  <Text fontSize="xs" color="gray.600" mb={1} fontWeight="semibold" textTransform="uppercase">
-                    Published Date
-                  </Text>
-                <Text fontSize="lg" fontWeight="bold" color="purple.700">
-                    {formatDateTime(TTData?.datePublished)}
-
-                </Text>
-
+                <Box>
+                  <Text fontSize="xs" color="gray.500" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.05em">Published</Text>
+                  <Text fontSize="md" fontWeight="bold" color="purple.700">{formatDateTime(TTData?.datePublished)}</Text>
                 </Box>
               </Flex>
             </CardBody>
           </Card>
-       <Card 
-            borderRadius="2xl" 
-            borderWidth="3px" 
-            borderColor={clash.length > 0 ? 'red.300' : 'green.300'}
-            boxShadow="lg"
-            _hover={{ boxShadow: '2xl', transform: 'translateY(-2px)' }}
-            transition="all 0.3s"
-          >
-            <CardBody p={2}>
-              <VStack align="stretch" spacing={3}>
-                <Flex align="center" gap={3}>
-                  <Box 
-                    bg={clash.length > 0 ? 'red.100' : 'green.100'} 
-                    p={1} 
-                    borderRadius="xl"
-                    boxShadow="md"
-                  >
-                    {clash.length > 0 ? 
-                      <WarningIcon boxSize={8} color="red.600" /> : 
-                      <CheckCircleIcon boxSize={8} color="green.600" />
-                    }
-                  </Box>
-                  <Text fontSize="md" fontWeight="bold" color="gray.700">
-                    Clash Detection
-                  </Text>
-                </Flex>
-                {clashFlag ? (
-                  clash.length === 0 ? (
-                    <Badge colorScheme="green" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
-                      ✓ NO CLASHES FOUND
-                    </Badge>
-                  ) : (
-                    <VStack spacing={2} align="stretch">
-                      <Badge colorScheme="red" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
-                        ⚠ {clash.length} Clash(es) Found
-                      </Badge>
-                      <Button
-                        size="sm"
-                        colorScheme="red"
-                        variant="solid"
-                        leftIcon={<WarningIcon />}
-                        onClick={() => window.open(`admin/clashes`, '_blank', 'noopener,noreferrer')}
-                        borderRadius="lg"
-                        fontWeight="bold"
-                        _hover={{ transform: 'scale(1.02)' }}
-                        transition="all 0.2s"
-                      >
-                        View Clashes
-                      </Button>
-                    </VStack>
-                  )
-                ) : (
-                  <Badge colorScheme="yellow" fontSize="md" px={4} py={2} borderRadius="lg" textAlign="center">
-                    🔍 Searching...
-                  </Badge>
-                )}
-              </VStack>
+
+          {/* Clashes */}
+          <Card bg="white" borderRadius="xl" borderWidth="2px" borderColor={clash.length > 0 ? 'red.300' : 'green.300'} boxShadow="sm" _hover={{ boxShadow: 'md', transform: 'translateY(-1px)' }} transition="all 0.2s">
+            <CardBody p={3}>
+              <Flex align="center" gap={3}>
+                <Box bg={clash.length > 0 ? 'red.100' : 'green.100'} p={2} borderRadius="lg">
+                  {clash.length > 0
+                    ? <WarningIcon boxSize={4} color="red.600" />
+                    : <CheckCircleIcon boxSize={4} color="green.600" />
+                  }
+                </Box>
+                <Box flex="1" minW={0}>
+                  <Text fontSize="10px" color="gray.500" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.05em">Clashes</Text>
+                  <Flex align="center" gap={2} flexWrap="wrap">
+                    {clashFlag ? (
+                      clash.length === 0 ? (
+                        <Badge colorScheme="green" fontSize="xs" px={2} py={0.5} borderRadius="md">✓ None found</Badge>
+                      ) : (
+                        <>
+                          <Badge colorScheme="red" fontSize="xs" px={2} py={0.5} borderRadius="md">⚠ {clash.length} found</Badge>
+                          <Button size="xs" colorScheme="red" variant="link" leftIcon={<WarningIcon boxSize={3} />} onClick={() => window.open(`admin/clashes`, '_blank', 'noopener,noreferrer')} fontWeight="bold">
+                            View
+                          </Button>
+                        </>
+                      )
+                    ) : (
+                      <Badge colorScheme="yellow" fontSize="xs" px={2} py={0.5} borderRadius="md">🔍 Searching...</Badge>
+                    )}
+                  </Flex>
+                </Box>
+              </Flex>
             </CardBody>
           </Card>
         </SimpleGrid>
@@ -1070,66 +1048,65 @@ const handleLockTT = async () => {
               >
                 {semesters.map((s, i) => <option key={i} value={s}>{s}</option>)}
               </Select>
-              <HStack spacing={{ base: 2, md: 3 }} ml={{ base: 0, md: "auto" }} w={{ base: "100%", md: "auto" }} justify={{ base: "center", md: "flex-start" }}>
-                <Tooltip label="Lock Timetable" placement="top" hasArrow bg="orange.600" fontSize="sm">
+              <HStack spacing={2} ml={{ base: 0, md: "auto" }} w={{ base: "100%", md: "auto" }} justify={{ base: "center", md: "flex-start" }}>
+                <Tooltip label="Lock Timetable" placement="top" hasArrow bg="orange.600" fontSize="xs">
                   <IconButton
                     icon={<LockIcon />}
                     onClick={handleLockTT}
                     colorScheme="orange"
-                    size={{ base: "sm", md: "md" }}
+                    size="sm"
                     borderRadius="lg"
-                    boxShadow="md"
+                    boxShadow="sm"
                   />
                 </Tooltip>
-                <Tooltip label="Publish Timetable" placement="bottom" hasArrow bg="green.600" fontSize="sm">
+                <Tooltip label="Publish Timetable" placement="bottom" hasArrow bg="green.600" fontSize="xs">
                   <IconButton
                     icon={<CheckCircleIcon />}
                     onClick={handlePublishTT}
                     colorScheme="green"
-                    size={{ base: "sm", md: "md" }}
+                    size="sm"
                     borderRadius="lg"
                     isDisabled={TTData?.publish === true}
                   />
                 </Tooltip>
-                <Tooltip label="View Summary" placement="top" hasArrow bg="purple.600" fontSize="sm">
+                <Tooltip label="View Summary" placement="top" hasArrow bg="purple.600" fontSize="xs">
                   <IconButton
                     icon={<ViewIcon />}
                     onClick={handleViewSummary}
                     colorScheme="blue"
-                    size={{ base: "sm", md: "md" }}
+                    size="sm"
                     borderRadius="lg"
-                    boxShadow="md"
+                    boxShadow="sm"
                   />
                 </Tooltip>
-                <Tooltip label=" Student Normalised Faculty Load" placement="bottom" hasArrow bg="yellow.600" fontSize="sm">
+                <Tooltip label="Student Normalised Faculty Load" placement="bottom" hasArrow bg="yellow.600" fontSize="xs">
                   <IconButton
                     icon={<FaUserTimes color="white"/>}
                     onClick={handleViewDeptFacultyLoad}
                     colorScheme="yellow"
-                    size={{ base: "sm", md: "md" }}
+                    size="sm"
                     borderRadius="lg"
-                    boxShadow="md"
+                    boxShadow="sm"
                   />
                 </Tooltip>
-                <Tooltip label="Subject Wise Faculty Load" placement="top" hasArrow bg="pink.600" fontSize="sm">
+                <Tooltip label="Subject Wise Faculty Load" placement="top" hasArrow bg="pink.600" fontSize="xs">
                   <IconButton
                     icon={<FaUserAlt color="white"/>}
                     onClick={handleViewFacultyLoad}
                     colorScheme="pink"
-                    size={{ base: "sm", md: "md" }}
+                    size="sm"
                     borderRadius="lg"
-                    boxShadow="md"
+                    boxShadow="sm"
                   />
                 </Tooltip>
-
-                <Tooltip label="Download PDF" placement="bottom" hasArrow bg="cyan.600" fontSize="sm">
+                <Tooltip label="Download PDF" placement="bottom" hasArrow bg="cyan.600" fontSize="xs">
                   <IconButton
                     icon={<DownloadIcon color="white"/>}
                     onClick={handleDownloadClick}
                     colorScheme="cyan"
-                    size={{ base: "sm", md: "md" }}
+                    size="sm"
                     borderRadius="lg"
-                    boxShadow="md"
+                    boxShadow="sm"
                   />
                 </Tooltip>
               </HStack>
