@@ -139,6 +139,7 @@ import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import EditTemplate from './reviewmodule/pages/EditTemplate';
+
 import EditDefaultTemplate from './reviewmodule/pages/EditDefaultTemplate.jsx';
 import NirfRanking from './nirf/rankings';
 import AddPaper from './reviewmodule/pages/addpaper';
@@ -207,7 +208,6 @@ import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
 import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
-import PhotoEdit from './attendancemodule/photoedit';
 import GroundTruthUpload from './attendancemodule/groundtruthupload';
 import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
 import Camera from './attendancemodule/camera';
@@ -218,6 +218,8 @@ import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
 import CameraRegistry from './attendancemodule/camera';
 import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
+import AMSManual from './attendancemodule/manual';
+import TTManual from './timetableadmin/TTManual';
 
 // ─── Department Admin Module Imports ────────────────────────────
 import DeptAdminLayout from './deptadmin/DeptAdminLayout';
@@ -632,6 +634,12 @@ function App() {
 
         <Route path="/ml/t1" element={<LinearRegression />} />
         <Route path="/ml" element={<MLDashboard />} />
+
+        {/* ─── AMS Manual — public, no auth required ─────────────── */}
+        <Route path="/ams-manual" element={<AMSManual standalone />} />
+
+        {/* ─── TT Manual — public, no auth required ──────────────── */}
+        <Route path="/tt-manual" element={<TTManual standalone />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
         <Route

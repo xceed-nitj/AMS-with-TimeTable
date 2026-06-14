@@ -15,13 +15,8 @@ const NAV = [
     route: '/attendance/edit-session-dates',
     label: 'Session Setup',
     exact: true,
-  }, // Added Session Setup below Dashboard entry
-  {
-    id: 'rtsp',
-    route: '/attendance/groundtruth/rtsp',
-    label: 'RTSP Capture',
-    exact: true,
   },
+  { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'RTSP Capture' },
   {
     id: 'assign',
     route: '/attendance/groundtruth/assign',
@@ -51,14 +46,13 @@ const NAV = [
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
+  { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
 const COLORS = {
   dashboard: '#6366f1',
-  session: '#8b5cf6', // Added matching slate-purple indicator tint color token
   rtsp: '#0ea5e9',
   assign: '#10b981',
-  photos: '#a855f7',
   upload: '#f472b6',
   reports: '#14b8a6',
   verify: '#ec4899',
@@ -66,6 +60,7 @@ const COLORS = {
   embeddings: '#f59e0b',
   preview: '#8b5cf6',
   confidence: '#ef4444',
+  manual: '#64748b',
 };
 
 const CSS = `
@@ -174,7 +169,11 @@ export default function AMSLayout() {
                 <div
                   key={item.id}
                   className="ams-nav-item"
-                  onClick={() => navigate(item.route)}
+                  onClick={() =>
+                    item.newTab
+                      ? window.open(item.route, '_blank', 'noopener,noreferrer')
+                      : navigate(item.route)
+                  }
                   title={collapsed ? item.label : undefined}
                   style={{
                     display: 'flex',

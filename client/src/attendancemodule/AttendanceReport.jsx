@@ -557,15 +557,10 @@ rtspUrl2Ref.current = rtspUrl2.trim();
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: `1px solid ${theme.border}` }}>
+            <div className="ams-tabs">
                 {[['run','Run Attendance'],['history','Saved Reports'],['detail','Report Detail']].map(([id, label]) => (
                     (id !== 'detail' || detailReport) && (
-                        <button key={id} onClick={() => setTab(id)} style={{
-                            padding: '10px 20px', background: 'transparent', border: 'none',
-                            borderBottom: `2px solid ${tab === id ? theme.accent : 'transparent'}`,
-                            color: tab === id ? theme.accent : theme.textMuted,
-                            fontSize: '13px', fontWeight: 600, cursor: 'pointer', marginBottom: -1,
-                        }}>{label}</button>
+                        <button key={id} className={`ams-tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>{label}</button>
                     )
                 ))}
             </div>
@@ -699,7 +694,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                         <option value="">
                                             {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
                                         </option>
-                                        {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                        {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
                                     </select>
                                     {deptError && (
                                         <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
@@ -1098,19 +1093,17 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                         </div>
                     ) : (
                         <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                            <table className="ams-table">
                                 <thead>
-                                    <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                                    <tr>
                                         {['Batch','Date','Slot','Subject','Faculty','P','A','%','Status',''].map(h => (
-                                            <th key={h} style={{ padding: '12px 14px', textAlign: 'left',
-                                                fontSize: '10px', color: theme.textMuted,
-                                                textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>{h}</th>
+                                            <th key={h}>{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {reports.map(r => (
-                                        <tr key={r._id} style={{ borderBottom: `1px solid ${theme.border}`, cursor: 'pointer' }}
+                                        <tr key={r._id} style={{ cursor: 'pointer' }}
                                             onClick={() => openDetail(r._id)}>
                                             <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600, color: theme.text }}>{r.batch}</td>
 
@@ -1279,13 +1272,13 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
 
     return (
         <div style={{ ...styles.card, padding: 0, overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', minWidth: 600 }}>
+            <table className="ams-table" style={{ minWidth: 600, fontSize: '12px' }}>
                 <thead>
-                    <tr style={{ borderBottom: `1px solid ${theme.border}`, background: theme.bg }}>
-                        <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>#</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>Roll No</th>
+                    <tr>
+                        <th>#</th>
+                        <th>Roll No</th>
                         {runs.map((r, i) => (
-                            <th key={i} style={{ padding: '10px 12px', textAlign: 'center', fontSize: '10px', color: theme.accent, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', borderLeft: `1px solid ${theme.border}` }}>
+                            <th key={i} style={{ textAlign: 'center', color: theme.accent, borderLeft: '1px solid #e4e8f5' }}>
                                 Run {i + 1}
                                 <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
                                     {r.processedAt ? new Date(r.processedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
@@ -1295,8 +1288,8 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                                 </div>
                             </th>
                         ))}
-                        <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', borderLeft: `2px solid ${theme.border}` }}>Final</th>
-                        {!readOnly && <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>Override</th>}
+                        <th style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>Final</th>
+                        {!readOnly && <th>Override</th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -1304,7 +1297,6 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                         const final = finalLookup[rollNo];
                         return (
                             <tr key={rollNo} style={{
-                                borderBottom: `1px solid ${theme.border}`,
                                 background: final?.finalStatus === 'R' ? theme.warningDim : 'transparent',
                             }}>
                                 <td style={{ padding: '9px 12px', color: theme.textMuted }}>{idx + 1}</td>
@@ -1312,7 +1304,7 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                                 {runs.map((_, ri) => {
                                     const s = runLookup[rollNo][ri];
                                     return (
-                                        <td key={ri} style={{ padding: '9px 12px', textAlign: 'center', borderLeft: `1px solid ${theme.border}` }}>
+                                        <td key={ri} style={{ textAlign: 'center', borderLeft: '1px solid #e4e8f5' }}>
                                             {s ? (
                                                 <span style={cellStyle(s.status)}>
                                                     {s.status === 'present' ? '✓' : s.status === 'review' ? '?' : s.status === 'absent' ? '✗' : '—'}
@@ -1328,7 +1320,7 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                                         </td>
                                     );
                                 })}
-                                <td style={{ padding: '9px 12px', textAlign: 'center', borderLeft: `2px solid ${theme.border}` }}>
+                                <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
                                     {final ? (
                                         <span style={{
                                             padding: '3px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, fontFamily: theme.fontMono,
@@ -1445,20 +1437,18 @@ function CameraWarningModal({ status, room, onProceed, onCancel }) {
 function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
     return (
         <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <table className="ams-table">
                 <thead>
-                    <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                    <tr>
                         {['#', 'Roll No', 'In List', 'ML Status', 'Confidence', 'Zone', 'First Seen', 'Final',
                           !readOnly && 'Override'].filter(Boolean).map(h => (
-                            <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontSize: '10px',
-                                color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>{h}</th>
+                            <th key={h}>{h}</th>
                         ))}
                     </tr>
                 </thead>
                 <tbody>
                     {rows.map((s, i) => (
                         <tr key={s.rollNo} style={{
-                            borderBottom: `1px solid ${theme.border}`,
                             background: s.flagged
                                 ? 'rgba(251,191,36,0.07)'
                                 : s.finalStatus === 'R'

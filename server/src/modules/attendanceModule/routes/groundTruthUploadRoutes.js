@@ -87,6 +87,18 @@ router.delete('/photo/:batch/:rollNo', async (req, res) => {
     }
 });
 
+// List photos (roll numbers) in a batch
+router.get('/list/:batch', async (req, res) => {
+    try { await controller.listPhotos(req, res); }
+    catch (e) { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+// Summary of all ERP photo batches
+router.get('/summary', async (req, res) => {
+    try { await controller.listAllBatches(req, res); }
+    catch (e) { res.status(500).json({ error: 'Internal server error' }); }
+});
+
 // Get ERP embedding sync status
 router.get('/status/:batch', async (req, res) => {
     try {

@@ -40,6 +40,11 @@ const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRoles, setSelectedRoles] = useState({});
+  const [departments, setDepartments] = useState([]);
+  const [departmentDrafts, setDepartmentDrafts] = useState({});
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [departmentError, setDepartmentError] = useState('');
+  const [savingDepartment, setSavingDepartment] = useState(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -56,13 +61,51 @@ const UserManagementPage = () => {
         const data = await response.json();
         console.log('Fetched users data:', data);
         setUsers(data.user); // Assuming data structure is { user: [ {...}, {...}, ... ] }
+        setDepartmentDrafts(
+          Object.fromEntries(
+            data.user.map((user) => [user._id, user.dept || '']),
+          ),
+        );
       } catch (error) {
         console.error('Error fetching users:', error.message);
       } finally {
         setIsLoading(false);
       }
     };
+
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/timetable/sess/allsessanddept`,
+          { credentials: 'include' },
+        );
+        if (!response.ok) {
+          throw new Error('Failed to load departments');
+        }
+
+        const data = await response.json();
+        const uniqueDepartments = Array.from(
+          new Set(
+            (data.uniqueDept || [])
+              .map((department) => department?.trim())
+              .filter(Boolean),
+          ),
+        ).sort((a, b) => a.localeCompare(b));
+
+        setDepartments(uniqueDepartments);
+        setDepartmentError(
+          uniqueDepartments.length ? '' : 'No departments found in the timetable.',
+        );
+      } catch (error) {
+        console.error('Error fetching departments:', error.message);
+        setDepartmentError(error.message);
+      } finally {
+        setDepartmentsLoading(false);
+      }
+    };
+
     fetchUsers();
+    fetchDepartments();
   }, []);
 
   const handleAssignRole = async (userId) => {
@@ -130,6 +173,48 @@ const UserManagementPage = () => {
 
   const handleRoleChange = (userId, role) => {
     setSelectedRoles({ ...selectedRoles, [userId]: role });
+  };
+
+  const handleDepartmentUpdate = async (userId) => {
+    const dept = departmentDrafts[userId] || '';
+    setSavingDepartment(userId);
+
+    try {
+      const response = await fetch(`${apiUrl}/user/getuser/department`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId, dept }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to update department');
+      }
+
+      setUsers((currentUsers) =>
+        currentUsers.map((user) => (user._id === userId ? data.user : user)),
+      );
+      setDepartmentDrafts((currentDrafts) => ({
+        ...currentDrafts,
+        [userId]: data.user.dept || '',
+      }));
+      toast({
+        title: 'Department updated.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: 'Could not update department.',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setSavingDepartment(null);
+    }
   };
 
   const HeaderUserMan = ({ title }) => {
@@ -263,6 +348,11 @@ const UserManagementPage = () => {
                 </Button>
               </Link>
             </Flex>
+            {departmentError && (
+              <Text color="red.500" fontSize="sm" w="full">
+                {departmentError}
+              </Text>
+            )}
             <Box maxW="95%" overflowX={'auto'}>
               <Table
                 variant="simple"
@@ -274,6 +364,7 @@ const UserManagementPage = () => {
                 <Thead bg="gray.100">
                   <Tr>
                     <Th>Email</Th>
+                    <Th>Department</Th>
                     <Th>Roles</Th>
                   </Tr>
                 </Thead>
@@ -284,6 +375,49 @@ const UserManagementPage = () => {
                       bg={index % 2 === 0 ? 'gray.50' : 'white'}
                     >
                       <Td>{user.email.join(', ')}</Td>
+                      <Td minW="260px">
+                        <Flex align="center" gap={2}>
+                          <Select
+                            minWidth="160px"
+                            value={departmentDrafts[user._id] ?? user.dept ?? ''}
+                            onChange={(event) =>
+                              setDepartmentDrafts((currentDrafts) => ({
+                                ...currentDrafts,
+                                [user._id]: event.target.value,
+                              }))
+                            }
+                            isDisabled={departmentsLoading}
+                          >
+                            <option value="">No department</option>
+                            {user.dept &&
+                              !departments.some(
+                                (department) =>
+                                  department.toLowerCase() === user.dept.toLowerCase(),
+                              ) && (
+                                <option value={user.dept}>{user.dept}</option>
+                              )}
+                            {departments.map((department) => (
+                              <option key={department} value={department}>
+                                {department}
+                              </option>
+                            ))}
+                          </Select>
+                          <Button
+                            colorScheme="teal"
+                            size="sm"
+                            isLoading={savingDepartment === user._id}
+                            isDisabled={
+                              departmentsLoading ||
+                              savingDepartment === user._id ||
+                              (departmentDrafts[user._id] ?? user.dept ?? '') ===
+                                (user.dept || '')
+                            }
+                            onClick={() => handleDepartmentUpdate(user._id)}
+                          >
+                            Save
+                          </Button>
+                        </Flex>
+                      </Td>
                       <Td>
                         <Flex
                           direction="row"

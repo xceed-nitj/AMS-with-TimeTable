@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import getEnvironment from '../getenvironment';
-import { DEGREES, YEARS, theme, styles, cssReset } from './config';
+import { DEGREES, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
+import { useBatchYears } from './useBatchYears';
 
 const apiUrl    = getEnvironment();
 const RA_BASE   = `${apiUrl}/attendancemodule/roll-assign`;
@@ -33,6 +34,12 @@ function broadcastRefresh(batchName) {
 
 export default function RollAssign({ fixedDepartment = '' }) {
     const { departments, deptLoading, deptError } = useDepartments();
+    const { batchYears, batchYearsLoading } = useBatchYears();
+
+    const [activeTab,      setActiveTab]      = useState('assign');
+    const [summary,        setSummary]        = useState([]);
+    const [summaryLoading, setSummaryLoading] = useState(false);
+    const [summaryError,   setSummaryError]   = useState(null);
 
     const [degree,        setDegree]        = useState('BTECH');
     const [department,    setDepartment]    = useState(fixedDepartment);
@@ -41,6 +48,17 @@ export default function RollAssign({ fixedDepartment = '' }) {
     useEffect(() => {
         if (fixedDepartment) setDepartment(fixedDepartment);
     }, [fixedDepartment]);
+
+    useEffect(() => {
+        if (activeTab !== 'summary') return;
+        setSummaryLoading(true);
+        setSummaryError(null);
+        fetch(`${RA_BASE}/summary`)
+            .then(r => r.ok ? r.json() : Promise.reject(new Error('Failed to load summary')))
+            .then(d => setSummary(d.batches || []))
+            .catch(e => setSummaryError(e.message))
+            .finally(() => setSummaryLoading(false));
+    }, [activeTab]);
 
     const [loading,       setLoading]       = useState(false);
     const [matching,      setMatching]      = useState(false);
@@ -506,7 +524,6 @@ export default function RollAssign({ fixedDepartment = '' }) {
     return (
         <div style={styles.page}>
             <style>{cssReset}</style>
-
           {toast && !modal && !flagModal && (
                 <>
                 <style>{`
@@ -630,11 +647,17 @@ export default function RollAssign({ fixedDepartment = '' }) {
                 document.body
             )}
 
-            <div style={{ marginBottom: 24 }}>
-                <div style={styles.heading}>Assign Roll Numbers</div>
-                <div style={styles.subheading}>Assign real roll numbers to extracted face clusters, then generate embeddings</div>
+            <div style={{ marginBottom: 16 }}>
+                <div style={styles.heading}>Roll Assignment</div>
+                <div style={styles.subheading}>Assign roll numbers to face clusters and track progress across batches</div>
             </div>
 
+            <div className="ams-tabs">
+                <button className={`ams-tab${activeTab === 'assign' ? ' active' : ''}`} onClick={() => setActiveTab('assign')}>Assign</button>
+                <button className={`ams-tab${activeTab === 'summary' ? ' active' : ''}`} onClick={() => setActiveTab('summary')}>Summary</button>
+            </div>
+
+            {activeTab === 'assign' && (<>
             <div style={{ ...styles.card, marginBottom: 20 }}>
                 <div style={{
                     display: 'grid',
@@ -653,7 +676,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
                             <label style={styles.label}>Department</label>
                             <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
                                 <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}</option>
-                                {departments.map(d => <option key={d}>{d}</option>)}
+                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
                             </select>
                             {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>}
                         </div>
@@ -662,7 +685,9 @@ export default function RollAssign({ fixedDepartment = '' }) {
                         <label style={styles.label}>Year</label>
                         <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>
                             <option value="">Select...</option>
-                            {YEARS.map(y => <option key={y}>{y}</option>)}
+                            {batchYearsLoading
+                                ? <option>Loading…</option>
+                                : batchYears.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
                     <button onClick={runAutoMatch} disabled={matching || !batchName || unprocessed.length === 0}
@@ -796,9 +821,115 @@ export default function RollAssign({ fixedDepartment = '' }) {
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>Select a batch to start</div>
                 </div>
             )}
+            </>)}
+
+            {activeTab === 'summary' && (
+                <SummaryPanel summary={summary} summaryLoading={summaryLoading} summaryError={summaryError} />
+            )}
         </div>
     );
 }
+
+// ── Summary tab helpers ───────────────────────────────────────────
+
+function parseBatch(batch) {
+    const parts = (batch || '').split('_');
+    if (parts.length < 3) return { degree: parts[0] || batch, dept: batch, year: '' };
+    return { degree: parts[0], dept: parts.slice(1, -1).join('_'), year: parts[parts.length - 1] };
+}
+
+function SummaryPanel({ summary, summaryLoading, summaryError }) {
+    if (summaryLoading) return (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: theme.textMuted, fontSize: '14px' }}>Loading summary…</div>
+    );
+    if (summaryError) return (
+        <div style={{ ...styles.card, color: '#ef4444', padding: 20, fontSize: '13px' }}>Error: {summaryError}</div>
+    );
+    if (!summary.length) return (
+        <div style={{ ...styles.card, textAlign: 'center', padding: '60px 20px', borderStyle: 'dashed' }}>
+            <div style={{ fontSize: '36px', opacity: 0.3, marginBottom: 12 }}>📊</div>
+            <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>No data yet</div>
+            <div style={{ fontSize: '13px', color: theme.textMuted }}>Run roll assignment to see batch statistics</div>
+        </div>
+    );
+
+    const groups = {};
+    for (const row of summary) {
+        const { dept } = parseBatch(row.batch);
+        if (!groups[dept]) groups[dept] = [];
+        groups[dept].push(row);
+    }
+    const sortedDepts = Object.keys(groups).sort();
+
+    const badge = (val, color) => (
+        <span style={{ fontWeight: 700, color: val > 0 ? color : theme.textMuted }}>{val}</span>
+    );
+
+    return (
+        <div>
+            {sortedDepts.map(dept => {
+                const rows = groups[dept].slice().sort((a, b) => a.batch.localeCompare(b.batch));
+                const totals = rows.reduce((acc, r) => ({
+                    total:     acc.total     + r.total,
+                    approved:  acc.approved  + r.approved,
+                    pending:   acc.pending   + r.pending,
+                    flagged:   acc.flagged   + r.flagged,
+                    unmatched: acc.unmatched + r.unmatched,
+                }), { total: 0, approved: 0, pending: 0, flagged: 0, unmatched: 0 });
+
+                return (
+                    <div key={dept} style={{ ...styles.card, marginBottom: 24, overflow: 'hidden', padding: 0 }}>
+                        <div style={{ padding: '14px 18px', borderBottom: `1px solid ${theme.border}`, background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ fontWeight: 700, fontSize: '14px', color: theme.text }}>{dept.replace(/_/g, ' ')}</div>
+                            <div style={{ fontSize: '12px', color: theme.textMuted }}>{rows.length} batch{rows.length !== 1 ? 'es' : ''}</div>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table className="ams-table">
+                                <thead>
+                                    <tr>
+                                        <th>Batch</th>
+                                        <th style={{ textAlign: 'right' }}>Total</th>
+                                        <th style={{ textAlign: 'right', color: theme.success }}>Approved</th>
+                                        <th style={{ textAlign: 'right', color: '#f59e0b' }}>Pending Review</th>
+                                        <th style={{ textAlign: 'right', color: theme.warning }}>Flagged</th>
+                                        <th style={{ textAlign: 'right' }}>Unmatched</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows.map(r => {
+                                        const { degree, year } = parseBatch(r.batch);
+                                        return (
+                                            <tr key={r.batch}>
+                                                <td>{degree} {year}</td>
+                                                <td style={{ textAlign: 'right' }}>{r.total}</td>
+                                                <td style={{ textAlign: 'right' }}>{badge(r.approved,  theme.success)}</td>
+                                                <td style={{ textAlign: 'right' }}>{badge(r.pending,   '#f59e0b')}</td>
+                                                <td style={{ textAlign: 'right' }}>{badge(r.flagged,   theme.warning)}</td>
+                                                <td style={{ textAlign: 'right', color: theme.textMuted }}>{r.unmatched}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td style={{ fontSize: '11px', color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total</td>
+                                        <td style={{ textAlign: 'right' }}>{totals.total}</td>
+                                        <td style={{ textAlign: 'right' }}>{badge(totals.approved,  theme.success)}</td>
+                                        <td style={{ textAlign: 'right' }}>{badge(totals.pending,   '#f59e0b')}</td>
+                                        <td style={{ textAlign: 'right' }}>{badge(totals.flagged,   theme.warning)}</td>
+                                        <td style={{ textAlign: 'right', color: theme.textMuted }}>{totals.unmatched}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────
 
 function FlaggedClusterCard({ item, batchName, flagPhotoUrl, onClick, onEditRoll, onDeleteAllImages, deletingAllImages }) {
     const folder    = item.currentFolder || item.folderName;

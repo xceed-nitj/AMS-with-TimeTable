@@ -63,6 +63,14 @@ userRouter.post("/deleterole", checkRole(['admin']), async (req, res) => {
   }
 });
 
+userRouter.put("/department", checkRole(['admin']), async (req, res) => {
+  try {
+    await UserController.updateDepartment(req, res);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
 userRouter.post("/logout", verifyToken, async (req, res) => {
   try {
     res.clearCookie("jwt");

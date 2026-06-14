@@ -78,6 +78,8 @@ export default function Navbar() {
     '/guide',
     '/forgot-password',
     '/nirf',
+    '/ams-manual',
+    '/tt-manual',
     '/login',
     '/classrooms',
     '/timetable',

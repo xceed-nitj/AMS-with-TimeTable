@@ -34,6 +34,8 @@ router.post('/save-match-result',                     wrap(ctrl.saveMatchResult)
 router.post('/auto-assign-all',                       wrap(ctrl.autoAssignAll));
 
 // ── DB records ────────────────────────────────────────────────────
+// Dept-wise summary of all batches (for Summary tab)
+router.get('/summary',                                wrap(ctrl.getSummary));
 // Load all match records for a batch (for page reload)
 router.get('/matches/:batch',                         wrap(ctrl.getMatches));
 
