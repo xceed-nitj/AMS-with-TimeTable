@@ -17,6 +17,46 @@ const fetch = (input, init = {}) => window.fetch(input, {
 const HIGH   = 0.62;
 const MEDIUM = 0.45;
 
+function NoEmbeddingBanner({ info, onDismiss }) {
+    return (
+        <div style={{
+            marginTop: 14,
+            padding: '14px 18px',
+            borderRadius: 10,
+            background: '#fef9c3',
+            border: '1.5px solid #f59e0b',
+            display: 'flex',
+            gap: 14,
+            alignItems: 'flex-start',
+        }}>
+            <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#92400e', marginBottom: 4 }}>
+                    ERP Embeddings Not Available
+                </div>
+                <div style={{ fontSize: 12, color: '#78350f', lineHeight: 1.6 }}>
+                    No pre-built face embeddings were found for batch{' '}
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{info.batch}</span>.
+                    Matching cannot run without them.
+                    <br />
+                    Go to the <strong>ERP Photos</strong> tab and click{' '}
+                    <strong>"Generate Embeddings"</strong> for this batch, then come back and try again.
+                </div>
+                <button
+                    onClick={onDismiss}
+                    style={{
+                        marginTop: 8, padding: '4px 12px', borderRadius: 6,
+                        border: '1px solid #d97706', background: 'transparent',
+                        color: '#92400e', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    }}
+                >
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    );
+}
+
 function confidenceColor(score) {
     if (score >= HIGH)   return theme.success;
     if (score >= MEDIUM) return theme.warning;
@@ -73,6 +113,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
     const [pendingReview,  setPendingReview]  = useState([]);
     const [approvedItems,  setApprovedItems]  = useState([]);
     const [unmatchedItems, setUnmatchedItems] = useState([]);
+    const [crossDeptItems, setCrossDeptItems] = useState([]);
     const [flaggedItems,   setFlaggedItems]   = useState([]);
     const [mergedItems,    setMergedItems]    = useState([]);
 
@@ -89,7 +130,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
     const [flagRollInput, setFlagRollInput] = useState('');
 
     const [gtModal,    setGtModal]    = useState(null);
-   
+   const [noEmbeddingError, setNoEmbeddingError] = useState(null);
 
     // CHANGE 2: state for edit-roll-no modal on assigned cards
     const [editRollModal,    setEditRollModal]    = useState(null); // { item }
@@ -140,6 +181,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
                 // CHANGE 3: sort approved by rollNo
                 setApprovedItems(records.filter(r => r.approved).sort((a, b) => (a.rollNo || '').localeCompare(b.rollNo || '')));
                 setUnmatchedItems(records.filter(r => r.status === 'unmatched'));
+                setCrossDeptItems(records.filter(r => r.status === 'cross_dept'));
                 setFlaggedItems(records.filter(r => r.status === 'flagged'));
                 setMergedItems(records.filter(r => r.status === 'merged_unapproved'));
             }
@@ -186,68 +228,77 @@ export default function RollAssign({ fixedDepartment = '' }) {
         return () => { try { ch?.close(); } catch (_) {} };
     }, [batchName, loadClusters]);
 
-    const runAutoMatch = useCallback(async () => {
-        if (!batchName) return;
-        setMatching(true); setMatchDone(false); setMatchError(null);
-        setMatchProgress({ msg: 'Starting…', done: 0, total: 0, step: 'init' });
-        const localMatches = {};
-        let sseSucceeded = false, matchCount = 0;
-        try {
-            const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
-            if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Match failed'); }
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buf = '';
-            const processLine = async (line) => {
-                if (!line.startsWith('data:')) return;
-                let evt;
-                try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
-                if (evt.type === 'erp_progress') {
-                    setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
-                } else if (evt.type === 'cluster_progress') {
-                    setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'cluster', current: evt.current });
-                } else if (evt.type === 'status') {
-                    setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
-                } else if (evt.type === 'match_result') {
-                    localMatches[evt.folder] = evt.match; matchCount++;
-                    try {
-                        const sr = await fetch(`${RA_BASE}/save-match-result`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ batch: batchName, folderName: evt.folder, matchData: evt.match }),
-                        });
-                        if (sr.ok) {
-                            setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
-                            setMatchProgress(p => ({ ...p, msg: `Saved ${matchCount} matches...`, done: matchCount }));
-                        }
-                    } catch (_) {}
-                } else if (evt.type === 'done') {
-                    sseSucceeded = true; setMatchDone(true);
-                    showToast(`✓ Matched ${matchCount} clusters — saved to database`);
-                } else if (evt.type === 'error') { throw new Error(evt.msg); }
-            };
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) { buf += decoder.decode(); for (const l of buf.split('\n')) await processLine(l); break; }
-                buf += decoder.decode(value, { stream: true });
-                const lines = buf.split('\n'); buf = lines.pop();
-                for (const l of lines) await processLine(l);
+   const runAutoMatch = useCallback(async () => {
+    if (!batchName) return;
+    setMatching(true); setMatchDone(false); setMatchError(null);
+    setNoEmbeddingError(null);   // clear any previous no-embedding banner
+    setMatchProgress({ msg: 'Starting…', done: 0, total: 0, step: 'init' });
+    const localMatches = {};
+    let sseSucceeded = false, matchCount = 0;
+    try {
+        const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
+        if (!res.ok) {
+            const d = await res.json();
+            // ── Structured "no embedding" error ──────────────────────────
+            if (d.noEmbedding) {
+                setNoEmbeddingError({ batch: d.batch, department: d.department });
+                return;
             }
-            if (sseSucceeded && matchCount > 0) {
-                setMatchProgress({ msg: 'Renaming folders…', done: matchCount, total: matchCount, step: 'saving' });
-                const ar = await fetch(`${RA_BASE}/auto-assign-all`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ batch: batchName, matches: localMatches }),
-                });
-                const ad = await ar.json();
-                if (!ar.ok) showToast(`⚠ Matching saved, but rename failed: ${ad.error}`, 'warning');
-                else showToast(`✓ ${ad.renamed} clusters auto-assigned` + (ad.unmatched ? `, ${ad.unmatched} unmatched` : '') + (ad.conflicts ? `, ${ad.conflicts} conflicts` : ''));
-                await loadClusters();
-            }
-        } catch (err) {
-            setMatchError(err.message); showToast(err.message, 'error');
-            setTimeout(() => loadClusters(), 500);
-        } finally { setMatching(false); setMatchProgress(null); }
-    }, [batchName, loadClusters]);
+            throw new Error(d.error || 'Match failed');
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        const processLine = async (line) => {
+            if (!line.startsWith('data:')) return;
+            let evt;
+            try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
+            if (evt.type === 'erp_progress') {
+                setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
+            } else if (evt.type === 'cluster_progress') {
+                setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'cluster', current: evt.current });
+            } else if (evt.type === 'status') {
+                setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
+            } else if (evt.type === 'match_result') {
+                localMatches[evt.folder] = evt.match; matchCount++;
+                try {
+                    const sr = await fetch(`${RA_BASE}/save-match-result`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ batch: batchName, folderName: evt.folder, matchData: evt.match }),
+                    });
+                    if (sr.ok) {
+                        setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
+                        setMatchProgress(p => ({ ...p, msg: `Saved ${matchCount} matches...`, done: matchCount }));
+                    }
+                } catch (_) {}
+            } else if (evt.type === 'done') {
+                sseSucceeded = true; setMatchDone(true);
+                showToast(`✓ Matched ${matchCount} clusters — saved to database`);
+            } else if (evt.type === 'error') { throw new Error(evt.msg); }
+        };
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) { buf += decoder.decode(); for (const l of buf.split('\n')) await processLine(l); break; }
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('\n'); buf = lines.pop();
+            for (const l of lines) await processLine(l);
+        }
+        if (sseSucceeded && matchCount > 0) {
+            setMatchProgress({ msg: 'Renaming folders…', done: matchCount, total: matchCount, step: 'saving' });
+            const ar = await fetch(`${RA_BASE}/auto-assign-all`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batch: batchName, matches: localMatches }),
+            });
+            const ad = await ar.json();
+            if (!ar.ok) showToast(`⚠ Matching saved, but rename failed: ${ad.error}`, 'warning');
+            else showToast(`✓ ${ad.renamed} clusters auto-assigned` + (ad.unmatched ? `, ${ad.unmatched} unmatched` : '') + (ad.conflicts ? `, ${ad.conflicts} conflicts` : ''));
+            await loadClusters();
+        }
+    } catch (err) {
+        setMatchError(err.message); showToast(err.message, 'error');
+        setTimeout(() => loadClusters(), 500);
+    } finally { setMatching(false); setMatchProgress(null); }
+}, [batchName, loadClusters]);
 
     const reviewQueue = [...pendingReview, ...mergedItems, ...flaggedItems];
 
@@ -718,6 +769,13 @@ export default function RollAssign({ fixedDepartment = '' }) {
 
                 {matchError && <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 6, background: '#3f1212', color: '#f87171', fontSize: '12px' }}>{matchError}</div>}
 
+                {noEmbeddingError && (
+                    <NoEmbeddingBanner
+                        info={noEmbeddingError}
+                        onDismiss={() => setNoEmbeddingError(null)}
+                    />
+                )}
+
                 {!matching && pendingReview.length > 0 && (
                     <div style={{ marginTop: 12, padding: '8px 14px', borderRadius: 6, background: theme.successDim, border: `1px solid ${theme.success}44`, display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ color: theme.success, fontWeight: 700, fontSize: '13px' }}>✓ Auto-assignment done</span>
@@ -793,6 +851,16 @@ export default function RollAssign({ fixedDepartment = '' }) {
                         ))}
                     </Section>
 
+                    <Section title="Unmatched Cluster" count={crossDeptItems.length} accentColor="#a78bfa" emptyText="No cross-department clusters">
+                        {crossDeptItems.map(item => (
+                            <CrossDeptCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl}
+                                saving={saving === item.folderName}
+                                onApprove={(rollNo) => handleApprove(item, rollNo)}
+                                onDeleteFolder={() => deleteUnmatchedFolder(item)}
+                                deletingFolder={saving === item.folderName} />
+                        ))}
+                    </Section>
+
                     {/* CHANGE 7+8: Unprocessed — no roll no field, delete folder button */}
                     {unprocessed.length > 0 && (
                         <Section title="Unprocessed" count={unprocessed.length} accentColor={theme.textMuted}>
@@ -805,7 +873,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
                         </Section>
                     )}
 
-                    {!unprocessed.length && !pendingReview.length && !approvedItems.length && !unmatchedItems.length && !flaggedItems.length && (
+                    {!unprocessed.length && !pendingReview.length && !approvedItems.length && !unmatchedItems.length && !crossDeptItems.length && !flaggedItems.length && (
                         <div style={{ ...styles.card, textAlign: 'center', padding: '60px 20px', borderStyle: 'dashed' }}>
                             <div style={{ fontSize: '36px', opacity: 0.3, marginBottom: 12 }}>📁</div>
                             <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>No folders found</div>
@@ -870,12 +938,13 @@ function SummaryPanel({ summary, summaryLoading, summaryError }) {
             {sortedDepts.map(dept => {
                 const rows = groups[dept].slice().sort((a, b) => a.batch.localeCompare(b.batch));
                 const totals = rows.reduce((acc, r) => ({
-                    total:     acc.total     + r.total,
-                    approved:  acc.approved  + r.approved,
-                    pending:   acc.pending   + r.pending,
-                    flagged:   acc.flagged   + r.flagged,
-                    unmatched: acc.unmatched + r.unmatched,
-                }), { total: 0, approved: 0, pending: 0, flagged: 0, unmatched: 0 });
+                    total:      acc.total     + r.total,
+                    approved:   acc.approved  + r.approved,
+                    pending:    acc.pending   + r.pending,
+                    flagged:    acc.flagged   + r.flagged,
+                    unmatched:  acc.unmatched + r.unmatched,
+                    cross_dept: acc.cross_dept + (r.cross_dept || 0),
+                }), { total: 0, approved: 0, pending: 0, flagged: 0, unmatched: 0, cross_dept: 0 });
 
                 return (
                     <div key={dept} style={{ ...styles.card, marginBottom: 24, overflow: 'hidden', padding: 0 }}>
@@ -892,6 +961,7 @@ function SummaryPanel({ summary, summaryLoading, summaryError }) {
                                         <th style={{ textAlign: 'right', color: theme.success }}>Approved</th>
                                         <th style={{ textAlign: 'right', color: '#f59e0b' }}>Pending Review</th>
                                         <th style={{ textAlign: 'right', color: theme.warning }}>Flagged</th>
+                                        <th style={{ textAlign: 'right', color: '#a78bfa' }}>Diff Dept</th>
                                         <th style={{ textAlign: 'right' }}>Unmatched</th>
                                     </tr>
                                 </thead>
@@ -902,9 +972,10 @@ function SummaryPanel({ summary, summaryLoading, summaryError }) {
                                             <tr key={r.batch}>
                                                 <td>{degree} {year}</td>
                                                 <td style={{ textAlign: 'right' }}>{r.total}</td>
-                                                <td style={{ textAlign: 'right' }}>{badge(r.approved,  theme.success)}</td>
-                                                <td style={{ textAlign: 'right' }}>{badge(r.pending,   '#f59e0b')}</td>
-                                                <td style={{ textAlign: 'right' }}>{badge(r.flagged,   theme.warning)}</td>
+                                                <td style={{ textAlign: 'right' }}>{badge(r.approved,           theme.success)}</td>
+                                                <td style={{ textAlign: 'right' }}>{badge(r.pending,            '#f59e0b')}</td>
+                                                <td style={{ textAlign: 'right' }}>{badge(r.flagged,            theme.warning)}</td>
+                                                <td style={{ textAlign: 'right' }}>{badge(r.cross_dept || 0,   '#a78bfa')}</td>
                                                 <td style={{ textAlign: 'right', color: theme.textMuted }}>{r.unmatched}</td>
                                             </tr>
                                         );
@@ -914,9 +985,10 @@ function SummaryPanel({ summary, summaryLoading, summaryError }) {
                                     <tr>
                                         <td style={{ fontSize: '11px', color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total</td>
                                         <td style={{ textAlign: 'right' }}>{totals.total}</td>
-                                        <td style={{ textAlign: 'right' }}>{badge(totals.approved,  theme.success)}</td>
-                                        <td style={{ textAlign: 'right' }}>{badge(totals.pending,   '#f59e0b')}</td>
-                                        <td style={{ textAlign: 'right' }}>{badge(totals.flagged,   theme.warning)}</td>
+                                        <td style={{ textAlign: 'right' }}>{badge(totals.approved,   theme.success)}</td>
+                                        <td style={{ textAlign: 'right' }}>{badge(totals.pending,    '#f59e0b')}</td>
+                                        <td style={{ textAlign: 'right' }}>{badge(totals.flagged,    theme.warning)}</td>
+                                        <td style={{ textAlign: 'right' }}>{badge(totals.cross_dept, '#a78bfa')}</td>
                                         <td style={{ textAlign: 'right', color: theme.textMuted }}>{totals.unmatched}</td>
                                     </tr>
                                 </tfoot>
@@ -1685,6 +1757,69 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl, overrideRo
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function CrossDeptCard({ item, batchName, photoUrl, saving, onApprove, onDeleteFolder, deletingFolder }) {
+    const folderForPhoto = item.currentFolder || item.folderName;
+    const previews       = item.previewFiles || [];
+
+    return (
+        <div style={{
+            background: theme.surface,
+            border: `1px solid #a78bfa55`,
+            borderRadius: 10,
+            overflow: 'hidden',
+            transition: 'border-color 0.15s',
+        }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#a78bfa'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#a78bfa55'; }}
+        >
+            {/* Preview strip */}
+            <div style={{ display: 'flex', height: 80, overflow: 'hidden', background: '#000', gap: 1 }}>
+                {previews.slice(0, 4).map((f, i) => (
+                    <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt="" style={{ flex: 1, height: '100%', objectFit: 'cover', minWidth: 0 }} onError={e => { e.target.style.display = 'none'; }} />
+                ))}
+                {previews.length === 0 && (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.textMuted, fontSize: '11px' }}>No images</div>
+                )}
+            </div>
+
+            <div style={{ padding: '10px 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 700, color: theme.text }}>{item.folderName}</span>
+                    <span style={{ fontSize: '11px', color: theme.textMuted }}>{item.imageCount} img</span>
+                </div>
+
+                {/* Badge */}
+                <div style={{ marginBottom: 8, padding: '3px 8px', borderRadius: 5, background: '#a78bfa22', color: '#a78bfa', fontSize: '11px', fontWeight: 600, textAlign: 'center' }}>
+                    👤 Face found — no ERP match (different dept?)
+                    {item.confidence != null && (
+                        <span style={{ marginLeft: 6, fontSize: '10px', fontWeight: 400, color: '#c4b5fd' }}>
+                            best guess: {(item.confidence * 100).toFixed(0)}%
+                        </span>
+                    )}
+                </div>
+
+                {/* Delete */}
+                <button
+                    onClick={e => { e.stopPropagation(); onDeleteFolder && onDeleteFolder(); }}
+                    disabled={deletingFolder}
+                    style={{
+                        width: '100%', padding: '6px 0', borderRadius: 6,
+                        border: '1px solid #f87171', background: '#ffffff',
+                        color: '#f87171', fontSize: '11px', fontWeight: 700,
+                        cursor: deletingFolder ? 'not-allowed' : 'pointer',
+                        opacity: deletingFolder ? 0.5 : 1,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    }}
+                >
+                    {deletingFolder ? 'Deleting…' : (
+                        <><svg width="11" height="12" viewBox="0 0 12 13" fill="none"><path d="M1.5 3.5h9M4.5 3.5V2.5h3v1M3 3.5l.6 7.5a.5.5 0 00.5.5h3.8a.5.5 0 00.5-.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><line x1="5" y1="6" x2="5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="7" y1="6" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>Delete Folder</>
+                    )}
+                </button>
             </div>
         </div>
     );
