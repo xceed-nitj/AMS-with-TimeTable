@@ -225,6 +225,9 @@ import DeptDashboard from './deptadmin/DeptDashboard';
 import DeptReports from './deptadmin/DeptReports';
 import { DeptAssignRolls, DeptLiveRTSP } from './deptadmin/DeptAdminTools';
 
+//confifence monitor
+import ConfidenceMonitor from './attendancemodule/confidenceMonitor';
+
 function App() {
   return (
     <Router>
@@ -652,6 +655,7 @@ function App() {
           <Route path="model" element={<ModelPerformance />} />
           <Route path="reports" element={<AttendanceReport />} />
           <Route path="frame-verification" element={<FrameVerification />} />
+          <Route path="confidence" element={<ConfidenceMonitor />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}
