@@ -656,7 +656,7 @@ function App() {
           {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
           <Route path="groundtruth/edit" element={<EditGroundTruth />} />
           <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
-          <Route path="groundtruth/photos" element={<PhotoEdit />} />
+          {/* <Route path="groundtruth/photos" element={<PhotoEdit />} /> */}
           <Route path="groundtruth/upload" element={<GroundTruthUpload />} />
           <Route path="embeddings" element={<EmbeddingGeneration />} />
           <Route path="report" element={<Attendancedoc />} />
