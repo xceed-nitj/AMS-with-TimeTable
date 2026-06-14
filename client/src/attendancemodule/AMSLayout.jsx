@@ -18,6 +18,7 @@ const NAV = [
   { id: 'cameras',    route: '/cameras',                               label: 'Camera Registry'   },
   { id: 'embeddings', route: '/attendance/embeddings',                  label: 'Embeddings'        },
   { id: 'preview',    route: '/cameras/preview',                        label: 'Camera Preview'    },
+  { id: 'manual',     route: '/ams-manual',                             label: 'Help & Manual',     newTab: true },
 ];
 
 const COLORS = {
@@ -30,6 +31,7 @@ const COLORS = {
   cameras:    '#f97316',
   embeddings: '#f59e0b',
   preview:    '#8b5cf6',
+  manual:     '#64748b',
 };
 
 const CSS = `
@@ -138,7 +140,7 @@ export default function AMSLayout() {
                 <div
                   key={item.id}
                   className="ams-nav-item"
-                  onClick={() => navigate(item.route)}
+                  onClick={() => item.newTab ? window.open(item.route, '_blank', 'noopener,noreferrer') : navigate(item.route)}
                   title={collapsed ? item.label : undefined}
                   style={{
                     display: 'flex',

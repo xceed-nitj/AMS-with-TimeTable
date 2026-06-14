@@ -218,6 +218,7 @@ import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
 import CameraRegistry from './attendancemodule/camera';
 import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
+import AMSManual from './attendancemodule/manual';
 
 // ─── Department Admin Module Imports ────────────────────────────
 import DeptAdminLayout from './deptadmin/DeptAdminLayout';
@@ -629,6 +630,9 @@ function App() {
 
         <Route path="/ml/t1" element={<LinearRegression />} />
         <Route path="/ml" element={<MLDashboard />} />
+
+        {/* ─── AMS Manual — public, no auth required ─────────────── */}
+        <Route path="/ams-manual" element={<AMSManual standalone />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
         <Route
