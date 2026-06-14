@@ -219,6 +219,7 @@ import AMSLayout from './attendancemodule/AMSLayout';
 import CameraRegistry from './attendancemodule/camera';
 import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
 import AMSManual from './attendancemodule/manual';
+import TTManual from './timetableadmin/TTManual';
 
 // ─── Department Admin Module Imports ────────────────────────────
 import DeptAdminLayout from './deptadmin/DeptAdminLayout';
@@ -633,6 +634,9 @@ function App() {
 
         {/* ─── AMS Manual — public, no auth required ─────────────── */}
         <Route path="/ams-manual" element={<AMSManual standalone />} />
+
+        {/* ─── TT Manual — public, no auth required ──────────────── */}
+        <Route path="/tt-manual" element={<TTManual standalone />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
         <Route
