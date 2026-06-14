@@ -227,6 +227,9 @@ import DeptDashboard from './deptadmin/DeptDashboard';
 import DeptReports from './deptadmin/DeptReports';
 import { DeptAssignRolls, DeptLiveRTSP } from './deptadmin/DeptAdminTools';
 
+//confifence monitor
+import ConfidenceMonitor from './attendancemodule/confidenceMonitor';
+
 function App() {
   return (
     <Router>
@@ -651,14 +654,16 @@ function App() {
 
           <Route path="groundtruth/assign" element={<RollAssign />} />
           {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
-          <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
-          <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
-          <Route path="groundtruth/upload"   element={<GroundTruthUpload />} />
-          <Route path="embeddings"           element={<EmbeddingGeneration />} />
-          <Route path="report"               element={<Attendancedoc />} />
-          <Route path="model"                element={<ModelPerformance />} />
-          <Route path="reports"              element={<AttendanceReport />} />
-          <Route path="frame-verification"   element={<FrameVerification />} />
+          <Route path="groundtruth/edit" element={<EditGroundTruth />} />
+          <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
+          <Route path="groundtruth/photos" element={<PhotoEdit />} />
+          <Route path="groundtruth/upload" element={<GroundTruthUpload />} />
+          <Route path="embeddings" element={<EmbeddingGeneration />} />
+          <Route path="report" element={<Attendancedoc />} />
+          <Route path="model" element={<ModelPerformance />} />
+          <Route path="reports" element={<AttendanceReport />} />
+          <Route path="frame-verification" element={<FrameVerification />} />
+          <Route path="confidence" element={<ConfidenceMonitor />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}
