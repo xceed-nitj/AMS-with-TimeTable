@@ -624,14 +624,17 @@ class RollAssignController {
             const safeFilename = path.basename(filename);
             const safeBatch    = batch ? path.basename(batch) : null;
 
+            // 1. batch-specific subfolder: erp_photos/<batch>/<filename>
             if (safeBatch) {
                 const batchPath = path.join(ERP_PHOTOS_DIR, safeBatch, safeFilename);
                 if (fs.existsSync(batchPath)) return res.sendFile(batchPath);
             }
 
+            // 2. flat root: erp_photos/<filename>
             const flatPath = path.join(ERP_PHOTOS_DIR, safeFilename);
             if (fs.existsSync(flatPath)) return res.sendFile(flatPath);
 
+            // 3. search every subdirectory inside erp_photos/
             if (fs.existsSync(ERP_PHOTOS_DIR)) {
                 const dirs = fs.readdirSync(ERP_PHOTOS_DIR, { withFileTypes: true })
                     .filter(e => e.isDirectory()).map(e => e.name);
@@ -656,38 +659,91 @@ class RollAssignController {
                 return res.status(404).json({ error: 'Batch not found' });
             }
 
-            const batchErpDir = path.join(ERP_PHOTOS_DIR, batch);
-            const erpDir      = fs.existsSync(batchErpDir) ? batchErpDir : ERP_PHOTOS_DIR;
+            const parts      = batch.split('_');
+            const department = parts.slice(1, -1).join('_');
 
-            const erpFiles = fs.existsSync(erpDir)
-                ? fs.readdirSync(erpDir).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
-                : [];
-            if (!erpFiles.length) {
-                return res.status(400).json({
-                    error: `No ERP photos found. Place student photos named {rollNo}.jpg in erp_photos/${batch}/`,
+            const ML_SVC          = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+            const ERP_PHOTOS_BASE = ERP_PHOTOS_DIR;
+            const batchPhotoDir   = path.join(ERP_PHOTOS_BASE, batch);
+            const erpPhotosDir    = fs.existsSync(batchPhotoDir) ? batchPhotoDir : ERP_PHOTOS_BASE;
+
+            // ── Check for pre-built pkl ───────────────────────────────────
+            let pkgCheck = { available: false };
+            try {
+                const checkRes = await axios.get(`${ML_SVC}/erp-embedding/check`, {
+                    params: { batch, department }, timeout: 8000,
                 });
-            }
+                pkgCheck = checkRes.data;
+            } catch (_) {}
 
-            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Content-Type',  'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
-            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('Connection',    'keep-alive');
             res.flushHeaders();
 
-            const response = await axios.post(
-                `${ML_SERVICE_URL}/match-clusters-to-erp`,
-                { batch_dir: batchPath, erp_photos_dir: erpDir, top_k: 3 },
-                { responseType: 'stream', timeout: 0 }
-            );
-            response.data.pipe(res);
-            response.data.on('end',   () => res.end());
-            response.data.on('error', (err) => {
-                res.write(`data: ${JSON.stringify({ type: 'error', msg: err.message })}\n\n`);
-                res.end();
+            let mlResponse;
+
+            if (pkgCheck.available) {
+                // ── FAST PATH: use pre-built pkl ──────────────────────────
+                mlResponse = await axios.post(
+                    `${ML_SVC}/match-clusters-to-erp-fast`,
+                    {
+                        batch_dir:      batchPath,
+                        pkl_path:       pkgCheck.pkl_path,
+                        erp_photos_dir: erpPhotosDir,
+                        top_k:          3,
+                    },
+                    { responseType: 'stream', timeout: 0 }
+                );
+            } else {
+                // ── SLOW PATH: build from photos, save pkl for next time ──
+                // Check photos exist at all
+                let photoCount = 0;
+                try {
+                    photoCount = fs.readdirSync(erpPhotosDir)
+                        .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length;
+                } catch (_) {}
+
+                if (photoCount === 0) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', msg: 'No ERP photos found. Go to the ERP Photos tab and upload photos first.' })}\n\n`);
+                    res.end();
+                    return;
+                }
+
+                // Save the generated pkl so next run is fast
+                const savePklPath = path.join(
+                    __dirname, '..', '..', '..', '..', 'ml-data', 'embeddings', 'erp', batch, 'embeddings_db.pkl'
+                );
+                fs.mkdirSync(path.dirname(savePklPath), { recursive: true });
+
+                mlResponse = await axios.post(
+                    `${ML_SVC}/match-clusters-to-erp`,
+                    {
+                        batch_dir:      batchPath,
+                        erp_photos_dir: erpPhotosDir,
+                        save_pkl_path:  savePklPath,
+                        top_k:          3,
+                    },
+                    { responseType: 'stream', timeout: 0 }
+                );
+            }
+
+            mlResponse.data.pipe(res);
+            mlResponse.data.on('end',   () => res.end());
+            mlResponse.data.on('error', (err) => {
+                if (!res.writableEnded) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', msg: err.message })}\n\n`);
+                    res.end();
+                }
             });
+
         } catch (err) {
             const msg = err.response?.data?.detail || err.message;
             if (!res.headersSent) res.status(500).json({ error: msg });
-            else { res.write(`data: ${JSON.stringify({ type: 'error', msg })}\n\n`); res.end(); }
+            else {
+                res.write(`data: ${JSON.stringify({ type: 'error', msg })}\n\n`);
+                res.end();
+            }
         }
     }
 

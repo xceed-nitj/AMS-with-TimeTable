@@ -17,6 +17,46 @@ const fetch = (input, init = {}) => window.fetch(input, {
 const HIGH   = 0.62;
 const MEDIUM = 0.45;
 
+function NoEmbeddingBanner({ info, onDismiss }) {
+    return (
+        <div style={{
+            marginTop: 14,
+            padding: '14px 18px',
+            borderRadius: 10,
+            background: '#fef9c3',
+            border: '1.5px solid #f59e0b',
+            display: 'flex',
+            gap: 14,
+            alignItems: 'flex-start',
+        }}>
+            <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#92400e', marginBottom: 4 }}>
+                    ERP Embeddings Not Available
+                </div>
+                <div style={{ fontSize: 12, color: '#78350f', lineHeight: 1.6 }}>
+                    No pre-built face embeddings were found for batch{' '}
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{info.batch}</span>.
+                    Matching cannot run without them.
+                    <br />
+                    Go to the <strong>ERP Photos</strong> tab and click{' '}
+                    <strong>"Generate Embeddings"</strong> for this batch, then come back and try again.
+                </div>
+                <button
+                    onClick={onDismiss}
+                    style={{
+                        marginTop: 8, padding: '4px 12px', borderRadius: 6,
+                        border: '1px solid #d97706', background: 'transparent',
+                        color: '#92400e', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    }}
+                >
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    );
+}
+
 function confidenceColor(score) {
     if (score >= HIGH)   return theme.success;
     if (score >= MEDIUM) return theme.warning;
@@ -89,7 +129,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
     const [flagRollInput, setFlagRollInput] = useState('');
 
     const [gtModal,    setGtModal]    = useState(null);
-   
+   const [noEmbeddingError, setNoEmbeddingError] = useState(null);
 
     // CHANGE 2: state for edit-roll-no modal on assigned cards
     const [editRollModal,    setEditRollModal]    = useState(null); // { item }
@@ -186,68 +226,77 @@ export default function RollAssign({ fixedDepartment = '' }) {
         return () => { try { ch?.close(); } catch (_) {} };
     }, [batchName, loadClusters]);
 
-    const runAutoMatch = useCallback(async () => {
-        if (!batchName) return;
-        setMatching(true); setMatchDone(false); setMatchError(null);
-        setMatchProgress({ msg: 'Starting…', done: 0, total: 0, step: 'init' });
-        const localMatches = {};
-        let sseSucceeded = false, matchCount = 0;
-        try {
-            const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
-            if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Match failed'); }
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buf = '';
-            const processLine = async (line) => {
-                if (!line.startsWith('data:')) return;
-                let evt;
-                try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
-                if (evt.type === 'erp_progress') {
-                    setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
-                } else if (evt.type === 'cluster_progress') {
-                    setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'cluster', current: evt.current });
-                } else if (evt.type === 'status') {
-                    setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
-                } else if (evt.type === 'match_result') {
-                    localMatches[evt.folder] = evt.match; matchCount++;
-                    try {
-                        const sr = await fetch(`${RA_BASE}/save-match-result`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ batch: batchName, folderName: evt.folder, matchData: evt.match }),
-                        });
-                        if (sr.ok) {
-                            setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
-                            setMatchProgress(p => ({ ...p, msg: `Saved ${matchCount} matches...`, done: matchCount }));
-                        }
-                    } catch (_) {}
-                } else if (evt.type === 'done') {
-                    sseSucceeded = true; setMatchDone(true);
-                    showToast(`✓ Matched ${matchCount} clusters — saved to database`);
-                } else if (evt.type === 'error') { throw new Error(evt.msg); }
-            };
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) { buf += decoder.decode(); for (const l of buf.split('\n')) await processLine(l); break; }
-                buf += decoder.decode(value, { stream: true });
-                const lines = buf.split('\n'); buf = lines.pop();
-                for (const l of lines) await processLine(l);
+   const runAutoMatch = useCallback(async () => {
+    if (!batchName) return;
+    setMatching(true); setMatchDone(false); setMatchError(null);
+    setNoEmbeddingError(null);   // clear any previous no-embedding banner
+    setMatchProgress({ msg: 'Starting…', done: 0, total: 0, step: 'init' });
+    const localMatches = {};
+    let sseSucceeded = false, matchCount = 0;
+    try {
+        const res = await fetch(`${RA_BASE}/auto-match/${batchName}`, { method: 'POST' });
+        if (!res.ok) {
+            const d = await res.json();
+            // ── Structured "no embedding" error ──────────────────────────
+            if (d.noEmbedding) {
+                setNoEmbeddingError({ batch: d.batch, department: d.department });
+                return;
             }
-            if (sseSucceeded && matchCount > 0) {
-                setMatchProgress({ msg: 'Renaming folders…', done: matchCount, total: matchCount, step: 'saving' });
-                const ar = await fetch(`${RA_BASE}/auto-assign-all`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ batch: batchName, matches: localMatches }),
-                });
-                const ad = await ar.json();
-                if (!ar.ok) showToast(`⚠ Matching saved, but rename failed: ${ad.error}`, 'warning');
-                else showToast(`✓ ${ad.renamed} clusters auto-assigned` + (ad.unmatched ? `, ${ad.unmatched} unmatched` : '') + (ad.conflicts ? `, ${ad.conflicts} conflicts` : ''));
-                await loadClusters();
-            }
-        } catch (err) {
-            setMatchError(err.message); showToast(err.message, 'error');
-            setTimeout(() => loadClusters(), 500);
-        } finally { setMatching(false); setMatchProgress(null); }
-    }, [batchName, loadClusters]);
+            throw new Error(d.error || 'Match failed');
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        const processLine = async (line) => {
+            if (!line.startsWith('data:')) return;
+            let evt;
+            try { evt = JSON.parse(line.slice(5).trim()); } catch { return; }
+            if (evt.type === 'erp_progress') {
+                setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'erp' });
+            } else if (evt.type === 'cluster_progress') {
+                setMatchProgress({ msg: evt.msg, done: evt.done, total: evt.total, step: 'cluster', current: evt.current });
+            } else if (evt.type === 'status') {
+                setMatchProgress(p => ({ ...p, msg: evt.msg, step: evt.step }));
+            } else if (evt.type === 'match_result') {
+                localMatches[evt.folder] = evt.match; matchCount++;
+                try {
+                    const sr = await fetch(`${RA_BASE}/save-match-result`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ batch: batchName, folderName: evt.folder, matchData: evt.match }),
+                    });
+                    if (sr.ok) {
+                        setMatches(prev => ({ ...prev, [evt.folder]: evt.match }));
+                        setMatchProgress(p => ({ ...p, msg: `Saved ${matchCount} matches...`, done: matchCount }));
+                    }
+                } catch (_) {}
+            } else if (evt.type === 'done') {
+                sseSucceeded = true; setMatchDone(true);
+                showToast(`✓ Matched ${matchCount} clusters — saved to database`);
+            } else if (evt.type === 'error') { throw new Error(evt.msg); }
+        };
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) { buf += decoder.decode(); for (const l of buf.split('\n')) await processLine(l); break; }
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('\n'); buf = lines.pop();
+            for (const l of lines) await processLine(l);
+        }
+        if (sseSucceeded && matchCount > 0) {
+            setMatchProgress({ msg: 'Renaming folders…', done: matchCount, total: matchCount, step: 'saving' });
+            const ar = await fetch(`${RA_BASE}/auto-assign-all`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batch: batchName, matches: localMatches }),
+            });
+            const ad = await ar.json();
+            if (!ar.ok) showToast(`⚠ Matching saved, but rename failed: ${ad.error}`, 'warning');
+            else showToast(`✓ ${ad.renamed} clusters auto-assigned` + (ad.unmatched ? `, ${ad.unmatched} unmatched` : '') + (ad.conflicts ? `, ${ad.conflicts} conflicts` : ''));
+            await loadClusters();
+        }
+    } catch (err) {
+        setMatchError(err.message); showToast(err.message, 'error');
+        setTimeout(() => loadClusters(), 500);
+    } finally { setMatching(false); setMatchProgress(null); }
+}, [batchName, loadClusters]);
 
     const reviewQueue = [...pendingReview, ...mergedItems, ...flaggedItems];
 
@@ -717,6 +766,13 @@ export default function RollAssign({ fixedDepartment = '' }) {
                 )}
 
                 {matchError && <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 6, background: '#3f1212', color: '#f87171', fontSize: '12px' }}>{matchError}</div>}
+
+                {noEmbeddingError && (
+                    <NoEmbeddingBanner
+                        info={noEmbeddingError}
+                        onDismiss={() => setNoEmbeddingError(null)}
+                    />
+                )}
 
                 {!matching && pendingReview.length > 0 && (
                     <div style={{ marginTop: 12, padding: '8px 14px', borderRadius: 6, background: theme.successDim, border: `1px solid ${theme.success}44`, display: 'flex', alignItems: 'center', gap: 10 }}>
