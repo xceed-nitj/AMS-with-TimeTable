@@ -26,13 +26,14 @@ const clusterMatchSchema = new mongoose.Schema({
     rollNo:         { type: String, default: null },
 
     // Workflow status:
-    //   unmatched — no face detected in this cluster, folder not renamed
-    //   matched   — ERP match found, folder auto-renamed to rollNo, awaiting operator approval
-    //   approved  — operator confirmed the match
-    //   flagged   — operator flagged as incorrect
+    //   unmatched   — no face detected in this cluster, folder not renamed
+    //   cross_dept  — face detected but no ERP match (student may be from a different dept)
+    //   matched     — ERP match found, awaiting operator approval
+    //   approved    — operator confirmed the match
+    //   flagged     — operator flagged as incorrect
     status: {
         type:    String,
-        enum:    ['unmatched', 'matched', 'approved', 'flagged', 'merged_unapproved'],
+        enum:    ['unmatched', 'cross_dept', 'matched', 'approved', 'flagged', 'merged_unapproved'],
         default: 'unmatched',
     },
 
