@@ -7,6 +7,7 @@ import {
   ResponsiveContainer, Legend, Cell,
 } from 'recharts';
 import getEnvironment from '../getenvironment';
+import HealthDashboard from './HealthDashboard';
 
 const apiUrl     = getEnvironment();
 const CAM_API    = `${apiUrl}/attendancemodule/cameras`;
@@ -415,6 +416,8 @@ export default function AMSDashboard() {
           />
           {camOpen && <div style={{ height: 24 }} />}
         </div>
+
+        <HealthDashboard />
 
         {/* ── Attendance stats ── */}
         <SectionLabel>Attendance</SectionLabel>
