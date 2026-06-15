@@ -341,16 +341,11 @@ export default function Attendancedoc() {
 
                     {/* Attendance Table */}
                     <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <table className="ams-table">
                             <thead>
-                                <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                                <tr>
                                     {['#', 'Roll No', 'Status', 'Confidence', 'Flag'].map(h => (
-                                        <th key={h} style={{
-                                            padding: '14px 16px', textAlign: 'left',
-                                            ...styles.label, marginBottom: 0, fontSize: '11px',
-                                        }}>
-                                            {h}
-                                        </th>
+                                        <th key={h}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -360,21 +355,18 @@ export default function Attendancedoc() {
                                     return (
                                         <tr
                                             key={student.rollNo}
-                                            style={{
-                                                borderBottom: `1px solid ${theme.border}`,
-                                                background: isFlagged ? theme.warningDim : 'transparent',
-                                            }}
+                                            style={{ background: isFlagged ? theme.warningDim : undefined }}
                                         >
-                                            <td style={{ padding: '12px 16px', color: theme.textMuted }}>{i + 1}</td>
-                                            <td style={{ padding: '12px 16px', fontFamily: theme.fontMono, fontWeight: 600 }}>
+                                            <td style={{ color: theme.textMuted }}>{i + 1}</td>
+                                            <td style={{ fontFamily: theme.fontMono, fontWeight: 600 }}>
                                                 {student.rollNo}
                                             </td>
-                                            <td style={{ padding: '12px 16px' }}>
+                                            <td>
                                                 <span style={styles.badge(student.status === 'present' ? 'success' : 'danger')}>
                                                     {student.status}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: '12px 16px' }}>
+                                            <td>
                                                 {student.status === 'present' ? (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                                         <div style={{
@@ -400,7 +392,7 @@ export default function Attendancedoc() {
                                                     <span style={{ color: theme.textMuted }}>—</span>
                                                 )}
                                             </td>
-                                            <td style={{ padding: '12px 16px' }}>
+                                            <td>
                                                 {isFlagged && (
                                                     <span style={{
                                                         ...styles.badge('warning'),

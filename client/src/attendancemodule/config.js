@@ -214,13 +214,13 @@ const cssReset = `
     .ams-tab.active { background: #ffffff; color: #6366f1; box-shadow: 0 1px 4px rgba(26,31,60,0.12); }
 
     /* ── Unified table ── */
-    .ams-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .ams-table th { background: #f5f6fb; padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #7b84ab; border-bottom: 1px solid #e4e8f5; white-space: nowrap; }
-    .ams-table td { padding: 11px 16px; border-bottom: 1px solid #e4e8f5; color: #1a1f3c; vertical-align: middle; }
+    .ams-table { width: 100%; border-collapse: collapse; font-size: 13px; border: none; }
+    .ams-table th { background: #f0f2f9; padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #7b84ab; border: none; border-bottom: 1px solid #e4e8f5; white-space: nowrap; }
+    .ams-table td { padding: 11px 16px; border: none; border-bottom: 1px solid #e4e8f5; color: #1a1f3c; vertical-align: middle; }
     .ams-table tbody tr:last-child td { border-bottom: none; }
     .ams-table tbody tr { transition: background .1s; }
     .ams-table tbody tr:hover td { background: #f8f9ff; }
-    .ams-table tfoot td { padding: 10px 16px; background: #f5f6fb; font-weight: 700; font-size: 12px; border-top: 2px solid #e4e8f5; border-bottom: none; }
+    .ams-table tfoot td { padding: 10px 16px; background: #f0f2f9; font-weight: 700; font-size: 12px; border: none; border-top: 1px solid #e4e8f5; }
 `;
 
 export { API_BASE, TIMETABLE_API, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset };

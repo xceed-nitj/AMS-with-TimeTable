@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import getEnvironment from '../getenvironment';
 import { theme, styles, cssReset, DEGREES } from './config';
 import { useDepartments } from './useDepartments';
@@ -37,10 +37,10 @@ const CSS = `
   .erp-input:focus { border-color: ${T.borderFocus}; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
 
   .erp-toast {
-    position: fixed; top: 24px; right: 24px; z-index: 999999;
-    padding: 13px 20px; border-radius: 8px; display: flex; align-items: center; gap: 10px;
-    font-size: 13px; font-weight: 600; color: #fff;
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,.15);
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999;
+    padding: 12px 22px; border-radius: 30px; display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap;
+    box-shadow: 0 8px 30px rgba(0,0,0,.18);
     animation: toastIn .25s cubic-bezier(.16,1,.3,1) both;
   }
 
@@ -56,6 +56,10 @@ const CSS = `
     width: 100% !important; box-shadow: 0 20px 25px -5px rgba(0,0,0,.15) !important;
     animation: modalIn .2s cubic-bezier(.16,1,.3,1) both !important;
   }
+
+  /* Override any global table borders inside erp-card */
+  .erp-card .ams-table { border: none; }
+  .erp-card .ams-table th, .erp-card .ams-table td { border-left: none; border-right: none; border-top: none; }
 
   .status-pill {
     display: inline-flex; align-items: center; gap: 5px;
@@ -88,13 +92,13 @@ const CSS = `
 
   @media (max-width: 768px) {
     .batch-filter-grid { grid-template-columns: 1fr; }
-    .erp-toast { left: 16px; right: 16px; top: 16px; }
+    .erp-toast { max-width: calc(100vw - 32px); white-space: normal; }
     .ams-tabs { overflow-x: auto; }
   }
 `;
 
 // ── Shared batch selector component ──────────────────────────────────────────
-function BatchSelector({ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName }) {
+function BatchSelector({ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount }) {
     return (
         <div className="erp-card" style={{ marginBottom: 20 }}>
             <div className="erp-card-header">Batch Selection</div>
@@ -123,8 +127,14 @@ function BatchSelector({ degree, setDegree, department, setDepartment, batchYear
                     </div>
                 </div>
                 {batchName && (
-                    <div className="batch-display">
-                        Target: <strong style={{ color: T.accent, fontFamily: T.fontMono }}>{batchName}</strong>
+                    <div className="batch-display" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                        <span>Target: <strong style={{ color: T.accent, fontFamily: T.fontMono }}>{batchName}</strong></span>
+                        {photoCount != null && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: T.accentDim, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: T.accent }}>
+                                <span style={{ fontSize: 13 }}>👤</span>
+                                {photoCount} student{photoCount !== 1 ? 's' : ''} uploaded
+                            </span>
+                        )}
                     </div>
                 )}
             </div>
@@ -168,10 +178,16 @@ export default function GroundTruthUpload() {
     // ── Summary tab state ─────────────────────────────────────────────
     const [summaryBatches,  setSummaryBatches]  = useState([]);
     const [summaryLoading,  setSummaryLoading]  = useState(false);
-    const [embFiles,        setEmbFiles]        = useState([]);
     const [regenning,       setRegenning]       = useState({});
     const [zipEmbedStatus,   setZipEmbedStatus]   = useState(null); // null | 'syncing' | 'done' | 'error'
     const [photoEmbedStatus, setPhotoEmbedStatus] = useState(null);
+    const regenTimers = useRef({});   // polling timers by batch
+
+    // ── Photo count for selected batch (shown in upload tab) ─────────
+    const [batchPhotoCount, setBatchPhotoCount] = useState(null);
+
+    // ── Embedding generation status after upload ───────────────────────
+    const [embGenStatus, setEmbGenStatus] = useState(null); // null | 'generating' | 'done' | 'error'
 
     // ── Toast ─────────────────────────────────────────────────────────
     const [toast, setToast] = useState(null);
@@ -204,6 +220,17 @@ export default function GroundTruthUpload() {
         return () => { cancelled = true; };
     }, []);
 
+    // ── Fetch current student count for the selected batch ───────────
+    useEffect(() => {
+        if (!batchName) { setBatchPhotoCount(null); return; }
+        let cancelled = false;
+        fetch(`${UPLOAD_BASE}/list/${encodeURIComponent(batchName)}`, { credentials: 'include' })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (!cancelled) setBatchPhotoCount(d?.rollNos?.length ?? 0); })
+            .catch(() => { if (!cancelled) setBatchPhotoCount(null); });
+        return () => { cancelled = true; };
+    }, [batchName]);
+
     // ── Load photos when manage tab selected + batch set ─────────────
     useEffect(() => {
         if (activeTab !== 'manage' || !batchName) { setPhotos([]); setSearchQuery(''); return; }
@@ -223,29 +250,34 @@ export default function GroundTruthUpload() {
         let cancelled = false;
         setSummaryLoading(true);
 
-        // Fetch batch list first — shows table as soon as possible
+        // /summary now returns hasEmbedding + embeddingUpdatedAt per batch (filesystem check)
         fetch(`${UPLOAD_BASE}/summary`, { credentials: 'include' })
             .then(r => r.ok ? r.json() : { batches: [] })
             .then(data => { if (!cancelled) setSummaryBatches(data.batches || []); })
             .catch(() => { if (!cancelled) setSummaryBatches([]); })
             .finally(() => { if (!cancelled) setSummaryLoading(false); });
 
-        // Fetch embedding status independently — updates pills once it arrives
-        fetch(`${EMB_API}/list-files`, { credentials: 'include' })
-            .then(r => r.ok ? r.json() : { files: [] })
-            .then(data => { if (!cancelled) setEmbFiles(data.files || []); })
-            .catch(() => {});
-
         return () => { cancelled = true; };
     }, [activeTab]);
 
     // ── Upload handlers ───────────────────────────────────────────────
+    const runEmbedSync = useCallback((batch) => {
+        setEmbGenStatus('generating');
+        fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batch)}`, {
+            method: 'POST',
+            credentials: 'include',
+        })
+        .then(r => setEmbGenStatus(r.ok ? 'done' : 'error'))
+        .catch(() => setEmbGenStatus('error'));
+    }, []);
+
     const handleZipUpload = async () => {
         if (!batchName) { showToast('Please select a Batch', 'error'); return; }
         if (!zipFile)   { showToast('Please select a ZIP file', 'error'); return; }
 
         setZipUploading(true);
         setZipResult(null);
+        setEmbGenStatus(null);
         const formData = new FormData();
         formData.append('zipFile', zipFile);
 
@@ -268,6 +300,8 @@ try {
 } catch {
     setZipEmbedStatus('error');
 }
+            setBatchPhotoCount(c => (c ?? 0) + (data.extractedFolders || 0));
+            runEmbedSync(batchName);
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
@@ -281,6 +315,7 @@ try {
         if (!studentPhoto)  { showToast('Please select a photo', 'error'); return; }
 
         setPhotoUploading(true);
+        setEmbGenStatus(null);
         const formData = new FormData();
         formData.append('photo', studentPhoto);
 
@@ -303,6 +338,9 @@ try {
 } catch {
     setPhotoEmbedStatus('error');
 }
+            setRollNo('');
+            setBatchPhotoCount(c => (c ?? 0) + 1);
+            runEmbedSync(batchName);
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
@@ -366,33 +404,54 @@ try {
         return { degree: batchStr, dept: '—', year: '—' };
     };
 
-    const hasEmbedding = (batchStr) => {
-        const { dept } = parseBatch(batchStr);
-        return embFiles.some(f => f.dept && f.dept.toUpperCase() === dept.toUpperCase());
-    };
-
-    const embLastUpdated = (batchStr) => {
-        const { dept } = parseBatch(batchStr);
-        const files = embFiles.filter(f => f.dept && f.dept.toUpperCase() === dept.toUpperCase());
-        const dates = files.map(f => new Date(f.generatedAt || f.modifiedAt)).filter(d => !isNaN(d.getTime()));
-        return dates.length ? new Date(Math.max(...dates)) : null;
-    };
-
     const handleRegen = async (batch) => {
+        // Cancel any existing poll for this batch
+        if (regenTimers.current[batch]) {
+            clearTimeout(regenTimers.current[batch]);
+            delete regenTimers.current[batch];
+        }
         setRegenning(r => ({ ...r, [batch]: true }));
         try {
-            await fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batch)}`, {
+            const r = await fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batch)}`, {
                 method: 'POST', credentials: 'include',
             });
-            showToast(`Embeddings regenerating for ${batch}…`);
-            // Refresh embedding list
-            fetch(`${EMB_API}/list-files`, { credentials: 'include' })
-                .then(r => r.ok ? r.json() : { files: [] })
-                .then(d => setEmbFiles(d.files || []));
+            if (!r.ok) throw new Error('Sync trigger failed');
+            showToast(`Generating embeddings for ${batch}…`);
+
+            // Poll filesystem check every 3 s until pkl appears (max 25 attempts ≈ 75 s)
+            let attempts = 0;
+            const poll = async () => {
+                attempts++;
+                try {
+                    const sr = await fetch(`${UPLOAD_BASE}/embedding-ready/${encodeURIComponent(batch)}`, { credentials: 'include' });
+                    if (sr.ok) {
+                        const sd = await sr.json();
+                        if (sd.available) {
+                            // Update the row in-place so the pill flips to green
+                            setSummaryBatches(prev => prev.map(b =>
+                                b.batch === batch
+                                    ? { ...b, hasEmbedding: true, embeddingUpdatedAt: sd.updatedAt }
+                                    : b
+                            ));
+                            setRegenning(prev => { const n = { ...prev }; delete n[batch]; return n; });
+                            showToast(`✓ Embeddings ready for ${batch}`);
+                            delete regenTimers.current[batch];
+                            return;
+                        }
+                    }
+                } catch (_) {}
+                if (attempts < 25) {
+                    regenTimers.current[batch] = setTimeout(poll, 3000);
+                } else {
+                    setRegenning(prev => { const n = { ...prev }; delete n[batch]; return n; });
+                    showToast('Embedding generation is taking longer than expected — check back shortly', 'warning');
+                    delete regenTimers.current[batch];
+                }
+            };
+            regenTimers.current[batch] = setTimeout(poll, 3000);
         } catch (e) {
             showToast(e.message, 'error');
-        } finally {
-            setRegenning(r => ({ ...r, [batch]: false }));
+            setRegenning(r => { const n = { ...r }; delete n[batch]; return n; });
         }
     };
 
@@ -403,8 +462,8 @@ try {
 
             {/* Toast */}
             {toast && (
-                <div className="erp-toast" style={{ background: toast.type === 'error' ? '#ef4444' : '#10b981' }}>
-                    <span style={{ fontSize: 15 }}>{toast.type === 'error' ? '⚠' : '✓'}</span>
+                <div className="erp-toast" style={{ background: toast.type === 'error' ? '#ef4444' : toast.type === 'warning' ? '#f59e0b' : '#10b981' }}>
+                    <span style={{ fontSize: 15 }}>{toast.type === 'error' ? '⚠' : toast.type === 'warning' ? '⚠' : '✓'}</span>
                     {toast.msg}
                 </div>
             )}
@@ -431,7 +490,7 @@ try {
             {/* ══ UPLOAD TAB ════════════════════════════════════════════════════ */}
             {activeTab === 'upload' && (
                 <>
-                    <BatchSelector {...{ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName }} />
+                    <BatchSelector {...{ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount: batchPhotoCount }} />
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                         {/* ZIP Upload */}
@@ -547,6 +606,31 @@ try {
                             </div>
                         </div>
                     </div>
+
+                    {/* Embedding generation status banner */}
+                    {embGenStatus && (
+                        <div style={{
+                            marginTop: 16, padding: '13px 18px', borderRadius: 9, display: 'flex', alignItems: 'flex-start', gap: 12,
+                            background: embGenStatus === 'done' ? '#f0fdf4' : embGenStatus === 'error' ? '#fef2f2' : '#fefce8',
+                            border: `1.5px solid ${embGenStatus === 'done' ? '#86efac' : embGenStatus === 'error' ? '#fca5a5' : '#fde68a'}`,
+                        }}>
+                            <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1, marginTop: 1 }}>
+                                {embGenStatus === 'done' ? '✅' : embGenStatus === 'error' ? '⚠️' : '⏳'}
+                            </span>
+                            <div>
+                                <div style={{ fontWeight: 700, fontSize: 13, color: embGenStatus === 'done' ? '#16a34a' : embGenStatus === 'error' ? '#dc2626' : '#92400e' }}>
+                                    {embGenStatus === 'done' ? 'ERP Embeddings Generated Successfully' : embGenStatus === 'error' ? 'Embedding Generation Failed' : 'Generating ERP Embeddings…'}
+                                </div>
+                                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3, lineHeight: 1.5 }}>
+                                    {embGenStatus === 'done'
+                                        ? 'Embeddings are ready. Go to Roll Assignment and click "Match with ERP Photos" to auto-assign clusters.'
+                                        : embGenStatus === 'error'
+                                        ? 'Generation failed. Go to the Summary tab and click "Regenerate" to retry.'
+                                        : 'Building face embeddings from uploaded photos. This may take a moment…'}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
 
@@ -696,69 +780,104 @@ try {
                                 if (!groups[dept]) groups[dept] = [];
                                 groups[dept].push(row);
                             }
-                            const fmtDate = (d) => d
-                                ? d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                                : '—';
+                            const fmtDate = (d) => {
+                                if (!d) return '—';
+                                const date = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                                const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                                return `${date}, ${time}`;
+                            };
                             return Object.keys(groups).sort().map(dept => (
                                 <div key={dept} className="erp-card" style={{ marginBottom: 20 }}>
                                     <div className="erp-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{dept.replace(/_/g, ' ')}</span>
-                                        <span style={{ color: T.accent }}>{groups[dept].length} batch{groups[dept].length !== 1 ? 'es' : ''}</span>
+                                        <span style={{ background: T.accentDim, color: T.accent, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
+                                            {groups[dept].length} batch{groups[dept].length !== 1 ? 'es' : ''}
+                                        </span>
                                     </div>
-                                    <div style={{ overflowX: 'auto' }}>
-                                        <table className="ams-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Degree</th>
-                                                    <th>Year</th>
-                                                    <th style={{ textAlign: 'center' }}>Students</th>
-                                                    <th style={{ textAlign: 'center' }}>Embedding Status</th>
-                                                    <th>Last Updated</th>
-                                                    <th style={{ textAlign: 'center' }}>Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {groups[dept].slice().sort((a, b) => a.batch.localeCompare(b.batch)).map(row => {
-                                                    const { degree: deg, year } = parseBatch(row.batch);
-                                                    const embOk  = hasEmbedding(row.batch);
-                                                    const lastDt = embLastUpdated(row.batch);
-                                                    const busy   = !!regenning[row.batch];
-                                                    return (
-                                                        <tr key={row.batch}>
-                                                            <td style={{ fontFamily: T.fontMono, fontWeight: 600, fontSize: 12 }}>{deg}</td>
-                                                            <td>
-                                                                <span style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 6, padding: '2px 8px', fontSize: 12, fontWeight: 700, fontFamily: T.fontMono }}>
-                                                                    {year}
-                                                                </span>
-                                                            </td>
-                                                            <td style={{ textAlign: 'center', fontWeight: 700 }}>{row.count}</td>
-                                                            <td style={{ textAlign: 'center' }}>
-                                                                {row.count === 0 ? (
-                                                                    <span className="status-pill na">No Photos</span>
-                                                                ) : embOk ? (
-                                                                    <span className="status-pill ok">✓ Available</span>
-                                                                ) : (
-                                                                    <span className="status-pill no">✗ Not Available</span>
-                                                                )}
-                                                            </td>
-                                                            <td style={{ fontSize: 12, color: lastDt ? T.text : T.textMuted }}>{fmtDate(lastDt)}</td>
-                                                            <td style={{ textAlign: 'center' }}>
-                                                                <button
-                                                                    className="erp-btn erp-btn-ghost"
-                                                                    disabled={busy || row.count === 0}
-                                                                    onClick={() => handleRegen(row.batch)}
-                                                                    style={{ fontSize: 11, padding: '4px 10px' }}
-                                                                    title={`Regenerate embeddings for ${row.batch}`}
-                                                                >
-                                                                    {busy ? '…' : '↺ Regenerate'}
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
+
+                                    {/* Column header row */}
+                                    <div style={{
+                                        display: 'grid', gridTemplateColumns: '2fr 90px 150px 165px 120px',
+                                        padding: '8px 18px', background: T.bg,
+                                        borderBottom: `1px solid ${T.border}`,
+                                        fontSize: 10, fontWeight: 700, color: T.textMuted,
+                                        textTransform: 'uppercase', letterSpacing: '0.07em',
+                                    }}>
+                                        <span>Batch</span>
+                                        <span style={{ textAlign: 'center' }}>Students</span>
+                                        <span style={{ textAlign: 'center' }}>Embeddings</span>
+                                        <span>Last Updated</span>
+                                        <span style={{ textAlign: 'right' }}>Action</span>
                                     </div>
+
+                                    {/* Data rows */}
+                                    {groups[dept].slice().sort((a, b) => a.batch.localeCompare(b.batch)).map((row, idx, arr) => {
+                                        const { degree: deg, year } = parseBatch(row.batch);
+                                        const embOk  = !!row.hasEmbedding;
+                                        const lastDt = row.embeddingUpdatedAt ? new Date(row.embeddingUpdatedAt) : null;
+                                        const busy   = !!regenning[row.batch];
+                                        const isLast = idx === arr.length - 1;
+                                        return (
+                                            <div key={row.batch} style={{
+                                                display: 'grid', gridTemplateColumns: '2fr 90px 150px 165px 120px',
+                                                alignItems: 'center', padding: '13px 18px',
+                                                borderBottom: isLast ? 'none' : `1px solid ${T.border}`,
+                                                transition: 'background .1s',
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background = '#f8f9ff'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                {/* Batch identity */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                                    <span style={{ fontFamily: T.fontMono, fontWeight: 700, fontSize: 12, color: T.text }}>{deg}</span>
+                                                    <span style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, fontFamily: T.fontMono, color: T.accent, flexShrink: 0 }}>{year}</span>
+                                                </div>
+
+                                                {/* Student count */}
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <span style={{ fontSize: 16, fontWeight: 800, color: row.count > 0 ? T.text : T.textMuted }}>{row.count}</span>
+                                                    {row.count > 0 && <span style={{ fontSize: 10, color: T.textMuted, display: 'block', marginTop: 1 }}>students</span>}
+                                                </div>
+
+                                                {/* Embedding status */}
+                                                <div style={{ textAlign: 'center' }}>
+                                                    {row.count === 0 ? (
+                                                        <span className="status-pill na">No Photos</span>
+                                                    ) : busy ? (
+                                                        <span className="status-pill na">⏳ Generating…</span>
+                                                    ) : embOk ? (
+                                                        <span className="status-pill ok">✓ Available</span>
+                                                    ) : (
+                                                        <span className="status-pill no">✗ Not Built</span>
+                                                    )}
+                                                </div>
+
+                                                {/* Last updated */}
+                                                <div style={{ fontSize: 12, color: lastDt ? T.text : T.textMuted }}>{fmtDate(lastDt)}</div>
+
+                                                {/* Action */}
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <button
+                                                        disabled={busy || row.count === 0}
+                                                        onClick={() => handleRegen(row.batch)}
+                                                        title={`Regenerate embeddings for ${row.batch}`}
+                                                        style={{
+                                                            fontSize: 11, padding: '5px 12px', borderRadius: 6,
+                                                            border: 'none', cursor: (busy || row.count === 0) ? 'not-allowed' : 'pointer',
+                                                            background: (busy || row.count === 0) ? T.accentDim : T.accent,
+                                                            color: (busy || row.count === 0) ? T.accent : '#fff',
+                                                            fontWeight: 600, fontFamily: T.fontBody,
+                                                            opacity: (busy || row.count === 0) ? 0.55 : 1,
+                                                            transition: 'opacity .2s',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                    >
+                                                        {busy ? '⏳ Building…' : '↺ Regenerate'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ));
                         })()

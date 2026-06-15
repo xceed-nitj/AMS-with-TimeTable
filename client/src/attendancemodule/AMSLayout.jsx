@@ -9,27 +9,48 @@ const T = theme;
 const apiUrl = getEnvironment();
 
 const NAV = [
-  { id: 'dashboard',  route: '/attendance',                           label: 'Dashboard'         },
-  { id: 'rtsp',       route: '/attendance/groundtruth/rtsp',           label: 'Ground Truth Capture' },
-  { id: 'assign',     route: '/attendance/groundtruth/assign',          label: 'Roll Assignment'   },
-  { id: 'upload',     route: '/attendance/groundtruth/upload',          label: 'ERP Image Upload'  },
-  { id: 'reports',    route: '/attendance/reports',                    label: 'Attendance Reports' },
-  { id: 'verify',     route: '/attendance/frame-verification',         label: 'Frame Verification' },
-  { id: 'cameras',    route: '/cameras',                               label: 'Camera Registry'   },
-  { id: 'embeddings', route: '/attendance/embeddings',                  label: 'Embeddings'        },
-  { id: 'preview',    route: '/cameras/preview',                        label: 'Camera Preview'    },
+  { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
+
+  { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'Ground Truth Capture' },
+  {
+    id: 'assign',
+    route: '/attendance/groundtruth/assign',
+    label: 'Roll Assignment',
+  },
+  {
+    id: 'upload',
+    route: '/attendance/groundtruth/upload',
+    label: 'ERP Upload',
+  },
+  { id: 'reports', route: '/attendance/reports', label: 'Attendance Reports' },
+  {
+    id: 'verify',
+    route: '/attendance/frame-verification',
+    label: 'Class Verification',
+  },
+  { id: 'cameras', route: '/cameras', label: 'Camera Registry', exact: true },
+  { id: 'embeddings', route: '/attendance/embeddings', label: 'Subject Embeddings' },
+  { id: 'preview', route: '/cameras/preview', label: 'Live Preview' },
+  {
+    id: 'confidence',
+    route: '/attendance/confidence',
+    label: 'Confidence Monitor',
+  },
+  { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
 const COLORS = {
-  dashboard:  '#6366f1',
-  rtsp:       '#0ea5e9',
-  assign:     '#10b981',
-  upload:     '#f472b6',
-  reports:    '#14b8a6',
-  verify:     '#ec4899',
-  cameras:    '#f97316',
+  dashboard: '#6366f1',
+  rtsp: '#0ea5e9',
+  assign: '#10b981',
+  upload: '#f472b6',
+  reports: '#14b8a6',
+  verify: '#ec4899',
+  cameras: '#f97316',
   embeddings: '#f59e0b',
-  preview:    '#8b5cf6',
+  preview: '#8b5cf6',
+  confidence: '#ef4444',
+  manual: '#64748b',
 };
 
 const CSS = `
@@ -138,7 +159,11 @@ export default function AMSLayout() {
                 <div
                   key={item.id}
                   className="ams-nav-item"
-                  onClick={() => navigate(item.route)}
+                  onClick={() =>
+                    item.newTab
+                      ? window.open(item.route, '_blank', 'noopener,noreferrer')
+                      : navigate(item.route)
+                  }
                   title={collapsed ? item.label : undefined}
                   style={{
                     display: 'flex',
