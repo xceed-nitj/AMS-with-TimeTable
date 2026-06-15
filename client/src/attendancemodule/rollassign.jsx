@@ -137,6 +137,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
     const [editRollInput,    setEditRollInput]    = useState('');
     const [editRollSaving,   setEditRollSaving]   = useState(false);
     const [deletingAllImgs,  setDeletingAllImgs]  = useState(null); // folderName
+    const [erpStatus,        setErpStatus]        = useState({ loading: false, available: null, pklName: null, studentCount: 0 });
 
     const batchName = degree && department && year
         ? `${degree}_${department}_${year}`.toUpperCase()
@@ -227,6 +228,15 @@ export default function RollAssign({ fixedDepartment = '' }) {
         } catch (_) {}
         return () => { try { ch?.close(); } catch (_) {} };
     }, [batchName, loadClusters]);
+
+    useEffect(() => {
+        if (!batchName) { setErpStatus({ loading: false, available: null, pklName: null, studentCount: 0 }); return; }
+        setErpStatus(s => ({ ...s, loading: true, available: null }));
+        fetch(`${RA_BASE}/erp-embedding/status/${encodeURIComponent(batchName)}`)
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(d => setErpStatus({ loading: false, available: !!d.available, pklName: d.pklName || null, studentCount: d.studentCount || 0 }))
+            .catch(() => setErpStatus({ loading: false, available: null, pklName: null, studentCount: 0 }));
+    }, [batchName]);
 
    const runAutoMatch = useCallback(async () => {
     if (!batchName) return;
@@ -741,11 +751,31 @@ export default function RollAssign({ fixedDepartment = '' }) {
                                 : batchYears.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
-                    <button onClick={runAutoMatch} disabled={matching || !batchName || unprocessed.length === 0}
-                        style={{ ...styles.btnPrimary, padding: '9px 20px', fontSize: '13px', opacity: (matching || !batchName || unprocessed.length === 0) ? 0.5 : 1 }}>
+                    <button onClick={runAutoMatch} disabled={matching || !batchName || unprocessed.length === 0 || (!erpStatus.loading && erpStatus.available === false)}
+                        style={{ ...styles.btnPrimary, padding: '9px 20px', fontSize: '13px', opacity: (matching || !batchName || unprocessed.length === 0 || (!erpStatus.loading && erpStatus.available === false)) ? 0.5 : 1 }}>
                         {matching ? '🔄 Matching…' : `🔍 Match with ERP Photos${unprocessed.length > 0 ? ` (${unprocessed.length})` : ''}`}
                     </button>
                 </div>
+
+                {batchName && !matching && (
+                    erpStatus.loading ? (
+                        <div style={{ marginTop: 10, fontSize: '11px', color: theme.textMuted }}>Checking ERP embeddings…</div>
+                    ) : erpStatus.available === true ? (
+                        <div style={{ marginTop: 10, padding: '7px 14px', borderRadius: 6, background: '#f0fdf4', border: '1px solid #86efac', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '12px' }}>✓ ERP embeddings ready</span>
+                            {erpStatus.studentCount > 0 && <span style={{ fontSize: '12px', color: '#15803d' }}>{erpStatus.studentCount} students</span>}
+                            {erpStatus.pklName && <span style={{ fontFamily: theme.fontMono, fontSize: '11px', color: '#166534', background: '#dcfce7', padding: '2px 7px', borderRadius: 4 }}>{erpStatus.pklName}</span>}
+                        </div>
+                    ) : erpStatus.available === false ? (
+                        <div style={{ marginTop: 10, padding: '7px 14px', borderRadius: 6, background: '#fef9c3', border: '1.5px solid #f59e0b', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                            <span style={{ fontSize: '16px', flexShrink: 0, lineHeight: 1 }}>⚠️</span>
+                            <div>
+                                <div style={{ fontWeight: 700, fontSize: '12px', color: '#92400e' }}>ERP embeddings not built for this batch</div>
+                                <div style={{ fontSize: '11px', color: '#78350f', lineHeight: 1.5, marginTop: 2 }}>Go to <strong>ERP Upload → Summary</strong> → click <strong>"Re-Generate Embeddings"</strong> for this batch, then return here to match.</div>
+                            </div>
+                        </div>
+                    ) : null
+                )}
 
                 {matchDone && highConfCount > 0 && (
                     <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
@@ -875,9 +905,12 @@ export default function RollAssign({ fixedDepartment = '' }) {
 
                     {!unprocessed.length && !pendingReview.length && !approvedItems.length && !unmatchedItems.length && !crossDeptItems.length && !flaggedItems.length && (
                         <div style={{ ...styles.card, textAlign: 'center', padding: '60px 20px', borderStyle: 'dashed' }}>
-                            <div style={{ fontSize: '36px', opacity: 0.3, marginBottom: 12 }}>📁</div>
-                            <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>No folders found</div>
-                            <div style={{ fontSize: '13px', color: theme.textMuted }}>Run Ground Truth Generation first</div>
+                            <div style={{ fontSize: '36px', opacity: 0.3, marginBottom: 12 }}>📷</div>
+                            <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: 6 }}>No ground truth data found for this batch</div>
+                            <div style={{ fontSize: '13px', color: theme.textMuted, marginBottom: 12 }}>Run <strong>Ground Truth Capture</strong> first to generate face clusters, then return here to assign roll numbers.</div>
+                            <a href="/attendance/groundtruth/rtsp" style={{ display: 'inline-block', padding: '7px 18px', borderRadius: 7, background: theme.accent, color: '#fff', fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>
+                                Go to Ground Truth Capture →
+                            </a>
                         </div>
                     )}
                 </>

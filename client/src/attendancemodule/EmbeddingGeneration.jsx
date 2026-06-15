@@ -467,23 +467,23 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 8px', borderRadius: 99, background: theme.accentDim, color: theme.accent }}>{doneCount + failedCount}/{rows.length}</span>
                             </div>
                             <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                                <table className="ams-table">
                                     <thead>
-                                        <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                                        <tr>
                                             {['Roll No', 'Status', 'Photos Used', 'Note'].map(h => (
-                                                <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
+                                                <th key={h}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {rows.map(row => (
-                                            <tr key={row.rollNo} style={{ borderBottom: `1px solid ${theme.border}22`, background: row.status === 'processing' ? theme.accentDim : 'transparent' }}>
-                                                <td style={{ padding: '8px 12px', fontFamily: theme.fontMono, fontSize: '12px', color: theme.text }}>{row.rollNo}</td>
-                                                <td style={{ padding: '8px 12px' }}><StatusBadge status={row.status} /></td>
-                                                <td style={{ padding: '8px 12px', color: row.photosUsed ? theme.accent : theme.textMuted, fontSize: '12px' }}>
+                                            <tr key={row.rollNo} style={{ background: row.status === 'processing' ? theme.accentDim : undefined }}>
+                                                <td style={{ fontFamily: theme.fontMono, fontSize: '12px' }}>{row.rollNo}</td>
+                                                <td><StatusBadge status={row.status} /></td>
+                                                <td style={{ color: row.photosUsed ? theme.accent : theme.textMuted, fontSize: '12px' }}>
                                                     {row.photosUsed != null ? `${row.photosUsed} photos` : '-'}
                                                 </td>
-                                                <td style={{ padding: '8px 12px', fontSize: '11px', color: row.status === 'failed' ? theme.danger : theme.textMuted }}>
+                                                <td style={{ fontSize: '11px', color: row.status === 'failed' ? theme.danger : theme.textMuted }}>
                                                     {row.reason || ''}
                                                 </td>
                                             </tr>

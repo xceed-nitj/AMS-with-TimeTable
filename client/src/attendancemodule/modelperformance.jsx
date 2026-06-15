@@ -105,38 +105,33 @@ export default function ModelPerformance() {
                     <div style={{ fontSize: '15px', fontWeight: 700 }}>Batch Embedding Status</div>
                 </div>
 
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <table className="ams-table">
                     <thead>
-                        <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                        <tr>
                             {['Batch', 'Students', 'Status', 'Action'].map(h => (
-                                <th key={h} style={{
-                                    padding: '12px 20px', textAlign: 'left',
-                                    ...styles.label, marginBottom: 0,
-                                }}>
-                                    {h}
-                                </th>
+                                <th key={h}>{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody>
                         {batches.map(b => (
-                            <tr key={b.batch} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                                <td style={{ padding: '14px 20px', fontFamily: theme.fontMono, fontWeight: 600 }}>
+                            <tr key={b.batch}>
+                                <td style={{ fontFamily: theme.fontMono, fontWeight: 600 }}>
                                     {b.batch}
                                 </td>
-                                <td style={{ padding: '14px 20px' }}>
+                                <td>
                                     <span style={styles.badge(b.studentCount >= 10 ? 'success' : b.studentCount > 0 ? 'warning' : 'danger')}>
                                         {b.studentCount} student{b.studentCount !== 1 ? 's' : ''}
                                     </span>
                                 </td>
-                                <td style={{ padding: '14px 20px' }}>
+                                <td>
                                     {b.studentCount > 0 ? (
                                         <span style={{ color: theme.success, fontSize: '12px' }}>Ready to generate</span>
                                     ) : (
                                         <span style={{ color: theme.textMuted, fontSize: '12px' }}>No data</span>
                                     )}
                                 </td>
-                                <td style={{ padding: '14px 20px' }}>
+                                <td>
                                     <button
                                         onClick={() => handleGenerate(b.batch)}
                                         disabled={generating || b.studentCount === 0}

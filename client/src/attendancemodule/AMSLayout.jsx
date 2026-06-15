@@ -10,37 +10,27 @@ const apiUrl = getEnvironment();
 
 const NAV = [
   { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
-  {
-    id: 'session',
-    route: '/attendance/edit-session-dates',
-    label: 'Session Setup',
-    exact: true,
-  },
-  { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'RTSP Capture' },
+
+  { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'Ground Truth Capture' },
   {
     id: 'assign',
     route: '/attendance/groundtruth/assign',
     label: 'Roll Assignment',
   },
   {
-    id: 'photos',
-    route: '/attendance/groundtruth/photos',
-    label: 'Photo Editor',
-  },
-  {
     id: 'upload',
     route: '/attendance/groundtruth/upload',
-    label: 'Manual Upload',
+    label: 'ERP Upload',
   },
   { id: 'reports', route: '/attendance/reports', label: 'Attendance Reports' },
   {
     id: 'verify',
     route: '/attendance/frame-verification',
-    label: 'Frame Verification',
+    label: 'Class Verification',
   },
   { id: 'cameras', route: '/cameras', label: 'Camera Registry', exact: true },
-  { id: 'embeddings', route: '/attendance/embeddings', label: 'Embeddings' },
-  { id: 'preview', route: '/cameras/preview', label: 'Camera Preview' },
+  { id: 'embeddings', route: '/attendance/embeddings', label: 'Subject Embeddings' },
+  { id: 'preview', route: '/cameras/preview', label: 'Live Preview' },
   {
     id: 'confidence',
     route: '/attendance/confidence',

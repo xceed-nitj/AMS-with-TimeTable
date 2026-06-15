@@ -11,6 +11,7 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8500';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ERP_PHOTOS_DIR = path.resolve(__dirname, '..', '..', '..', '..', 'ml-data', 'erp_photos');
+const ERP_EMBED_DIR  = path.resolve(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings', 'erp');
 
 const MAX_FILES_IN_ZIP  = 500;
 const MAX_IMAGE_SIZE    = 10 * 1024 * 1024;   // 10 MB per image
@@ -79,6 +80,20 @@ function isValidImage(buffer, ext) {
     if (!signature) return false;
     if (buffer.length < signature.length) return false;
     return signature.every((byte, i) => buffer[i] === byte);
+}
+
+// ─── Find pkl path for a batch (ML service saves under {dept}/{batch}/) ─────
+function findEmbeddingPkl(batchName) {
+    const parts = batchName.split('_');
+    const department = parts.length >= 3 ? parts.slice(1, -1).join('_') : '';
+    if (department) {
+        const newPath = path.join(ERP_EMBED_DIR, department, batchName, 'embeddings_db.pkl');
+        if (fs.existsSync(newPath)) return newPath;
+    }
+    // Fallback: flat path used before department subfolder convention
+    const oldPath = path.join(ERP_EMBED_DIR, batchName, 'embeddings_db.pkl');
+    if (fs.existsSync(oldPath)) return oldPath;
+    return null;
 }
 
 // ─── Trigger Async Background Sync ────────────────────────────────────────────
@@ -539,7 +554,13 @@ class GroundTruthUploadController {
                 const batchPath = path.join(ERP_PHOTOS_DIR, entry.name);
                 const files = await fsPromises.readdir(batchPath);
                 const count = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length;
-                batches.push({ batch: entry.name, count });
+                const pklPath = findEmbeddingPkl(entry.name);
+                let hasEmbedding = false, embeddingUpdatedAt = null;
+                if (pklPath) {
+                    hasEmbedding = true;
+                    try { embeddingUpdatedAt = fs.statSync(pklPath).mtime; } catch (_) {}
+                }
+                batches.push({ batch: entry.name, count, hasEmbedding, embeddingUpdatedAt });
             }
 
             batches.sort((a, b) => a.batch.localeCompare(b.batch));
@@ -547,6 +568,21 @@ class GroundTruthUploadController {
         } catch (err) {
             console.error('[GT Upload] listAllBatches error:', err);
             res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ─── Check if ERP pkl exists (filesystem only, no ML call) ───────
+    async checkEmbedding(req, res) {
+        try {
+            const batch   = sanitizeBatch(req.params.batch);
+            const pklPath = findEmbeddingPkl(batch);
+            let updatedAt = null;
+            if (pklPath) {
+                try { updatedAt = fs.statSync(pklPath).mtime; } catch (_) {}
+            }
+            res.json({ available: !!pklPath, updatedAt });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
         }
     }
 

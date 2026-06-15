@@ -476,27 +476,8 @@ export default function Camera() {
                     gap: 12px;
                     align-items: end;
                 }
-                .camera-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    min-width: 820px;
-                }
-                .camera-table th {
-                    color: ${theme.textMuted};
-                    font-size: 11px;
-                    letter-spacing: 0.08em;
-                    text-transform: uppercase;
-                    text-align: left;
-                    padding: 10px 12px;
-                    border-bottom: 1px solid ${theme.border};
-                }
-                .camera-table td {
-                    color: ${theme.text};
-                    font-size: 13px;
-                    padding: 12px;
-                    border-bottom: 1px solid ${theme.border};
-                    vertical-align: top;
-                }
+                .ams-table { min-width: 820px; }
+                @media (max-width: 700px) { .ams-table { min-width: 580px; } }
                 .camera-row {
                     cursor: pointer;
                     transition: background 0.16s ease, transform 0.16s ease;
@@ -535,7 +516,6 @@ export default function Camera() {
                 @media (max-width: 700px) {
                     .camera-filter-grid { grid-template-columns: 1fr; }
                     .camera-actions     { flex-direction: column; align-items: stretch; }
-                    .camera-table       { min-width: 580px; }
                 }
             `}</style>
 
@@ -734,7 +714,7 @@ export default function Camera() {
                 </div>
 
                 <div style={{ overflowX: 'auto', border: `1px solid ${theme.border}`, borderRadius: 10 }}>
-                    <table className="camera-table">
+                    <table className="ams-table">
                         <thead>
                             <tr>
                                 <th>Camera</th>
