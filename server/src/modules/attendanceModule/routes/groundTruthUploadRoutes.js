@@ -99,6 +99,12 @@ router.get('/summary', async (req, res) => {
     catch (e) { res.status(500).json({ error: 'Internal server error' }); }
 });
 
+// Fast filesystem check — does the ERP pkl exist for this batch?
+router.get('/embedding-ready/:batch', async (req, res) => {
+    try { await controller.checkEmbedding(req, res); }
+    catch (e) { res.status(500).json({ error: 'Check failed' }); }
+});
+
 // Get ERP embedding sync status
 router.get('/status/:batch', async (req, res) => {
     try {

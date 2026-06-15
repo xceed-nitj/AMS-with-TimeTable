@@ -25,6 +25,10 @@ router.get('/photo/:batch/:folder/:filename',         wrap(ctrl.servePhoto));
 router.get('/erp-photo/:batch/:filename',             wrap(ctrl.serveErpPhoto));
 router.get('/erp-photo/:filename',                    wrap(ctrl.serveErpPhoto));
 
+// ── ERP embedding status ──────────────────────────────────────────
+// Check if pre-built pkl exists for a batch and return student count
+router.get('/erp-embedding/status/:batch',            wrap(ctrl.erpEmbeddingStatus));
+
 // ── Matching ──────────────────────────────────────────────────────
 // SSE stream: match clusters against ERP photos via Python ML service
 router.post('/auto-match/:batch',                     wrap(ctrl.autoMatch));

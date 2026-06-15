@@ -148,30 +148,7 @@ export default function ConfidenceMonitor() {
                     padding: 28px;
                     margin-bottom: 22px;
                 }
-                .cm-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 12px;
-                }
-                .cm-table th {
-                    background: ${theme.surfaceAlt};
-                    color: ${theme.textMuted};
-                    font-size: 10px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.07em;
-                    padding: 10px 12px;
-                    border-bottom: 1px solid ${theme.border};
-                    text-align: left;
-                    white-space: nowrap;
-                }
-                .cm-table td {
-                    padding: 9px 12px;
-                    border-bottom: 1px solid ${theme.border};
-                    vertical-align: middle;
-                }
-                .cm-table tr:last-child td { border-bottom: none; }
-                .cm-table tr:hover td { background: ${theme.surfaceAlt}; }
+                .ams-table { font-size: 12px; }
                 .cm-conf-cell {
                     text-align: center;
                     border-radius: 5px;
@@ -409,7 +386,7 @@ export default function ConfidenceMonitor() {
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table className="cm-table">
+              <table className="ams-table">
                 <thead>
                   <tr>
                     <th>Roll No</th>

@@ -859,6 +859,42 @@ class RollAssignController {
         }
     }
 
+    // ─── ERP embedding status (available + student count) ────────
+    async erpEmbeddingStatus(req, res) {
+        try {
+            const { batch }  = req.params;
+            const parts      = batch.split('_');
+            const department = parts.slice(1, -1).join('_');
+            const ML_SVC     = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+
+            let pkgCheck = { available: false };
+            try {
+                const checkRes = await axios.get(`${ML_SVC}/erp-embedding/check`, {
+                    params: { batch, department }, timeout: 5000,
+                });
+                pkgCheck = checkRes.data;
+            } catch (_) {}
+
+            // Count ERP photos as proxy for student count when ML doesn't provide it
+            const batchPhotoDir = path.join(ERP_PHOTOS_DIR, batch);
+            let studentCount = pkgCheck.student_count || pkgCheck.num_students || pkgCheck.count || 0;
+            if (!studentCount && fs.existsSync(batchPhotoDir)) {
+                try {
+                    studentCount = fs.readdirSync(batchPhotoDir)
+                        .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length;
+                } catch (_) {}
+            }
+
+            res.json({
+                available:    !!pkgCheck.available,
+                pklName:      pkgCheck.pkl_path ? path.basename(pkgCheck.pkl_path) : null,
+                studentCount,
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     // ─── Auto-match clusters to ERP photos (SSE stream) ──────────
     async autoMatch(req, res) {
         try {
@@ -885,57 +921,26 @@ class RollAssignController {
                 pkgCheck = checkRes.data;
             } catch (_) {}
 
+            // Require pre-built pkl — block before starting SSE stream
+            if (!pkgCheck.available) {
+                return res.status(422).json({ noEmbedding: true, batch, department });
+            }
+
             res.setHeader('Content-Type',  'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection',    'keep-alive');
             res.flushHeaders();
 
-            let mlResponse;
-
-            if (pkgCheck.available) {
-                // ── FAST PATH: use pre-built pkl ──────────────────────────
-                mlResponse = await axios.post(
-                    `${ML_SVC}/match-clusters-to-erp-fast`,
-                    {
-                        batch_dir:      batchPath,
-                        pkl_path:       pkgCheck.pkl_path,
-                        erp_photos_dir: erpPhotosDir,
-                        top_k:          3,
-                    },
-                    { responseType: 'stream', timeout: 0 }
-                );
-            } else {
-                // ── SLOW PATH: build from photos, save pkl for next time ──
-                // Check photos exist at all
-                let photoCount = 0;
-                try {
-                    photoCount = fs.readdirSync(erpPhotosDir)
-                        .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length;
-                } catch (_) {}
-
-                if (photoCount === 0) {
-                    res.write(`data: ${JSON.stringify({ type: 'error', msg: 'No ERP photos found. Go to the ERP Photos tab and upload photos first.' })}\n\n`);
-                    res.end();
-                    return;
-                }
-
-                // Save the generated pkl so next run is fast
-                const savePklPath = path.join(
-                    __dirname, '..', '..', '..', '..', 'ml-data', 'embeddings', 'erp', batch, 'embeddings_db.pkl'
-                );
-                fs.mkdirSync(path.dirname(savePklPath), { recursive: true });
-
-                mlResponse = await axios.post(
-                    `${ML_SVC}/match-clusters-to-erp`,
-                    {
-                        batch_dir:      batchPath,
-                        erp_photos_dir: erpPhotosDir,
-                        save_pkl_path:  savePklPath,
-                        top_k:          3,
-                    },
-                    { responseType: 'stream', timeout: 0 }
-                );
-            }
+            const mlResponse = await axios.post(
+                `${ML_SVC}/match-clusters-to-erp-fast`,
+                {
+                    batch_dir:      batchPath,
+                    pkl_path:       pkgCheck.pkl_path,
+                    erp_photos_dir: erpPhotosDir,
+                    top_k:          3,
+                },
+                { responseType: 'stream', timeout: 0 }
+            );
 
             mlResponse.data.pipe(res);
             mlResponse.data.on('end',   () => res.end());
