@@ -95,6 +95,8 @@ export default function EditGroundTruth() {
     const [toast,           setToast]           = useState(null);
     const [search,          setSearch]          = useState('');
     const [busyPhoto,       setBusyPhoto]       = useState(null);
+    const [embSyncStatus,   setEmbSyncStatus]   = useState({});
+
 
     const [showAddForm, setShowAddForm] = useState(false);
     const [newRollNo,   setNewRollNo]   = useState('');
@@ -173,52 +175,66 @@ export default function EditGroundTruth() {
     };
 
     // ─── Delete photo ─────────────────────────────────────────────
-    const deletePhoto = async (rollNo, filename) => {
-        if (!window.confirm('Remove this photo?')) return;
-        setBusyPhoto(filename);
-        try {
-            await fetch(`${API_BASE}/photo/${selectedBatch}/${rollNo}/${filename}`, { method: 'DELETE' });
-            showToast('Photo removed');
-            await refreshStudent(selectedBatch, rollNo);
-        } catch {
-            showToast('Delete failed', 'error');
-        }
-        setBusyPhoto(null);
-    };
+    // ─── Delete photo ─────────────────────────────────────────────
+const deletePhoto = async (rollNo, filename) => {
+    if (!window.confirm('Remove this photo?')) return;
+    setBusyPhoto(filename);
+    setEmbSyncStatus(prev => ({ ...prev, [rollNo]: 'syncing' }));
+    try {
+        const res = await fetch(`${API_BASE}/photo/${selectedBatch}/${rollNo}/${filename}`, { method: 'DELETE' });
+if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Delete failed');
+}
+setEmbSyncStatus(prev => ({ ...prev, [rollNo]: 'done' }));
+        setTimeout(() => setEmbSyncStatus(prev => { const c = { ...prev }; delete c[rollNo]; return c; }), 4000);
+        await refreshStudent(selectedBatch, rollNo);
+    } catch {
+        setEmbSyncStatus(prev => ({ ...prev, [rollNo]: 'error' }));
+        showToast('Delete failed', 'error');
+    }
+    setBusyPhoto(null);
+};
 
     // ─── Move photo: promote → embedding, demote → backup ────────
-    const movePhoto = async (rollNo, filename, direction) => {
-        const student = students.find(s => s.rollNo === rollNo);
-        if (!student) return;
+    // ─── Move photo: promote → embedding, demote → backup ────────
+const movePhoto = async (rollNo, filename, direction) => {
+    const student = students.find(s => s.rollNo === rollNo);
+    if (!student) return;
 
-        const currentEmb = student.embeddingFiles.map(p => p.filename);
-        let newEmbedding;
-        if (direction === 'promote') {
-            newEmbedding = [...new Set([...currentEmb, filename])];
-        } else {
-            newEmbedding = currentEmb.filter(f => f !== filename);
-            if (newEmbedding.length === 0) {
-                showToast('Must keep at least one embedding image', 'error');
-                return;
-            }
+    const currentEmb = student.embeddingFiles.map(p => p.filename);
+    let newEmbedding;
+    if (direction === 'promote') {
+        newEmbedding = [...new Set([...currentEmb, filename])];
+    } else {
+        newEmbedding = currentEmb.filter(f => f !== filename);
+        if (newEmbedding.length === 0) {
+            showToast('Must keep at least one embedding image', 'error');
+            return;
         }
+    }
 
-        setBusyPhoto(filename);
-        try {
-            const res  = await fetch(`${API_BASE}/update-embedding`, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ batch: selectedBatch, rollNo, embeddingFiles: newEmbedding }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
-            showToast(`Embedding updated — ${data.embedding_files_used} active`);
-            await refreshStudent(selectedBatch, rollNo);
-        } catch (err) {
-            showToast(err.message, 'error');
-        }
-        setBusyPhoto(null);
-    };
+    setBusyPhoto(filename);
+    setEmbSyncStatus(prev => ({ ...prev, [rollNo]: 'syncing' }));
+    try {
+        const res  = await fetch(`${API_BASE}/update-embedding`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ batch: selectedBatch, rollNo, embeddingFiles: newEmbedding }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+
+        setEmbSyncStatus(prev => ({ ...prev, [rollNo]: 'done' }));
+        setTimeout(() => setEmbSyncStatus(prev => { const c = { ...prev }; delete c[rollNo]; return c; }), 4000);
+
+        await refreshStudent(selectedBatch, rollNo);
+    } catch (err) {
+        setEmbSyncStatus(prev => ({ ...prev, [rollNo]: 'error' }));
+        showToast(err.message, 'error');
+    }
+    setBusyPhoto(null);
+};
 
     // ─── Upload photos ────────────────────────────────────────────
     const handleUpload = async () => {
@@ -447,6 +463,28 @@ export default function EditGroundTruth() {
 
                                 {expandedStudent === s.rollNo && (
                                     <div style={{ padding: '0 20px 20px', paddingTop: 14, borderTop: `1px solid ${theme.border}` }}>
+                                        {embSyncStatus[s.rollNo] === 'syncing' && (
+    <div style={{ padding: '8px 14px', background: theme.accentDim,
+                  color: theme.accent, fontSize: '12px', fontWeight: 600,
+                  marginBottom: 10, borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
+        Updating subject embeddings… please wait
+    </div>
+)}
+{embSyncStatus[s.rollNo] === 'done' && (
+    <div style={{ padding: '8px 14px', background: theme.successDim,
+                  color: theme.success, fontSize: '12px', fontWeight: 600,
+                  marginBottom: 10, borderRadius: 6 }}>
+        ✓ Subject embeddings updated successfully
+    </div>
+)}
+{embSyncStatus[s.rollNo] === 'error' && (
+    <div style={{ padding: '8px 14px', background: theme.dangerDim,
+                  color: theme.danger, fontSize: '12px', fontWeight: 600,
+                  marginBottom: 10, borderRadius: 6 }}>
+        ✗ Embedding sync failed — try regenerating from Summary tab
+    </div>
+)}
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
                                             <button
                                                 onClick={e => { e.stopPropagation(); deleteStudent(s.rollNo); }}

@@ -179,6 +179,8 @@ export default function GroundTruthUpload() {
     const [summaryBatches,  setSummaryBatches]  = useState([]);
     const [summaryLoading,  setSummaryLoading]  = useState(false);
     const [regenning,       setRegenning]       = useState({});
+    const [zipEmbedStatus,   setZipEmbedStatus]   = useState(null); // null | 'syncing' | 'done' | 'error'
+    const [photoEmbedStatus, setPhotoEmbedStatus] = useState(null);
     const regenTimers = useRef({});   // polling timers by batch
 
     // ── Photo count for selected batch (shown in upload tab) ─────────
@@ -290,6 +292,14 @@ export default function GroundTruthUpload() {
             setZipResult(data);
             showToast(`Extracted ${data.extractedImages} photos for ${data.extractedFolders} students!`);
             setZipFile(null);
+setZipEmbedStatus('syncing');
+try {
+    await fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batchName)}`, { method: 'POST', credentials: 'include' });
+    setZipEmbedStatus('done');
+    setTimeout(() => setZipEmbedStatus(null), 5000);
+} catch {
+    setZipEmbedStatus('error');
+}
             setBatchPhotoCount(c => (c ?? 0) + (data.extractedFolders || 0));
             runEmbedSync(batchName);
         } catch (err) {
@@ -319,6 +329,15 @@ export default function GroundTruthUpload() {
             if (!res.ok) throw new Error(data.error || 'Upload failed');
             showToast(`Photo uploaded for ${data.rollNo}`);
             setStudentPhoto(null);
+setRollNo('');
+setPhotoEmbedStatus('syncing');
+try {
+    await fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batchName)}`, { method: 'POST', credentials: 'include' });
+    setPhotoEmbedStatus('done');
+    setTimeout(() => setPhotoEmbedStatus(null), 5000);
+} catch {
+    setPhotoEmbedStatus('error');
+}
             setRollNo('');
             setBatchPhotoCount(c => (c ?? 0) + 1);
             runEmbedSync(batchName);
@@ -496,6 +515,26 @@ export default function GroundTruthUpload() {
                                 >
                                     {zipUploading ? 'Extracting ZIP…' : 'Upload & Extract ZIP'}
                                 </button>
+                                {zipEmbedStatus === 'syncing' && (
+    <div style={{ marginTop: 12, padding: '9px 14px', background: T.accentDim,
+                  color: T.accent, borderRadius: 7, fontSize: 13, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
+        Updating embeddings for {batchName}…
+    </div>
+)}
+{zipEmbedStatus === 'done' && (
+    <div style={{ marginTop: 12, padding: '9px 14px', background: T.successDim,
+                  color: T.success, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
+        ✓ Embeddings updated successfully
+    </div>
+)}
+{zipEmbedStatus === 'error' && (
+    <div style={{ marginTop: 12, padding: '9px 14px', background: T.dangerDim,
+                  color: T.danger, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
+        ✗ Embedding sync failed
+    </div>
+)}
 
                                 {zipResult && (
                                     <div style={{ marginTop: 14, padding: '10px 14px', background: T.successDim, borderRadius: 7, border: `1px solid rgba(16,185,129,.25)`, fontSize: 13, color: T.success, fontWeight: 600 }}>
@@ -544,6 +583,26 @@ export default function GroundTruthUpload() {
                                 >
                                     {photoUploading ? 'Uploading…' : 'Upload Photo'}
                                 </button>
+                                {photoEmbedStatus === 'syncing' && (
+    <div style={{ marginTop: 12, padding: '9px 14px', background: T.accentDim,
+                  color: T.accent, borderRadius: 7, fontSize: 13, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
+        Updating embeddings for {batchName}…
+    </div>
+)}
+{photoEmbedStatus === 'done' && (
+    <div style={{ marginTop: 12, padding: '9px 14px', background: T.successDim,
+                  color: T.success, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
+        ✓ Embeddings updated successfully
+    </div>
+)}
+{photoEmbedStatus === 'error' && (
+    <div style={{ marginTop: 12, padding: '9px 14px', background: T.dangerDim,
+                  color: T.danger, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
+        ✗ Embedding sync failed
+    </div>
+)}
                             </div>
                         </div>
                     </div>
