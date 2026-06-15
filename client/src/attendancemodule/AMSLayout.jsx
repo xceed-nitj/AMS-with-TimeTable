@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { theme } from './config';
 import getEnvironment from '../getenvironment';
+import { HealthProvider } from './HealthContext';
 
 const T = theme;
 const apiUrl = getEnvironment();
@@ -121,7 +122,7 @@ export default function AMSLayout() {
   if (!accessChecked) return null;
 
   return (
-    <>
+    <HealthProvider>
       <style>{CSS}</style>
       <div
         style={{
@@ -268,6 +269,6 @@ export default function AMSLayout() {
           <Outlet />
         </main>
       </div>
-    </>
+    </HealthProvider>
   );
 }

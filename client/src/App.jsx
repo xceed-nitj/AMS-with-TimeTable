@@ -229,12 +229,10 @@ import { DeptAssignRolls, DeptLiveRTSP } from './deptadmin/DeptAdminTools';
 
 //confifence monitor
 import ConfidenceMonitor from './attendancemodule/confidenceMonitor';
-import { HealthProvider } from './attendancemodule/HealthContext';
 
 function App() {
   return (
-    <HealthProvider>
-      <Router>
+    <Router>
       {/* <div className="app"> */}
 
       {/* <h1>XCEED-Timetable Module</h1>  */}
@@ -685,8 +683,7 @@ function App() {
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
-      </Router>
-    </HealthProvider>
+    </Router>
   );
 }
 

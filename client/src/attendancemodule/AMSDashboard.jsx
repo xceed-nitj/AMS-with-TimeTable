@@ -359,8 +359,6 @@ export default function AMSDashboard() {
       <style>{CSS}</style>
       <div style={{ minHeight: '100vh', background: T.bg, color: T.text, fontFamily: T.fontBody, padding: 'clamp(16px,3vw,32px)' }}>
 
-        <HealthDashboard />
-
         {/* ── Header ── */}
         <div style={{ marginBottom: camOpen ? 0 : 24, animation: 'fadeUp .4s ease both' }}>
           <div style={{
@@ -418,6 +416,8 @@ export default function AMSDashboard() {
           />
           {camOpen && <div style={{ height: 24 }} />}
         </div>
+
+        <HealthDashboard />
 
         {/* ── Attendance stats ── */}
         <SectionLabel>Attendance</SectionLabel>
