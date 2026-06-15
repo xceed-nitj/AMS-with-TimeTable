@@ -374,6 +374,9 @@ export default function AMSDashboard() {
               </div>
             </div>
 
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+              <HealthDashboard />
+
             {/* camera toggle badge */}
             <button
               onClick={() => setCamOpen(o => !o)}
@@ -405,6 +408,28 @@ export default function AMSDashboard() {
                 transform: camOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s',
               }}>▾</span>
             </button>
+
+            {/* settings button */}
+            <button
+              onClick={() => navigate('/attendance/edit-session-dates')}
+              title="Session Setup"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, flexShrink: 0,
+                background: T.surface,
+                border: `1px solid ${T.border}`,
+                borderRadius: 9,
+                boxShadow: '0 1px 4px rgba(26,31,60,0.06)',
+                cursor: 'pointer',
+                transition: 'border-color .15s',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+            </div>
           </div>
 
           {/* inline collapsible panel — in normal flow, pushes content down */}
@@ -416,8 +441,6 @@ export default function AMSDashboard() {
           />
           {camOpen && <div style={{ height: 24 }} />}
         </div>
-
-        <HealthDashboard />
 
         {/* ── Attendance stats ── */}
         <SectionLabel>Attendance</SectionLabel>
@@ -479,25 +502,6 @@ export default function AMSDashboard() {
           <StatCard label="Complete"         value={embFiles?.complete}      color={T.emerald} loading={embLoad} delay={40}  />
           <StatCard label="Incomplete"       value={embFiles?.incomplete}    color={T.red}     loading={embLoad} delay={80}  />
           <StatCard label="Students Covered" value={embFiles?.totalStudents} color={T.purple}  loading={embLoad} delay={120} />
-        </div>
-
-        {/* ── Quick Actions ── */}
-        <SectionLabel>Quick Actions</SectionLabel>
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fill, minmax(200px,1fr))', marginBottom: 28 }}>
-          <ActionCard
-            title="Session Setup"
-            subtitle="Configure semester dates, time slots, and attendance session parameters before capturing."
-            color={T.purple}
-            buttonLabel="Open Session Setup"
-            onClick={() => navigate('/attendance/edit-session-dates')}
-          />
-          <ActionCard
-            title="Frame Verification"
-            subtitle="Review saved raw and annotated screenshots by room, date, and period."
-            color={T.teal}
-            buttonLabel="Open Gallery"
-            onClick={() => navigate('/attendance/frame-verification')}
-          />
         </div>
 
         {/* ── Charts ── */}
