@@ -3,9 +3,6 @@
 const AttendanceReport = require("../../../models/attendanceReport");
 const LockSem = require("../../../models/locksem");
 
-// ── Merge logic (notebook: merging both → final status) ──────
-// REPLACE the entire mergeStudentStatus function with this:
-
 function mergeStudentStatus(slotResults) {
   const rollMap = {};
 
@@ -79,7 +76,7 @@ function mergeStudentStatus(slotResults) {
   return finalReport;
 }
 
-// ── Build summary counts ──────────────────────────────────────
+// Build summary counts
 function buildSummary(finalReport) {
   const total = finalReport.length;
   const present = finalReport.filter((s) => s.finalStatus === "P").length;
@@ -130,7 +127,7 @@ class AttendanceReportController {
         "not_enrolled",
       ]);
 
-      // ── Build per-student list from ML result ──
+      // Build per-student list from ML result
       const students = [];
       const attendance = mlResult.attendance || {};
       for (const [rollNo, data] of Object.entries(attendance)) {
@@ -162,8 +159,7 @@ class AttendanceReportController {
         },
       };
 
-      // ── Upsert: ONE report per batch+date+timeSlot ──
-      // REPLACE this block (around line: "let report = await AttendanceReport.findOne...")
+      // Upsert: ONE report per batch+date+timeSlot ──
       const slotKey = timeSlot || "";
       let report = await AttendanceReport.findOne({
         batch,
@@ -177,7 +173,7 @@ class AttendanceReportController {
             .status(409)
             .json({ error: "Cannot add runs to a finalized report" });
         }
-        // ✅ Allow appending even if status is 'live' (session is running)
+        // Allow appending even if status is 'live' (session is running)
         report.slotResults.push(slotResult);
       } else {
         report = new AttendanceReport({
@@ -195,11 +191,11 @@ class AttendanceReportController {
         });
       }
 
-      // ✅ Always recompute merged final from ALL runs
+      // Always recompute merged final from ALL runs
       report.finalReport = mergeStudentStatus(report.slotResults);
       report.summary = buildSummary(report.finalReport);
 
-      // ✅ If report was live (session), keep it live
+      // If report was live (session), keep it live
       if (report.status !== "live") {
         report.status = "draft";
       }
@@ -224,7 +220,7 @@ class AttendanceReportController {
       res.status(500).json({ error: err.message });
     }
   }
-  // ── List reports (with optional filters) ─────────────────────
+  // List reports (with optional filters)
   // GET /attendancemodule/reports?batch=X&date=X&faculty=X&status=X
   async getReports(req, res) {
     try {
@@ -259,7 +255,7 @@ class AttendanceReportController {
     }
   }
 
-  // ── Get full report detail ────────────────────────────────────
+  // Get full report detail
   // GET /attendancemodule/reports/:id
   async getReportById(req, res) {
     try {
@@ -271,7 +267,7 @@ class AttendanceReportController {
     }
   }
 
-  // ── Get reports by batch + date ───────────────────────────────
+  // Get reports by batch + date
   // GET /attendancemodule/reports/by-date/:batch/:date
   async getReportByDate(req, res) {
     try {
@@ -285,7 +281,7 @@ class AttendanceReportController {
     }
   }
 
-  // ── Get student history across all sessions ───────────────────
+  // Get student history across all sessions
   // GET /attendancemodule/reports/student/:batch/:rollNo
   async getStudentHistory(req, res) {
     try {
@@ -330,7 +326,7 @@ class AttendanceReportController {
     }
   }
 
-  // ── Finalize a report (draft → finalized) ─────────────────────
+  // Finalize a report (draft → finalized)
   // POST /attendancemodule/reports/:id/finalize
   async finalizeReport(req, res) {
     try {
@@ -347,7 +343,7 @@ class AttendanceReportController {
     }
   }
 
-  // ── Update final status of a student manually ─────────────────
+  // Update final status of a student manually
   // PATCH /attendancemodule/reports/:id/student/:rollNo
   // Body: { finalStatus: 'P' | 'A' | 'R' }
   async updateStudentStatus(req, res) {
@@ -386,7 +382,7 @@ class AttendanceReportController {
     }
   }
 
-  // ── Delete a draft report ─────────────────────────────────────
+  // Delete a draft report
   // DELETE /attendancemodule/reports/:id
   async deleteReport(req, res) {
     try {
@@ -404,7 +400,7 @@ class AttendanceReportController {
     }
   }
 
-  // ── Get locksem context (time slot + subject/faculty info) ─────
+  // Get locksem context (time slot + subject/faculty info)
   // GET /attendancemodule/reports/locksem-context/:locksemId
   async getLocksemContext(req, res) {
     try {
@@ -437,7 +433,7 @@ class AttendanceReportController {
         batch,
         date: { $gte: weekAgoStr },
       })
-        .select("date finalReport")
+        .select("date finalReport semester")
         .sort({ date: 1 });
 
       // Group by rollNo → per day lowest confidence
@@ -446,38 +442,48 @@ class AttendanceReportController {
       for (const report of reports) {
         for (const student of report.finalReport) {
           if (!studentMap[student.rollNo]) {
-            studentMap[student.rollNo] = {};
+            studentMap[student.rollNo] = {
+              days: {},
+              semester: report.semester || "",
+            };
           }
-          const existing = studentMap[student.rollNo][report.date];
+          const existing = studentMap[student.rollNo].days[report.date];
           const conf = student.avgConfidence || 0;
-          // Store lowest confidence for the day
           if (existing === undefined || conf < existing) {
-            studentMap[student.rollNo][report.date] = conf;
+            studentMap[student.rollNo].days[report.date] = conf;
           }
         }
       }
 
       // Build result array with drift flag
-      const result = Object.entries(studentMap).map(([rollNo, dayMap]) => {
+      const result = Object.entries(studentMap).map(([rollNo, studentData]) => {
+        const dayMap = studentData.days;
+        const semester = studentData.semester;
         const days = Object.keys(dayMap).sort();
         const confidences = days.map((d) => ({
           date: d,
           confidence: dayMap[d],
         }));
-
-        // Flag if last confidence < first confidence (declining)
         const isDrifting =
           confidences.length >= 2 &&
           confidences[confidences.length - 1].confidence <
             confidences[0].confidence;
-
-        return { rollNo, confidences, isDrifting };
+        return { rollNo, semester, confidences, isDrifting };
       });
 
       // Sort — drifting students first
       result.sort((a, b) => b.isDrifting - a.isDrifting);
 
-      res.json({ batch, weekFrom: weekAgoStr, students: result });
+      // Get semester from the most recent report for this batch
+      const semesterInfo =
+        reports.length > 0 ? reports[reports.length - 1].semester : "";
+
+      res.json({
+        batch,
+        weekFrom: weekAgoStr,
+        semester: semesterInfo,
+        students: result,
+      });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
