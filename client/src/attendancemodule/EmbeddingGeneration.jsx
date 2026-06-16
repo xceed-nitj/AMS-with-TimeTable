@@ -14,7 +14,7 @@ function Toast({ toast }) {
     if (!toast) return null;
     return (
         <div style={{
-            position: 'fixed', top: 20, right: 20, zIndex: 9999,
+            position: 'fixed', top: 80, right: 20, zIndex: 9999, whiteSpace: 'nowrap',
             padding: '12px 24px', borderRadius: 8, fontSize: '13px', fontWeight: 600,
             background: toast.type === 'error' ? theme.dangerDim  : theme.successDim,
             color:      toast.type === 'error' ? theme.danger      : theme.success,
@@ -141,6 +141,25 @@ function FilterBlock({
     return (
         <div style={{ ...styles.card, marginBottom: 20, padding: '18px 24px', borderLeft: `3px solid ${theme.accent}` }}>
             <div style={{ fontSize: '11px', fontWeight: 700, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Selection</div>
+            {/* Loading toasts - inline banner */}
+{semsLoading && (
+    <div style={{
+       position: 'fixed', top: 80, right: 20,
+        zIndex: 9999, padding: '10px 22px', borderRadius: 8,
+        background: theme.accentDim, color: theme.accent,
+        border: `1px solid ${theme.accent}55`, fontSize: '15px', fontWeight: 600,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.2)', whiteSpace: 'nowrap',
+    }}>⏳ Loading semesters...</div>
+)}
+{subjectsLoading && (
+    <div style={{
+        position: 'fixed', top: 80, right: 20,
+        zIndex: 9999, padding: '10px 22px', borderRadius: 8,
+        background: theme.accentDim, color: theme.accent,
+        border: `1px solid ${theme.accent}55`, fontSize: '15px', fontWeight: 600,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.2)', whiteSpace: 'nowrap',
+    }}>⏳ Loading subjects...</div>
+)}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 16, alignItems: 'end' }} className="r-grid-3">
                 <div>
                     <label style={styles.label}>Department</label>
@@ -711,9 +730,7 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
                             <span style={{ fontSize: '13px', fontWeight: 700, color: theme.text }}>Embedding Files</span>
                             <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 9px', borderRadius: 99, background: theme.accentDim, color: theme.accent }}>{pklFiles.length}</span>
                             <div style={{ flex: 1 }} />
-                            <button onClick={() => loadPklFiles(dept)} style={{ ...styles.btnGhost, padding: '5px 12px', fontSize: '11px' }}>
-                                 Refresh
-                            </button>
+                            
                         </div>
 
                         {/* Grouped by semester */}
