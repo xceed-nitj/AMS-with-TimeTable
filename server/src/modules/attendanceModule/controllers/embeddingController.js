@@ -155,8 +155,10 @@ class EmbeddingController {
     }
     async getHistoryByDept(req, res) {
     try {
-        const { dept } = req.query;
+        const { dept, sem, subject } = req.query;
         const filter = dept ? { dept: { $regex: dept, $options: 'i' } } : {};
+        if (sem)     filter.sem     = sem;
+        if (subject) filter.subject = { $regex: subject.trim(), $options: 'i' };
         const records = await StudentEmbedding.find(filter)
             .sort({ generatedAt: -1 })
             .lean();
@@ -191,6 +193,67 @@ async listFiles(req, res) {
                 recordId:      rec?._id             || null,
                 generatedAt:   rec?.generatedAt     || stat.mtime,
                 uploadedDirect: rec?.uploadedDirect || false,
+            };
+        }));
+
+        res.json({ files: enriched });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+async listFilesByDept(req, res) {
+    try {
+        const { dept } = req.query;
+        const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
+
+        if (!fs.existsSync(EMBEDDINGS_DIR)) {
+            return res.json({ files: [] });
+        }
+
+        // Recursively collect all .pkl files under EMBEDDINGS_DIR
+        function collectPkls(dir) {
+            let results = [];
+            for (const entry of fs.readdirSync(dir)) {
+                const full = path.join(dir, entry);
+                const stat = fs.statSync(full);
+                if (stat.isDirectory()) {
+                    results = results.concat(collectPkls(full));
+                } else if (entry.endsWith('.pkl')) {
+                    results.push({ fullPath: full, filename: entry, relPath: path.relative(EMBEDDINGS_DIR, full) });
+                }
+            }
+            return results;
+        }
+
+        let allFiles = collectPkls(EMBEDDINGS_DIR);
+
+        // Filter by dept if provided — match against folder path
+        if (dept && dept.trim()) {
+            const deptNorm = dept.trim().replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase();
+            allFiles = allFiles.filter(f => f.relPath.toLowerCase().includes(deptNorm));
+        }
+
+        const enriched = await Promise.all(allFiles.map(async ({ fullPath, filename, relPath }) => {
+            const stat = fs.statSync(fullPath);
+            // Try to find a matching DB record by filename
+            const rec = await StudentEmbedding.findOne({ embeddingFile: filename })
+                .sort({ generatedAt: -1 }).lean();
+                console.log('listFilesByDept → file:', filename, '| rec found:', !!rec, '| rollNos:', rec?.rollNos?.length ?? 'none');
+            return {
+                filename,
+                relPath,
+                sizeKB:        Math.round(stat.size / 1024),
+                modifiedAt:    stat.mtime,
+                sem:           rec?.sem             || null,
+                subject:       rec?.subject         || null,
+                dept:          rec?.dept            || null,
+                rollNos:       rec?.rollNos         || [],
+                missedRollNos: rec?.missedRollNos   || [],
+                missedCount:   rec?.missedRollNos?.length || 0,
+                recordId:      rec?._id             || null,
+                generatedAt:   rec?.generatedAt     || stat.mtime,
+                status:        rec?.status          || 'unknown',
             };
         }));
 
@@ -323,25 +386,22 @@ uploadPkl() {
         // by scanning for any batch folder that contains the roll number.
         // Alternatively, if dept is supplied we can narrow down. For now we scan.
 
-        let record = await StudentEmbedding.findOneAndUpdate(
-            { sem: semSafe, subject: subject.trim(), dept: (dept || '').trim().toUpperCase() },
-            {
-                $set: {
-                    embeddingFile,
-                    session:         sessionStr,
-                    subjectCode:     subjectCode,
-                    rollNos,
-                    missedRollNos:   [],
-                    status:          'pending',
-                    studentsTotal:   rollNos.length,
-                    studentsSuccess: 0,
-                    studentsFailed:  0,
-                    generatedAt:     new Date(),
-                    lastUpdatedAt:   new Date(),
-                },
-            },
-            { upsert: true, new: true }
-        );
+        let record = await StudentEmbedding.create({
+    sem:             semSafe,
+    subject:         subject.trim(),
+    dept:            (dept || '').trim().toUpperCase(),
+    embeddingFile,
+    session:         sessionStr,
+    subjectCode,
+    rollNos,
+    missedRollNos:   [],
+    status:          'pending',
+    studentsTotal:   rollNos.length,
+    studentsSuccess: 0,
+    studentsFailed:  0,
+    generatedAt:     new Date(),
+    lastUpdatedAt:   new Date(),
+});
 
         let success = 0, failed = 0;
         const failedList    = [];
@@ -392,22 +452,16 @@ uploadPkl() {
                 } catch (_) {}
             }
 
-            // Fallback: first 5 images if no _info.json
+            
             if (!embeddingFiles.length) {
-                const files = await fsPromises.readdir(studentDir);
-                embeddingFiles = files
-                    .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
-                    .sort()
-                    .slice(0, 5);
-            }
-
-            if (!embeddingFiles.length) {
-                sse({ type: 'student', rollNo, status: 'failed', reason: 'No photos found' });
+                sse({ type: 'student', rollNo, status: 'failed', reason: 'No embedding photos marked in _info.json' });
                 failed++;
-                failedList.push({ rollNo, reason: 'No photos found' });
-                missedRollNos.push({ rollNo, reason: 'No photos found' });
+                failedList.push({ rollNo, reason: 'No embedding photos marked in _info.json' });
+                missedRollNos.push({ rollNo, reason: 'No embedding photos marked in _info.json' });
                 continue;
             }
+
+            
 
             sse({ type: 'student', rollNo, status: 'processing', photoCount: embeddingFiles.length });
             
@@ -512,6 +566,22 @@ try {
                 res.end();
             } catch (_) {}
         }   // ← TO HERE
+    }
+
+    // DELETE /attendancemodule/embeddings/file  — deletes physical .pkl + all DB records
+    async deleteFile(req, res) {
+        const { filename, relPath } = req.body;
+        if (!filename) return res.status(400).json({ error: 'filename required' });
+
+        const filePath = path.join(EMBEDDINGS_DIR, relPath || filename);
+        try {
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch (err) {
+            console.error('deleteFile: could not remove physical file:', err.message);
+        }
+
+        const result = await StudentEmbedding.deleteMany({ embeddingFile: filename });
+        res.json({ ok: true, deleted: filename, dbDeleted: result.deletedCount });
     }
 
     // DELETE /attendancemodule/embeddings/:id

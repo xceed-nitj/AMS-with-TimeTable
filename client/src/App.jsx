@@ -1,7 +1,10 @@
+// client/src/App.jsx
+
 import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
   RouterProvider,
 } from 'react-router-dom';
 
@@ -92,7 +95,6 @@ import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
 
-
 import Template01 from './certificatemodule/pages/certificatetemplates/akleem';
 // import ViewCertificate from './certificatemodule/pages/participantCerti';
 import Template03 from './certificatemodule/pages/certificatetemplates/03_sarthak';
@@ -137,6 +139,7 @@ import HomePage from './reviewmodule/pages/Main';
 import AddTrack from './reviewmodule/pages/addTracks';
 import AddTemplate from './reviewmodule/pages/addTemplate';
 import EditTemplate from './reviewmodule/pages/EditTemplate';
+
 import EditDefaultTemplate from './reviewmodule/pages/EditDefaultTemplate.jsx';
 import NirfRanking from './nirf/rankings';
 import AddPaper from './reviewmodule/pages/addpaper';
@@ -184,9 +187,8 @@ import DoctorDetailView from './diabeticsModule/pages/DoctorDetailView';
 import HospitalDetailView from './diabeticsModule/pages/HospitalDetailView';
 
 // import fileUpload
-import FileUpload from './fileUpload/fileUploads.jsx'
-import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx'
-
+import FileUpload from './fileUpload/fileUploads.jsx';
+import PaymentPortal from './conferencemodule/pages/PaymentPortal.jsx';
 
 //import machine learning modules
 import LinearRegression from './mlcoursemodule/linearregression.jsx';
@@ -206,17 +208,28 @@ import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
 import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
-import PhotoEdit from './attendancemodule/photoedit';
 import GroundTruthUpload from './attendancemodule/groundtruthupload';
 import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
 import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
 
-import AMSDashboard        from './attendancemodule/AMSDashboard';
-import AMSLayout           from './attendancemodule/AMSLayout';
-import CameraRegistry      from './attendancemodule/camera';
-import AcquisitionControl from './attendancemodule/AcquisitionControl';
+import AMSDashboard from './attendancemodule/AMSDashboard';
+import AMSLayout from './attendancemodule/AMSLayout';
+import CameraRegistry from './attendancemodule/camera';
+import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
+import AMSManual from './attendancemodule/manual';
+import TTManual from './timetableadmin/TTManual';
+
+// ─── Department Admin Module Imports ────────────────────────────
+import DeptAdminLayout from './deptadmin/DeptAdminLayout';
+import DeptDashboard from './deptadmin/DeptDashboard';
+import DeptReports from './deptadmin/DeptReports';
+import { DeptAssignRolls, DeptLiveRTSP } from './deptadmin/DeptAdminTools';
+
+//confifence monitor
+import ConfidenceMonitor from './attendancemodule/confidenceMonitor';
+
 function App() {
   return (
     <Router>
@@ -246,7 +259,6 @@ function App() {
         <Route path="/camera" element={<Camera />} />
         <Route path="/cameras" element={<Camera />} />
         <Route path="/camera/preview" element={<CameraPreview />} />
-        <Route path="/cameras/preview" element={<CameraPreview />} />
 
         {/* <Route path="/timetable" element={<Timetable />} /> */}
 
@@ -266,45 +278,45 @@ function App() {
         </Route>
 
         {/* Original Routes */}
-<Route path="/tt/:generatedLink">
-  <Route index element={<Timetable />}></Route>
-  <Route path="addfaculty" element={<AddFaculty />} />
-  <Route path="importttdata" element={<ImportTT />} />
-  <Route path="addroom" element={<AddRoom />} />
-  <Route path="addcommonload" element={<CommonLoad />} />
-  <Route path="addlunchload" element={<LunchLoad />} />
-  <Route path="addsubjects" element={<Subjects />} />
-  <Route path="addsem" element={<AddSem />} />
-  <Route path="addnote" element={<Note />} />
-  <Route path="firstyearload" element={<FirstYearLoad />} />
-  <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
-  <Route path="lockedsummary" element={<LockedSummary />} />
-  <Route path="generatepdf" element={<PrintSummary />} />
-  <Route path="loaddistribution" element={<LoadDistribution />} />
-  <Route path="roomallotment" element={<ViewAllotmentPage />} />
-  <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
-  <Route path="facultyload" element={<FacultyDeptHourLoad />} />
-</Route>
+        <Route path="/tt/:generatedLink">
+          <Route index element={<Timetable />}></Route>
+          <Route path="addfaculty" element={<AddFaculty />} />
+          <Route path="importttdata" element={<ImportTT />} />
+          <Route path="addroom" element={<AddRoom />} />
+          <Route path="addcommonload" element={<CommonLoad />} />
+          <Route path="addlunchload" element={<LunchLoad />} />
+          <Route path="addsubjects" element={<Subjects />} />
+          <Route path="addsem" element={<AddSem />} />
+          <Route path="addnote" element={<Note />} />
+          <Route path="firstyearload" element={<FirstYearLoad />} />
+          <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
+          <Route path="lockedsummary" element={<LockedSummary />} />
+          <Route path="generatepdf" element={<PrintSummary />} />
+          <Route path="loaddistribution" element={<LoadDistribution />} />
+          <Route path="roomallotment" element={<ViewAllotmentPage />} />
+          <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
+          <Route path="facultyload" element={<FacultyDeptHourLoad />} />
+        </Route>
 
-{/* Backup Routes - v1 */}
-<Route path="/tt/v1/:generatedLink">
-  <Route index element={<Timetable2 />}></Route>
-  <Route path="addfaculty" element={<AddFaculty />} />
-  <Route path="importttdata" element={<ImportTT />} />
-  <Route path="addroom" element={<AddRoom />} />
-  <Route path="addcommonload" element={<CommonLoad />} />
-  <Route path="addlunchload" element={<LunchLoad />} />
-  <Route path="addsubjects" element={<Subjects />} />
-  <Route path="addsem" element={<AddSem />} />
-  <Route path="addnote" element={<Note />} />
-  <Route path="firstyearload" element={<FirstYearLoad />} />
-  <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
-  <Route path="lockedsummary" element={<LockedSummary />} />
-  <Route path="generatepdf" element={<PrintSummary />} />
-  <Route path="loaddistribution" element={<LoadDistribution />} />
-  <Route path="roomallotment" element={<ViewAllotmentPage />} />
-  <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
-</Route>
+        {/* Backup Routes - v1 */}
+        <Route path="/tt/v1/:generatedLink">
+          <Route index element={<Timetable2 />}></Route>
+          <Route path="addfaculty" element={<AddFaculty />} />
+          <Route path="importttdata" element={<ImportTT />} />
+          <Route path="addroom" element={<AddRoom />} />
+          <Route path="addcommonload" element={<CommonLoad />} />
+          <Route path="addlunchload" element={<LunchLoad />} />
+          <Route path="addsubjects" element={<Subjects />} />
+          <Route path="addsem" element={<AddSem />} />
+          <Route path="addnote" element={<Note />} />
+          <Route path="firstyearload" element={<FirstYearLoad />} />
+          <Route path="firstyearfaculty" element={<FirstYearFaculty />} />
+          <Route path="lockedsummary" element={<LockedSummary />} />
+          <Route path="generatepdf" element={<PrintSummary />} />
+          <Route path="loaddistribution" element={<LoadDistribution />} />
+          <Route path="roomallotment" element={<ViewAllotmentPage />} />
+          <Route path="editmasterfaculty" element={<EditMasterFaculty />} />
+        </Route>
         {/* Same link */}
         <Route path="classrooms" element={<ViewMRooms />} />
         {/* Same link */}
@@ -315,13 +327,19 @@ function App() {
 
         <Route path="/tt/admin" element={<AdminPage />} />
         <Route path="/tt/admin/adminview" element={<TimetableMasterView />} />
-        <Route path="/tt/admin/facultyload" element={<FacultyLoadCalculation />} />
-<Route path="tt/coe/facultyload" element={<FacultyLoadCOE/>}/>
+        <Route
+          path="/tt/admin/facultyload"
+          element={<FacultyLoadCalculation />}
+        />
+        <Route path="tt/coe/facultyload" element={<FacultyLoadCOE />} />
 
         {/* Same link */}
         <Route path="/timetable">
           <Route index element={<MasterView />} />
-          <Route path="faculty/:facultyname" element={<MasterView autofill />} />
+          <Route
+            path="faculty/:facultyname"
+            element={<MasterView autofill />}
+          />
         </Route>
         {/* Same link */}
 
@@ -344,7 +362,6 @@ function App() {
           element={<FacultyHourLoad />}
         />
 
-
         <Route path="/cm/addevent" element={<EventRegistration />} />
         <Route path="/cm/dashboard" element={<CMDashboard />} />
         <Route path="/cm/:eventid" element={<CertificateForm />} />
@@ -361,8 +378,7 @@ function App() {
           path="/cm/userimages/signatures/:userId"
           element={<UserSignatures />}
         />
-        <Route path="/payment-portal" element={<PaymentPortal/>} />
-
+        <Route path="/payment-portal" element={<PaymentPortal />} />
 
         {/* Review management routes*/}
         <Route path="/prm/login" element={<ReviewLogin />} />
@@ -616,38 +632,57 @@ function App() {
         <Route path="/dm/addDailyDosage" element={<DailyDosageForm />} />
         <Route path="/dm/addSickDay" element={<SickDayForm />} />
 
-
         <Route path="/ml/t1" element={<LinearRegression />} />
         <Route path="/ml" element={<MLDashboard />} />
 
+        {/* ─── AMS Manual — public, no auth required ─────────────── */}
+        <Route path="/ams-manual" element={<AMSManual standalone />} />
+
+        {/* ─── TT Manual — public, no auth required ──────────────── */}
+        <Route path="/tt-manual" element={<TTManual standalone />} />
+
         {/* ─── Attendance Module Routes ──────────────────────────── */}
-<Route path="/attendance" element={<AMSLayout />}>
-  <Route index element={<AMSDashboard />} />
-  <Route path="groundtruth/assign"   element={<RollAssign />} />
-  {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
-  <Route path="groundtruth/edit"     element={<EditGroundTruth />} />
-  <Route path="groundtruth/rtsp"     element={<GroundTruthRTSP />} />
-  <Route path="groundtruth/photos"   element={<PhotoEdit />} />
-  <Route path="groundtruth/upload"   element={<GroundTruthUpload />} />
-  <Route path="embeddings"           element={<EmbeddingGeneration />} />
-  <Route path="report"               element={<Attendancedoc />} />
-  <Route path="model"                element={<ModelPerformance />} />
-  <Route path="reports"              element={<AttendanceReport />} />
-  <Route path="frame-verification"   element={<FrameVerification />} />
-  <Route path="acquisition-control" element={<AcquisitionControl />} />
-</Route>
+        <Route
+          path="/iams-admin/*"
+          element={<Navigate to="/attendance" replace />}
+        />
+        <Route path="/attendance" element={<AMSLayout />}>
+          <Route index element={<AMSDashboard />} />
 
-{/* Camera Registry — top-level but still inside AMSLayout */}
-<Route path="/cameras" element={<AMSLayout />}>
-  <Route index element={<CameraRegistry />} />
-</Route>
+          {/* 2. Session setup sub-route handler registered context array */}
+          <Route path="edit-session-dates" element={<EditSessionDates />} />
 
+          <Route path="groundtruth/assign" element={<RollAssign />} />
+          {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
+          <Route path="groundtruth/edit" element={<EditGroundTruth />} />
+          <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
+          {/* <Route path="groundtruth/photos" element={<PhotoEdit />} /> */}
+          <Route path="groundtruth/upload" element={<GroundTruthUpload />} />
+          <Route path="embeddings" element={<EmbeddingGeneration />} />
+          <Route path="report" element={<Attendancedoc />} />
+          <Route path="model" element={<ModelPerformance />} />
+          <Route path="reports" element={<AttendanceReport />} />
+          <Route path="frame-verification" element={<FrameVerification />} />
+          <Route path="confidence" element={<ConfidenceMonitor />} />
+        </Route>
+
+        {/* ─── Department Admin Routes ────────────────────────────── */}
+        <Route path="/dept-admin" element={<DeptAdminLayout />}>
+          <Route index element={<DeptDashboard />} />
+          <Route path="dashboard" element={<DeptDashboard />} />
+          <Route path="live-rtsp" element={<DeptLiveRTSP />} />
+          <Route path="assign-rolls" element={<DeptAssignRolls />} />
+          <Route path="reports" element={<DeptReports />} />
+        </Route>
+
+        {/* Camera Registry — top-level but still inside AMSLayout */}
+        <Route path="/cameras" element={<AMSLayout />}>
+          <Route index element={<CameraRegistry />} />
+          <Route path="preview" element={<CameraPreview />} />
+        </Route>
       </Routes>
       {/* <Footer/> */}
       {/* </div> */}
-
-
-
     </Router>
   );
 }

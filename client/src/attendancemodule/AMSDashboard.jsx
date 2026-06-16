@@ -7,11 +7,13 @@ import {
   ResponsiveContainer, Legend, Cell,
 } from 'recharts';
 import getEnvironment from '../getenvironment';
+import HealthDashboard from './HealthDashboard';
 
 const apiUrl     = getEnvironment();
 const CAM_API    = `${apiUrl}/attendancemodule/cameras`;
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
 const GT_API     = `${apiUrl}/attendancemodule/ground-truth`;
+const EMB_API    = `${apiUrl}/attendancemodule/embeddings`;
 const USER_API   = `${apiUrl}/user/getuser`;
 
 const T = {
@@ -441,6 +443,8 @@ export default function AMSDashboard() {
   const [userRoles,   setUserRoles] = useState([]);
   const [gtStats,     setGtStats]   = useState(null);
   const [gtLoad,      setGtLoad]    = useState(true);
+  const [embFiles,    setEmbFiles]  = useState(null);
+  const [embLoad,     setEmbLoad]   = useState(true);
   const [chartData,   setChartData] = useState(null);
   const [camOpen,     setCamOpen]   = useState(false);
 
@@ -484,6 +488,20 @@ export default function AMSDashboard() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    fetch(`${EMB_API}/list-files`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const files = d?.files || [];
+        const complete   = files.filter(f => !(f.missedRollNos?.length > 0)).length;
+        const incomplete = files.filter(f =>   f.missedRollNos?.length > 0 ).length;
+        const totalStudents = files.reduce((sum, f) => sum + (f.rollNos?.length || 0), 0);
+        setEmbFiles({ total: files.length, complete, incomplete, totalStudents });
+      })
+      .catch(() => setEmbFiles(null))
+      .finally(() => setEmbLoad(false));
+  }, []);
+
   const onlineCams = cameras.filter(c => c.status === 'online').length;
   const totalCams  = cameras.length;
 
@@ -506,6 +524,9 @@ export default function AMSDashboard() {
                 {userRoles.length > 0 ? userRoles.join(' · ') : 'Attendance Management System'}
               </div>
             </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+              <HealthDashboard />
 
             {/* camera toggle badge */}
             <button
@@ -538,6 +559,28 @@ export default function AMSDashboard() {
                 transform: camOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s',
               }}>▾</span>
             </button>
+
+            {/* settings button */}
+            <button
+              onClick={() => navigate('/attendance/edit-session-dates')}
+              title="Session Setup"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, flexShrink: 0,
+                background: T.surface,
+                border: `1px solid ${T.border}`,
+                borderRadius: 9,
+                boxShadow: '0 1px 4px rgba(26,31,60,0.06)',
+                cursor: 'pointer',
+                transition: 'border-color .15s',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+            </div>
           </div>
 
           {/* inline collapsible panel — in normal flow, pushes content down */}
@@ -635,15 +678,28 @@ export default function AMSDashboard() {
           </div>  {/* end Right sidebar flex column */}
         </div>  {/* end Ground Truth flex row */}
 
-        <SectionLabel>Verification</SectionLabel>
+        {/* ── Embedding stats ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.09em' }}>
+            Subject Embeddings
+          </div>
+          <button
+            onClick={() => navigate('/attendance/embeddings')}
+            style={{
+              fontSize: 10, padding: '3px 9px', borderRadius: 6,
+              background: T.amberDim, color: T.amber,
+              border: `1px solid ${T.amber}30`, cursor: 'pointer',
+              fontFamily: T.fontBody, fontWeight: 700,
+            }}
+          >
+            Manage →
+          </button>
+        </div>
         <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
-          <ActionCard
-            title="Saved Frame Verification"
-            subtitle="Open the dedicated gallery to review saved raw and annotated screenshots by room, date, and period."
-            color={T.pink || '#ec4899'}
-            buttonLabel="Open Gallery"
-            onClick={() => navigate('/attendance/frame-verification')}
-          />
+          <StatCard label="Total Files"      value={embFiles?.total}         color={T.amber}   loading={embLoad} delay={0}   />
+          <StatCard label="Complete"         value={embFiles?.complete}      color={T.emerald} loading={embLoad} delay={40}  />
+          <StatCard label="Incomplete"       value={embFiles?.incomplete}    color={T.red}     loading={embLoad} delay={80}  />
+          <StatCard label="Students Covered" value={embFiles?.totalStudents} color={T.purple}  loading={embLoad} delay={120} />
         </div>
 
         {/* ── Charts ── */}

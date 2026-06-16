@@ -26,6 +26,10 @@ from models import (
     AssignRollNoRequest,
     UpdateEmbeddingRequest,
 )
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from fastapi import BackgroundTasks
+from filelock import FileLock
 from clustering_service import _detect_faces_tiled, _build_ui_mask
 
 logger = logging.getLogger("ml_service.ground_truth_routes")
@@ -35,8 +39,27 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
+ERP_PHOTOS_DIR = os.path.join(ROOT_DIR, "server", "ml-data", "erp_photos")
+ERP_EMB_DIR = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "erp")
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
+# ─── ERP Models ───────────────────────────────────────────────────────────────
+class ERPSyncRequest(BaseModel):
+    batch: str
+    department: str
+    roll_nos: Optional[List[str]] = Field(None, max_length=1000)
+
+class ERPRenameRequest(BaseModel):
+    batch: str
+    department: str
+    old_roll_no: str
+    new_roll_no: str
+
+class ERPDeleteRequest(BaseModel):
+    batch: str
+    department: str
+    roll_no: str
 
 
 # ─── Enrolled Students ────────────────────────────────────────────────────────
@@ -76,6 +99,36 @@ async def build_embeddings_sync(req: BuildEmbeddingsRequest):
     import asyncio
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, _build_embeddings_sync, req)
+
+def _compute_mean_embedding(fp, photos):
+    embeddings  = []
+    emb_weights = []
+    for photo in photos:
+        img = cv2.imread(os.path.join(fp, photo))
+        if img is None:
+            continue
+        faces = state.face_app.get(img)
+        if not faces:
+            continue
+        face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
+        det_score = float(getattr(face, 'det_score', 1.0))
+        if det_score < 0.5:
+            continue
+        emb  = face.embedding
+        norm = np.linalg.norm(emb)
+        if norm == 0:
+            continue
+        embeddings.append(emb / norm)
+        emb_weights.append(max(det_score, 0.01))
+
+    if embeddings:
+        weights  = np.array(emb_weights, dtype=np.float32)
+        weights /= weights.sum()
+        mean_emb = np.average(np.array(embeddings, dtype=np.float32), axis=0, weights=weights)
+        norm     = np.linalg.norm(mean_emb)
+        mean_emb = mean_emb / norm
+        return mean_emb, len(embeddings)
+    return None, 0
 
 def _build_embeddings_sync(req: BuildEmbeddingsRequest):
     if not os.path.exists(req.photos_dir):
@@ -135,33 +188,10 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
         else:
             photos = all_photos
 
-        embeddings  = []
-        emb_weights = []
-        for photo in photos:
-            img = cv2.imread(os.path.join(fp, photo))
-            if img is None:
-                continue
-            faces = state.face_app.get(img)
-            if not faces:
-                continue
-            face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
-            det_score = float(getattr(face, 'det_score', 1.0))
-            if det_score < 0.5:
-                continue
-            emb  = face.embedding
-            norm = np.linalg.norm(emb)
-            if norm == 0:
-                continue
-            embeddings.append(emb / norm)
-            emb_weights.append(max(det_score, 0.01))
+        mean_emb, num_photos_used = _compute_mean_embedding(fp, photos)
 
-        if embeddings:
-            weights  = np.array(emb_weights, dtype=np.float32)
-            weights /= weights.sum()
-            mean_emb = np.average(np.array(embeddings, dtype=np.float32), axis=0, weights=weights)
-            norm     = np.linalg.norm(mean_emb)
-            mean_emb = mean_emb / norm
-            db[student_id] = {"name": name, "embedding": mean_emb, "num_photos": len(embeddings)}
+        if mean_emb is not None:
+            db[student_id] = {"name": name, "embedding": mean_emb, "num_photos": num_photos_used}
 
             # ── NEW: persist mean_embedding into _info.json for next run ─────
             try:
@@ -184,6 +214,201 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
 
     state.embeddings_db.update(db)
     return {"status": "done", "students_enrolled": len(db), "output_path": req.output_path}
+
+# ─── ERP Embeddings Automation ────────────────────────────────────────────────
+
+def sanitize_path_component(name: str) -> str:
+    if not name:
+        raise ValueError("Empty path component")
+    name = str(name).strip()
+    if ".." in name or "/" in name or "\\" in name:
+        raise ValueError(f"Invalid path component: {name}")
+    return name
+
+def _safe_update_pkl(db_path: str, update_fn):
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    lock = FileLock(db_path + ".lock")
+    with lock:
+        db = {}
+        if os.path.exists(db_path):
+            try:
+                with open(db_path, "rb") as f:
+                    db = pickle.load(f)
+            except Exception as e:
+                logger.error(f"Failed to load ERP pkl {db_path}: {e}")
+        
+        update_fn(db)
+        
+        tmp_path = db_path + ".tmp"
+        with open(tmp_path, "wb") as f:
+            pickle.dump(db, f)
+        os.replace(tmp_path, db_path)
+
+def _erp_sync_background(req: ERPSyncRequest):
+    try:
+        batch = sanitize_path_component(req.batch)
+        department = sanitize_path_component(req.department)
+    except ValueError as e:
+        logger.error(f"ERP Sync failed: {e}")
+        return
+
+    batch_dir = os.path.join(ERP_PHOTOS_DIR, batch)
+    if not os.path.exists(batch_dir):
+        return
+
+    db_path = os.path.join(ERP_EMB_DIR, department, batch, "embeddings_db.pkl")
+    
+    roll_nos_to_sync = req.roll_nos
+    if not roll_nos_to_sync:
+        roll_nos_to_sync = []
+        for f in os.listdir(batch_dir):
+            if f.lower().endswith(IMG_EXTS):
+                roll_no, _ = os.path.splitext(f)
+                roll_nos_to_sync.append(roll_no.upper())
+
+    logger.info(json.dumps({"action": "erp_sync", "batch": batch, "department": department, "count": len(roll_nos_to_sync)}))
+
+    db_updates = {}
+    processed_count = 0
+
+    for roll_no in roll_nos_to_sync:
+        photos = [f for f in os.listdir(batch_dir) if f.lower().startswith(roll_no.lower() + ".")]
+        if not photos:
+            continue
+            
+        mean_emb, num_photos_used = _compute_mean_embedding(batch_dir, photos)
+        if mean_emb is not None:
+            db_updates[roll_no] = {
+                "name": roll_no,
+                "embedding": mean_emb,
+                "num_photos": num_photos_used
+            }
+            processed_count += 1
+            
+            if processed_count % 25 == 0:
+                def do_batch_update(db, updates=db_updates):
+                    for r, data in updates.items():
+                        db[r] = data
+                _safe_update_pkl(db_path, do_batch_update)
+                db_updates = {}
+        else:
+            logger.warning(f"ERP Sync: No face found for {roll_no}")
+
+    if db_updates:
+        def do_final_update(db, updates=db_updates):
+            for r, data in updates.items():
+                db[r] = data
+        _safe_update_pkl(db_path, do_final_update)
+
+
+@router.post("/erp-embedding/sync", status_code=202)
+def erp_embedding_sync(req: ERPSyncRequest, bg_tasks: BackgroundTasks):
+    bg_tasks.add_task(_erp_sync_background, req)
+    return {"status": "accepted"}
+
+@router.post("/erp-embedding/sync-all", status_code=202)
+def erp_embedding_sync_all(req: ERPSyncRequest, bg_tasks: BackgroundTasks):
+    # This acts identically to sync but defaults to parsing all. Node.js backend can use it.
+    bg_tasks.add_task(_erp_sync_background, req)
+    return {"status": "accepted"}
+
+def _erp_rename_background(req: ERPRenameRequest):
+    try:
+        batch = sanitize_path_component(req.batch)
+        department = sanitize_path_component(req.department)
+        old_roll = sanitize_path_component(req.old_roll_no)
+        new_roll = sanitize_path_component(req.new_roll_no)
+    except ValueError as e:
+        logger.error(f"ERP Rename failed: {e}")
+        return
+
+    db_path = os.path.join(ERP_EMB_DIR, department, batch, "embeddings_db.pkl")
+    if not os.path.exists(db_path):
+        return
+
+    logger.info(json.dumps({"action": "erp_rename", "batch": batch, "old_roll": old_roll, "new_roll": new_roll}))
+
+    def do_update(db, _old=old_roll, _new=new_roll):
+        if _old in db:
+            db[_new] = db.pop(_old)
+            db[_new]["name"] = _new
+    _safe_update_pkl(db_path, do_update)
+
+@router.post("/erp-embedding/rename", status_code=202)
+def erp_embedding_rename(req: ERPRenameRequest, bg_tasks: BackgroundTasks):
+    bg_tasks.add_task(_erp_rename_background, req)
+    return {"status": "accepted"}
+
+def _erp_delete_background(req: ERPDeleteRequest):
+    try:
+        batch = sanitize_path_component(req.batch)
+        department = sanitize_path_component(req.department)
+        roll = sanitize_path_component(req.roll_no)
+    except ValueError as e:
+        logger.error(f"ERP Delete failed: {e}")
+        return
+
+    db_path = os.path.join(ERP_EMB_DIR, department, batch, "embeddings_db.pkl")
+    if not os.path.exists(db_path):
+        return
+
+    logger.info(json.dumps({"action": "erp_delete", "batch": batch, "roll": roll}))
+
+    def do_update(db, _roll=roll):
+        if _roll in db:
+            del db[_roll]
+    _safe_update_pkl(db_path, do_update)
+
+@router.post("/erp-embedding/delete", status_code=202)
+def erp_embedding_delete(req: ERPDeleteRequest, bg_tasks: BackgroundTasks):
+    bg_tasks.add_task(_erp_delete_background, req)
+    return {"status": "accepted"}
+
+@router.get("/erp-embedding/status/{batch}")
+def erp_embedding_status(batch: str, department: str = "UNKNOWN_DEPT"):
+    try:
+        batch_safe = sanitize_path_component(batch)
+        dept_safe = sanitize_path_component(department)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    batch_dir = os.path.join(ERP_PHOTOS_DIR, batch_safe)
+    db_path = os.path.join(ERP_EMB_DIR, dept_safe, batch_safe, "embeddings_db.pkl")
+    
+    photo_roll_nos = set()
+    if os.path.exists(batch_dir):
+        for f in os.listdir(batch_dir):
+            if f.lower().endswith(IMG_EXTS):
+                r, _ = os.path.splitext(f)
+                photo_roll_nos.add(r.upper())
+                
+    db_roll_nos = set()
+    last_sync = None
+    if os.path.exists(db_path):
+        last_sync = os.path.getmtime(db_path)
+        try:
+            lock = FileLock(db_path + ".lock")
+            with lock.acquire(timeout=2):
+                with open(db_path, "rb") as f:
+                    db = pickle.load(f)
+                    db_roll_nos = set(db.keys())
+        except Exception as e:
+            logger.warning(f"Status read timeout or error for {db_path}: {e}")
+            
+    missing_embeddings = list(photo_roll_nos - db_roll_nos)
+    orphaned_embeddings = list(db_roll_nos - photo_roll_nos)
+    
+    return {
+        "batch": batch,
+        "department": department,
+        "total_photos": len(photo_roll_nos),
+        "total_embeddings": len(db_roll_nos),
+        "missing_count": len(missing_embeddings),
+        "missing": missing_embeddings[:50],  # cap list for UI payload
+        "orphaned_count": len(orphaned_embeddings),
+        "orphaned": orphaned_embeddings[:50],
+        "last_sync_timestamp": last_sync * 1000 if last_sync else None
+    }
 
 # ─── Build Embeddings (streaming subprocess) ──────────────────────────────────
 

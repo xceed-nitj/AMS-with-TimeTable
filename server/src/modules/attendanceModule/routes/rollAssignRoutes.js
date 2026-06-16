@@ -25,6 +25,10 @@ router.get('/photo/:batch/:folder/:filename',         wrap(ctrl.servePhoto));
 router.get('/erp-photo/:batch/:filename',             wrap(ctrl.serveErpPhoto));
 router.get('/erp-photo/:filename',                    wrap(ctrl.serveErpPhoto));
 
+// ── ERP embedding status ──────────────────────────────────────────
+// Check if pre-built pkl exists for a batch and return student count
+router.get('/erp-embedding/status/:batch',            wrap(ctrl.erpEmbeddingStatus));
+
 // ── Matching ──────────────────────────────────────────────────────
 // SSE stream: match clusters against ERP photos via Python ML service
 router.post('/auto-match/:batch',                     wrap(ctrl.autoMatch));
@@ -34,6 +38,8 @@ router.post('/save-match-result',                     wrap(ctrl.saveMatchResult)
 router.post('/auto-assign-all',                       wrap(ctrl.autoAssignAll));
 
 // ── DB records ────────────────────────────────────────────────────
+// Dept-wise summary of all batches (for Summary tab)
+router.get('/summary',                                wrap(ctrl.getSummary));
 // Load all match records for a batch (for page reload)
 router.get('/matches/:batch',                         wrap(ctrl.getMatches));
 

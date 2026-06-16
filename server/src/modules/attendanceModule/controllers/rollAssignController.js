@@ -12,6 +12,70 @@ const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data',
 const ERP_PHOTOS_DIR   = process.env.ERP_PHOTOS_DIR ||
                           path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'erp_photos');
 
+// Minimum confidence to treat an ERP match as genuine (same dept).
+// Below this we fall back to matching against approved ground truth clusters.
+const CROSS_DEPT_CONFIDENCE_THRESHOLD = parseFloat(process.env.CROSS_DEPT_CONFIDENCE_THRESHOLD || '0.45');
+
+// Minimum confidence to accept a ground-truth cluster match.
+const GT_MATCH_THRESHOLD = parseFloat(process.env.GT_MATCH_THRESHOLD || '0.55');
+
+// ── Match a person_XXX cluster against approved ground-truth folders ────────
+// Reads mean_embedding from each approved student's _info.json (no ML call for
+// those) and calls the ML service only to get the cluster's own mean embedding.
+// Returns { rollNo, confidence } if a match exceeds GT_MATCH_THRESHOLD, else null.
+async function matchAgainstGroundTruth(batch, batchPath, folderPath) {
+    const ML_SVC = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+
+    // ── Step 1: get the cluster's mean embedding from ML service ────────────
+    let clusterEmb;
+    try {
+        const res = await axios.post(
+            `${ML_SVC}/cluster-mean-embedding`,
+            { folder_path: folderPath },
+            { timeout: 15000 }
+        );
+        clusterEmb = res.data?.embedding;   // float32 array
+    } catch (_) {
+        return null;  // ML service unavailable — skip GT matching
+    }
+    if (!clusterEmb || !clusterEmb.length) return null;
+
+    // ── Step 2: load mean embeddings from every approved GT folder ──────────
+    const approvedRecords = await ClusterMatch.find({ batch, approved: true, rollNo: { $ne: null } }).lean();
+    if (!approvedRecords.length) return null;
+
+    let bestRoll = null, bestConf = -Infinity;
+
+    for (const rec of approvedRecords) {
+        const gtFolder = rec.rollNo;   // approved folder is always named after rollNo
+        const infoPath = path.join(batchPath, gtFolder, '_info.json');
+        if (!fs.existsSync(infoPath)) continue;
+
+        let gtEmb;
+        try {
+            const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+            gtEmb = info.mean_embedding;   // cached by update-student-embedding
+        } catch (_) { continue; }
+        if (!gtEmb || !gtEmb.length) continue;
+
+        // cosine similarity
+        let dot = 0, normA = 0, normB = 0;
+        for (let i = 0; i < clusterEmb.length; i++) {
+            dot   += clusterEmb[i] * gtEmb[i];
+            normA += clusterEmb[i] * clusterEmb[i];
+            normB += gtEmb[i]       * gtEmb[i];
+        }
+        const sim = normA && normB ? dot / (Math.sqrt(normA) * Math.sqrt(normB)) : 0;
+
+        if (sim > bestConf) { bestConf = sim; bestRoll = rec.rollNo; }
+    }
+
+    if (bestConf >= GT_MATCH_THRESHOLD && bestRoll) {
+        return { rollNo: bestRoll, confidence: Math.round(bestConf * 10000) / 10000 };
+    }
+    return null;
+}
+
 function ensureDir(p) {
     if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 }
@@ -265,27 +329,103 @@ class RollAssignController {
                     const srcPath = path.join(batchPath, folderName);
                     const { imageFiles, embeddingFiles } = await readFolderFiles(srcPath);
 
-                    // ── No face detected — save unmatched, keep folder as-is ─
+                    // ── No face detected OR no ERP match ──────────────────
                     if (matchData.error || !matchData.best) {
+                        // Faces were detected but no ERP match at all —
+                        // try matching against approved ground truth in this batch.
+                        if (!matchData.error && matchData.image_count > 0) {
+                            const gtMatch = await matchAgainstGroundTruth(batch, batchPath, srcPath);
+                            if (gtMatch) {
+                                // GT matched — treat exactly like a normal ERP match
+                                await ClusterMatch.findOneAndUpdate(
+                                    { batch, folderName },
+                                    { $set: {
+                                        currentFolder: folderName,
+                                        rollNo:        gtMatch.rollNo,
+                                        status:        'matched',
+                                        approved:      false,
+                                        erpPhoto:      null,
+                                        confidence:    gtMatch.confidence,
+                                        candidates:    [],
+                                        imageFiles, embeddingFiles,
+                                        previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                                        imageCount:    matchData.image_count    || imageFiles.length,
+                                        error:         null,
+                                        updated_at:    new Date(),
+                                    }},
+                                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                                );
+                                saved++;
+                                return;
+                            }
+                        }
+                        // Truly unidentifiable — no ERP, no GT match (or no face at all)
+                        const isCrossDept = !matchData.error && matchData.image_count > 0;
                         await ClusterMatch.findOneAndUpdate(
                             { batch, folderName },
-                            {
-                                $set: {
-                                    currentFolder:  folderName,   // stays person_XXX
-                                    rollNo:         null,
-                                    status:         'unmatched',
-                                    approved:       false,
-                                    erpPhoto:       null,
-                                    confidence:     null,
-                                    candidates:     [],
-                                    imageFiles,
-                                    embeddingFiles,
-                                    previewFiles:   matchData.preview_images || imageFiles.slice(0, 6),
-                                    imageCount:     matchData.image_count    || imageFiles.length,
-                                    error:          matchData.error          || 'no match',
-                                    updated_at:     new Date(),
-                                },
-                            },
+                            { $set: {
+                                currentFolder: folderName,
+                                rollNo:        null,
+                                status:        isCrossDept ? 'cross_dept' : 'unmatched',
+                                approved:      false,
+                                erpPhoto:      null,
+                                confidence:    null,
+                                candidates:    [],
+                                imageFiles, embeddingFiles,
+                                previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                                imageCount:    matchData.image_count    || imageFiles.length,
+                                error:         matchData.error          || null,
+                                updated_at:    new Date(),
+                            }},
+                            { upsert: true, new: true, setDefaultsOnInsert: true }
+                        );
+                        unmatched++;
+                        return;
+                    }
+
+                    // ── ERP returned a best match — but confidence too low? ─────────────
+                    // Fall back to ground truth cluster matching before giving up.
+                    if (matchData.best.confidence < CROSS_DEPT_CONFIDENCE_THRESHOLD) {
+                        const gtMatch = await matchAgainstGroundTruth(batch, batchPath, srcPath);
+                        if (gtMatch) {
+                            await ClusterMatch.findOneAndUpdate(
+                                { batch, folderName },
+                                { $set: {
+                                    currentFolder: folderName,
+                                    rollNo:        gtMatch.rollNo,
+                                    status:        'matched',
+                                    approved:      false,
+                                    erpPhoto:      null,
+                                    confidence:    gtMatch.confidence,
+                                    candidates:    matchData.candidates || [],
+                                    imageFiles, embeddingFiles,
+                                    previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                                    imageCount:    matchData.image_count    || imageFiles.length,
+                                    error:         null,
+                                    updated_at:    new Date(),
+                                }},
+                                { upsert: true, new: true, setDefaultsOnInsert: true }
+                            );
+                            saved++;
+                            return;
+                        }
+                        // GT also didn’t match — save as cross_dept
+                        await ClusterMatch.findOneAndUpdate(
+                            { batch, folderName },
+                            { $set: {
+                                currentFolder: folderName,
+                                rollNo:        null,
+                                status:        'cross_dept',
+                                approved:      false,
+                                erpPhoto:      null,
+                                confidence:    matchData.best.confidence,
+                                candidates:    matchData.candidates || [],
+                                imageFiles, embeddingFiles,
+                                previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                                imageCount:    matchData.image_count    || imageFiles.length,
+                                error:         null,
+                                updated_at:    new Date(),
+                            }},
                             { upsert: true, new: true, setDefaultsOnInsert: true }
                         );
                         unmatched++;
@@ -350,30 +490,99 @@ class RollAssignController {
             const srcPath   = path.join(batchPath, folderName);
             const { imageFiles, embeddingFiles } = await readFolderFiles(srcPath);
 
-            // ── No face detected — save unmatched, keep folder ────
+            // ── No face detected OR no ERP match ───────────────────
             if (matchData.error || !matchData.best) {
+                if (!matchData.error && matchData.image_count > 0) {
+                    const gtMatch = await matchAgainstGroundTruth(batch, batchPath, srcPath);
+                    if (gtMatch) {
+                        await ClusterMatch.findOneAndUpdate(
+                            { batch, folderName },
+                            { $set: {
+                                currentFolder: folderName,
+                                rollNo:        gtMatch.rollNo,
+                                status:        'matched',
+                                approved:      false,
+                                erpPhoto:      null,
+                                confidence:    gtMatch.confidence,
+                                candidates:    [],
+                                imageFiles, embeddingFiles,
+                                previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                                imageCount:    matchData.image_count    || imageFiles.length,
+                                error:         null,
+                                updated_at:    new Date(),
+                            }},
+                            { upsert: true, new: true, setDefaultsOnInsert: true }
+                        );
+                        return res.json({ ok: true, status: 'matched', folderName, rollNo: gtMatch.rollNo });
+                    }
+                }
+                const isCrossDept = !matchData.error && matchData.image_count > 0;
                 await ClusterMatch.findOneAndUpdate(
                     { batch, folderName },
-                    {
-                        $set: {
-                            currentFolder:  folderName,
-                            rollNo:         null,
-                            status:         'unmatched',
-                            approved:       false,
-                            erpPhoto:       null,
-                            confidence:     null,
-                            candidates:     [],
-                            imageFiles,
-                            embeddingFiles,
-                            previewFiles:   matchData.preview_images || imageFiles.slice(0, 6),
-                            imageCount:     matchData.image_count    || imageFiles.length,
-                            error:          matchData.error          || 'no match',
-                            updated_at:     new Date(),
-                        },
-                    },
+                    { $set: {
+                        currentFolder: folderName,
+                        rollNo:        null,
+                        status:        isCrossDept ? 'cross_dept' : 'unmatched',
+                        approved:      false,
+                        erpPhoto:      null,
+                        confidence:    null,
+                        candidates:    [],
+                        imageFiles, embeddingFiles,
+                        previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                        imageCount:    matchData.image_count    || imageFiles.length,
+                        error:         matchData.error          || null,
+                        updated_at:    new Date(),
+                    }},
                     { upsert: true, new: true, setDefaultsOnInsert: true }
                 );
-                return res.json({ ok: true, status: 'unmatched', folderName });
+                return res.json({ ok: true, status: isCrossDept ? 'cross_dept' : 'unmatched', folderName });
+            }
+
+            // ── ERP has a best match — but confidence too low? ──────────────────
+            // Fall back to ground truth cluster matching before giving up.
+            if (matchData.best.confidence < CROSS_DEPT_CONFIDENCE_THRESHOLD) {
+                const gtMatch = await matchAgainstGroundTruth(batch, batchPath, srcPath);
+                if (gtMatch) {
+                    await ClusterMatch.findOneAndUpdate(
+                        { batch, folderName },
+                        { $set: {
+                            currentFolder: folderName,
+                            rollNo:        gtMatch.rollNo,
+                            status:        'matched',
+                            approved:      false,
+                            erpPhoto:      null,
+                            confidence:    gtMatch.confidence,
+                            candidates:    matchData.candidates || [],
+                            imageFiles, embeddingFiles,
+                            previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                            imageCount:    matchData.image_count    || imageFiles.length,
+                            error:         null,
+                            updated_at:    new Date(),
+                        }},
+                        { upsert: true, new: true, setDefaultsOnInsert: true }
+                    );
+                    return res.json({ ok: true, status: 'matched', folderName, rollNo: gtMatch.rollNo });
+                }
+                // GT also didn’t match — cross_dept
+                await ClusterMatch.findOneAndUpdate(
+                    { batch, folderName },
+                    { $set: {
+                        currentFolder: folderName,
+                        rollNo:        null,
+                        status:        'cross_dept',
+                        approved:      false,
+                        erpPhoto:      null,
+                        confidence:    matchData.best.confidence,
+                        candidates:    matchData.candidates || [],
+                        imageFiles, embeddingFiles,
+                        previewFiles:  matchData.preview_images || imageFiles.slice(0, 6),
+                        imageCount:    matchData.image_count    || imageFiles.length,
+                        error:         null,
+                        updated_at:    new Date(),
+                    }},
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+                return res.json({ ok: true, status: 'cross_dept', folderName });
             }
 
             // ── Has a best match — save with matched status, folder stays person_XXX ─
@@ -624,14 +833,17 @@ class RollAssignController {
             const safeFilename = path.basename(filename);
             const safeBatch    = batch ? path.basename(batch) : null;
 
+            // 1. batch-specific subfolder: erp_photos/<batch>/<filename>
             if (safeBatch) {
                 const batchPath = path.join(ERP_PHOTOS_DIR, safeBatch, safeFilename);
                 if (fs.existsSync(batchPath)) return res.sendFile(batchPath);
             }
 
+            // 2. flat root: erp_photos/<filename>
             const flatPath = path.join(ERP_PHOTOS_DIR, safeFilename);
             if (fs.existsSync(flatPath)) return res.sendFile(flatPath);
 
+            // 3. search every subdirectory inside erp_photos/
             if (fs.existsSync(ERP_PHOTOS_DIR)) {
                 const dirs = fs.readdirSync(ERP_PHOTOS_DIR, { withFileTypes: true })
                     .filter(e => e.isDirectory()).map(e => e.name);
@@ -647,6 +859,42 @@ class RollAssignController {
         }
     }
 
+    // ─── ERP embedding status (available + student count) ────────
+    async erpEmbeddingStatus(req, res) {
+        try {
+            const { batch }  = req.params;
+            const parts      = batch.split('_');
+            const department = parts.slice(1, -1).join('_');
+            const ML_SVC     = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+
+            let pkgCheck = { available: false };
+            try {
+                const checkRes = await axios.get(`${ML_SVC}/erp-embedding/check`, {
+                    params: { batch, department }, timeout: 5000,
+                });
+                pkgCheck = checkRes.data;
+            } catch (_) {}
+
+            // Count ERP photos as proxy for student count when ML doesn't provide it
+            const batchPhotoDir = path.join(ERP_PHOTOS_DIR, batch);
+            let studentCount = pkgCheck.student_count || pkgCheck.num_students || pkgCheck.count || 0;
+            if (!studentCount && fs.existsSync(batchPhotoDir)) {
+                try {
+                    studentCount = fs.readdirSync(batchPhotoDir)
+                        .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length;
+                } catch (_) {}
+            }
+
+            res.json({
+                available:    !!pkgCheck.available,
+                pklName:      pkgCheck.pkl_path ? path.basename(pkgCheck.pkl_path) : null,
+                studentCount,
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     // ─── Auto-match clusters to ERP photos (SSE stream) ──────────
     async autoMatch(req, res) {
         try {
@@ -656,38 +904,60 @@ class RollAssignController {
                 return res.status(404).json({ error: 'Batch not found' });
             }
 
-            const batchErpDir = path.join(ERP_PHOTOS_DIR, batch);
-            const erpDir      = fs.existsSync(batchErpDir) ? batchErpDir : ERP_PHOTOS_DIR;
+            const parts      = batch.split('_');
+            const department = parts.slice(1, -1).join('_');
 
-            const erpFiles = fs.existsSync(erpDir)
-                ? fs.readdirSync(erpDir).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
-                : [];
-            if (!erpFiles.length) {
-                return res.status(400).json({
-                    error: `No ERP photos found. Place student photos named {rollNo}.jpg in erp_photos/${batch}/`,
+            const ML_SVC          = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+            const ERP_PHOTOS_BASE = ERP_PHOTOS_DIR;
+            const batchPhotoDir   = path.join(ERP_PHOTOS_BASE, batch);
+            const erpPhotosDir    = fs.existsSync(batchPhotoDir) ? batchPhotoDir : ERP_PHOTOS_BASE;
+
+            // ── Check for pre-built pkl ───────────────────────────────────
+            let pkgCheck = { available: false };
+            try {
+                const checkRes = await axios.get(`${ML_SVC}/erp-embedding/check`, {
+                    params: { batch, department }, timeout: 8000,
                 });
+                pkgCheck = checkRes.data;
+            } catch (_) {}
+
+            // Require pre-built pkl — block before starting SSE stream
+            if (!pkgCheck.available) {
+                return res.status(422).json({ noEmbedding: true, batch, department });
             }
 
-            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Content-Type',  'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
-            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('Connection',    'keep-alive');
             res.flushHeaders();
 
-            const response = await axios.post(
-                `${ML_SERVICE_URL}/match-clusters-to-erp`,
-                { batch_dir: batchPath, erp_photos_dir: erpDir, top_k: 3 },
+            const mlResponse = await axios.post(
+                `${ML_SVC}/match-clusters-to-erp-fast`,
+                {
+                    batch_dir:      batchPath,
+                    pkl_path:       pkgCheck.pkl_path,
+                    erp_photos_dir: erpPhotosDir,
+                    top_k:          3,
+                },
                 { responseType: 'stream', timeout: 0 }
             );
-            response.data.pipe(res);
-            response.data.on('end',   () => res.end());
-            response.data.on('error', (err) => {
-                res.write(`data: ${JSON.stringify({ type: 'error', msg: err.message })}\n\n`);
-                res.end();
+
+            mlResponse.data.pipe(res);
+            mlResponse.data.on('end',   () => res.end());
+            mlResponse.data.on('error', (err) => {
+                if (!res.writableEnded) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', msg: err.message })}\n\n`);
+                    res.end();
+                }
             });
+
         } catch (err) {
             const msg = err.response?.data?.detail || err.message;
             if (!res.headersSent) res.status(500).json({ error: msg });
-            else { res.write(`data: ${JSON.stringify({ type: 'error', msg })}\n\n`); res.end(); }
+            else {
+                res.write(`data: ${JSON.stringify({ type: 'error', msg })}\n\n`);
+                res.end();
+            }
         }
     }
 
@@ -875,6 +1145,23 @@ class RollAssignController {
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
+    }
+
+    async getSummary(req, res) {
+        const agg = await ClusterMatch.aggregate([
+            { $group: {
+                _id:        '$batch',
+                total:      { $sum: 1 },
+                approved:   { $sum: { $cond: [{ $eq: ['$approved', true] }, 1, 0] } },
+                pending:    { $sum: { $cond: [{ $and: [{ $eq: ['$status', 'matched'] }, { $eq: ['$approved', false] }] }, 1, 0] } },
+                flagged:    { $sum: { $cond: [{ $eq: ['$status', 'flagged'] }, 1, 0] } },
+                unmatched:  { $sum: { $cond: [{ $eq: ['$status', 'unmatched'] }, 1, 0] } },
+                cross_dept: { $sum: { $cond: [{ $eq: ['$status', 'cross_dept'] }, 1, 0] } },
+            }},
+            { $project: { _id: 0, batch: '$_id', total: 1, approved: 1, pending: 1, flagged: 1, unmatched: 1, cross_dept: 1 } },
+            { $sort: { batch: 1 } },
+        ]);
+        res.json({ batches: agg });
     }
 }
 

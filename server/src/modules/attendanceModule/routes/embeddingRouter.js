@@ -68,6 +68,18 @@ router.get('/list-files', async (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /attendancemodule/embeddings/list-files-by-dept?dept=ECE
+router.get('/list-files-by-dept', async (req, res) => {
+    try { await ctrl.listFilesByDept(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// DELETE /attendancemodule/embeddings/file — deletes physical .pkl + DB records (must be before /:id)
+router.delete('/file', async (req, res) => {
+    try { await ctrl.deleteFile(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // DELETE /attendancemodule/embeddings/:id
 router.delete('/:id', async (req, res) => {

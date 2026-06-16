@@ -4,9 +4,14 @@ const path       = require('path');
 const fs         = require('fs');
 const fsPromises = require('fs').promises;
 const JSZip      = require('jszip');
+const crypto     = require('crypto');
+const Batch      = require('../../../models/attendanceModule/batch');
+
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8500';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ERP_PHOTOS_DIR = path.resolve(__dirname, '..', '..', '..', '..', 'ml-data', 'erp_photos');
+const ERP_EMBED_DIR  = path.resolve(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings', 'erp');
 
 const MAX_FILES_IN_ZIP  = 500;
 const MAX_IMAGE_SIZE    = 10 * 1024 * 1024;   // 10 MB per image
@@ -75,6 +80,59 @@ function isValidImage(buffer, ext) {
     if (!signature) return false;
     if (buffer.length < signature.length) return false;
     return signature.every((byte, i) => buffer[i] === byte);
+}
+
+// ─── Find pkl path for a batch (ML service saves under {dept}/{batch}/) ─────
+function findEmbeddingPkl(batchName) {
+    const parts = batchName.split('_');
+    const department = parts.length >= 3 ? parts.slice(1, -1).join('_') : '';
+    if (department) {
+        const newPath = path.join(ERP_EMBED_DIR, department, batchName, 'embeddings_db.pkl');
+        if (fs.existsSync(newPath)) return newPath;
+    }
+    // Fallback: flat path used before department subfolder convention
+    const oldPath = path.join(ERP_EMBED_DIR, batchName, 'embeddings_db.pkl');
+    if (fs.existsSync(oldPath)) return oldPath;
+    return null;
+}
+
+// ─── Trigger Async Background Sync ────────────────────────────────────────────
+async function triggerEmbeddingSync(action, payload) {
+    const reqId = crypto.randomUUID();
+    try {
+        let department = 'UNKNOWN_DEPT';
+        const parts = payload.batch.split('_');
+        if (parts.length >= 3) {
+            department = parts.slice(1, -1).join('_');
+        }
+
+        const url = `${ML_SERVICE_URL}/erp-embedding/${action}`;
+        const body = {
+            ...payload,
+            department
+        };
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
+        // Fire and forget: do not await the fetch response parsing
+        fetch(url, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Request-ID': reqId
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal
+        }).catch(err => {
+            console.error(`[GT Upload] [${reqId}] Async sync trigger failed for action=${action} batch=${payload.batch}:`, err.message);
+        }).finally(() => {
+            clearTimeout(timeout);
+        });
+
+    } catch (err) {
+        console.error(`[GT Upload] [${reqId}] Failed to resolve metadata and trigger sync for action=${action} batch=${payload.batch}:`, err.message);
+    }
 }
 
 // ─── Controller ───────────────────────────────────────────────────────────────
@@ -198,6 +256,18 @@ class GroundTruthUploadController {
                 errors: errors.length ? errors : undefined
             });
 
+            // Trigger background sync
+            if (targetFolders.size > 0) {
+                const roll_nos = Array.from(targetFolders);
+                const chunkSize = 1000;
+                for (let i = 0; i < roll_nos.length; i += chunkSize) {
+                    triggerEmbeddingSync('sync', {
+                        batch: batch,
+                        roll_nos: roll_nos.slice(i, i + chunkSize)
+                    });
+                }
+            }
+
         } catch (err) {
             if (err.message === 'Invalid batch name' || err.message === 'Batch name is required') {
                 return res.status(400).json({ error: err.message });
@@ -253,6 +323,12 @@ class GroundTruthUploadController {
                 message: 'Photo uploaded successfully',
                 rollNo: safeRollNo,
                 imagesAdded: 1
+            });
+
+            // Trigger background sync
+            triggerEmbeddingSync('sync', {
+                batch: batch,
+                roll_nos: [safeRollNo]
             });
 
         } catch (err) {
@@ -325,6 +401,13 @@ class GroundTruthUploadController {
                 newRollNo: safeNewRollNo
             });
 
+            // Trigger background sync rename
+            triggerEmbeddingSync('rename', {
+                batch: batch,
+                old_roll_no: safeOldRollNo,
+                new_roll_no: safeNewRollNo
+            });
+
         } catch (err) {
             if (err.message === 'Invalid batch name' || err.message === 'Invalid roll number' ||
                 err.message === 'Batch name is required') {
@@ -332,6 +415,203 @@ class GroundTruthUploadController {
             }
             console.error('[GT Upload] Rename error:', err);
             res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ─── Delete Student Photo ───────────────────────────────────────────────
+    async deletePhoto(req, res) {
+        try {
+            const batch = sanitizeBatch(req.params.batch);
+            const safeRollNo = sanitizeRollNo(req.params.rollNo);
+
+            const batchPath = path.join(ERP_PHOTOS_DIR, batch);
+            assertInsideRoot(batchPath);
+
+            if (!fs.existsSync(batchPath)) {
+                return res.status(404).json({ error: 'Batch folder not found' });
+            }
+
+            const existingFiles = await fsPromises.readdir(batchPath);
+            let photoDeleted = false;
+
+            for (const f of existingFiles) {
+                const ext = path.extname(f);
+                const roll = path.basename(f, ext);
+                if (roll.toUpperCase() === safeRollNo) {
+                    const filePath = path.join(batchPath, f);
+                    assertInsideRoot(filePath);
+                    await fsPromises.unlink(filePath);
+                    photoDeleted = true;
+                }
+            }
+
+            if (!photoDeleted) {
+                return res.status(404).json({ error: 'Photo not found' });
+            }
+
+            console.log(`[GT Upload] Delete: batch=${batch} rollNo=${safeRollNo}`);
+
+            res.json({
+                message: 'Photo deleted successfully',
+                rollNo: safeRollNo
+            });
+
+            // Trigger background sync delete
+            triggerEmbeddingSync('delete', {
+                batch: batch,
+                roll_no: safeRollNo
+            });
+
+        } catch (err) {
+            if (err.message === 'Invalid batch name' || err.message === 'Invalid roll number' || err.message === 'Batch name is required') {
+                return res.status(400).json({ error: err.message });
+            }
+            console.error('[GT Upload] Delete error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ─── Force Sync All ───────────────────────────────────────────────
+    async syncAll(req, res) {
+        try {
+            const batch = sanitizeBatch(req.params.batch);
+            const batchPath = path.join(ERP_PHOTOS_DIR, batch);
+            assertInsideRoot(batchPath);
+
+            let roll_nos = [];
+            if (fs.existsSync(batchPath)) {
+                const existingFiles = await fsPromises.readdir(batchPath);
+                for (const f of existingFiles) {
+                    const ext = path.extname(f);
+                    const roll = path.basename(f, ext);
+                    if (/^\.(jpg|jpeg|png|webp)$/i.test(ext)) {
+                        roll_nos.push(roll.toUpperCase());
+                    }
+                }
+            }
+
+            // Immediately respond
+            res.json({
+                message: `Triggered sync for ${roll_nos.length} photos`,
+                photosCount: roll_nos.length
+            });
+
+            if (roll_nos.length > 0) {
+                const chunkSize = 1000;
+                for (let i = 0; i < roll_nos.length; i += chunkSize) {
+                    triggerEmbeddingSync('sync', {
+                        batch: batch,
+                        roll_nos: roll_nos.slice(i, i + chunkSize)
+                    });
+                }
+            }
+
+        } catch (err) {
+            console.error('[GT Upload] syncAll error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ─── List Photos in a Batch ───────────────────────────────────────
+    async listPhotos(req, res) {
+        try {
+            const batch = sanitizeBatch(req.params.batch);
+            const batchPath = path.join(ERP_PHOTOS_DIR, batch);
+            assertInsideRoot(batchPath);
+
+            if (!fs.existsSync(batchPath)) {
+                return res.json({ rollNos: [], count: 0, batch });
+            }
+
+            const files = await fsPromises.readdir(batchPath);
+            const rollNos = files
+                .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
+                .map(f => ({ rollNo: path.basename(f, path.extname(f)).toUpperCase(), ext: path.extname(f).toLowerCase() }))
+                .sort((a, b) => a.rollNo.localeCompare(b.rollNo));
+
+            res.json({ rollNos, count: rollNos.length, batch });
+        } catch (err) {
+            if (err.message === 'Invalid batch name' || err.message === 'Batch name is required') {
+                return res.status(400).json({ error: err.message });
+            }
+            console.error('[GT Upload] listPhotos error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ─── Summary of All ERP Photo Batches ────────────────────────────
+    async listAllBatches(req, res) {
+        try {
+            if (!fs.existsSync(ERP_PHOTOS_DIR)) {
+                return res.json({ batches: [] });
+            }
+
+            const entries = await fsPromises.readdir(ERP_PHOTOS_DIR, { withFileTypes: true });
+            const batches = [];
+
+            for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+                const batchPath = path.join(ERP_PHOTOS_DIR, entry.name);
+                const files = await fsPromises.readdir(batchPath);
+                const count = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).length;
+                const pklPath = findEmbeddingPkl(entry.name);
+                let hasEmbedding = false, embeddingUpdatedAt = null;
+                if (pklPath) {
+                    hasEmbedding = true;
+                    try { embeddingUpdatedAt = fs.statSync(pklPath).mtime; } catch (_) {}
+                }
+                batches.push({ batch: entry.name, count, hasEmbedding, embeddingUpdatedAt });
+            }
+
+            batches.sort((a, b) => a.batch.localeCompare(b.batch));
+            res.json({ batches });
+        } catch (err) {
+            console.error('[GT Upload] listAllBatches error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ─── Check if ERP pkl exists (filesystem only, no ML call) ───────
+    async checkEmbedding(req, res) {
+        try {
+            const batch   = sanitizeBatch(req.params.batch);
+            const pklPath = findEmbeddingPkl(batch);
+            let updatedAt = null;
+            if (pklPath) {
+                try { updatedAt = fs.statSync(pklPath).mtime; } catch (_) {}
+            }
+            res.json({ available: !!pklPath, updatedAt });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ─── Get Sync Status ───────────────────────────────────────────────
+    async getStatus(req, res) {
+        try {
+            const batchString = sanitizeBatch(req.params.batch);
+            let department = 'UNKNOWN_DEPT';
+            const parts = batchString.split('_');
+            if (parts.length >= 3) {
+                department = parts.slice(1, -1).join('_');
+            }
+
+            const url = `${ML_SERVICE_URL}/erp-embedding/status/${encodeURIComponent(batchString)}?department=${encodeURIComponent(department)}`;
+            
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
+            
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeout);
+            
+            if (!response.ok) {
+                throw new Error('ML service returned error');
+            }
+            const data = await response.json();
+            res.json(data);
+        } catch (e) {
+            console.error('[GT Upload] status proxy error:', e.message);
+            res.status(502).json({ error: 'Failed to fetch status from ML service' });
         }
     }
 }

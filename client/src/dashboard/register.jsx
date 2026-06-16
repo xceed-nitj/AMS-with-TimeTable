@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Input,
@@ -7,6 +7,9 @@ import {
   Checkbox,
   Text,
   Heading,
+  FormControl,
+  FormLabel,
+  Select,
 } from '@chakra-ui/react';
 import getEnvironment from '../getenvironment';
 
@@ -15,13 +18,62 @@ const RegistrationForm = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    dept: '',
     roles: [], // Set a default role or leave it empty
   });
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [departments, setDepartments] = useState([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [departmentError, setDepartmentError] = useState('');
 
   const apiUrl = getEnvironment();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch(
+          `${apiUrl}/timetablemodule/timetable/sess/allsessanddept`,
+          { credentials: 'include' },
+        );
+        if (!response.ok) {
+          throw new Error('Failed to load departments');
+        }
+
+        const data = await response.json();
+        const uniqueDepartments = Array.from(
+          new Set(
+            (data.uniqueDept || [])
+              .map((department) => department?.trim())
+              .filter(Boolean),
+          ),
+        ).sort((a, b) => a.localeCompare(b));
+
+        if (!cancelled) {
+          setDepartments(uniqueDepartments);
+          setDepartmentError(
+            uniqueDepartments.length ? '' : 'No departments found in the timetable.',
+          );
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          setDepartmentError(fetchError.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setDepartmentsLoading(false);
+        }
+      }
+    };
+
+    fetchDepartments();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -57,6 +109,12 @@ const RegistrationForm = () => {
     if (formData.password.length < 6) {
       setError('Password should be a minimum of 6 characters.');
       setSuccess(''); // Clear success message on error
+      return;
+    }
+
+    if (formData.roles.includes('iams-dept-admin') && !formData.dept) {
+      setError('Department is required for an IAMS Department Admin.');
+      setSuccess('');
       return;
     }
 
@@ -114,6 +172,31 @@ const RegistrationForm = () => {
           value={formData.confirmPassword}
           onChange={handleInputChange}
         />
+        <FormControl>
+          <FormLabel mb={1}>Department (optional)</FormLabel>
+          <Select
+            name="dept"
+            value={formData.dept}
+            onChange={handleInputChange}
+            placeholder={
+              departmentsLoading
+                ? 'Loading departments...'
+                : 'No department selected'
+            }
+            isDisabled={departmentsLoading || Boolean(departmentError)}
+          >
+            {departments.map((department) => (
+              <option key={department} value={department}>
+                {department}
+              </option>
+            ))}
+          </Select>
+          {departmentError && (
+            <Text color="red.500" fontSize="sm" mt={1}>
+              {departmentError}
+            </Text>
+          )}
+        </FormControl>
         <VStack align="start" spacing={2}>
           <Text>Select Role(s):</Text>
           <Checkbox

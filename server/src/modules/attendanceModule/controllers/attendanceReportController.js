@@ -1,354 +1,493 @@
 // server/src/modules/attendanceModule/controllers/attendanceReportController.js
 
-const AttendanceReport = require('../../../models/attendanceReport');
-const LockSem          = require('../../../models/locksem');
-
-// ── Merge logic (notebook: merging both → final status) ──────
-// REPLACE the entire mergeStudentStatus function with this:
+const AttendanceReport = require("../../../models/attendanceReport");
+const LockSem = require("../../../models/locksem");
 
 function mergeStudentStatus(slotResults) {
-    const rollMap = {};
+  const rollMap = {};
 
-    for (const slot of slotResults) {
-        for (const s of slot.students) {
-            if (!rollMap[s.rollNo]) rollMap[s.rollNo] = [];
-            rollMap[s.rollNo].push({
-                status:         s.status,
-                avgConfidence:  s.avgConfidence  || 0,
-                confidenceZone: s.confidenceZone || 'low',
-                firstSeenSec:   s.firstSeenSec,
-                clusterFolder:  s.clusterFolder,
-                slot:           slot.slot,
-            });
-        }
+  for (const slot of slotResults) {
+    for (const s of slot.students) {
+      if (!rollMap[s.rollNo]) rollMap[s.rollNo] = [];
+      rollMap[s.rollNo].push({
+        status: s.status,
+        avgConfidence: s.avgConfidence || 0,
+        confidenceZone: s.confidenceZone || "low",
+        firstSeenSec: s.firstSeenSec,
+        clusterFolder: s.clusterFolder,
+        slot: slot.slot,
+      });
+    }
+  }
+
+  const finalReport = [];
+  for (const [rollNo, entries] of Object.entries(rollMap)) {
+    // Best = highest confidence across ALL runs (both cameras)
+    const best = entries.reduce(
+      (prev, cur) =>
+        (cur.avgConfidence || 0) > (prev.avgConfidence || 0) ? cur : prev,
+      entries[0],
+    );
+
+    const presentEntries = entries.filter((e) => e.status === "present");
+    const reviewEntries = entries.filter((e) => e.status === "review");
+    const allAbsent = entries.every((e) => e.status === "absent");
+
+    let finalStatus;
+
+    if (allAbsent) {
+      // Absent in every run across every camera → definitely absent
+      finalStatus = "A";
+    } else if (presentEntries.length > 0) {
+      // Present in at least one run — use best confidence to decide P vs R
+      const bestPresent = presentEntries.reduce(
+        (prev, cur) =>
+          (cur.avgConfidence || 0) > (prev.avgConfidence || 0) ? cur : prev,
+        presentEntries[0],
+      );
+
+      if (
+        bestPresent.confidenceZone === "high" ||
+        bestPresent.confidenceZone === "medium"
+      ) {
+        finalStatus = "P";
+      } else {
+        // Low confidence present — mark Review for manual check
+        finalStatus = "R";
+      }
+    } else if (reviewEntries.length > 0) {
+      // Only review statuses (no clear present) → keep as Review
+      finalStatus = "R";
+    } else {
+      finalStatus = "A";
     }
 
-    const finalReport = [];
-    for (const [rollNo, entries] of Object.entries(rollMap)) {
-        // Best = highest confidence across ALL runs (both cameras)
-        const best = entries.reduce((prev, cur) =>
-            (cur.avgConfidence || 0) > (prev.avgConfidence || 0) ? cur : prev, entries[0]);
+    finalReport.push({
+      rollNo,
+      status: best.status,
+      avgConfidence: best.avgConfidence,
+      confidenceZone: best.confidenceZone,
+      firstSeenSec: best.firstSeenSec,
+      clusterFolder: best.clusterFolder,
+      finalStatus,
+    });
+  }
 
-        const presentEntries = entries.filter(e => e.status === 'present');
-        const reviewEntries  = entries.filter(e => e.status === 'review');
-        const allAbsent      = entries.every(e => e.status === 'absent');
-
-        let finalStatus;
-
-        if (allAbsent) {
-            // Absent in every run across every camera → definitely absent
-            finalStatus = 'A';
-        } else if (presentEntries.length > 0) {
-            // Present in at least one run — use best confidence to decide P vs R
-            const bestPresent = presentEntries.reduce((prev, cur) =>
-                (cur.avgConfidence || 0) > (prev.avgConfidence || 0) ? cur : prev, presentEntries[0]);
-
-            if (bestPresent.confidenceZone === 'high' || bestPresent.confidenceZone === 'medium') {
-                finalStatus = 'P';
-            } else {
-                // Low confidence present — mark Review for manual check
-                finalStatus = 'R';
-            }
-        } else if (reviewEntries.length > 0) {
-            // Only review statuses (no clear present) → keep as Review
-            finalStatus = 'R';
-        } else {
-            finalStatus = 'A';
-        }
-
-        finalReport.push({
-            rollNo,
-            status:         best.status,
-            avgConfidence:  best.avgConfidence,
-            confidenceZone: best.confidenceZone,
-            firstSeenSec:   best.firstSeenSec,
-            clusterFolder:  best.clusterFolder,
-            finalStatus,
-        });
-    }
-
-    return finalReport;
+  return finalReport;
 }
 
-// ── Build summary counts ──────────────────────────────────────
+// Build summary counts
 function buildSummary(finalReport) {
-    const total   = finalReport.length;
-    const present = finalReport.filter(s => s.finalStatus === 'P').length;
-    const absent  = finalReport.filter(s => s.finalStatus === 'A').length;
-    const review  = finalReport.filter(s => s.finalStatus === 'R').length;
-    return {
-        totalStudents:  total,
-        present,
-        absent,
-        review,
-        attendancePct:  total > 0 ? Math.round((present / total) * 100) : 0,
-    };
+  const total = finalReport.length;
+  const present = finalReport.filter((s) => s.finalStatus === "P").length;
+  const absent = finalReport.filter((s) => s.finalStatus === "A").length;
+  const review = finalReport.filter((s) => s.finalStatus === "R").length;
+  return {
+    totalStudents: total,
+    present,
+    absent,
+    review,
+    attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
+  };
 }
 
 class AttendanceReportController {
-
-    // ── Save / update report after ML processes a video ───────────
-    // POST /attendancemodule/reports/save
-    // Body: { batch, department, semester, subject, faculty, room, date,
-    //         timeSlot, locksemId?, videoLink, mlResult }
-    // mlResult shape: { attendance: {rollNo: {status,avg_confidence,...}},
-    //                   summary: {present, absent, review, processing_time} }
-    async saveReport(req, res) {
+  // ── Save / update report after ML processes a video ───────────
+  // POST /attendancemodule/reports/save
+  // Body: { batch, department, semester, subject, faculty, room, date,
+  //         timeSlot, locksemId?, videoLink, mlResult }
+  // mlResult shape: { attendance: {rollNo: {status,avg_confidence,...}},
+  //                   summary: {present, absent, review, processing_time} }
+  async saveReport(req, res) {
     try {
-        const {
-            batch, department, semester, subject, faculty, room,
-            date, timeSlot, locksemId, videoLink, mlResult
-        } = req.body;
+      const {
+        batch,
+        department,
+        semester,
+        subject,
+        faculty,
+        room,
+        date,
+        timeSlot,
+        locksemId,
+        videoLink,
+        mlResult,
+      } = req.body;
 
-        if (!batch || !date || !mlResult) {
-            return res.status(400).json({ error: 'batch, date, and mlResult are required' });
-        }
+      if (!batch || !date || !mlResult) {
+        return res
+          .status(400)
+          .json({ error: "batch, date, and mlResult are required" });
+      }
 
-        const VALID_STATUSES = new Set(['present', 'absent', 'review', 'not_enrolled']);
+      const VALID_STATUSES = new Set([
+        "present",
+        "absent",
+        "review",
+        "not_enrolled",
+      ]);
 
-        // ── Build per-student list from ML result ──
-        const students = [];
-        const attendance = mlResult.attendance || {};
-        for (const [rollNo, data] of Object.entries(attendance)) {
-            const rawStatus = data.status || 'absent';
-            const status    = VALID_STATUSES.has(rawStatus) ? rawStatus : 'absent';
-            students.push({
-                rollNo,
-                status,
-                avgConfidence:  data.avg_confidence  || 0,
-                confidenceZone: data.confidence_zone || 'low',
-                firstSeenSec:   data.first_seen_sec  || null,
-                clusterFolder:  data.cluster_folder  || null,
-                finalStatus:    status === 'present' ? 'P'
-                              : status === 'review'  ? 'R' : 'A',
-            });
-        }
-
-        const slotResult = {
-            slot:        timeSlot  || 'unknown',
-            videoLink:   videoLink || '',
-            processedAt: new Date(),
-            students,
-            summary: {
-                present:           mlResult.summary?.present          || 0,
-                absent:            mlResult.summary?.absent           || 0,
-                review:            mlResult.summary?.review           || 0,
-                total:             students.length,
-                processingTimeSec: mlResult.summary?.processing_time  || 0,
-            }
-        };
-
-        // ── Upsert: ONE report per batch+date+timeSlot ──
-        // REPLACE this block (around line: "let report = await AttendanceReport.findOne...")
-const slotKey = timeSlot || '';
-let report = await AttendanceReport.findOne({ batch, date, timeSlot: slotKey });
-
-if (report) {
-    if (report.status === 'finalized') {
-        return res.status(409).json({ error: 'Cannot add runs to a finalized report' });
-    }
-    // ✅ Allow appending even if status is 'live' (session is running)
-    report.slotResults.push(slotResult);
-} else {
-    report = new AttendanceReport({
-        batch, department, semester, subject, faculty, room,
-        date, timeSlot: slotKey,
-        locksemId: locksemId || null,
-        slotResults: [slotResult],
-        status: 'draft',
-    });
-}
-
-// ✅ Always recompute merged final from ALL runs
-report.finalReport = mergeStudentStatus(report.slotResults);
-report.summary     = buildSummary(report.finalReport);
-
-// ✅ If report was live (session), keep it live
-if (report.status !== 'live') {
-    report.status = 'draft';
-}
-
-await report.save();
-
-        res.json({
-            message:     'Report saved successfully',
-            reportId:    report._id,
-            summary:     report.summary,
-            finalReport: report.finalReport,
+      // Build per-student list from ML result
+      const students = [];
+      const attendance = mlResult.attendance || {};
+      for (const [rollNo, data] of Object.entries(attendance)) {
+        const rawStatus = data.status || "absent";
+        const status = VALID_STATUSES.has(rawStatus) ? rawStatus : "absent";
+        students.push({
+          rollNo,
+          status,
+          avgConfidence: data.avg_confidence || 0,
+          confidenceZone: data.confidence_zone || "low",
+          firstSeenSec: data.first_seen_sec || null,
+          clusterFolder: data.cluster_folder || null,
+          finalStatus:
+            status === "present" ? "P" : status === "review" ? "R" : "A",
         });
+      }
+
+      const slotResult = {
+        slot: timeSlot || "unknown",
+        videoLink: videoLink || "",
+        processedAt: new Date(),
+        students,
+        summary: {
+          present: mlResult.summary?.present || 0,
+          absent: mlResult.summary?.absent || 0,
+          review: mlResult.summary?.review || 0,
+          total: students.length,
+          processingTimeSec: mlResult.summary?.processing_time || 0,
+        },
+      };
+
+      // Upsert: ONE report per batch+date+timeSlot ──
+      const slotKey = timeSlot || "";
+      let report = await AttendanceReport.findOne({
+        batch,
+        date,
+        timeSlot: slotKey,
+      });
+
+      if (report) {
+        if (report.status === "finalized") {
+          return res
+            .status(409)
+            .json({ error: "Cannot add runs to a finalized report" });
+        }
+        // Allow appending even if status is 'live' (session is running)
+        report.slotResults.push(slotResult);
+      } else {
+        report = new AttendanceReport({
+          batch,
+          department,
+          semester,
+          subject,
+          faculty,
+          room,
+          date,
+          timeSlot: slotKey,
+          locksemId: locksemId || null,
+          slotResults: [slotResult],
+          status: "draft",
+        });
+      }
+
+      // Always recompute merged final from ALL runs
+      report.finalReport = mergeStudentStatus(report.slotResults);
+      report.summary = buildSummary(report.finalReport);
+
+      // If report was live (session), keep it live
+      if (report.status !== "live") {
+        report.status = "draft";
+      }
+
+      await report.save();
+
+      res.json({
+        message: "Report saved successfully",
+        reportId: report._id,
+        summary: report.summary,
+        finalReport: report.finalReport,
+      });
     } catch (err) {
-        console.error('[AttendanceReport] saveReport error:', err);
-        // Gracefully handle duplicate key race conditions
-        if (err.code === 11000) {
-            return res.status(409).json({ error: 'A report for this batch/date/slot already exists. Reload and try again.' });
-        }
-        res.status(500).json({ error: err.message });
+      console.error("[AttendanceReport] saveReport error:", err);
+      // Gracefully handle duplicate key race conditions
+      if (err.code === 11000) {
+        return res.status(409).json({
+          error:
+            "A report for this batch/date/slot already exists. Reload and try again.",
+        });
+      }
+      res.status(500).json({ error: err.message });
     }
-}
-    // ── List reports (with optional filters) ─────────────────────
-    // GET /attendancemodule/reports?batch=X&date=X&faculty=X&status=X
-    async getReports(req, res) {
-        try {
-            const { batch, date, faculty, subject, status, limit = 50, skip = 0 } = req.query;
-            const filter = {};
-            if (batch)   filter.batch   = batch;
-            if (date)    filter.date    = date;
-            if (faculty) filter.faculty = faculty;
-            if (subject) filter.subject = subject;
-            if (status)  filter.status  = status;
+  }
+  // List reports (with optional filters)
+  // GET /attendancemodule/reports?batch=X&date=X&faculty=X&status=X
+  async getReports(req, res) {
+    try {
+      const {
+        batch,
+        date,
+        faculty,
+        subject,
+        status,
+        limit = 50,
+        skip = 0,
+      } = req.query;
+      const filter = {};
+      if (batch) filter.batch = batch;
+      if (date) filter.date = date;
+      if (faculty) filter.faculty = faculty;
+      if (subject) filter.subject = subject;
+      if (status) filter.status = status;
 
-            const reports = await AttendanceReport
-                .find(filter)
-                .select('batch department semester subject faculty room date timeSlot summary status createdAt')
-                .sort({ date: -1, createdAt: -1 })
-                .skip(Number(skip))
-                .limit(Number(limit));
+      const reports = await AttendanceReport.find(filter)
+        .select(
+          "batch department semester subject faculty room date timeSlot summary status createdAt",
+        )
+        .sort({ date: -1, createdAt: -1 })
+        .skip(Number(skip))
+        .limit(Number(limit));
 
-            const total = await AttendanceReport.countDocuments(filter);
-            res.json({ reports, total, skip: Number(skip), limit: Number(limit) });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+      const total = await AttendanceReport.countDocuments(filter);
+      res.json({ reports, total, skip: Number(skip), limit: Number(limit) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    // ── Get full report detail ────────────────────────────────────
-    // GET /attendancemodule/reports/:id
-    async getReportById(req, res) {
-        try {
-            const report = await AttendanceReport.findById(req.params.id);
-            if (!report) return res.status(404).json({ error: 'Report not found' });
-            res.json(report);
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+  // Get full report detail
+  // GET /attendancemodule/reports/:id
+  async getReportById(req, res) {
+    try {
+      const report = await AttendanceReport.findById(req.params.id);
+      if (!report) return res.status(404).json({ error: "Report not found" });
+      res.json(report);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    // ── Get reports by batch + date ───────────────────────────────
-    // GET /attendancemodule/reports/by-date/:batch/:date
-    async getReportByDate(req, res) {
-        try {
-            const { batch, date } = req.params;
-            const reports = await AttendanceReport
-                .find({ batch, date })
-                .sort({ timeSlot: 1 });
-            res.json({ batch, date, reports });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+  // Get reports by batch + date
+  // GET /attendancemodule/reports/by-date/:batch/:date
+  async getReportByDate(req, res) {
+    try {
+      const { batch, date } = req.params;
+      const reports = await AttendanceReport.find({ batch, date }).sort({
+        timeSlot: 1,
+      });
+      res.json({ batch, date, reports });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    // ── Get student history across all sessions ───────────────────
-    // GET /attendancemodule/reports/student/:batch/:rollNo
-    async getStudentHistory(req, res) {
-        try {
-            const { batch, rollNo } = req.params;
+  // Get student history across all sessions
+  // GET /attendancemodule/reports/student/:batch/:rollNo
+  async getStudentHistory(req, res) {
+    try {
+      const { batch, rollNo } = req.params;
 
-            const reports = await AttendanceReport
-                .find({ batch, 'finalReport.rollNo': rollNo })
-                .select('date timeSlot subject faculty finalReport summary')
-                .sort({ date: -1 });
+      const reports = await AttendanceReport.find({
+        batch,
+        "finalReport.rollNo": rollNo,
+      })
+        .select("date timeSlot subject faculty finalReport summary")
+        .sort({ date: -1 });
 
-            const history = reports.map(r => {
-                const entry = r.finalReport.find(s => s.rollNo === rollNo);
-                return {
-                    date:          r.date,
-                    timeSlot:      r.timeSlot,
-                    subject:       r.subject,
-                    faculty:       r.faculty,
-                    status:        entry?.status        || 'absent',
-                    finalStatus:   entry?.finalStatus   || 'A',
-                    avgConfidence: entry?.avgConfidence || 0,
-                    reportId:      r._id,
-                };
-            });
+      const history = reports.map((r) => {
+        const entry = r.finalReport.find((s) => s.rollNo === rollNo);
+        return {
+          date: r.date,
+          timeSlot: r.timeSlot,
+          subject: r.subject,
+          faculty: r.faculty,
+          status: entry?.status || "absent",
+          finalStatus: entry?.finalStatus || "A",
+          avgConfidence: entry?.avgConfidence || 0,
+          reportId: r._id,
+        };
+      });
 
-            const totalSessions = history.length;
-            const present       = history.filter(h => h.finalStatus === 'P').length;
-            const attendancePct = totalSessions > 0
-                ? Math.round((present / totalSessions) * 100) : 0;
+      const totalSessions = history.length;
+      const present = history.filter((h) => h.finalStatus === "P").length;
+      const attendancePct =
+        totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0;
 
-            res.json({ batch, rollNo, history, totalSessions, present, attendancePct });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+      res.json({
+        batch,
+        rollNo,
+        history,
+        totalSessions,
+        present,
+        attendancePct,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    // ── Finalize a report (draft → finalized) ─────────────────────
-    // POST /attendancemodule/reports/:id/finalize
-    async finalizeReport(req, res) {
-        try {
-            const report = await AttendanceReport.findById(req.params.id);
-            if (!report) return res.status(404).json({ error: 'Report not found' });
-            if (report.status === 'finalized') {
-                return res.status(400).json({ error: 'Report is already finalized' });
-            }
-            report.status = 'finalized';
-            await report.save();
-            res.json({ message: 'Report finalized', reportId: report._id });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+  // Finalize a report (draft → finalized)
+  // POST /attendancemodule/reports/:id/finalize
+  async finalizeReport(req, res) {
+    try {
+      const report = await AttendanceReport.findById(req.params.id);
+      if (!report) return res.status(404).json({ error: "Report not found" });
+      if (report.status === "finalized") {
+        return res.status(400).json({ error: "Report is already finalized" });
+      }
+      report.status = "finalized";
+      await report.save();
+      res.json({ message: "Report finalized", reportId: report._id });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    // ── Update final status of a student manually ─────────────────
-    // PATCH /attendancemodule/reports/:id/student/:rollNo
-    // Body: { finalStatus: 'P' | 'A' | 'R' }
-    async updateStudentStatus(req, res) {
-        try {
-            const { id, rollNo } = req.params;
-            const { finalStatus } = req.body;
+  // Update final status of a student manually
+  // PATCH /attendancemodule/reports/:id/student/:rollNo
+  // Body: { finalStatus: 'P' | 'A' | 'R' }
+  async updateStudentStatus(req, res) {
+    try {
+      const { id, rollNo } = req.params;
+      const { finalStatus } = req.body;
 
-            if (!['P', 'A', 'R'].includes(finalStatus)) {
-                return res.status(400).json({ error: 'finalStatus must be P, A, or R' });
-            }
+      if (!["P", "A", "R"].includes(finalStatus)) {
+        return res
+          .status(400)
+          .json({ error: "finalStatus must be P, A, or R" });
+      }
 
-            const report = await AttendanceReport.findById(id);
-            if (!report) return res.status(404).json({ error: 'Report not found' });
-            if (report.status === 'finalized') {
-                return res.status(400).json({ error: 'Cannot edit a finalized report' });
-            }
+      const report = await AttendanceReport.findById(id);
+      if (!report) return res.status(404).json({ error: "Report not found" });
+      if (report.status === "finalized") {
+        return res
+          .status(400)
+          .json({ error: "Cannot edit a finalized report" });
+      }
 
-            const student = report.finalReport.find(s => s.rollNo === rollNo);
-            if (!student) return res.status(404).json({ error: 'Student not found in report' });
+      const student = report.finalReport.find((s) => s.rollNo === rollNo);
+      if (!student)
+        return res.status(404).json({ error: "Student not found in report" });
 
-            student.finalStatus = finalStatus;
-            report.summary = buildSummary(report.finalReport);
-            await report.save();
+      student.finalStatus = finalStatus;
+      report.summary = buildSummary(report.finalReport);
+      await report.save();
 
-            res.json({ message: `Updated ${rollNo} → ${finalStatus}`, summary: report.summary });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+      res.json({
+        message: `Updated ${rollNo} → ${finalStatus}`,
+        summary: report.summary,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    // ── Delete a draft report ─────────────────────────────────────
-    // DELETE /attendancemodule/reports/:id
-    async deleteReport(req, res) {
-        try {
-            const report = await AttendanceReport.findById(req.params.id);
-            if (!report) return res.status(404).json({ error: 'Report not found' });
-            if (report.status === 'finalized') {
-                return res.status(400).json({ error: 'Cannot delete a finalized report' });
-            }
-            await report.deleteOne();
-            res.json({ message: 'Report deleted' });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+  // Delete a draft report
+  // DELETE /attendancemodule/reports/:id
+  async deleteReport(req, res) {
+    try {
+      const report = await AttendanceReport.findById(req.params.id);
+      if (!report) return res.status(404).json({ error: "Report not found" });
+      if (report.status === "finalized") {
+        return res
+          .status(400)
+          .json({ error: "Cannot delete a finalized report" });
+      }
+      await report.deleteOne();
+      res.json({ message: "Report deleted" });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    // ── Get locksem context (time slot + subject/faculty info) ─────
-    // GET /attendancemodule/reports/locksem-context/:locksemId
-    async getLocksemContext(req, res) {
-        try {
-            const locksem = await LockSem.findById(req.params.locksemId)
-                .populate('timetable', 'name dept session');
-            if (!locksem) return res.status(404).json({ error: 'LockSem entry not found' });
-            res.json(locksem);
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+  // Get locksem context (time slot + subject/faculty info)
+  // GET /attendancemodule/reports/locksem-context/:locksemId
+  async getLocksemContext(req, res) {
+    try {
+      const locksem = await LockSem.findById(req.params.locksemId).populate(
+        "timetable",
+        "name dept session",
+      );
+      if (!locksem)
+        return res.status(404).json({ error: "LockSem entry not found" });
+      res.json(locksem);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
+
+  // GET /attendancemodule/reports/confidence-trend?batch=BTECH_ECE_2023
+  async getConfidenceTrend(req, res) {
+    try {
+      const { batch } = req.query;
+      if (!batch) return res.status(400).json({ error: "batch is required" });
+
+      const now = new Date();
+      const weekAgo = new Date(now);
+      const days = parseInt(req.query.days) || 7;
+      weekAgo.setDate(weekAgo.getDate() - days);
+      const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+
+      // Fetch last 7 days reports for this batch
+      const reports = await AttendanceReport.find({
+        batch,
+        date: { $gte: weekAgoStr },
+      })
+        .select("date finalReport semester")
+        .sort({ date: 1 });
+
+      // Group by rollNo → per day lowest confidence
+      const studentMap = {};
+
+      for (const report of reports) {
+        for (const student of report.finalReport) {
+          if (!studentMap[student.rollNo]) {
+            studentMap[student.rollNo] = {
+              days: {},
+              semester: report.semester || "",
+            };
+          }
+          const existing = studentMap[student.rollNo].days[report.date];
+          const conf = student.avgConfidence || 0;
+          if (existing === undefined || conf < existing) {
+            studentMap[student.rollNo].days[report.date] = conf;
+          }
+        }
+      }
+
+      // Build result array with drift flag
+      const result = Object.entries(studentMap).map(([rollNo, studentData]) => {
+        const dayMap = studentData.days;
+        const semester = studentData.semester;
+        const days = Object.keys(dayMap).sort();
+        const confidences = days.map((d) => ({
+          date: d,
+          confidence: dayMap[d],
+        }));
+        const isDrifting =
+          confidences.length >= 2 &&
+          confidences[confidences.length - 1].confidence <
+            confidences[0].confidence;
+        return { rollNo, semester, confidences, isDrifting };
+      });
+
+      // Sort — drifting students first
+      result.sort((a, b) => b.isDrifting - a.isDrifting);
+
+      // Get semester from the most recent report for this batch
+      const semesterInfo =
+        reports.length > 0 ? reports[reports.length - 1].semester : "";
+
+      res.json({
+        batch,
+        weekFrom: weekAgoStr,
+        semester: semesterInfo,
+        students: result,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = AttendanceReportController;

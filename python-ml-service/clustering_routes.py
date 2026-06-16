@@ -1,16 +1,19 @@
 # clustering_routes.py
 # All clustering-related endpoints:
-#   POST /extract-faces-stream   (SSE)
+#   POST /extract-faces-stream              (SSE)
 #   POST /extract-faces
-#   POST /process-video-clustering-stream  (SSE)
+#   POST /process-video-clustering-stream   (SSE)
 #   POST /process-video-clustering
 #   POST /cluster-only
-#   POST /match-clusters-to-erp  (SSE)
+#   GET  /erp-embedding/check              — check if pre-built ERP pkl exists for a batch
+#   POST /match-clusters-to-erp-fast       (SSE) — uses pre-built ERP pkl, no photo re-processing
+#   POST /match-clusters-to-erp            (SSE) — legacy: re-builds ERP embeddings from photos
 #   GET  /cluster-metadata
 
 import os
 import re
 import json
+import pickle
 import base64
 import logging
 import time
@@ -19,6 +22,7 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 import state
 from models import (
@@ -42,6 +46,17 @@ logger = logging.getLogger("ml_service.clustering_routes")
 router = APIRouter()
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
+# ─── ERP embedding paths ──────────────────────────────────────────────────────
+_BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+_ROOT_DIR   = os.path.abspath(os.path.join(_BASE_DIR, ".."))
+ERP_EMB_DIR = os.path.join(_ROOT_DIR, "server", "ml-data", "embeddings", "erp")
+
+class MatchClustersFromPklRequest(BaseModel):
+    batch_dir:      str
+    pkl_path:       str    # absolute path to the pre-built ERP embeddings pkl
+    erp_photos_dir: str    # used only to resolve photo filenames for UI display
+    top_k:          int = 3
 
 
 # ─── Extract Faces (streaming SSE) ───────────────────────────────────────────
@@ -373,7 +388,216 @@ def cluster_only(req: ClusterOnlyRequest):
     )
 
 
-# ─── Match Clusters to ERP (SSE) ─────────────────────────────────────────────
+# ─── NEW: Check ERP Embedding PKL availability ────────────────────────────────
+# GET /erp-embedding/check?batch=BTECH_ECE_2023&department=ELECTRONICS_AND_COMMUNICATION_ENGINEERING
+# Called by Node.js autoMatch before starting the match to verify a pkl exists.
+# Searches from most-specific to least-specific path.
+
+@router.get("/erp-embedding/check")
+def check_erp_embedding(batch: str, department: str = ""):
+    """
+    Search order (most to least specific):
+      1. erp/<department>/<batch>/embeddings_db.pkl
+      2. erp/<batch>/embeddings_db.pkl
+      3. erp/embeddings_db.pkl   (flat fallback — only if roll numbers match batch prefix)
+    Returns { available, pkl_path, roll_count }.
+    """
+    candidates = []
+    if department:
+        candidates.append(os.path.join(ERP_EMB_DIR, department, batch, "embeddings_db.pkl"))
+    candidates.append(os.path.join(ERP_EMB_DIR, batch, "embeddings_db.pkl"))
+    # Do NOT use the flat embeddings_db.pkl as fallback — it belongs to a different batch
+    # and causes wrong roll numbers to be matched.
+
+    for pkl_path in candidates:
+        if os.path.exists(pkl_path):
+            roll_count = 0
+            try:
+                with open(pkl_path, "rb") as f:
+                    db = pickle.load(f)
+                roll_count = len(db)
+            except Exception:
+                pass
+            return {"available": True, "pkl_path": pkl_path, "roll_count": roll_count}
+
+    return {"available": False, "pkl_path": None, "roll_count": 0}
+
+
+# ─── NEW: Match Clusters to ERP using pre-built pkl (FAST, SSE) ──────────────
+# POST /match-clusters-to-erp-fast
+# Body: { batch_dir, pkl_path, erp_photos_dir, top_k }
+#
+# Key difference vs /match-clusters-to-erp (legacy):
+#   - Loads ERP embeddings from pkl  — NO face detection on ERP photos at all
+#   - Still runs face detection on cluster (ground-truth) images
+#   - Skips O(N_students) inference calls → much faster
+
+@router.post("/match-clusters-to-erp-fast")
+def match_clusters_to_erp_fast(req: MatchClustersFromPklRequest):
+    if state.face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+    if not os.path.isdir(req.batch_dir):
+        raise HTTPException(status_code=404, detail=f"batch_dir not found: {req.batch_dir}")
+    if not os.path.exists(req.pkl_path):
+        raise HTTPException(status_code=404, detail=f"ERP pkl not found: {req.pkl_path}")
+
+    def generate():
+        def evt(obj):
+            return f"data: {json.dumps(obj)}\n\n"
+
+        # Step 1: Load pre-built ERP embeddings from pkl (zero face detection on ERP side)
+        yield evt({"type": "status", "msg": "Loading pre-built ERP embeddings…", "step": "erp"})
+
+        try:
+            with open(req.pkl_path, "rb") as f:
+                raw_db = pickle.load(f)
+        except Exception as e:
+            yield evt({"type": "error", "msg": f"Failed to load ERP pkl: {e}"})
+            return
+
+        erp_rolls  = []
+        erp_matrix = []
+        erp_photos = {}   # roll_no (upper) -> photo filename for UI display
+
+        # Pre-index ALL photos on disk across multiple directories:
+        #   1. req.erp_photos_dir (batch-specific subfolder, e.g. erp_photos/BTECH_ECE_2023/)
+        #   2. parent erp_photos/ root (flat layout where photos are named <rollno>.jpg)
+        #   3. any sibling subdirectory inside erp_photos/
+        # This ensures we find photos regardless of which directory layout is used.
+        photo_dir = req.erp_photos_dir
+        search_dirs = [photo_dir]
+
+        # Add the parent directory if photo_dir is a subfolder
+        parent_dir = os.path.dirname(photo_dir)
+        if os.path.isdir(parent_dir) and parent_dir != photo_dir:
+            search_dirs.append(parent_dir)
+            # Also add sibling subdirectories
+            try:
+                for entry in os.listdir(parent_dir):
+                    sibling = os.path.join(parent_dir, entry)
+                    if os.path.isdir(sibling) and sibling not in search_dirs:
+                        search_dirs.append(sibling)
+            except Exception:
+                pass
+
+        for search_dir in search_dirs:
+            if os.path.isdir(search_dir):
+                for fname in os.listdir(search_dir):
+                    if fname.lower().endswith(IMG_EXTS):
+                        rn = os.path.splitext(fname)[0].upper()
+                        # Don't overwrite if already found in a more-specific dir
+                        if rn not in erp_photos:
+                            erp_photos[rn] = fname
+
+        for roll_no, data in raw_db.items():
+            emb = data.get("embedding")
+            if emb is None:
+                continue
+            emb  = np.array(emb, dtype=np.float32)
+            norm = np.linalg.norm(emb)
+            if norm == 0:
+                continue
+            rn_up = roll_no.upper()
+            erp_rolls.append(rn_up)
+            erp_matrix.append(emb / norm)
+
+            # Resolve thumbnail: try pkl value first, then disk index, then brute-force search
+            stored_photo = data.get("photo") or data.get("photo_file") or erp_photos.get(rn_up, "")
+            if not stored_photo:
+                for ext in (".jpg", ".jpeg", ".png"):
+                    for sdir in search_dirs:
+                        guess = roll_no + ext
+                        if os.path.exists(os.path.join(sdir, guess)):
+                            stored_photo = guess
+                            break
+                    if stored_photo:
+                        break
+            erp_photos[rn_up] = stored_photo or ""
+
+        if not erp_rolls:
+            yield evt({"type": "error", "msg": "ERP pkl is empty or has no valid embeddings"})
+            return
+
+        erp_matrix = np.array(erp_matrix, dtype=np.float32)
+        yield evt({
+            "type": "status",
+            "msg":  f"Loaded {len(erp_rolls)} ERP embeddings from pkl. Matching clusters…",
+            "step": "matching",
+        })
+
+        # Step 2: Match each person_XXX cluster against the ERP embedding matrix
+        cluster_dirs = sorted([
+            d for d in os.listdir(req.batch_dir)
+            if re.match(r"^person_\d+$", d, re.IGNORECASE)
+            and os.path.isdir(os.path.join(req.batch_dir, d))
+        ])
+
+        matched_count = 0
+        for idx, folder_name in enumerate(cluster_dirs):
+            folder_path = os.path.join(req.batch_dir, folder_name)
+            img_files   = [f for f in os.listdir(folder_path) if f.lower().endswith(IMG_EXTS)]
+
+            yield evt({
+                "type": "cluster_progress",
+                "done": idx + 1, "total": len(cluster_dirs),
+                "current": folder_name,
+                "msg": f"Matching {folder_name} ({idx+1}/{len(cluster_dirs)})…",
+            })
+
+            # Face detection runs only on cluster images (not ERP photos — that's the speedup)
+            cluster_embs = []
+            for img_file in img_files[:10]:
+                img = cv2.imread(os.path.join(folder_path, img_file))
+                if img is None:
+                    continue
+                faces = state.face_app.get(img)
+                if faces:
+                    emb  = faces[0].embedding
+                    norm = np.linalg.norm(emb)
+                    if norm > 0:
+                        cluster_embs.append(emb / norm)
+
+            if not cluster_embs:
+                yield evt({"type": "match_result", "folder": folder_name,
+                           "match": {"error": "no faces detected"}})
+                continue
+
+            mean_emb = np.mean(cluster_embs, axis=0)
+            mean_emb = mean_emb / np.linalg.norm(mean_emb)
+            scores   = erp_matrix @ mean_emb          # cosine similarity, all students at once
+            top_idx  = np.argsort(scores)[::-1][: req.top_k]
+
+            candidates = [
+                {
+                    "rollNo":     erp_rolls[i],
+                    "confidence": round(float(scores[i]), 4),
+                    "erpPhoto":   erp_photos.get(erp_rolls[i], ""),
+                }
+                for i in top_idx
+            ]
+
+            yield evt({
+                "type":   "match_result",
+                "folder": folder_name,
+                "match":  {
+                    "best":           candidates[0],
+                    "candidates":     candidates,
+                    "image_count":    len(img_files),
+                    "preview_images": img_files[:6],
+                },
+            })
+            matched_count += 1
+
+        yield evt({"type": "done", "erp_students": len(erp_rolls), "clusters": matched_count})
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ─── Match Clusters to ERP (legacy — re-builds embeddings from photos each time) ─
 
 @router.post("/match-clusters-to-erp")
 def match_clusters_to_erp(req: MatchClustersRequest):
@@ -388,7 +612,6 @@ def match_clusters_to_erp(req: MatchClustersRequest):
         def evt(obj):
             return f"data: {json.dumps(obj)}\n\n"
 
-        # Step 1: build ERP embeddings
         yield evt({"type": "status", "msg": "Loading ERP photos…", "step": "erp"})
 
         erp_embs = {}
@@ -424,7 +647,6 @@ def match_clusters_to_erp(req: MatchClustersRequest):
         erp_rolls  = list(erp_embs.keys())
         erp_matrix = np.array([erp_embs[r]["embedding"] for r in erp_rolls])
 
-        # Step 2: match each person_XXX cluster
         cluster_dirs = sorted([
             d for d in os.listdir(req.batch_dir)
             if re.match(r"^person_\d+$", d, re.IGNORECASE)

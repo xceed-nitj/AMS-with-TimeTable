@@ -13,11 +13,72 @@ const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 const EMBEDDINGS_DIR   = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
 
+
 function ensureDir(dirPath) {
     if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
 }
 ensureDir(GROUND_TRUTH_DIR);
 ensureDir(EMBEDDINGS_DIR);
+
+function findFileInDir(dir, filename) {
+    if (!fs.existsSync(dir)) return null;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            const found = findFileInDir(full, filename);
+            if (found) return found;
+        } else if (entry.name === filename) {
+            return full;
+        }
+    }
+    return null;
+}
+
+// ← ADD HERE
+async function rebuildSubjectPklsForStudent(rollNo, batch) {
+    const StudentEmbedding = require('../../../models/attendanceModule/studentEmbedding');
+    const subjectRecords = await StudentEmbedding.find({
+        rollNos: rollNo,
+        status: 'done',
+    }).lean();
+
+    console.log(`[rebuildSubjectPkls] ${rollNo} → ${subjectRecords.length} subject PKL(s) to rebuild`);
+
+    // Deduplicate: group records by their resolved pklPath so the same file is only rebuilt once
+const pklGroups = new Map(); // pklPath → { record, rollNos: Set }
+for (const record of subjectRecords) {
+    const pklPath = findFileInDir(EMBEDDINGS_DIR, record.embeddingFile);
+    if (!pklPath) {
+        console.warn(`[rebuildSubjectPkls] PKL not found on disk: ${record.embeddingFile}`);
+        continue;
+    }
+    if (!pklGroups.has(pklPath)) {
+        pklGroups.set(pklPath, { record, rollNos: new Set(record.rollNos) });
+    } else {
+        // merge rollNos from duplicate records pointing to the same file
+        for (const r of record.rollNos) pklGroups.get(pklPath).rollNos.add(r);
+    }
+}
+
+const batchDir = path.join(GROUND_TRUTH_DIR, batch);
+if (!fs.existsSync(batchDir)) return;
+
+for (const [pklPath, { record, rollNos }] of pklGroups) {
+    try {
+        console.log(`[rebuildSubjectPkls] Rebuilding ${record.embeddingFile} …`);
+        await axios.post(
+            `${ML_SERVICE_URL}/build-embeddings-sync`,
+            { photos_dir: batchDir, output_path: pklPath, roll_nos: [...rollNos] },
+            { timeout: 900000 }
+        );
+        await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
+        console.log(`[rebuildSubjectPkls] ✓ Done ${record.embeddingFile}`);
+    } catch (err) {
+        console.warn(`[rebuildSubjectPkls] Failed ${record.embeddingFile}:`, err.message);
+    }
+}
+}
+
 
 function mlError(err) {
     if (err.code === 'ECONNREFUSED')
@@ -89,6 +150,17 @@ class GroundTruthController {
             const batches = [];
             for (const entry of entries) {
                 if (!entry.isDirectory()) continue;
+                if (
+                    !req.attendanceFullAccess
+                    && !req.attendanceDepartment
+                ) continue;
+                if (
+                    !req.attendanceFullAccess
+                    && !new RegExp(
+                        `^[^_]+_${req.attendanceDepartment.trim().replace(/[\s-]+/g, '_').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_`,
+                        'i',
+                    ).test(entry.name)
+                ) continue;
                 const batchPath = path.join(GROUND_TRUTH_DIR, entry.name);
                 const students  = await fsPromises.readdir(batchPath, { withFileTypes: true });
                 batches.push({ batch: entry.name, studentCount: students.filter(s => s.isDirectory()).length });
@@ -242,14 +314,33 @@ class GroundTruthController {
 
     // ─── Delete a single photo ───────────────────────────────────────────────
     async deletePhoto(req, res) {
+    try {
+        const { batch, rollNo, filename } = req.params;
+        const filePath = path.join(GROUND_TRUTH_DIR, batch, rollNo, filename);
+        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Photo not found' });
+        await fsPromises.unlink(filePath);
+
+        // NEW: Remove the deleted file from _info.json
+        const infoPath = path.join(GROUND_TRUTH_DIR, batch, rollNo, '_info.json');
+        if (fs.existsSync(infoPath)) {
+            try {
+                const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                info.embedding_files = (info.embedding_files || []).filter(f => f !== filename);
+                info.backup_files    = (info.backup_files    || []).filter(f => f !== filename);
+                info.approved_files  = (info.approved_files  || []).filter(f => f !== filename);
+                await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
+            } catch (_) {}
+        }
+
         try {
-            const { batch, rollNo, filename } = req.params;
-            const filePath = path.join(GROUND_TRUTH_DIR, batch, rollNo, filename);
-            if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Photo not found' });
-            await fsPromises.unlink(filePath);
-            res.json({ message: `Removed ${filename}` });
-        } catch (err) { res.status(500).json({ error: err.message }); }
-    }
+    await rebuildSubjectPklsForStudent(rollNo, batch);
+} catch (err) {
+    console.warn(`[deletePhoto] PKL rebuild failed:`, err.message);
+}
+
+res.json({ message: `Removed ${filename}` });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+}
 
     // ─── Get student ground truth ────────────────────────────────────────────
     async getStudentGroundTruth(req, res) {
@@ -333,31 +424,51 @@ class GroundTruthController {
         });
 
         // 🔥 Rebuild embedding in background — fire and forget
-        axios.post(
+        // REPLACE WITH THIS:
+setImmediate(async () => {
+    try {
+        await axios.post(
             `${ML_SERVICE_URL}/update-student-embedding`,
             { batch_name: batch, roll_no: rollNo, embedding_files: info.embedding_files },
             { timeout: 60000 }
-        ).catch(err => {
-            console.warn(`[approvePhotos] Background embedding failed for ${rollNo}:`, err.message);
-        });
+        );
+        console.log(`[approvePhotos] Base embedding updated for ${rollNo}`);
+        await rebuildSubjectPklsForStudent(rollNo, batch);
+    } catch (err) {
+        console.warn(`[approvePhotos] Background rebuild failed for ${rollNo}:`, err.message);
+    }
+});
 
     } catch (err) { res.status(500).json({ error: err.message }); }
 }
 
     // ─── Update embedding for a student ─────────────────────────────────────
-    async updateStudentEmbedding(req, res) {
-        try {
-            const { batch, rollNo, embeddingFiles } = req.body;
-            if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length === 0)
-                return res.status(400).json({ error: 'batch, rollNo, and embeddingFiles[] required' });
-            const response = await axios.post(
-                `${ML_SERVICE_URL}/update-student-embedding`,
-                { batch_name: batch, roll_no: rollNo, embedding_files: embeddingFiles },
-                { timeout: 60000 }
-            );
-            res.json(response.data);
-        } catch (err) { res.status(500).json({ error: mlError(err) }); }
-    }
+   async updateStudentEmbedding(req, res) {
+    try {
+        const { batch, rollNo, embeddingFiles } = req.body;
+        if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length === 0)
+            return res.status(400).json({ error: 'batch, rollNo, and embeddingFiles[] required' });
+
+        // 1. Update the student embedding in ML service
+        const response = await axios.post(
+            `${ML_SERVICE_URL}/update-student-embedding`,
+            { batch_name: batch, roll_no: rollNo, embedding_files: embeddingFiles },
+            { timeout: 60000 }
+        );
+
+        // 2. Rebuild all subject PKLs where this student is enrolled — wait for completion
+try {
+    await rebuildSubjectPklsForStudent(rollNo, batch);
+} catch (err) {
+    console.warn(`[updateStudentEmbedding] PKL rebuild failed:`, err.message);
+}
+
+// 3. Respond only after rebuild is done
+res.json({ ...response.data, embedding_files_used: embeddingFiles.length });
+
+
+    } catch (err) { res.status(500).json({ error: mlError(err) }); }
+}
 
     // ─── Generate embeddings + reload into Python memory ────────────────────
     async generateEmbeddings(req, res) {

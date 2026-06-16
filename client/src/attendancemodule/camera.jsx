@@ -462,33 +462,22 @@ export default function Camera() {
                     grid-template-columns: repeat(2, minmax(0, 1fr));
                     gap: 14px;
                 }
+                .camera-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }
                 .camera-filter-grid {
                     display: grid;
                     grid-template-columns: 1.1fr 0.8fr 0.7fr auto;
                     gap: 12px;
                     align-items: end;
                 }
-                .camera-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    min-width: 820px;
-                }
-                .camera-table th {
-                    color: ${theme.textMuted};
-                    font-size: 11px;
-                    letter-spacing: 0.08em;
-                    text-transform: uppercase;
-                    text-align: left;
-                    padding: 10px 12px;
-                    border-bottom: 1px solid ${theme.border};
-                }
-                .camera-table td {
-                    color: ${theme.text};
-                    font-size: 13px;
-                    padding: 12px;
-                    border-bottom: 1px solid ${theme.border};
-                    vertical-align: top;
-                }
+                .ams-table { min-width: 820px; }
+                @media (max-width: 700px) { .ams-table { min-width: 580px; } }
                 .camera-row {
                     cursor: pointer;
                     transition: background 0.16s ease, transform 0.16s ease;
@@ -521,32 +510,23 @@ export default function Camera() {
                     background: ${theme.accentDim};
                 }
                 @media (max-width: 980px) {
-                    .camera-grid,
                     .camera-form-grid,
-                    .camera-filter-grid {
-                        grid-template-columns: 1fr;
-                    }
-                    .camera-hero {
-                        padding: 20px;
-                    }
+                    .camera-filter-grid { grid-template-columns: 1fr; }
+                }
+                @media (max-width: 700px) {
+                    .camera-filter-grid { grid-template-columns: 1fr; }
+                    .camera-actions     { flex-direction: column; align-items: stretch; }
                 }
             `}</style>
 
             <Toast toast={toast} />
 
-            <section className="camera-hero">
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div style={{ ...styles.badge('accent'), display: 'inline-flex', marginBottom: 12 }}>
-                        Backend connected: /attendancemodule/cameras
-                    </div>
-                    <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 8 }}>
-                        Camera Data Entry
-                    </div>
-                    <div style={{ color: theme.textMuted, maxWidth: 820, fontSize: 14, lineHeight: 1.7 }}>
-                        Register classroom cameras and pair the two front angles. Room, protocol and position are configured here, while status and active state are shown from backend health data.
-                    </div>
+            <div className="camera-header">
+                <div>
+                    <div style={styles.heading}>Camera Registry</div>
+                    <div style={{ ...styles.subheading, marginBottom: 0 }}>Register classroom cameras and pair front-angle feeds</div>
                 </div>
-            </section>
+            </div>
 
             <div className="camera-grid">
                 <section style={styles.card}>
@@ -734,7 +714,7 @@ export default function Camera() {
                 </div>
 
                 <div style={{ overflowX: 'auto', border: `1px solid ${theme.border}`, borderRadius: 10 }}>
-                    <table className="camera-table">
+                    <table className="ams-table">
                         <thead>
                             <tr>
                                 <th>Camera</th>

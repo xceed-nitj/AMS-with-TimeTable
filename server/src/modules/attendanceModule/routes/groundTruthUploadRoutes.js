@@ -4,8 +4,10 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const GroundTruthUploadController = require('../controllers/groundTruthUploadController');
+const axios = require('axios'); // for proxying to ML service
 
 const controller = new GroundTruthUploadController();
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8500';
 
 // ─── Multer with strict limits ────────────────────────────────────────────────
 // Fixes: CRITICAL-4 (no file size limit / memory exhaustion DoS)
@@ -72,6 +74,54 @@ router.patch('/rename-student', async (req, res) => {
     } catch (e) {
         console.error('[GT Upload Route] renameStudent error:', e);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Delete student photo
+router.delete('/photo/:batch/:rollNo', async (req, res) => {
+    try {
+        await controller.deletePhoto(req, res);
+    } catch (e) {
+        console.error('[GT Upload Route] deletePhoto error:', e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// List photos (roll numbers) in a batch
+router.get('/list/:batch', async (req, res) => {
+    try { await controller.listPhotos(req, res); }
+    catch (e) { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+// Summary of all ERP photo batches
+router.get('/summary', async (req, res) => {
+    try { await controller.listAllBatches(req, res); }
+    catch (e) { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+// Fast filesystem check — does the ERP pkl exist for this batch?
+router.get('/embedding-ready/:batch', async (req, res) => {
+    try { await controller.checkEmbedding(req, res); }
+    catch (e) { res.status(500).json({ error: 'Check failed' }); }
+});
+
+// Get ERP embedding sync status
+router.get('/status/:batch', async (req, res) => {
+    try {
+        await controller.getStatus(req, res);
+    } catch (e) {
+        console.error('[GT Upload Route] status error:', e.message);
+        res.status(500).json({ error: 'Failed to fetch status' });
+    }
+});
+
+// Trigger sync-all
+router.post('/sync-all/:batch', async (req, res) => {
+    try {
+        await controller.syncAll(req, res);
+    } catch (e) {
+        console.error('[GT Upload Route] sync-all proxy error:', e.message);
+        res.status(502).json({ error: 'Failed to trigger sync-all on ML service' });
     }
 });
 

@@ -2,8 +2,9 @@ const express = require("express");
 const router = express.Router();
 
 const User = require("../../../models/usermanagement/user");
-
-const mongoose = require("mongoose");
+const {
+  getFacultyDepartmentByEmail,
+} = require("./facultyDepartment");
 
 // Function to get user details based on the user ID
 async function getUserDetails(userId) {
@@ -14,12 +15,13 @@ async function getUserDetails(userId) {
       return null; // User not found
     }
 
-    // You can select the fields you want to retrieve
+    const department = user.dept?.trim()
+      || await getFacultyDepartmentByEmail(user.email);
     const userDetails = {
       email: user.email,
       role: user.role,
       id: user.id,
-      // Add more fields as needed
+      department,
     };
 
     return userDetails;
