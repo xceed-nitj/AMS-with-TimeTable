@@ -374,6 +374,18 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
             )
         ).sort();
     }, [timetableRooms, degree, year]);
+    
+    const otherRooms = useMemo(() => {
+        const currentSet = new Set(currentBatchRoomNames);
+
+        return Array.from(
+          new Set(
+              timetableRooms
+                  .map(r => r.roomName)
+                  .filter(room => !currentSet.has(room))
+              )
+          ).sort();
+        }, [timetableRooms, currentBatchRoomNames]);
 
     // Fetch cameras for the strictly selected allotment string
     useEffect(() => {
@@ -791,7 +803,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
             }}>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: fixedDepartment ? '1fr 1fr' : '1fr 1fr 1fr',
+                    gridTemplateColumns: '1fr 1fr 1fr',
                     gap: 16,
                     marginBottom: 20,
                 }}>
@@ -801,7 +813,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                             {DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                     </div>
-                    {!fixedDepartment && (
+                    {!fixedDepartment ? (
                         <div>
                             <label style={styles.label}>Department</label>
                             <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
@@ -810,7 +822,20 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                             </select>
                             {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 4 }}>{deptError}</div>}
                         </div>
-                    )}
+                    )
+                    :
+                    (
+                      <div>
+                          <label style={styles.label}>Department</label>
+                          <div style={styles.select} disabled={deptLoading}>
+                              <span>
+                                {deptLoading ? "Loading..." : fixedDepartment?.replaceAll('_',' ')}
+                              </span>
+                            </div>
+                            {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 4 }}>{deptError}</div>}
+                        </div> 
+                    )
+                  }
                     <div>
                         <label style={styles.label}>Year (Batch)</label>
                         <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>
@@ -836,20 +861,33 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                         style={styles.select}
                         disabled={allotmentLoading || isRunning || isStopping || anyMode}
                     >
-                        <option value="">— No room (manual selection below) —</option>
+                        <option value="">{!allotmentLoading ? "— No room (manual selection below) —" : "Loading..."}</option>
                         {allotmentLoading ? (
                             <option disabled>⏳ Fetching active session allotments…</option>
                         ) : (
                             <>
                                 {/* ── 🌟 PERFECTLY CONTEXT-TARGETED OPTGROUP DROPDOWN ENGINE ── */}
                                 {currentBatchRoomNames.length > 0 ? (
-                                    <optgroup label={`── Allotted to ${degree} ${year ? 'Batch ' + year : ''}  ──`}>
-                                        {currentBatchRoomNames.map(room => (
-                                            <option key={room} value={room}>
-                                                {room}
-                                            </option>
-                                        ))}
-                                    </optgroup>
+                                    <>
+                                      <optgroup label={`── Allotted to ${degree} ${year ? 'Batch ' + year : ''}  ──`}>
+                                          {currentBatchRoomNames.map(room => (
+                                              <option key={room} value={room}>
+                                                  {room}
+                                              </option>
+                                          ))}
+                                      </optgroup>
+                                      {
+                                        !fixedDepartment && (
+                                          <optgroup label={`── Other Rooms ──`}>
+                                          {otherRooms.map(room => (
+                                              <option key={room} value={room}>
+                                                  {room}
+                                              </option>
+                                          ))}
+                                          </optgroup>
+                                        )
+                                      }
+                                    </>
                                 ) : (
                                     <option disabled> No allotments registered for this configuration in active session</option>
                                 )}
