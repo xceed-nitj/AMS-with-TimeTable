@@ -6,13 +6,16 @@
 
 const axios  = require('axios');
 const cron   = require('node-cron');
+const path   = require('path');
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 const { saveFrameSnapshots } = require('./frameSnapshotWriter');
+const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 // ── Slot schedule — start/end in minutes from midnight ──────────────────────
 const SLOT_SCHEDULE = {
@@ -256,6 +259,7 @@ async function runOneCheck({ room, slot, date, ctx, cameras, config, checkIndex 
                 faculty:          ctx.faculty,
                 semester:         ctx.sem,
                 locksemId:        ctx.locksemId,
+                enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, ctx.batch),
             },
             { timeout: 300000 }
         );

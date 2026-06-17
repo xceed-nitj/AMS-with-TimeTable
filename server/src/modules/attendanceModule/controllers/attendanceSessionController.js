@@ -4,11 +4,14 @@
 // frontend polls GET /reports/:id to see new runs appear.
 
 const axios = require('axios');
+const path  = require('path');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 const { saveFrameSnapshots } = require('./frameSnapshotWriter');
+const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 // ── In-memory session tracking ──────────────────────────────────────────────
 // Lost on server restart — acceptable for now.
@@ -88,6 +91,7 @@ async function runOneCheck(reportId, checkIndex, config) {
                 semester:         config.semester         || '',
                 locksemId:        config.locksemId        || '',
                 enrolledRollNos:  config.enrolledRollNos  || [],
+                enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, config.batch),
             },
             { timeout: 300000 }   // 5 min timeout
         );

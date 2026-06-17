@@ -108,6 +108,61 @@ function buildStudentPayload(rollNo, name, studentDir) {
     };
 }
 
+/**
+ * Build the existingFolders payload for /extract-rtsp-stream: for every
+ * subfolder under batchDir, read its _info.json and up to 5 representative
+ * photo bytes (embedding_files if present, else first images found). Used
+ * to seed Python's in-memory existing-folder state during live RTSP capture
+ * without Python needing direct filesystem access to ground_truth/.
+ */
+function buildExistingFoldersPayload(batchDir) {
+    const result = [];
+    if (!fs.existsSync(batchDir)) return result;
+    for (const entry of fs.readdirSync(batchDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
+        const folderPath = path.join(batchDir, entry.name);
+        const infoJson   = readInfoJson(folderPath);
+        const allImgs    = fs.readdirSync(folderPath).filter(f => IMG_EXT_RE.test(f));
+        if (allImgs.length === 0) continue;
+
+        let photoFiles = allImgs;
+        if (Array.isArray(infoJson.embedding_files) && infoJson.embedding_files.length > 0) {
+            const filtered = infoJson.embedding_files.filter(f => allImgs.includes(f));
+            if (filtered.length > 0) photoFiles = filtered;
+        }
+
+        result.push({
+            folderName: entry.name,
+            infoJson,
+            photos: readPhotoBytes(folderPath, photoFiles.slice(0, 5)),
+        });
+    }
+    return result;
+}
+
+/**
+ * Collect each enrolled student's cached mean_embedding from _info.json for
+ * an RTSP attendance run. Students with no cached mean_embedding are
+ * skipped — deliberately no fallback to recomputing from raw/backup photos,
+ * since that recomputation only happens via the approve/update-embedding
+ * flows, which keep mean_embedding fresh. person_XXX folders (unmatched RTSP
+ * clusters, not enrolled students) are excluded.
+ */
+function buildEnrolledEmbeddings(groundTruthDir, batch) {
+    const batchDir = path.join(groundTruthDir, batch);
+    const enrolled = {};
+    if (!fs.existsSync(batchDir)) return enrolled;
+    for (const entry of fs.readdirSync(batchDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
+        if (/^person_\d+$/i.test(entry.name)) continue;
+        const info = readInfoJson(path.join(batchDir, entry.name));
+        if (Array.isArray(info.mean_embedding) && info.mean_embedding.length > 0) {
+            enrolled[entry.name] = info.mean_embedding;
+        }
+    }
+    return enrolled;
+}
+
 // Mirrors Python's old folder-name parsing: "21CS001_John_Doe" → id="21CS001", name="John Doe"
 function parseStudentFolder(folder) {
     const idx = folder.indexOf('_');
@@ -175,4 +230,6 @@ module.exports = {
     buildBatchEmbeddingsPkl,
     buildEmbeddingsPklForStudents,
     parseStudentFolder,
+    buildExistingFoldersPayload,
+    buildEnrolledEmbeddings,
 };

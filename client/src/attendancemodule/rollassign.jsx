@@ -1493,6 +1493,7 @@ function GTModal({ rollNo, batchName, onClose, showToast, onMoved }) {
                 return { ...prev, embeddingFiles: embFiles.filter(f => f.filename !== filename), backupFiles: [...backFiles, { ...moved }] };
             } else {
                 // backup/other → embedding
+                if (embFiles.length >= 5) { showToast('Maximum 5 embedding images allowed', 'error'); return prev; }
                 const srcArr = currentType === 'backup' ? backFiles : othFiles;
                 const moved  = srcArr.find(f => f.filename === filename);
                 if (!moved) return prev;
