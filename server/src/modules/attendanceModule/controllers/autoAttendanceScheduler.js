@@ -10,6 +10,7 @@ const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
+const { saveFrameSnapshots } = require('./frameSnapshotWriter');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
@@ -160,6 +161,14 @@ function buildSummary(finalReport) {
 }
 
 async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) {
+    // ML service is stateless — persist the base64 raw/annotated frames it
+    // shipped back in frame_files (see frameSnapshotWriter.js).
+    try {
+        saveFrameSnapshots(mlResult.frame_files || []);
+    } catch (snapErr) {
+        console.warn('[AutoScheduler] Could not save frame snapshots:', snapErr.message);
+    }
+
     const attendance = mlResult.attendance || {};
     const students   = Object.entries(attendance).map(([rollNo, data]) => ({
         rollNo,

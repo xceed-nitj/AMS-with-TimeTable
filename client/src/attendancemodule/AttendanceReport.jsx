@@ -1011,7 +1011,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                                         {snap.faces_count} face{snap.faces_count !== 1 ? 's' : ''}
                                                     </div>
                                                     <div style={{ color: theme.textMuted, fontSize: '10px', marginTop: 2, wordBreak: 'break-all' }}>
-                                                        {snap.path?.split(/[\\/]/).pop()}
+                                                        {snap.filename}
                                                     </div>
                                                 </div>
                                             ))}

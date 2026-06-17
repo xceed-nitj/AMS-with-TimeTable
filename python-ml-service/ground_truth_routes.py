@@ -107,7 +107,8 @@ def _compute_mean_embedding(fp, photos):
         img = cv2.imread(os.path.join(fp, photo))
         if img is None:
             continue
-        faces = state.face_app.get(img)
+        with state.face_lock:
+            faces = state.face_app.get(img)
         if not faces:
             continue
         face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
@@ -502,7 +503,8 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
         img = cv2.imread(fpath)
         if img is None:
             continue
-        faces = state.face_app.get(img)
+        with state.face_lock:
+            faces = state.face_app.get(img)
         if not faces:
             continue
         face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))

@@ -152,7 +152,8 @@ def test_detection():
     frame = cv2.imread("test_frame.jpg")
     if frame is None:
         return {"error": "Cannot read test_frame.jpg"}
-    faces = state.face_app.get(frame)
+    with state.face_lock:
+        faces = state.face_app.get(frame)
     return {
         "faces_found": len(faces),
         "faces": [

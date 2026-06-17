@@ -28,8 +28,6 @@ router = APIRouter()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
-ML_DATA_DIR          = os.path.join(ROOT_DIR, "server", "ml-data", "frame_snapshots")
-ANNOTATED_FRAMES_DIR = os.path.join(ROOT_DIR, "server", "ml-data", "annotated_frames")
 
 SNAP_EVERY_SEC = 15   # save raw + annotated frame snapshot every N seconds during attendance
 
@@ -518,7 +516,12 @@ def extract_rtsp_stream(req: RTSPRequest):
 def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     """
     Core attendance logic as a regular (synchronous) generator.
-    Yields plain dicts: {"type": "stage"|"frame"|"done"|"error", ...}
+    Yields plain dicts: {"type": "stage"|"frame"|"frame_snapshot"|"done"|"error", ...}
+    "frame_snapshot" carries base64-encoded raw + annotated JPEG bytes — the
+    pipeline never writes to local disk, so it runs correctly even when this
+    process is on a separate machine from the Node server (e.g. a remote GPU
+    box). Callers (the sync and SSE routes below) are responsible for
+    persisting those bytes wherever server/ml-data/ actually lives.
     No SSE wrapping here — callers decide how to use the events.
     job: per-request dict with keys "stop" (Event), "frame" (bytes|None), "lock" (Lock).
     """
@@ -561,7 +564,8 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
             img = cv2.imread(os.path.join(fp, photo))
             if img is None:
                 continue
-            faces = state.face_app.get(img)
+            with state.face_lock:
+                faces = state.face_app.get(img)
             if not faces:
                 continue
             face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
@@ -634,12 +638,17 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     last_seq = 0
 
     # ── Frame snapshot tracking ────────────────────────────────────────────────
+    # Snapshots are never written to local disk here — this generator may run
+    # on a GPU machine with no shared filesystem with the Node server. Each
+    # snapshot is instead base64-encoded and yielded as a "frame_snapshot"
+    # event (same pattern as the ground-truth "crop_save" event); the caller
+    # (Node, via the sync or SSE route) is responsible for writing the bytes
+    # to server/ml-data/. `frame_snapshots` below stays a lightweight
+    # metadata-only summary (no image bytes) for the final "done" result.
     room_clean = re.sub(r'[^\w]', '_', (req.room or 'ROOM').upper().strip())
     slot_clean = re.sub(r'[^\w]', '_', (req.slot or 'SLOT').upper().strip())
     date_clean = (req.date or '').replace('-', '') or time.strftime('%Y%m%d')
     snap_folder_name = f"{room_clean}_{slot_clean}_{date_clean}"
-    snap_dir  = os.path.join(ML_DATA_DIR,          snap_folder_name)
-    annot_dir = os.path.join(ANNOTATED_FRAMES_DIR, snap_folder_name)
     frame_snapshots: list = []
     last_snap_t = -SNAP_EVERY_SEC  # trigger a snap on the first eligible frame
  
@@ -687,25 +696,15 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 all_timestamps.append(round(elapsed, 2))
                 all_quality.append(d["quality"])
 
-            # ── Save raw + annotated frame every SNAP_EVERY_SEC seconds ──────
+            # ── Emit raw + annotated frame every SNAP_EVERY_SEC seconds ──────
+            # Encoded in-memory and shipped as a "frame_snapshot" event —
+            # nothing is written to disk here (see note above).
             if elapsed - last_snap_t >= SNAP_EVERY_SEC:
                 last_snap_t = elapsed
                 fname = f"frame_{int(elapsed):04d}s_cam{cam_idx + 1}.jpg"
                 try:
-                    os.makedirs(snap_dir, exist_ok=True)
-                    snap_path = os.path.join(snap_dir, fname)
-                    cv2.imwrite(snap_path, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                    frame_snapshots.append({
-                        "cam":         cam_idx + 1,
-                        "elapsed_sec": round(elapsed, 1),
-                        "faces_count": faces_this_frame,
-                        "path":        snap_path,
-                        "folder":      snap_folder_name,
-                    })
-                except Exception:
-                    pass
-                try:
-                    os.makedirs(annot_dir, exist_ok=True)
+                    ok_raw, raw_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
                     annot = frame.copy()
                     for d in detections:
                         x1, y1, x2, y2 = d["bbox"]
@@ -718,10 +717,28 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                                 f"t={int(elapsed)}s  faces={faces_this_frame}  cam={cam_idx + 1}",
                                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
                                 (0, 200, 255), 2, cv2.LINE_AA)
-                    cv2.imwrite(os.path.join(annot_dir, fname), annot,
-                                [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    ok_annot, annot_buf = cv2.imencode('.jpg', annot, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
+                    if ok_raw and ok_annot:
+                        yield {
+                            "type":         "frame_snapshot",
+                            "folder":       snap_folder_name,
+                            "filename":     fname,
+                            "cam":          cam_idx + 1,
+                            "elapsed_sec":  round(elapsed, 1),
+                            "faces_count":  faces_this_frame,
+                            "raw_data":     base64.b64encode(raw_buf.tobytes()).decode('ascii'),
+                            "annotated_data": base64.b64encode(annot_buf.tobytes()).decode('ascii'),
+                        }
+                        frame_snapshots.append({
+                            "cam":         cam_idx + 1,
+                            "elapsed_sec": round(elapsed, 1),
+                            "faces_count": faces_this_frame,
+                            "filename":    fname,
+                            "folder":      snap_folder_name,
+                        })
                 except Exception:
-                    pass
+                    logger.exception("Failed to encode frame snapshot at elapsed=%s", elapsed)
 
             yield {"type": "frame", "frame": frame_count, "faces": faces_this_frame,
                    "total_embs": len(all_embeddings), "elapsed": round(elapsed, 1),
@@ -920,7 +937,13 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
 def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
     """
     Synchronous JSON endpoint — called by attendanceSessionController.js
-    (Node.js) via axios.post().  Blocks until done, returns plain JSON.
+    and autoAttendanceScheduler.js (Node.js) via axios.post().
+    Blocks until done, returns plain JSON.
+
+    Since this is a single request/response (no incremental streaming to
+    the caller), every "frame_snapshot" event emitted by the pipeline is
+    buffered here and returned in the response under "frame_files" — Node
+    decodes the base64 payloads and writes them to server/ml-data/ itself.
     """
     if state.face_app is None:
         raise HTTPException(status_code=503, detail="Face model not loaded")
@@ -929,6 +952,7 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
     result_payload = None
     error_message  = None
     stages         = []
+    frame_files    = []
 
     try:
         for event in _attendance_pipeline(req, job):
@@ -939,6 +963,8 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
                 error_message = event.get("message")
             elif t == "stage":
                 stages.append(event.get("message", ""))
+            elif t == "frame_snapshot":
+                frame_files.append(event)
             # "frame" events are dropped — too verbose for a sync response
     finally:
         _finish_job(job_id, job)
@@ -948,7 +974,7 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
     if result_payload is None:
         raise HTTPException(status_code=500, detail="Pipeline finished without a result")
 
-    return JSONResponse(content={**result_payload, "stages": stages})
+    return JSONResponse(content={**result_payload, "stages": stages, "frame_files": frame_files})
 
 
 # ── Per-job attendance preview (MJPEG, one stream per parallel run) ───────────
@@ -1031,7 +1057,8 @@ def _load_existing_folders(batch_dir, existing_mean_embs):
             img = cv2.imread(os.path.join(fp, img_f))
             if img is None:
                 continue
-            faces = state.face_app.get(img)
+            with state.face_lock:
+                faces = state.face_app.get(img)
             if not faces:
                 continue
             face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
