@@ -550,7 +550,8 @@ def match_clusters_to_erp_fast(req: MatchClustersFromPklRequest):
                 img = cv2.imread(os.path.join(folder_path, img_file))
                 if img is None:
                     continue
-                faces = state.face_app.get(img)
+                with state.face_lock:
+                    faces = state.face_app.get(img)
                 if faces:
                     emb  = faces[0].embedding
                     norm = np.linalg.norm(emb)
@@ -625,7 +626,8 @@ def match_clusters_to_erp(req: MatchClustersRequest):
             img     = cv2.imread(os.path.join(req.erp_photos_dir, fname))
             if img is None:
                 continue
-            faces = state.face_app.get(img)
+            with state.face_lock:
+                faces = state.face_app.get(img)
             if not faces:
                 logger.warning(f"No face in ERP photo: {fname}")
                 continue
@@ -667,7 +669,8 @@ def match_clusters_to_erp(req: MatchClustersRequest):
                 img = cv2.imread(os.path.join(folder_path, img_file))
                 if img is None:
                     continue
-                faces = state.face_app.get(img)
+                with state.face_lock:
+                    faces = state.face_app.get(img)
                 if faces:
                     emb  = faces[0].embedding
                     norm = np.linalg.norm(emb)
