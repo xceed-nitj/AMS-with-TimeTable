@@ -8,6 +8,10 @@ const axios      = require('axios');
 const LockSem  = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const AddSem    = require('../../../models/addsem');
+const {
+    updateStudentEmbedding: syncUpdateStudentEmbedding,
+    buildBatchEmbeddingsPkl,
+} = require('./embeddingSyncHelper');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
@@ -63,14 +67,10 @@ for (const record of subjectRecords) {
 const batchDir = path.join(GROUND_TRUTH_DIR, batch);
 if (!fs.existsSync(batchDir)) return;
 
-for (const [pklPath, { record, rollNos }] of pklGroups) {
+for (const [pklPath, { record }] of pklGroups) {
     try {
         console.log(`[rebuildSubjectPkls] Rebuilding ${record.embeddingFile} …`);
-        await axios.post(
-            `${ML_SERVICE_URL}/build-embeddings-sync`,
-            { photos_dir: batchDir, output_path: pklPath, roll_nos: [...rollNos] },
-            { timeout: 900000 }
-        );
+        await buildBatchEmbeddingsPkl(batchDir, pklPath);
         await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
         console.log(`[rebuildSubjectPkls] ✓ Done ${record.embeddingFile}`);
     } catch (err) {
@@ -427,11 +427,7 @@ res.json({ message: `Removed ${filename}` });
         // REPLACE WITH THIS:
 setImmediate(async () => {
     try {
-        await axios.post(
-            `${ML_SERVICE_URL}/update-student-embedding`,
-            { batch_name: batch, roll_no: rollNo, embedding_files: info.embedding_files },
-            { timeout: 60000 }
-        );
+        await syncUpdateStudentEmbedding(studentDir, rollNo, info.embedding_files);
         console.log(`[approvePhotos] Base embedding updated for ${rollNo}`);
         await rebuildSubjectPklsForStudent(rollNo, batch);
     } catch (err) {
@@ -449,12 +445,10 @@ setImmediate(async () => {
         if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length === 0)
             return res.status(400).json({ error: 'batch, rollNo, and embeddingFiles[] required' });
 
+        const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+
         // 1. Update the student embedding in ML service
-        const response = await axios.post(
-            `${ML_SERVICE_URL}/update-student-embedding`,
-            { batch_name: batch, roll_no: rollNo, embedding_files: embeddingFiles },
-            { timeout: 60000 }
-        );
+        const response = await syncUpdateStudentEmbedding(studentDir, rollNo, embeddingFiles);
 
         // 2. Rebuild all subject PKLs where this student is enrolled — wait for completion
 try {
@@ -464,7 +458,7 @@ try {
 }
 
 // 3. Respond only after rebuild is done
-res.json({ ...response.data, embedding_files_used: embeddingFiles.length });
+res.json({ ...response, embedding_files_used: embeddingFiles.length });
 
 
     } catch (err) { res.status(500).json({ error: mlError(err) }); }
@@ -475,16 +469,12 @@ res.json({ ...response.data, embedding_files_used: embeddingFiles.length });
         try {
             const { batch } = req.body;
             if (!batch) return res.status(400).json({ error: 'batch is required' });
-            const buildResp = await axios.post(
-                `${ML_SERVICE_URL}/build-embeddings-sync`,
-                {
-                    photos_dir:  path.join(GROUND_TRUTH_DIR, batch),
-                    output_path: path.join(EMBEDDINGS_DIR, `${batch}.pkl`)
-                },
-                { timeout: 180000 }
+            const buildResp = await buildBatchEmbeddingsPkl(
+                path.join(GROUND_TRUTH_DIR, batch),
+                path.join(EMBEDDINGS_DIR, `${batch}.pkl`)
             );
             await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
-            res.json({ ...buildResp.data, reloaded: true });
+            res.json({ ...buildResp, reloaded: true });
         } catch (err) { res.status(500).json({ error: mlError(err) }); }
     }
 
@@ -675,10 +665,7 @@ try {
             const batchDir = path.join(GROUND_TRUTH_DIR, batch);
             if (fs.existsSync(batchDir)) {
                 console.log(`[runAttendance] Building batch embeddings for "${batch}"...`);
-                await axios.post(`${ML_SERVICE_URL}/build-embeddings-sync`, {
-                    photos_dir:  batchDir,
-                    output_path: path.join(EMBEDDINGS_DIR, `${batch}.pkl`),
-                }, { timeout: 180000 });
+                await buildBatchEmbeddingsPkl(batchDir, path.join(EMBEDDINGS_DIR, `${batch}.pkl`));
             } else {
                 console.warn(`[runAttendance] Folder does not exist: ${batchDir}`);
             }
