@@ -320,23 +320,34 @@ class GroundTruthController {
         if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Photo not found' });
         await fsPromises.unlink(filePath);
 
-        // NEW: Remove the deleted file from _info.json
-        const infoPath = path.join(GROUND_TRUTH_DIR, batch, rollNo, '_info.json');
+        // Remove the deleted file from _info.json, and if it was a marked
+        // embedding photo, recompute mean_embedding so stale data from the
+        // deleted photo doesn't linger in subject PKLs.
+        const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+        const infoPath   = path.join(studentDir, '_info.json');
+        let needsRecompute = false;
+        let remainingEmbeddingFiles = [];
         if (fs.existsSync(infoPath)) {
             try {
                 const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                needsRecompute = (info.embedding_files || []).includes(filename);
                 info.embedding_files = (info.embedding_files || []).filter(f => f !== filename);
                 info.backup_files    = (info.backup_files    || []).filter(f => f !== filename);
                 info.approved_files  = (info.approved_files  || []).filter(f => f !== filename);
+                remainingEmbeddingFiles = info.embedding_files;
+                if (needsRecompute && remainingEmbeddingFiles.length === 0) delete info.mean_embedding;
                 await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
             } catch (_) {}
         }
 
         try {
-    await rebuildSubjectPklsForStudent(rollNo, batch);
-} catch (err) {
-    console.warn(`[deletePhoto] PKL rebuild failed:`, err.message);
-}
+            if (needsRecompute && remainingEmbeddingFiles.length > 0) {
+                await syncUpdateStudentEmbedding(studentDir, rollNo, remainingEmbeddingFiles);
+            }
+            await rebuildSubjectPklsForStudent(rollNo, batch);
+        } catch (err) {
+            console.warn(`[deletePhoto] PKL rebuild failed:`, err.message);
+        }
 
 res.json({ message: `Removed ${filename}` });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -403,9 +414,15 @@ res.json({ message: `Removed ${filename}` });
         const embeddingSet = new Set(info.embedding_files || []);
         const backupSet    = new Set(info.backup_files    || []);
 
+        const MAX_EMBEDDING_FILES = 5;
         for (const f of validFiles) {
-            embeddingSet.add(f);
             backupSet.delete(f);
+            // Cap embedding_files at 5 — overflow goes to backup instead.
+            if (embeddingSet.has(f) || embeddingSet.size < MAX_EMBEDDING_FILES) {
+                embeddingSet.add(f);
+            } else {
+                backupSet.add(f);
+            }
         }
 
         info.approved_files  = [...approvedSet].filter(f => allFiles.includes(f));
@@ -444,6 +461,8 @@ setImmediate(async () => {
         const { batch, rollNo, embeddingFiles } = req.body;
         if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length === 0)
             return res.status(400).json({ error: 'batch, rollNo, and embeddingFiles[] required' });
+        if (embeddingFiles.length > 5)
+            return res.status(400).json({ error: 'Maximum 5 embedding images allowed' });
 
         const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
 
@@ -651,8 +670,9 @@ try {
         // Always reload it so the ML service only recognises students
         // enrolled in THIS subject, not the entire batch.
         console.log(`[runAttendance] Loading subject-specific embeddings: ${subjectPkl}`);
+        const pklBytes = fs.readFileSync(subjectPklPath);
         await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
-            pkl_path: subjectPklPath   // pass path so Python loads the right file
+            pkl_data: pklBytes.toString('base64')   // bytes, not a path — Python may run on a separate machine
         }, { timeout: 30000 });
         console.log(`[runAttendance] Subject embeddings loaded from ${subjectPkl}`);
 
@@ -721,37 +741,6 @@ try {
         }
     }
 
-    // ─── Build per-student embedding ─────────────────────────────────────────
-    async buildStudentEmbedding(req, res) {
-        try {
-            const { batch, rollNo, embeddingFiles } = req.body;
-            if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length !== 5)
-                return res.status(400).json({ error: 'batch, rollNo, and exactly 5 embeddingFiles are required' });
-            const response = await axios.post(
-                `${ML_SERVICE_URL}/build-student-embedding`,
-                { batch_name: batch, roll_no: rollNo, embedding_files: embeddingFiles },
-                { timeout: 60000 }
-            );
-            res.json(response.data);
-        } catch (err) { res.status(500).json({ error: mlError(err) }); }
-    }
-
-    // ─── Build embeddings for entire batch ───────────────────────────────────
-    async buildBatchEmbeddings(req, res) {
-        try {
-            const { batch } = req.body;
-            if (!batch) return res.status(400).json({ error: 'batch is required' });
-            const response = await axios.post(
-                `${ML_SERVICE_URL}/build-batch-embeddings`,
-                {
-                    photos_dir:  path.join(GROUND_TRUTH_DIR, batch),
-                    output_path: path.join(EMBEDDINGS_DIR, `${batch}.pkl`)
-                },
-                { timeout: 300000 }
-            );
-            res.json(response.data);
-        } catch (err) { res.status(500).json({ error: mlError(err) }); }
-    }
 }
 
 module.exports = GroundTruthController;
