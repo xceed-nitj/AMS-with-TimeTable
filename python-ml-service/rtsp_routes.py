@@ -810,13 +810,45 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     for r, (cluster_id, indices) in enumerate(cluster_meta):
         if r not in assigned_cluster_rows:
             best_score = 0.0
+            closest_roll_no = None
             if len(enroll_matrix) > 0:
-                best_score = float(np.max(np.array(cluster_means[r]) @ enroll_matrix.T))
+                scores = np.array(cluster_means[r]) @ enroll_matrix.T
+                best_idx = int(np.argmax(scores))
+                best_score = float(scores[best_idx])
+                closest_roll_no = enrolled_ids[best_idx]
+            
+            cluster_sorted = sorted(
+                [(all_face_images[i], all_quality[i], all_timestamps[i], i) for i in indices],
+                key=lambda x: x[1], reverse=True
+            )
+            
+            failure_reason = "NO_MATCH_FOUND"
+            if best_score > 0 and closest_roll_no:
+                failure_reason = "LOW_CONFIDENCE"
+            
+            if len(cluster_sorted) > 0 and cluster_sorted[0][1] < 0.2:
+                failure_reason = "POOR_QUALITY"
+
+            crops_base64 = []
+            for crop, quality, ts, idx in cluster_sorted[:5]:
+                if crop.size > 0:
+                    ok, buf = cv2.imencode('.jpg', crop, [cv2.IMWRITE_JPEG_QUALITY, 95])
+                    if ok:
+                        crops_base64.append({
+                            "data": base64.b64encode(buf.tobytes()).decode('ascii'),
+                            "quality": round(quality, 4),
+                            "timestamp": round(float(ts), 1)
+                        })
+
             unmatched_clusters.append({
                 "cluster_id": int(cluster_id),
                 "detections": int(len(indices)),
                 "best_score": round(best_score, 4),
                 "first_seen": round(float(all_timestamps[indices[0]]), 1),
+                "failureReason": failure_reason,
+                "closestRollNo": closest_roll_no,
+                "recognitionThreshold": req.reviewThreshold,
+                "crops": crops_base64
             })
  
     present = sum(1 for v in attendance.values() if v["status"] == "present")
