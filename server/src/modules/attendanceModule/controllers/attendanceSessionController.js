@@ -6,6 +6,7 @@
 const axios = require('axios');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
+const { saveUnknownFaces } = require('./unknownFaceWriter');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
@@ -57,6 +58,7 @@ function buildSummary(finalReport) {
     return {
         totalStudents: total, present, absent, review,
         attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
+        unknownFaceCount: 0 // Will be added outside
     };
 }
 
@@ -136,8 +138,19 @@ async function runOneCheck(reportId, checkIndex, config) {
 
         report.slotResults.push(slotResult);
         report.finalReport = mergeStudentStatus(report.slotResults);
+        
+        const currentUnknownCount = report.summary && report.summary.unknownFaceCount ? report.summary.unknownFaceCount : 0;
+        const newUnknownCount = (mlResult.unmatched_clusters && mlResult.unmatched_clusters.length) ? mlResult.unmatched_clusters.length : 0;
+        
         report.summary     = buildSummary(report.finalReport);
+        report.summary.unknownFaceCount = currentUnknownCount; // saveUnknownFaces handles incrementing
+        
         await report.save();
+
+        // Fire and forget unknown face processing
+        if (newUnknownCount > 0) {
+            saveUnknownFaces(mlResult.unmatched_clusters, config, reportId);
+        }
 
         saveAttendanceDailyData(
             { batch: config.batch, date: config.date, slot: config.slot, room: config.room,

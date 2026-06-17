@@ -59,6 +59,7 @@ const attendanceReportSchema = new Schema({
         absent:        { type: Number, default: 0 },
         review:        { type: Number, default: 0 },
         attendancePct: { type: Number, default: 0 },
+        unknownFaceCount:{ type: Number, default: 0 },
     },
 
     status: {
