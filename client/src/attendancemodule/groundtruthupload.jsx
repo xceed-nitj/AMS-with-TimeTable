@@ -37,10 +37,10 @@ const CSS = `
   .erp-input:focus { border-color: ${T.borderFocus}; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
 
   .erp-toast {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999;
+    position: fixed; top: 96px; left: 50%; transform: translateX(-50%); z-index: 9000;
     padding: 12px 22px; border-radius: 30px; display: flex; align-items: center; gap: 10px;
-    font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap;
-    box-shadow: 0 8px 30px rgba(0,0,0,.18);
+    font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap;
+    box-shadow: 0 4px 24px rgba(0,0,0,.25);
     animation: toastIn .25s cubic-bezier(.16,1,.3,1) both;
   }
 

@@ -290,11 +290,11 @@ const movePhoto = async (rollNo, filename, direction) => {
 
             {toast && (
                 <div style={{
-                    position: 'fixed', top: 20, right: 20, zIndex: 9999,
-                    padding: '12px 24px', borderRadius: 8, fontSize: '13px', fontWeight: 600,
-                    background: toast.type === 'error' ? theme.dangerDim  : theme.successDim,
-                    color:      toast.type === 'error' ? theme.danger      : theme.success,
-                    border: `1px solid ${toast.type === 'error' ? theme.danger : theme.success}`,
+                    position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', zIndex: 9000,
+                    padding: '12px 24px', borderRadius: 8, fontSize: '13px', fontWeight: 700,
+                    background: toast.type === 'error' ? theme.danger : theme.success,
+                    color: '#ffffff',
+                    border: 'none',
                 }}>
                     {toast.msg}
                 </div>
