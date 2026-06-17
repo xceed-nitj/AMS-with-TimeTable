@@ -4,10 +4,14 @@
 // frontend polls GET /reports/:id to see new runs appear.
 
 const axios = require('axios');
+const path  = require('path');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
+const { saveFrameSnapshots } = require('./frameSnapshotWriter');
+const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 // ── In-memory session tracking ──────────────────────────────────────────────
 // Lost on server restart — acceptable for now.
@@ -87,6 +91,7 @@ async function runOneCheck(reportId, checkIndex, config) {
                 semester:         config.semester         || '',
                 locksemId:        config.locksemId        || '',
                 enrolledRollNos:  config.enrolledRollNos  || [],
+                enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, config.batch),
             },
             { timeout: 300000 }   // 5 min timeout
         );
@@ -94,32 +99,16 @@ async function runOneCheck(reportId, checkIndex, config) {
         const mlResult   = res.data;
         const attendance = mlResult.attendance || {};
 
-        // ── Write _faces.json sidecar for the cleanup scheduler (Issue #1544) ──
-        // frame_snapshots: [{ cam, elapsed_sec, faces_count, path, folder }, ...]
-        // The cleanup scheduler reads this to find the best annotated frame per camera.
-        const frameSnapshots = mlResult.frame_snapshots || [];
-        if (frameSnapshots.length > 0) {
-            try {
-                const path = require('path');
-                const fs   = require('fs');
-                const SERVER_ROOT    = path.join(__dirname, '..', '..', '..', '..');
-                const ANNOTATED_DIR  = path.join(SERVER_ROOT, 'ml-data', 'annotated_frames');
-                const folderName     = mlResult.snapshot_folder;
-                if (folderName) {
-                    const sidecar = {};
-                    for (const snap of frameSnapshots) {
-                        // filename matches what rtsp_routes.py writes: frame_{elapsed:04d}s_cam{N}.jpg
-                        const fname = `frame_${String(Math.round(snap.elapsed_sec)).padStart(4, '0')}s_cam${snap.cam}.jpg`;
-                        sidecar[fname] = snap.faces_count || 0;
-                    }
-                    const sidecarPath = path.join(ANNOTATED_DIR, folderName, '_faces.json');
-                    fs.mkdirSync(path.dirname(sidecarPath), { recursive: true });
-                    fs.writeFileSync(sidecarPath, JSON.stringify(sidecar, null, 2));
-                }
-            } catch (sidecarErr) {
-                // Non-fatal — cleanup falls back to elapsed-seconds proxy
-                console.warn('[Session] Could not write _faces.json sidecar:', sidecarErr.message);
-            }
+        // ── Persist raw + annotated frame files (Issue #1544) ──────────────────
+        // The ML service is stateless — it never writes to server/ml-data/ itself
+        // (it may be running on a separate GPU machine). frame_files carries the
+        // base64-encoded bytes for every snapshot taken during this check; we
+        // write them here, plus merge each snapshot's face count into the
+        // _faces.json sidecar the cleanup scheduler reads.
+        try {
+            saveFrameSnapshots(mlResult.frame_files || []);
+        } catch (snapErr) {
+            console.warn('[Session] Could not save frame snapshots:', snapErr.message);
         }
 
         // Build per-student list

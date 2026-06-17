@@ -42,24 +42,24 @@ function confBand(avgConf) {
 function Toast({ toast }) {
   if (!toast) return null;
   const isError = toast.type === 'error';
-  const color = isError ? theme.danger : theme.success;
-  const bg = isError ? theme.dangerDim : theme.successDim;
+  const bg = isError ? theme.danger : theme.success;
   return (
     <div
       style={{
         position: 'fixed',
-        top: 82,
-        right: 20,
-        zIndex: 2147483647,
+        top: 96,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 9000,
         padding: '12px 20px',
         borderRadius: 8,
         fontSize: 13,
         fontWeight: 700,
         background: bg,
-        color,
-        border: `1px solid ${color}`,
+        color: '#ffffff',
+        border: 'none',
         maxWidth: 420,
-        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
       }}
     >
       {toast.msg}

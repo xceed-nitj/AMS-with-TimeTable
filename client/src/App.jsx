@@ -213,6 +213,7 @@ import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
 import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
+import AcquisitionControl from './attendancemodule/AcquisitionControl';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
@@ -664,6 +665,7 @@ function App() {
           <Route path="reports" element={<AttendanceReport />} />
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
+           <Route path="acquisition-control" element={<AcquisitionControl />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}

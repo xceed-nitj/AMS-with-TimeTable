@@ -152,7 +152,8 @@ def test_detection():
     frame = cv2.imread("test_frame.jpg")
     if frame is None:
         return {"error": "Cannot read test_frame.jpg"}
-    faces = state.face_app.get(frame)
+    with state.face_lock:
+        faces = state.face_app.get(frame)
     return {
         "faces_found": len(faces),
         "faces": [
@@ -165,11 +166,17 @@ from pydantic import BaseModel
 from typing import Optional
 
 class ReloadEmbeddingsRequest(BaseModel):
-    pkl_path: Optional[str] = None
+    pkl_path: Optional[str] = None   # local/solo-machine dev convenience only
+    pkl_data: Optional[str] = None   # base64-encoded pickle bytes — works cross-machine, preferred
 
 @app.post("/reload-embeddings")
 def reload_embeddings_ep(req: ReloadEmbeddingsRequest = ReloadEmbeddingsRequest()):
-    if req.pkl_path and os.path.exists(req.pkl_path):
+    if req.pkl_data:
+        import pickle, base64
+        state.embeddings_db = pickle.loads(base64.b64decode(req.pkl_data))
+        logger.info(f"Loaded subject embeddings from pkl_data (base64): {len(state.embeddings_db)} students.")
+        return {"status": "ok", "students_enrolled": len(state.embeddings_db), "source": "pkl_data"}
+    elif req.pkl_path and os.path.exists(req.pkl_path):
         import pickle
         with open(req.pkl_path, "rb") as f:
             state.embeddings_db = pickle.load(f)

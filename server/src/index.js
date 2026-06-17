@@ -71,6 +71,7 @@ app.use(
 "https://projectipecon.netlify.app",
       "https://glogift2026.com",
       "https://mac2027.com",
+      "https://nitjtt.vercel.app"
 
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",

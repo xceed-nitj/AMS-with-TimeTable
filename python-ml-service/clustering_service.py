@@ -9,6 +9,8 @@ import cv2
 import numpy as np
 from sklearn.cluster import DBSCAN
 
+import state
+
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -315,7 +317,8 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         enhanced = _apply_clahe(zoomed)
  
         try:
-            faces = face_app.get(enhanced)
+            with state.face_lock:
+                faces = face_app.get(enhanced)
         except Exception as e:
             logger.warning(
                 f"InsightFace error pass={pass_idx} "

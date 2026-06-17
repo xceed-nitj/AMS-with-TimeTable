@@ -6,6 +6,10 @@ const axios      = require('axios');
 
 const StudentEmbedding = require('../../../models/attendanceModule/studentEmbedding');
 const Student          = require('../../../models/student');
+const {
+    updateStudentEmbedding: syncUpdateStudentEmbedding,
+    buildBatchEmbeddingsPkl,
+} = require('./embeddingSyncHelper');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
@@ -472,21 +476,13 @@ uploadPkl() {
             
 
             try {
-                const mlRes = await axios.post(
-                    `${ML_SERVICE_URL}/update-student-embedding`,
-                    {
-                        batch_name:      batchName,
-                        roll_no:         rollNo,
-                        embedding_files: embeddingFiles,
-                    },
-                    { timeout: 120000 }
-                );
+                const mlResult = await syncUpdateStudentEmbedding(studentDir, rollNo, embeddingFiles);
 
                 sse({
                     type:        'student',
                     rollNo,
                     status:      'done',
-                    photosUsed:  mlRes.data.embedding_files_used || embeddingFiles.length,
+                    photosUsed:  mlResult.embedding_files_used || embeddingFiles.length,
                     embeddingFile,
                 });
                 success++;
@@ -521,15 +517,7 @@ try {
                 ? path.join(GROUND_TRUTH_DIR, primaryBatch)
                 : GROUND_TRUTH_DIR;
 
-            await axios.post(
-                `${ML_SERVICE_URL}/build-embeddings-sync`,
-                {
-                    photos_dir:  batchDir,
-                    output_path: outputPath,
-                    roll_nos:    rollNos,
-                },
-                { timeout: 900000 }
-            );
+            await buildBatchEmbeddingsPkl(batchDir, outputPath);
 
             await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
             sse({ type: 'stage', message: 'Subject embeddings reloaded into ML service.' });

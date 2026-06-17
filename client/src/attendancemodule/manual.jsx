@@ -748,9 +748,34 @@ function TabOther() {
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', lineHeight: 1.9 }}>
                     <li>Click <strong>Frame Verification</strong> in the sidebar.</li>
                     <li>Select the <strong>Room</strong>, <strong>Date</strong>, and <strong>Period</strong> to filter frames.</li>
-                    <li>A gallery of captured frames is displayed. Frames where no faces were detected appear without annotations.</li>
+                    <li>The <strong>Annotated Frames</strong> tab opens by default — it shows frames with detection
+                    boxes and roll numbers. Switch to <strong>Raw Frames</strong> to see the unprocessed images.</li>
+                    <li>Frames where no faces were detected appear without annotations.</li>
                     <li>Use this to verify detection quality and support disputes over attendance records.</li>
                 </ul>
+            </div>
+
+            <SectionTitle>Frame Retention Policy</SectionTitle>
+            <div style={{
+                background: '#f8f9ff', border: '1px solid #e4e8f5',
+                borderRadius: 10, padding: '16px 20px', marginBottom: 20,
+            }}>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, marginBottom: 12 }}>
+                    To control storage growth, a nightly cleanup job (production only) automatically prunes
+                    old session frames:
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', lineHeight: 1.9 }}>
+                    <li><strong>Less than 7 days old:</strong> left completely untouched — all raw and annotated frames remain available.</li>
+                    <li><strong>7 days or older:</strong> all <strong>raw frames are deleted</strong>. For annotated frames, only the
+                    <strong> single best-shot frame per camera</strong> is kept (the one with the highest detected face
+                    count) — every other annotated frame for that camera is deleted.</li>
+                    <li>For a period covered by 2 cameras, this means 2 annotated frames remain in total after 7 days
+                    (1 best frame from each camera) — not 2 per camera.</li>
+                </ul>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, marginTop: 12 }}>
+                    Plan attendance audits and dispute resolution involving raw frames within this 7-day window —
+                    after that, only the one best annotated frame per camera is retrievable via Frame Verification.
+                </div>
             </div>
 
             <SectionTitle>Camera Live Preview</SectionTitle>

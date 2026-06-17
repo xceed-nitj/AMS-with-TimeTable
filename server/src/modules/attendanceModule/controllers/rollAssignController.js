@@ -6,6 +6,7 @@ const fsPromises = require('fs').promises;
 const axios      = require('axios');
 
 const ClusterMatch = require('../../../models/attendanceModule/clusterMatch');
+const erpSync       = require('./erpEmbeddingSyncHelper');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
@@ -865,14 +866,10 @@ class RollAssignController {
             const { batch }  = req.params;
             const parts      = batch.split('_');
             const department = parts.slice(1, -1).join('_');
-            const ML_SVC     = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
             let pkgCheck = { available: false };
             try {
-                const checkRes = await axios.get(`${ML_SVC}/erp-embedding/check`, {
-                    params: { batch, department }, timeout: 5000,
-                });
-                pkgCheck = checkRes.data;
+                pkgCheck = await erpSync.checkErpEmbedding(batch, department);
             } catch (_) {}
 
             // Count ERP photos as proxy for student count when ML doesn't provide it
@@ -907,7 +904,6 @@ class RollAssignController {
             const parts      = batch.split('_');
             const department = parts.slice(1, -1).join('_');
 
-            const ML_SVC          = process.env.ML_SERVICE_URL || 'http://localhost:8500';
             const ERP_PHOTOS_BASE = ERP_PHOTOS_DIR;
             const batchPhotoDir   = path.join(ERP_PHOTOS_BASE, batch);
             const erpPhotosDir    = fs.existsSync(batchPhotoDir) ? batchPhotoDir : ERP_PHOTOS_BASE;
@@ -915,10 +911,7 @@ class RollAssignController {
             // ── Check for pre-built pkl ───────────────────────────────────
             let pkgCheck = { available: false };
             try {
-                const checkRes = await axios.get(`${ML_SVC}/erp-embedding/check`, {
-                    params: { batch, department }, timeout: 8000,
-                });
-                pkgCheck = checkRes.data;
+                pkgCheck = await erpSync.checkErpEmbedding(batch, department);
             } catch (_) {}
 
             // Require pre-built pkl — block before starting SSE stream
@@ -926,19 +919,58 @@ class RollAssignController {
                 return res.status(422).json({ noEmbedding: true, batch, department });
             }
 
+            const pklData = erpSync.readPklBase64(pkgCheck.pkl_path);
+
+            // ── Build ERP photo filename map (mirrors the old Python 3-tier
+            // search: batch-specific dir, parent erp_photos/ root, siblings) ──
+            const erpPhotoMap = {};
+            const searchDirs = [erpPhotosDir];
+            const parentDir = path.dirname(erpPhotosDir);
+            if (fs.existsSync(parentDir) && parentDir !== erpPhotosDir) {
+                searchDirs.push(parentDir);
+                try {
+                    for (const entry of fs.readdirSync(parentDir, { withFileTypes: true })) {
+                        if (entry.isDirectory()) {
+                            const sibling = path.join(parentDir, entry.name);
+                            if (!searchDirs.includes(sibling)) searchDirs.push(sibling);
+                        }
+                    }
+                } catch (_) {}
+            }
+            for (const dir of searchDirs) {
+                if (!fs.existsSync(dir)) continue;
+                for (const fname of fs.readdirSync(dir)) {
+                    if (/\.(jpg|jpeg|png|webp)$/i.test(fname)) {
+                        const rn = path.basename(fname, path.extname(fname)).toUpperCase();
+                        if (!(rn in erpPhotoMap)) erpPhotoMap[rn] = fname;
+                    }
+                }
+            }
+
+            // ── Build cluster photo payload (person_XXX folders) ──────────
+            const clusterDirs = fs.readdirSync(batchPath, { withFileTypes: true })
+                .filter(e => e.isDirectory() && /^person_\d+$/i.test(e.name))
+                .map(e => e.name)
+                .sort();
+
+            const clusters = clusterDirs.map(folderName => {
+                const folderPath = path.join(batchPath, folderName);
+                const imgFiles = fs.readdirSync(folderPath).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+                const photos = imgFiles.map(filename => ({
+                    filename,
+                    data: fs.readFileSync(path.join(folderPath, filename)).toString('base64'),
+                }));
+                return { folder_name: folderName, photos };
+            });
+
             res.setHeader('Content-Type',  'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection',    'keep-alive');
             res.flushHeaders();
 
             const mlResponse = await axios.post(
-                `${ML_SVC}/match-clusters-to-erp-fast`,
-                {
-                    batch_dir:      batchPath,
-                    pkl_path:       pkgCheck.pkl_path,
-                    erp_photos_dir: erpPhotosDir,
-                    top_k:          3,
-                },
+                `${ML_SERVICE_URL}/match-clusters-to-erp-fast`,
+                { pkl_data: pklData, erp_photo_map: erpPhotoMap, clusters, top_k: 3 },
                 { responseType: 'stream', timeout: 0 }
             );
 
