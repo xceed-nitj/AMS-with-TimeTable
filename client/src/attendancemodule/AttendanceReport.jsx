@@ -540,12 +540,12 @@ rtspUrl2Ref.current = rtspUrl2.trim();
 
             {toast && (
                 <div style={{
-                    position: 'fixed', top: 20, right: 20, zIndex: 999,
-                    padding: '12px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+                    position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', zIndex: 9000,
+                    padding: '12px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 700,
                     animation: 'fadeIn 0.3s',
-                    background: toast.type === 'error' ? theme.dangerDim  : theme.successDim,
-                    color:      toast.type === 'error' ? theme.danger      : theme.success,
-                    border: `1px solid ${toast.type === 'error' ? theme.danger : theme.success}`,
+                    background: toast.type === 'error' ? theme.danger : theme.success,
+                    color: '#ffffff',
+                    border: 'none',
                 }}>{toast.msg}</div>
             )}
 

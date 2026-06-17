@@ -594,21 +594,20 @@ export default function RollAssign({ fixedDepartment = '' }) {
                     }
                 `}</style>
                 <div style={{
-                    position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)',
-                    zIndex: 9999, pointerEvents: 'none',
+                    position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)',
+                    zIndex: 9000, pointerEvents: 'none',
                     animation: 'slideDown 0.22s cubic-bezier(0.16,1,0.3,1)',
                     minWidth: 300, maxWidth: 400,
-                    background: '#f8f8f6',
+                    background: toast.type === 'error' ? '#ef4444' : toast.type === 'flag' ? '#f59e0b' : '#22c55e',
                     borderRadius: 8,
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-                    border: `1px solid ${toast.type === 'error' ? '#fca5a5' : toast.type === 'flag' ? '#fcd34d' : '#86efac'}`,
-                    borderLeft: `4px solid ${toast.type === 'error' ? '#ef4444' : toast.type === 'flag' ? '#f59e0b' : '#22c55e'}`,
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+                    border: 'none',
                     padding: '12px 20px',
                 }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                         {toast.type === 'error' ? 'Error' : toast.type === 'flag' ? 'Flagged' : 'Success'}
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937', letterSpacing: '0.02em' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.02em' }}>
                         {toast.msg}
                     </div>
                 </div>
@@ -1654,7 +1653,6 @@ function GTModal({ rollNo, batchName, onClose, showToast, onMoved }) {
 
 function InModalToast({ toast }) {
     const accent = toast.type === 'success' ? '#22c55e' : toast.type === 'flag' ? '#f59e0b' : '#ef4444';
-    const border = toast.type === 'success' ? '#86efac' : toast.type === 'flag' ? '#fcd34d' : '#fca5a5';
     const label  = toast.type === 'success' ? 'Success' : toast.type === 'flag' ? 'Flagged' : 'Error';
     return (
         <>
@@ -1665,19 +1663,18 @@ function InModalToast({ toast }) {
             }
         `}</style>
         <div style={{
-           position: 'fixed', top: 64, left: '50%',
-            zIndex: 9999, pointerEvents: 'none',
+           position: 'fixed', top: 96, left: '50%',
+            zIndex: 9000, pointerEvents: 'none',
             animation: 'slideDown 0.22s cubic-bezier(0.16,1,0.3,1)',
             minWidth: 300, maxWidth: 400,
-            background: '#f8f8f6',
+            background: accent,
             borderRadius: 8,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-            border: `1px solid ${border}`,
-            borderLeft: `4px solid ${accent}`,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+            border: 'none',
             padding: '12px 20px',
         }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{label}</div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937', letterSpacing: '0.02em' }}>{toast.msg}</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{label}</div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.02em' }}>{toast.msg}</div>
         </div>
         </>
     );
