@@ -50,5 +50,6 @@ router.use('/ground-truth-upload', require("./groundTruthUploadRoutes"));
 router.use('/acquisition-control', acquisitionControlRoutes);
 router.use('/settings/batches', require("./batchSettingsRoutes"));
 router.use('/health', require("./healthRoutes"));
+router.use('/unknown-faces', require("./unknownFaceRoutes"));
 
 module.exports = router;

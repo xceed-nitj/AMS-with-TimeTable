@@ -214,11 +214,13 @@ import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
 import AcquisitionControl from './attendancemodule/AcquisitionControl';
+import UnknownFaces from './attendancemodule/UnknownFaces';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
 import CameraRegistry from './attendancemodule/camera';
 import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
+import GpuMetrics from './attendancemodule/GpuMetrics';
 import AMSManual from './attendancemodule/manual';
 import TTManual from './timetableadmin/TTManual';
 
@@ -656,6 +658,7 @@ function App() {
           <Route path="groundtruth/assign" element={<RollAssign />} />
           {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
           <Route path="groundtruth/edit" element={<EditGroundTruth />} />
+          <Route path="groundtruth/unknown" element={<UnknownFaces />} />
           <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
           {/* <Route path="groundtruth/photos" element={<PhotoEdit />} /> */}
           <Route path="groundtruth/upload" element={<GroundTruthUpload />} />
@@ -666,6 +669,7 @@ function App() {
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
            <Route path="acquisition-control" element={<AcquisitionControl />} />
+          <Route path="gpu" element={<GpuMetrics />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}
