@@ -213,6 +213,7 @@ import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
 import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
+import UnknownFaces from './attendancemodule/UnknownFaces';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
@@ -656,6 +657,7 @@ function App() {
           <Route path="groundtruth/assign" element={<RollAssign />} />
           {/* <Route path="groundtruth/flagged"  element={<FlaggedAssign />} /> */}
           <Route path="groundtruth/edit" element={<EditGroundTruth />} />
+          <Route path="groundtruth/unknown" element={<UnknownFaces />} />
           <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
           {/* <Route path="groundtruth/photos" element={<PhotoEdit />} /> */}
           <Route path="groundtruth/upload" element={<GroundTruthUpload />} />

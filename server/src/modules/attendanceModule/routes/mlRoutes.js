@@ -14,12 +14,10 @@ const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const { saveAttendanceDailyData, listDailyDataFiles, readDailyDataFile } = require('../controllers/attendanceDailyDataSaver');
 const { saveFrameSnapshot } = require('../controllers/frameSnapshotWriter');
+const { buildEnrolledEmbeddings } = require('../controllers/embeddingSyncHelper');
 
-const configuredMlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8500';
-const ML_URL = /^https?:\/\//i.test(configuredMlUrl)
-    ? configuredMlUrl
-    : `http://${configuredMlUrl}`;
-// const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 // ─── Roll Lists Directory ─────────────────────────────────────
 const ROLL_LISTS_DIR = path.join(__dirname, '../roll-lists');
@@ -599,6 +597,7 @@ router.post('/run-attendance-rtsp', async (req, res) => {
         semester:  resolvedSem,
         locksemId: resolvedLocksem,
         _resolvedCtx: ctx || null,
+        enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, resolvedBatch),
     };
 
     // Step 3: Stream from Python, intercept the 'done' event to save daily data

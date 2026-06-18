@@ -4,11 +4,16 @@
 // frontend polls GET /reports/:id to see new runs appear.
 
 const axios = require('axios');
+const path  = require('path');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
+const { saveUnknownFaces } = require('./unknownFaceWriter');
 const { saveFrameSnapshots } = require('./frameSnapshotWriter');
+const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
+
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 // ── In-memory session tracking ──────────────────────────────────────────────
 // Lost on server restart — acceptable for now.
@@ -58,6 +63,7 @@ function buildSummary(finalReport) {
     return {
         totalStudents: total, present, absent, review,
         attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
+        unknownFaceCount: 0 // Will be added outside
     };
 }
 
@@ -88,6 +94,7 @@ async function runOneCheck(reportId, checkIndex, config) {
                 semester:         config.semester         || '',
                 locksemId:        config.locksemId        || '',
                 enrolledRollNos:  config.enrolledRollNos  || [],
+                enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, config.batch),
             },
             { timeout: 300000 }   // 5 min timeout
         );
@@ -149,8 +156,19 @@ async function runOneCheck(reportId, checkIndex, config) {
 
         report.slotResults.push(slotResult);
         report.finalReport = mergeStudentStatus(report.slotResults);
+        
+        const currentUnknownCount = report.summary && report.summary.unknownFaceCount ? report.summary.unknownFaceCount : 0;
+        const newUnknownCount = (mlResult.unmatched_clusters && mlResult.unmatched_clusters.length) ? mlResult.unmatched_clusters.length : 0;
+        
         report.summary     = buildSummary(report.finalReport);
+        report.summary.unknownFaceCount = currentUnknownCount; // saveUnknownFaces handles incrementing
+        
         await report.save();
+
+        // Fire and forget unknown face processing
+        if (newUnknownCount > 0) {
+            saveUnknownFaces(mlResult.unmatched_clusters, config, reportId);
+        }
 
         saveAttendanceDailyData(
             { batch: config.batch, date: config.date, slot: config.slot, room: config.room,

@@ -134,6 +134,7 @@ router.post('/run-attendance', async (req, res) => {
 
 const http = require('http');
 const fs   = require('fs');
+const { buildExistingFoldersPayload } = require('../controllers/embeddingSyncHelper');
 
 const GT_BASE_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
@@ -215,8 +216,9 @@ function handleGroundTruthEvent(event, batch, pythonFolderMap) {
 }
 
 router.post('/extract-rtsp-stream', (req, res) => {
-    const body           = JSON.stringify(req.body);
-    const batch          = req.body.batch || '';
+    const batch           = req.body.batch || '';
+    const existingFolders = buildExistingFoldersPayload(path.join(GT_BASE_DIR, batch));
+    const body            = JSON.stringify({ ...req.body, existingFolders });
     const pythonFolderMap = {};   // person_XXX → ObjectId string, scoped to this stream
 
     res.setHeader('Content-Type', 'text/event-stream');
