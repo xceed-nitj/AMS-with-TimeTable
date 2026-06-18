@@ -32,6 +32,7 @@ const NAV = [
   { id: 'cameras', route: '/cameras', label: 'Camera Registry', exact: true },
   { id: 'embeddings', route: '/attendance/embeddings', label: 'Subject Embeddings' },
   { id: 'preview', route: '/cameras/preview', label: 'Live Preview' },
+  { id: 'gpu', route: '/attendance/gpu', label: 'GPU Monitor' },
   {
     id: 'confidence',
     route: '/attendance/confidence',
@@ -50,6 +51,7 @@ const COLORS = {
   cameras: '#f97316',
   embeddings: '#f59e0b',
   preview: '#8b5cf6',
+  gpu: '#06b6d4',
   confidence: '#ef4444',
   manual: '#64748b',
 };

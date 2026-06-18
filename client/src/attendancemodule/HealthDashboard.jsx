@@ -155,6 +155,7 @@ export default function HealthDashboard() {
     database: clientStatus === 'online' ? (healthData?.services?.database?.status || 'offline') : 'unknown',
     tunnel:   clientStatus === 'online' ? (healthData?.services?.tunnel?.status   || 'unknown') : 'unknown',
   };
+  const mlTarget = healthData?.services?.ml?.target || healthData?.services?.tunnel?.target;
 
   const formatUptime = (s) => {
     if (!s) return '0s';
@@ -210,7 +211,10 @@ export default function HealthDashboard() {
         label="H100"
         status={svc.tunnel}
         details={[
-          svc.tunnel === 'not_configured' ? 'Not configured' : 'Proxy active',
+          mlTarget?.display ? `Target: ${mlTarget.display}` : null,
+          mlTarget?.kind === 'h100'
+            ? (svc.tunnel === 'online' ? 'H100 reachable' : 'H100 unreachable')
+            : 'Not configured; using local ML service',
         ]}
       />
 

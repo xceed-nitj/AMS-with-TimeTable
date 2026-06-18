@@ -15,7 +15,11 @@ const TimeTable = require('../../../models/timetable');
 const { saveAttendanceDailyData, listDailyDataFiles, readDailyDataFile } = require('../controllers/attendanceDailyDataSaver');
 const { saveFrameSnapshot } = require('../controllers/frameSnapshotWriter');
 
-const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const configuredMlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const ML_URL = /^https?:\/\//i.test(configuredMlUrl)
+    ? configuredMlUrl
+    : `http://${configuredMlUrl}`;
+// const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
 // ─── Roll Lists Directory ─────────────────────────────────────
 const ROLL_LISTS_DIR = path.join(__dirname, '../roll-lists');
@@ -238,9 +242,46 @@ for (const d of ['MTECH', 'PHD', 'BSC', 'MSC', 'MBA', 'MCA', 'BTECH', 'B.TECH', 
 // ─── ML Service Health ────────────────────────────────────────
 router.get('/health', async (req, res) => {
     try {
-        res.json(await mlClient.healthCheck());
+        const health = await mlClient.healthCheck();
+        res.json({ ...health, target: mlClient.getTargetInfo() });
     } catch (e) {
-        res.status(503).json({ status: 'unreachable' });
+        res.status(503).json({ status: 'unreachable', target: mlClient.getTargetInfo() });
+    }
+});
+
+router.get('/target', (req, res) => {
+    res.json(mlClient.getTargetInfo());
+});
+
+router.get('/gpu-metrics', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/metrics/gpu`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            available: false,
+            error: e.response?.data?.detail || e.message || 'GPU metrics unavailable',
+        });
+    }
+});
+
+router.get('/logs', async (req, res) => {
+    try {
+        const limit = Number.parseInt(req.query.limit, 10) || 200;
+        const result = await axios.get(`${ML_URL}/logs`, {
+            timeout: 5000,
+            params: { limit },
+        });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status;
+        const upstreamMessage = e.response?.data?.detail || e.response?.data?.error || e.message;
+        res.status(503).json({
+            logs: [],
+            error: status === 404
+                ? 'ML service /logs endpoint not found. Restart python-ml-service/ml_service.py with the latest code.'
+                : upstreamMessage || 'ML service logs unavailable',
+        });
     }
 });
 
