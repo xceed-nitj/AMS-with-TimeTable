@@ -877,7 +877,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                                           ))}
                                       </optgroup>
                                       {
-                                        !fixedDepartment && (
+                                        !fixedDepartment && otherRooms.length > 0 && (
                                           <optgroup label={`── Other Rooms ──`}>
                                           {otherRooms.map(room => (
                                               <option key={room} value={room}>
@@ -888,8 +888,18 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                                         )
                                       }
                                     </>
-                                ) : (
-                                    <option disabled> No allotments registered for this configuration in active session</option>
+                                ) : 
+                                // If no rooms are there in currentBatchRoomNames this means
+                                // that otherRooms contains all the rooms (otherRooms = timetableRooms - currentBatchRoomNames, so otherRooms is just Set of timetableRooms)
+                                // Hence we will show otherRooms for both Department and Admin
+                                (
+                                    <optgroup label={`── All Rooms ──`}>
+                                          {otherRooms.map(room => (
+                                              <option key={room} value={room}>
+                                                  {room}
+                                              </option>
+                                          ))}
+                                    </optgroup>
                                 )}
                             </>
                         )}
