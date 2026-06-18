@@ -219,6 +219,7 @@ import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
 import CameraRegistry from './attendancemodule/camera';
 import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
+import GpuMetrics from './attendancemodule/GpuMetrics';
 import AMSManual from './attendancemodule/manual';
 import TTManual from './timetableadmin/TTManual';
 
@@ -666,6 +667,7 @@ function App() {
           <Route path="reports" element={<AttendanceReport />} />
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
+          <Route path="gpu" element={<GpuMetrics />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}
