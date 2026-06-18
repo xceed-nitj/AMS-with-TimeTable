@@ -11,6 +11,7 @@ const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
+const { saveUnknownFaces } = require('./unknownFaceWriter');
 const { saveFrameSnapshots } = require('./frameSnapshotWriter');
 const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
 
@@ -160,7 +161,8 @@ function buildSummary(finalReport) {
     const absent  = finalReport.filter(s => s.finalStatus === 'A').length;
     const review  = finalReport.filter(s => s.finalStatus === 'R').length;
     return { totalStudents: total, present, absent, review,
-             attendancePct: total > 0 ? Math.round((present/total)*100) : 0 };
+             attendancePct: total > 0 ? Math.round((present/total)*100) : 0,
+             unknownFaceCount: 0 };
 }
 
 async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) {
@@ -214,7 +216,12 @@ async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) 
     }
 
     report.finalReport = mergeStudentStatus(report.slotResults);
+    
+    const currentUnknownCount = report.summary && report.summary.unknownFaceCount ? report.summary.unknownFaceCount : 0;
+    
     report.summary     = buildSummary(report.finalReport);
+    report.summary.unknownFaceCount = currentUnknownCount; // saveUnknownFaces handles incrementing
+    
     await report.save();
 
     saveAttendanceDailyData(
@@ -231,7 +238,18 @@ async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) 
         for (const u of unmatched) {
             console.warn(`[AutoScheduler]    cluster_${u.cluster_id} — ${u.detections} detections, best_score=${u.best_score}, first_seen=${u.first_seen}s`);
         }
-        // TODO: send email/notification here if needed
+        
+        // Fire and forget unknown face saving
+        saveUnknownFaces(unmatched, {
+            batch: ctx.batch,
+            date,
+            slot,
+            room,
+            subject: ctx.subject,
+            faculty: ctx.faculty,
+            semester: ctx.sem,
+            rtspUrl: cameras.cam1, // default for metadata
+        }, report._id.toString());
     }
 
     console.log(`[AutoScheduler] ✅ Check ${checkIndex} saved — ${ctx.batch} ${slot} — P:${slotResult.summary.present} A:${slotResult.summary.absent} R:${slotResult.summary.review} Unmatched:${unmatched.length}`);
