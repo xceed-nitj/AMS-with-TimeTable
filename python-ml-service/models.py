@@ -3,7 +3,7 @@
 
 import os
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
@@ -31,12 +31,27 @@ class CompareRequest(BaseModel):
     max_gt_images: int = 10
 
 
-class BuildEmbeddingsRequest(BaseModel):
-    photos_dir: str = CLIENT_GROUND_TRUTH
-    output_path: str = DB_PATH
-    roll_nos: List[str] = [] 
+# A single ground-truth photo shipped as bytes (base64) rather than a path —
+# the ML service may run on a machine with no access to server/ml-data/.
+class PhotoBytes(BaseModel):
+    filename: str
+    data: str  # base64-encoded JPEG/PNG bytes
 
-    use_cached_embeddings: bool = True  # NEW: skip re-processing if embedding already exists
+
+# One student's input for a batch/subject embedding build. If
+# cached_mean_embedding is supplied (Node already has it cached in this
+# student's _info.json), Python skips face detection entirely for them —
+# photos only need to be sent when there's no cache yet.
+class StudentEmbeddingInput(BaseModel):
+    roll_no: str
+    name: str = ""
+    cached_mean_embedding: Optional[List[float]] = None
+    num_photos_cached: int = 0
+    photos: List[PhotoBytes] = []
+
+
+class BuildEmbeddingsRequest(BaseModel):
+    students: List[StudentEmbeddingInput] = []
 
 
 class ExtractFacesRequest(BaseModel):
@@ -84,9 +99,8 @@ class ClusterOnlyRequest(BaseModel):
 
 
 class UpdateEmbeddingRequest(BaseModel):
-    batch_name: str
     roll_no: str
-    embedding_files: List[str]
+    photos: List[PhotoBytes]
 
 
 class AssignRollNoRequest(BaseModel):

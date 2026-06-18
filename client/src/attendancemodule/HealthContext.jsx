@@ -121,32 +121,33 @@ export function HealthProvider({ children }) {
       
       {/* Alerts Area - Now as floating pop-up toasts using Portals */}
       {alerts.length > 0 && typeof document !== 'undefined' && createPortal(
-        <div style={{ 
-          position: 'fixed', 
-          bottom: 32, 
-          right: 32, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: 12, 
-          zIndex: 2147483647 
+        <div style={{
+          position: 'fixed',
+          top: 96,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 9000
         }}>
           {alerts.map(alert => (
             <div key={alert.id} style={{
-              background: T.surface,
-              border: `1px solid ${T.border}`,
-              borderLeft: `4px solid ${alert.type === 'success' ? T.emerald : T.red}`,
-              color: T.text,
-              padding: '14px 20px', 
-              borderRadius: 8, 
-              fontSize: 14, 
-              fontWeight: 600,
-              boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+              background: alert.type === 'success' ? T.emerald : T.red,
+              border: 'none',
+              color: '#ffffff',
+              padding: '14px 20px',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
               animation: 'fadeUp .3s ease both',
               minWidth: '300px',
               overflow: 'hidden',
               fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif"
             }}>
-              <div style={{ color: alert.type === 'success' ? T.emerald : T.red, marginBottom: 4, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ color: '#ffffff', opacity: 0.85, marginBottom: 4, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {alert.type === 'success' ? 'Connected' : 'Disconnected'}
               </div>
               {alert.message}

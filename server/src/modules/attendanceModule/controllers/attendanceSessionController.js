@@ -4,11 +4,16 @@
 // frontend polls GET /reports/:id to see new runs appear.
 
 const axios = require('axios');
+const path  = require('path');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 const { saveUnknownFaces } = require('./unknownFaceWriter');
+const { saveFrameSnapshots } = require('./frameSnapshotWriter');
+const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
+
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 // ── In-memory session tracking ──────────────────────────────────────────────
 // Lost on server restart — acceptable for now.
@@ -89,12 +94,25 @@ async function runOneCheck(reportId, checkIndex, config) {
                 semester:         config.semester         || '',
                 locksemId:        config.locksemId        || '',
                 enrolledRollNos:  config.enrolledRollNos  || [],
+                enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, config.batch),
             },
             { timeout: 300000 }   // 5 min timeout
         );
 
         const mlResult   = res.data;
         const attendance = mlResult.attendance || {};
+
+        // ── Persist raw + annotated frame files (Issue #1544) ──────────────────
+        // The ML service is stateless — it never writes to server/ml-data/ itself
+        // (it may be running on a separate GPU machine). frame_files carries the
+        // base64-encoded bytes for every snapshot taken during this check; we
+        // write them here, plus merge each snapshot's face count into the
+        // _faces.json sidecar the cleanup scheduler reads.
+        try {
+            saveFrameSnapshots(mlResult.frame_files || []);
+        } catch (snapErr) {
+            console.warn('[Session] Could not save frame snapshots:', snapErr.message);
+        }
 
         // Build per-student list
         // Normalise status: only allow values in the Mongoose enum

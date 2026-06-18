@@ -71,6 +71,7 @@ app.use(
 "https://projectipecon.netlify.app",
       "https://glogift2026.com",
       "https://mac2027.com",
+      "https://nitjtt.vercel.app"
 
     ], // Change this to your allowed origins or '*' to allow all origins
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
@@ -198,6 +199,17 @@ mongoose
       };
       startAutoScheduler(ROOM_CAMERA_MAP, SCHEDULER_CONFIG);
       console.log('[AutoScheduler] Scheduler started for rooms:', Object.keys(ROOM_CAMERA_MAP));
+
+      // ── Frame Cleanup Scheduler (Task #1544) ──────────────────
+      // Deletes frames older than 7 days; keeps only the best
+      // annotated frame (highest face count) per camera per period.
+      const { startFrameCleanupScheduler } = require('./modules/attendanceModule/controllers/frameCleanupScheduler');
+      if (process.env.NODE_ENV === 'production') {
+        startFrameCleanupScheduler();
+        console.log('[FrameCleanup] Production storage retention scheduler registered successfully.');
+      } else {
+        console.log('[FrameCleanup] Development environment detected — Scheduler paused to protect local assets.');
+      }
 
     });
     server.setTimeout(600000); // 10 min — prevents Node killing long SSE connections

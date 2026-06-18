@@ -14,12 +14,12 @@ function Toast({ toast }) {
     if (!toast) return null;
     return (
         <div style={{
-            position: 'fixed', top: 20, right: 20, zIndex: 9999,
-            padding: '12px 24px', borderRadius: 8, fontSize: '13px', fontWeight: 600,
-            background: toast.type === 'error' ? theme.dangerDim  : theme.successDim,
-            color:      toast.type === 'error' ? theme.danger      : theme.success,
-            border: `1px solid ${toast.type === 'error' ? theme.danger : theme.success}`,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+            position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', zIndex: 9000, whiteSpace: 'nowrap',
+            padding: '12px 24px', borderRadius: 8, fontSize: '13px', fontWeight: 700,
+            background: toast.type === 'error' ? theme.danger : theme.success,
+            color: '#ffffff',
+            border: 'none',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
         }}>{toast.msg}</div>
     );
 }
@@ -141,6 +141,25 @@ function FilterBlock({
     return (
         <div style={{ ...styles.card, marginBottom: 20, padding: '18px 24px', borderLeft: `3px solid ${theme.accent}` }}>
             <div style={{ fontSize: '11px', fontWeight: 700, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Selection</div>
+            {/* Loading toasts - inline banner */}
+{semsLoading && (
+    <div style={{
+        position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)',
+        zIndex: 9000, padding: '12px 24px', borderRadius: 8,
+        background: theme.success, color: '#ffffff',
+        border: 'none', fontSize: '13px', fontWeight: 700,
+        boxShadow: '0 4px 24px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
+    }}>⏳ Loading semesters...</div>
+)}
+{subjectsLoading && (
+    <div style={{
+        position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)',
+        zIndex: 9000, padding: '12px 24px', borderRadius: 8,
+        background: theme.success, color: '#ffffff',
+        border: 'none', fontSize: '13px', fontWeight: 700,
+        boxShadow: '0 4px 24px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
+    }}>⏳ Loading subjects...</div>
+)}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 16, alignItems: 'end' }} className="r-grid-3">
                 <div>
                     <label style={styles.label}>Department</label>
@@ -264,6 +283,21 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
         e.target.value = '';
     };
 
+    const downloadTemplate = () => {
+        const sample = [
+            ['Roll No'],
+            ['21CS001'],
+            ['21CS002'],
+            ['21CS003'],
+            ['21CS004'],
+            ['21CS005'],
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(sample);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Roll Numbers');
+        XLSX.writeFile(wb, 'roll_numbers_template.xlsx');
+    };
+
     const startGeneration = async () => {
         if (!batchName || rollNos.length === 0 || !subject.trim()) return;
         setRunning(true);
@@ -369,12 +403,35 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 8px', borderRadius: 99, background: theme.accentDim, color: theme.accent }}>{rollNos.length}</span>
                             )}
                             <div style={{ flex: 1 }} />
+                            <button
+                                type="button"
+                                onClick={downloadTemplate}
+                                title="Download a sample .xlsx with dummy roll numbers"
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                                    padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
+                                    background: theme.successDim, color: theme.success,
+                                    border: `1px solid ${theme.success}44`, fontSize: '12px', fontWeight: 600,
+                                }}
+                            >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                Download Template
+                            </button>
                             <label style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 6,
                                 padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
                                 background: theme.accentDim, color: theme.accent,
                                 border: `1px solid ${theme.accent}44`, fontSize: '12px', fontWeight: 600,
                             }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
                                 Upload .xlsx
                                 <input ref={xlsxRef} type="file" accept=".xlsx,.xls,.csv"
                                     style={{ display: 'none' }} onChange={handleXlsxUpload} disabled={running} />
@@ -711,9 +768,7 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
                             <span style={{ fontSize: '13px', fontWeight: 700, color: theme.text }}>Embedding Files</span>
                             <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 9px', borderRadius: 99, background: theme.accentDim, color: theme.accent }}>{pklFiles.length}</span>
                             <div style={{ flex: 1 }} />
-                            <button onClick={() => loadPklFiles(dept)} style={{ ...styles.btnGhost, padding: '5px 12px', fontSize: '11px' }}>
-                                 Refresh
-                            </button>
+                            
                         </div>
 
                         {/* Grouped by semester */}

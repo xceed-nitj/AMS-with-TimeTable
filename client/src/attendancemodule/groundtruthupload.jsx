@@ -37,10 +37,10 @@ const CSS = `
   .erp-input:focus { border-color: ${T.borderFocus}; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
 
   .erp-toast {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999;
+    position: fixed; top: 96px; left: 50%; transform: translateX(-50%); z-index: 9000;
     padding: 12px 22px; border-radius: 30px; display: flex; align-items: center; gap: 10px;
-    font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap;
-    box-shadow: 0 8px 30px rgba(0,0,0,.18);
+    font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap;
+    box-shadow: 0 4px 24px rgba(0,0,0,.25);
     animation: toastIn .25s cubic-bezier(.16,1,.3,1) both;
   }
 
@@ -188,6 +188,7 @@ export default function GroundTruthUpload() {
 
     // ── Embedding generation status after upload ───────────────────────
     const [embGenStatus, setEmbGenStatus] = useState(null); // null | 'generating' | 'done' | 'error'
+    const [summaryVersion, setSummaryVersion] = useState(0); // bump to force summary refresh
 
     // ── Toast ─────────────────────────────────────────────────────────
     const [toast, setToast] = useState(null);
@@ -258,7 +259,7 @@ export default function GroundTruthUpload() {
             .finally(() => { if (!cancelled) setSummaryLoading(false); });
 
         return () => { cancelled = true; };
-    }, [activeTab]);
+    }, [activeTab, summaryVersion]);
 
     // ── Upload handlers ───────────────────────────────────────────────
     const runEmbedSync = useCallback((batch) => {
@@ -292,6 +293,7 @@ export default function GroundTruthUpload() {
             setZipResult(data);
             showToast(`Extracted ${data.extractedImages} photos for ${data.extractedFolders} students!`);
             setZipFile(null);
+            
 setZipEmbedStatus('syncing');
 try {
     await fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batchName)}`, { method: 'POST', credentials: 'include' });
@@ -301,11 +303,13 @@ try {
     setZipEmbedStatus('error');
 }
             setBatchPhotoCount(c => (c ?? 0) + (data.extractedFolders || 0));
-            runEmbedSync(batchName);
+            setTimeout(() => setSummaryVersion(v => v + 1), 6000);
+            
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
             setZipUploading(false);
+
         }
     };
 
@@ -329,6 +333,7 @@ try {
             if (!res.ok) throw new Error(data.error || 'Upload failed');
             showToast(`Photo uploaded for ${data.rollNo}`);
             setStudentPhoto(null);
+            
 setRollNo('');
 setPhotoEmbedStatus('syncing');
 try {
@@ -338,9 +343,10 @@ try {
 } catch {
     setPhotoEmbedStatus('error');
 }
-            setRollNo('');
+            
             setBatchPhotoCount(c => (c ?? 0) + 1);
-            runEmbedSync(batchName);
+            setTimeout(() => setSummaryVersion(v => v + 1), 6000);
+            
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
@@ -366,6 +372,7 @@ try {
             setEditingRoll(null);
             setEditValue('');
             triggerEmbedSync(batchName);
+             setSummaryVersion(v => v + 1);
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
@@ -386,6 +393,7 @@ try {
             showToast(`Deleted ${pendingDelete.rollNo}`);
             setPhotos(prev => prev.filter(p => p.rollNo !== pendingDelete.rollNo));
             triggerEmbedSync(batchName);
+            setSummaryVersion(v => v + 1);
             setPendingDelete(null);
         } catch (err) {
             showToast(err.message, 'error');
@@ -607,30 +615,7 @@ try {
                         </div>
                     </div>
 
-                    {/* Embedding generation status banner */}
-                    {embGenStatus && (
-                        <div style={{
-                            marginTop: 16, padding: '13px 18px', borderRadius: 9, display: 'flex', alignItems: 'flex-start', gap: 12,
-                            background: embGenStatus === 'done' ? '#f0fdf4' : embGenStatus === 'error' ? '#fef2f2' : '#fefce8',
-                            border: `1.5px solid ${embGenStatus === 'done' ? '#86efac' : embGenStatus === 'error' ? '#fca5a5' : '#fde68a'}`,
-                        }}>
-                            <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1, marginTop: 1 }}>
-                                {embGenStatus === 'done' ? '✅' : embGenStatus === 'error' ? '⚠️' : '⏳'}
-                            </span>
-                            <div>
-                                <div style={{ fontWeight: 700, fontSize: 13, color: embGenStatus === 'done' ? '#16a34a' : embGenStatus === 'error' ? '#dc2626' : '#92400e' }}>
-                                    {embGenStatus === 'done' ? 'ERP Embeddings Generated Successfully' : embGenStatus === 'error' ? 'Embedding Generation Failed' : 'Generating ERP Embeddings…'}
-                                </div>
-                                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3, lineHeight: 1.5 }}>
-                                    {embGenStatus === 'done'
-                                        ? 'Embeddings are ready. Go to Roll Assignment and click "Match with ERP Photos" to auto-assign clusters.'
-                                        : embGenStatus === 'error'
-                                        ? 'Generation failed. Go to the Summary tab and click "Regenerate" to retry.'
-                                        : 'Building face embeddings from uploaded photos. This may take a moment…'}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                   
                 </>
             )}
 
