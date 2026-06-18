@@ -924,7 +924,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
             </>)}
 
             {activeTab === 'summary' && (
-                <SummaryPanel summary={summary} summaryLoading={summaryLoading} summaryError={summaryError} />
+                <SummaryPanel summary={summary} summaryLoading={summaryLoading} summaryError={summaryError} fixedDepartment={fixedDepartment} />
             )}
         </div>
     );
@@ -938,7 +938,7 @@ function parseBatch(batch) {
     return { degree: parts[0], dept: parts.slice(1, -1).join('_'), year: parts[parts.length - 1] };
 }
 
-function SummaryPanel({ summary, summaryLoading, summaryError }) {
+function SummaryPanel({ summary, summaryLoading, summaryError, fixedDepartment }) {
     if (summaryLoading) return (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: theme.textMuted, fontSize: '14px' }}>Loading summary…</div>
     );
@@ -967,7 +967,9 @@ function SummaryPanel({ summary, summaryLoading, summaryError }) {
 
     return (
         <div>
-            {sortedDepts.map(dept => {
+            {/* If admin, no filtering directly show all | If dept coordinator show only concerned dept. summary */}
+            {sortedDepts.filter(dept => !fixedDepartment || dept.toLowerCase() === fixedDepartment.toLowerCase())
+                        .map(dept => {
                 const rows = groups[dept].slice().sort((a, b) => a.batch.localeCompare(b.batch));
                 const totals = rows.reduce((acc, r) => ({
                     total:      acc.total     + r.total,
