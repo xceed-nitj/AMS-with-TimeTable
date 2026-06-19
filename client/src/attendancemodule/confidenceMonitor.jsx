@@ -9,9 +9,7 @@ import { theme, styles, cssReset, DEGREES } from './config';
 const apiUrl = getEnvironment();
 const REPORTS_API = `${apiUrl}/attendancemodule/reports`;
 const GT_API = `${apiUrl}/attendancemodule/ground-truth`;
-const YEARS = Array.from({ length: 7 }, (_, i) =>
-  String(new Date().getFullYear() - i),
-);
+const BATCHES_API = `${apiUrl}/attendancemodule/settings/batches`;
 const LOW_CONF_THRESHOLD = 0.6;
 const HIGH_CONF_THRESHOLD = 0.8;
 
@@ -70,7 +68,9 @@ function Toast({ toast }) {
 // Main Component
 
 export default function ConfidenceMonitor() {
-  const [degree, setDegree] = useState('');
+  const [degree, setDegree] = useState('BTECH');
+  const [years, setYears] = useState([]);
+  const [yearsLoading, setYearsLoading] = useState(false);
   const [dept, setDept] = useState('');
   const [year, setYear] = useState('');
   const [departments, setDepts] = useState([]);
@@ -90,6 +90,22 @@ export default function ConfidenceMonitor() {
   }, []);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  // Fetch batch years from the Batch model (DB) on mount
+  useEffect(() => {
+    setYearsLoading(true);
+    fetch(BATCHES_API)
+      .then((r) => r.json())
+      .then((d) => {
+        const batchYears = (d.batches || [])
+          .map((b) => b.batchYear)
+          .filter(Boolean)
+          .sort((a, b) => b.localeCompare(a));
+        setYears(batchYears);
+      })
+      .catch(() => showToast('Could not load batch years'))
+      .finally(() => setYearsLoading(false));
+  }, []);
 
   // Fetch departments when degree changes
   useEffect(() => {
@@ -342,7 +358,6 @@ export default function ConfidenceMonitor() {
               }}
               style={styles.select}
             >
-              <option value="">Select...</option>
               {DEGREES.map((d) => (
                 <option key={d} value={d}>
                   {d}
@@ -384,10 +399,12 @@ export default function ConfidenceMonitor() {
                 setData(null);
               }}
               style={styles.select}
-              disabled={!dept}
+              disabled={!dept || yearsLoading}
             >
-              <option value="">Select...</option>
-              {YEARS.map((y) => (
+              <option value="">
+                {yearsLoading ? 'Loading...' : 'Select...'}
+              </option>
+              {years.map((y) => (
                 <option key={y} value={y}>
                   {y}
                 </option>
