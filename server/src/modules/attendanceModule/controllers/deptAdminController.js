@@ -217,9 +217,35 @@ const getReports = async (req, res) => {
         res.status(500).json({ message: 'Failed to fetch department reports.' });
     }
 };
+const Batch = require('../../../models/attendanceModule/batch');
+
+const getDeptMenus = async (req, res) => {
+    try {
+        const batch = await Batch.findOne({}).sort({ batchYear: -1 });
+        const defaults = {
+    dashboard: true,
+    groundTruth: true,
+    rollAssignment: true,
+    erpUpload: true,
+    attendanceReports: true,
+    classVerification: true,
+    cameraRegistry: true,   // ← new
+    subjectEmbeddings: true,
+    livePreview: true,
+    gpuMetrics: true,       // ← new
+    confidenceMonitor: true,
+    helpManual: true,
+};
+        res.json({ deptMenus: batch?.deptMenus ?? defaults });
+    } catch (error) {
+        console.error('[DeptAdmin] getDeptMenus:', error);
+        res.status(500).json({ message: 'Failed to fetch dept menu config.' });
+    }
+};
 
 module.exports = {
     getContext,
     getTodayAttendanceStats,
     getReports,
+    getDeptMenus,
 };
