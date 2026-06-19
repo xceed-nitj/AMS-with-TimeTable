@@ -2,8 +2,10 @@
 // Input: room + slot + RTSP URL → auto-lookup from LockSem → attendance report
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
+import UnknownFaces from './UnknownFaces';
 import getEnvironment from '../getenvironment';
 
 const apiUrl     = getEnvironment();
@@ -26,6 +28,7 @@ const SLOT_LABELS = {
 };
 
 export default function AttendanceReport() {
+    const navigate = useNavigate();
     const [tab, setTab] = useState('run');
 
     // ── Inputs ────────────────────────────────────────────────────
@@ -540,12 +543,12 @@ rtspUrl2Ref.current = rtspUrl2.trim();
 
             {toast && (
                 <div style={{
-                    position: 'fixed', top: 20, right: 20, zIndex: 999,
-                    padding: '12px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+                    position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', zIndex: 9000,
+                    padding: '12px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 700,
                     animation: 'fadeIn 0.3s',
-                    background: toast.type === 'error' ? theme.dangerDim  : theme.successDim,
-                    color:      toast.type === 'error' ? theme.danger      : theme.success,
-                    border: `1px solid ${toast.type === 'error' ? theme.danger : theme.success}`,
+                    background: toast.type === 'error' ? theme.danger : theme.success,
+                    color: '#ffffff',
+                    border: 'none',
                 }}>{toast.msg}</div>
             )}
 
@@ -558,7 +561,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
 
             {/* Tabs */}
             <div className="ams-tabs">
-                {[['run','Run Attendance'],['history','Saved Reports'],['detail','Report Detail']].map(([id, label]) => (
+                {[['run','Run Attendance'],['history','Saved Reports'],['unknown','Unknown Faces'],['detail','Report Detail']].map(([id, label]) => (
                     (id !== 'detail' || detailReport) && (
                         <button key={id} className={`ams-tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>{label}</button>
                     )
@@ -1011,7 +1014,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                                         {snap.faces_count} face{snap.faces_count !== 1 ? 's' : ''}
                                                     </div>
                                                     <div style={{ color: theme.textMuted, fontSize: '10px', marginTop: 2, wordBreak: 'break-all' }}>
-                                                        {snap.path?.split(/[\\/]/).pop()}
+                                                        {snap.filename}
                                                     </div>
                                                 </div>
                                             ))}
@@ -1202,6 +1205,10 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                                 </button>
                                             </>
                                         )}
+                                        <button onClick={() => setTab('unknown')} 
+                                            style={{ ...styles.btnPrimary, background: theme.accent, padding: '8px 18px', fontSize: '13px' }}>
+                                            Review Unknown Faces ({detailReport.summary?.unknownFaceCount ?? 0})
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1211,6 +1218,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                 { label: 'Present', val: detailReport.summary?.present       ?? 0, color: theme.success },
                                 { label: 'Absent',  val: detailReport.summary?.absent        ?? 0, color: theme.danger  },
                                 { label: 'Att. %',  val: (detailReport.summary?.attendancePct ?? 0) + '%', color: theme.accent },
+                                { label: 'Unknown', val: detailReport.summary?.unknownFaceCount ?? 0, color: theme.warning },
                             ]} theme={theme} styles={styles} />
 
                             {detailReport.slotResults?.length > 0 ? (
@@ -1230,6 +1238,12 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                             )}
                         </div>
                     )}
+                </div>
+            )}
+            {/* ════ UNKNOWN FACES TAB ════ */}
+            {tab === 'unknown' && (
+                <div style={{ marginTop: 16 }}>
+                    <UnknownFaces embedded={true} defaultDate={date} defaultDept={derivedCtx?.dept || department} />
                 </div>
             )}
         </div>

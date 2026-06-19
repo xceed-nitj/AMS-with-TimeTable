@@ -28,8 +28,6 @@ router = APIRouter()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
-ML_DATA_DIR          = os.path.join(ROOT_DIR, "server", "ml-data", "frame_snapshots")
-ANNOTATED_FRAMES_DIR = os.path.join(ROOT_DIR, "server", "ml-data", "annotated_frames")
 
 SNAP_EVERY_SEC = 15   # save raw + annotated frame snapshot every N seconds during attendance
 
@@ -168,6 +166,10 @@ class RTSPRequest(BaseModel):
     minSamples:          int   = 3
     clusterThreshold:    float = 0.45
     jobId:               str   = ""
+    # [{folderName, infoJson, photos: [{filename, data}]}] — sent by Node so this
+    # process never needs direct filesystem access to ground_truth/ (may run on a
+    # separate machine).
+    existingFolders:     list  = []
 
 
 class RTSPAttendanceRequest(BaseModel):
@@ -189,6 +191,10 @@ class RTSPAttendanceRequest(BaseModel):
     semester:         str   = ''
     locksemId:        str   = ''
     enrolledRollNos:  list  = []
+    # { rollNo: mean_embedding } sent by Node (from cached _info.json values) so
+    # this process never needs direct filesystem access to ground_truth/ (may
+    # run on a separate machine).
+    enrolledEmbeddings: dict = {}
 
 
 # ── Preview endpoint ──────────────────────────────────────────────────────────
@@ -280,11 +286,11 @@ def extract_rtsp_stream(req: RTSPRequest):
 
         yield sse({"type": "stage", "message": f"Connecting to {req.rtspUrl}…"})
 
-        # Load existing state from disk (populated by server from a prior session)
-        folder_state: dict = _load_folder_state(batch_dir)
+        # Existing-folder state comes from Node as photo bytes (req.existingFolders) —
+        # this process may run on a separate machine with no access to ground_truth/.
+        folder_state: dict = _load_folder_state_from_payload(req.existingFolders)
         existing_mean_embs: dict[str, np.ndarray] = {}
-        if os.path.isdir(batch_dir):
-            _load_existing_folders(batch_dir, existing_mean_embs)
+        _load_existing_folders_from_payload(req.existingFolders, existing_mean_embs)
 
         person_counts: dict[str, int] = {
             k: len(v.get("scores", {}))
@@ -518,80 +524,36 @@ def extract_rtsp_stream(req: RTSPRequest):
 def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     """
     Core attendance logic as a regular (synchronous) generator.
-    Yields plain dicts: {"type": "stage"|"frame"|"done"|"error", ...}
+    Yields plain dicts: {"type": "stage"|"frame"|"frame_snapshot"|"done"|"error", ...}
+    "frame_snapshot" carries base64-encoded raw + annotated JPEG bytes — the
+    pipeline never reads or writes local disk, so it runs correctly even when
+    this process is on a separate machine from the Node server (e.g. a remote
+    GPU box). Enrollment data comes in via req.enrolledEmbeddings; snapshot
+    bytes go out via "frame_snapshot" events. Callers (the sync and SSE
+    routes below) are responsible for persisting those bytes wherever
+    server/ml-data/ actually lives.
     No SSE wrapping here — callers decide how to use the events.
     job: per-request dict with keys "stop" (Event), "frame" (bytes|None), "lock" (Lock).
     """
-    batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
-    logger.info("[attendance] batch_dir=%s", batch_dir)
     job["stop"].clear()
 
-    if not os.path.isdir(batch_dir):
-        yield {"type": "error", "message": f"Ground truth folder not found: {batch_dir}."}
-        return
- 
-    yield {"type": "stage", "message": f"Loading ground truth for batch: {req.batch}…"}
- 
+    yield {"type": "stage", "message": f"Loading enrolled embeddings for batch: {req.batch}…"}
+
+    # Enrollment embeddings come from Node's cached _info.json mean_embedding
+    # values (req.enrolledEmbeddings) — this process may run on a separate
+    # machine with no access to ground_truth/, and re-detecting faces from
+    # raw photos on every attendance run was both unnecessary (the mean
+    # embedding is already cached) and risked pulling in unmarked/backup
+    # images if a student had no embedding_files tracked.
     enrolled = {}
-    IMG_EXTS_LOCAL = (".jpg", ".jpeg", ".png", ".webp")
- 
-    for folder in sorted(os.listdir(batch_dir)):
-        fp = os.path.join(batch_dir, folder)
-        if not os.path.isdir(fp):
-            continue
-        if re.match(r'^person_\d+$', folder, re.IGNORECASE):
-            continue
-        roll_no = folder
-        info_path = os.path.join(fp, '_info.json')
-        photos = []
-        if os.path.exists(info_path):
-            try:
-                with open(info_path) as fi:
-                    info = json.load(fi)
-                photos = [f for f in info.get('embedding_files', [])
-                          if os.path.exists(os.path.join(fp, f))]
-            except Exception:
-                photos = []
-        if not photos:
-            photos = [f for f in os.listdir(fp)
-                      if f.lower().endswith(IMG_EXTS_LOCAL) and not f.startswith('_')]
- 
-        embs, emb_weights = [], []
-        for photo in photos[:5]:
-            img = cv2.imread(os.path.join(fp, photo))
-            if img is None:
-                continue
-            faces = state.face_app.get(img)
-            if not faces:
-                continue
-            face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
-            fw, fh = face.bbox[2] - face.bbox[0], face.bbox[3] - face.bbox[1]
-            if min(fw, fh) < 40:
-                continue
-            det_score = float(getattr(face, 'det_score', 1.0))
-            if det_score < 0.5:
-                continue
-            emb = face.embedding
-            norm = np.linalg.norm(emb)
-            if norm == 0:
-                continue
-            x1, y1, x2, y2 = map(int, face.bbox)
-            crop = img[max(0,y1):y2, max(0,x1):x2]
-            quality = (det_score * min(float(cv2.Laplacian(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY),
-                       cv2.CV_64F).var()), 500) / 500) if crop.size > 0 else det_score
-            embs.append(emb / norm)
-            emb_weights.append(max(quality, 0.01))
- 
-        if embs:
-            weights = np.array(emb_weights, dtype=np.float32)
-            weights /= weights.sum()
-            mean_emb = np.average(np.array(embs, dtype=np.float32), axis=0, weights=weights)
-            norm = np.linalg.norm(mean_emb)
-            if norm > 0:
-                enrolled[roll_no] = mean_emb / norm
- 
+    for roll_no, vec in (req.enrolledEmbeddings or {}).items():
+        arr = np.array(vec, dtype=np.float32)
+        norm = np.linalg.norm(arr)
+        if norm > 0:
+            enrolled[roll_no] = arr / norm
+
     if not enrolled:
-        yield {"type": "error", "message": f"No enrolled students found in '{batch_dir}'."}
+        yield {"type": "error", "message": f"No enrolled students found for batch '{req.batch}' (enrolledEmbeddings empty)."}
         return
  
     # Sir's list filter
@@ -634,12 +596,17 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     last_seq = 0
 
     # ── Frame snapshot tracking ────────────────────────────────────────────────
+    # Snapshots are never written to local disk here — this generator may run
+    # on a GPU machine with no shared filesystem with the Node server. Each
+    # snapshot is instead base64-encoded and yielded as a "frame_snapshot"
+    # event (same pattern as the ground-truth "crop_save" event); the caller
+    # (Node, via the sync or SSE route) is responsible for writing the bytes
+    # to server/ml-data/. `frame_snapshots` below stays a lightweight
+    # metadata-only summary (no image bytes) for the final "done" result.
     room_clean = re.sub(r'[^\w]', '_', (req.room or 'ROOM').upper().strip())
     slot_clean = re.sub(r'[^\w]', '_', (req.slot or 'SLOT').upper().strip())
     date_clean = (req.date or '').replace('-', '') or time.strftime('%Y%m%d')
     snap_folder_name = f"{room_clean}_{slot_clean}_{date_clean}"
-    snap_dir  = os.path.join(ML_DATA_DIR,          snap_folder_name)
-    annot_dir = os.path.join(ANNOTATED_FRAMES_DIR, snap_folder_name)
     frame_snapshots: list = []
     last_snap_t = -SNAP_EVERY_SEC  # trigger a snap on the first eligible frame
  
@@ -687,25 +654,15 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 all_timestamps.append(round(elapsed, 2))
                 all_quality.append(d["quality"])
 
-            # ── Save raw + annotated frame every SNAP_EVERY_SEC seconds ──────
+            # ── Emit raw + annotated frame every SNAP_EVERY_SEC seconds ──────
+            # Encoded in-memory and shipped as a "frame_snapshot" event —
+            # nothing is written to disk here (see note above).
             if elapsed - last_snap_t >= SNAP_EVERY_SEC:
                 last_snap_t = elapsed
                 fname = f"frame_{int(elapsed):04d}s_cam{cam_idx + 1}.jpg"
                 try:
-                    os.makedirs(snap_dir, exist_ok=True)
-                    snap_path = os.path.join(snap_dir, fname)
-                    cv2.imwrite(snap_path, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                    frame_snapshots.append({
-                        "cam":         cam_idx + 1,
-                        "elapsed_sec": round(elapsed, 1),
-                        "faces_count": faces_this_frame,
-                        "path":        snap_path,
-                        "folder":      snap_folder_name,
-                    })
-                except Exception:
-                    pass
-                try:
-                    os.makedirs(annot_dir, exist_ok=True)
+                    ok_raw, raw_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
                     annot = frame.copy()
                     for d in detections:
                         x1, y1, x2, y2 = d["bbox"]
@@ -718,10 +675,28 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                                 f"t={int(elapsed)}s  faces={faces_this_frame}  cam={cam_idx + 1}",
                                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
                                 (0, 200, 255), 2, cv2.LINE_AA)
-                    cv2.imwrite(os.path.join(annot_dir, fname), annot,
-                                [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    ok_annot, annot_buf = cv2.imencode('.jpg', annot, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
+                    if ok_raw and ok_annot:
+                        yield {
+                            "type":         "frame_snapshot",
+                            "folder":       snap_folder_name,
+                            "filename":     fname,
+                            "cam":          cam_idx + 1,
+                            "elapsed_sec":  round(elapsed, 1),
+                            "faces_count":  faces_this_frame,
+                            "raw_data":     base64.b64encode(raw_buf.tobytes()).decode('ascii'),
+                            "annotated_data": base64.b64encode(annot_buf.tobytes()).decode('ascii'),
+                        }
+                        frame_snapshots.append({
+                            "cam":         cam_idx + 1,
+                            "elapsed_sec": round(elapsed, 1),
+                            "faces_count": faces_this_frame,
+                            "filename":    fname,
+                            "folder":      snap_folder_name,
+                        })
                 except Exception:
-                    pass
+                    logger.exception("Failed to encode frame snapshot at elapsed=%s", elapsed)
 
             yield {"type": "frame", "frame": frame_count, "faces": faces_this_frame,
                    "total_embs": len(all_embeddings), "elapsed": round(elapsed, 1),
@@ -810,13 +785,45 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     for r, (cluster_id, indices) in enumerate(cluster_meta):
         if r not in assigned_cluster_rows:
             best_score = 0.0
+            closest_roll_no = None
             if len(enroll_matrix) > 0:
-                best_score = float(np.max(np.array(cluster_means[r]) @ enroll_matrix.T))
+                scores = np.array(cluster_means[r]) @ enroll_matrix.T
+                best_idx = int(np.argmax(scores))
+                best_score = float(scores[best_idx])
+                closest_roll_no = enrolled_ids[best_idx]
+            
+            cluster_sorted = sorted(
+                [(all_face_images[i], all_quality[i], all_timestamps[i], i) for i in indices],
+                key=lambda x: x[1], reverse=True
+            )
+            
+            failure_reason = "NO_MATCH_FOUND"
+            if best_score > 0 and closest_roll_no:
+                failure_reason = "LOW_CONFIDENCE"
+            
+            if len(cluster_sorted) > 0 and cluster_sorted[0][1] < 0.2:
+                failure_reason = "POOR_QUALITY"
+
+            crops_base64 = []
+            for crop, quality, ts, idx in cluster_sorted[:5]:
+                if crop.size > 0:
+                    ok, buf = cv2.imencode('.jpg', crop, [cv2.IMWRITE_JPEG_QUALITY, 95])
+                    if ok:
+                        crops_base64.append({
+                            "data": base64.b64encode(buf.tobytes()).decode('ascii'),
+                            "quality": round(quality, 4),
+                            "timestamp": round(float(ts), 1)
+                        })
+
             unmatched_clusters.append({
                 "cluster_id": int(cluster_id),
                 "detections": int(len(indices)),
                 "best_score": round(best_score, 4),
                 "first_seen": round(float(all_timestamps[indices[0]]), 1),
+                "failureReason": failure_reason,
+                "closestRollNo": closest_roll_no,
+                "recognitionThreshold": req.reviewThreshold,
+                "crops": crops_base64
             })
  
     present = sum(1 for v in attendance.values() if v["status"] == "present")
@@ -920,7 +927,13 @@ def run_attendance_rtsp(req: RTSPAttendanceRequest):
 def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
     """
     Synchronous JSON endpoint — called by attendanceSessionController.js
-    (Node.js) via axios.post().  Blocks until done, returns plain JSON.
+    and autoAttendanceScheduler.js (Node.js) via axios.post().
+    Blocks until done, returns plain JSON.
+
+    Since this is a single request/response (no incremental streaming to
+    the caller), every "frame_snapshot" event emitted by the pipeline is
+    buffered here and returned in the response under "frame_files" — Node
+    decodes the base64 payloads and writes them to server/ml-data/ itself.
     """
     if state.face_app is None:
         raise HTTPException(status_code=503, detail="Face model not loaded")
@@ -929,6 +942,7 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
     result_payload = None
     error_message  = None
     stages         = []
+    frame_files    = []
 
     try:
         for event in _attendance_pipeline(req, job):
@@ -939,6 +953,8 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
                 error_message = event.get("message")
             elif t == "stage":
                 stages.append(event.get("message", ""))
+            elif t == "frame_snapshot":
+                frame_files.append(event)
             # "frame" events are dropped — too verbose for a sync response
     finally:
         _finish_job(job_id, job)
@@ -948,7 +964,7 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
     if result_payload is None:
         raise HTTPException(status_code=500, detail="Pipeline finished without a result")
 
-    return JSONResponse(content={**result_payload, "stages": stages})
+    return JSONResponse(content={**result_payload, "stages": stages, "frame_files": frame_files})
 
 
 # ── Per-job attendance preview (MJPEG, one stream per parallel run) ───────────
@@ -1008,30 +1024,30 @@ def _cluster(embeddings, threshold, min_samples):
     return labels, unique_labels
 
 
-def _load_existing_folders(batch_dir, existing_mean_embs):
-    for folder_name in os.listdir(batch_dir):
-        fp = os.path.join(batch_dir, folder_name)
-        if not os.path.isdir(fp) or folder_name.startswith("_"):
+def _load_existing_folders_from_payload(existing_folders, existing_mean_embs):
+    """
+    Same purpose as the old disk-based _load_existing_folders, but consumes
+    photo bytes Node already sent (req.existingFolders) instead of reading
+    ground_truth/ off local disk — this process may run on a separate
+    machine from the Node server.
+    """
+    for folder in existing_folders:
+        folder_name = folder.get("folderName")
+        photos      = folder.get("photos") or []
+        if not photos:
             continue
-        imgs = [f for f in os.listdir(fp) if f.lower().endswith(IMG_EXTS)]
-        if not imgs:
-            continue
-        info_p = os.path.join(fp, "_info.json")
-        if os.path.exists(info_p):
-            try:
-                with open(info_p) as fi:
-                    info = json.load(fi)
-                ef = [f for f in info.get("embedding_files", []) if f in imgs]
-                if ef:
-                    imgs = ef
-            except Exception:
-                pass
         folder_embs, folder_weights = [], []
-        for img_f in imgs[:5]:
-            img = cv2.imread(os.path.join(fp, img_f))
+        for photo in photos[:5]:
+            try:
+                img_bytes = base64.b64decode(photo.get("data", ""))
+                img_arr   = np.frombuffer(img_bytes, dtype=np.uint8)
+                img       = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+            except Exception:
+                img = None
             if img is None:
                 continue
-            faces = state.face_app.get(img)
+            with state.face_lock:
+                faces = state.face_app.get(img)
             if not faces:
                 continue
             face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
@@ -1133,30 +1149,22 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
     return next_serial, updated, crops_to_emit
 
 
-def _load_folder_state(batch_dir):
-    """Load per-folder image state from existing _info.json files (or folder scan)."""
-    state = {}
-    if not os.path.isdir(batch_dir):
-        return state
-    for folder_name in os.listdir(batch_dir):
-        fp = os.path.join(batch_dir, folder_name)
-        if not os.path.isdir(fp) or folder_name.startswith("_"):
-            continue
-        scores = {}
-        info_path = os.path.join(fp, "_info.json")
-        if os.path.exists(info_path):
-            try:
-                with open(info_path) as fi:
-                    info = json.load(fi)
-                scores = {k: v for k, v in info.get("scores", {}).items()}
-            except Exception:
-                pass
+def _load_folder_state_from_payload(existing_folders):
+    """
+    Same purpose as the old disk-based _load_folder_state, but consumes the
+    infoJson/photos Node already sent (req.existingFolders) instead of
+    reading _info.json off local disk.
+    """
+    folder_state = {}
+    for folder in existing_folders:
+        folder_name = folder.get("folderName")
+        info_json   = folder.get("infoJson") or {}
+        photos      = folder.get("photos") or []
+        scores = {k: v for k, v in (info_json.get("scores") or {}).items()}
         if not scores:
-            for img_f in os.listdir(fp):
-                if img_f.lower().endswith(IMG_EXTS):
-                    scores[img_f] = 0.5
-        state[folder_name] = {"scores": scores}
-    return state
+            scores = {p.get("filename"): 0.5 for p in photos if p.get("filename")}
+        folder_state[folder_name] = {"scores": scores}
+    return folder_state
 
 
 def _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit, top_n=10, embed_n=5):

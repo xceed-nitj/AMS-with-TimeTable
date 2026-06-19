@@ -5,8 +5,13 @@
 import os
 import pickle
 import logging
+import subprocess
+import sys
+import threading
 import warnings
+from collections import deque
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 # insightface uses deprecated APIs in scikit-image / numpy — suppress until upstream fixes.
 warnings.filterwarnings("ignore", message=r"`estimate` is deprecated",  category=FutureWarning)
@@ -25,7 +30,60 @@ from clustering_routes   import router as cluster_router
 from ground_truth_routes import router as gt_router
 from rtsp_routes         import router as rtsp_router
 
+LOG_BUFFER = deque(maxlen=int(os.environ.get("ML_LOG_BUFFER_LINES", "500")))
+LOG_LOCK = threading.Lock()
+LOG_FORMATTER = logging.Formatter()
+
+
+def _append_log(level, name, message, created=None):
+    timestamp = datetime.fromtimestamp(created or datetime.now().timestamp()).isoformat(timespec="seconds")
+    with LOG_LOCK:
+        LOG_BUFFER.append({
+            "timestamp": timestamp,
+            "level": level,
+            "logger": name,
+            "message": message,
+        })
+
+
+class _MemoryLogHandler(logging.Handler):
+    def emit(self, record):
+        message = record.getMessage()
+        if record.exc_info:
+            message = f"{message}\n{LOG_FORMATTER.formatException(record.exc_info)}"
+        _append_log(record.levelname, record.name, message, record.created)
+
+
+class _TeeStream:
+    def __init__(self, stream, level):
+        self.stream = stream
+        self.level = level
+        self._buffer = ""
+
+    def write(self, text):
+        written = self.stream.write(text)
+        text = str(text)
+        if not text:
+            return written
+        self._buffer += text
+        while "\n" in self._buffer:
+            line, self._buffer = self._buffer.split("\n", 1)
+            line = line.rstrip()
+            if line:
+                _append_log(self.level, "console", line)
+        return written
+
+    def flush(self):
+        self.stream.flush()
+
+    def isatty(self):
+        return self.stream.isatty()
+
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
+logging.getLogger().addHandler(_MemoryLogHandler(level=logging.INFO))
+sys.stdout = _TeeStream(sys.stdout, "STDOUT")
+sys.stderr = _TeeStream(sys.stderr, "STDERR")
 logger = logging.getLogger("ml_service")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -132,6 +190,90 @@ def health():
     }
 
 
+@app.get("/logs")
+def logs(limit: int = 200):
+    limit = max(1, min(limit, 1000))
+    with LOG_LOCK:
+        entries = list(LOG_BUFFER)[-limit:]
+        total = len(LOG_BUFFER)
+    return {
+        "logs": entries,
+        "total": total,
+    }
+
+
+def _to_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+@app.get("/metrics/gpu")
+def gpu_metrics():
+    fields = [
+        "utilization.gpu",
+        "memory.used",
+        "memory.total",
+        "temperature.gpu",
+        "power.draw",
+    ]
+    empty_metrics = {
+        "utilPercent": None,
+        "memUsedMiB": None,
+        "memTotalMiB": None,
+        "memPercent": None,
+        "tempC": None,
+        "powerW": None,
+    }
+
+    try:
+        completed = subprocess.run(
+            [
+                "nvidia-smi",
+                f"--query-gpu={','.join(fields)}",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=3,
+            check=True,
+        )
+    except FileNotFoundError:
+        return {**empty_metrics, "available": False, "error": "nvidia-smi not found"}
+    except subprocess.TimeoutExpired:
+        return {**empty_metrics, "available": False, "error": "nvidia-smi timed out"}
+    except subprocess.CalledProcessError as exc:
+        message = (exc.stderr or exc.stdout or "nvidia-smi failed").strip()
+        return {**empty_metrics, "available": False, "error": message}
+
+    first_gpu = next((line for line in completed.stdout.splitlines() if line.strip()), "")
+    values = [part.strip() for part in first_gpu.split(",")]
+    if len(values) < len(fields):
+        return {**empty_metrics, "available": False, "error": "Unexpected nvidia-smi output"}
+
+    util_percent = _to_float(values[0])
+    mem_used_mib = _to_float(values[1])
+    mem_total_mib = _to_float(values[2])
+    temp_c = _to_float(values[3])
+    power_w = _to_float(values[4])
+    mem_percent = (
+        round((mem_used_mib / mem_total_mib) * 100, 2)
+        if mem_used_mib is not None and mem_total_mib
+        else None
+    )
+
+    return {
+        "utilPercent": util_percent,
+        "memUsedMiB": mem_used_mib,
+        "memTotalMiB": mem_total_mib,
+        "memPercent": mem_percent,
+        "tempC": temp_c,
+        "powerW": power_w,
+        "available": True,
+    }
+
+
 @app.get("/det-size")
 def get_det_size():
     return {"det_size": state.current_det_size}
@@ -152,7 +294,8 @@ def test_detection():
     frame = cv2.imread("test_frame.jpg")
     if frame is None:
         return {"error": "Cannot read test_frame.jpg"}
-    faces = state.face_app.get(frame)
+    with state.face_lock:
+        faces = state.face_app.get(frame)
     return {
         "faces_found": len(faces),
         "faces": [
@@ -165,11 +308,17 @@ from pydantic import BaseModel
 from typing import Optional
 
 class ReloadEmbeddingsRequest(BaseModel):
-    pkl_path: Optional[str] = None
+    pkl_path: Optional[str] = None   # local/solo-machine dev convenience only
+    pkl_data: Optional[str] = None   # base64-encoded pickle bytes — works cross-machine, preferred
 
 @app.post("/reload-embeddings")
 def reload_embeddings_ep(req: ReloadEmbeddingsRequest = ReloadEmbeddingsRequest()):
-    if req.pkl_path and os.path.exists(req.pkl_path):
+    if req.pkl_data:
+        import pickle, base64
+        state.embeddings_db = pickle.loads(base64.b64decode(req.pkl_data))
+        logger.info(f"Loaded subject embeddings from pkl_data (base64): {len(state.embeddings_db)} students.")
+        return {"status": "ok", "students_enrolled": len(state.embeddings_db), "source": "pkl_data"}
+    elif req.pkl_path and os.path.exists(req.pkl_path):
         import pickle
         with open(req.pkl_path, "rb") as f:
             state.embeddings_db = pickle.load(f)

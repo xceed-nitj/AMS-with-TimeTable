@@ -6,12 +6,17 @@
 
 const axios  = require('axios');
 const cron   = require('node-cron');
+const path   = require('path');
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
+const { saveUnknownFaces } = require('./unknownFaceWriter');
+const { saveFrameSnapshots } = require('./frameSnapshotWriter');
+const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 // ── Slot schedule — start/end in minutes from midnight ──────────────────────
 const SLOT_SCHEDULE = {
@@ -156,10 +161,19 @@ function buildSummary(finalReport) {
     const absent  = finalReport.filter(s => s.finalStatus === 'A').length;
     const review  = finalReport.filter(s => s.finalStatus === 'R').length;
     return { totalStudents: total, present, absent, review,
-             attendancePct: total > 0 ? Math.round((present/total)*100) : 0 };
+             attendancePct: total > 0 ? Math.round((present/total)*100) : 0,
+             unknownFaceCount: 0 };
 }
 
 async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) {
+    // ML service is stateless — persist the base64 raw/annotated frames it
+    // shipped back in frame_files (see frameSnapshotWriter.js).
+    try {
+        saveFrameSnapshots(mlResult.frame_files || []);
+    } catch (snapErr) {
+        console.warn('[AutoScheduler] Could not save frame snapshots:', snapErr.message);
+    }
+
     const attendance = mlResult.attendance || {};
     const students   = Object.entries(attendance).map(([rollNo, data]) => ({
         rollNo,
@@ -202,7 +216,12 @@ async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) 
     }
 
     report.finalReport = mergeStudentStatus(report.slotResults);
+    
+    const currentUnknownCount = report.summary && report.summary.unknownFaceCount ? report.summary.unknownFaceCount : 0;
+    
     report.summary     = buildSummary(report.finalReport);
+    report.summary.unknownFaceCount = currentUnknownCount; // saveUnknownFaces handles incrementing
+    
     await report.save();
 
     saveAttendanceDailyData(
@@ -219,7 +238,18 @@ async function saveCheckResult({ ctx, date, slot, checkIndex, mlResult, room }) 
         for (const u of unmatched) {
             console.warn(`[AutoScheduler]    cluster_${u.cluster_id} — ${u.detections} detections, best_score=${u.best_score}, first_seen=${u.first_seen}s`);
         }
-        // TODO: send email/notification here if needed
+        
+        // Fire and forget unknown face saving
+        saveUnknownFaces(unmatched, {
+            batch: ctx.batch,
+            date,
+            slot,
+            room,
+            subject: ctx.subject,
+            faculty: ctx.faculty,
+            semester: ctx.sem,
+            rtspUrl: cameras.cam1, // default for metadata
+        }, report._id.toString());
     }
 
     console.log(`[AutoScheduler] ✅ Check ${checkIndex} saved — ${ctx.batch} ${slot} — P:${slotResult.summary.present} A:${slotResult.summary.absent} R:${slotResult.summary.review} Unmatched:${unmatched.length}`);
@@ -247,6 +277,7 @@ async function runOneCheck({ room, slot, date, ctx, cameras, config, checkIndex 
                 faculty:          ctx.faculty,
                 semester:         ctx.sem,
                 locksemId:        ctx.locksemId,
+                enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, ctx.batch),
             },
             { timeout: 300000 }
         );

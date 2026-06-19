@@ -105,13 +105,13 @@ const CSS = `
 
   .floating-toast-container {
     position: fixed;
-    top: 24px; right: 24px;
-    z-index: 999999;
+    top: 96px; left: 50%; transform: translateX(-50%);
+    z-index: 9000;
     padding: 14px 22px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
     border-radius: 8px;
     display: flex; align-items: center; gap: 12px;
-    font-size: 13.5px; font-weight: 600;
+    font-size: 13.5px; font-weight: 700;
     color: #ffffff !important;
     animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
@@ -149,7 +149,7 @@ const CSS = `
     .session-grid { grid-template-columns: 1fr; }
     .term-date-row { flex-direction: column; align-items: flex-start; gap: 12px; }
     .monthly-cards-grid { grid-template-columns: 1fr; }
-    .floating-toast-container { left: 16px; right: 16px; top: 16px; }
+    .floating-toast-container { left: 16px; right: 16px; top: 96px; transform: none; }
     .ams-tabs { overflow-x: auto; }
   }
 `;

@@ -88,8 +88,8 @@ export default function FrameVerification() {
     const [availabilityLoading, setAvailabilityLoading] = useState(false);
     const [framesLoading, setFramesLoading] = useState(false);
     const [galleryData, setGalleryData] = useState(null);
-    const [activeTab, setActiveTab] = useState('raw');
-    const [modalState, setModalState] = useState({ open: false, tab: 'raw', index: 0 });
+    const [activeTab, setActiveTab] = useState('annotated');
+    const [modalState, setModalState] = useState({ open: false, tab: 'annotated', index: 0 });
     const [fullscreenActive, setFullscreenActive] = useState(false);
     const [classInfo, setClassInfo] = useState(null);
     const [classInfoLoading, setClassInfoLoading] = useState(false);
@@ -178,7 +178,7 @@ export default function FrameVerification() {
                 const data = await res.json();
                 if (!cancelled) {
                     setGalleryData(data);
-                    if ((data.annotatedFrames || []).length > 0 && (data.rawFrames || []).length === 0) {
+                    if ((data.annotatedFrames || []).length > 0) {
                         setActiveTab('annotated');
                     } else {
                         setActiveTab('raw');
@@ -506,18 +506,18 @@ export default function FrameVerification() {
 
                                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                                         <button
-                                            className={`frame-chip ${activeTab === 'raw' ? 'active' : ''}`}
-                                            onClick={() => setActiveTab('raw')}
-                                            type="button"
-                                        >
-                                            Raw Frames ({rawFrames.length})
-                                        </button>
-                                        <button
                                             className={`frame-chip ${activeTab === 'annotated' ? 'active' : ''}`}
                                             onClick={() => setActiveTab('annotated')}
                                             type="button"
                                         >
                                             Annotated Frames ({annotatedFrames.length})
+                                        </button>
+                                        <button
+                                            className={`frame-chip ${activeTab === 'raw' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('raw')}
+                                            type="button"
+                                        >
+                                            Raw Frames ({rawFrames.length})
                                         </button>
                                     </div>
                                 </div>

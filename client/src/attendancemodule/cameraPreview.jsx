@@ -18,33 +18,29 @@ function Toast({ toast }) {
   if (!toast) return null;
   const isError = toast.type === 'error';
   const isWarning = toast.type === 'warning';
-  const color = isError
+  const bg = isError
     ? theme.danger
     : isWarning
       ? theme.warning
       : theme.success;
-  const bg = isError
-    ? theme.dangerDim
-    : isWarning
-      ? theme.warningDim
-      : theme.successDim;
   return (
     <div
       style={{
         position: 'fixed',
-        top: 82,
-        right: 20,
-        zIndex: 2147483647,
+        top: 96,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 9000,
         padding: '12px 20px',
         borderRadius: 8,
         fontSize: 13,
         fontWeight: 700,
         animation: 'fadeIn 0.3s',
         background: bg,
-        color,
-        border: `1px solid ${color}`,
+        color: '#ffffff',
+        border: 'none',
         maxWidth: 420,
-        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
       }}
     >
       {toast.msg}

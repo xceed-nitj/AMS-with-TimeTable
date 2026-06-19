@@ -6,8 +6,7 @@ const fsPromises = require('fs').promises;
 const JSZip      = require('jszip');
 const crypto     = require('crypto');
 const Batch      = require('../../../models/attendanceModule/batch');
-
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8500';
+const erpSync    = require('./erpEmbeddingSyncHelper');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ERP_PHOTOS_DIR = path.resolve(__dirname, '..', '..', '..', '..', 'ml-data', 'erp_photos');
@@ -97,6 +96,12 @@ function findEmbeddingPkl(batchName) {
 }
 
 // ─── Trigger Async Background Sync ────────────────────────────────────────────
+// The ML service is stateless — it never reads erp_photos/ or writes the
+// .pkl itself. This reads the relevant photo bytes (and the existing .pkl,
+// for sync) here, sends them to Python, and persists whatever comes back.
+// Still fire-and-forget from the caller's perspective: callers never await
+// this, matching the previous behavior where the route handler responded
+// before the sync completed.
 async function triggerEmbeddingSync(action, payload) {
     const reqId = crypto.randomUUID();
     try {
@@ -106,32 +111,16 @@ async function triggerEmbeddingSync(action, payload) {
             department = parts.slice(1, -1).join('_');
         }
 
-        const url = `${ML_SERVICE_URL}/erp-embedding/${action}`;
-        const body = {
-            ...payload,
-            department
-        };
-
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-
-        // Fire and forget: do not await the fetch response parsing
-        fetch(url, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Request-ID': reqId
-            },
-            body: JSON.stringify(body),
-            signal: controller.signal
-        }).catch(err => {
-            console.error(`[GT Upload] [${reqId}] Async sync trigger failed for action=${action} batch=${payload.batch}:`, err.message);
-        }).finally(() => {
-            clearTimeout(timeout);
-        });
+        if (action === 'sync') {
+            await erpSync.syncErpEmbeddings(payload.batch, department, payload.roll_nos || []);
+        } else if (action === 'rename') {
+            await erpSync.renameErpEmbedding(payload.batch, department, payload.old_roll_no, payload.new_roll_no);
+        } else if (action === 'delete') {
+            await erpSync.deleteErpEmbedding(payload.batch, department, payload.roll_no);
+        }
 
     } catch (err) {
-        console.error(`[GT Upload] [${reqId}] Failed to resolve metadata and trigger sync for action=${action} batch=${payload.batch}:`, err.message);
+        console.error(`[GT Upload] [${reqId}] Failed to trigger sync for action=${action} batch=${payload.batch}:`, err.message);
     }
 }
 
@@ -596,18 +585,7 @@ class GroundTruthUploadController {
                 department = parts.slice(1, -1).join('_');
             }
 
-            const url = `${ML_SERVICE_URL}/erp-embedding/status/${encodeURIComponent(batchString)}?department=${encodeURIComponent(department)}`;
-            
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            
-            const response = await fetch(url, { signal: controller.signal });
-            clearTimeout(timeout);
-            
-            if (!response.ok) {
-                throw new Error('ML service returned error');
-            }
-            const data = await response.json();
+            const data = await erpSync.getErpStatus(batchString, department);
             res.json(data);
         } catch (e) {
             console.error('[GT Upload] status proxy error:', e.message);

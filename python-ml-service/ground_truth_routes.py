@@ -14,6 +14,7 @@ import pickle
 import sys
 import subprocess
 import logging
+import base64
 
 import cv2
 import numpy as np
@@ -25,11 +26,10 @@ from models import (
     BuildEmbeddingsRequest,
     AssignRollNoRequest,
     UpdateEmbeddingRequest,
+    PhotoBytes,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
-from fastapi import BackgroundTasks
-from filelock import FileLock
 from clustering_service import _detect_faces_tiled, _build_ui_mask
 
 logger = logging.getLogger("ml_service.ground_truth_routes")
@@ -39,27 +39,37 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
-ERP_PHOTOS_DIR = os.path.join(ROOT_DIR, "server", "ml-data", "erp_photos")
-ERP_EMB_DIR = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "erp")
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
 # ─── ERP Models ───────────────────────────────────────────────────────────────
+# All ERP embedding endpoints below operate purely on bytes Node sends —
+# the ML service never reads/writes server/ml-data/erp_photos or
+# server/ml-data/embeddings/erp directly, since it may run on a machine
+# with no access to that filesystem. Node (which owns those directories)
+# reads/writes the actual files; Python only computes embeddings and
+# returns updated pickle bytes for Node to persist. The saved .pkl format —
+# {roll_no: {"name", "embedding", "num_photos"}} — is unchanged.
+
+class ERPStudentPhotos(BaseModel):
+    roll_no: str
+    photos: List[PhotoBytes] = []
+
 class ERPSyncRequest(BaseModel):
-    batch: str
-    department: str
-    roll_nos: Optional[List[str]] = Field(None, max_length=1000)
+    existing_pkl_data: Optional[str] = None  # base64 of the current .pkl, if one exists
+    students: List[ERPStudentPhotos] = []
 
 class ERPRenameRequest(BaseModel):
-    batch: str
-    department: str
+    pkl_data: str  # base64 of the current .pkl — required, rename is a no-op without one
     old_roll_no: str
     new_roll_no: str
 
 class ERPDeleteRequest(BaseModel):
-    batch: str
-    department: str
+    pkl_data: str  # base64 of the current .pkl — required, delete is a no-op without one
     roll_no: str
+
+class ERPInspectRequest(BaseModel):
+    pkl_data: Optional[str] = None  # base64 of a .pkl, or None if it doesn't exist yet
 
 
 # ─── Enrolled Students ────────────────────────────────────────────────────────
@@ -100,14 +110,28 @@ async def build_embeddings_sync(req: BuildEmbeddingsRequest):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, _build_embeddings_sync, req)
 
-def _compute_mean_embedding(fp, photos):
+def _decode_photo(photo) -> np.ndarray:
+    """Decode a base64-encoded PhotoBytes payload into a cv2 BGR image (or None)."""
+    try:
+        img_bytes = base64.b64decode(photo.data)
+        img_arr   = np.frombuffer(img_bytes, dtype=np.uint8)
+        return cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+    except Exception:
+        return None
+
+
+def _compute_mean_embedding_from_bytes(photos):
+    """Same as _compute_mean_embedding, but reads from in-memory PhotoBytes
+    (base64) instead of files on disk — used so the ML service never needs
+    filesystem access to server/ml-data/ground_truth/."""
     embeddings  = []
     emb_weights = []
     for photo in photos:
-        img = cv2.imread(os.path.join(fp, photo))
+        img = _decode_photo(photo)
         if img is None:
             continue
-        faces = state.face_app.get(img)
+        with state.face_lock:
+            faces = state.face_app.get(img)
         if not faces:
             continue
         face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
@@ -130,285 +154,161 @@ def _compute_mean_embedding(fp, photos):
         return mean_emb, len(embeddings)
     return None, 0
 
-def _build_embeddings_sync(req: BuildEmbeddingsRequest):
-    if not os.path.exists(req.photos_dir):
-        raise HTTPException(status_code=404, detail=f"Photos dir not found: {req.photos_dir}")
 
-    student_folders = [
-        f for f in os.listdir(req.photos_dir)
-        if os.path.isdir(os.path.join(req.photos_dir, f))
-    ]
+def _build_embeddings_sync(req: BuildEmbeddingsRequest):
+    """
+    Builds a {roll_no: {name, embedding, num_photos}} pickle entirely from
+    what Node sends in the request — never touches server/ml-data/ on disk.
+    For each student: use student.cached_mean_embedding if Node already had
+    it cached (fast path, no face detection needed), otherwise compute it
+    fresh from student.photos (base64 bytes Node read from its own disk).
+    The resulting pickle is returned as base64 ("pkl_data") for Node to
+    write wherever server/ml-data/embeddings/ actually lives.
+    """
     db = {}
 
-    for folder in sorted(student_folders):
-        parts      = folder.split("_", 1)
-        student_id = parts[0]
-        name       = parts[1].replace("_", " ") if len(parts) > 1 else folder
-        fp         = os.path.join(req.photos_dir, folder)
-        info_path  = os.path.join(fp, "_info.json")
+    for student in req.students:
+        roll_no = student.roll_no
+        name    = student.name or roll_no
 
-        # ── NEW: load cached mean_embedding if available ─────────────────────
-        loaded_from_cache = False
-        if req.use_cached_embeddings and os.path.exists(info_path):
-            try:
-                with open(info_path) as fi:
-                    _info = json.load(fi)
-                cached_emb = _info.get("mean_embedding")
-                if cached_emb:
-                    mean_emb = np.array(cached_emb, dtype=np.float32)
-                    norm     = np.linalg.norm(mean_emb)
-                    if norm > 0:
-                        mean_emb = mean_emb / norm
-                        db[student_id] = {
-                            "name":       name,
-                            "embedding":  mean_emb,
-                            "num_photos": len(_info.get("embedding_files", [])),
-                        }
-                        logger.info(f"✓ {student_id}: loaded cached embedding")
-                        loaded_from_cache = True
-            except Exception as e:
-                logger.warning(f"⚠ {student_id}: could not load cache ({e}), falling back")
+        if student.cached_mean_embedding:
+            mean_emb = np.array(student.cached_mean_embedding, dtype=np.float32)
+            norm     = np.linalg.norm(mean_emb)
+            if norm > 0:
+                db[roll_no] = {
+                    "name":       name,
+                    "embedding":  mean_emb / norm,
+                    "num_photos": student.num_photos_cached,
+                }
+                logger.info(f"✓ {roll_no}: used cached embedding")
+                continue
 
-        if loaded_from_cache:
-            continue                          # ← inside the for loop ✓
-        # ── end NEW ──────────────────────────────────────────────────────────
-
-        all_photos = [f for f in os.listdir(fp)
-                      if f.lower().endswith((".jpg", ".jpeg", ".png"))]
-
-        if os.path.exists(info_path):
-            try:
-                with open(info_path) as fi:
-                    _info = json.load(fi)
-                ef = [f for f in _info.get("embedding_files", [])
-                      if os.path.exists(os.path.join(fp, f))]
-                photos = ef if ef else all_photos
-            except Exception:
-                photos = all_photos
-        else:
-            photos = all_photos
-
-        mean_emb, num_photos_used = _compute_mean_embedding(fp, photos)
-
+        mean_emb, num_photos_used = _compute_mean_embedding_from_bytes(student.photos)
         if mean_emb is not None:
-            db[student_id] = {"name": name, "embedding": mean_emb, "num_photos": num_photos_used}
-
-            # ── NEW: persist mean_embedding into _info.json for next run ─────
-            try:
-                info = {}
-                if os.path.exists(info_path):
-                    with open(info_path) as fi:
-                        info = json.load(fi)
-                info["mean_embedding"] = mean_emb.tolist()
-                with open(info_path, "w") as fi:
-                    json.dump(info, fi, indent=2)
-            except Exception as e:
-                logger.warning(f"⚠ {student_id}: could not save embedding cache ({e})")
-            # ── end NEW ──────────────────────────────────────────────────────
+            db[roll_no] = {"name": name, "embedding": mean_emb, "num_photos": num_photos_used}
         else:
-            logger.warning(f"✗ {student_id}: no faces detected")
+            logger.warning(f"✗ {roll_no}: no faces detected")
 
-    os.makedirs(os.path.dirname(req.output_path), exist_ok=True)
-    with open(req.output_path, "wb") as f:
-        pickle.dump(db, f)
-
+    pkl_bytes = pickle.dumps(db)
     state.embeddings_db.update(db)
-    return {"status": "done", "students_enrolled": len(db), "output_path": req.output_path}
+
+    return {
+        "status":            "done",
+        "students_enrolled": len(db),
+        "pkl_data":          base64.b64encode(pkl_bytes).decode('ascii'),
+    }
 
 # ─── ERP Embeddings Automation ────────────────────────────────────────────────
+# Stateless: Node owns server/ml-data/erp_photos and server/ml-data/embeddings/erp.
+# It reads the existing .pkl (if any) and the relevant photo bytes, sends them
+# here, and persists whatever pkl_data comes back. Saved format is unchanged:
+# {roll_no: {"name", "embedding", "num_photos"}}.
 
-def sanitize_path_component(name: str) -> str:
-    if not name:
-        raise ValueError("Empty path component")
-    name = str(name).strip()
-    if ".." in name or "/" in name or "\\" in name:
-        raise ValueError(f"Invalid path component: {name}")
-    return name
+def _erp_sync_sync(req: ERPSyncRequest) -> dict:
+    db = {}
+    if req.existing_pkl_data:
+        try:
+            db = pickle.loads(base64.b64decode(req.existing_pkl_data))
+        except Exception as e:
+            logger.error(f"ERP Sync: failed to load existing pkl: {e}")
+            db = {}
 
-def _safe_update_pkl(db_path: str, update_fn):
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    lock = FileLock(db_path + ".lock")
-    with lock:
-        db = {}
-        if os.path.exists(db_path):
-            try:
-                with open(db_path, "rb") as f:
-                    db = pickle.load(f)
-            except Exception as e:
-                logger.error(f"Failed to load ERP pkl {db_path}: {e}")
-        
-        update_fn(db)
-        
-        tmp_path = db_path + ".tmp"
-        with open(tmp_path, "wb") as f:
-            pickle.dump(db, f)
-        os.replace(tmp_path, db_path)
-
-def _erp_sync_background(req: ERPSyncRequest):
-    try:
-        batch = sanitize_path_component(req.batch)
-        department = sanitize_path_component(req.department)
-    except ValueError as e:
-        logger.error(f"ERP Sync failed: {e}")
-        return
-
-    batch_dir = os.path.join(ERP_PHOTOS_DIR, batch)
-    if not os.path.exists(batch_dir):
-        return
-
-    db_path = os.path.join(ERP_EMB_DIR, department, batch, "embeddings_db.pkl")
-    
-    roll_nos_to_sync = req.roll_nos
-    if not roll_nos_to_sync:
-        roll_nos_to_sync = []
-        for f in os.listdir(batch_dir):
-            if f.lower().endswith(IMG_EXTS):
-                roll_no, _ = os.path.splitext(f)
-                roll_nos_to_sync.append(roll_no.upper())
-
-    logger.info(json.dumps({"action": "erp_sync", "batch": batch, "department": department, "count": len(roll_nos_to_sync)}))
-
-    db_updates = {}
-    processed_count = 0
-
-    for roll_no in roll_nos_to_sync:
-        photos = [f for f in os.listdir(batch_dir) if f.lower().startswith(roll_no.lower() + ".")]
-        if not photos:
-            continue
-            
-        mean_emb, num_photos_used = _compute_mean_embedding(batch_dir, photos)
+    processed = 0
+    skipped   = []
+    for student in req.students:
+        roll_no = student.roll_no
+        mean_emb, num_photos_used = _compute_mean_embedding_from_bytes(student.photos)
         if mean_emb is not None:
-            db_updates[roll_no] = {
-                "name": roll_no,
-                "embedding": mean_emb,
-                "num_photos": num_photos_used
+            db[roll_no] = {
+                "name":       roll_no,
+                "embedding":  mean_emb,
+                "num_photos": num_photos_used,
             }
-            processed_count += 1
-            
-            if processed_count % 25 == 0:
-                def do_batch_update(db, updates=db_updates):
-                    for r, data in updates.items():
-                        db[r] = data
-                _safe_update_pkl(db_path, do_batch_update)
-                db_updates = {}
+            processed += 1
         else:
             logger.warning(f"ERP Sync: No face found for {roll_no}")
+            skipped.append(roll_no)
 
-    if db_updates:
-        def do_final_update(db, updates=db_updates):
-            for r, data in updates.items():
-                db[r] = data
-        _safe_update_pkl(db_path, do_final_update)
-
-
-@router.post("/erp-embedding/sync", status_code=202)
-def erp_embedding_sync(req: ERPSyncRequest, bg_tasks: BackgroundTasks):
-    bg_tasks.add_task(_erp_sync_background, req)
-    return {"status": "accepted"}
-
-@router.post("/erp-embedding/sync-all", status_code=202)
-def erp_embedding_sync_all(req: ERPSyncRequest, bg_tasks: BackgroundTasks):
-    # This acts identically to sync but defaults to parsing all. Node.js backend can use it.
-    bg_tasks.add_task(_erp_sync_background, req)
-    return {"status": "accepted"}
-
-def _erp_rename_background(req: ERPRenameRequest):
-    try:
-        batch = sanitize_path_component(req.batch)
-        department = sanitize_path_component(req.department)
-        old_roll = sanitize_path_component(req.old_roll_no)
-        new_roll = sanitize_path_component(req.new_roll_no)
-    except ValueError as e:
-        logger.error(f"ERP Rename failed: {e}")
-        return
-
-    db_path = os.path.join(ERP_EMB_DIR, department, batch, "embeddings_db.pkl")
-    if not os.path.exists(db_path):
-        return
-
-    logger.info(json.dumps({"action": "erp_rename", "batch": batch, "old_roll": old_roll, "new_roll": new_roll}))
-
-    def do_update(db, _old=old_roll, _new=new_roll):
-        if _old in db:
-            db[_new] = db.pop(_old)
-            db[_new]["name"] = _new
-    _safe_update_pkl(db_path, do_update)
-
-@router.post("/erp-embedding/rename", status_code=202)
-def erp_embedding_rename(req: ERPRenameRequest, bg_tasks: BackgroundTasks):
-    bg_tasks.add_task(_erp_rename_background, req)
-    return {"status": "accepted"}
-
-def _erp_delete_background(req: ERPDeleteRequest):
-    try:
-        batch = sanitize_path_component(req.batch)
-        department = sanitize_path_component(req.department)
-        roll = sanitize_path_component(req.roll_no)
-    except ValueError as e:
-        logger.error(f"ERP Delete failed: {e}")
-        return
-
-    db_path = os.path.join(ERP_EMB_DIR, department, batch, "embeddings_db.pkl")
-    if not os.path.exists(db_path):
-        return
-
-    logger.info(json.dumps({"action": "erp_delete", "batch": batch, "roll": roll}))
-
-    def do_update(db, _roll=roll):
-        if _roll in db:
-            del db[_roll]
-    _safe_update_pkl(db_path, do_update)
-
-@router.post("/erp-embedding/delete", status_code=202)
-def erp_embedding_delete(req: ERPDeleteRequest, bg_tasks: BackgroundTasks):
-    bg_tasks.add_task(_erp_delete_background, req)
-    return {"status": "accepted"}
-
-@router.get("/erp-embedding/status/{batch}")
-def erp_embedding_status(batch: str, department: str = "UNKNOWN_DEPT"):
-    try:
-        batch_safe = sanitize_path_component(batch)
-        dept_safe = sanitize_path_component(department)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    batch_dir = os.path.join(ERP_PHOTOS_DIR, batch_safe)
-    db_path = os.path.join(ERP_EMB_DIR, dept_safe, batch_safe, "embeddings_db.pkl")
-    
-    photo_roll_nos = set()
-    if os.path.exists(batch_dir):
-        for f in os.listdir(batch_dir):
-            if f.lower().endswith(IMG_EXTS):
-                r, _ = os.path.splitext(f)
-                photo_roll_nos.add(r.upper())
-                
-    db_roll_nos = set()
-    last_sync = None
-    if os.path.exists(db_path):
-        last_sync = os.path.getmtime(db_path)
-        try:
-            lock = FileLock(db_path + ".lock")
-            with lock.acquire(timeout=2):
-                with open(db_path, "rb") as f:
-                    db = pickle.load(f)
-                    db_roll_nos = set(db.keys())
-        except Exception as e:
-            logger.warning(f"Status read timeout or error for {db_path}: {e}")
-            
-    missing_embeddings = list(photo_roll_nos - db_roll_nos)
-    orphaned_embeddings = list(db_roll_nos - photo_roll_nos)
-    
+    pkl_bytes = pickle.dumps(db)
     return {
-        "batch": batch,
-        "department": department,
-        "total_photos": len(photo_roll_nos),
-        "total_embeddings": len(db_roll_nos),
-        "missing_count": len(missing_embeddings),
-        "missing": missing_embeddings[:50],  # cap list for UI payload
-        "orphaned_count": len(orphaned_embeddings),
-        "orphaned": orphaned_embeddings[:50],
-        "last_sync_timestamp": last_sync * 1000 if last_sync else None
+        "status":         "done",
+        "processed":      processed,
+        "skipped":        skipped,
+        "total_roll_nos": len(db),
+        "pkl_data":       base64.b64encode(pkl_bytes).decode('ascii'),
     }
+
+@router.post("/erp-embedding/sync")
+def erp_embedding_sync(req: ERPSyncRequest):
+    return _erp_sync_sync(req)
+
+@router.post("/erp-embedding/sync-all")
+def erp_embedding_sync_all(req: ERPSyncRequest):
+    # Identical to /sync — kept for compatibility. Node always supplies the
+    # explicit roll_no/photo list itself now (no more "scan everything" mode).
+    return _erp_sync_sync(req)
+
+
+def _erp_rename_sync(req: ERPRenameRequest) -> dict:
+    try:
+        db = pickle.loads(base64.b64decode(req.pkl_data))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to load pkl: {e}")
+
+    renamed = False
+    if req.old_roll_no in db:
+        db[req.new_roll_no] = db.pop(req.old_roll_no)
+        db[req.new_roll_no]["name"] = req.new_roll_no
+        renamed = True
+
+    pkl_bytes = pickle.dumps(db)
+    return {
+        "status":   "done",
+        "renamed":  renamed,
+        "pkl_data": base64.b64encode(pkl_bytes).decode('ascii'),
+    }
+
+@router.post("/erp-embedding/rename")
+def erp_embedding_rename(req: ERPRenameRequest):
+    return _erp_rename_sync(req)
+
+
+def _erp_delete_sync(req: ERPDeleteRequest) -> dict:
+    try:
+        db = pickle.loads(base64.b64decode(req.pkl_data))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to load pkl: {e}")
+
+    deleted = False
+    if req.roll_no in db:
+        del db[req.roll_no]
+        deleted = True
+
+    pkl_bytes = pickle.dumps(db)
+    return {
+        "status":   "done",
+        "deleted":  deleted,
+        "pkl_data": base64.b64encode(pkl_bytes).decode('ascii'),
+    }
+
+@router.post("/erp-embedding/delete")
+def erp_embedding_delete(req: ERPDeleteRequest):
+    return _erp_delete_sync(req)
+
+
+@router.post("/erp-embedding/inspect")
+def erp_embedding_inspect(req: ERPInspectRequest):
+    """Returns the roll numbers present in a .pkl Node sends as bytes —
+    used by Node to compute both /erp-embedding/check (roll_count) and the
+    sync-status comparison (missing/orphaned), without Python ever touching
+    server/ml-data/ itself."""
+    if not req.pkl_data:
+        return {"roll_nos": []}
+    try:
+        db = pickle.loads(base64.b64decode(req.pkl_data))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to load pkl: {e}")
+    return {"roll_nos": list(db.keys())}
 
 # ─── Build Embeddings (streaming subprocess) ──────────────────────────────────
 
@@ -483,26 +383,27 @@ async def update_student_embedding(req: UpdateEmbeddingRequest):
     return await loop.run_in_executor(None, _update_student_embedding_sync, req)
 
 def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
-    student_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch_name, req.roll_no)
-    if not os.path.isdir(student_dir):
-        raise ValueError(f"Student dir not found: {student_dir}")
+    """
+    Computes a fresh mean embedding for one student purely from the photo
+    bytes Node sends — never reads server/ml-data/ground_truth/ from disk.
+    Returns the embedding (as a plain float list) for Node to merge into
+    that student's _info.json itself, since Node already owns that file.
+    """
     if state.face_app is None:
         raise ValueError("Model not loaded")
 
     new_embeddings = []
     new_weights    = []
     missing        = []
-    for filename in req.embedding_files:
-        if filename.startswith("_"):
+    for photo in req.photos:
+        if photo.filename.startswith("_"):
             continue
-        fpath = os.path.join(student_dir, filename)
-        if not os.path.exists(fpath):
-            missing.append(filename)
-            continue
-        img = cv2.imread(fpath)
+        img = _decode_photo(photo)
         if img is None:
+            missing.append(photo.filename)
             continue
-        faces = state.face_app.get(img)
+        with state.face_lock:
+            faces = state.face_app.get(img)
         if not faces:
             continue
         face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
@@ -546,29 +447,14 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     with open(DB_PATH, "wb") as f:
         pickle.dump(state.embeddings_db, f)
-    
-    info_path = os.path.join(student_dir, "_info.json")
-    info      = {}
-    if os.path.exists(info_path):
-        try:
-            with open(info_path) as fi:
-                info = json.load(fi)
-        except Exception:
-            info = {}
-
-    all_imgs = [f for f in os.listdir(student_dir) if f.lower().endswith(IMG_EXTS)]
-    info["embedding_files"] = [f for f in req.embedding_files if f in all_imgs]
-    info["backup_files"]    = [f for f in all_imgs if f not in req.embedding_files][:5]
-    info["mean_embedding"]  = mean_emb.tolist()   # NEW: cache for fast re-build
-    with open(info_path, "w") as fi:
-        json.dump(info, fi, indent=2)
 
     return {
         "status":               "ok",
         "roll_no":              req.roll_no,
         "embedding_files_used": len(new_embeddings),
-        "total_selected":       len(req.embedding_files),
+        "total_selected":       len(req.photos),
         "missing_files":        missing,
+        "mean_embedding":       mean_emb.tolist(),
     }
 
 

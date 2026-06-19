@@ -13,8 +13,11 @@ const mlProcess = require('../controllers/mlProcessController');
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const { saveAttendanceDailyData, listDailyDataFiles, readDailyDataFile } = require('../controllers/attendanceDailyDataSaver');
+const { saveFrameSnapshot } = require('../controllers/frameSnapshotWriter');
+const { buildEnrolledEmbeddings } = require('../controllers/embeddingSyncHelper');
 
-const ML_URL = 'http://localhost:8500';
+const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 // ─── Roll Lists Directory ─────────────────────────────────────
 const ROLL_LISTS_DIR = path.join(__dirname, '../roll-lists');
@@ -237,9 +240,46 @@ for (const d of ['MTECH', 'PHD', 'BSC', 'MSC', 'MBA', 'MCA', 'BTECH', 'B.TECH', 
 // ─── ML Service Health ────────────────────────────────────────
 router.get('/health', async (req, res) => {
     try {
-        res.json(await mlClient.healthCheck());
+        const health = await mlClient.healthCheck();
+        res.json({ ...health, target: mlClient.getTargetInfo() });
     } catch (e) {
-        res.status(503).json({ status: 'unreachable' });
+        res.status(503).json({ status: 'unreachable', target: mlClient.getTargetInfo() });
+    }
+});
+
+router.get('/target', (req, res) => {
+    res.json(mlClient.getTargetInfo());
+});
+
+router.get('/gpu-metrics', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/metrics/gpu`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            available: false,
+            error: e.response?.data?.detail || e.message || 'GPU metrics unavailable',
+        });
+    }
+});
+
+router.get('/logs', async (req, res) => {
+    try {
+        const limit = Number.parseInt(req.query.limit, 10) || 200;
+        const result = await axios.get(`${ML_URL}/logs`, {
+            timeout: 5000,
+            params: { limit },
+        });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status;
+        const upstreamMessage = e.response?.data?.detail || e.response?.data?.error || e.message;
+        res.status(503).json({
+            logs: [],
+            error: status === 404
+                ? 'ML service /logs endpoint not found. Restart python-ml-service/ml_service.py with the latest code.'
+                : upstreamMessage || 'ML service logs unavailable',
+        });
     }
 });
 
@@ -557,6 +597,7 @@ router.post('/run-attendance-rtsp', async (req, res) => {
         semester:  resolvedSem,
         locksemId: resolvedLocksem,
         _resolvedCtx: ctx || null,
+        enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, resolvedBatch),
     };
 
     // Step 3: Stream from Python, intercept the 'done' event to save daily data
@@ -573,29 +614,47 @@ router.post('/run-attendance-rtsp', async (req, res) => {
             { timeout: 600000, responseType: 'stream', headers: { 'Content-Type': 'application/json' } }
         );
 
+        // Buffer on the "\n\n" SSE event boundary (matches the
+        // "data: {...}\n\n" framing rtsp_routes.py writes) so each event is
+        // parsed whole before deciding whether to forward it. This lets us
+        // intercept "frame_snapshot" events — they carry base64 image bytes
+        // the ML service ships back instead of writing to disk itself — and
+        // persist them server-side without relaying that payload to the
+        // browser, which only needs the lightweight events.
         let sseBuffer = '';
         pyRes.data.on('data', (chunk) => {
-            const text = chunk.toString();
-            res.write(text);
+            sseBuffer += chunk.toString();
 
-            sseBuffer += text;
-            const lines = sseBuffer.split('\n');
-            sseBuffer = lines.pop();
+            let boundary;
+            while ((boundary = sseBuffer.indexOf('\n\n')) !== -1) {
+                const eventText = sseBuffer.substring(0, boundary + 2);
+                sseBuffer = sseBuffer.substring(boundary + 2);
 
-            for (const line of lines) {
-                if (!line.startsWith('data: ')) continue;
-                try {
-                    const event = JSON.parse(line.slice(6));
-                    if (event.type === 'done' && event.result) {
-                        saveAttendanceDailyData(
-                            { batch: resolvedBatch, date: req.body.date, slot: req.body.slot,
-                              room: req.body.room, subject: resolvedSubject, faculty: resolvedFaculty,
-                              semester: resolvedSem, locksemId: resolvedLocksem },
-                            event.result,
-                            1
-                        );
-                    }
-                } catch (_) {}
+                const dataLine = eventText.trimEnd();
+                if (!dataLine.startsWith('data: ')) {
+                    if (!res.writableEnded) res.write(eventText);
+                    continue;
+                }
+
+                let event = null;
+                try { event = JSON.parse(dataLine.slice(6)); } catch (_) {}
+
+                if (event && event.type === 'frame_snapshot') {
+                    saveFrameSnapshot(event);
+                    continue; // not forwarded — browser doesn't need raw image bytes
+                }
+
+                if (!res.writableEnded) res.write(eventText);
+
+                if (event && event.type === 'done' && event.result) {
+                    saveAttendanceDailyData(
+                        { batch: resolvedBatch, date: req.body.date, slot: req.body.slot,
+                          room: req.body.room, subject: resolvedSubject, faculty: resolvedFaculty,
+                          semester: resolvedSem, locksemId: resolvedLocksem },
+                        event.result,
+                        1
+                    );
+                }
             }
         });
 
