@@ -13,7 +13,6 @@ const NAV = [
   { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
 
   { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'Ground Truth Capture' },
-  { id: 'acquisition', route: '/attendance/acquisition-control', label: 'Acquisition Control' },
   {
     id: 'assign',
     route: '/attendance/groundtruth/assign',
@@ -33,13 +32,11 @@ const NAV = [
   { id: 'cameras', route: '/cameras', label: 'Camera Registry', exact: true },
   { id: 'embeddings', route: '/attendance/embeddings', label: 'Subject Embeddings' },
   { id: 'preview', route: '/cameras/preview', label: 'Live Preview' },
-  { id: 'gpu', route: '/attendance/gpu', label: 'GPU Monitor' },
   {
     id: 'confidence',
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
-  { id: 'deptMenuConfig', route: '/attendance/dept-menu-config', label: 'Dept Menu Config' },
 
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
@@ -49,15 +46,12 @@ const COLORS = {
   rtsp: '#0ea5e9',
   assign: '#10b981',
   upload: '#f472b6',
-  acquisition: '#f97316',
   reports: '#14b8a6',
   verify: '#ec4899',
   cameras: '#f97316',
   embeddings: '#f59e0b',
   preview: '#8b5cf6',
-  gpu: '#06b6d4',
   confidence: '#ef4444',
-  deptMenuConfig: '#a855f7',
   manual: '#64748b',
 };
 
