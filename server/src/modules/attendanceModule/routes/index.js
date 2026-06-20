@@ -24,6 +24,11 @@ router.get(
     ...attendanceRoleAccess,
     deptAdminController.getReports,
 );
+router.get(
+    '/dept-admin/menus',
+    ...attendanceRoleAccess,
+    deptAdminController.getDeptMenus,
+);
 router.use(
     '/ground-truth',
     ...attendanceRoleAccess,
@@ -42,6 +47,7 @@ router.use(
     enforceAttendanceDepartment,
     require("./flagRoutes"),
 );
+
 router.use('/reports',      require("./attendanceReportRoutes"));
 router.use('/cameras',      require("./cameraRoutes"));
 router.use('/embeddings',   require("./embeddingRouter"));

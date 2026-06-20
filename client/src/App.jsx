@@ -229,6 +229,7 @@ import DeptAdminLayout from './deptadmin/DeptAdminLayout';
 import DeptDashboard from './deptadmin/DeptDashboard';
 import DeptReports from './deptadmin/DeptReports';
 import { DeptAssignRolls, DeptLiveRTSP } from './deptadmin/DeptAdminTools';
+import DeptMenuConfig from './attendancemodule/DeptMenuConfig';
 
 //confifence monitor
 import ConfidenceMonitor from './attendancemodule/confidenceMonitor';
@@ -670,6 +671,7 @@ function App() {
           <Route path="confidence" element={<ConfidenceMonitor />} />
            <Route path="acquisition-control" element={<AcquisitionControl />} />
           <Route path="gpu" element={<GpuMetrics />} />
+          <Route path="dept-menu-config" element={<DeptMenuConfig />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}
@@ -679,6 +681,7 @@ function App() {
           <Route path="live-rtsp" element={<DeptLiveRTSP />} />
           <Route path="assign-rolls" element={<DeptAssignRolls />} />
           <Route path="reports" element={<DeptReports />} />
+          
         </Route>
 
         {/* Camera Registry — top-level but still inside AMSLayout */}

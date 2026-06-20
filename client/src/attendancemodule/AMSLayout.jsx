@@ -38,6 +38,8 @@ const NAV = [
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
+  { id: 'deptMenuConfig', route: '/attendance/dept-menu-config', label: 'Dept Menu Config' },
+
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
@@ -53,6 +55,7 @@ const COLORS = {
   preview: '#8b5cf6',
   gpu: '#06b6d4',
   confidence: '#ef4444',
+  deptMenuConfig: '#a855f7',
   manual: '#64748b',
 };
 
