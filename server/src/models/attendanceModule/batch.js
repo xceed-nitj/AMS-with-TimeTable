@@ -9,7 +9,13 @@ const batchSchema = new mongoose.Schema({
     batchString: {
         type: String,
         unique: true,
-    }
+    },
+    degrees: [
+        {
+            degreeName: String,
+            branches: [String]
+        }
+    ]
 }, { timestamps: true });
 
 // Compound index for uniqueness
