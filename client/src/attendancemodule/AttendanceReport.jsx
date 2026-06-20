@@ -1,5 +1,5 @@
 // client/src/attendancemodule/AttendanceReport.jsx
-// Input: room + slot + RTSP URL → auto-lookup from LockSem → attendance report
+// Input: room + slot → auto-lookup from LockSem + AcquisitionControl config → attendance report
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,19 +13,6 @@ const REPORT_API = `${apiUrl}/attendancemodule/reports`;
 const ML_API     = `${apiUrl}/ml`;
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 const CAMERA_SWITCH_SEC = 30; // must match CAMERA_SWITCH_SEC in rtsp_routes.py
-// ── LT103 dual-camera preset (same as groundtruthgen_rtsp) ───────────────────
-//const LT103L_URL = 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
-//const LT103R_URL = 'rtsp://admin:Admin%401234%23@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
-const SLOT_LABELS = {
-    period1: 'Period 1 — 08:30',
-    period2: 'Period 2 — 09:30',
-    period3: 'Period 3 — 10:30',
-    period4: 'Period 4 — 11:30',
-    period5: 'Period 5 — 13:30',
-    period6: 'Period 6 — 14:30',
-    period7: 'Period 7 — 15:30',
-    period8: 'Period 8 — 16:30',
-};
 
 export default function AttendanceReport() {
     const navigate = useNavigate();
@@ -57,6 +44,28 @@ export default function AttendanceReport() {
     const manualBatch = degree && department && year
         ? `${degree}_${sanitizeDept(department)}_${year}` : null;
 
+    // ── AcquisitionControl config ─────────────────────────────────
+    const [acqConfig, setAcqConfig] = useState(null);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res  = await fetch(`${apiUrl}/attendancemodule/acquisitioncontrol`);
+                const data = await res.json();
+                setAcqConfig(data);
+            } catch { /* silently ignore */ }
+        })();
+    }, []);
+
+    // Derive period config from AcquisitionControl whenever slot changes
+    useEffect(() => {
+        if (!acqConfig || !slot) return;
+        const periodCfg = acqConfig.periods?.find(p => p.periodKey === slot);
+        if (!periodCfg) return;
+        if (periodCfg.runDurationSec)   setDuration(periodCfg.runDurationSec);
+        if (periodCfg.checkIntervalMin) setCheckIntervalMin(periodCfg.checkIntervalMin);
+    }, [acqConfig, slot]);
+
     // ── Run state ─────────────────────────────────────────────────
     const [processing,      setProcessing]      = useState(false);
     const [streamLog,       setStreamLog]       = useState([]);
@@ -68,18 +77,16 @@ export default function AttendanceReport() {
     const camCountdownRef = useRef(null);
     const activeCamRef = useRef(null);
     const rtspUrl2Ref     = useRef('');
-   
+
     const [jobId,           setJobId]           = useState(null);
     const [snapshots,       setSnapshots]       = useState([]);
     const [previewActive,   setPreviewActive]   = useState(false);
-    const [enrolledRollNos, setEnrolledRollNos] = useState('');
-    const [showRollInput,   setShowRollInput]   = useState(false);
     const [saving,          setSaving]          = useState(false);
     const [mlResult,        setMlResult]        = useState(null);
     const [savedReport,     setSavedReport]     = useState(null);
     const [derivedCtx,      setDerivedCtx]      = useState(null);
 
-    // ── Session state (multi-run) ─────────────────────────────────
+    // ── Session state (multi-run) — kept for later ────────────────
     const [sessionReportId, setSessionReportId] = useState(null);
     const [sessionActive,   setSessionActive]   = useState(false);
     const [sessionChecks,   setSessionChecks]   = useState(0);
@@ -94,11 +101,11 @@ export default function AttendanceReport() {
     const [detailReport,  setDetailReport]  = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
 
-    // ── Camera status from DB ─────────────────────────────────────────────────
+    // ── Camera status from DB ─────────────────────────────────────
     const [cameraStatus,  setCameraStatus]  = useState(null); // null | 'ok' | 'inactive' | 'none'
     const [cameraWarnAck, setCameraWarnAck] = useState(false);
     const [showCameraWarn, setShowCameraWarn] = useState(false);
-    const [pendingAction,  setPendingAction]  = useState(null); // 'run' | 'session'
+    const [pendingAction,  setPendingAction]  = useState(null); // 'run'
 
     const [toast, setToast] = useState(null);
     const showToast = (msg, type = 'success') => {
@@ -205,47 +212,40 @@ export default function AttendanceReport() {
                 setDetailReport(updated);
                 setSessionChecks(updated.slotResults?.length || 0);
             } catch { /* ignore */ }
-        }, 10000);  // poll every 10 seconds
+        }, 10000);
         return () => clearInterval(interval);
     }, [detailReport?._id, detailReport?.status]);
 
-    // ── Camera-switch countdown ticker ────────────────────────────────────────
-// Python switches cameras every CAMERA_SWITCH_SEC (30s), not every `duration`.
-// We count down from CAMERA_SWITCH_SEC using camSwitchAt as the reference point.
-useEffect(() => {
-    // Only run countdown when processing AND a camera is active AND cam2 is configured
-    const hasCam2 = rtspUrl2.trim().length > 0;
-if (!processing || !activeCam || !hasCam2) {
-    // Still clear the interval, but DO NOT clear camCountdown to 0 if activeCam is set
-    // (so the banner stays visible in single-cam mode without countdown)
-    if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; }
-    if (!processing || !activeCam) setCamCountdown(0);
-    return;
-}
-    // (Re)start the ticker whenever camSwitchAt changes (i.e. every real switch)
-    if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; }
-    const switchedAt = camSwitchAt || Date.now();
-    camCountdownRef.current = setInterval(() => {
-        const elapsed   = Math.floor((Date.now() - switchedAt) / 1000);
-        const remaining = Math.max(0, CAMERA_SWITCH_SEC - elapsed);
-        setCamCountdown(remaining);
-    }, 500); // 500ms tick is more responsive than 1000ms
-    return () => { if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; } };
-}, [processing, activeCam, camSwitchAt, rtspUrl2]);
-
-    
+    // ── Camera-switch countdown ticker ────────────────────────────
+    useEffect(() => {
+        const hasCam2 = rtspUrl2.trim().length > 0;
+        if (!processing || !activeCam || !hasCam2) {
+            if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; }
+            if (!processing || !activeCam) setCamCountdown(0);
+            return;
+        }
+        if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; }
+        const switchedAt = camSwitchAt || Date.now();
+        camCountdownRef.current = setInterval(() => {
+            const elapsed   = Math.floor((Date.now() - switchedAt) / 1000);
+            const remaining = Math.max(0, CAMERA_SWITCH_SEC - elapsed);
+            setCamCountdown(remaining);
+        }, 500);
+        return () => { if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; } };
+    }, [processing, activeCam, camSwitchAt, rtspUrl2]);
 
     // ── Run attendance — SSE stream ───────────────────────────────
     const runAttendance = async () => {
-        if (!rtspUrl.trim()) { showToast('Paste the RTSP URL', 'error'); return; }
-        if (!room)           { showToast('Enter room number', 'error'); return; }
-        if (!slot)           { showToast('Select a slot', 'error'); return; }
+        if (!room)  { showToast('Select a room', 'error'); return; }
+        if (!slot)  { showToast('Select a slot', 'error'); return; }
+        if (!rtspUrl.trim()) { showToast('No camera found for this room — check Camera Management', 'error'); return; }
 
         const effectiveBatch = derivedCtx?.batch || manualBatch;
         if (!effectiveBatch) {
             showToast('Batch not found — expand "Batch override" and fill in Degree/Dept/Year', 'error');
             return;
         }
+
         // ── Camera inactive/none warning gate ────────────────────
         if ((cameraStatus === 'inactive' || cameraStatus === 'none') && !cameraWarnAck) {
             setPendingAction('run');
@@ -253,17 +253,12 @@ if (!processing || !activeCam || !hasCam2) {
             return;
         }
 
-        // ── Parse sir's roll number list ──────────────────────────
-        const parsedRollNos = enrolledRollNos.trim()
-            ? enrolledRollNos.trim().split(/[\n,]+/).map(r => r.trim()).filter(Boolean)
-            : [];
-
         setProcessing(true); setMlResult(null); setSavedReport(null);
         setSnapshots([]); setLiveFrame(null); setPreviewActive(true);
         setStreamLog([]); setLiveStats(null); setJobId(null);
-        setActiveCam(rtspUrl2.trim() ? 1 : null);  // show cam 1 immediately if dual-cam
+        setActiveCam(rtspUrl2.trim() ? 1 : null);
         activeCamRef.current = rtspUrl2.trim() ? 1 : null;
-        setCamSwitchAt(Date.now());   // start countdown immediately
+        setCamSwitchAt(Date.now());
         setCamCountdown(CAMERA_SWITCH_SEC);
         rtspUrl2Ref.current = rtspUrl2.trim();
 
@@ -283,7 +278,7 @@ if (!processing || !activeCam || !hasCam2) {
                     faculty:         derivedCtx?.faculty   || '',
                     semester:        derivedCtx?.sem        || '',
                     locksemId:       derivedCtx?.locksemId || '',
-                    enrolledRollNos: parsedRollNos,  // ← sir's list sent to Python
+                    enrolledRollNos: [],
                 }),
             });
 
@@ -316,29 +311,24 @@ if (!processing || !activeCam || !hasCam2) {
                         if (ev.type === 'stage') {
                             setStreamLog(prev => [...prev, ev.message]);
                         }
-                        
-    if (ev.type === 'frame') {
-    setLiveStats({
-        frames:    ev.frame,
-        faces:     ev.total_embs,
-        elapsed:   ev.elapsed,
-        remaining: ev.remaining,
-    });
-    setLiveFrame({
-        faces:   ev.faces,
-        camera:  ev.camera,
-        elapsed: ev.elapsed,
-    });
-    // Camera switch tracking — use ref so the closure always sees
-    // the latest activeCam value, not the stale one from when
-    // runAttendance was first called.
-    // Always update activeCam on first frame (null → 1) and on real switches
-if (ev.camera != null && ev.camera !== activeCamRef.current) {
-    activeCamRef.current = ev.camera;
-    setActiveCam(ev.camera);
-    setCamSwitchAt(Date.now());
-}
-}
+                        if (ev.type === 'frame') {
+                            setLiveStats({
+                                frames:    ev.frame,
+                                faces:     ev.total_embs,
+                                elapsed:   ev.elapsed,
+                                remaining: ev.remaining,
+                            });
+                            setLiveFrame({
+                                faces:   ev.faces,
+                                camera:  ev.camera,
+                                elapsed: ev.elapsed,
+                            });
+                            if (ev.camera != null && ev.camera !== activeCamRef.current) {
+                                activeCamRef.current = ev.camera;
+                                setActiveCam(ev.camera);
+                                setCamSwitchAt(Date.now());
+                            }
+                        }
                         if (ev.type === 'done') {
                             setMlResult(ev.result);
                             if (ev.result?.metadata) {
@@ -363,28 +353,22 @@ if (ev.camera != null && ev.camera !== activeCamRef.current) {
         }
     };
 
-
-    // ── Start multi-run session ───────────────────────────────────
+    // ── Start multi-run session — kept for later ──────────────────
     const startSession = async () => {
-        if (!rtspUrl.trim()) { showToast('Paste Camera 1 RTSP URL', 'error'); return; }
-        if (!room)           { showToast('Enter room number', 'error'); return; }
-        if (!slot)           { showToast('Select a slot', 'error'); return; }
+        if (!room)  { showToast('Select a room', 'error'); return; }
+        if (!slot)  { showToast('Select a slot', 'error'); return; }
+        if (!rtspUrl.trim()) { showToast('No camera found for this room', 'error'); return; }
 
         const effectiveBatch = derivedCtx?.batch || manualBatch;
         if (!effectiveBatch) {
             showToast('Batch not found — fill in Degree/Dept/Year', 'error');
             return;
         }
-        // ── Camera inactive/none warning gate ────────────────────
         if ((cameraStatus === 'inactive' || cameraStatus === 'none') && !cameraWarnAck) {
             setPendingAction('session');
             setShowCameraWarn(true);
             return;
         }
-
-        const parsedRollNos = enrolledRollNos.trim()
-            ? enrolledRollNos.trim().split(/[\n,]+/).map(r => r.trim()).filter(Boolean)
-            : [];
 
         try {
             const res = await fetch(`${REPORT_API}/start-session`, {
@@ -402,7 +386,7 @@ if (ev.camera != null && ev.camera !== activeCamRef.current) {
                     faculty:         derivedCtx?.faculty    || '',
                     semester:        derivedCtx?.sem         || '',
                     locksemId:       derivedCtx?.locksemId  || '',
-                    enrolledRollNos: parsedRollNos,
+                    enrolledRollNos: [],
                 }),
             });
             const data = await res.json();
@@ -413,7 +397,7 @@ if (ev.camera != null && ev.camera !== activeCamRef.current) {
             activeCamRef.current = rtspUrl2.trim() ? 1 : null;
             setCamSwitchAt(Date.now());
             setCamCountdown(CAMERA_SWITCH_SEC);
-rtspUrl2Ref.current = rtspUrl2.trim();
+            rtspUrl2Ref.current = rtspUrl2.trim();
             setSessionChecks(0);
             showToast(`Session started — checks every ${checkIntervalMin} min`);
             openDetail(data.reportId);
@@ -428,7 +412,6 @@ rtspUrl2Ref.current = rtspUrl2.trim();
             await fetch(`${REPORT_API}/stop-session/${reportId}`, { method: 'POST' });
             setSessionActive(false);
             setSessionReportId(null);
-            // Refresh detail report to show draft status
             const res     = await fetch(`${REPORT_API}/${reportId}`);
             const updated = await res.json();
             setDetailReport(updated);
@@ -461,22 +444,20 @@ rtspUrl2Ref.current = rtspUrl2.trim();
             });
             const data = await res.json();
             if (data.error) {
-            showToast(data.error, 'error');
-            // If a report already exists for this slot, fetch and open it
-            if (res.status === 409) {
-                const listRes = await fetch(`${REPORT_API}?batch=${encodeURIComponent(ctx.batch || manualBatch)}&date=${date}`);
-                const listData = await listRes.json();
-                const existing = (listData.reports || []).find(r => r.timeSlot === slot);
-                if (existing) openDetail(existing._id);
+                showToast(data.error, 'error');
+                if (res.status === 409) {
+                    const listRes = await fetch(`${REPORT_API}?batch=${encodeURIComponent(ctx.batch || manualBatch)}&date=${date}`);
+                    const listData = await listRes.json();
+                    const existing = (listData.reports || []).find(r => r.timeSlot === slot);
+                    if (existing) openDetail(existing._id);
+                }
+            } else {
+                setSavedReport(data);
+                showToast(`✓ Saved & merged — ${data.summary?.present ?? 0}P / ${data.summary?.absent ?? 0}A / ${data.summary?.review ?? 0}R`);
             }
-        } else {
-            setSavedReport(data);
-            showToast(`✓ Saved & merged — ${data.summary?.present ?? 0}P / ${data.summary?.absent ?? 0}A / ${data.summary?.review ?? 0}R`);
-
-        }
-    } catch { showToast('Save failed', 'error'); }
-    setSaving(false);
-};
+        } catch { showToast('Save failed', 'error'); }
+        setSaving(false);
+    };
 
     const openDetail = async (id) => {
         setTab('detail'); setDetailLoading(true); setDetailReport(null);
@@ -521,9 +502,18 @@ rtspUrl2Ref.current = rtspUrl2.trim();
         } catch { showToast('Delete failed', 'error'); }
     };
 
+ // ── Derived period config for display ─────────────────────────
+    const slotLabel = (key) => {
+        const p = acqConfig?.periods?.find(p => p.periodKey === key);
+        return p ? `${p.label}${p.startTime ? ' — ' + p.startTime : ''}` : key;
+    };
+    const slotOptions = acqConfig?.periods?.filter(p => p.enabled) ?? [];
+    const activePeriodCfg = acqConfig?.periods?.find(p => p.periodKey === slot) ?? null;
+
     return (
         <div style={styles.page}>
             <style>{cssReset}</style>
+
             {/* ── Camera warning modal ── */}
             <CameraWarningModal
                 status={showCameraWarn ? cameraStatus : null}
@@ -555,7 +545,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
             <div style={{ marginBottom: 24 }}>
                 <div style={styles.heading}>Attendance Reports</div>
                 <div style={styles.subheading}>
-                    Enter room + slot + RTSP URL — faculty, subject, batch auto-fetched from timetable
+                    Select room + slot — camera, faculty, subject, and batch are auto-fetched from configuration
                 </div>
             </div>
 
@@ -622,13 +612,15 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                 <label style={styles.label}>Slot</label>
                                 <select value={slot} onChange={e => setSlot(e.target.value)} style={styles.select}>
                                     <option value="">Select slot...</option>
-                                    {Object.entries(SLOT_LABELS).map(([val, label]) => (
-                                        <option key={val} value={val}>{label}</option>
-                                    ))}
+                                    {slotOptions.map(p => (
+    <option key={p.periodKey} value={p.periodKey}>
+        {p.label}{p.startTime ? ` — ${p.startTime}` : ''}
+    </option>
+))}
                                 </select>
                             </div>
                             <div>
-                                <label style={styles.label}>Date (for saving only)</label>
+                                <label style={styles.label}>Date</label>
                                 <input type="date" value={date}
                                     onChange={e => setDate(e.target.value)}
                                     style={styles.input} />
@@ -642,7 +634,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                 background: theme.accentDim, border: `1px solid ${theme.accent}`,
                                 fontSize: '11px', color: theme.accent,
                             }}>
-                                🔍 Looking up timetable for {room} / {SLOT_LABELS[slot]}…
+                                🔍 Looking up timetable for {room} / {slotLabel(slot)}…
                             </div>
                         )}
                         {ttStatus === 'notfound' && (
@@ -717,123 +709,75 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                 </div>
                             )}
                         </details>
+                        {/* AcquisitionControl config block — shown whenever slot is selected */}
+{slot && (
+    <div style={{
+        padding: '12px 16px', borderRadius: 8, marginBottom: 14,
+        background: acqConfig ? theme.accentDim : theme.bg,
+        border: `1px solid ${acqConfig ? theme.accent : theme.border}`,
+        display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center',
+    }}>
+        {acqConfig === null ? (
+            <span style={{ fontSize: '12px', color: theme.textMuted }}>
+                ⏳ Loading acquisition config…
+            </span>
+        ) : activePeriodCfg ? (
+            <>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    Run Config
+                </span>
+                {[
+                    ['Duration',   `${activePeriodCfg.runDurationSec}s`],
+                    ['Interval',   `${activePeriodCfg.checkIntervalMin} min`],
+                    ['Runs',       `${activePeriodCfg.numRuns}`],
+                    ['Logic',      activePeriodCfg.presentLogic],
+                    ['Camera',     rtspUrl ? (rtspUrl2 ? 'Dual 📷📷' : 'Single 📷') : '⚠ None'],
+                ].map(([k, v]) => (
+                    <span key={k} style={{ fontSize: '12px', color: theme.textMuted, fontFamily: theme.fontMono }}>
+                        <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{k}: </span>
+                        <span style={{
+                            color: k === 'Camera' && !rtspUrl ? theme.danger : theme.text,
+                            fontWeight: 600,
+                        }}>{v}</span>
+                    </span>
+                ))}
+            </>
+        ) : (
+            <span style={{ fontSize: '12px', color: theme.warning }}>
+                ⚠ No config found for slot "{slot}" in Acquisition Control — using defaults (120s / 5min)
+            </span>
+        )}
+    </div>
+)}
 
-                        {/* ── Enrolled Roll Numbers — sir's list ── */}
-                        <details
-                            open={showRollInput}
-                            style={{ marginBottom: 14 }}
-                            onToggle={e => setShowRollInput(e.target.open)}
-                        >
-                            <summary style={{ fontSize: '12px', color: theme.accent, cursor: 'pointer', fontWeight: 600, marginBottom: 8 }}>
-                                📋 Enrolled Roll Numbers (sir's list — optional but recommended)
-                            </summary>
-                            <div style={{ marginTop: 10 }}>
-                                <label style={styles.label}>
-                                    Paste roll numbers — one per line or comma separated.
-                                    Only these appear in the report. Faces detected outside this list are flagged.
-                                </label>
-                                <textarea
-                                    value={enrolledRollNos}
-                                    onChange={e => setEnrolledRollNos(e.target.value)}
-                                    placeholder={'CS001\nCS002\nCS003\n...\nor: CS001, CS002, CS003'}
-                                    rows={6}
-                                    style={{
-                                        ...styles.input,
-                                        fontFamily: theme.fontMono,
-                                        resize: 'vertical',
-                                        marginTop: 6,
-                                    }}
-                                />
-                                {enrolledRollNos.trim() && (
-                                    <div style={{ fontSize: '11px', color: theme.accent, marginTop: 4, fontFamily: theme.fontMono }}>
-                                        {enrolledRollNos.trim().split(/[\n,]+/).filter(r => r.trim()).length} roll numbers entered
-                                    </div>
-                                )}
-                            </div>
-                        </details>
-
-                        {/* Camera URLs + Interval + Duration + Run */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                            <div>
-                                <label style={styles.label}>Camera 1 — RTSP URL</label>
-                                <input
-                                    placeholder="rtsp://...camera1..."
-                                    value={rtspUrl}
-                                    onChange={e => setRtspUrl(e.target.value)}
-                                    style={{ ...styles.input, fontFamily: theme.fontMono }}
-                                />
-                            </div>
-                            <div>
-                                <label style={styles.label}>Camera 2 — RTSP URL (optional)</label>
-                                <input
-    placeholder="rtsp://...camera2..."
-    value={rtspUrl2}
-    onChange={e => { setRtspUrl2(e.target.value); rtspUrl2Ref.current = e.target.value; }}
-    style={{ ...styles.input, fontFamily: theme.fontMono }}
-/>
-                            </div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'flex-end' }}>
-                            <div>
-                                <label style={styles.label}>Check interval (mins)</label>
-                                <input
-                                    type="number" min={1} max={30} value={checkIntervalMin}
-                                    onChange={e => setCheckIntervalMin(Number(e.target.value))}
-                                    style={styles.input}
-                                    placeholder="e.g. 5"
-                                />
-                            </div>
-                            <div>
-                                <label style={styles.label}>Duration per check</label>
-                                <select value={duration} onChange={e => setDuration(Number(e.target.value))} style={styles.select}>
-                                    <option value={30}>30 seconds</option>
-                                    <option value={60}>60 seconds</option>
-                                    <option value={120}>120 seconds</option>
-                                    <option value={180}>180 seconds</option>
-                                    <option value={300}>300 seconds</option>
-                                </select>
-                            </div>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                <button
-                                    onClick={runAttendance}
-
-                                    disabled={processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
-                                    style={{
-                                        ...styles.btnPrimary, minWidth: 140,
-                                        opacity: (processing || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)) ? 0.5 : 1,
-                                    }}
-                                >
-                                    {processing ? (
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <span style={{
-                                                width: 13, height: 13,
-                                                border: '2px solid rgba(0,0,0,0.3)',
-                                                borderTopColor: theme.accentText,
-                                                borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                                                display: 'inline-block',
-                                            }} />
-                                            {liveStats 
-  ? `${liveStats.remaining}s left…` 
-  : activeCam 
-    ? `Cam ${activeCam} — starting…` 
-    : 'Connecting…'}
-                                        </span>
-                                    ) : 'Run Once'}
-                                </button>
-                               
-                                <button
-                                    onClick={startSession}
-                                    disabled={processing || sessionActive || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
-                                    style={{
-                                        ...styles.btnPrimary,
-                                        minWidth: 140,
-                                        background: theme.success,
-                                        opacity: (processing || sessionActive || !rtspUrl.trim() || !room || !slot || (!derivedCtx?.batch && !manualBatch)) ? 0.5 : 1,
-                                    }}
-                                >
-                                    {sessionActive ? `Session running…` : `Start Session`}
-                                </button>
-                            </div>
+{/* Run button row */}
+<div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+    <button
+        onClick={runAttendance}
+        disabled={processing || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
+        style={{
+            ...styles.btnPrimary, minWidth: 160,
+            opacity: (processing || !room || !slot || (!derivedCtx?.batch && !manualBatch)) ? 0.5 : 1,
+        }}
+    >
+                        
+                                {processing ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{
+                                            width: 13, height: 13,
+                                            border: '2px solid rgba(0,0,0,0.3)',
+                                            borderTopColor: theme.accentText,
+                                            borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+                                            display: 'inline-block',
+                                        }} />
+                                        {liveStats
+                                            ? `${liveStats.remaining}s left…`
+                                            : activeCam
+                                                ? `Cam ${activeCam} — starting…`
+                                                : 'Connecting…'}
+                                    </span>
+                                ) : 'Run Attendance'}
+                            </button>
                         </div>
 
                         {/* Live stream log while processing */}
@@ -913,66 +857,64 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                     </>
                                 )}
                             </div>
-
-      
                         </div>
                     )}
-                    {/* ── Camera switch banner (shown during and after processing) ── */}
-{activeCam && (
-    <div style={{
-        marginTop: 12,
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '10px 16px', borderRadius: 8,
-        background: activeCam === 1 ? theme.accentDim : 'rgba(240,192,64,0.1)',
-        border: `1px solid ${activeCam === 1 ? theme.accent : '#f0c040'}`,
-    }}>
-        <span style={{ fontSize: '20px', lineHeight: 1 }}>🎥</span>
-        <div style={{ flex: 1 }}>
-            <div style={{
-                fontSize: '13px', fontWeight: 700,
-                color: activeCam === 1 ? theme.accent : '#f0c040',
-            }}>
-                Camera {activeCam} Active
-            </div>
-            {rtspUrl2.trim() && camCountdown > 0 && (
-                <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
-                    Switching to Camera {activeCam === 1 ? 2 : 1} in{' '}
-                    <span style={{
-                        fontWeight: 700, fontFamily: theme.fontMono,
-                        color: activeCam === 1 ? theme.accent : '#f0c040',
-                    }}>
-                        {String(Math.floor(camCountdown / 60)).padStart(2, '0')}:{String(camCountdown % 60).padStart(2, '0')}
-                    </span>
-                </div>
-            )}
-            {!rtspUrl2.trim() && (
-                <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
-                    Single camera mode
-                </div>
-            )}
-        </div>
-        {rtspUrl2.trim() && (
-            <div style={{ display: 'flex', gap: 6 }}>
-                {[1, 2].map(n => (
-                    <span key={n} style={{
-                        padding: '3px 12px', borderRadius: '999px',
-                        fontSize: '12px', fontWeight: 700, fontFamily: theme.fontMono,
-                        background: activeCam === n
-                            ? (n === 1 ? theme.accent : '#f0c040')
-                            : theme.border,
-                        color: activeCam === n
-                            ? (n === 1 ? (theme.accentText || '#fff') : '#000')
-                            : theme.textMuted,
-                        transition: 'all 0.3s',
-                    }}>
-                        CAM {n}
-                    </span>
-                ))}
-            </div>
-        )}
-    </div>
-)}
 
+                    {/* ── Camera switch banner ── */}
+                    {activeCam && (
+                        <div style={{
+                            marginTop: 12,
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '10px 16px', borderRadius: 8,
+                            background: activeCam === 1 ? theme.accentDim : 'rgba(240,192,64,0.1)',
+                            border: `1px solid ${activeCam === 1 ? theme.accent : '#f0c040'}`,
+                        }}>
+                            <span style={{ fontSize: '20px', lineHeight: 1 }}>🎥</span>
+                            <div style={{ flex: 1 }}>
+                                <div style={{
+                                    fontSize: '13px', fontWeight: 700,
+                                    color: activeCam === 1 ? theme.accent : '#f0c040',
+                                }}>
+                                    Camera {activeCam} Active
+                                </div>
+                                {rtspUrl2.trim() && camCountdown > 0 && (
+                                    <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
+                                        Switching to Camera {activeCam === 1 ? 2 : 1} in{' '}
+                                        <span style={{
+                                            fontWeight: 700, fontFamily: theme.fontMono,
+                                            color: activeCam === 1 ? theme.accent : '#f0c040',
+                                        }}>
+                                            {String(Math.floor(camCountdown / 60)).padStart(2, '0')}:{String(camCountdown % 60).padStart(2, '0')}
+                                        </span>
+                                    </div>
+                                )}
+                                {!rtspUrl2.trim() && (
+                                    <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
+                                        Single camera mode
+                                    </div>
+                                )}
+                            </div>
+                            {rtspUrl2.trim() && (
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                    {[1, 2].map(n => (
+                                        <span key={n} style={{
+                                            padding: '3px 12px', borderRadius: '999px',
+                                            fontSize: '12px', fontWeight: 700, fontFamily: theme.fontMono,
+                                            background: activeCam === n
+                                                ? (n === 1 ? theme.accent : '#f0c040')
+                                                : theme.border,
+                                            color: activeCam === n
+                                                ? (n === 1 ? (theme.accentText || '#fff') : '#000')
+                                                : theme.textMuted,
+                                            transition: 'all 0.3s',
+                                        }}>
+                                            CAM {n}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {mlResult && !processing && (() => {
                         const arr = Object.values(mlResult.attendance || {});
@@ -993,7 +935,6 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                     ...(stats.flagged > 0 ? [{ label: 'Flagged 🚩', val: stats.flagged, color: theme.warning }] : []),
                                 ]} theme={theme} styles={styles} />
 
-                                {/* Saved frame snapshots */}
                                 {snapshots.length > 0 && (
                                     <div style={{ ...styles.card, marginBottom: 16 }}>
                                         <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: 10 }}>
@@ -1109,9 +1050,8 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                         <tr key={r._id} style={{ cursor: 'pointer' }}
                                             onClick={() => openDetail(r._id)}>
                                             <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600, color: theme.text }}>{r.batch}</td>
-
                                             <td style={{ padding: '11px 14px', color: theme.text }}>{r.date}</td>
-                                            <td style={{ padding: '11px 14px', color: theme.textMuted }}>{SLOT_LABELS[r.timeSlot] || r.timeSlot || '—'}</td>
+                                            <td style={{ padding: '11px 14px', color: theme.textMuted }}>{slotLabel(r.timeSlot) || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.text }}>{r.subject || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.textMuted }}>{r.faculty || '—'}</td>
                                             <td style={{ padding: '11px 14px', color: theme.success, fontWeight: 700 }}>{r.summary?.present ?? '—'}</td>
@@ -1141,32 +1081,31 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                     {detailReport && !detailLoading && (
                         <div style={{ animation: 'fadeIn 0.3s' }}>
                             <div style={{ ...styles.card, marginBottom: 16 }}>
-                                {/* Live session banner */}
-                            {detailReport.status === 'live' && (
-                                <div style={{
-                                    padding: '12px 16px', borderRadius: 8, marginBottom: 16,
-                                    background: theme.accentDim, border: `1px solid ${theme.accent}`,
-                                    display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-                                }}>
-                                    <span style={{
-                                        width: 10, height: 10, borderRadius: '50%',
-                                        background: theme.accent, display: 'inline-block',
-                                        animation: 'spin 1.5s linear infinite',
-                                    }} />
-                                    <span style={{ color: theme.accent, fontWeight: 700, fontSize: '13px' }}>
-                                        Live Session — {detailReport.slotResults?.length || 0} run(s) completed
-                                    </span>
-                                    <span style={{ fontSize: '12px', color: theme.textMuted }}>
-                                        Auto-updating every 10 seconds
-                                    </span>
-                                    <button
-                                        onClick={() => stopSession(detailReport._id)}
-                                        style={{ ...styles.btnDanger, padding: '6px 14px', fontSize: '12px', marginLeft: 'auto' }}
-                                    >
-                                        Stop Session
-                                    </button>
-                                </div>
-                            )}
+                                {detailReport.status === 'live' && (
+                                    <div style={{
+                                        padding: '12px 16px', borderRadius: 8, marginBottom: 16,
+                                        background: theme.accentDim, border: `1px solid ${theme.accent}`,
+                                        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                                    }}>
+                                        <span style={{
+                                            width: 10, height: 10, borderRadius: '50%',
+                                            background: theme.accent, display: 'inline-block',
+                                            animation: 'spin 1.5s linear infinite',
+                                        }} />
+                                        <span style={{ color: theme.accent, fontWeight: 700, fontSize: '13px' }}>
+                                            Live Session — {detailReport.slotResults?.length || 0} run(s) completed
+                                        </span>
+                                        <span style={{ fontSize: '12px', color: theme.textMuted }}>
+                                            Auto-updating every 10 seconds
+                                        </span>
+                                        <button
+                                            onClick={() => stopSession(detailReport._id)}
+                                            style={{ ...styles.btnDanger, padding: '6px 14px', fontSize: '12px', marginLeft: 'auto' }}
+                                        >
+                                            Stop Session
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                                     <div>
@@ -1176,7 +1115,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                         <div style={{ display: 'flex', gap: 20, fontSize: '13px', color: theme.textMuted, flexWrap: 'wrap' }}>
                                             {[
                                                 ['Date',    detailReport.date],
-                                                ['Slot',    SLOT_LABELS[detailReport.timeSlot] || detailReport.timeSlot || '—'],
+                                                ['Slot', slotLabel(detailReport.timeSlot) || '—'],
                                                 ['Subject', detailReport.subject  || '—'],
                                                 ['Faculty', detailReport.faculty  || '—'],
                                                 ['Room',    detailReport.room     || '—'],
@@ -1205,7 +1144,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                                 </button>
                                             </>
                                         )}
-                                        <button onClick={() => setTab('unknown')} 
+                                        <button onClick={() => setTab('unknown')}
                                             style={{ ...styles.btnPrimary, background: theme.accent, padding: '8px 18px', fontSize: '13px' }}>
                                             Review Unknown Faces ({detailReport.summary?.unknownFaceCount ?? 0})
                                         </button>
@@ -1240,6 +1179,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                     )}
                 </div>
             )}
+
             {/* ════ UNKNOWN FACES TAB ════ */}
             {tab === 'unknown' && (
                 <div style={{ marginTop: 16 }}>
@@ -1257,13 +1197,11 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
         finalLookup[s.rollNo] = s;
     }
 
-    // Collect all roll numbers across all runs + finalReport
     const allRollNos = [...new Set([
         ...runs.flatMap(r => r.students.map(s => s.rollNo)),
         ...Object.keys(finalLookup),
     ])].sort();
 
-    // Build lookup: rollNo → runIndex → student record
     const runLookup = {};
     for (const rollNo of allRollNos) {
         runLookup[rollNo] = {};
@@ -1448,6 +1386,7 @@ function CameraWarningModal({ status, room, onProceed, onCancel }) {
         </div>
     );
 }
+
 function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
     return (
         <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
@@ -1472,7 +1411,6 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                             <td style={{ padding: '10px 14px', color: theme.textMuted }}>{i + 1}</td>
                             <td style={{ padding: '10px 14px', fontFamily: theme.fontMono, fontWeight: 600, color: '#111' }}>{s.rollNo}</td>
 
-                            {/* ── In List column ── */}
                             <td style={{ padding: '10px 14px' }}>
                                 {s.flagged === true ? (
                                     <span style={{
@@ -1483,8 +1421,6 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                     </span>
                                 ) : s.inList === true ? (
                                     <span style={{ fontSize: '12.5px', color: theme.success }}>✓</span>
-                                ) : s.inList === false ? (
-                                    <span style={{ fontSize: '11px', color: theme.textMuted }}>—</span>
                                 ) : (
                                     <span style={{ fontSize: '11px', color: theme.textMuted }}>—</span>
                                 )}

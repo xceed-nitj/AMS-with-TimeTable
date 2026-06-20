@@ -246,14 +246,7 @@ router.get("/confidence-trend", async (req, res) => {
   }
 });
 
-// Get full report by ID (keep last to avoid conflicts with named routes above)
-router.get("/:id", async (req, res) => {
-  try {
-    await ctrl.getReportById(req, res);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+
 // GET /attendancemodule/reports/lookup-context?room=lt101&slot=period1&date=2026-04-08
 router.get("/lookup-context", async (req, res) => {
   try {
@@ -326,6 +319,14 @@ router.get("/lookup-context", async (req, res) => {
   } catch (err) {
     console.error("[lookup-context]", err);
     res.status(500).json({ error: err.message });
+  }
+});
+// Get full report by ID (keep last to avoid conflicts with named routes above)
+router.get("/:id", async (req, res) => {
+  try {
+    await ctrl.getReportById(req, res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

@@ -53,7 +53,7 @@ router.use('/cameras',      require("./cameraRoutes"));
 router.use('/embeddings',   require("./embeddingRouter"));
 router.use('/frame-verification', require("./frameVerificationRoutes"));
 router.use('/ground-truth-upload', require("./groundTruthUploadRoutes"));
-router.use('/acquisition-control', acquisitionControlRoutes);
+router.use('/acquisitioncontrol', acquisitionControlRoutes);
 router.use('/settings/batches', require("./batchSettingsRoutes"));
 router.use('/health', require("./healthRoutes"));
 router.use('/unknown-faces', require("./unknownFaceRoutes"));
