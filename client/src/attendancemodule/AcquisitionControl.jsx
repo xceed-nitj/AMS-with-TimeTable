@@ -8,7 +8,7 @@ import { DEGREES, YEARS } from './config';
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
-const AC_API = `${apiUrl}/attendancemodule/acquisition-control`;
+const AC_API = `${apiUrl}/attendancemodule/acquisitioncontrol`;
 const ROOM_API = `${apiUrl}/timetablemodule/masterroom`;
 
 // ── Period definitions (display order) ────────────────────────────────────────

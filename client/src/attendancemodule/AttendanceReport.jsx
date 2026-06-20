@@ -124,13 +124,14 @@ export default function AttendanceReport() {
         })();
     }, []);
 
-    // ── Timetable auto-lookup when room + slot change ─────────────
+    // ── Timetable auto-lookup when room + slot + date change ──────
     useEffect(() => {
         if (!room || !slot) { setDerivedCtx(null); setTtStatus(null); return; }
         const ctrl = new AbortController();
         setTtStatus('loading');
         (async () => {
             try {
+                // 1. Try regular timetable
                 const params = new URLSearchParams({ room, slot });
                 const res = await fetch(
                     `${apiUrl}/timetablemodule/lock/attendance-lookup?${params}`,
@@ -142,12 +143,32 @@ export default function AttendanceReport() {
                 setTtStatus('found');
             } catch (e) {
                 if (e.name === 'AbortError') return;
-                setDerivedCtx(null);
-                setTtStatus('notfound');
+                // 2. Fallback — check extraClasses in AcquisitionControl
+                const match = acqConfig?.extraClasses?.find(ec =>
+                    ec.active &&
+                    ec.room?.toLowerCase().trim() === room.toLowerCase().trim() &&
+                    ec.periodKey === slot &&
+                    ec.date === date
+                );
+                if (match) {
+                    setDerivedCtx({
+                        batch:     match.batch,
+                        subject:   match.subject  || '',
+                        faculty:   match.faculty  || '',
+                        sem:       match.semester || '',
+                        dept:      '',
+                        locksemId: null,
+                        fromExtra: true,
+                    });
+                    setTtStatus('found');
+                } else {
+                    setDerivedCtx(null);
+                    setTtStatus('notfound');
+                }
             }
         })();
         return () => ctrl.abort();
-    }, [room, slot]);
+    }, [room, slot, date, acqConfig]);
 
     // ── Auto-fetch camera RTSPs for the selected room from Camera model ────────
     useEffect(() => {
@@ -639,11 +660,18 @@ export default function AttendanceReport() {
                         )}
                         {ttStatus === 'notfound' && (
                             <div style={{
-                                padding: '8px 14px', borderRadius: '6px', marginBottom: 14,
+                                padding: '12px 16px', borderRadius: '6px', marginBottom: 14,
                                 background: theme.warningDim, border: `1px solid ${theme.warning}`,
                                 fontSize: '12px', color: theme.warning,
                             }}>
-                                ⚠️ No timetable entry found for this room/slot — expand "Batch override" below and fill in manually.
+                                <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                                    ⚠️ No class scheduled for {room} / {slotLabel(slot)} on {date}
+                                </div>
+                                <div style={{ color: theme.textMuted }}>
+                                    No timetable entry and no extra class found. 
+                                    To run attendance here, go to <b>Acquisition Control → Extra / Lunch Classes</b> and add an entry for this room, slot, and date.
+                                    Or expand "Batch override" below to fill in manually.
+                                </div>
                             </div>
                         )}
 
@@ -654,7 +682,9 @@ export default function AttendanceReport() {
                                 background: theme.successDim, border: `1px solid ${theme.success}`,
                                 fontSize: '12px', display: 'flex', gap: 20, flexWrap: 'wrap',
                             }}>
-                                <span style={{ color: theme.success, fontWeight: 700 }}>✓ Timetable matched</span>
+                                <span style={{ color: theme.success, fontWeight: 700 }}>
+    {derivedCtx?.fromExtra ? '✓ Extra Class matched' : '✓ Timetable matched'}
+</span>
                                 {[
                                     ['Batch',   derivedCtx.batch],
                                     ['Subject', derivedCtx.subject],

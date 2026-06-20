@@ -148,14 +148,49 @@ exports.removeRoom = async (req, res) => {
   }
 };
 
-// ── POST /acquisitioncontrol/extra-class ─────────────────────────────────────
 exports.addExtraClass = async (req, res) => {
   try {
     const { date, periodKey, room, batch, subject, faculty, semester, isLunchHour, startTime, endTime } = req.body;
     if (!date || !periodKey || !room || !batch) {
       return res.status(400).json({ error: 'date, periodKey, room, batch required' });
     }
+
     const doc = await getOrCreateDefault();
+
+    // ── Check 1: duplicate extra class for same room+date+slot ──
+    const duplicateExtra = doc.extraClasses.find(ec =>
+      ec.active &&
+      ec.room?.toLowerCase().trim() === room.toLowerCase().trim() &&
+      ec.periodKey === periodKey &&
+      ec.date === date
+    );
+    if (duplicateExtra) {
+      return res.status(409).json({
+        error: `Slot "${periodKey}" in room "${room}" on ${date} is already booked as an extra class (batch: ${duplicateExtra.batch}).`,
+      });
+    }
+
+    // ── Check 2: conflicts with regular timetable (LockSem) ─────
+    try {
+      const LockSem = require('../../../models/locksem');
+      const d = new Date(date);
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const day = days[d.getDay()];
+      const conflict = await LockSem.findOne({
+        slot: periodKey,
+        day,
+        'slotData.room': { $regex: new RegExp(`^${room.trim()}$`, 'i') },
+      });
+      if (conflict) {
+        return res.status(409).json({
+          error: `Slot "${periodKey}" in room "${room}" is already occupied by a regular timetable class on ${day}s.`,
+        });
+      }
+    } catch (lockErr) {
+      // If LockSem check fails (model missing etc.), don't block — log and continue
+      console.warn('[addExtraClass] LockSem conflict check failed:', lockErr.message);
+    }
+
     doc.extraClasses.push({ date, periodKey, room, batch, subject, faculty, semester, isLunchHour, startTime, endTime, active: true });
     doc.markModified('extraClasses');
     await doc.save();
@@ -164,7 +199,6 @@ exports.addExtraClass = async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 };
-
 // ── PATCH /acquisitioncontrol/extra-class/:id ─────────────────────────────────
 exports.updateExtraClass = async (req, res) => {
   try {
