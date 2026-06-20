@@ -1,0 +1,16 @@
+{
+  "rollNo": "23104046",
+  "confidence": 0.1004,
+  "confidenceScores": [
+    0.1004,
+    0.1004,
+    0.1004,
+    0.1004,
+    0.1004,
+    0.1004
+  ],
+  "imageCount": 6,
+  "sourceSession": "LT_103_PERIOD2_20260619",
+  "type": "known",
+  "clusterId": "cluster_23104046_6c4a57b0"
+}

@@ -3,6 +3,7 @@
 // Frontend starts a session → this runs check every N minutes →
 // frontend polls GET /reports/:id to see new runs appear.
 
+const { spawn } = require('child_process');
 const axios = require('axios');
 const path  = require('path');
 const AttendanceReport = require('../../../models/attendanceReport');
@@ -10,6 +11,7 @@ const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 const { saveUnknownFaces } = require('./unknownFaceWriter');
 const { saveFrameSnapshots } = require('./frameSnapshotWriter');
 const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
+const { pklPath } = require('./erpEmbeddingSyncHelper');
 
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
@@ -179,6 +181,54 @@ async function runOneCheck(reportId, checkIndex, config) {
         );
 
         console.log(`${tag} ✅ Saved — P:${slotResult.summary.present} A:${slotResult.summary.absent} R:${slotResult.summary.review} (${students.length} students, ${slotResult.summary.processingTimeSec}s)`);
+
+        // Run face_cluster.py automation
+        const room_clean = (config.room || 'ROOM').toUpperCase().replace(/[^\w]/g, '_');
+        const slot_clean = (config.slot || 'SLOT').toUpperCase().replace(/[^\w]/g, '_');
+        const date_clean = (config.date || '').replace(/-/g, '') || new Date().toISOString().slice(0,10).replace(/-/g, '');
+        const sessionId = `${room_clean}_${slot_clean}_${date_clean}`;
+
+        // Dynamically extract department from batch (e.g., BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023)
+        const batchParts = (config.batch || '').split('_');
+        let extractedDepartment = config.department || 'UNKNOWN';
+        if (!config.department || config.department === 'UNKNOWN') {
+            if (batchParts.length >= 3) {
+                extractedDepartment = batchParts.slice(1, -1).join('_');
+            } else if (batchParts.length > 1) {
+                extractedDepartment = batchParts[1];
+            }
+        }
+
+        const outputDir = path.resolve(__dirname, '..', '..', '..', '..', 'ml-data', 'faces', extractedDepartment, config.date || 'UNKNOWN', config.semester || 'UNKNOWN', config.slot || 'UNKNOWN');
+        const dbPathStr = pklPath(config.batch, extractedDepartment);
+
+        // Path to python executable inside python-ml-service/venv
+        const pyPath = path.resolve(__dirname, '..', '..', '..', '..', '..', 'python-ml-service', 'venv', 'Scripts', 'python.exe');
+        const scriptPath = path.resolve(__dirname, '..', '..', '..', '..', '..', 'python-ml-service', 'face_cluster.py');
+
+        console.log(`${tag} Spawning face_cluster.py with session_id=${sessionId}`);
+        const pyProc = spawn(pyPath, [
+            scriptPath,
+            '--session_id', sessionId,
+            '--output_dir', outputDir,
+            '--db_path', dbPathStr
+        ], { cwd: path.dirname(scriptPath) });
+
+        pyProc.stdout.on('data', d => console.log(`[face_cluster] ${d.toString().trim()}`));
+        pyProc.stderr.on('data', d => console.error(`[face_cluster] ${d.toString().trim()}`));
+        pyProc.on('close', code => {
+            console.log(`[face_cluster] exited with code ${code}`);
+            if (code === 0) {
+                // ── Issue #1512 — active learning: update backup images ──────
+                // face_cluster.py just wrote per-student crops + confidence
+                // scores to outputDir. Reuse that directly — only backup_files
+                // gets touched, never embedding_files, and at most one new
+                // backup per student per day (see backupImageUpdater.js).
+                const { updateBackupsFromSession } = require('./backupImageUpdater');
+                updateBackupsFromSession(outputDir, config.date, extractedDepartment)
+                    .catch(err => console.error(`[BackupUpdate] Failed: ${err.message}`));
+            }
+        });
 
     } catch (err) {
         console.error(`${tag} ❌ Failed: ${err.message}`);

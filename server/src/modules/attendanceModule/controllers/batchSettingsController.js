@@ -113,6 +113,59 @@ class BatchSettingsController {
             res.status(500).json({ error: 'Internal server error' });
         }
     }
+    async getDeptMenus(req, res) {
+        try {
+            // Return a merged/default menu config (use first batch or global defaults)
+            const batch = await Batch.findOne({}).sort({ batchYear: -1 });
+            const defaults = {
+    dashboard: true,
+    groundTruth: true,
+    rollAssignment: true,
+    erpUpload: true,
+    attendanceReports: true,
+    classVerification: true,
+    cameraRegistry: true,   // ← new
+    subjectEmbeddings: true,
+    livePreview: true,
+    gpuMetrics: true,       // ← new
+    confidenceMonitor: true,
+    helpManual: true,
+};
+            res.json({ deptMenus: batch?.deptMenus ?? defaults });
+        } catch (error) {
+            console.error('[BatchSettingsController] getDeptMenus error:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    async updateDeptMenus(req, res) {
+    try {
+        const { deptMenus } = req.body;
+        if (!deptMenus || typeof deptMenus !== 'object') {
+            return res.status(400).json({ error: 'deptMenus object is required' });
+        }
+
+        // Log what changed — visible in server terminal
+        const enabledMenus  = Object.entries(deptMenus).filter(([, v]) => v).map(([k]) => k);
+        const disabledMenus = Object.entries(deptMenus).filter(([, v]) => !v).map(([k]) => k);
+
+        console.log('\n========================================');
+        console.log('  DEPT MENU CONFIG UPDATED');
+        console.log('========================================');
+        console.log('  ✅ ENABLED  :', enabledMenus.join(', ')  || 'none');
+        console.log('  ❌ DISABLED :', disabledMenus.join(', ') || 'none');
+        console.log('========================================\n');
+
+        // Apply to all batches (global config)
+        const result = await Batch.updateMany({}, { $set: { deptMenus } });
+        console.log(`[DeptMenus] MongoDB updated ${result.modifiedCount} batch document(s)`);
+
+        res.json({ message: 'Dept menus updated successfully', deptMenus });
+    } catch (error) {
+        console.error('[BatchSettingsController] updateDeptMenus error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
 }
 
 module.exports = BatchSettingsController;

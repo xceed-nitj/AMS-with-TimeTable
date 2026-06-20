@@ -561,7 +561,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
 
             {/* Tabs */}
             <div className="ams-tabs">
-                {[['run','Run Attendance'],['history','Saved Reports'],['unknown','Unknown Faces'],['detail','Report Detail']].map(([id, label]) => (
+                {[['run','Run Attendance (Developers Only)'],['history','Saved Reports'],['unknown','Unknown Faces'],['detail','Report Detail']].map(([id, label]) => (
                     (id !== 'detail' || detailReport) && (
                         <button key={id} className={`ams-tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>{label}</button>
                     )

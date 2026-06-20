@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import { theme as T, cssReset } from './config';
+import DeptMenuConfig from './DeptMenuConfig';
 
 const apiUrl        = getEnvironment();
 const ALLOTMENT_API = `${apiUrl}/timetablemodule/allotment`;
@@ -167,7 +168,10 @@ export default function EditSessionDates() {
   const isFetching = useRef(false);
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState('session');
+  const initialTab = ['session', 'batch', 'deptMenu'].includes(searchParams.get('tab'))
+    ? searchParams.get('tab')
+    : 'session';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const [isAuthorized,      setIsAuthorized]      = useState(null);
@@ -821,7 +825,7 @@ export default function EditSessionDates() {
         <div className="session-header">
           <div>
             <div style={{ fontWeight: 700, fontSize: 'clamp(17px,2.5vw,22px)', letterSpacing: '-0.03em', marginBottom: 3, color: T.text }}>
-              Session Setup
+              iams-master-settings
             </div>
             <div style={{ fontSize: 12, color: T.textMuted }}>
               Configure session dates, non-working days, and batch identifiers
@@ -842,6 +846,12 @@ export default function EditSessionDates() {
             onClick={() => setActiveTab('batch')}
           >
             Batch Management
+          </button>
+          <button
+            className={`ams-tab${activeTab === 'deptMenu' ? ' active' : ''}`}
+            onClick={() => setActiveTab('deptMenu')}
+          >
+            Dept Menu Config
           </button>
         </div>
 
@@ -1428,6 +1438,9 @@ export default function EditSessionDates() {
             </div>
           </div>
         )}
+
+        {/* ══ DEPT MENU CONFIG TAB ═══════════════════════════════════════════ */}
+        {activeTab === 'deptMenu' && <DeptMenuConfig />}
 
       </div>
 

@@ -16,9 +16,23 @@ const batchSchema = new mongoose.Schema({
             branches: [String]
         }
     ]
+    // ─── Dept Role Menu Visibility ─────────────────────────────
+    deptMenus: {
+    dashboard:         { type: Boolean, default: true },
+    groundTruth:       { type: Boolean, default: true },
+    rollAssignment:    { type: Boolean, default: true },
+    erpUpload:         { type: Boolean, default: true },
+    attendanceReports: { type: Boolean, default: true },
+    classVerification: { type: Boolean, default: true },
+    cameraRegistry:    { type: Boolean, default: true },   // ← new
+    subjectEmbeddings: { type: Boolean, default: true },
+    livePreview:       { type: Boolean, default: true },
+    gpuMetrics:        { type: Boolean, default: true },   // ← new
+    confidenceMonitor: { type: Boolean, default: true },
+    helpManual:        { type: Boolean, default: true },
+},
 }, { timestamps: true });
 
-// Compound index for uniqueness
 batchSchema.index({ batchYear: 1 }, { unique: true });
 
 batchSchema.pre('save', function(next) {

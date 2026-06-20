@@ -5,19 +5,20 @@ import { theme } from '../attendancemodule/config';
 
 const apiUrl = getEnvironment();
 
-const NAV = [
-    { id: 'dashboard', route: '/dept-admin/dashboard', label: 'Dashboard', exact: true },
-    { id: 'rtsp', route: '/dept-admin/live-rtsp', label: 'GT Acquisition' },
-    { id: 'assign', route: '/dept-admin/assign-rolls', label: 'Roll Assignment' },
-    { id: 'reports', route: '/dept-admin/reports', label: 'Reports' },
+// Master list of all possible dept menus — add new menus here in the future
+const ALL_MENUS = [
+    { id: 'dashboard',         menuKey: 'dashboard',         route: '/dept-admin/dashboard',           label: 'Dashboard',            exact: true,  color: '#6366f1' },
+    { id: 'groundTruth',       menuKey: 'groundTruth',       route: '/dept-admin/live-rtsp',            label: 'Ground Truth Capture',               color: '#0ea5e9' },
+    { id: 'rollAssignment',    menuKey: 'rollAssignment',    route: '/dept-admin/assign-rolls',         label: 'Roll Assignment',                    color: '#10b981' },
+    { id: 'erpUpload',         menuKey: 'erpUpload',         route: '/attendance/groundtruth/upload',   label: 'ERP Upload',                         color: '#f472b6' },
+    { id: 'attendanceReports', menuKey: 'attendanceReports', route: '/dept-admin/reports',              label: 'Attendance Reports',                 color: '#14b8a6' },
+    { id: 'classVerification', menuKey: 'classVerification', route: '/attendance/frame-verification',   label: 'Class Verification',                 color: '#ec4899' },
+    { id: 'cameraRegistry',    menuKey: 'cameraRegistry',    route: '/cameras',                         label: 'Camera Registry',                    color: '#f97316' },
+    { id: 'subjectEmbeddings', menuKey: 'subjectEmbeddings', route: '/attendance/embeddings',           label: 'Subject Embeddings',                 color: '#f59e0b' },
+    { id: 'livePreview',       menuKey: 'livePreview',       route: '/cameras/preview',                 label: 'Live Preview',                       color: '#8b5cf6' },
+    { id: 'confidenceMonitor', menuKey: 'confidenceMonitor', route: '/attendance/confidence',           label: 'Confidence Monitor',                 color: '#ef4444' },
+    { id: 'helpManual',        menuKey: 'helpManual',        route: '/ams-manual',                      label: 'Help & Manual',        newTab: true, color: '#64748b' },
 ];
-
-const COLORS = {
-    dashboard: '#6366f1',
-    rtsp: '#0ea5e9',
-    assign: '#10b981',
-    reports: '#14b8a6',
-};
 
 const CSS = `
   * { box-sizing: border-box; }
@@ -30,6 +31,7 @@ export default function DeptAdminLayout() {
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [deptMenus, setDeptMenus] = useState(null); // null = loading
     const [context, setContext] = useState({
         department: '',
         batchDepartment: '',
@@ -51,7 +53,6 @@ export default function DeptAdminLayout() {
 
     useEffect(() => {
         const controller = new AbortController();
-
         fetch(`${apiUrl}/attendancemodule/dept-admin/context`, {
             credentials: 'include',
             signal: controller.signal,
@@ -69,34 +70,39 @@ export default function DeptAdminLayout() {
             })
             .catch((error) => {
                 if (error.name !== 'AbortError') {
-                    setContext({
-                        department: '',
-                        batchDepartment: '',
-                        fullAccess: false,
-                        loading: false,
-                        error: error.message,
-                    });
+                    setContext({ department: '', batchDepartment: '', fullAccess: false, loading: false, error: error.message });
                 }
             });
-
         return () => controller.abort();
     }, []);
+
+    // Fetch dynamic menu config from server
+    useEffect(() => {
+        fetch(`${apiUrl}/attendancemodule/dept-admin/menus`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => setDeptMenus(data.deptMenus))
+            .catch(() => {
+                // Fallback: show all menus if fetch fails
+                const fallback = {};
+                ALL_MENUS.forEach(m => { fallback[m.menuKey] = true; });
+                setDeptMenus(fallback);
+            });
+    }, []);
+
+    const visibleMenus = deptMenus
+        ? ALL_MENUS.filter(m => deptMenus[m.menuKey] !== false)
+        : [];
 
     const isActive = (item) => item.exact
         ? location.pathname === item.route || location.pathname === `${item.route}/`
         : location.pathname.startsWith(item.route);
+
     const sidebarWidth = collapsed ? 52 : 208;
 
     return (
         <>
             <style>{CSS}</style>
-            <div style={{
-                display: 'flex',
-                minHeight: '100vh',
-                background: theme.bg,
-                color: theme.text,
-                fontFamily: theme.fontBody,
-            }}>
+            <div style={{ display: 'flex', minHeight: '100vh', background: theme.bg, color: theme.text, fontFamily: theme.fontBody }}>
                 <aside style={{
                     width: sidebarWidth,
                     flexShrink: 0,
@@ -113,14 +119,20 @@ export default function DeptAdminLayout() {
                     boxShadow: '1px 0 8px rgba(26,31,60,0.05)',
                 }}>
                     <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
-                        {NAV.map((item) => {
+                        {visibleMenus.map((item) => {
                             const active = isActive(item);
-                            const color = COLORS[item.id];
+                            const color = item.color;
                             return (
                                 <div
                                     key={item.id}
                                     className="dept-admin-nav-item"
-                                    onClick={() => navigate(item.route)}
+                                    onClick={() => {
+                                        if (item.newTab) {
+                                            window.open(item.route, '_blank');
+                                        } else {
+                                            navigate(item.route);
+                                        }
+                                    }}
                                     title={collapsed ? item.label : undefined}
                                     style={{
                                         display: 'flex',
@@ -137,29 +149,16 @@ export default function DeptAdminLayout() {
                                 >
                                     {active && (
                                         <div style={{
-                                            position: 'absolute',
-                                            left: 0,
-                                            top: '22%',
-                                            bottom: '22%',
-                                            width: 3,
-                                            borderRadius: '0 3px 3px 0',
-                                            background: color,
+                                            position: 'absolute', left: 0, top: '22%', bottom: '22%',
+                                            width: 3, borderRadius: '0 3px 3px 0', background: color,
                                         }} />
                                     )}
                                     {collapsed ? (
-                                        <span style={{
-                                            fontSize: 11,
-                                            fontWeight: 800,
-                                            fontFamily: theme.fontMono,
-                                        }}>
+                                        <span style={{ fontSize: 11, fontWeight: 800, fontFamily: theme.fontMono }}>
                                             {item.label[0]}
                                         </span>
                                     ) : (
-                                        <span style={{
-                                            fontSize: 12.5,
-                                            fontWeight: active ? 600 : 400,
-                                            whiteSpace: 'nowrap',
-                                        }}>
+                                        <span style={{ fontSize: 12.5, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap' }}>
                                             {item.label}
                                         </span>
                                     )}
@@ -169,37 +168,22 @@ export default function DeptAdminLayout() {
                     </nav>
 
                     {!collapsed && (context.department || context.fullAccess) && (
-                        <div style={{
-                            padding: '10px 12px',
-                            borderTop: `1px solid ${theme.border}`,
-                            color: theme.textMuted,
-                            fontSize: 10,
-                            lineHeight: 1.4,
-                        }}>
+                        <div style={{ padding: '10px 12px', borderTop: `1px solid ${theme.border}`, color: theme.textMuted, fontSize: 10, lineHeight: 1.4 }}>
                             {context.fullAccess ? 'Institute access' : context.department}
                         </div>
                     )}
                     <div style={{ padding: '10px 8px', borderTop: `1px solid ${theme.border}` }}>
                         <div
                             className="dept-admin-nav-item"
-                            onClick={() => setCollapsed((value) => !value)}
+                            onClick={() => setCollapsed((v) => !v)}
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
+                                display: 'flex', alignItems: 'center',
                                 justifyContent: collapsed ? 'center' : 'flex-start',
-                                gap: 8,
-                                padding: collapsed ? '8px 0' : '8px 11px',
-                                borderRadius: 7,
-                                color: theme.textMuted,
-                                fontSize: 11,
+                                gap: 8, padding: collapsed ? '8px 0' : '8px 11px',
+                                borderRadius: 7, color: theme.textMuted, fontSize: 11,
                             }}
                         >
-                            <span style={{
-                                transform: collapsed ? 'rotate(180deg)' : 'none',
-                                transition: 'transform .2s',
-                            }}>
-                                ‹
-                            </span>
+                            <span style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>‹</span>
                             {!collapsed && 'Collapse'}
                         </div>
                     </div>

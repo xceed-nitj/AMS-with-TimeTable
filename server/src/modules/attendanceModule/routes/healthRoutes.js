@@ -5,6 +5,7 @@ const axios = require('axios');
 const mlClient = require('../controllers/mlServiceClient');
 
 async function getHealthStatus() {
+    const mlTarget = mlClient.getTargetInfo();
     const response = {
         timestamp: new Date().toISOString(),
         services: {
@@ -17,10 +18,12 @@ async function getHealthStatus() {
             },
             ml: {
                 status: 'offline',
-                latency: null
+                latency: null,
+                target: mlTarget,
             },
             tunnel: {
-                status: 'not_configured'
+                status: mlTarget.kind === 'h100' ? 'checking' : 'not_configured',
+                target: mlTarget,
             }
         }
     };
@@ -36,8 +39,10 @@ async function getHealthStatus() {
         await mlClient.healthCheck();
         response.services.ml.status = 'online';
         response.services.ml.latency = Date.now() - mlStart;
+        response.services.tunnel.status = mlTarget.kind === 'h100' ? 'online' : 'not_configured';
     } catch (error) {
         response.services.ml.status = 'offline';
+        response.services.tunnel.status = mlTarget.kind === 'h100' ? 'offline' : 'not_configured';
     }
 
     return response;

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useHealth } from './HealthContext';
 
 const T = {
@@ -31,7 +32,7 @@ function StatusDot({ status, size = 7 }) {
   );
 }
 
-function ServiceButton({ label, status, details }) {
+function ServiceButton({ label, status, details, action }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState({ top: 0, right: 0 });
   const btnRef = useRef(null);
@@ -132,12 +133,26 @@ function ServiceButton({ label, status, details }) {
           {validDetails.map((d, i) => (
             <div key={i} style={{
               padding: '8px 14px',
-              borderBottom: i < validDetails.length - 1 ? `1px solid ${T.border}` : 'none',
+              borderBottom: i < validDetails.length - 1 || action ? `1px solid ${T.border}` : 'none',
               fontSize: 11, color: T.textMuted, fontFamily: T.fontMono,
             }}>
               {d}
             </div>
           ))}
+
+          {action && (
+            <button
+              onClick={() => { setOpen(false); action.onClick(); }}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                padding: '9px 14px', background: 'transparent', border: 'none',
+                fontSize: 11.5, fontWeight: 700, color: '#6366f1',
+                cursor: 'pointer', fontFamily: T.fontBody,
+              }}
+            >
+              {action.label} →
+            </button>
+          )}
         </div>,
         document.body
       )}
@@ -146,6 +161,7 @@ function ServiceButton({ label, status, details }) {
 }
 
 export default function HealthDashboard() {
+  const navigate = useNavigate();
   const { healthData, lastCheck, clientStatus, directMlStatus } = useHealth();
   const clientVersion = 'v1.0.4';
 
@@ -155,6 +171,7 @@ export default function HealthDashboard() {
     database: clientStatus === 'online' ? (healthData?.services?.database?.status || 'offline') : 'unknown',
     tunnel:   clientStatus === 'online' ? (healthData?.services?.tunnel?.status   || 'unknown') : 'unknown',
   };
+  const mlTarget = healthData?.services?.ml?.target || healthData?.services?.tunnel?.target;
 
   const formatUptime = (s) => {
     if (!s) return '0s';
@@ -210,8 +227,12 @@ export default function HealthDashboard() {
         label="H100"
         status={svc.tunnel}
         details={[
-          svc.tunnel === 'not_configured' ? 'Not configured' : 'Proxy active',
+          mlTarget?.display ? `Target: ${mlTarget.display}` : null,
+          mlTarget?.kind === 'h100'
+            ? (svc.tunnel === 'online' ? 'H100 reachable' : 'H100 unreachable')
+            : 'Not configured; using local ML service',
         ]}
+        action={{ label: 'View Metrics', onClick: () => navigate('/attendance/gpu') }}
       />
 
     </div>
