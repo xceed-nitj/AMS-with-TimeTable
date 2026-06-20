@@ -1,5 +1,5 @@
 // client/src/attendancemodule/editSessionDates.jsx
-
+import React from 'react'
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
@@ -152,6 +152,11 @@ const CSS = `
     .floating-toast-container { left: 16px; right: 16px; top: 96px; transform: none; }
     .ams-tabs { overflow-x: auto; }
   }
+
+  .ams-table tbody .batch-row:hover td {
+    background: transparent !important;
+  }
+
 `;
 
 export default function EditSessionDates() {
@@ -202,6 +207,9 @@ export default function EditSessionDates() {
   const [editingBatchId,     setEditingBatchId]    = useState(null);
   const [editBatchYear,      setEditBatchYear]     = useState('');
   const [pendingDeleteBatch, setPendingDeleteBatch] = useState(null);
+  const [expandedBatchId, setExpandedBatchId] = useState(null);
+  const [editingBatch, setEditingBatch] = useState(null);
+  const [hoveredBranchKey, setHoveredBranchKey] = useState(null);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const fmt = (d) => {
@@ -247,6 +255,32 @@ export default function EditSessionDates() {
     } catch { return dateStr; }
   };
 
+  const humanizeBranchName = (branch) => {
+    if (!branch) return '';
+
+    const words = String(branch)
+      .replace(/_&_/g, ' and ')
+      .replace(/_/g, ' ')
+      .trim()
+      .toLowerCase()
+      .split(/\s+/);
+
+    return words
+      .map(word => word === 'and' ? word : word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const getBranchShortLabel = (branch) => {
+    const humanized = humanizeBranchName(branch);
+    const title = humanized.toUpperCase();
+
+    return title
+      .split(/\s+/)
+      .filter(word => !['AND', 'OF', 'THE', 'FOR', 'TO', 'IN', 'WITH'].includes(word))
+      .map(word => word.charAt(0))
+      .join('');
+  };
+
   const generateWeekendsForRange = (startStr, endStr, currentDaysList) => {
     if (!startStr || !endStr || startStr > endStr) return currentDaysList;
     const existingDates = new Set(currentDaysList.map(item => item.date));
@@ -269,6 +303,91 @@ export default function EditSessionDates() {
     }
     return currentDaysList;
   };
+
+  const removeBranch = (batchId, degreeName, branchIndex) => {
+    setEditingBatch(prev => ({
+      ...prev,
+      degrees: (prev?.degrees || []).map(d =>
+        d.degreeName === degreeName
+          ? {
+              ...d,
+              branches: (d.branches || []).filter(
+                (_, i) => i !== branchIndex
+              )
+            }
+          : d
+      )
+    }));
+  };
+  const deleteDegree = (batchId, degreeName) => {
+        setEditingBatch(prev => ({
+      ...prev,
+
+      degrees: (prev?.degrees || []).filter(
+        d => d.degreeName !== degreeName
+      )
+    }));
+  };
+  const addBranch = (batchId, degreeName) => {
+    const branch = prompt("Enter branch name");
+
+    if (!branch) return;
+
+    const branchName = branch.trim().replace(/\s+/g, ' ');
+
+    if (!branchName) return;
+
+    setEditingBatch(prev => ({
+      ...prev,
+      degrees: (prev?.degrees || []).map(d =>
+        d.degreeName === degreeName
+          ? {
+              ...d,
+              branches: [
+                ...(d.branches || []).filter(
+                  b => b.toLowerCase() !== branchName.toLowerCase()
+                ),
+                branchName
+              ]
+            }
+          : d
+      )
+    }));
+  };
+    const addDegree = (batch) => {
+      const degreeName = prompt("Enter Degree Name");
+
+      if (!degreeName) return;
+
+      const normalizedDegreeName = degreeName.trim().toUpperCase();
+      if (!normalizedDegreeName) return;
+
+      setEditingBatchId(batch._id);
+      setEditBatchYear(batch.batchYear);
+
+      setEditingBatch(prev => {
+        const currentBatch = prev || batch;
+        const currentDegrees = currentBatch.degrees || [];
+
+        if (currentDegrees.some(
+          d => d.degreeName.toLowerCase() === normalizedDegreeName.toLowerCase()
+        )) {
+          triggerToast('error', 'Degree already exists for this batch.');
+          return currentBatch;
+        }
+
+        return {
+          ...currentBatch,
+          degrees: [
+            ...currentDegrees,
+            {
+              degreeName: normalizedDegreeName,
+              branches: []
+            }
+          ]
+        };
+      });
+    };
 
   // ── 1. Role check ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -558,20 +677,45 @@ export default function EditSessionDates() {
   };
 
   const handleBatchSaveEdit = async (id) => {
-    if (!/^\d{4}$/.test(editBatchYear)) { triggerToast('error', 'Batch year must be a 4-digit number.'); return; }
+    if (!/^\d{4}$/.test(editBatchYear)) {
+      triggerToast('error', 'Batch year must be a 4-digit number.');
+      return;
+    }
+
     try {
       const res = await fetch(`${BATCH_API}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ batchYear: editBatchYear }),
+
+        body: JSON.stringify({
+          batchYear: editBatchYear,
+          degrees: editingBatch?.degrees || [],
+        }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update batch');
-      triggerToast('success', 'Batch updated successfully.');
+
+      if (!res.ok)
+        throw new Error(data.error || 'Failed to update batch');
+
+      setBatches(prev =>
+        prev.map(batch =>
+          batch._id === id
+            ? {
+                ...editingBatch,
+                batchYear: editBatchYear,
+              }
+            : batch
+        )
+      );
+
+      setEditingBatch(null);
       setEditingBatchId(null);
-      fetchBatches();
-    } catch (err) {
+
+      triggerToast('success', 'Batch updated successfully.');
+    }
+    catch (err) {
       triggerToast('error', err.message);
     }
   };
@@ -1094,17 +1238,27 @@ export default function EditSessionDates() {
                 </div>
               ) : (
                 <div className="r-table-wrap">
-                  <table className="ams-table">
+                  <table className="ams-table batch-table">
                     <thead>
                       <tr>
-                        <th>Batch Year</th>
-                        <th>Generated String</th>
+                        <th></th>
+                        <th style={{textAlign: "center"}}>Batch Year</th>
+                        <th style={{textAlign: "center"}}>Generated String</th>
                         <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {batches.map(b => (
-                        <tr key={b._id}>
+                      {batches.map(b => 
+                      { 
+                        const degrees = editingBatchId === b._id ? editingBatch?.degrees || [] : b.degrees || [];
+                        return (
+                       <React.Fragment key={b._id}>
+                        <tr onClick={() => setExpandedBatchId(expandedBatchId === b._id ? null : b._id)} style={{userSelect: "none"}}>
+                          <td>
+                            <span style={{ marginRight: 8, display: "flex", justifyContent: "center", alignItems: "center", rotate: expandedBatchId === b._id ? '-180deg' : '0deg', transition: 'all 300ms ease' }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down-icon lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+                            </span>
+                          </td>
                           <td>
                             {editingBatchId === b._id ? (
                               <input
@@ -1115,7 +1269,9 @@ export default function EditSessionDates() {
                                 style={{ padding: '6px 10px', width: 90, fontSize: 13 }}
                               />
                             ) : (
-                              <span style={{ fontWeight: 600 }}>{b.batchYear}</span>
+                              <span style={{fontWeight: 600,cursor: "pointer"}}>
+                                  {b.batchYear}
+                              </span>
                             )}
                           </td>
                           <td style={{ color: T.textMuted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>
@@ -1126,14 +1282,21 @@ export default function EditSessionDates() {
                               <div style={{ display: 'inline-flex', gap: 8 }}>
                                 <button
                                   className="native-btn"
-                                  onClick={() => handleBatchSaveEdit(b._id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleBatchSaveEdit(b._id)
+                                  }}
                                   style={{ background: T.success, color: '#fff', padding: '6px 12px', fontSize: 12 }}
                                 >
                                   Save
                                 </button>
                                 <button
                                   className="native-btn"
-                                  onClick={() => setEditingBatchId(null)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setEditingBatchId(null);
+                                    setEditingBatch(null);
+                                  }}
                                   style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted, padding: '6px 12px', fontSize: 12 }}
                                 >
                                   Cancel
@@ -1142,7 +1305,9 @@ export default function EditSessionDates() {
                             ) : (
                               <div style={{ display: 'inline-flex', gap: 16 }}>
                                 <button
-                                  onClick={() => { setEditingBatchId(b._id); setEditBatchYear(b.batchYear); }}
+                                  onClick={(e) => { 
+                                    e.stopPropagation()
+                                    setEditingBatchId(b._id); setEditBatchYear(b.batchYear); setEditingBatch(JSON.parse(JSON.stringify(b)))}}
                                   style={{ background: 'none', border: 'none', color: T.accent, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: T.fontBody }}
                                 >
                                   Edit
@@ -1157,7 +1322,97 @@ export default function EditSessionDates() {
                             )}
                           </td>
                         </tr>
-                      ))}
+                        {expandedBatchId === b._id && (
+                          <tr className='batch-row'>
+                            <td colSpan={4}>
+                              <div style={{ borderRadius: 10, marginTop: 16 }}>
+                                {degrees.length === 0 ? (
+                                  <>
+                                    <p style={{ color: T.textMuted }}>
+                                      No degree data yet.
+                                    </p>
+
+                                    <button onClick={e => { e.stopPropagation(); addDegree(b);}}  className="native-btn" style={{ background: '#fff', color: T.accent, border: `1px solid ${T.accent}`, fontSize: '12px', padding: '4px 8px ', marginTop: '12px' }} >
+                                      + Add Degree
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    {(editingBatchId === b._id
+                                        ? editingBatch?.degrees
+                                        : degrees
+                                    ).map((deg, i) => (
+                                      <div
+                                        key={i} style={{ border: `1px solid ${T.border}`, borderRadius: 10, padding: "16px", marginBottom: "14px", background: T.surface, }} >
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }} >
+                                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }} >
+                                            <h4  style={{ margin: 0, fontWeight:"bold" }}>
+                                              {deg.degreeName}
+                                            </h4>
+
+                                            {editingBatchId === b._id && (
+                                              <button
+                                                onClick={e => {
+                                                  e.stopPropagation();
+                                                  deleteDegree(b._id, deg.degreeName);
+                                                }}
+                                                style={{
+                                                  border: "none",
+                                                  background: "none",
+                                                  color: T.danger,
+                                                  cursor: "pointer"
+                                                }}
+                                              >
+                                                Delete Degree
+                                              </button>
+                                            )}
+                                          </div>
+
+                                          <span style={{ padding: "4px 10px", borderRadius: 20, fontSize: "12px", fontWeight: 600, background: `${T.accent}15`,color: T.accent }} >
+                                            {deg.branches.length} Branches
+                                          </span>
+                                        </div>
+
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                          {deg.branches.map((branch, idx) => (
+                                            <span
+                                              key={idx}
+                                              title={humanizeBranchName(branch)}
+                                              onMouseEnter={() => setHoveredBranchKey(`${b._id}-${deg.degreeName}-${idx}`)}
+                                              onMouseLeave={() => setHoveredBranchKey(null)}
+                                              style={{ padding: editingBatchId === b._id ? "6px 8px 6px 12px" : "6px 12px", border: `1px solid ${T.border}`, borderRadius: 20, fontSize: 13, background: "#fff", color: T.text, display: "flex", alignItems: "center", gap: 8, width: "fit-content", transition: 'all 300ms ease', cursor:"pointer" }}
+                                            >
+                                              {hoveredBranchKey === `${b._id}-${deg.degreeName}-${idx}` || editingBatchId === b._id ? humanizeBranchName(branch) : getBranchShortLabel(branch)}
+                                              {editingBatchId === b._id && (
+                                                <button
+                                                  onClick={e => { e.stopPropagation(); removeBranch( b._id, deg.degreeName, idx ); }}
+                                                  style={{ border: "none", background: "none", color: T.danger, cursor: "pointer", padding: 0, margin: 0, fontSize: 16, lineHeight: 1, fontWeight: 700 }} >
+                                                  ×
+                                                </button>
+                                              )}
+                                            </span>
+                                          ))}
+                                        </div>
+                                        {editingBatchId === b._id && (
+                                          <button className="native-btn" onClick={e => 
+                                            { e.stopPropagation(); addBranch( b._id, deg.degreeName ); }}
+                                            style={{ marginTop: 12, background: "#fff", color: T.accent, border: `1px solid ${T.accent}`, fontSize: "12px" }} >
+                                            + Add Branch
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                    <button onClick={e => { e.stopPropagation(); addDegree(b);}}  className="native-btn" style={{ background: '#fff', color: T.accent, border: `1px solid ${T.accent}`, fontSize: '12px', padding: '4px 8px ', marginTop: '12px' }} >
+                                      + Add Degree
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                          )}
+                        </React.Fragment>
+                      )})}
                     </tbody>
                   </table>
                 </div>
