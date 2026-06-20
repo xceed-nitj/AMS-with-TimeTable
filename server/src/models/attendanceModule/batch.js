@@ -15,7 +15,7 @@ const batchSchema = new mongoose.Schema({
             degreeName: String,
             branches: [String]
         }
-    ]
+    ],
     // ─── Dept Role Menu Visibility ─────────────────────────────
     deptMenus: {
     dashboard:         { type: Boolean, default: true },
