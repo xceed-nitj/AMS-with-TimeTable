@@ -216,7 +216,19 @@ async function runOneCheck(reportId, checkIndex, config) {
 
         pyProc.stdout.on('data', d => console.log(`[face_cluster] ${d.toString().trim()}`));
         pyProc.stderr.on('data', d => console.error(`[face_cluster] ${d.toString().trim()}`));
-        pyProc.on('close', code => console.log(`[face_cluster] exited with code ${code}`));
+        pyProc.on('close', code => {
+            console.log(`[face_cluster] exited with code ${code}`);
+            if (code === 0) {
+                // ── Issue #1512 — active learning: update backup images ──────
+                // face_cluster.py just wrote per-student crops + confidence
+                // scores to outputDir. Reuse that directly — only backup_files
+                // gets touched, never embedding_files, and at most one new
+                // backup per student per day (see backupImageUpdater.js).
+                const { updateBackupsFromSession } = require('./backupImageUpdater');
+                updateBackupsFromSession(outputDir, config.date, extractedDepartment)
+                    .catch(err => console.error(`[BackupUpdate] Failed: ${err.message}`));
+            }
+        });
 
     } catch (err) {
         console.error(`${tag} ❌ Failed: ${err.message}`);
