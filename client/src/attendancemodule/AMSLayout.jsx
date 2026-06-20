@@ -13,6 +13,7 @@ const NAV = [
   { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
 
   { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'Ground Truth Capture' },
+  { id: 'acquisition', route: '/attendance/acquisition-control', label: 'Acquisition Control' },
   {
     id: 'assign',
     route: '/attendance/groundtruth/assign',
@@ -48,6 +49,7 @@ const COLORS = {
   rtsp: '#0ea5e9',
   assign: '#10b981',
   upload: '#f472b6',
+  acquisition: '#f97316',
   reports: '#14b8a6',
   verify: '#ec4899',
   cameras: '#f97316',
