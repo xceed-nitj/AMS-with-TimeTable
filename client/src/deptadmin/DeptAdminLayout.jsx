@@ -16,7 +16,6 @@ const ALL_MENUS = [
     { id: 'cameraRegistry',    menuKey: 'cameraRegistry',    route: '/cameras',                         label: 'Camera Registry',                    color: '#f97316' },
     { id: 'subjectEmbeddings', menuKey: 'subjectEmbeddings', route: '/attendance/embeddings',           label: 'Subject Embeddings',                 color: '#f59e0b' },
     { id: 'livePreview',       menuKey: 'livePreview',       route: '/cameras/preview',                 label: 'Live Preview',                       color: '#8b5cf6' },
-    { id: 'gpuMetrics',        menuKey: 'gpuMetrics',        route: '/attendance/gpu',                  label: 'GPU Monitor',                        color: '#06b6d4' },
     { id: 'confidenceMonitor', menuKey: 'confidenceMonitor', route: '/attendance/confidence',           label: 'Confidence Monitor',                 color: '#ef4444' },
     { id: 'helpManual',        menuKey: 'helpManual',        route: '/ams-manual',                      label: 'Help & Manual',        newTab: true, color: '#64748b' },
 ];
