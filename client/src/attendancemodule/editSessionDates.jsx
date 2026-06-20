@@ -1402,9 +1402,13 @@ export default function EditSessionDates() {
                                         )}
                                       </div>
                                     ))}
-                                    <button onClick={e => { e.stopPropagation(); addDegree(b);}}  className="native-btn" style={{ background: '#fff', color: T.accent, border: `1px solid ${T.accent}`, fontSize: '12px', padding: '4px 8px ', marginTop: '12px' }} >
-                                      + Add Degree
-                                    </button>
+                                    {
+                                      editingBatchId === b._id && (
+                                        <button onClick={e => { e.stopPropagation(); addDegree(b);}}  className="native-btn" style={{ background: '#fff', color: T.accent, border: `1px solid ${T.accent}`, fontSize: '12px', padding: '4px 8px ', marginTop: '12px' }} >
+                                          + Add Degree
+                                        </button>
+                                      )
+                                    }
                                   </>
                                 )}
                               </div>
