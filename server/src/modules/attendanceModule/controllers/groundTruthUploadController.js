@@ -139,6 +139,15 @@ class GroundTruthUploadController {
             assertInsideRoot(batchPath);
             ensureDir(batchPath);
 
+            // ── Clear old contents if replacing ───────────────────────────
+            if (req.query.replace === 'true') {
+                const pklPath = findEmbeddingPkl(batch);
+                if (pklPath) {
+                    await fsPromises.unlink(pklPath);
+                }
+                console.log(`[GT Upload] Replaced existing embeddings database for batch=${batch}`);
+            }
+
             // ── Parse ZIP ─────────────────────────────────────────────────
             const zip = await JSZip.loadAsync(req.file.buffer);
 
@@ -216,7 +225,24 @@ class GroundTruthUploadController {
                         const fExt = path.extname(f);
                         const fRollNo = path.basename(f, fExt);
                         if (fRollNo.toUpperCase() === rollNo) {
-                            await fsPromises.unlink(path.join(batchPath, f));
+                            const filePath = path.join(batchPath, f);
+                            try {
+                                await fsPromises.unlink(filePath);
+                            } catch (unlinkErr) {
+                                if (unlinkErr.code === 'EBUSY' || unlinkErr.code === 'EPERM') {
+                                    console.warn(`[GT Upload] File locked, retrying unlink: ${filePath}`);
+                                    await new Promise(r => setTimeout(r, 200));
+                                    try {
+                                        await fsPromises.unlink(filePath);
+                                    } catch (e2) {
+                                        if (fExt.toLowerCase() !== ext) {
+                                            throw new Error(`File locked by another process.`);
+                                        }
+                                    }
+                                } else {
+                                    throw unlinkErr;
+                                }
+                            }
                         }
                     }
                     clearedFolders.add(rollNo);
@@ -295,7 +321,25 @@ class GroundTruthUploadController {
                 const fExt = path.extname(f);
                 const fRollNo = path.basename(f, fExt);
                 if (fRollNo.toUpperCase() === safeRollNo) {
-                    await fsPromises.unlink(path.join(batchPath, f));
+                    const filePath = path.join(batchPath, f);
+                    try {
+                        await fsPromises.unlink(filePath);
+                    } catch (unlinkErr) {
+                        if (unlinkErr.code === 'EBUSY' || unlinkErr.code === 'EPERM') {
+                            console.warn(`[GT Upload] File locked, retrying unlink: ${filePath}`);
+                            await new Promise(r => setTimeout(r, 200));
+                            try {
+                                await fsPromises.unlink(filePath);
+                            } catch (e2) {
+                                console.error(`[GT Upload] Unlink failed again for ${filePath}`);
+                                if (fExt.toLowerCase() !== ext) {
+                                    throw new Error(`File is locked by another process (e.g. ML Service) and cannot be replaced.`);
+                                }
+                            }
+                        } else {
+                            throw unlinkErr;
+                        }
+                    }
                 }
             }
 
