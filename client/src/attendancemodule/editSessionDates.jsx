@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
+import NotificationSettingsTab from './NotificationSettingsTab';
 import { theme as T, cssReset } from './config';
+import NotificationSettingsTab from './NotificationSettingsTab';
+import NotificationSettingsTab from './NotificationSettingsTab';
 
 const apiUrl        = getEnvironment();
 const ALLOTMENT_API = `${apiUrl}/timetablemodule/allotment`;
@@ -699,6 +702,12 @@ export default function EditSessionDates() {
           >
             Batch Management
           </button>
+          <button
+            className={`ams-tab${activeTab === 'notifications' ? ' active' : ''}`}
+            onClick={() => setActiveTab('notifications')}
+          >
+            Email Notifications
+          </button>
         </div>
 
         {/* ══ SESSION DATES TAB ══════════════════════════════════════════════ */}
@@ -1166,6 +1175,18 @@ export default function EditSessionDates() {
 
             <div style={{ fontSize: 12, color: T.textMuted, padding: '0 4px' }}>
               Batch identifiers are used to structure ERP Image Upload folder paths. Deleting a batch will not remove uploaded photos.
+            </div>
+          </div>
+        )}
+        {activeTab === 'notifications' && (
+          <div>
+            <div className="session-card">
+              <div className="session-card-header">
+                <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700 }}>
+                  Email Notifications
+                </span>
+              </div>
+              <NotificationSettingsTab />
             </div>
           </div>
         )}
