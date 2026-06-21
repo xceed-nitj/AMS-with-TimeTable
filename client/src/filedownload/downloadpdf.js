@@ -31,7 +31,7 @@ const session = ttdata.session;
   if (type == 'sem') {
     subheading = 'Degree & Sem:';
   } else if (type =='faculty') {
-    subheading = 'Faculty Name: Dr.';
+    subheading = 'Faculty Name:';
   }
   else if (type =='room') {
     subheading = 'Room: ';
