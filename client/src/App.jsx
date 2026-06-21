@@ -676,13 +676,24 @@ function App() {
 
         {/* ─── Department Admin Routes ────────────────────────────── */}
         <Route path="/dept-admin" element={<DeptAdminLayout />}>
-          <Route index element={<DeptDashboard />} />
-          <Route path="dashboard" element={<DeptDashboard />} />
-          <Route path="live-rtsp" element={<DeptLiveRTSP />} />
-          <Route path="assign-rolls" element={<DeptAssignRolls />} />
-          <Route path="reports" element={<DeptReports />} />
-          
-        </Route>
+  <Route index element={<DeptDashboard />} />
+  <Route path="dashboard" element={<DeptDashboard />} />
+  <Route path="live-rtsp" element={<DeptLiveRTSP />} />
+  <Route path="assign-rolls" element={<DeptAssignRolls />} />
+  <Route path="reports" element={<DeptReports />} />
+  <Route path="*" element={
+    <div style={{ padding: 48, textAlign: 'center' }}>
+      <h2 style={{ marginBottom: 12 }}>Access Restricted</h2>
+      <p style={{ color: '#666', marginBottom: 24 }}>
+        This section is not configured for your role.
+        Please contact the administrator to request access.
+      </p>
+      <a href="mailto:xceeddev2@nitj.ac.in" style={{ color: '#6366f1', fontWeight: 600 }}>
+        Contact Admin
+      </a>
+    </div>
+  } />
+</Route>
 
         {/* Camera Registry — top-level but still inside AMSLayout */}
         <Route path="/cameras" element={<AMSLayout />}>

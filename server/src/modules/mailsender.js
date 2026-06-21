@@ -1,6 +1,11 @@
 const nodemailer = require("nodemailer");
 
-const mailSender = async (email, title, body, fromData = { name: "XCEED NITJ", address: process.env.MAIL_USER }) => {
+const mailSender = async (
+  email,
+  title,
+  body,
+  fromData = { name: "XCEED NITJ", address: process.env.MAIL_USER },
+) => {
   try {
     let transport = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
@@ -21,7 +26,7 @@ const mailSender = async (email, title, body, fromData = { name: "XCEED NITJ", a
   } catch (e) {
     console.log(
       "error is happening in sending mail during transporter creating",
-      e
+      e,
     );
   }
 };

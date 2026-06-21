@@ -55,6 +55,7 @@ router.use('/frame-verification', require("./frameVerificationRoutes"));
 router.use('/ground-truth-upload', require("./groundTruthUploadRoutes"));
 router.use('/acquisitioncontrol', acquisitionControlRoutes);
 router.use('/settings/batches', require("./batchSettingsRoutes"));
+router.use('/settings/notifications', require("./notificationSettingsRoutes"));
 router.use('/health', require("./healthRoutes"));
 router.use('/unknown-faces', require("./unknownFaceRoutes"));
 
