@@ -82,15 +82,13 @@ export default function DeptAdminLayout() {
             .then(res => res.json())
             .then(data => setDeptMenus(data.deptMenus))
             .catch(() => {
-                // Fallback: show all menus if fetch fails
-                const fallback = {};
-                ALL_MENUS.forEach(m => { fallback[m.menuKey] = true; });
-                setDeptMenus(fallback);
-            });
+    // If menu fetch fails, show NO menus (don't give unintended access)
+    setDeptMenus({});
+});
     }, []);
 
     const visibleMenus = deptMenus
-        ? ALL_MENUS.filter(m => deptMenus[m.menuKey] !== false)
+        ? ALL_MENUS.filter(m => deptMenus[m.menuKey] === true)
         : [];
 
     const isActive = (item) => item.exact
@@ -127,12 +125,14 @@ export default function DeptAdminLayout() {
                                     key={item.id}
                                     className="dept-admin-nav-item"
                                     onClick={() => {
-                                        if (item.newTab) {
-                                            window.open(item.route, '_blank');
-                                        } else {
-                                            navigate(item.route);
-                                        }
-                                    }}
+    if (item.newTab) {
+        window.open(item.route, '_blank');
+    } else if (!item.route.startsWith('/dept-admin')) {
+        navigate('/dept-admin/access-denied');
+    } else {
+        navigate(item.route);
+    }
+}}
                                     title={collapsed ? item.label : undefined}
                                     style={{
                                         display: 'flex',
