@@ -5,7 +5,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import NotificationSettingsTab from './NotificationSettingsTab';
 import { theme as T, cssReset } from './config';
-import NotificationSettingsTab from './NotificationSettingsTab';
 import DeptMenuConfig from './DeptMenuConfig';
 
 const apiUrl = getEnvironment();
