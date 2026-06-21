@@ -1,5 +1,7 @@
 const express = require("express");
 const router  = express.Router();
+const acquisitionControlRoutes = require('./acquisitionControlRoutes');
+
 const {
     attendanceRoleAccess,
     enforceAttendanceDepartment,
@@ -22,6 +24,11 @@ router.get(
     ...attendanceRoleAccess,
     deptAdminController.getReports,
 );
+router.get(
+    '/dept-admin/menus',
+    ...attendanceRoleAccess,
+    deptAdminController.getDeptMenus,
+);
 router.use(
     '/ground-truth',
     ...attendanceRoleAccess,
@@ -40,11 +47,13 @@ router.use(
     enforceAttendanceDepartment,
     require("./flagRoutes"),
 );
+
 router.use('/reports',      require("./attendanceReportRoutes"));
 router.use('/cameras',      require("./cameraRoutes"));
 router.use('/embeddings',   require("./embeddingRouter"));
 router.use('/frame-verification', require("./frameVerificationRoutes"));
 router.use('/ground-truth-upload', require("./groundTruthUploadRoutes"));
+router.use('/acquisition-control', acquisitionControlRoutes);
 router.use('/settings/batches', require("./batchSettingsRoutes"));
 router.use('/settings/notifications', require("./notificationSettingsRoutes"));
 router.use('/health', require("./healthRoutes"));

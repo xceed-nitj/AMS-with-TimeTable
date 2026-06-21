@@ -161,6 +161,7 @@ export default function GroundTruthUpload() {
     const [zipFile,       setZipFile]       = useState(null);
     const [zipUploading,  setZipUploading]  = useState(false);
     const [zipResult,     setZipResult]     = useState(null);
+    const [zipReplaceConfirm, setZipReplaceConfirm] = useState(false);
     const [rollNo,        setRollNo]        = useState('');
     const [studentPhoto,  setStudentPhoto]  = useState(null);
     const [photoUploading, setPhotoUploading] = useState(false);
@@ -276,6 +277,16 @@ export default function GroundTruthUpload() {
         if (!batchName) { showToast('Please select a Batch', 'error'); return; }
         if (!zipFile)   { showToast('Please select a ZIP file', 'error'); return; }
 
+        if (batchPhotoCount > 0 && !zipReplaceConfirm) {
+            setZipReplaceConfirm(true);
+            return;
+        }
+
+        executeZipUpload();
+    };
+
+    const executeZipUpload = async () => {
+        setZipReplaceConfirm(false);
         setZipUploading(true);
         setZipResult(null);
         setEmbGenStatus(null);
@@ -283,7 +294,8 @@ export default function GroundTruthUpload() {
         formData.append('zipFile', zipFile);
 
         try {
-            const res = await fetch(`${UPLOAD_BASE}/upload-zip/${encodeURIComponent(batchName)}`, {
+            const replaceQuery = batchPhotoCount > 0 ? '?replace=true' : '';
+            const res = await fetch(`${UPLOAD_BASE}/upload-zip/${encodeURIComponent(batchName)}${replaceQuery}`, {
                 method: 'POST',
                 credentials: 'include',
                 body: formData,
@@ -294,22 +306,26 @@ export default function GroundTruthUpload() {
             showToast(`Extracted ${data.extractedImages} photos for ${data.extractedFolders} students!`);
             setZipFile(null);
             
-setZipEmbedStatus('syncing');
-try {
-    await fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batchName)}`, { method: 'POST', credentials: 'include' });
-    setZipEmbedStatus('done');
-    setTimeout(() => setZipEmbedStatus(null), 5000);
-} catch {
-    setZipEmbedStatus('error');
-}
-            setBatchPhotoCount(c => (c ?? 0) + (data.extractedFolders || 0));
+            setZipEmbedStatus('syncing');
+            try {
+                await fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batchName)}`, { method: 'POST', credentials: 'include' });
+                setZipEmbedStatus('done');
+                showToast('Embeddings created successfully.');
+                setTimeout(() => setZipEmbedStatus(null), 5000);
+            } catch {
+                setZipEmbedStatus('error');
+            }
+            if (batchPhotoCount > 0) {
+                setBatchPhotoCount(data.extractedFolders || 0); // Replaced
+            } else {
+                setBatchPhotoCount(c => (c ?? 0) + (data.extractedFolders || 0));
+            }
             setTimeout(() => setSummaryVersion(v => v + 1), 6000);
             
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
             setZipUploading(false);
-
         }
     };
 
@@ -339,6 +355,7 @@ setPhotoEmbedStatus('syncing');
 try {
     await fetch(`${UPLOAD_BASE}/sync-all/${encodeURIComponent(batchName)}`, { method: 'POST', credentials: 'include' });
     setPhotoEmbedStatus('done');
+    showToast('Embeddings created successfully.');
     setTimeout(() => setPhotoEmbedStatus(null), 5000);
 } catch {
     setPhotoEmbedStatus('error');
@@ -531,12 +548,6 @@ try {
         Updating embeddings for {batchName}…
     </div>
 )}
-{zipEmbedStatus === 'done' && (
-    <div style={{ marginTop: 12, padding: '9px 14px', background: T.successDim,
-                  color: T.success, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
-        ✓ Embeddings updated successfully
-    </div>
-)}
 {zipEmbedStatus === 'error' && (
     <div style={{ marginTop: 12, padding: '9px 14px', background: T.dangerDim,
                   color: T.danger, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
@@ -597,12 +608,6 @@ try {
                   display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
         Updating embeddings for {batchName}…
-    </div>
-)}
-{photoEmbedStatus === 'done' && (
-    <div style={{ marginTop: 12, padding: '9px 14px', background: T.successDim,
-                  color: T.success, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
-        ✓ Embeddings updated successfully
     </div>
 )}
 {photoEmbedStatus === 'error' && (
@@ -762,8 +767,9 @@ try {
                             const groups = {};
                             for (const row of summaryBatches) {
                                 const { dept } = parseBatch(row.batch);
-                                if (!groups[dept]) groups[dept] = [];
-                                groups[dept].push(row);
+                                const normalizedDept = dept.trim().toUpperCase();
+                                if (!groups[normalizedDept]) groups[normalizedDept] = { name: dept.trim(), items: [] };
+                                groups[normalizedDept].items.push(row);
                             }
                             const fmtDate = (d) => {
                                 if (!d) return '—';
@@ -771,12 +777,15 @@ try {
                                 const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
                                 return `${date}, ${time}`;
                             };
-                            return Object.keys(groups).sort().map(dept => (
-                                <div key={dept} className="erp-card" style={{ marginBottom: 20 }}>
+                            return Object.keys(groups).sort().map(deptKey => {
+                                const deptName = groups[deptKey].name;
+                                const items = groups[deptKey].items;
+                                return (
+                                <div key={deptKey} className="erp-card" style={{ marginBottom: 20 }}>
                                     <div className="erp-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{dept.replace(/_/g, ' ')}</span>
+                                        <span style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{deptName.replace(/_/g, ' ')}</span>
                                         <span style={{ background: T.accentDim, color: T.accent, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
-                                            {groups[dept].length} batch{groups[dept].length !== 1 ? 'es' : ''}
+                                            {items.length} batch{items.length !== 1 ? 'es' : ''}
                                         </span>
                                     </div>
 
@@ -796,7 +805,7 @@ try {
                                     </div>
 
                                     {/* Data rows */}
-                                    {groups[dept].slice().sort((a, b) => a.batch.localeCompare(b.batch)).map((row, idx, arr) => {
+                                    {items.slice().sort((a, b) => a.batch.localeCompare(b.batch)).map((row, idx, arr) => {
                                         const { degree: deg, year } = parseBatch(row.batch);
                                         const embOk  = !!row.hasEmbedding;
                                         const lastDt = row.embeddingUpdatedAt ? new Date(row.embeddingUpdatedAt) : null;
@@ -864,10 +873,39 @@ try {
                                         );
                                     })}
                                 </div>
-                            ));
+                                );
+                            });
                         })()
                     )}
                 </>
+            )}
+
+            {/* ── Replace confirmation modal ─────────────────────────────────── */}
+            {zipReplaceConfirm && (
+                <div className="erp-modal-overlay">
+                    <div className="erp-modal-box">
+                        <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 8, fontFamily: T.fontBody }}>
+                            Replace Existing Batch?
+                        </div>
+                        <div style={{ fontSize: 13.5, color: T.textMuted, lineHeight: 1.55, marginBottom: 22, fontFamily: T.fontBody }}>
+                            Uploading a new ZIP file will replace the existing ERP photos and embeddings for this batch. Do you want to continue?
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => setZipReplaceConfirm(false)}
+                                style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', padding: '10px 16px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: T.fontBody }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={executeZipUpload}
+                                style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 16px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: T.fontBody }}
+                            >
+                                Yes, Replace
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* ── Delete confirmation modal ─────────────────────────────────── */}

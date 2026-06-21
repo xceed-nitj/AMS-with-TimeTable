@@ -13,9 +13,27 @@ class BatchSettingsController {
 
     async createBatch(req, res) {
         try {
-            const { batchYear } = req.body;
+            const { batchYear, degrees } = req.body;
             if (!batchYear) {
                 return res.status(400).json({ error: 'Batch year is required' });
+            }
+
+            // Validate degrees if provided
+            if (degrees !== undefined) {
+                if (!Array.isArray(degrees)) {
+                    return res.status(400).json({ error: '`degrees` must be an array' });
+                }
+                for (const d of degrees) {
+                    if (typeof d.degreeName !== 'string' || !Array.isArray(d.branches)) {
+                        return res.status(400).json({ error: 'Each degree must have a string `degreeName` and an array `branches`' });
+                    }
+                    //  ensure branches are strings
+                    for (const b of d.branches) {
+                        if (typeof b !== 'string') {
+                            return res.status(400).json({ error: 'Branch names must be strings' });
+                        }
+                    }
+                }
             }
 
             const existing = await Batch.findOne({ batchYear });
@@ -23,9 +41,9 @@ class BatchSettingsController {
                 return res.status(409).json({ error: 'Batch already exists for this year' });
             }
 
-            const batch = new Batch({ batchYear });
+            const batch = new Batch({ batchYear, degrees });
             await batch.save();
-            
+
             res.status(201).json({ message: 'Batch created successfully', batch });
         } catch (error) {
             console.error('[BatchSettingsController] createBatch error:', error);
@@ -38,30 +56,46 @@ class BatchSettingsController {
 
     async updateBatch(req, res) {
         try {
-            const { batchYear } = req.body;
+            const { batchYear, degrees } = req.body;
+
             const batch = await Batch.findById(req.params.id);
-            
+
             if (!batch) {
                 return res.status(404).json({ error: 'Batch not found' });
             }
 
-            if (batchYear) batch.batchYear = batchYear;
+            if (batchYear) {
+                batch.batchYear = batchYear;
+            }
 
-            // Check for conflicts
-            const conflict = await Batch.findOne({ 
+            if (degrees) {
+                batch.degrees = degrees;
+            }
+
+            const conflict = await Batch.findOne({
                 batchYear: batch.batchYear,
                 _id: { $ne: batch._id }
             });
 
             if (conflict) {
-                return res.status(409).json({ error: 'Another batch already exists with these details' });
+                return res.status(409).json({
+                    error: 'Another batch already exists with these details'
+                });
             }
 
             await batch.save();
-            res.json({ message: 'Batch updated successfully', batch });
+
+            res.json({
+                message: 'Batch updated successfully',
+                batch
+            });
+
         } catch (error) {
             console.error('[BatchSettingsController] updateBatch error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+
+            res.status(500).json({
+                error: 'Internal server error'
+            });
         }
     }
 
@@ -79,6 +113,59 @@ class BatchSettingsController {
             res.status(500).json({ error: 'Internal server error' });
         }
     }
+    async getDeptMenus(req, res) {
+        try {
+            // Return a merged/default menu config (use first batch or global defaults)
+            const batch = await Batch.findOne({}).sort({ batchYear: -1 });
+            const defaults = {
+    dashboard: true,
+    groundTruth: true,
+    rollAssignment: true,
+    erpUpload: true,
+    attendanceReports: true,
+    classVerification: true,
+    cameraRegistry: true,   // ← new
+    subjectEmbeddings: true,
+    livePreview: true,
+    gpuMetrics: true,       // ← new
+    confidenceMonitor: true,
+    helpManual: true,
+};
+            res.json({ deptMenus: batch?.deptMenus ?? defaults });
+        } catch (error) {
+            console.error('[BatchSettingsController] getDeptMenus error:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    async updateDeptMenus(req, res) {
+    try {
+        const { deptMenus } = req.body;
+        if (!deptMenus || typeof deptMenus !== 'object') {
+            return res.status(400).json({ error: 'deptMenus object is required' });
+        }
+
+        // Log what changed — visible in server terminal
+        const enabledMenus  = Object.entries(deptMenus).filter(([, v]) => v).map(([k]) => k);
+        const disabledMenus = Object.entries(deptMenus).filter(([, v]) => !v).map(([k]) => k);
+
+        console.log('\n========================================');
+        console.log('  DEPT MENU CONFIG UPDATED');
+        console.log('========================================');
+        console.log('  ✅ ENABLED  :', enabledMenus.join(', ')  || 'none');
+        console.log('  ❌ DISABLED :', disabledMenus.join(', ') || 'none');
+        console.log('========================================\n');
+
+        // Apply to all batches (global config)
+        const result = await Batch.updateMany({}, { $set: { deptMenus } });
+        console.log(`[DeptMenus] MongoDB updated ${result.modifiedCount} batch document(s)`);
+
+        res.json({ message: 'Dept menus updated successfully', deptMenus });
+    } catch (error) {
+        console.error('[BatchSettingsController] updateDeptMenus error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
 }
 
 module.exports = BatchSettingsController;
