@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Clock3, RefreshCw, ScanFace, Users } from 'lucide-react';
+import { CheckCircle2, Clock3, ScanFace, Users } from 'lucide-react';
 import getEnvironment from '../getenvironment';
 import { styles, theme } from '../attendancemodule/config';
 
 const apiUrl = getEnvironment();
-const actionStyle = {
-    ...styles.btnGhost,
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 7,
-};
 
 const displayPercent = (value) => value == null ? 'No data' : `${value}%`;
 
@@ -87,9 +81,6 @@ export default function DeptDashboard() {
         return (
             <div style={{ ...styles.card, color: theme.danger }}>
                 {state.error}
-                <button onClick={loadStats} style={{ ...actionStyle, marginLeft: 16 }}>
-                    <RefreshCw size={14} /> Retry
-                </button>
             </div>
         );
     }
@@ -104,9 +95,6 @@ export default function DeptDashboard() {
                     <div style={styles.heading}>{stats.department} Attendance</div>
                     <div style={styles.subheading}>Today, {stats.date}</div>
                 </div>
-                <button onClick={loadStats} title="Refresh dashboard" style={actionStyle}>
-                    <RefreshCw size={15} /> Refresh
-                </button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>

@@ -27,7 +27,7 @@ const SLOT_LABELS = {
     period8: 'Period 8 — 16:30',
 };
 
-export default function AttendanceReport() {
+export default function AttendanceReport({ fixedDepartment = '' }) {
     const navigate = useNavigate();
     const [tab, setTab] = useState('run');
 
@@ -50,12 +50,16 @@ export default function AttendanceReport() {
 
     // ── Fallback batch (if LockSem lookup fails) ──────────────────
     const [degree,     setDegree]     = useState('BTECH');
-    const [department, setDepartment] = useState('');
+    const [department, setDepartment] = useState(fixedDepartment);
     const [year,       setYear]       = useState('');
     const { departments, deptLoading, deptError } = useDepartments();
     const sanitizeDept = (d) => (d || '').trim().replace(/\s+/g, '_').toUpperCase();
     const manualBatch = degree && department && year
         ? `${degree}_${sanitizeDept(department)}_${year}` : null;
+
+    useEffect(() => {
+        if (fixedDepartment) setDepartment(fixedDepartment);
+    }, [fixedDepartment]);
 
     // ── Run state ─────────────────────────────────────────────────
     const [processing,      setProcessing]      = useState(false);
@@ -186,12 +190,13 @@ export default function AttendanceReport() {
             const params = new URLSearchParams();
             if (filterBatch) params.set('batch', filterBatch);
             if (filterDate)  params.set('date',  filterDate);
+            if (fixedDepartment) params.set('department', fixedDepartment);
             const res  = await fetch(`${REPORT_API}?${params}`);
             const data = await res.json();
             setReports(data.reports || []);
         } catch { showToast('Failed to load reports', 'error'); }
         setHistLoading(false);
-    }, [filterBatch, filterDate]);
+    }, [filterBatch, filterDate, fixedDepartment]);
 
     useEffect(() => { if (tab === 'history') fetchReports(); }, [tab, fetchReports]);
 
@@ -561,7 +566,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
 
             {/* Tabs */}
             <div className="ams-tabs">
-                {[['run','Run Attendance'],['history','Saved Reports'],['unknown','Unknown Faces'],['detail','Report Detail']].map(([id, label]) => (
+                {[['run','Run Attendance (Developers Only)'],['history','Saved Reports'],['unknown','Unknown Faces'],['detail','Report Detail']].map(([id, label]) => (
                     (id !== 'detail' || detailReport) && (
                         <button key={id} className={`ams-tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>{label}</button>
                     )
@@ -692,15 +697,23 @@ rtspUrl2Ref.current = rtspUrl2.trim();
                                 </div>
                                 <div>
                                     <label style={styles.label}>Department</label>
-                                    <select value={department} onChange={e => setDepartment(e.target.value)}
-                                        style={styles.select} disabled={deptLoading}>
-                                        <option value="">
-                                            {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
-                                        </option>
-                                        {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                                    </select>
-                                    {deptError && (
-                                        <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
+                                    {fixedDepartment ? (
+                                        <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                                            {fixedDepartment.replace(/_/g, ' ')}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <select value={department} onChange={e => setDepartment(e.target.value)}
+                                                style={styles.select} disabled={deptLoading}>
+                                                <option value="">
+                                                    {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
+                                                </option>
+                                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                                            </select>
+                                            {deptError && (
+                                                <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                                 <div>
@@ -1243,7 +1256,7 @@ rtspUrl2Ref.current = rtspUrl2.trim();
             {/* ════ UNKNOWN FACES TAB ════ */}
             {tab === 'unknown' && (
                 <div style={{ marginTop: 16 }}>
-                    <UnknownFaces embedded={true} defaultDate={date} defaultDept={derivedCtx?.dept || department} />
+                    <UnknownFaces embedded={true} defaultDate={date} defaultDept={derivedCtx?.dept || department} fixedDept={fixedDepartment} />
                 </div>
             )}
         </div>
