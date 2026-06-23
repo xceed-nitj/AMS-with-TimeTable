@@ -331,6 +331,28 @@ export default function DegreeManagement() {
     setIsEditing(true);
   };
 
+  const handleDeleteDegree = () => {
+    if (!selectedDegree) return;
+
+    const ok = window.confirm(
+      `Delete ${selectedDegree} permanently?`
+    );
+
+    if (!ok) return;
+
+    const updated = editingData.filter(
+      d => d.degreeName !== selectedDegree
+    );
+
+    setEditingData(updated);
+
+    if (updated.length > 0) {
+      setSelectedDegree(updated[0].degreeName);
+    } else {
+      setSelectedDegree('');
+    }
+  };
+
   return (
     <>
       <style>{CSS}</style>
@@ -378,32 +400,33 @@ export default function DegreeManagement() {
             <div className="degree-actions">
               {isEditing ? (
                 <>
-                  <button
-                    className="native-btn"
-                    style={{
-                      background: 'transparent',
-                      border: `1px solid ${T.border}`,
-                      color: T.textMuted,
-                    }}
+                  <div style={{borderRight: `1px solid ${T.borderFocus}40`, paddingRight: "0.75rem"}}>
+                    <button title='Save Changes' className="native-btn"
+                      style={{ background: T.success, color: '#fff'}}
+                      onClick={handleSave}
+                      disabled={saving}
+                    >
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button className="native-btn"
+                    style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textMuted}}
+                    title='Cancel Changes'
                     onClick={() => {
                       setEditingData(JSON.parse(JSON.stringify(degrees)));
-
                       setIsEditing(false);
-                    }}
-                  >
+                    }} >
                     Cancel
                   </button>
-
-                  <button
-                    className="native-btn"
-                    style={{
-                      background: T.success,
-                      color: '#fff',
-                    }}
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? 'Saving...' : 'Save Changes'}
+                  </div>
+                  <button className="native-btn"
+                    style={{ background: T.danger, color: "#fff"}}
+                    title='Delete Degree'
+                    onClick={handleDeleteDegree} >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2">
+                      <path d="M10 11v6"/><path d="M14 11v6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/>
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
                   </button>
                 </>
               ) : (
