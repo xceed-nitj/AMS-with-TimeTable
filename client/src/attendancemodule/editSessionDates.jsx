@@ -6,6 +6,7 @@ import getEnvironment from '../getenvironment';
 import NotificationSettingsTab from './NotificationSettingsTab';
 import { theme as T, cssReset } from './config';
 import DeptMenuConfig from './DeptMenuConfig';
+import DegreeManagement from './DegreeManagement';
 
 const apiUrl = getEnvironment();
 const ALLOTMENT_API = `${apiUrl}/timetablemodule/allotment`;
@@ -1026,6 +1027,12 @@ export default function EditSessionDates() {
             onClick={() => setActiveTab('deptMenu')}
           >
             Dept Menu Config
+          </button>
+          <button
+            className={`ams-tab${activeTab === 'degree' ? ' active' : ''}`}
+            onClick={() => setActiveTab('degree')}
+          >
+            Degree Management
           </button>
         </div>
 
@@ -2201,6 +2208,8 @@ export default function EditSessionDates() {
 
         {/* ══ DEPT MENU CONFIG TAB ═══════════════════════════════════════════ */}
         {activeTab === 'deptMenu' && <DeptMenuConfig />}
+        {/* ══ DEGREE MANAGEMENT TAB ═══════════════════════════════════════════ */}
+        {activeTab === 'degree' && <DegreeManagement apiUrl={apiUrl} />}
       </div>
 
       {/* ── Holiday delete confirmation modal ── */}

@@ -166,6 +166,105 @@ class BatchSettingsController {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
+
+    // ---------------------------------------------------------------------
+    // Degree Array Endpoints
+    // ---------------------------------------------------------------------
+    // Retrieve the degree array for a specific batch
+    async getDegrees(req, res) {
+        try {
+            const batch = await Batch.findById(req.params.id);
+            if (!batch) {
+                return res.status(404).json({ error: 'Batch not found' });
+            }
+            res.json({ degrees: batch.degrees || [] });
+        } catch (error) {
+            console.error('[BatchSettingsController] getDegrees error:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // Replace the degree array for a specific batch
+    async updateDegrees(req, res) {
+        try {
+            const { degrees } = req.body;
+            if (!Array.isArray(degrees)) {
+                return res.status(400).json({ error: '`degrees` must be an array' });
+            }
+            // Basic validation of each degree object
+            for (const d of degrees) {
+                if (typeof d.degreeName !== 'string' || !Array.isArray(d.branches)) {
+                    return res.status(400).json({ error: 'Each degree must have a string `degreeName` and an array `branches`' });
+                }
+                for (const b of d.branches) {
+                    if (typeof b.dept !== 'string' || typeof b.branchName !== 'string') {
+                        return res.status(400).json({ error: 'Each branch must have `dept` and `branchName` strings' });
+                    }
+                }
+            }
+            const batch = await Batch.findById(req.params.id);
+            if (!batch) {
+                return res.status(404).json({ error: 'Batch not found' });
+            }
+            batch.degrees = degrees;
+            await batch.save();
+            res.json({ message: 'Degrees updated successfully', degrees: batch.degrees });
+        } catch (error) {
+            console.error('[BatchSettingsController] updateDegrees error:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Global Degree Array Endpoints (update all batches)
+    // ---------------------------------------------------------------------
+    // Retrieve the degree array from the most recent batch (global view)
+    async getGlobalDegrees(req, res) {
+        try {
+            const batch = await Batch.findOne().sort({ batchYear: -1 });
+            res.json({ degrees: batch?.degrees || [] });
+        } catch (error) {
+            console.error('[BatchSettingsController] getGlobalDegrees error:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // Replace the degree array for ALL batches (global config)
+    async updateAllDegrees(req, res) {
+        try {
+            const { degrees } = req.body;
+            if (!Array.isArray(degrees)) {
+                return res.status(400).json({ error: '`degrees` must be an array' });
+            }
+            // Validate each degree object
+            for (const d of degrees) {
+                if (typeof d.degreeName !== 'string' || !Array.isArray(d.branches)) {
+                    return res.status(400).json({ error: 'Each degree must have a string `degreeName` and an array `branches`' });
+                }
+                for (const b of d.branches) {
+                    if (typeof b.dept !== 'string' || typeof b.branchName !== 'string') {
+                        return res.status(400).json({ error: 'Each branch must have `dept` and `branchName` strings' });
+                    }
+                }
+            }
+            // Apply to ALL batches (global config)
+            const result = await Batch.updateMany({}, { $set: { degrees } });
+            console.log(`[GlobalDegrees] MongoDB updated ${result.modifiedCount} batch document(s)`);
+            res.json({
+                message: 'Degrees updated globally for all batches',
+                modifiedCount: result.modifiedCount,
+                degrees
+            });
+        } catch (error) {
+            console.error('[BatchSettingsController] updateAllDegrees error:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // End of Degree Endpoints
+    // ---------------------------------------------------------------------
+
 }
 
 module.exports = BatchSettingsController;
