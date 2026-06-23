@@ -120,13 +120,7 @@ function PeriodCard({ period, onSave }) {
   };
 
   const isLunch = period.periodKey.startsWith('lunch');
-  const borderColor = form.stopForDay
-    ? theme.danger
-    : !form.enabled
-    ? theme.border
-    : isLunch
-    ? theme.warning
-    : theme.accent;
+  const borderColor = isLunch ? theme.warning : theme.accent;
 
   return (
     <div style={{
@@ -134,7 +128,7 @@ function PeriodCard({ period, onSave }) {
       border: `1.5px solid ${borderColor}`,
       borderRadius: 12,
       padding: 20,
-      opacity: form.enabled ? 1 : 0.55,
+   
       transition: 'opacity .2s, border-color .2s',
     }}>
       {/* Header row */}
@@ -146,24 +140,12 @@ function PeriodCard({ period, onSave }) {
           }}>
             {isLunch ? '🍱 ' : '📅 '}{SLOT_LABELS[period.periodKey] || period.periodKey}
           </div>
-          {form.stopForDay && (
-            <span style={{
-              fontSize: 10, padding: '2px 8px', borderRadius: 99,
-              background: theme.dangerDim, color: theme.danger,
-              fontWeight: 700,
-            }}>⛔ STOPPED FOR TODAY</span>
-          )}
+          
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <Toggle
-            value={form.enabled}
-            onChange={v => update('enabled', v)}
-            label={form.enabled ? 'Enabled' : 'Disabled'}
-          />
-        </div>
+        
       </div>
 
-      {form.enabled && (
+      
         <>
           {/* Time range */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
@@ -187,78 +169,11 @@ function PeriodCard({ period, onSave }) {
             </div>
           </div>
 
-          {/* Runs config */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
-            <div>
-              <Label>Number of Runs</Label>
-              <input
-                type="number" min={1} max={10}
-                value={form.numRuns}
-                onChange={e => update('numRuns', Number(e.target.value))}
-                style={styles.input}
-              />
-            </div>
-            <div>
-              <Label>Duration per Run (sec)</Label>
-              <select value={form.runDurationSec} onChange={e => update('runDurationSec', Number(e.target.value))} style={styles.select}>
-                {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d}s</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>Check Interval (min)</Label>
-              <select value={form.checkIntervalMin} onChange={e => update('checkIntervalMin', Number(e.target.value))} style={styles.select}>
-                {INTERVAL_OPTIONS.map(i => <option key={i} value={i}>{i} min</option>)}
-              </select>
-            </div>
-          </div>
+          
 
-          {/* Present logic */}
-          <div style={{ marginBottom: 14 }}>
-            <Label>Present Logic</Label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
-              {LOGIC_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  title={opt.hint}
-                  onClick={() => update('presentLogic', opt.value)}
-                  style={{
-                    padding: '6px 14px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    cursor: 'pointer', border: '1px solid',
-                    borderColor: form.presentLogic === opt.value ? theme.accent : theme.border,
-                    background:  form.presentLogic === opt.value ? theme.accentDim : 'transparent',
-                    color:       form.presentLogic === opt.value ? theme.accent    : theme.textMuted,
-                    transition: 'all .15s',
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 4 }}>
-              {LOGIC_OPTIONS.find(o => o.value === form.presentLogic)?.hint}
-            </div>
-          </div>
-
-          {/* Stop for day toggle */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '10px 14px', borderRadius: 8,
-            background: form.stopForDay ? theme.dangerDim : theme.bg,
-            border: `1px solid ${form.stopForDay ? theme.danger : theme.border}`,
-            marginBottom: 14,
-          }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: form.stopForDay ? theme.danger : theme.text }}>
-                Stop Acquisition for Today
-              </div>
-              <div style={{ fontSize: 10, color: theme.textMuted }}>
-                Temporarily disables this period's capture for the current day only
-              </div>
-            </div>
-            <Toggle value={form.stopForDay} onChange={v => update('stopForDay', v)} />
-          </div>
+          
         </>
-      )}
+      
 
       {/* Save button */}
       {dirty && (
@@ -659,9 +574,9 @@ export default function AcquisitionControl() {
       <div style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: 28 }}>
         {[
           ['periods', '📅 Periods & Timing'],
-          ['rooms',   '🏫 Rooms & Cameras'],
+      
           ['extras',  '➕ Extra / Lunch Classes'],
-          ['global',  '🌐 Global Settings'],
+          
           ['stopdays','⛔ Stop Days'],
         ].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{
@@ -674,72 +589,32 @@ export default function AcquisitionControl() {
       </div>
 
       {/* ══════════════ PERIODS TAB ══════════════ */}
-      {tab === 'periods' && (
-        <div>
-          <SectionHead
-            title="Period Configuration"
-            sub="Configure each period independently — timing, number of runs, present logic, and per-day stop"
-            color={theme.accent}
-          />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 16 }}>
-            {(config?.periods || []).map(period => (
-              <PeriodCard key={period.periodKey} period={period} onSave={savePeriod} />
-            ))}
-          </div>
-        </div>
-      )}
+{tab === 'periods' && (
+  <div>
+    {/* Global run settings — applies to all periods */}
+    <SectionHead
+      title="Run Settings (All Periods)"
+      sub="Number of runs, duration, interval, and present logic apply to every period below"
+      color={theme.accent}
+    />
+    <div style={{ ...styles.card, marginBottom: 28 }}>
+      <GlobalEditor config={config} onSave={patchGlobal} />
+    </div>
 
-      {/* ══════════════ ROOMS TAB ══════════════ */}
-      {tab === 'rooms' && (
-        <div>
-          <SectionHead
-            title="Room & Camera Control"
-            sub="Add rooms to the controlled list. Override RTSP URLs per room if needed. Empty = uses Camera DB automatically."
-            color={theme.orange || theme.warning}
-          />
+    <SectionHead
+      title="Period Timings"
+      sub="Set start and end time for each period"
+      color={theme.accent}
+    />
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+      {(config?.periods || []).map(period => (
+        <PeriodCard key={period.periodKey} period={period} onSave={savePeriod} />
+      ))}
+    </div>
+  </div>
+)}
 
-          {/* Add room row */}
-          <div style={{ ...styles.card, padding: 16, marginBottom: 20, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-            <div style={{ flex: 1 }}>
-              <Label>Add Room</Label>
-              <select value={newRoom} onChange={e => setNewRoom(e.target.value)} style={styles.select}>
-                <option value="">Select room to add…</option>
-                {allRooms
-                  .filter(r => !config?.includedRooms?.find(ir => ir.room === r))
-                  .map(r => <option key={r} value={r}>{r}</option>)
-                }
-              </select>
-            </div>
-            <button onClick={addRoom} disabled={!newRoom} style={{ ...styles.btnPrimary, opacity: newRoom ? 1 : 0.5 }}>
-              + Add Room
-            </button>
-          </div>
-
-          {/* Room list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(config?.includedRooms || []).length === 0 && (
-              <div style={{
-                ...styles.card, padding: 40, textAlign: 'center',
-                color: theme.textMuted, borderStyle: 'dashed',
-              }}>
-                No rooms added yet. Select from dropdown above.
-                <div style={{ fontSize: 11, marginTop: 6 }}>
-                  When list is empty, all rooms are eligible (using Camera DB).
-                </div>
-              </div>
-            )}
-            {(config?.includedRooms || []).map(entry => (
-              <RoomRow
-                key={entry.room}
-                entry={entry}
-                allRooms={allRooms}
-                onSave={upsertRoom}
-                onRemove={removeRoom}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      
 
       {/* ══════════════ EXTRA CLASSES TAB ══════════════ */}
       {tab === 'extras' && (
@@ -928,7 +803,7 @@ function GlobalEditor({ config, onSave }) {
     globalPresentLogic:   config?.globalPresentLogic   || 'majority',
     globalNumRuns:        config?.globalNumRuns        || 1,
     globalRunDurationSec: config?.globalRunDurationSec || 120,
-    globalCheckIntervalMin: config?.globalCheckIntervalMin || 5,
+  
   });
   const [saving, setSaving] = useState(false);
 
@@ -942,6 +817,9 @@ function GlobalEditor({ config, onSave }) {
 
   return (
     <div>
+      <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 16, padding: '8px 12px', borderRadius: 6, background: theme.accentDim, border: `1px solid ${theme.accent}` }}>
+        ℹ️ These settings apply uniformly to <strong>all periods</strong>. Per-period timing is configured in the Periods & Timing tab.
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 18 }}>
         <div>
           <Label>Default Number of Runs</Label>
@@ -958,12 +836,14 @@ function GlobalEditor({ config, onSave }) {
             {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d}s</option>)}
           </select>
         </div>
-        <div>
-          <Label>Default Check Interval (min)</Label>
-          <select value={form.globalCheckIntervalMin} onChange={e => update('globalCheckIntervalMin', Number(e.target.value))} style={styles.select}>
-            {INTERVAL_OPTIONS.map(i => <option key={i} value={i}>{i} min</option>)}
-          </select>
-        </div>
+        <div style={{ 
+  fontSize: 11, color: theme.textMuted, marginTop: 8, 
+  padding: '8px 12px', borderRadius: 6, background: theme.bg,
+  border: `1px solid ${theme.border}`
+}}>
+  ℹ️ Check interval is calculated automatically at runtime as <strong>period duration ÷ number of runs</strong>
+</div>
+        
       </div>
 
       <div style={{ marginBottom: 18 }}>
