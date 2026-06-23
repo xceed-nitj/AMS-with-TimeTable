@@ -421,12 +421,10 @@ uploadPkl() {
             if (!fs.existsSync(GROUND_TRUTH_DIR)) return null;
             const batchFolders = await fsPromises.readdir(GROUND_TRUTH_DIR);
             // Prefer dept-matching batches first
-            const sorted = dept
-                ? [
-                    ...batchFolders.filter(b => b.toUpperCase().includes(dept.toUpperCase())),
-                    ...batchFolders.filter(b => !b.toUpperCase().includes(dept.toUpperCase())),
-                  ]
-                : batchFolders;
+            const isGlobal = !dept || dept.toUpperCase() === 'ALL';
+            const sorted = isGlobal
+                ? batchFolders
+                : batchFolders.filter(b => b.toUpperCase().includes(dept.toUpperCase()));
             for (const batch of sorted) {
                 const candidate = path.join(GROUND_TRUTH_DIR, batch, rollNo);
                 if (fs.existsSync(candidate)) return { dir: candidate, batch };

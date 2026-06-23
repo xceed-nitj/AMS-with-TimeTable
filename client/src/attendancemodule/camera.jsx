@@ -495,13 +495,16 @@ export default function Camera() {
                     align-items: center;
                 }
                 .camera-mini-btn {
-                    padding: 7px 10px;
+                    width: 30px;
+                    height: 30px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0;
                     border-radius: 6px;
                     border: 1px solid ${theme.border};
                     background: transparent;
                     color: ${theme.textMuted};
-                    font-size: 12px;
-                    font-weight: 700;
                     cursor: pointer;
                 }
                 .camera-mini-btn:hover {
@@ -757,15 +760,28 @@ export default function Camera() {
                                     <td>{camera.pairedWith || '-'}</td>
                                     <td>
                                         <div className="camera-actions" onClick={(e) => e.stopPropagation()}>
-                                            <button type="button" className="camera-mini-btn" onClick={() => fillFormFromCamera(camera)}>Edit</button>
+                                            <button type="button" className="camera-mini-btn" title="Edit" onClick={() => fillFormFromCamera(camera)}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                                </svg>
+                                            </button>
                                             <a
                                                 className="camera-mini-btn"
+                                                title="Preview"
                                                 href={`/camera/preview?cameraId=${encodeURIComponent(camera.cameraId)}`}
                                                 style={{ textDecoration: 'none' }}
                                             >
-                                                Preview
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                    <circle cx="12" cy="12" r="3" />
+                                                </svg>
                                             </a>
-                                            <button type="button" className="camera-mini-btn" onClick={() => deleteCamera(camera)} style={{ color: theme.danger }}>Delete</button>
+                                            <button type="button" className="camera-mini-btn" title="Delete" onClick={() => deleteCamera(camera)} style={{ color: theme.danger }}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" />
+                                                    <path d="M10 11v6M14 11v6" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

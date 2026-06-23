@@ -1,0 +1,12 @@
+const express = require('express');
+const router = express.Router();
+const NotificationSettingsController = require('../controllers/notificationSettingsController');
+const controller = new NotificationSettingsController();
+
+router.get('/', async (req, res) => await controller.getSettings(req, res));
+router.put('/', async (req, res) => await controller.updateSettings(req, res));
+router.post('/recipients', async (req, res) => await controller.addRecipient(req, res));
+router.put('/recipients/:id', async (req, res) => await controller.updateRecipient(req, res));
+router.delete('/recipients/:id', async (req, res) => await controller.removeRecipient(req, res));
+
+module.exports = router;

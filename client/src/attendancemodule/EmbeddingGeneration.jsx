@@ -218,6 +218,8 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
 
     const [rollInput,  setRollInput]  = useState('');
     const [rollNos,    setRollNos]    = useState([]);
+    const [instituteWise, setInstituteWise] = useState(false);
+
 
     const [rows,    setRows]    = useState([]);
     const [running, setRunning] = useState(false);
@@ -322,7 +324,8 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
             const res = await fetch(`${EMB_BASE}/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sem: sem.trim(), subject: subject.trim(), dept: dept.trim(), subjectCode: subjectCode.trim(), rollNos }),
+                body: JSON.stringify({ sem: sem.trim(), subject: subject.trim(), dept: instituteWise ? 'ALL' : dept.trim(), subjectCode: subjectCode.trim(), rollNos }),
+
             });
 
             if (!res.ok) {
@@ -454,9 +457,30 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                             placeholder="Enter roll numbers - separated by newlines, commas, or spaces"
                             style={{ ...styles.input, height: 160, resize: 'vertical', fontFamily: theme.fontMono, fontSize: '13px' }}
                         />
-                        <div style={{ marginTop: 8, fontSize: '12px', color: theme.textMuted }}>
-                            {rollNos.length} roll number{rollNos.length !== 1 ? 's' : ''} detected
-                        </div>
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <span style={{ fontSize: '12px', color: theme.textMuted }}>
+        {rollNos.length} roll number{rollNos.length !== 1 ? 's' : ''} detected
+    </span>
+    <label style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7,
+        cursor: running ? 'not-allowed' : 'pointer',
+        fontSize: '12px', fontWeight: 600,
+        color: theme.accent,
+        padding: '5px 12px', borderRadius: 6,
+        border: `1px solid ${theme.accent}44`,
+        background: theme.accentDim,
+        transition: 'all 0.15s',
+    }}>
+        <input
+            type="checkbox"
+            checked={instituteWise}
+            onChange={e => setInstituteWise(e.target.checked)}
+            disabled={running}
+            style={{ width: 14, height: 14, accentColor: theme.accent, cursor: running ? 'not-allowed' : 'pointer' }}
+        />
+        Search Institute Wise
+    </label>
+</div>
                     </div>
 
                     {/* Generate / Update button */}
