@@ -4,6 +4,7 @@ import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
 const ROOMS_API = `${apiUrl}/timetablemodule/lock/rooms`;
+const MASTERROOM_API = `${apiUrl}/timetablemodule/masterroom`;
 const VERIFY_API = `${apiUrl}/attendancemodule/frame-verification`;
 const CLASS_INFO_API = `${apiUrl}/timetablemodule/lock/attendance-lookup`;
 
@@ -77,7 +78,7 @@ function EmptyState({ title, subtitle }) {
     );
 }
 
-export default function FrameVerification() {
+export default function FrameVerification({ fixedDepartment = '' }) {
     const [rooms, setRooms] = useState([]);
     const [room, setRoom] = useState('');
     const [availableDates, setAvailableDates] = useState([]);
@@ -103,8 +104,29 @@ export default function FrameVerification() {
             try {
                 const res = await fetch(ROOMS_API);
                 const data = await res.json();
+                let allRooms = Array.isArray(data.rooms) ? data.rooms : [];
+
+                if (fixedDepartment) {
+                    // Dept-admin: only show rooms belonging to their department.
+                    // Intersect the locked-timetable room list with the dept's
+                    // master room list so we never show a room outside scope.
+                    try {
+                        const deptRes  = await fetch(`${MASTERROOM_API}/dept/${encodeURIComponent(fixedDepartment)}`);
+                        const deptData = await deptRes.json();
+                        const deptRoomNames = new Set(
+                            (Array.isArray(deptData) ? deptData : [])
+                                .map(r => String(r.room || '').trim().toUpperCase())
+                        );
+                        allRooms = allRooms.filter(r => deptRoomNames.has(String(r).trim().toUpperCase()));
+                    } catch (_) {
+                        // If the dept room lookup fails, fail safe to an empty list
+                        // rather than showing rooms outside the dept-admin's scope.
+                        allRooms = [];
+                    }
+                }
+
                 if (!cancelled) {
-                    setRooms(Array.isArray(data.rooms) ? data.rooms : []);
+                    setRooms(allRooms);
                 }
             } catch (_) {
                 if (!cancelled) {
@@ -114,7 +136,7 @@ export default function FrameVerification() {
         })();
 
         return () => { cancelled = true; };
-    }, []);
+    }, [fixedDepartment]);
 
     useEffect(() => {
         if (!room) {

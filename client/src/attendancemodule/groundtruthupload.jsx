@@ -98,7 +98,7 @@ const CSS = `
 `;
 
 // ── Shared batch selector component ──────────────────────────────────────────
-function BatchSelector({ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount }) {
+function BatchSelector({ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount, fixedDepartment }) {
     return (
         <div className="erp-card" style={{ marginBottom: 20 }}>
             <div className="erp-card-header">Batch Selection</div>
@@ -113,10 +113,16 @@ function BatchSelector({ degree, setDegree, department, setDepartment, batchYear
                     </div>
                     <div>
                         <label style={styles.label}>Department</label>
-                        <select value={department} onChange={e => { setDepartment(e.target.value); setBatchYear(''); }} style={styles.select} disabled={deptLoading}>
-                            <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select…'}</option>
-                            {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                        </select>
+                        {fixedDepartment ? (
+                            <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: T.bg, color: T.textMuted, cursor: 'not-allowed' }}>
+                                {fixedDepartment.replace(/_/g, ' ')}
+                            </div>
+                        ) : (
+                            <select value={department} onChange={e => { setDepartment(e.target.value); setBatchYear(''); }} style={styles.select} disabled={deptLoading}>
+                                <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select…'}</option>
+                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                            </select>
+                        )}
                     </div>
                     <div>
                         <label style={styles.label}>Batch Year</label>
@@ -142,15 +148,19 @@ function BatchSelector({ degree, setDegree, department, setDepartment, batchYear
     );
 }
 
-export default function GroundTruthUpload() {
+export default function GroundTruthUpload({ fixedDepartment = '' }) {
     const { departments, loading: deptLoading, error: deptError } = useDepartments();
 
     // ── Shared filter state ───────────────────────────────────────────
     const [degree,       setDegree]       = useState('');
-    const [department,   setDepartment]   = useState('');
+    const [department,   setDepartment]   = useState(fixedDepartment);
     const [batchYear,    setBatchYear]    = useState('');
     const [batches,      setBatches]      = useState([]);
     const [batchesLoading, setBatchesLoading] = useState(false);
+
+    useEffect(() => {
+        if (fixedDepartment) setDepartment(fixedDepartment);
+    }, [fixedDepartment]);
 
     const batchName = (degree && department && batchYear) ? `${degree}_${department}_${batchYear}` : '';
 
@@ -515,7 +525,7 @@ try {
             {/* ══ UPLOAD TAB ════════════════════════════════════════════════════ */}
             {activeTab === 'upload' && (
                 <>
-                    <BatchSelector {...{ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount: batchPhotoCount }} />
+                    <BatchSelector {...{ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount: batchPhotoCount, fixedDepartment }} />
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                         {/* ZIP Upload */}
@@ -627,7 +637,7 @@ try {
             {/* ══ MANAGE TAB ════════════════════════════════════════════════════ */}
             {activeTab === 'manage' && (
                 <>
-                    <BatchSelector {...{ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName }} />
+                    <BatchSelector {...{ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, fixedDepartment }} />
 
                     {!batchName ? (
                         <div className="erp-card" style={{ padding: '40px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
@@ -765,9 +775,12 @@ try {
                         (() => {
                             // Group batches by department
                             const groups = {};
+                            const fixedNorm = fixedDepartment ? fixedDepartment.trim().toUpperCase() : null;
                             for (const row of summaryBatches) {
                                 const { dept } = parseBatch(row.batch);
                                 const normalizedDept = dept.trim().toUpperCase();
+                                // Dept-admins only see their own department's batches
+                                if (fixedNorm && normalizedDept !== fixedNorm) continue;
                                 if (!groups[normalizedDept]) groups[normalizedDept] = { name: dept.trim(), items: [] };
                                 groups[normalizedDept].items.push(row);
                             }

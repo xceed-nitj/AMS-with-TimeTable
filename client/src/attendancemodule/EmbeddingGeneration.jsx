@@ -79,7 +79,7 @@ function FilterBlock({
     dept, setDept, sem, setSem, subject, setSubject,
     subjectCode, setSubjectCode, setSubjectId,
     departments, deptLoading, deptError,
-    prefillSem, prefillSubject,
+    prefillSem, prefillSubject,fixedDepartment
 }) {
     const [sems,            setSems]            = useState([]);
     const [subjects,        setSubjects]        = useState([]);
@@ -163,10 +163,16 @@ function FilterBlock({
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 16, alignItems: 'end' }} className="r-grid-3">
                 <div>
                     <label style={styles.label}>Department</label>
-                    <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
-                        <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'Select department...'}</option>
-                        {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                    </select>
+                    {fixedDepartment ? (
+                        <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                            {fixedDepartment.replace(/_/g, ' ')}
+                        </div>
+                    ) : (
+                        <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
+                            <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'Select department...'}</option>
+                            {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                        </select>
+                    )}
                 </div>
                 <div>
                     <label style={styles.label}>Semester</label>
@@ -203,8 +209,8 @@ function FilterBlock({
 // ===============================================================================
 // TAB 1 - Generate Subject Embeddings
 // ===============================================================================
-function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillConsumed }) {
-    const [dept,        setDept]        = useState('');
+function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillConsumed, fixedDepartment = '' }) {
+    const [dept,        setDept]        = useState(fixedDepartment);
     const [sem,         setSem]         = useState('');
     const [subject,     setSubject]     = useState('');
     const [subjectCode, setSubjectCode] = useState('');
@@ -242,7 +248,10 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
     // Apply prefill when it arrives from ViewTab
     useEffect(() => {
         if (!prefill) return;
-        setDept(prefill.dept || '');
+        // For dept-locked admins, ignore any prefill dept that doesn't match —
+        // they should never be able to jump into another department's batch.
+        if (fixedDepartment && prefill.dept && prefill.dept !== fixedDepartment) return;
+        setDept(fixedDepartment || prefill.dept || '');
         setRollInput((prefill.rollNos || []).join('\n'));
         setSummary(null);
         setRows([]);
@@ -383,6 +392,7 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
 
             <FilterBlock
                 dept={dept} setDept={handleSetDept}
+                fixedDepartment = {fixedDepartment}
                 sem={sem} setSem={setSem}
                 subject={subject} setSubject={setSubject}
                 subjectCode={subjectCode} setSubjectCode={setSubjectCode}
@@ -583,8 +593,8 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
 // ===============================================================================
 // TAB 2 - View Generated Embeddings
 // ===============================================================================
-function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
-    const [dept,         setDept]         = useState('');
+function ViewTab({ departments, deptLoading, deptError, onUpdate, fixedDepartment = '' }) {
+    const [dept,         setDept]         = useState(fixedDepartment);
     const [pklFiles,     setPklFiles]     = useState([]);
     const [history,      setHistory]      = useState([]);
     const [pklLoading,   setPklLoading]   = useState(false);
@@ -765,10 +775,16 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
                 <div style={{ fontSize: '11px', fontWeight: 700, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Filter</div>
                 <div style={{ maxWidth: 320 }}>
                     <label style={styles.label}>Department</label>
-                    <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
-                        <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'Select department...'}</option>
-                        {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                    </select>
+                    {fixedDepartment ? (
+                        <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                            {fixedDepartment.replace(/_/g, ' ')}
+                        </div>
+                    ) : (
+                        <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
+                            <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'Select department...'}</option>
+                            {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                        </select>
+                    )}
                 </div>
             </div>
 
@@ -1028,7 +1044,7 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
 
 // Main export
 // ===============================================================================
-export default function EmbeddingGeneration() {
+export default function EmbeddingGeneration({ fixedDepartment = '' }) {
     const { departments, deptLoading, deptError } = useDepartments();
     const [activeTab, setActiveTab] = useState(1);
     const [prefill,   setPrefill]   = useState(null);
@@ -1064,12 +1080,14 @@ export default function EmbeddingGeneration() {
                     departments={departments} deptLoading={deptLoading} deptError={deptError}
                     prefill={prefill}
                     onPrefillConsumed={() => setPrefill(null)}
+                    fixedDepartment={fixedDepartment}
                 />
             )}
             {activeTab === 2 && (
                 <ViewTab
                     departments={departments} deptLoading={deptLoading} deptError={deptError}
                     onUpdate={handleUpdate}
+                    fixedDepartment={fixedDepartment}
                 />
             )}
         </div>

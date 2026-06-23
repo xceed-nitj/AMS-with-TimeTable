@@ -10,13 +10,13 @@ const ALL_MENUS = [
     { id: 'dashboard',         menuKey: 'dashboard',         route: '/dept-admin/dashboard',           label: 'Dashboard',            exact: true,  color: '#6366f1' },
     { id: 'groundTruth',       menuKey: 'groundTruth',       route: '/dept-admin/live-rtsp',            label: 'Ground Truth Capture',               color: '#0ea5e9' },
     { id: 'rollAssignment',    menuKey: 'rollAssignment',    route: '/dept-admin/assign-rolls',         label: 'Roll Assignment',                    color: '#10b981' },
-    { id: 'erpUpload',         menuKey: 'erpUpload',         route: '/attendance/groundtruth/upload',   label: 'ERP Upload',                         color: '#f472b6' },
+    { id: 'erpUpload',         menuKey: 'erpUpload',         route: '/dept-admin/erp-upload',           label: 'ERP Upload',                         color: '#f472b6' },
     { id: 'attendanceReports', menuKey: 'attendanceReports', route: '/dept-admin/reports',              label: 'Attendance Reports',                 color: '#14b8a6' },
-    { id: 'classVerification', menuKey: 'classVerification', route: '/attendance/frame-verification',   label: 'Class Verification',                 color: '#ec4899' },
+    { id: 'classVerification', menuKey: 'classVerification', route: '/dept-admin/class-verification',   label: 'Class Verification',                 color: '#ec4899' },
     { id: 'cameraRegistry',    menuKey: 'cameraRegistry',    route: '/cameras',                         label: 'Camera Registry',                    color: '#f97316' },
-    { id: 'subjectEmbeddings', menuKey: 'subjectEmbeddings', route: '/attendance/embeddings',           label: 'Subject Embeddings',                 color: '#f59e0b' },
+    { id: 'subjectEmbeddings', menuKey: 'subjectEmbeddings', route: '/dept-admin/embeddings',           label: 'Subject Embeddings',                 color: '#f59e0b' },
     { id: 'livePreview',       menuKey: 'livePreview',       route: '/cameras/preview',                 label: 'Live Preview',                       color: '#8b5cf6' },
-    { id: 'confidenceMonitor', menuKey: 'confidenceMonitor', route: '/attendance/confidence',           label: 'Confidence Monitor',                 color: '#ef4444' },
+    { id: 'confidenceMonitor', menuKey: 'confidenceMonitor', route: '/dept-admin/confidence',           label: 'Confidence Monitor',                 color: '#ef4444' },
     { id: 'helpManual',        menuKey: 'helpManual',        route: '/ams-manual',                      label: 'Help & Manual',        newTab: true, color: '#64748b' },
 ];
 
@@ -128,7 +128,7 @@ export default function DeptAdminLayout() {
     if (item.newTab) {
         window.open(item.route, '_blank');
     } else if (!item.route.startsWith('/dept-admin')) {
-        navigate('/dept-admin/access-denied');
+    navigate('/dept-admin/access-denied');
     } else {
         navigate(item.route);
     }
