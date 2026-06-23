@@ -128,7 +128,7 @@ export default function DeptAdminLayout() {
     if (item.newTab) {
         window.open(item.route, '_blank');
     } else if (!item.route.startsWith('/dept-admin')) {
-        navigate('/dept-admin/access-denied');
+    navigate('/dept-admin/access-denied');
     } else {
         navigate(item.route);
     }

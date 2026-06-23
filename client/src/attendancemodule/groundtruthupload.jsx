@@ -336,7 +336,6 @@ export default function GroundTruthUpload({ fixedDepartment = '' }) {
             showToast(err.message, 'error');
         } finally {
             setZipUploading(false);
-
         }
     };
 
@@ -559,12 +558,6 @@ try {
         Updating embeddings for {batchName}…
     </div>
 )}
-{zipEmbedStatus === 'done' && (
-    <div style={{ marginTop: 12, padding: '9px 14px', background: T.successDim,
-                  color: T.success, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
-        ✓ Embeddings updated successfully
-    </div>
-)}
 {zipEmbedStatus === 'error' && (
     <div style={{ marginTop: 12, padding: '9px 14px', background: T.dangerDim,
                   color: T.danger, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
@@ -625,12 +618,6 @@ try {
                   display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
         Updating embeddings for {batchName}…
-    </div>
-)}
-{photoEmbedStatus === 'done' && (
-    <div style={{ marginTop: 12, padding: '9px 14px', background: T.successDim,
-                  color: T.success, borderRadius: 7, fontSize: 13, fontWeight: 600 }}>
-        ✓ Embeddings updated successfully
     </div>
 )}
 {photoEmbedStatus === 'error' && (
