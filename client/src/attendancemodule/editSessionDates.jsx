@@ -2042,137 +2042,46 @@ export default function EditSessionDates() {
                                               </span>
                                             </div>
 
-                                            <div
-                                              style={{
-                                                display: 'flex',
-                                                flexWrap: 'wrap',
-                                                gap: 8,
-                                              }}
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                          {deg.branches.map((branch, idx) => (
+                                            <span
+                                              key={idx}
+                                              title={humanizeBranchName(branch)}
+                                              onMouseEnter={() => setHoveredBranchKey(`${b._id}-${deg.degreeName}-${idx}`)}
+                                              onMouseLeave={() => setHoveredBranchKey(null)}
+                                              style={{ padding: editingBatchId === b._id ? "6px 8px 6px 12px" : "6px 12px", border: `1px solid ${T.border}`, borderRadius: 20, fontSize: 13, background: "#fff", color: T.text, display: "flex", alignItems: "center", gap: 8, width: "fit-content", transition: 'all 300ms ease', cursor:"pointer" }}
                                             >
-                                              {deg.branches.map(
-                                                (branch, idx) => (
-                                                  <span
-                                                    key={idx}
-                                                    title={humanizeBranchName(
-                                                      branch,
-                                                    )}
-                                                    onMouseEnter={() =>
-                                                      setHoveredBranchKey(
-                                                        `${b._id}-${deg.degreeName}-${idx}`,
-                                                      )
-                                                    }
-                                                    onMouseLeave={() =>
-                                                      setHoveredBranchKey(null)
-                                                    }
-                                                    style={{
-                                                      padding:
-                                                        editingBatchId === b._id
-                                                          ? '6px 8px 6px 12px'
-                                                          : '6px 12px',
-                                                      border: `1px solid ${T.border}`,
-                                                      borderRadius: 20,
-                                                      fontSize: 13,
-                                                      background: '#fff',
-                                                      color: T.text,
-                                                      display: 'flex',
-                                                      alignItems: 'center',
-                                                      gap: 8,
-                                                      width: 'fit-content',
-                                                      transition:
-                                                        'all 300ms ease',
-                                                      cursor: 'pointer',
-                                                    }}
-                                                  >
-                                                    {hoveredBranchKey ===
-                                                      `${b._id}-${deg.degreeName}-${idx}` ||
-                                                    editingBatchId === b._id
-                                                      ? humanizeBranchName(
-                                                          branch,
-                                                        )
-                                                      : getBranchShortLabel(
-                                                          branch,
-                                                        )}
-                                                    {editingBatchId ===
-                                                      b._id && (
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          removeBranch(
-                                                            b._id,
-                                                            deg.degreeName,
-                                                            idx,
-                                                          );
-                                                        }}
-                                                        style={{
-                                                          border: 'none',
-                                                          background: 'none',
-                                                          color: T.danger,
-                                                          cursor: 'pointer',
-                                                          padding: 0,
-                                                          margin: 0,
-                                                          fontSize: 16,
-                                                          lineHeight: 1,
-                                                          fontWeight: 700,
-                                                        }}
-                                                      >
-                                                        ×
-                                                      </button>
-                                                    )}
-                                                  </span>
-                                                ),
+                                              {hoveredBranchKey === `${b._id}-${deg.degreeName}-${idx}` || editingBatchId === b._id ? humanizeBranchName(branch) : getBranchShortLabel(branch)}
+                                              {editingBatchId === b._id && (
+                                                <button
+                                                  onClick={e => { e.stopPropagation(); removeBranch( b._id, deg.degreeName, idx ); }}
+                                                  style={{ border: "none", background: "none", color: T.danger, cursor: "pointer", padding: 0, margin: 0, fontSize: 16, lineHeight: 1, fontWeight: 700 }} >
+                                                  ×
+                                                </button>
                                               )}
-                                            </div>
-                                            {editingBatchId === b._id && (
-                                              <button
-                                                className="native-btn"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  addBranch(
-                                                    b._id,
-                                                    deg.degreeName,
-                                                  );
-                                                }}
-                                                style={{
-                                                  marginTop: 12,
-                                                  background: '#fff',
-                                                  color: T.accent,
-                                                  border: `1px solid ${T.accent}`,
-                                                  fontSize: '12px',
-                                                }}
-                                              >
-                                                + Add Branch
-                                              </button>
-                                            )}
-                                          </div>
-                                        ))}
+                                            </span>
+                                          ))}
+                                        </div>
                                         {editingBatchId === b._id && (
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              addDegree(b);
-                                            }}
-                                            className="native-btn"
-                                            style={{
-                                              background: '#fff',
-                                              color: T.accent,
-                                              border: `1px solid ${T.accent}`,
-                                              fontSize: '12px',
-                                              padding: '4px 8px ',
-                                              marginTop: '12px',
-                                            }}
-                                          >
-                                            + Add Degree
+                                          <button className="native-btn" onClick={e => 
+                                            { e.stopPropagation(); addBranch( b._id, deg.degreeName ); }}
+                                            style={{ marginTop: 12, background: "#fff", color: T.accent, border: `1px solid ${T.accent}`, fontSize: "12px" }} >
+                                            + Add Branch
                                           </button>
                                         )}
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
+                                      </div>
+                                    ))}
+                                    <button onClick={e => { e.stopPropagation(); addDegree(b);}}  className="native-btn" style={{ background: '#fff', color: T.accent, border: `1px solid ${T.accent}`, fontSize: '12px', padding: '4px 8px ', marginTop: '12px' }} >
+                                      + Add Degree
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                          )}
+                        </React.Fragment>
+                      )})}
                     </tbody>
                   </table>
                 </div>
