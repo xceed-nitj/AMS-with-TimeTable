@@ -215,6 +215,7 @@ import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
 import AcquisitionControl from './attendancemodule/AcquisitionControl';
 import UnknownFaces from './attendancemodule/UnknownFaces';
+import RecordStream from './attendancemodule/RecordStream';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
@@ -671,6 +672,7 @@ function App() {
           <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
           {/* <Route path="groundtruth/photos" element={<PhotoEdit />} /> */}
           <Route path="groundtruth/upload" element={<GroundTruthUpload />} />
+          <Route path="record-stream" element={<RecordStream />} />
           <Route path="embeddings" element={<EmbeddingGeneration />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
