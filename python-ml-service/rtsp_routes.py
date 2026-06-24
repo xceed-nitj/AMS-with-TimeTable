@@ -1189,3 +1189,98 @@ def _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit, top
             "scores":          dict(fs["scores"]),
         },
     })
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RTSP VIDEO RECORDING ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+import subprocess
+import shutil
+
+RECORDINGS_DIR = os.path.join(BASE_DIR, "..", "server", "recordings")
+os.makedirs(RECORDINGS_DIR, exist_ok=True)
+
+_recordings: dict = {}
+_rec_lock = threading.Lock()
+
+class RecordRequest(BaseModel):
+    rtspUrl: str
+    label:   str
+    durationSec: int = 0   # 0 = no hard stop
+
+class StopRecordRequest(BaseModel):
+    recordingId: str
+
+@router.post("/start-recording")
+def start_recording(req: RecordRequest):
+    rec_id    = str(uuid.uuid4())
+    safe_label = re.sub(r'[^\w\-]', '_', req.label)
+    ts         = time.strftime('%Y%m%d_%H%M%S')
+    filename   = f"{safe_label}_{ts}.mp4"
+    out_path   = os.path.join(RECORDINGS_DIR, filename)
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-rtsp_transport", "tcp",
+        "-i", req.rtspUrl,
+        "-c:v", "copy",
+        "-c:a", "aac",          # transcode audio → AAC so MP4 plays everywhere
+        "-b:a", "128k",
+        "-movflags", "+faststart",
+    ]
+    if req.durationSec > 0:
+        cmd += ["-t", str(req.durationSec)]
+    cmd.append(out_path)
+
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    with _rec_lock:
+        _recordings[rec_id] = {
+            "proc": proc, "path": out_path,
+            "filename": filename, "label": req.label,
+            "started": time.time(), "rtspUrl": req.rtspUrl,
+        }
+    return {"recordingId": rec_id, "filename": filename, "status": "recording"}
+
+
+@router.post("/stop-recording")
+def stop_recording_ep(req: StopRecordRequest):
+    with _rec_lock:
+        rec = _recordings.get(req.recordingId)
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recording not found")
+    proc = rec["proc"]
+    if proc.poll() is None:
+        try:
+            proc.stdin.write(b'q\n')   # graceful FFmpeg quit → writes moov atom
+            proc.stdin.flush()
+            proc.wait(timeout=10)
+        except Exception:
+            proc.kill()
+    size = 0
+    try:
+        size = os.path.getsize(rec["path"])
+    except Exception:
+        pass
+    return {"recordingId": req.recordingId, "filename": rec["filename"],
+            "status": "done", "sizeBytes": size}
+
+
+@router.get("/recordings")
+def list_recordings_ep():
+    with _rec_lock:
+        result = []
+        for rec_id, rec in _recordings.items():
+            running = rec["proc"].poll() is None
+            size = 0
+            try: size = os.path.getsize(rec["path"])
+            except: pass
+            result.append({
+                "recordingId": rec_id,
+                "filename":    rec["filename"],
+                "label":       rec["label"],
+                "started":     rec["started"],
+                "status":      "recording" if running else "done",
+                "sizeBytes":   size,
+            })
+    return result

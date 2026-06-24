@@ -356,6 +356,74 @@ class CameraController {
             return sendKnownError(res, error);
         }
     }
+    async startRecording(req, res) {
+    const { rtspUrl, label } = req.body;
+    if (!rtspUrl || !label)
+        return res.status(400).json({ error: 'rtspUrl and label required' });
+    try {
+        const result = await axios.post(`${ML_URL}/start-recording`,
+            { rtspUrl, label }, { timeout: 10000 });
+        return res.json(result.data);
+    } catch (error) {
+        return sendKnownError(res, error);
+    }
+}
+
+async stopRecording(req, res) {
+    const { recordingId } = req.body;
+    if (!recordingId)
+        return res.status(400).json({ error: 'recordingId required' });
+    try {
+        const result = await axios.post(`${ML_URL}/stop-recording`,
+            { recordingId }, { timeout: 15000 });
+        return res.json(result.data);
+    } catch (error) {
+        return sendKnownError(res, error);
+    }
+}
+
+async listRecordings(req, res) {
+    try {
+        const result = await axios.get(`${ML_URL}/recordings`, { timeout: 8000 });
+        return res.json(result.data);
+    } catch (error) {
+        return sendKnownError(res, error);
+    }
+}
+
+async downloadRecording(req, res) {
+    const path = require('path');
+    const fs   = require('fs');
+    const safe = path.basename(req.params.filename);
+    const filePath = path.join(__dirname, '../../../../recordings', safe);
+    if (!fs.existsSync(filePath))
+        return res.status(404).json({ error: 'File not found' });
+    const stat = fs.statSync(filePath);
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', `attachment; filename="${safe}"`);
+    res.setHeader('Content-Length', stat.size);
+    fs.createReadStream(filePath).pipe(res);
+}
+
+async downloadAudio(req, res) {
+    const { spawn } = require('child_process');
+    const path      = require('path');
+    const fs        = require('fs');
+    const safe      = path.basename(req.params.filename);
+    const filePath  = path.join(__dirname, '../../../../recordings', safe);
+    if (!fs.existsSync(filePath))
+        return res.status(404).json({ error: 'File not found' });
+    const audioName = safe.replace(/\.mp4$/, '.mp3');
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Disposition', `attachment; filename="${audioName}"`);
+    const ff = spawn('ffmpeg', [
+        '-i', filePath, '-vn', '-acodec', 'mp3',
+        '-q:a', '2', '-f', 'mp3', 'pipe:1',
+    ]);
+    ff.stdout.pipe(res);
+    ff.stderr.on('data', () => {});
+    req.on('close', () => ff.kill());
+}
 }
 function sendKnownError(res, error) {
     if (error.code === 11000) {
