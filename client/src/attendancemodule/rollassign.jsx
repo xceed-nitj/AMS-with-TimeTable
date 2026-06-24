@@ -733,7 +733,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
             <div style={{ ...styles.card, marginBottom: 20 }}>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: fixedDepartment ? '1fr 1fr auto' : '1fr 1fr 1fr auto',
+                    gridTemplateColumns: '1fr 1fr 1fr auto',
                     gap: 16,
                     alignItems: 'end',
                 }}>
@@ -743,12 +743,17 @@ export default function RollAssign({ fixedDepartment = '' }) {
                             {degrees.map(d => <option key={d.degreeName}>{d.degreeName}</option>)}
                         </select>
                     </div>
-                    {!fixedDepartment && (
-                        <div>
-                            <label style={styles.label}>Department</label>
-                            <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
-                                <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}</option>
-                                {departments.map((d) => {
+                    <div>
+                        <label style={styles.label}>Department</label>
+                        {fixedDepartment ? (
+                            <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                                {fixedDepartment.replace(/_/g, ' ')}
+                            </div>
+                        ) : (
+                            <>
+                                <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
+                                    <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}</option>
+                                    {departments.map((d) => {
                                     const normalisedDepartment = d.replace(/_/g, " ")
                                     const selectedDegree = degrees.find(d => d.degreeName === degree);
                                     const branch = selectedDegree?.branches?.find( b => b.dept === normalisedDepartment );
@@ -758,10 +763,11 @@ export default function RollAssign({ fixedDepartment = '' }) {
                                         </option>
                                     );
                                 })}
-                            </select>
-                            {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>}
-                        </div>
-                    )}
+                                </select>
+                                {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>}
+                            </>
+                        )}
+                    </div>
                     <div>
                         <label style={styles.label}>Year</label>
                         <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>

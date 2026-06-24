@@ -226,6 +226,7 @@ class AttendanceReportController {
     try {
       const {
         batch,
+        department,
         date,
         faculty,
         subject,
@@ -235,6 +236,12 @@ class AttendanceReportController {
       } = req.query;
       const filter = {};
       if (batch) filter.batch = batch;
+      if (department) {
+        // Dept-admins pass their locked department; match case/space/underscore-insensitively
+        const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const norm = escapeRegex(department.trim().replace(/\s+/g, '_'));
+        filter.department = new RegExp(`^${norm.replace(/_/g, '[ _]')}$`, 'i');
+      }
       if (date) filter.date = date;
       if (faculty) filter.faculty = faculty;
       if (subject) filter.subject = subject;

@@ -67,12 +67,12 @@ function Toast({ toast }) {
 
 // Main Component
 
-export default function ConfidenceMonitor() {
+export default function ConfidenceMonitor({ fixedDepartment = '' }) {
   const [degree, setDegree] = useState('BTECH');
   const [degrees, setDegrees] = useState([]);
   const [years, setYears] = useState([]);
   const [yearsLoading, setYearsLoading] = useState(false);
-  const [dept, setDept] = useState('');
+  const [dept, setDept] = useState(fixedDepartment);
   const [year, setYear] = useState('');
   const [departments, setDepts] = useState([]);
   const [days, setDays] = useState('60');
@@ -124,7 +124,7 @@ export default function ConfidenceMonitor() {
   useEffect(() => {
     if (!degree) {
       setDepts([]);
-      setDept('');
+      setDept(fixedDepartment || '');
       return;
     }
     setDepsLoading(true);
@@ -135,11 +135,11 @@ export default function ConfidenceMonitor() {
           .map((item) => (typeof item === 'string' ? item : item.dept))
           .filter(Boolean);
         setDepts(depts);
-        setDept('');
+        setDept(fixedDepartment || '');
       })
       .catch(() => showToast('Could not load departments'))
       .finally(() => setDepsLoading(false));
-  }, [degree]);
+  }, [degree, fixedDepartment]);
 
   const batch =
     degree && dept && year
@@ -382,29 +382,35 @@ export default function ConfidenceMonitor() {
           {/* Department */}
           <div style={{ minWidth: 200, flex: '2 1 200px' }}>
             <label style={styles.label}>Department</label>
-            <select
-              value={dept}
-              onChange={(e) => {
-                setDept(e.target.value);
-                setData(null);
-              }}
-              style={styles.select}
-              disabled={!degree || depsLoading}
-            >
-              <option value="">
-                {depsLoading ? 'Loading...' : 'Select...'}
-              </option>
-              {departments.map((d) => {
+            {fixedDepartment ? (
+              <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                {fixedDepartment.replace(/_/g, ' ')}
+              </div>
+            ) : (
+              <select
+                value={dept}
+                onChange={(e) => {
+                  setDept(e.target.value);
+                  setData(null);
+                }}
+                style={styles.select}
+                disabled={!degree || depsLoading}
+              >
+                <option value="">
+                  {depsLoading ? 'Loading...' : 'Select...'}
+                </option>
+                {departments.map((d) => {
                   const normalisedDepartment = d.replace(/_/g, " ")
                   const selectedDegree = degrees.find(d => d.degreeName === degree);
                   const branch = selectedDegree?.branches?.find( b => b.dept === normalisedDepartment );
                   return (
-                      <option key={d} value={d}>
-                          {branch?.branchName || normalisedDepartment}
-                      </option>
-                  );
+                        <option key={d} value={d}>
+                            {branch?.branchName || normalisedDepartment}
+                        </option>
+                    );
               })}
-            </select>
+              </select>
+            )}
           </div>
 
           {/* Year */}

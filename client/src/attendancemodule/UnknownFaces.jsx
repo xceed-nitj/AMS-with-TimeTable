@@ -6,7 +6,7 @@ import { useDepartments } from './useDepartments';
 const apiUrl = getEnvironment();
 const API_BASE = `${apiUrl}/attendancemodule/unknown-faces`;
 
-export default function UnknownFaces({ embedded = false, defaultDate = '', defaultDept = '' }) {
+export default function UnknownFaces({ embedded = false, defaultDate = '', defaultDept = '', fixedDept = '' }) {
     const [clusters, setClusters] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ export default function UnknownFaces({ embedded = false, defaultDate = '', defau
 
     // Filters
     const [filterDate, setFilterDate] = useState(defaultDate);
-    const [filterDept, setFilterDept] = useState(defaultDept);
+    const [filterDept, setFilterDept] = useState(fixedDept || defaultDept);
     const [filterStatus, setFilterStatus] = useState('');
     
     const { departments, deptLoading, deptError } = useDepartments();
@@ -173,12 +173,18 @@ export default function UnknownFaces({ embedded = false, defaultDate = '', defau
                 </div>
                 <div>
                     <label style={{ fontSize: '11px', color: theme.textMuted, display: 'block', marginBottom: 4 }}>Department</label>
-                    <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...styles.select, padding: '8px', fontSize: '13px' }} disabled={deptLoading}>
-                        <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'All Departments'}</option>
-                        {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                    </select>
+                    {fixedDept ? (
+                        <div style={{ ...styles.select, padding: '8px', fontSize: '13px', display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                            {fixedDept.replace(/_/g, ' ')}
+                        </div>
+                    ) : (
+                        <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...styles.select, padding: '8px', fontSize: '13px' }} disabled={deptLoading}>
+                            <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'All Departments'}</option>
+                            {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                        </select>
+                    )}
                 </div>
-                <button onClick={() => { setFilterDate(''); setFilterDept(''); setFilterStatus(''); }} style={{ ...styles.btnGhost, marginTop: 18 }}>Clear Filters</button>
+                <button onClick={() => { setFilterDate(''); setFilterDept(fixedDept || ''); setFilterStatus(''); }} style={{ ...styles.btnGhost, marginTop: 18 }}>Clear Filters</button>
             </div>
 
             {loading ? (
