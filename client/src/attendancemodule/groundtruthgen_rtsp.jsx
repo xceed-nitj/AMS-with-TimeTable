@@ -206,6 +206,7 @@ function extractSSEEvents(buffer) {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartment = '' }) {
     const [degree,     setDegree]     = useState('BTECH');
+    const [degrees, setDegrees] = useState([]);
     const [department, setDepartment] = useState(fixedDepartment);
     const { departments, deptLoading, deptError } = useDepartments();
     const { batchYears, batchYearsLoading } = useBatchYears();
@@ -253,6 +254,18 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
     const handleStartRef  = useRef(null);
 
     const RETRY_DELAY = 5;
+    
+    const fetchDegrees = async () => {
+        const url = `${_apiUrl}/attendancemodule/settings/batches/degrees`
+        const res = await fetch(url, {credentials: "include"})
+        const data = await res.json();
+        setDegrees(data.degrees);
+        console.log(data.degrees)
+    }
+
+    useEffect(() => {
+        fetchDegrees();
+    }, [])
 
     useEffect(() => {
         if (fixedDepartment) setDepartment(fixedDepartment);
@@ -810,7 +823,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                     <div>
                         <label style={styles.label}>Degree</label>
                         <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
-                            {DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                            {degrees.map(d => <option key={d._id} value={d.degreeName}>{d.degreeName}</option>)}
                         </select>
                     </div>
                     {!fixedDepartment ? (
@@ -818,7 +831,16 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                             <label style={styles.label}>Department</label>
                             <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
                                 <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select…'}</option>
-                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                                {departments.map((d) => {
+                                    const normalisedDepartment = d.replace(/_/g, " ")
+                                    const selectedDegree = degrees.find(d => d.degreeName === degree);
+                                    const branch = selectedDegree?.branches?.find( b => b.dept === normalisedDepartment );
+                                    return (
+                                        <option key={d} value={d}>
+                                            {branch?.branchName || normalisedDepartment}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 4 }}>{deptError}</div>}
                         </div>

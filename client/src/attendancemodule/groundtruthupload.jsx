@@ -98,7 +98,7 @@ const CSS = `
 `;
 
 // ── Shared batch selector component ──────────────────────────────────────────
-function BatchSelector({ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount, fixedDepartment }) {
+function BatchSelector({ degree, setDegree, degrees, setDegrees, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount, fixedDepartment }) {
     return (
         <div className="erp-card" style={{ marginBottom: 20 }}>
             <div className="erp-card-header">Batch Selection</div>
@@ -108,7 +108,7 @@ function BatchSelector({ degree, setDegree, department, setDepartment, batchYear
                         <label style={styles.label}>Degree</label>
                         <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
                             <option value="">Select…</option>
-                            {DEGREES.map(d => <option key={d}>{d}</option>)}
+                            {degrees.map(d => <option key={d.degreeName}>{d.degreeName}</option>)}
                         </select>
                     </div>
                     <div>
@@ -120,7 +120,16 @@ function BatchSelector({ degree, setDegree, department, setDepartment, batchYear
                         ) : (
                             <select value={department} onChange={e => { setDepartment(e.target.value); setBatchYear(''); }} style={styles.select} disabled={deptLoading}>
                                 <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select…'}</option>
-                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                                {departments.map((d) => {
+                                const normalisedDepartment = d.replace(/_/g, " ")
+                                const selectedDegree = degrees.find(d => d.degreeName === degree);
+                                const branch = selectedDegree?.branches?.find( b => b.dept === normalisedDepartment );
+                                return (
+                                    <option key={d} value={d}>
+                                        {branch?.branchName || normalisedDepartment}
+                                    </option>
+                                );
+                            })}
                             </select>
                         )}
                     </div>
@@ -153,7 +162,8 @@ export default function GroundTruthUpload({ fixedDepartment = '' }) {
 
     // ── Shared filter state ───────────────────────────────────────────
     const [degree,       setDegree]       = useState('');
-    const [department,   setDepartment]   = useState(fixedDepartment);
+    const [degrees, setDegrees]           = useState([]);
+    const [department,   setDepartment]   = useState('');
     const [batchYear,    setBatchYear]    = useState('');
     const [batches,      setBatches]      = useState([]);
     const [batchesLoading, setBatchesLoading] = useState(false);
@@ -215,6 +225,18 @@ export default function GroundTruthUpload({ fixedDepartment = '' }) {
             credentials: 'include',
         }).catch(() => {});
     }, []);
+
+    // Fetch Degrees
+    const fetchDegrees = async () => {
+        const url = `${apiUrl}/attendancemodule/settings/batches/degrees`
+        const res = await fetch(url, {credentials: "include"})
+        const data = await res.json();
+        setDegrees(data.degrees);
+    }
+
+    useEffect(() => {
+        fetchDegrees();
+    }, [])
 
     // ── Load batch years on mount ─────────────────────────────────────
     useEffect(() => {
@@ -525,7 +547,7 @@ try {
             {/* ══ UPLOAD TAB ════════════════════════════════════════════════════ */}
             {activeTab === 'upload' && (
                 <>
-                    <BatchSelector {...{ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount: batchPhotoCount, fixedDepartment }} />
+                    <BatchSelector {...{ degree, setDegree, degrees, setDegrees, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, photoCount: batchPhotoCount, fixedDepartment }} />
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                         {/* ZIP Upload */}
@@ -637,7 +659,7 @@ try {
             {/* ══ MANAGE TAB ════════════════════════════════════════════════════ */}
             {activeTab === 'manage' && (
                 <>
-                    <BatchSelector {...{ degree, setDegree, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, fixedDepartment }} />
+                    <BatchSelector {...{ degree, setDegree, degrees, setDegrees, department, setDepartment, batchYear, setBatchYear, departments, deptLoading, deptError, batches, batchesLoading, batchName, fixedDepartment }} />
 
                     {!batchName ? (
                         <div className="erp-card" style={{ padding: '40px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>

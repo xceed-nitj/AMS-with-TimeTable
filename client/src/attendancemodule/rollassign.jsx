@@ -82,8 +82,20 @@ export default function RollAssign({ fixedDepartment = '' }) {
     const [summaryError,   setSummaryError]   = useState(null);
 
     const [degree,        setDegree]        = useState('BTECH');
+    const [degrees, setDegrees]             = useState([]);
     const [department,    setDepartment]    = useState(fixedDepartment);
     const [year,          setYear]          = useState('');
+
+    const fetchDegrees = async () => {
+        const url = `${apiUrl}/attendancemodule/settings/batches/degrees`
+        const res = await fetch(url, {credentials: "include"})
+        const data = await res.json();
+        setDegrees(data.degrees);
+    }
+
+    useEffect(() => {
+        fetchDegrees();
+    }, [])
 
     useEffect(() => {
         if (fixedDepartment) setDepartment(fixedDepartment);
@@ -728,7 +740,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
                     <div>
                         <label style={styles.label}>Degree</label>
                         <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
-                            {DEGREES.map(d => <option key={d}>{d}</option>)}
+                            {degrees.map(d => <option key={d.degreeName}>{d.degreeName}</option>)}
                         </select>
                     </div>
                     <div>
@@ -741,7 +753,16 @@ export default function RollAssign({ fixedDepartment = '' }) {
                             <>
                                 <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select} disabled={deptLoading}>
                                     <option value="">{deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}</option>
-                                    {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                                    {departments.map((d) => {
+                                    const normalisedDepartment = d.replace(/_/g, " ")
+                                    const selectedDegree = degrees.find(d => d.degreeName === degree);
+                                    const branch = selectedDegree?.branches?.find( b => b.dept === normalisedDepartment );
+                                    return (
+                                        <option key={d} value={d}>
+                                            {branch?.branchName || normalisedDepartment}
+                                        </option>
+                                    );
+                                })}
                                 </select>
                                 {deptError && <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>}
                             </>
