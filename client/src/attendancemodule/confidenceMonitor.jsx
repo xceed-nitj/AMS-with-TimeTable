@@ -69,6 +69,7 @@ function Toast({ toast }) {
 
 export default function ConfidenceMonitor() {
   const [degree, setDegree] = useState('BTECH');
+  const [degrees, setDegrees] = useState([]);
   const [years, setYears] = useState([]);
   const [yearsLoading, setYearsLoading] = useState(false);
   const [dept, setDept] = useState('');
@@ -90,6 +91,18 @@ export default function ConfidenceMonitor() {
   }, []);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const fetchDegrees = async () => {
+      const url = `${apiUrl}/attendancemodule/settings/batches/degrees`
+      const res = await fetch(url, {credentials: "include"})
+      const data = await res.json();
+      setDegrees(data.degrees);
+      console.log(data.degrees)
+  }
+
+  useEffect(() => {
+      fetchDegrees();
+  }, [])
 
   // Fetch batch years from the Batch model (DB) on mount
   useEffect(() => {
@@ -358,9 +371,9 @@ export default function ConfidenceMonitor() {
               }}
               style={styles.select}
             >
-              {DEGREES.map((d) => (
-                <option key={d} value={d}>
-                  {d}
+              {degrees.map((d) => (
+                <option key={d.degreeName} value={d.degreeName}>
+                  {d.degreeName}
                 </option>
               ))}
             </select>
@@ -381,11 +394,16 @@ export default function ConfidenceMonitor() {
               <option value="">
                 {depsLoading ? 'Loading...' : 'Select...'}
               </option>
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
+              {departments.map((d) => {
+                  const normalisedDepartment = d.replace(/_/g, " ")
+                  const selectedDegree = degrees.find(d => d.degreeName === degree);
+                  const branch = selectedDegree?.branches?.find( b => b.dept === normalisedDepartment );
+                  return (
+                      <option key={d} value={d}>
+                          {branch?.branchName || normalisedDepartment}
+                      </option>
+                  );
+              })}
             </select>
           </div>
 
