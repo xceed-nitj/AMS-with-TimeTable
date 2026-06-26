@@ -27,11 +27,12 @@ const batchSchema = new mongoose.Schema({
     erpUpload:         { type: Boolean, default: true },
     attendanceReports: { type: Boolean, default: true },
     classVerification: { type: Boolean, default: true },
-    cameraRegistry:    { type: Boolean, default: true },   // ← new
+    cameraRegistry:    { type: Boolean, default: true },
     subjectEmbeddings: { type: Boolean, default: true },
     livePreview:       { type: Boolean, default: true },
-    gpuMetrics:        { type: Boolean, default: true },   // ← new
+    gpuMetrics:        { type: Boolean, default: true },
     confidenceMonitor: { type: Boolean, default: true },
+    recordStream:      { type: Boolean, default: true },  
     helpManual:        { type: Boolean, default: true },
 },
 }, { timestamps: true });
