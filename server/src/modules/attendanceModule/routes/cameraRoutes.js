@@ -15,5 +15,10 @@ router.put('/:id', (req, res) => cameraController.updateCameraById(req, res));
 router.patch('/:id/health', (req, res) => cameraController.updateCameraHealth(req, res));
 router.post('/:id/preview/start', (req, res) => cameraController.startPreviewById(req, res));
 router.delete('/:id', (req, res) => cameraController.deleteCameraById(req, res));
+router.post('/recording/start',                (req, res) => cameraController.startRecording(req, res));
+router.post('/recording/stop',                 (req, res) => cameraController.stopRecording(req, res));
+router.get('/recording/list',                  (req, res) => cameraController.listRecordings(req, res));
+router.get('/recording/download/:filename',    (req, res) => cameraController.downloadRecording(req, res));
+router.get('/recording/audio/:filename',       (req, res) => cameraController.downloadAudio(req, res));
 
 module.exports = router;

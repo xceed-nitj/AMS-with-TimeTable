@@ -443,7 +443,8 @@ uploadPkl() {
     // collection by sem+dept. If dept is also omitted, ALL students in that sem are used.
     // File name format: {sem}_{subjectSafe}.pkl  e.g. 6_Digital_Electronics.pkl
     async generate(req, res) {
-        let { sem, subject, dept, rollNos } = req.body;
+        let { sem, subject, dept, rollNos, instituteWise } = req.body;
+        instituteWise = !!instituteWise;
 
         if (!subject || !subject.trim()) {
             return res.status(400).json({ error: 'subject is required' });
@@ -455,7 +456,7 @@ uploadPkl() {
         // ── Auto-fetch roll nos if not supplied ───────────────────────────────
         if (!Array.isArray(rollNos) || rollNos.length === 0) {
             const filter = { sem: Number(sem) || sem };
-            if (dept && dept.toUpperCase() !== 'ALL') {
+            if (dept && !instituteWise) {
                 filter.dept = { $regex: new RegExp(dept, 'i') };
             }
             const students = await Student.find(filter).select('rollNo -_id').lean();
@@ -519,17 +520,14 @@ uploadPkl() {
         sse({ type: 'start', total: rollNos.length, sem: semSafe, subject: subject.trim(), embeddingFile });
 
         // Helper: find the GT batch folder that contains a given roll number.
-        // Checks every subfolder under ground_truth/ for a matching roll dir.
-        // If dept is supplied, prefers batch folders whose name contains dept.
+        // When instituteWise=true scans all batch folders; otherwise only dept-matching ones.
         async function findStudentDir(rollNo) {
             if (!fs.existsSync(GROUND_TRUTH_DIR)) return null;
             const batchFolders = await fsPromises.readdir(GROUND_TRUTH_DIR);
-            // Prefer dept-matching batches first
-            const isGlobal = !dept || dept.toUpperCase() === 'ALL';
-            const sorted = isGlobal
+            const candidates = instituteWise
                 ? batchFolders
-                : batchFolders.filter(b => b.toUpperCase().includes(dept.toUpperCase()));
-            for (const batch of sorted) {
+                : batchFolders.filter(b => b.toUpperCase().includes((dept || '').toUpperCase()));
+            for (const batch of candidates) {
                 const candidate = path.join(GROUND_TRUTH_DIR, batch, rollNo);
                 if (fs.existsSync(candidate)) return { dir: candidate, batch };
             }
@@ -540,10 +538,13 @@ uploadPkl() {
             const found = await findStudentDir(rollNo);
 
             if (!found) {
-                sse({ type: 'student', rollNo, status: 'failed', reason: 'No ground truth folder' });
+                const reason = instituteWise
+                    ? 'Not found in any department — check roll no and verify ground truth exists'
+                    : 'Not found in dept ground truth — try Institute Wise search';
+                sse({ type: 'student', rollNo, status: 'failed', reason });
                 failed++;
-                failedList.push({ rollNo, reason: 'No ground truth folder' });
-                missedRollNos.push({ rollNo, reason: 'No ground truth folder' });
+                failedList.push({ rollNo, reason });
+                missedRollNos.push({ rollNo, reason });
                 continue;
             }
 

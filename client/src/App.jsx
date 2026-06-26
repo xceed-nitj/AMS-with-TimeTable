@@ -216,6 +216,7 @@ import FrameVerification from './attendancemodule/FrameVerification';
 import AcquisitionControl from './attendancemodule/AcquisitionControl';
 import UnknownFaces from './attendancemodule/UnknownFaces';
 import SchedulerPage from './attendancemodule/SchedulerPage';
+import RecordStream from './attendancemodule/RecordStream';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
@@ -230,7 +231,15 @@ import TTManual from './timetableadmin/TTManual';
 import DeptAdminLayout from './deptadmin/DeptAdminLayout';
 import DeptDashboard from './deptadmin/DeptDashboard';
 import DeptReports from './deptadmin/DeptReports';
-import { DeptAssignRolls, DeptLiveRTSP } from './deptadmin/DeptAdminTools';
+import {
+    DeptAssignRolls,
+    DeptLiveRTSP,
+    DeptGroundTruthUpload,
+    DeptAttendanceReport,
+    DeptClassVerification,
+    DeptSubjectEmbeddings,
+    DeptConfidenceMonitor,
+} from './deptadmin/DeptAdminTools';
 import DeptMenuConfig from './attendancemodule/DeptMenuConfig';
 
 //confifence monitor
@@ -665,13 +674,14 @@ function App() {
           <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
           {/* <Route path="groundtruth/photos" element={<PhotoEdit />} /> */}
           <Route path="groundtruth/upload" element={<GroundTruthUpload />} />
+          <Route path="record-stream" element={<RecordStream />} />
           <Route path="embeddings" element={<EmbeddingGeneration />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
           <Route path="reports" element={<AttendanceReport />} />
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
-           <Route path="acquisition-control" element={<AcquisitionControl />} />
+          <Route path="acquisition-control" element={<AcquisitionControl />} />
           <Route path="gpu" element={<GpuMetrics />} />
           <Route path="dept-menu-config" element={<DeptMenuConfig />} />
           <Route path="scheduler" element={<SchedulerPage />} />
@@ -679,24 +689,29 @@ function App() {
 
         {/* ─── Department Admin Routes ────────────────────────────── */}
         <Route path="/dept-admin" element={<DeptAdminLayout />}>
-  <Route index element={<DeptDashboard />} />
-  <Route path="dashboard" element={<DeptDashboard />} />
-  <Route path="live-rtsp" element={<DeptLiveRTSP />} />
-  <Route path="assign-rolls" element={<DeptAssignRolls />} />
-  <Route path="reports" element={<DeptReports />} />
-  <Route path="*" element={
-    <div style={{ padding: 48, textAlign: 'center' }}>
-      <h2 style={{ marginBottom: 12 }}>Access Restricted</h2>
-      <p style={{ color: '#666', marginBottom: 24 }}>
-        This section is not configured for your role.
-        Please contact the administrator to request access.
-      </p>
-      <a href="mailto:xceeddev2@nitj.ac.in" style={{ color: '#6366f1', fontWeight: 600 }}>
-        Contact Admin
-      </a>
-    </div>
-  } />
-</Route>
+          <Route index element={<DeptDashboard />} />
+          <Route path="dashboard" element={<DeptDashboard />} />
+          <Route path="live-rtsp" element={<DeptLiveRTSP />} />
+          <Route path="assign-rolls" element={<DeptAssignRolls />} />
+          <Route path="erp-upload" element={<DeptGroundTruthUpload />} />
+          <Route path="reports" element={<DeptAttendanceReport />} />
+          <Route path="class-verification" element={<DeptClassVerification />} />
+          <Route path="embeddings" element={<DeptSubjectEmbeddings />} />
+          <Route path="confidence" element={<DeptConfidenceMonitor />} />
+          <Route path="dept-reports-view" element={<DeptReports />} />
+          <Route path="*" element={
+            <div style={{ padding: 48, textAlign: 'center' }}>
+              <h2 style={{ marginBottom: 12 }}>Access Restricted</h2>
+              <p style={{ color: '#666', marginBottom: 24 }}>
+                This section is not configured for your role.
+                Please contact the administrator to request access.              
+                </p>
+              <a href="mailto:xceeddev2@nitj.ac.in" style={{ color: '#6366f1', fontWeight: 600 }}>
+                Contact Admin
+              </a>
+            </div>
+          } />
+        </Route>
 
         {/* Camera Registry — top-level but still inside AMSLayout */}
         <Route path="/cameras" element={<AMSLayout />}>

@@ -10,6 +10,12 @@ const controller = new BatchSettingsController();
 router.get('/dept-menus', async (req, res) => await controller.getDeptMenus(req, res));
 router.put('/dept-menus', async (req, res) => await controller.updateDeptMenus(req, res));
 
+// Degree array endpoints — must come BEFORE '/:id'
+router.get('/:id/degrees', async (req, res) => await controller.getDegrees(req, res));
+router.put('/:id/degrees', async (req, res) => await controller.updateDegrees(req, res));
+router.get('/degrees', async (req, res) => await controller.getGlobalDegrees(req, res));
+router.put('/degrees', async (req, res) => await controller.updateAllDegrees(req, res));
+
 router.get('/', async (req, res) => await controller.listBatches(req, res));
 router.get('/department/:dept', async (req, res) => await controller.listBatches(req, res));
 router.post('/', async (req, res) => await controller.createBatch(req, res));

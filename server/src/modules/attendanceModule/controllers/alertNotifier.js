@@ -13,17 +13,23 @@ function shouldSend(key) {
   return true;
 }
 
-// alertKey must match one of: serverDown | lowConfidence | classBunk | duplicateAttendance
-function getRecipients(recipients, alertKey, dept = null) {
+// Get all emails that should receive this alertKey, filtered by role alertTypes + dept matching
+function getRecipients(settings, alertKey, dept = null) {
   const emails = new Set();
-  for (const r of recipients) {
-    if (!r.alertTypes || !r.alertTypes[alertKey]) continue; // must be opted in for this alert type
 
-    if (r.category === "admin") {
-      emails.add(r.email);
-    } else if (dept && (r.category === "coordinator" || r.category === "head")) {
-      if (r.dept && r.dept.toLowerCase() === dept.toLowerCase()) {
-        emails.add(r.email);
+  // Build a map of role → alertTypes for quick lookup
+  const roleMap = {};
+  for (const r of settings.roles) roleMap[r.role] = r.alertTypes;
+
+  for (const recipient of settings.recipients) {
+    const roleAlerts = roleMap[recipient.role];
+    if (!roleAlerts || !roleAlerts[alertKey]) continue; // role not opted in
+
+    if (recipient.role === 'admin') {
+      emails.add(recipient.email);
+    } else if (dept && (recipient.role === 'coordinator' || recipient.role === 'head')) {
+      if (recipient.dept && recipient.dept.toLowerCase() === dept.toLowerCase()) {
+        emails.add(recipient.email);
       }
     }
   }
@@ -41,9 +47,9 @@ async function sendAlert(subject, html, cooldownKey, alertKey, dept = null) {
 
   if (!settings.enabled) return;
 
-  const emails = getRecipients(settings.recipients, alertKey, dept);
+  const emails = getRecipients(settings, alertKey, dept);
   if (emails.length === 0) {
-    console.warn("[AlertNotifier] No recipients opted in for", alertKey, "— skipping:", subject);
+    console.warn("[AlertNotifier] No recipients for", alertKey, "— skipping");
     return;
   }
 
@@ -60,45 +66,52 @@ async function sendAlert(subject, html, cooldownKey, alertKey, dept = null) {
 }
 
 async function notifyServerDown(serviceName, details = "") {
-  const subject = `⚠️ iAMS Alert: ${serviceName} is down`;
-  await sendAlert(subject, templates.serverDownTemplate(serviceName, details), null, "serverDown", null);
+  await sendAlert(
+    `⚠️ iAMS Alert: ${serviceName} is down`,
+    templates.serverDownTemplate(serviceName, details),
+    null, "serverDown", null
+  );
 }
 
-async function notifyClassBunk({ batch, subject, faculty, room, date, timeSlot, dept }) {
-  const emailSubject = `⚠️ iAMS Alert: Class bunked — ${subject || "Unknown subject"}`;
+async function notifyNoReportSaved({ batch, subject, faculty, room, date, timeSlot, dept }) {
   await sendAlert(
-    emailSubject,
-    templates.classBunkTemplate({ batch, subject, faculty, room, date, timeSlot }),
+    `⚠️ iAMS Alert: No report saved — ${subject || "Unknown subject"}`,
+    templates.noReportSavedTemplate({ batch, subject, faculty, room, date, timeSlot }),
+    `no-report-${batch}-${date}-${timeSlot}`,
+    "noReportSaved", dept || null
+  );
+}
+
+async function notifyClassBunk({ batch, subject, faculty, room, date, timeSlot, dept, totalStudents }) {
+  await sendAlert(
+    `🚨 iAMS Alert: Class bunked — ${subject || "Unknown subject"}`,
+    templates.classBunkTemplate({ batch, subject, faculty, room, date, timeSlot, totalStudents }),
     `class-bunk-${batch}-${date}-${timeSlot}`,
-    "classBunk",
-    dept || null
+    "classBunk", dept || null
   );
 }
 
 async function notifyLowConfidence({ batch, rollNo, avgConfidence, dept }) {
-  const subject = `⚠️ iAMS Alert: Low confidence detection — ${rollNo}`;
   await sendAlert(
-    subject,
+    `⚠️ iAMS Alert: Low confidence detection — ${rollNo}`,
     templates.lowConfidenceTemplate({ batch, rollNo, avgConfidence }),
     `low-conf-${batch}-${rollNo}`,
-    "lowConfidence",
-    dept || null
+    "lowConfidence", dept || null
   );
 }
 
 async function notifyDuplicateAttendance({ rollNo, date, sessions }) {
-  const subject = `⚠️ iAMS Alert: Duplicate attendance detected — ${rollNo}`;
   await sendAlert(
-    subject,
+    `⚠️ iAMS Alert: Duplicate attendance detected — ${rollNo}`,
     templates.duplicateAttendanceTemplate({ rollNo, date, sessions }),
     `dup-${rollNo}-${date}`,
-    "duplicateAttendance",
-    null
+    "duplicateAttendance", null
   );
 }
 
 module.exports = {
   notifyServerDown,
+  notifyNoReportSaved,
   notifyClassBunk,
   notifyLowConfidence,
   notifyDuplicateAttendance,

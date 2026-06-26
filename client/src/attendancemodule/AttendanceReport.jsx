@@ -14,7 +14,7 @@ const ML_API     = `${apiUrl}/ml`;
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 const CAMERA_SWITCH_SEC = 30; // must match CAMERA_SWITCH_SEC in rtsp_routes.py
 
-export default function AttendanceReport() {
+export default function AttendanceReport({ fixedDepartment = '' }) {
     const navigate = useNavigate();
     const [tab, setTab] = useState('run');
 
@@ -37,7 +37,7 @@ export default function AttendanceReport() {
 
     // ── Fallback batch (if LockSem lookup fails) ──────────────────
     const [degree,     setDegree]     = useState('BTECH');
-    const [department, setDepartment] = useState('');
+    const [department, setDepartment] = useState(fixedDepartment);
     const [year,       setYear]       = useState('');
     const { departments, deptLoading, deptError } = useDepartments();
     const sanitizeDept = (d) => (d || '').trim().replace(/\s+/g, '_').toUpperCase();
@@ -65,6 +65,9 @@ export default function AttendanceReport() {
         if (periodCfg.runDurationSec)   setDuration(periodCfg.runDurationSec);
         if (periodCfg.checkIntervalMin) setCheckIntervalMin(periodCfg.checkIntervalMin);
     }, [acqConfig, slot]);
+    useEffect(() => {
+        if (fixedDepartment) setDepartment(fixedDepartment);
+    }, [fixedDepartment]);
 
     // ── Run state ─────────────────────────────────────────────────
     const [processing,      setProcessing]      = useState(false);
@@ -214,12 +217,13 @@ export default function AttendanceReport() {
             const params = new URLSearchParams();
             if (filterBatch) params.set('batch', filterBatch);
             if (filterDate)  params.set('date',  filterDate);
+            if (fixedDepartment) params.set('department', fixedDepartment);
             const res  = await fetch(`${REPORT_API}?${params}`);
             const data = await res.json();
             setReports(data.reports || []);
         } catch { showToast('Failed to load reports', 'error'); }
         setHistLoading(false);
-    }, [filterBatch, filterDate]);
+    }, [filterBatch, filterDate, fixedDepartment]);
 
     useEffect(() => { if (tab === 'history') fetchReports(); }, [tab, fetchReports]);
 
@@ -714,15 +718,23 @@ export default function AttendanceReport() {
                                 </div>
                                 <div>
                                     <label style={styles.label}>Department</label>
-                                    <select value={department} onChange={e => setDepartment(e.target.value)}
-                                        style={styles.select} disabled={deptLoading}>
-                                        <option value="">
-                                            {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
-                                        </option>
-                                        {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                                    </select>
-                                    {deptError && (
-                                        <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
+                                    {fixedDepartment ? (
+                                        <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                                            {fixedDepartment.replace(/_/g, ' ')}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <select value={department} onChange={e => setDepartment(e.target.value)}
+                                                style={styles.select} disabled={deptLoading}>
+                                                <option value="">
+                                                    {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
+                                                </option>
+                                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                                            </select>
+                                            {deptError && (
+                                                <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                                 <div>
@@ -1213,7 +1225,7 @@ export default function AttendanceReport() {
             {/* ════ UNKNOWN FACES TAB ════ */}
             {tab === 'unknown' && (
                 <div style={{ marginTop: 16 }}>
-                    <UnknownFaces embedded={true} defaultDate={date} defaultDept={derivedCtx?.dept || department} />
+                    <UnknownFaces embedded={true} defaultDate={date} defaultDept={derivedCtx?.dept || department} fixedDept={fixedDepartment} />
                 </div>
             )}
         </div>
