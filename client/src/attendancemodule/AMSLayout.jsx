@@ -37,7 +37,7 @@ const NAV = [
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
-
+  { id: 'mldata', route: '/attendance/view-mldata', label: 'View ML-Data', newTab: false },
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
