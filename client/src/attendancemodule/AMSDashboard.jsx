@@ -8,6 +8,9 @@ import {
 } from 'recharts';
 import getEnvironment from '../getenvironment';
 import HealthDashboard from './HealthDashboard';
+import { MLDataFolder } from './MLDataFolder';
+import { createPortal } from "react-dom";
+import { useRef } from "react";
 
 const apiUrl     = getEnvironment();
 const CAM_API    = `${apiUrl}/attendancemodule/cameras`;
@@ -15,6 +18,7 @@ const REPORT_API = `${apiUrl}/attendancemodule/reports`;
 const GT_API     = `${apiUrl}/attendancemodule/ground-truth`;
 const EMB_API    = `${apiUrl}/attendancemodule/embeddings`;
 const USER_API   = `${apiUrl}/user/getuser`;
+const ML_DATA_API   = `${apiUrl}/attendancemodule/mldatafoldertree`;
 
 const T = {
   bg:         '#f5f6fb',
@@ -318,6 +322,11 @@ export default function AMSDashboard() {
   const [embLoad,     setEmbLoad]   = useState(true);
   const [chartData,   setChartData] = useState(null);
   const [camOpen,     setCamOpen]   = useState(false);
+  const [showML, setShowML] = useState(false);
+  const [mlFolderLoad, setMLFolderLoad] = useState(true);
+  const [mlFoldertree, setMlFolderTree] = useState({});
+  const [mlDropPos, setMlDropPos] = useState({ top: 0, right: 0 });
+  const mlBtnRef = useRef(null);
 
   /* data fetches */
   useEffect(() => {
@@ -327,6 +336,44 @@ export default function AMSDashboard() {
       .catch(() => {});
   }, []);
 
+  useEffect(()=> {
+      getMLFolderTree();
+  }, [])
+
+  const getMLFolderTree = async () => {
+      try{
+          const url = `${apiUrl}/attendancemodule/mldatafoldertree`
+          const res = await fetch(url);
+          const data = await res.json();
+          setMlFolderTree(data);
+      }
+      catch(e){
+          console.error(e);
+      }
+      finally {
+          setMLFolderLoad(false);
+      }
+  }
+  const formatBytes = (bytes) => {
+      if (!bytes) return "0 B";
+
+      const units = ["B","KB","MB","GB","TB"];
+      const i = Math.floor(Math.log(bytes)/Math.log(1024));
+
+      return `${(bytes/Math.pow(1024,i)).toFixed(2)} ${units[i]}`;
+  };
+  const handleMLClick = () => {
+    if (mlBtnRef.current) {
+      const r = mlBtnRef.current.getBoundingClientRect();
+
+      setMlDropPos({
+        top: r.bottom + 6,
+        right: window.innerWidth - r.right,
+      });
+    }
+
+    setShowML(prev => !prev);
+  };
   function fetchGtStats() {
     setGtLoad(true);
     fetch(`${GT_API}/stats`, { credentials: 'include' })
@@ -398,6 +445,159 @@ export default function AMSDashboard() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
               <HealthDashboard />
+            <div>
+              <button ref={mlBtnRef} onClick={handleMLClick}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexShrink: 0,
+                  background: T.surface,
+                  border: `1px solid ${showML ? T.indigo + "80" : T.border}`,
+                  borderRadius: 9,
+                  padding: "7px 13px",
+                  boxShadow: "0 1px 4px rgba(26,31,60,0.06)",
+                  cursor: "pointer",
+                  fontFamily: T.fontBody,
+                  transition: "border-color .15s",
+                }}
+              >
+                {mlFolderLoad ? (
+                  <span style={{ fontSize: 12, color: T.textMuted }}>
+                    Loading...
+                  </span>
+                ) : (
+                  <span style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: T.text,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5}}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                      </svg>
+                      ML Data
+                    </span>
+
+                    <span style={{ color: T.indigo }}>
+                      {formatBytes(mlFoldertree.size)}
+                    </span>
+                  </span>
+                )}
+              </button>
+              {showML &&
+                createPortal(
+                  <div
+                    style={{
+                      position: "fixed",
+                      top: mlDropPos.top,
+                      right: mlDropPos.right,
+                      width: 280,
+                      background: T.surface,
+                      border: `1px solid ${T.border}`,
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      boxShadow: "0 8px 24px rgba(26,31,60,0.12)",
+                      animation: "dropDown .18s ease both",
+                      zIndex: 2147483647,
+                      fontFamily: T.fontBody,
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderBottom: `1px solid ${T.border}`,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: T.text,
+                        }}
+                      >
+                        ML Data Folders
+                      </span>
+
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: T.indigo,
+                          background: T.indigoDim,
+                          padding: "3px 7px",
+                          borderRadius: 4,
+                        }}
+                      >
+                        {formatBytes(mlFoldertree.size)}
+                      </span>
+                    </div>
+
+                    {mlFoldertree.subfolders?.map((folder, index) => (
+                      <div
+                        key={folder.name}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "10px 14px",
+                          borderBottom:
+                            index !== mlFoldertree.subfolders.length - 1
+                              ? `1px solid ${T.border}`
+                              : "none",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: T.text,
+                          }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                          </svg>
+                          {folder.name}
+                        </span>
+                        <span
+                          style={{
+                            color: T.textMuted,
+                            fontSize: 11,
+                            fontFamily: T.fontMono,
+                          }}
+                        >
+                          {formatBytes(folder.size)}
+                        </span>
+                      </div>
+                    ))}
+                    <button
+                      style={{
+                        color: T.indigo,
+                        textDecoration: "underline",
+                        display : "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        width: "100%",
+                        fontSize: "12px",
+                        fontWeight: "500"
+                      }}
+                      onClick={() => navigate("/attendance/view-mldata")}
+                    >
+                      View Details {">>"}
+                    </button>  
+                  </div>,
+                  document.body
+                )}
+            </div>
 
             {/* camera toggle badge */}
             <button
@@ -589,7 +789,6 @@ export default function AMSDashboard() {
               </ResponsiveContainer>
             )}
           </ChartCard>
-
         </div>
       </div>
     </>
