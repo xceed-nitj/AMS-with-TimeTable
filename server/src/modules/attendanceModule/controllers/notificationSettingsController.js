@@ -1,6 +1,6 @@
 const NotificationSettings = require('../../../models/attendanceModule/notificationSettings');
 
-const ALERT_KEYS = ['serverDown', 'lowConfidence', 'classBunk', 'duplicateAttendance'];
+const ALERT_KEYS = ['serverDown', 'lowConfidence', 'noReportSaved', 'classBunk', 'duplicateAttendance'];
 const VALID_ROLES = ['admin', 'coordinator', 'head'];
 
 function normalizeAlertTypes(input = {}) {

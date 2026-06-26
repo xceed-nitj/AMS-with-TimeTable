@@ -523,8 +523,9 @@ async function checkMissedClasses(
         });
 
         if (!report) {
+          // No report at all — system did not run for this scheduled class
           try {
-            await alertNotifier.notifyClassBunk({
+            await alertNotifier.notifyNoReportSaved({
               batch: ctx.batch,
               subject: ctx.subject,
               faculty: ctx.faculty,
@@ -534,7 +535,27 @@ async function checkMissedClasses(
               dept: ctx.dept,
             });
           } catch (err) {
-            console.error("[ClassBunkCheck] alert failed:", err.message);
+            console.error("[ClassBunkCheck] no-report alert failed:", err.message);
+          }
+        } else {
+          // Report exists — check if all roll nos are absent and no faces were detected
+          const allAbsent = (report.summary.present || 0) === 0 && (report.summary.review || 0) === 0;
+          const hasStudents = (report.finalReport || []).length > 0;
+          if (allAbsent && hasStudents) {
+            try {
+              await alertNotifier.notifyClassBunk({
+                batch: ctx.batch,
+                subject: ctx.subject,
+                faculty: ctx.faculty,
+                room: slotEntry.room,
+                date,
+                timeSlot: slotKey,
+                dept: ctx.dept,
+                totalStudents: report.finalReport.length,
+              });
+            } catch (err) {
+              console.error("[ClassBunkCheck] bunk alert failed:", err.message);
+            }
           }
         }
       }

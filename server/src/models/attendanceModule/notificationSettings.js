@@ -6,6 +6,7 @@ const roleSettingsSchema = new mongoose.Schema({
   alertTypes: {
     serverDown:          { type: Boolean, default: false },
     lowConfidence:       { type: Boolean, default: false },
+    noReportSaved:       { type: Boolean, default: false },
     classBunk:           { type: Boolean, default: false },
     duplicateAttendance: { type: Boolean, default: false },
   },
@@ -25,9 +26,9 @@ const notificationSettingsSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const DEFAULT_ROLES = [
-  { role: "admin",       alertTypes: { serverDown: false, lowConfidence: false, classBunk: false, duplicateAttendance: false } },
-  { role: "coordinator", alertTypes: { serverDown: false, lowConfidence: false, classBunk: false, duplicateAttendance: false } },
-  { role: "head",        alertTypes: { serverDown: false, lowConfidence: false, classBunk: false, duplicateAttendance: false } },
+  { role: "admin",       alertTypes: { serverDown: false, lowConfidence: false, noReportSaved: false, classBunk: false, duplicateAttendance: false } },
+  { role: "coordinator", alertTypes: { serverDown: false, lowConfidence: false, noReportSaved: false, classBunk: false, duplicateAttendance: false } },
+  { role: "head",        alertTypes: { serverDown: false, lowConfidence: false, noReportSaved: false, classBunk: false, duplicateAttendance: false } },
 ];
 
 notificationSettingsSchema.statics.getSettings = async function () {

@@ -73,10 +73,19 @@ async function notifyServerDown(serviceName, details = "") {
   );
 }
 
-async function notifyClassBunk({ batch, subject, faculty, room, date, timeSlot, dept }) {
+async function notifyNoReportSaved({ batch, subject, faculty, room, date, timeSlot, dept }) {
   await sendAlert(
-    `⚠️ iAMS Alert: Class bunked — ${subject || "Unknown subject"}`,
-    templates.classBunkTemplate({ batch, subject, faculty, room, date, timeSlot }),
+    `⚠️ iAMS Alert: No report saved — ${subject || "Unknown subject"}`,
+    templates.noReportSavedTemplate({ batch, subject, faculty, room, date, timeSlot }),
+    `no-report-${batch}-${date}-${timeSlot}`,
+    "noReportSaved", dept || null
+  );
+}
+
+async function notifyClassBunk({ batch, subject, faculty, room, date, timeSlot, dept, totalStudents }) {
+  await sendAlert(
+    `🚨 iAMS Alert: Class bunked — ${subject || "Unknown subject"}`,
+    templates.classBunkTemplate({ batch, subject, faculty, room, date, timeSlot, totalStudents }),
     `class-bunk-${batch}-${date}-${timeSlot}`,
     "classBunk", dept || null
   );
@@ -102,6 +111,7 @@ async function notifyDuplicateAttendance({ rollNo, date, sessions }) {
 
 module.exports = {
   notifyServerDown,
+  notifyNoReportSaved,
   notifyClassBunk,
   notifyLowConfidence,
   notifyDuplicateAttendance,

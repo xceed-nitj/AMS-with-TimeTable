@@ -12,10 +12,10 @@ function serverDownTemplate(serviceName, details = '') {
   `;
 }
 
-function classBunkTemplate({ batch, subject, faculty, room, date, timeSlot }) {
+function noReportSavedTemplate({ batch, subject, faculty, room, date, timeSlot }) {
   return `
-    <h3>⚠️ Class Bunked</h3>
-    <p>A scheduled class did not run. Details below:</p>
+    <h3>⚠️ No Report Saved</h3>
+    <p>A scheduled class has no attendance report saved. The camera or recognition system may not have run for this session.</p>
     <table style="border-collapse:collapse;font-size:14px;">
       <tr><td style="padding:4px 12px 4px 0;color:#888;">Batch</td><td><strong>${batch}</strong></td></tr>
       <tr><td style="padding:4px 12px 4px 0;color:#888;">Subject</td><td><strong>${subject || 'N/A'}</strong></td></tr>
@@ -24,7 +24,26 @@ function classBunkTemplate({ batch, subject, faculty, room, date, timeSlot }) {
       <tr><td style="padding:4px 12px 4px 0;color:#888;">Date</td><td>${date}</td></tr>
       <tr><td style="padding:4px 12px 4px 0;color:#888;">Time Slot</td><td>${timeSlot}</td></tr>
     </table>
-    <p>No attendance report was generated for this scheduled session.</p>
+    <p>No attendance report was generated for this scheduled session. Please verify the camera feed and system status.</p>
+    <hr/>
+    <p style="color:#888;font-size:12px;">This is an automated alert from iAMS. Do not reply to this email.</p>
+  `;
+}
+
+function classBunkTemplate({ batch, subject, faculty, room, date, timeSlot, totalStudents }) {
+  return `
+    <h3>🚨 Class Bunked</h3>
+    <p>The attendance system ran for this session but <strong>no faces were detected and all students are marked absent</strong>. The entire class may have bunked.</p>
+    <table style="border-collapse:collapse;font-size:14px;">
+      <tr><td style="padding:4px 12px 4px 0;color:#888;">Batch</td><td><strong>${batch}</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#888;">Subject</td><td><strong>${subject || 'N/A'}</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#888;">Faculty</td><td>${faculty || 'N/A'}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#888;">Room</td><td>${room || 'N/A'}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#888;">Date</td><td>${date}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#888;">Time Slot</td><td>${timeSlot}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#888;">Total Students</td><td><strong>${totalStudents}</strong> — all absent</td></tr>
+    </table>
+    <p>No student faces were recognised and no faces appeared in review. This indicates the class was not attended.</p>
     <hr/>
     <p style="color:#888;font-size:12px;">This is an automated alert from iAMS. Do not reply to this email.</p>
   `;
@@ -66,6 +85,7 @@ function duplicateAttendanceTemplate({ rollNo, date, sessions }) {
 
 module.exports = {
   serverDownTemplate,
+  noReportSavedTemplate,
   classBunkTemplate,
   lowConfidenceTemplate,
   duplicateAttendanceTemplate,
