@@ -579,6 +579,21 @@ export default function AMSDashboard() {
                         </span>
                       </div>
                     ))}
+                    <button
+                      style={{
+                        color: T.indigo,
+                        textDecoration: "underline",
+                        display : "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        width: "100%",
+                        fontSize: "12px",
+                        fontWeight: "500"
+                      }}
+                      onClick={() => navigate("/attendance/view-mldata")}
+                    >
+                      View Details {">>"}
+                    </button>  
                   </div>,
                   document.body
                 )}
