@@ -13,6 +13,13 @@ const studentAttendanceSchema = new Schema({
     confidenceZone:  { type: String, enum: ['high', 'medium', 'low'], default: 'low' },
     firstSeenSec:    { type: Number, default: null },
     clusterFolder:   { type: String, default: null },
+    // Demographics from InsightFace's genderage head — captured for free
+    // during the same detection pass that produces the embedding. Used to
+    // cross-check against the enrolled student's recorded gender/age before
+    // a "present" mark is trusted.
+    detectedAge:     { type: Number, default: null },
+    detectedGender:  { type: String, enum: ['M', 'F', null], default: null },
+    genderMismatch:  { type: Boolean, default: false },  // true if detectedGender != Student.gender
     // logic merge: if multiple time slots
     finalStatus:     { type: String, enum: ['P', 'A', 'R'], default: 'A' },
 }, { _id: false });
