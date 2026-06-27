@@ -196,6 +196,7 @@ ZOOM_PASSES = [
     {"zoom": 7.0, "cx": 0.68, "cy": 0.12, "min_sharpness": 1.5,  "min_face_px": 5},
     {"zoom": 7.0, "cx": 0.85, "cy": 0.12, "min_sharpness": 1.5,  "min_face_px": 5},
 ]
+ZOOM_PASSES_LIVE = [p for p in ZOOM_PASSES if p["zoom"] <= 3.0]
 # ─────────────────────────────────────────────────────────────────────────────
 # Digital zoom helper
 # ─────────────────────────────────────────────────────────────────────────────
@@ -275,7 +276,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                         lap_threshold: float = None,
                         debug_dir: str = None,
                         debug_frame_id: int = 0,
-                        ) -> list:
+                        profile: str = "full") -> list:
  
     _min_face_px   = min_face_px   if min_face_px   is not None else MIN_FACE_PX
     _lap_threshold = lap_threshold if lap_threshold is not None else MIN_SHARPNESS
@@ -298,7 +299,8 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
     zoom_boxes = []
     _raw_counter = 0
  
-    for pass_idx, pass_cfg in enumerate(ZOOM_PASSES):
+    _passes = ZOOM_PASSES_LIVE if profile == "live" else ZOOM_PASSES
+    for pass_idx, pass_cfg in enumerate(_passes):
  
         pass_lap_threshold = pass_cfg.get("min_sharpness", _lap_threshold)
         pass_min_face_px   = pass_cfg.get("min_face_px",   _min_face_px)

@@ -121,3 +121,14 @@ class TestPipelineRequest(BaseModel):
     ground_truth_file: str = ""
     threshold: float = 0.45
     frame_skip: int = 3
+
+
+class RTSPTrackedAttendanceRequest(BaseModel):
+    rtspUrl:          str
+    enrolledRollNos:  List[str] = []
+    frameSkip:        int   = 5
+    durationSec:      Optional[float] = None
+    recogThreshold:   float = 0.40
+    iouMin:           float = 0.20
+    driftThresholdPx: float = 60.0
+    trackExpirySec:   float = 30.0

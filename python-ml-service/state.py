@@ -22,3 +22,12 @@ face_lock = threading.Lock()
 # Populated by ml_service.py at startup so route modules can trigger a reload
 # without importing ml_service (which would be circular).
 load_model_fn = None   # assigned in ml_service.py: state.load_model_fn = load_model
+
+
+faiss_index = None
+vid_to_roll = {}
+embeddings_meta = {}
+face_pool = None
+faiss_dirty: bool = False
+faiss_index_lock: threading.Lock = threading.Lock()
+_next_vector_id: int = 0
