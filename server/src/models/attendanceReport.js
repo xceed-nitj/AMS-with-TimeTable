@@ -53,6 +53,15 @@ const attendanceReportSchema = new Schema({
     timeSlot:    { type: String, default: '' },      // "8:30-9:30"
     locksemId:   { type: Schema.Types.ObjectId, ref: 'LockSem', default: null },
 
+     // Subject metadata for ERP push — resolved from Subject model at save-time
+    // (free-text `subject` above is timetable text; ERP needs the real code/abbrev)
+    subjectMeta: {
+        subName:         { type: String, default: '' },   // abbreviation e.g. "DSP"
+        subCode:         { type: String, default: '' },   // e.g. "ECPC_306"
+        subjectFullName: { type: String, default: '' },
+        credits:         { type: Number, default: null },
+    },
+
     // One entry per video processed in this session
     slotResults: [slotResultSchema],
 

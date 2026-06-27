@@ -75,6 +75,18 @@ router.get('/list-files-by-dept', async (req, res) => {
 });
 
 
+// GET /attendancemodule/embeddings/list?session=2025-26&dept=ECE
+router.get('/list', async (req, res) => {
+    try { await ctrl.listEmbeddingsInFolder(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /attendancemodule/embeddings/check?dept=ECE&subject=DSP&session=2025-26
+router.get('/check', async (req, res) => {
+    try { await ctrl.checkEmbeddingForSubject(req, res); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // DELETE /attendancemodule/embeddings/file — deletes physical .pkl + DB records (must be before /:id)
 router.delete('/file', async (req, res) => {
     try { await ctrl.deleteFile(req, res); }
