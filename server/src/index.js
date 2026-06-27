@@ -181,25 +181,11 @@ mongoose
     const server = app.listen(PORT, () => {
       console.log(`Server started on port ${PORT}`);
       
-      // ── Auto Attendance Scheduler ─────────────────────────────
-      const { startAutoScheduler } = require('./modules/attendanceModule/controllers/autoAttendanceScheduler');
-      const ROOM_CAMERA_MAP = {
-          'lt103': {
-              cam1: process.env.RTSP_LT103_CAM1 || 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp',
-              cam2: process.env.RTSP_LT103_CAM2 || 'rtsp://admin:Admin.123@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp',
-          },
-      };
-      const SCHEDULER_CONFIG = {
-          checkIntervalMin: parseInt(process.env.CHECK_INTERVAL_MIN) || 5,
-          durationSec:      60,
-          frameSkip:        10,
-          clusterThreshold: 0.45,
-          minSamples:       3,
-          autoThreshold:    0.60,
-          reviewThreshold:  0.40,
-      };
-      startAutoScheduler(ROOM_CAMERA_MAP, SCHEDULER_CONFIG);
-      console.log('[AutoScheduler] Scheduler started for rooms:', Object.keys(ROOM_CAMERA_MAP));
+     // ── Auto Attendance Scheduler ─────────────────────────────
+      // No args needed — rooms, periods, and run settings are now read
+      // live from AcquisitionControl + the Camera Registry on every tick.
+      startAutoScheduler();
+      console.log('[AutoScheduler] Scheduler started — DB-driven (rooms, periods, embeddings).'); 
 
       // ── Frame Cleanup Scheduler (Task #1544) ──────────────────
       // Deletes frames older than 7 days; keeps only the best
